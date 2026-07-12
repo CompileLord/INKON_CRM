@@ -21,8 +21,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+import hmac
+
+
 def hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return hmac.new(
+        settings.JWT_REFRESH_SECRET_KEY.encode("utf-8"),
+        token.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
 
 
 def create_access_token(

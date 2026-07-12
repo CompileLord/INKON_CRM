@@ -25,7 +25,6 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
     parent_telegram_chat_id: Optional[int] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
-    must_set_password: Optional[bool] = None
 
 
 class UserResponse(BaseModel):

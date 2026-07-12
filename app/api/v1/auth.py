@@ -24,8 +24,12 @@ async def login(
     payload: LoginRequest,
     db: AsyncSession = Depends(get_db_session)
 ) -> TokenPair:
+    key = f"auth:attempts:login:{payload.email}"
+    await check_rate_limit(key, 5, 900)
     auth_service = AuthService(db)
-    return await auth_service.login(payload.email, payload.password)
+    result = await auth_service.login(payload.email, payload.password)
+    await clear_rate_limit(key)
+    return result
 
 
 @router.post("/refresh", response_model=TokenPair)

@@ -81,8 +81,6 @@ class UserService:
                     detail="Payment day of month can only be set for students"
                 )
             user.payment_day_of_month = user_update.payment_day_of_month
-        if user_update.must_set_password is not None:
-            user.must_set_password = user_update.must_set_password
 
         return await self.user_repo.update(user)
 
@@ -135,7 +133,18 @@ class UserService:
                 detail="User not found"
             )
 
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Avatar size exceeds the 5MB limit"
+            )
+
         content = await file.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Avatar size exceeds the 5MB limit"
+            )
         try:
             image = Image.open(io.BytesIO(content))
             image.verify()

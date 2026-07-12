@@ -130,6 +130,13 @@ class AuthService:
             )
 
         data = json.loads(raw_data)
+        if data.get("attempts", 0) >= 5:
+            await redis_client.delete(key)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Too many incorrect attempts. Code invalidated."
+            )
+
         data["attempts"] += 1
         await redis_client.set(key, json.dumps(data), keepttl=True)
 
@@ -234,6 +241,13 @@ class AuthService:
             )
 
         data = json.loads(raw_data)
+        if data.get("attempts", 0) >= 5:
+            await redis_client.delete(key)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Too many incorrect attempts. Reset code invalidated."
+            )
+
         data["attempts"] += 1
         await redis_client.set(key, json.dumps(data), keepttl=True)
 

@@ -106,11 +106,15 @@ class FinanceService:
         page: int,
         page_size: int
     ) -> dict:
+        page_size = min(max(1, page_size), 100)
+
         payment_sum = func.coalesce(
             func.sum(Payment.amount * (Decimal("1.0") - cast(Payment.discount_percent, Numeric) / Decimal("100.0"))),
             Decimal("0.0")
         )
-        query = select(
+        debt_expr = Enrollment.price_at_enrollment - payment_sum
+
+        base_query = select(
             Enrollment,
             User,
             Course,
@@ -132,19 +136,36 @@ class FinanceService:
 
         course_id = filters.get("course_id")
         if course_id:
-            query = query.filter(Enrollment.course_id == course_id)
+            base_query = base_query.filter(Enrollment.course_id == course_id)
 
         min_debt = filters.get("min_debt")
         if min_debt is not None:
-            query = query.having(Enrollment.price_at_enrollment - payment_sum >= min_debt)
+            base_query = base_query.having(debt_expr >= min_debt)
         else:
-            query = query.having(Enrollment.price_at_enrollment - payment_sum > Decimal("0.0"))
+            base_query = base_query.having(debt_expr > Decimal("0.0"))
 
-        result = await self.db.execute(query)
-        rows = list(result.all())
+        overdue_days_filter = filters.get("overdue_days")
 
-        items = []
+        # When overdue_days filter is not used, paginate at the SQL level
+        if overdue_days_filter is None:
+            count_subquery = base_query.subquery()
+            count_query = select(func.count()).select_from(count_subquery)
+            count_result = await self.db.execute(count_query)
+            total = count_result.scalar() or 0
+
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            offset = (page - 1) * page_size
+
+            paginated_query = base_query.order_by(debt_expr.desc()).offset(offset).limit(page_size)
+            result = await self.db.execute(paginated_query)
+            rows = list(result.all())
+        else:
+            # Must load all rows for Python-side overdue_days filtering
+            result = await self.db.execute(base_query.order_by(debt_expr.desc()))
+            rows = list(result.all())
+
         today_date = date.today()
+        items = []
         for enrollment, student, course, total_paid in rows:
             debt = enrollment.price_at_enrollment - total_paid
 
@@ -183,19 +204,16 @@ class FinanceService:
                 "overdue_days": overdue_days
             })
 
-        overdue_days_filter = filters.get("overdue_days")
+        # Apply overdue_days filter + pagination in Python only when filter is active
         if overdue_days_filter is not None:
             items = [item for item in items if item["overdue_days"] >= overdue_days_filter]
-
-        total = len(items)
-        page_size = min(max(1, page_size), 100)
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-
-        offset = (page - 1) * page_size
-        paginated_items = items[offset : offset + page_size] if page <= total_pages else []
+            total = len(items)
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            offset = (page - 1) * page_size
+            items = items[offset : offset + page_size] if page <= total_pages else []
 
         return {
-            "items": paginated_items,
+            "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,

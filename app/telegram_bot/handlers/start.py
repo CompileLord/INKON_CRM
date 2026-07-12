@@ -22,6 +22,11 @@ async def cmd_start(message: types.Message) -> None:
 
 @router.message(F.contact)
 async def process_contact(message: types.Message) -> None:
+    if message.contact.user_id != message.from_user.id:
+        await message.answer(
+            "Вы можете поделиться только своим собственным контактом."
+        )
+        return
     phone = message.contact.phone_number
     cleaned = "".join(c for c in phone if c.isdigit() or c == "+")
     if cleaned and not cleaned.startswith("+"):

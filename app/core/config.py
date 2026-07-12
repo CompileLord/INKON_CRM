@@ -54,7 +54,8 @@ class Settings(BaseSettings):
 
     TIMEZONE: str = "Asia/Dushanbe"
     STORAGE_PATH: str = "storage"
-    TELEGRAM_BOT_TOKEN: str = "123456:mock_token"
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_BOT_SECRET_TOKEN: str
     TELEGRAM_WEBHOOK_URL: str = "http://localhost:8000/api/v1/telegram/webhook"
 
     BACKEND_CORS_ORIGINS: Annotated[

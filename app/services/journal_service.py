@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import HTTPException, status
@@ -92,14 +93,33 @@ class JournalService:
         students_result = await self.db.execute(students_query)
         students_list = list(students_result.all())
 
+        student_ids = [s_user.id for s_user, _ in students_list]
+
+        # Batch-load all entries for this journal (eliminates N+1)
+        all_entries_query = select(JournalEntry).filter(
+            JournalEntry.journal_id == journal_id,
+            JournalEntry.student_id.in_(student_ids)
+        ).order_by(JournalEntry.student_id, JournalEntry.lesson_date)
+        all_entries_result = await self.db.execute(all_entries_query)
+        all_entries = list(all_entries_result.scalars().all())
+
+        entries_by_student = defaultdict(list)
+        for entry in all_entries:
+            entries_by_student[entry.student_id].append(entry)
+
+        # Batch-load all summaries for this journal (eliminates N+1)
+        all_summaries_query = select(JournalStudentSummary).filter(
+            JournalStudentSummary.journal_id == journal_id,
+            JournalStudentSummary.student_id.in_(student_ids)
+        )
+        all_summaries_result = await self.db.execute(all_summaries_query)
+        all_summaries = list(all_summaries_result.scalars().all())
+
+        summaries_by_student = {s.student_id: s for s in all_summaries}
+
         students_data = []
         for s_user, color_hex in students_list:
-            entries_query = select(JournalEntry).filter(
-                JournalEntry.journal_id == journal_id,
-                JournalEntry.student_id == s_user.id
-            ).order_by(JournalEntry.lesson_date)
-            entries_result = await self.db.execute(entries_query)
-            entries = list(entries_result.scalars().all())
+            entries = entries_by_student.get(s_user.id, [])
 
             entries_data = []
             for entry in entries:
@@ -113,12 +133,7 @@ class JournalService:
                     "version": entry.version
                 })
 
-            summary_query = select(JournalStudentSummary).filter(
-                JournalStudentSummary.journal_id == journal_id,
-                JournalStudentSummary.student_id == s_user.id
-            )
-            summary_result = await self.db.execute(summary_query)
-            summary = summary_result.scalars().first()
+            summary = summaries_by_student.get(s_user.id)
 
             summary_data = None
             if summary:
@@ -344,18 +359,12 @@ class JournalService:
         sum_service = SumCalculationService(self.db)
         await sum_service.recalculate(journal_id, student_id)
 
-        # Enqueue arq task for exam result notification
-        from arq import create_pool
-        from arq.connections import RedisSettings
-        from app.core.config import settings
-
-        if not settings.TESTING:
-            try:
-                redis_settings = RedisSettings(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
-                pool = await create_pool(redis_settings)
-                await pool.enqueue_job("send_exam_result_notification_task", student_id, journal_id)
-            except Exception:
-                pass
+        # Enqueue arq task for exam result notification (uses singleton pool)
+        from app.core.redis import enqueue_job
+        try:
+            await enqueue_job("send_exam_result_notification_task", student_id, journal_id)
+        except Exception:
+            pass
 
         await self.db.refresh(summary)
         return summary

@@ -23,8 +23,11 @@ async def check_rate_limit(key: str, limit: int, window: int) -> None:
     except HTTPException:
         raise
     except Exception as e:
-        logger.warning(f"Rate limiter failed open due to error: {e}")
-        return
+        logger.error(f"Rate limiter connection error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Security service is currently unavailable. Please try again later."
+        )
 
 
 async def clear_rate_limit(key: str) -> None:

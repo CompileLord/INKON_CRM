@@ -93,10 +93,12 @@ class EnrollmentService:
         journals_result = await self.db.execute(journals_query)
         journals = list(journals_result.scalars().all())
 
+        entries_to_add = []
+        summaries_to_add = []
         for journal in journals:
             lesson_dates = get_lesson_dates(journal.period_start, journal.period_end, schedules)
             for l_date in lesson_dates:
-                entry = JournalEntry(
+                entries_to_add.append(JournalEntry(
                     journal_id=journal.id,
                     student_id=student_id,
                     lesson_date=l_date,
@@ -104,10 +106,9 @@ class EnrollmentService:
                     score=0,
                     comment=None,
                     version=1
-                )
-                self.db.add(entry)
+                ))
 
-            summary = JournalStudentSummary(
+            summaries_to_add.append(JournalStudentSummary(
                 journal_id=journal.id,
                 student_id=student_id,
                 exam_score=0,
@@ -116,8 +117,10 @@ class EnrollmentService:
                 attendance_count=0,
                 total_lessons=len(lesson_dates),
                 version=1
-            )
-            self.db.add(summary)
+            ))
+
+        self.db.add_all(entries_to_add)
+        self.db.add_all(summaries_to_add)
 
         await self.db.flush()
         await self.db.refresh(enrollment)

@@ -184,6 +184,7 @@ async def test_telegram_webhook_and_parent_binding(
     monkeypatch
 ) -> None:
     from aiogram import Bot
+    from app.core.config import settings
     mock_call = AsyncMock(return_value=None)
     monkeypatch.setattr(Bot, "__call__", mock_call)
 
@@ -214,7 +215,8 @@ async def test_telegram_webhook_and_parent_binding(
         }
     }
 
-    response = await client.post("/api/v1/telegram/webhook", json=payload)
+    headers = {"X-Telegram-Bot-Api-Secret-Token": settings.TELEGRAM_BOT_SECRET_TOKEN}
+    response = await client.post("/api/v1/telegram/webhook", json=payload, headers=headers)
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
