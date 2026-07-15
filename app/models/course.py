@@ -2,7 +2,7 @@ from datetime import date
 from enum import Enum
 from decimal import Decimal
 from typing import Optional
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String, Text, Date
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String, Text, Date, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin
 
@@ -21,6 +21,11 @@ class Course(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "courses"
     __table_args__ = (
         CheckConstraint("start_date < end_date", name="check_course_dates"),
+        Index(
+            "idx_courses_mentor_active", 
+            "mentor_id", 
+            postgresql_where=text("status = 'active' AND is_deleted = false")
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

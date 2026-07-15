@@ -205,6 +205,8 @@ class JournalService:
             )
 
         updated_student_ids = set()
+        
+        # Pre-validate scores
         for update_item in entries_updates:
             if not (0 <= update_item.score <= 5):
                 raise HTTPException(
@@ -212,17 +214,31 @@ class JournalService:
                     detail="Score must be between 0 and 5"
                 )
 
-            entry_query = select(JournalEntry).filter(
-                JournalEntry.journal_id == journal_id,
-                JournalEntry.student_id == update_item.student_id,
-                JournalEntry.lesson_date == update_item.lesson_date
-            )
-            entry_result = await self.db.execute(entry_query)
-            entry = entry_result.scalars().first()
+        if not entries_updates:
+            return {"status": "success"}
+
+        student_ids = list(set(u.student_id for u in entries_updates))
+        dates = list(set(u.lesson_date for u in entries_updates))
+        
+        # Batch load all entries
+        entry_query = select(JournalEntry).filter(
+            JournalEntry.journal_id == journal_id,
+            JournalEntry.student_id.in_(student_ids),
+            JournalEntry.lesson_date.in_(dates)
+        )
+        entry_result = await self.db.execute(entry_query)
+        entries = list(entry_result.scalars().all())
+        entries_map = {(e.student_id, e.lesson_date): e for e in entries}
+
+        from app.services.audit_service import AuditService
+        audit_service = AuditService(self.db)
+
+        for update_item in entries_updates:
+            entry = entries_map.get((update_item.student_id, update_item.lesson_date))
             if not entry:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Journal entry not found"
+                    detail=f"Journal entry not found for student {update_item.student_id} on {update_item.lesson_date}"
                 )
 
             if entry.version != update_item.version:
@@ -239,14 +255,12 @@ class JournalService:
             if entry.comment != update_item.comment:
                 changes["comment"] = (entry.comment, update_item.comment)
 
-            entry.attendance = update_item.attendance
-            entry.score = update_item.score
-            entry.comment = update_item.comment
-            updated_student_ids.add(update_item.student_id)
-
             if changes:
-                from app.services.audit_service import AuditService
-                audit_service = AuditService(self.db)
+                entry.attendance = update_item.attendance
+                entry.score = update_item.score
+                entry.comment = update_item.comment
+                updated_student_ids.add(update_item.student_id)
+
                 await audit_service.log(
                     user_id=current_user.id,
                     action="update",

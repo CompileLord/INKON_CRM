@@ -106,6 +106,8 @@ class FinanceService:
         page: int,
         page_size: int
     ) -> dict:
+        from sqlalchemy import case, cast, extract, Integer, Date, text
+        
         page_size = min(max(1, page_size), 100)
 
         payment_sum = func.coalesce(
@@ -114,11 +116,29 @@ class FinanceService:
         )
         debt_expr = Enrollment.price_at_enrollment - payment_sum
 
+        due_date_this_month = func.make_date(
+            cast(extract('year', func.current_date()), Integer),
+            cast(extract('month', func.current_date()), Integer),
+            User.payment_day_of_month
+        )
+        
+        due_date = case(
+            (func.current_date() >= due_date_this_month, due_date_this_month),
+            else_=cast(due_date_this_month - text("interval '1 month'"), Date)
+        )
+        
+        overdue_days_expr = case(
+            (User.payment_day_of_month.is_(None), 0),
+            (debt_expr <= 0, 0),
+            else_=func.current_date() - due_date
+        )
+
         base_query = select(
             Enrollment,
             User,
             Course,
-            payment_sum.label("total_paid")
+            payment_sum.label("total_paid"),
+            overdue_days_expr.label("calc_overdue_days")
         ).join(
             User, User.id == Enrollment.student_id
         ).join(
@@ -145,46 +165,27 @@ class FinanceService:
             base_query = base_query.having(debt_expr > Decimal("0.0"))
 
         overdue_days_filter = filters.get("overdue_days")
+        if overdue_days_filter is not None:
+            base_query = base_query.having(overdue_days_expr >= overdue_days_filter)
 
-        # When overdue_days filter is not used, paginate at the SQL level
-        if overdue_days_filter is None:
-            count_subquery = base_query.subquery()
-            count_query = select(func.count()).select_from(count_subquery)
-            count_result = await self.db.execute(count_query)
-            total = count_result.scalar() or 0
+        count_subquery = base_query.subquery()
+        count_query = select(func.count()).select_from(count_subquery)
+        count_result = await self.db.execute(count_query)
+        total = count_result.scalar() or 0
 
-            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-            offset = (page - 1) * page_size
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+        offset = (page - 1) * page_size
 
-            paginated_query = base_query.order_by(debt_expr.desc()).offset(offset).limit(page_size)
-            result = await self.db.execute(paginated_query)
-            rows = list(result.all())
-        else:
-            # Must load all rows for Python-side overdue_days filtering
-            result = await self.db.execute(base_query.order_by(debt_expr.desc()))
-            rows = list(result.all())
+        paginated_query = base_query.order_by(debt_expr.desc()).offset(offset).limit(page_size)
+        result = await self.db.execute(paginated_query)
+        rows = list(result.all())
 
-        today_date = date.today()
         items = []
-        for enrollment, student, course, total_paid in rows:
+        for enrollment, student, course, total_paid, calc_overdue_days in rows:
             debt = enrollment.price_at_enrollment - total_paid
-
-            overdue_days = 0
-            if debt > 0 and student.payment_day_of_month:
-                payment_day = student.payment_day_of_month
-                try:
-                    due_date_this_month = date(today_date.year, today_date.month, payment_day)
-                except ValueError:
-                    due_date_this_month = date(today_date.year, today_date.month, 28)
-
-                if today_date >= due_date_this_month:
-                    due_date = due_date_this_month
-                else:
-                    if today_date.month == 1:
-                        due_date = date(today_date.year - 1, 12, payment_day)
-                    else:
-                        due_date = date(today_date.year, today_date.month - 1, payment_day)
-                overdue_days = max(0, (today_date - due_date).days)
+            
+            # Post-process to ensure we don't return negative numbers if something goes weird
+            overdue_days = max(0, int(calc_overdue_days))
 
             items.append({
                 "student": {
@@ -203,14 +204,6 @@ class FinanceService:
                 "debt": debt,
                 "overdue_days": overdue_days
             })
-
-        # Apply overdue_days filter + pagination in Python only when filter is active
-        if overdue_days_filter is not None:
-            items = [item for item in items if item["overdue_days"] >= overdue_days_filter]
-            total = len(items)
-            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-            offset = (page - 1) * page_size
-            items = items[offset : offset + page_size] if page <= total_pages else []
 
         return {
             "items": items,

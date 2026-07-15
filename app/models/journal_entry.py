@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Optional
-from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Integer, Text, UniqueConstraint, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -10,6 +10,11 @@ class JournalEntry(Base):
     __table_args__ = (
         UniqueConstraint("journal_id", "student_id", "lesson_date", name="uq_journal_student_date"),
         CheckConstraint("score >= 0 AND score <= 5", name="check_score_range"),
+        Index(
+            "idx_journal_entries_student_attendance", 
+            "student_id", 
+            postgresql_where=text("attendance = false")
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

@@ -65,28 +65,23 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         courses_result = await self.session.execute(courses_query)
         courses = list(courses_result.scalars().all())
 
-        avg_score_query = select(func.avg(JournalStudentSummary.sum_score)).filter(
-            JournalStudentSummary.student_id == student_id
-        )
-        avg_score_result = await self.session.execute(avg_score_query)
-        avg_score = avg_score_result.scalar()
+        stats_query = select(
+            func.avg(JournalStudentSummary.sum_score),
+            func.sum(JournalStudentSummary.attendance_count),
+            func.sum(JournalStudentSummary.total_lessons)
+        ).filter(JournalStudentSummary.student_id == student_id)
+        
+        stats_result = await self.session.execute(stats_query)
+        avg_score, attendance_count, total_lessons = stats_result.one()
 
-        absences_query = select(func.count(JournalEntry.id)).filter(
-            JournalEntry.student_id == student_id,
-            JournalEntry.attendance == False
-        )
-        absences_result = await self.session.execute(absences_query)
-        absences = absences_result.scalar() or 0
-
-        total_lessons_query = select(func.count(JournalEntry.id)).filter(
-            JournalEntry.student_id == student_id
-        )
-        total_lessons_result = await self.session.execute(total_lessons_query)
-        total_lessons = total_lessons_result.scalar() or 0
+        avg_score = float(avg_score) if avg_score is not None else 0.0
+        total_lessons = int(total_lessons) if total_lessons is not None else 0
+        attendance_count = int(attendance_count) if attendance_count is not None else 0
+        absences = total_lessons - attendance_count
 
         return {
             "courses": courses,
-            "avg_score": float(avg_score) if avg_score is not None else 0.0,
+            "avg_score": avg_score,
             "absences": absences,
             "total_lessons": total_lessons
         }
