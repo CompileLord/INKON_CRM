@@ -94,7 +94,9 @@ async def add_security_headers(request, call_next):
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "img-src 'self' data: https://fastapi.tiangolo.com;"
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            # Add connect-src to allow fetching openapi.json and the jsdelivr source maps
+            "connect-src 'self' https://cdn.jsdelivr.net;"
         )
     else:
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
