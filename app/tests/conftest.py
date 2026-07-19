@@ -54,8 +54,10 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_test_db() -> None:
+    from sqlalchemy import text
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
         await conn.run_sync(Base.metadata.create_all)
     yield
     await test_engine.dispose()

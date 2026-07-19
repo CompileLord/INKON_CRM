@@ -278,6 +278,7 @@ async def test_check_payment_reminders(db_session: AsyncSession, test_student: U
     mock_enqueue = AsyncMock()
     monkeypatch.setattr("app.core.redis.enqueue_job", mock_enqueue)
 
+    from datetime import datetime
     class MockDate:
         @classmethod
         def today(cls):
@@ -285,7 +286,16 @@ async def test_check_payment_reminders(db_session: AsyncSession, test_student: U
         def __new__(cls, *args, **kwargs):
             return date(*args, **kwargs)
 
+    class MockDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            dt = datetime(2026, 7, 12, 12, 0, 0)
+            if tz:
+                return dt.replace(tzinfo=tz)
+            return dt
+
     monkeypatch.setattr("app.workers.tasks.date", MockDate)
+    monkeypatch.setattr("app.workers.tasks.datetime", MockDatetime)
 
     await check_payment_reminders(None)
 

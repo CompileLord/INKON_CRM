@@ -1,6 +1,6 @@
 from typing import AsyncGenerator, Callable, List
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -8,9 +8,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/auth/login"
-)
+oauth2_scheme = HTTPBearer()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -26,7 +24,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_current_user(
     db: AsyncSession = Depends(get_db_session),
-    token: str = Depends(oauth2_scheme)
+    token_auth: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -34,6 +32,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        token = token_auth.credentials
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
