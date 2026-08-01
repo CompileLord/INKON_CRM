@@ -705,6 +705,30 @@ This document is auto-generated from the OpenAPI schema and contains all endpoin
 
 ---
 
+## GET /api/v1/courses/{id}/journals
+
+**Summary:** List Course Journals
+
+**Parameters:**
+- `id` [path]  (Required)
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  [
+  {
+      "id": integer,
+      "course_id": integer,
+      "period_label": string,
+      "period_start": string,
+      "period_end": string,
+      "period_type": object,
+    }
+  ]
+  ```
+
+---
+
 ## GET /api/v1/courses/{id}/progress-chart
 
 **Summary:** Get Progress Chart
@@ -1059,6 +1083,87 @@ This document is auto-generated from the OpenAPI schema and contains all endpoin
     "total_pages": integer,
   }
   ```
+
+---
+
+## PATCH /api/v1/users/me
+
+**Summary:** Update Own Profile
+
+**Request Body (JSON):**
+```json
+{
+  "first_name"?: string,
+  "last_name"?: string,
+  "date_of_birth"?: string,
+  "phone"?: string,
+  "parent_telegram_chat_id"?: integer
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+
+---
+
+## GET /api/v1/notifications/
+
+**Summary:** List User Notifications
+
+**Parameters:**
+- `page` [query]
+- `page_size` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": array[
+      {
+        "id": integer,
+        "user_id"?: integer,
+        "recipient": string,
+        "type": string,
+        "related_entity_id": integer,
+        "notification_date": string,
+        "status": string,
+        "sent_at"?: string,
+        "read_at"?: string,
+        "error_message"?: string
+      }
+    ],
+    "total": integer,
+    "page": integer,
+    "page_size": integer,
+    "total_pages": integer
+  }
+  ```
+
+---
+
+## GET /api/v1/notifications/unread-count
+
+**Summary:** Get Unread Notification Count
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "unread_count": integer
+  }
+  ```
+
+---
+
+## PATCH /api/v1/notifications/{id}/read
+
+**Summary:** Mark Notification Read
+
+**Parameters:**
+- `id` [path] (Required)
+
+**Responses:**
+- **200**: Successful Response
 
 ---
 
