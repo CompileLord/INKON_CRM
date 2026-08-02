@@ -1,0 +1,17 @@
+{
+  "title": "Documents",
+  "subtitle": "Files attached to this profile",
+  "uploadDoc": "Upload Document",
+  "uploading": "Uploading...",
+  "loadingDocs": "Loading documents...",
+  "loadError": "Failed to load documents",
+  "noDocs": "No attached documents",
+  "emptyHelp": "Upload the first document using the button above",
+  "maxSizeError": "The file exceeds the maximum size of 20MB",
+  "uploadSuccess": "Document uploaded",
+  "uploadError": "Failed to upload document",
+  "deleteTitle": "Delete Document",
+  "deleteMsg": "Delete \"{{fileName}}\"? This action cannot be undone.",
+  "deleteSuccess": "Document deleted",
+  "deleteError": "Failed to delete document"
+}

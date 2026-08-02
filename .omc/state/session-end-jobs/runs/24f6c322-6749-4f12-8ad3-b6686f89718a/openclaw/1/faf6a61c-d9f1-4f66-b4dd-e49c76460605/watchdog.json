@@ -1,0 +1,9 @@
+{
+  "runner": {
+    "pid": 86524,
+    "processStartIdentity": "watchdog-parent"
+  },
+  "startedAt": "2026-07-31T22:32:00.337Z",
+  "deadlineAt": "2026-07-31T22:32:02.337Z",
+  "state": "armed"
+}

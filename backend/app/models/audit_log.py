@@ -10,6 +10,10 @@ class AuditAction(str, Enum):
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
+    VOID = "void"
+    REFUND = "refund"
+    CLOSE_PERIOD = "close_period"
+    REOPEN_PERIOD = "reopen_period"
 
 
 class AuditLog(Base):

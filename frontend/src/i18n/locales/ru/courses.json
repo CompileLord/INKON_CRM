@@ -1,0 +1,87 @@
+{
+  "title": "Курсы и Группы",
+  "subtitle": "Каталог направлений, назначение преподавателей и списки студентов",
+  "addCourse": "Создать курс",
+  "editCourse": "Редактировать курс",
+  "searchPlaceholder": "Поиск курса по названию...",
+  "filter": {
+    "all": "Все",
+    "active": "Активные",
+    "archived": "Архив"
+  },
+  "sort": {
+    "newest": "Сначала новые",
+    "price": "По цене"
+  },
+  "view": {
+    "grid": "Плитка",
+    "list": "Список"
+  },
+  "filterStatus": "Все направления",
+  "activeCourses": "Активные курсы",
+  "archivedCourses": "Архивные курсы",
+  "price": "Стоимость",
+  "examType": "Тип экзаменов",
+  "mentors": "Преподаватели",
+  "enrolledStudents": "Зачислено студентов",
+  "roster": "Состав группы",
+  "enrollStudent": "Зачислить студента",
+  "loading": "Загрузка курсов...",
+  "empty": "Курсы не найдены",
+  "noProgressData": "Пока нет данных для графика прогресса",
+  "courseProgress": "Прогресс курса",
+  "notFound": "Курс не найден",
+  "loadError": "Не удалось загрузить курс",
+  "period": "Период",
+  "month": "мес",
+  "schedule": "Расписание",
+  "noSchedule": "Расписание не задано",
+  "mentorHistory": "История менторов",
+  "noMentorHistory": "Смен ментора не было",
+  "duplicate": "Дублировать",
+  "duplicateTitle": "Дублировать курс",
+  "duplicateMsg": "Создать копию курса «{{title}}» с тем же расписанием, ценой и ментором?",
+  "deleteTitle": "Удалить курс",
+  "deleteMsg": "Удалить курс «{{title}}»? Это действие нельзя отменить.",
+  "copySuffix": "копия",
+  "courseCopied": "Курс скопирован",
+  "courseCopyError": "Не удалось скопировать курс",
+  "courseUpdated": "Курс обновлён",
+  "courseDeleteError": "Не удалось удалить курс",
+  "assignedFromPresent": "с {{start}} — по наст. время",
+  "days": {
+    "sun": "Вс",
+    "mon": "Пн",
+    "tue": "Вт",
+    "wed": "Ср",
+    "thu": "Чт",
+    "fri": "Пт",
+    "sat": "Сб"
+  },
+  "examTypeLabel": {
+    "weekly": "Еженедельный экзамен",
+    "monthly": "Ежемесячный экзамен"
+  },
+  "profile": {
+    "title": "Страница курса",
+    "schedule": "Расписание занятий",
+    "studentsCount": "Студентов в группе: {{count}}",
+    "maxCapacity": "Вместимость: {{count}}"
+  },
+  "form": {
+    "newCourseTitle": "Новый курс",
+    "editCourseTitle": "Редактировать курс",
+    "titleLabel": "Название",
+    "descriptionLabel": "Описание",
+    "photoPathLabel": "Фото (путь/URL)",
+    "startDateLabel": "Дата начала",
+    "endDateLabel": "Дата окончания",
+    "mentorLabel": "Ментор",
+    "selectMentor": "Выберите ментора",
+    "examTypeLabel": "Тип экзамена",
+    "priceLabel": "Цена, TJS",
+    "immutableNotice": "Тип экзамена, цену и расписание нельзя изменить после создания курса.",
+    "scheduleLabel": "Расписание",
+    "saving": "Сохранение…"
+  }
+}

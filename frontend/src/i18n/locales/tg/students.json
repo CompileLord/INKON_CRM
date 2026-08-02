@@ -1,0 +1,43 @@
+{
+  "title": "Донишҷӯён",
+  "subtitle": "Идоракунии ҳисобҳои донишҷӯён, профилҳо ва ҳуҷҷатҳо",
+  "addStudent": "Илова кардани донишҷӯ",
+  "editStudent": "Таҳрири донишҷӯ",
+  "searchPlaceholder": "Ҷустуҷӯ аз рӯи ном, почта ё телефон...",
+  "filterStatus": "Ҳама мақомҳо",
+  "name": "Ному насаби донишҷӯ",
+  "contacts": "Тамос",
+  "courses": "Курсҳо",
+  "registeredAt": "Санаи сабт",
+  "actions": "Амалҳо",
+  "loading": "Боргирии рӯйхати донишҷӯён...",
+  "empty": "Донишҷӯён ёфт нашуданд",
+  "coursesTab": "Курсҳо",
+  "performanceTab": "Пешрафт",
+  "noCourses": "Донишҷӯ ба ягон курс сабт нашудааст",
+  "activeCourses": "Курсҳои фаъол",
+  "attendance": "Давомот",
+  "avgScore": "Балли миёна",
+  "absences": "Ғоибӣ",
+  "totalLessons": "Ҷамъи дарсҳо",
+  "table": {
+    "student": "Донишҷӯ",
+    "phone": "Телефон",
+    "paymentDay": "Рӯзи пардохт",
+    "created": "Санаи сабт",
+    "empty": "Донишҷӯён ёфт нашуданд",
+    "error": "Боргирии маълумот ноком шуд"
+  },
+  "form": {
+    "newStudentTitle": "Донишҷӯи нав",
+    "editStudentTitle": "Таҳрири донишҷӯ",
+    "firstNameLabel": "Ном",
+    "lastNameLabel": "Насаб",
+    "phoneLabel": "Телефон",
+    "dobLabel": "Санаи таваллуд",
+    "telegramChatIdLabel": "Telegram chat ID-и волидайн",
+    "paymentDayLabel": "Рӯзи пардохт (моҳона)",
+    "paymentDayHelp": "Рақам аз 1 то 28",
+    "saving": "Захиракунӣ…"
+  }
+}

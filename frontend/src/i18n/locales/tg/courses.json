@@ -1,0 +1,87 @@
+{
+  "title": "Курсҳо ва Гуруҳҳо",
+  "subtitle": "Каталоги самтҳо, таъини омӯзгорон ва рӯйхати донишҷӯён",
+  "addCourse": "Сохтани курс",
+  "editCourse": "Таҳрири курс",
+  "searchPlaceholder": "Ҷустуҷӯи курс...",
+  "filter": {
+    "all": "Ҳама",
+    "active": "Фаъол",
+    "archived": "Бойгонӣ"
+  },
+  "sort": {
+    "newest": "Навтаринҳо",
+    "price": "Аз рӯи нарх"
+  },
+  "view": {
+    "grid": "Тӯр",
+    "list": "Рӯйхат"
+  },
+  "filterStatus": "Ҳамаи самтҳо",
+  "activeCourses": "Курсҳои фаъол",
+  "archivedCourses": "Курсҳои бойгонӣ",
+  "price": "Нарх",
+  "examType": "Намуди имтиҳонҳо",
+  "mentors": "Омӯзгорон",
+  "enrolledStudents": "Донишҷӯёни аъзошуда",
+  "roster": "Ҳайати гуруҳ",
+  "enrollStudent": "Қабули донишҷӯ",
+  "loading": "Боргирии курсҳо...",
+  "empty": "Курсҳо ёфт нашуданд",
+  "noProgressData": "Маълумот барои графики пешрафт ҳанӯз нест",
+  "courseProgress": "Пешрафти курс",
+  "notFound": "Курс ёфт нашуд",
+  "loadError": "Курсро бор кардан ноком шуд",
+  "period": "Давра",
+  "month": "моҳ",
+  "schedule": "Ҷадвал",
+  "noSchedule": "Ҷадвал муайян нашудааст",
+  "mentorHistory": "Таърихи омӯзгорон",
+  "noMentorHistory": "Иваз кардани омӯзгор набудааст",
+  "duplicate": "Нусхабардорӣ",
+  "duplicateTitle": "Нусхабардории курс",
+  "duplicateMsg": "Нусхаи курси «{{title}}»-ро бо ҳамон ҷадвал, нарх ва омӯзгор эҷод мекунед?",
+  "deleteTitle": "Нест кардани курс",
+  "deleteMsg": "Курси «{{title}}»-ро нест мекунед? Ин амалро бекор кардан мумкин нест.",
+  "copySuffix": "нусха",
+  "courseCopied": "Курс нусха бардошта шуд",
+  "courseCopyError": "Нусхабардории курс ноком шуд",
+  "courseUpdated": "Курс навсозӣ шуд",
+  "courseDeleteError": "Нест кардани курс ноком шуд",
+  "assignedFromPresent": "аз {{start}} — то ҳол",
+  "days": {
+    "sun": "Як",
+    "mon": "Ду",
+    "tue": "Се",
+    "wed": "Чор",
+    "thu": "Пан",
+    "fri": "Ҷум",
+    "sat": "Шан"
+  },
+  "examTypeLabel": {
+    "weekly": "Имтиҳони ҳафтаина",
+    "monthly": "Имтиҳони моҳона"
+  },
+  "profile": {
+    "title": "Саҳифаи курс",
+    "schedule": "Ҷадвали дарсҳо",
+    "studentsCount": "Донишҷӯён дар гуруҳ: {{count}}",
+    "maxCapacity": "Ғунҷоиш: {{count}}"
+  },
+  "form": {
+    "newCourseTitle": "Курси нав",
+    "editCourseTitle": "Таҳрири курс",
+    "titleLabel": "Ном",
+    "descriptionLabel": "Тавсиф",
+    "photoPathLabel": "Расм (роҳ/URL)",
+    "startDateLabel": "Санаи оғоз",
+    "endDateLabel": "Санаи анҷом",
+    "mentorLabel": "Омӯзгор",
+    "selectMentor": "Омӯзгорро интихоб кунед",
+    "examTypeLabel": "Намуди имтиҳон",
+    "priceLabel": "Нарх, TJS",
+    "immutableNotice": "Намуди имтиҳон, нарх ва ҷадвалро баъд аз сохтани курс тағйир додан мумкин нест.",
+    "scheduleLabel": "Ҷадвал",
+    "saving": "Захиракунӣ…"
+  }
+}

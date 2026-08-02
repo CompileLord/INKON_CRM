@@ -1,0 +1,350 @@
+{
+  "version": 1,
+  "jobId": "24f6c322-6749-4f12-8ad3-b6686f89718a",
+  "sessionId": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+  "scopeKey": "07319e866b0e5def7af37249bd61c8e7cb5088ec65e437dda03b44f3e519ec52",
+  "revision": 38,
+  "createdAt": "2026-07-31T22:31:59.486Z",
+  "updatedAt": "2026-08-02T04:07:47.272Z",
+  "producerGraceExpiresAt": "2026-07-31T22:32:29.486Z",
+  "bestEffortDeadlineAt": "2026-07-31T22:33:20.486Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "39d9c9d51b142d6ed945793ccd3b021699343722fe32cab899d504ba16f1042b",
+      "payloadDigest": "39d9c9d51b142d6ed945793ccd3b021699343722fe32cab899d504ba16f1042b",
+      "sealedAt": "2026-07-31T22:31:59.497Z",
+      "sealedBy": "foreground"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-07-31T22:31:59.493Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "301ebd3919344f44a1cc6ec31920807c19c92d284144d02d8fb56cac7b829dff",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {},
+        "foregroundResult": {
+          "removedTransientFiles": 1,
+          "completedAt": "2026-07-31T22:31:59.497Z"
+        }
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-07-31T22:31:59.497Z",
+      "lastOutcomeCode": "completed"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "52ba24742505d526fbc730329cf7a067d34cffee5002239d6eac784bd99fbcc1",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-07-31T22:31:59.493Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "94b558dc7cd57581d2c0ede035ffa219922ae4e0e39aaa4f3d0fa89a049f119d",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-31T22:31:59.620Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "1c0554b2-755b-4dc8-83e9-f2615090957e",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-31T22:31:59.761Z"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "2da371722b40ae2bca23875ae90ec9fd2b2d90fcd3160f8a17ed1ca038defac7",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-31T22:31:59.766Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "056c1b6b-c68c-4342-9bc7-69a85854926c",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-31T22:31:59.923Z"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "bceb34b5ebddabbb2f19552ba887f740183763063525ca4439de4e60d16d3303",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-31T22:31:59.927Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "0aaca778-f4bc-493e-9370-0ac97c90029a",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-31T22:32:00.067Z"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "4a7603eef68662fd2fd08f35d806cb1b49ae4798aaf5c723770bea28924de712",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-31T22:32:00.072Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "a2b1c501-b09f-4f33-94c1-75b8bfe7f858",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-31T22:32:00.193Z"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "833a735a6bfaeb0cf8df8c7e4233fe07c75a02a7f7bb3a304e3ffbe7b0c51164",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-31T22:32:00.198Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "305282c2-99d4-4d48-af32-afc551902f75",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-31T22:32:00.326Z"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 1,
+      "idempotencyKey": "46d2a85249a840d1e1e2a4e42dda30da89f81f2c08b58b1f461acd575ec6d9de",
+      "payload": {
+        "transcriptPath": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+        "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+        "reason": "other",
+        "input": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "transcript_path": "/home/compilelord/.claude/projects/-home-compilelord-new-vibecoding-IMKON-CRM/173af075-f398-4f1f-8c1e-c7dafef533d7.jsonl",
+          "cwd": "/home/compilelord/new/vibecoding/IMKON_CRM/backend",
+          "prompt_id": "a2764695-5473-4dca-8034-1077751722df",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "173af075-f398-4f1f-8c1e-c7dafef533d7",
+          "ended_at": "2026-07-31T22:31:59.476Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-31T22:32:00.331Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "faf6a61c-d9f1-4f66-b4dd-e49c76460605",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-31T22:32:09.609Z"
+      },
+      "lastOutcomeCode": "delivery-uncertain-owner-reaped"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-08-02T04:07:47.272Z",
+    "terminalDigest": "ae451d4e3b0dd75d92c674e6b203c15174f32a956ea559f39b9c482a15d97540",
+    "terminalRevision": 38
+  }
+}

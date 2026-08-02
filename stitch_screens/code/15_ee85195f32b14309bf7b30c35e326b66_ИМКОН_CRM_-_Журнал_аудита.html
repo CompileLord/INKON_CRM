@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ИМКОН CRM - Журнал аудита</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#002110",
+                        "surface": "#faf9f6",
+                        "on-tertiary-fixed-variant": "#005230",
+                        "on-secondary-fixed": "#00164d",
+                        "primary-fixed-dim": "#ffb59c",
+                        "on-tertiary-container": "#f6fff5",
+                        "on-secondary-fixed-variant": "#003cac",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2f312f",
+                        "on-surface-variant": "#594139",
+                        "outline": "#8d7167",
+                        "surface-tint": "#ab3500",
+                        "primary-container": "#ce470e",
+                        "tertiary-container": "#0d8552",
+                        "on-primary-fixed": "#390c00",
+                        "on-primary-container": "#fffbff",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#006a40",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1a1c1a",
+                        "background": "#faf9f6",
+                        "surface-variant": "#e3e2e0",
+                        "primary-fixed": "#ffdbcf",
+                        "secondary-fixed": "#dbe1ff",
+                        "surface-container-high": "#e9e8e5",
+                        "surface-container": "#efeeeb",
+                        "outline-variant": "#e2bfb4",
+                        "on-secondary-container": "#fefbff",
+                        "inverse-primary": "#ffb59c",
+                        "surface-container-highest": "#e3e2e0",
+                        "surface-bright": "#faf9f6",
+                        "tertiary-fixed-dim": "#74db9f",
+                        "inverse-on-surface": "#f2f1ee",
+                        "tertiary-fixed": "#90f7ba",
+                        "surface-container-low": "#f4f3f1",
+                        "secondary-container": "#426ce5",
+                        "secondary-fixed-dim": "#b5c4ff",
+                        "primary": "#a73400",
+                        "on-primary-fixed-variant": "#832700",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-background": "#1a1c1a",
+                        "surface-dim": "#dbdad7",
+                        "secondary": "#2152ca"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "caption": ["Inter"],
+                        "h1": ["Manrope"],
+                        "label-md": ["Inter"],
+                        "section-heading": ["Manrope"],
+                        "kpi": ["Inter"],
+                        "card-subheading": ["Manrope"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "h1": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "section-heading": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "kpi": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "card-subheading": ["18px", { "lineHeight": "26px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); font-family: 'Inter', sans-serif; }
+        .table-row-hover:hover { background-color: theme('colors.surface-variant'); box-shadow: 0 4px 16px rgba(28,27,26,0.08); z-index: 10; position: relative; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden antialiased">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-[240px] bg-surface-container-low border-r border-outline-variant p-4 gap-2 z-20 shrink-0">
+<div class="mb-8 px-4">
+<h1 class="font-h1 text-h1 text-primary">ИМКОН</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-1">CRM для образования</p>
+</div>
+<div class="flex flex-col gap-1 w-full">
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-label-md text-label-md">Дашборд</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">group</span>
+<span class="font-label-md text-label-md">Студенты</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">school</span>
+<span class="font-label-md text-label-md">Менторы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">menu_book</span>
+<span class="font-label-md text-label-md">Курсы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">auto_stories</span>
+<span class="font-label-md text-label-md">Журналы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">payments</span>
+<span class="font-label-md text-label-md">Финансы</span>
+</a>
+<a class="flex items-center gap-3 bg-surface-container-highest text-secondary rounded-full px-4 py-2 font-bold active:scale-95 transition-transform group" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-md text-label-md">Аудит</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-2 rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-label-md text-label-md">Настройки</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- TopAppBar -->
+<header class="h-[64px] bg-surface flex items-center justify-between px-gutter border-b border-outline-variant shrink-0 z-10">
+<div class="flex items-center flex-1 max-w-2xl gap-4">
+<button class="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="relative flex-1 group hidden sm:block">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border border-outline-variant rounded-full leading-5 bg-surface-container-lowest placeholder-on-surface-variant text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary sm:text-sm transition-all shadow-sm group-focus-within:shadow-md" placeholder="Поиск по системе..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-error ring-2 ring-surface"></span>
+</button>
+<div class="flex items-center gap-3 border-l border-outline-variant pl-4">
+<div class="text-right hidden lg:block">
+<p class="font-label-md text-label-md text-on-surface">Малика Юсупова</p>
+<p class="font-caption text-caption text-on-surface-variant">Администратор</p>
+</div>
+<img alt="Аватар пользователя" class="h-9 w-9 rounded-full object-cover border border-outline-variant cursor-pointer hover:ring-2 hover:ring-secondary transition-all" data-alt="Professional headshot of a young Central Asian woman with dark hair tied back, wearing a neat business casual outfit in a modern, well-lit corporate office environment with light neutral walls. Crisp lighting, shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_tyvbrr2e7uGJ5WXE3DoNSLeFi-ybdSWacm1JmDBB9hbbxhbPSSM8vTaM-cjUl6CQ6WCz6mx6BdPmcT2IR3YOYM7AZ2QSUI7zrTlBscGdbWJjZ08HoZ2gqmgmhzN_-E3J2bHnxTrktxoHluRnjsAz0_2dbFG7jrZ9jTbncJ7cxZwVjN4zXm2l9XgUlVrACIvZc9FpVf6xnYuTEDFh9TsXq70CJUCz-8pqKQu1iLMmLMVPbJh3FnmcF1E0-DSRrjuJXJWkt8u9H15I"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-container-padding">
+<div class="max-w-7xl mx-auto flex flex-col gap-section-gap">
+<!-- Page Header -->
+<div>
+<h2 class="font-section-heading text-section-heading text-on-surface">Журнал аудита</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-1">История всех административных действий в системе</p>
+</div>
+<!-- Filters & Table Container -->
+<div class="bg-surface-container-lowest rounded-[16px] border border-outline-variant shadow-sm flex flex-col">
+<!-- Filter Bar -->
+<div class="p-4 border-b border-outline-variant flex flex-wrap gap-4 items-center bg-surface-bright rounded-t-[16px]">
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Тип действия</label>
+<div class="relative">
+<select class="block w-full pl-3 pr-10 py-2 text-base border-outline-variant focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-[10px] bg-white appearance-none cursor-pointer">
+<option>Все действия</option>
+<option>Изменение оценки</option>
+<option>Регистрация платежа</option>
+<option>Назначение скидки</option>
+<option>Смена ментора</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Пользователь</label>
+<div class="relative">
+<select class="block w-full pl-3 pr-10 py-2 text-base border-outline-variant focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-[10px] bg-white appearance-none cursor-pointer">
+<option>Все пользователи</option>
+<option>Малика Юсупова</option>
+<option>Азиз Рахимов</option>
+<option>Умед Раджабов</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Период</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">calendar_month</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-outline-variant focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-[10px] bg-white cursor-pointer" type="text" value="11.09.2026 - 12.09.2026"/>
+</div>
+</div>
+<div class="flex items-end self-stretch pb-[2px]">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-full hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                                Применить
+                            </button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto rounded-b-[16px]">
+<table class="min-w-full divide-y divide-outline-variant">
+<thead class="bg-surface-container-low sticky top-0 z-10">
+<tr>
+<th class="px-6 py-3 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" scope="col">Дата и время</th>
+<th class="px-6 py-3 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" scope="col">Пользователь</th>
+<th class="px-6 py-3 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" scope="col">Действие</th>
+<th class="px-6 py-3 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" scope="col">До → После</th>
+<th class="px-6 py-3 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" scope="col">Сущность</th>
+</tr>
+</thead>
+<tbody class="bg-surface-container-lowest divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="table-row-hover transition-colors duration-150 cursor-pointer">
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="font-data-mono text-data-mono text-on-surface">12.09.2026 10:15:22</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<img class="h-6 w-6 rounded-full object-cover border border-outline-variant" data-alt="Professional headshot of a young Central Asian woman with dark hair tied back, wearing a neat business casual outfit in a modern, well-lit corporate office environment with light neutral walls. Crisp lighting, shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhM7tVVc7YFZQKoQc5GzVmP8uab60haLlcZYaQyMNdUj2bGMEhCypHgmiKJBVXKr2YGqqBSCZhvqr4FM1YvpwQOwZs-JqO2wjCoG2VCgPhVfgLXn3wViPNobNomelbhGJDPmeaW_kn-NG4MPWBLtOvHQaaoyEvI9FIDm8J4_mdfGtSnTmNnFA0c2s47daS3cPTwxiVvKhfpU87oGa4XUVZEFhPkpUBnG4jOiJPMC0_iVcP3LRGoeCyJpiwc_RpoA5bZavQGNQmWKTw"/>
+<span class="font-body-lg text-body-lg text-on-surface">Малика Юсупова</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-tertiary-container/10 text-tertiary">
+                                            Изменил оценку
+                                        </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2 font-data-mono text-data-mono">
+<span class="text-on-surface-variant opacity-70">4</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_right_alt</span>
+<span class="text-on-surface font-semibold">5</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<a class="font-label-md text-label-md text-[#EA5B24] hover:text-primary transition-colors flex items-center gap-1 group" href="#">
+                                            Студент: Азиз Рахимов (SAT Math Prep)
+                                            <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+</a>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="table-row-hover transition-colors duration-150 cursor-pointer">
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="font-data-mono text-data-mono text-on-surface">12.09.2026 09:45:10</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-xs">АР</div>
+<span class="font-body-lg text-body-lg text-on-surface">Азиз Рахимов</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-container/10 text-secondary">
+                                            Зарегистрировал платёж
+                                        </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2 font-data-mono text-data-mono">
+<span class="text-on-surface-variant opacity-70">—</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_right_alt</span>
+<span class="text-on-surface font-semibold text-tertiary">500 TJS</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<a class="font-label-md text-label-md text-[#EA5B24] hover:text-primary transition-colors flex items-center gap-1 group" href="#">
+                                            Платёж #P-9012 (Умед Раджабов)
+                                            <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+</a>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="table-row-hover transition-colors duration-150 cursor-pointer">
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="font-data-mono text-data-mono text-on-surface">11.09.2026 18:30:00</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-surface-tint/20 flex items-center justify-center text-on-surface font-bold text-xs">УР</div>
+<span class="font-body-lg text-body-lg text-on-surface">Умед Раджабов</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-outline-variant/30 text-on-surface">
+                                            Сменил ментора курса
+                                        </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2 font-data-mono text-data-mono">
+<span class="text-on-surface-variant opacity-70">Малика Ю.</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_right_alt</span>
+<span class="text-on-surface font-semibold">Фахридин М.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<a class="font-label-md text-label-md text-[#EA5B24] hover:text-primary transition-colors flex items-center gap-1 group" href="#">
+                                            Курс SAT Math Prep #12
+                                            <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+</a>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="table-row-hover transition-colors duration-150 cursor-pointer">
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="font-data-mono text-data-mono text-on-surface">11.09.2026 16:12:45</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<img class="h-6 w-6 rounded-full object-cover border border-outline-variant" data-alt="Professional headshot of a young Central Asian woman with dark hair tied back, wearing a neat business casual outfit in a modern, well-lit corporate office environment with light neutral walls. Crisp lighting, shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIx9m_IfX8EHriD-uLLM-4NmDACa9fNDuaIiH2lBvn4rGeycP5XN7Luv7YhHRquHXA2YyVymnpSnqM292k0PW0Z1zKwaxYPbU0fPNhrGicXECCH5K0ZID9S1fZJk8uE2XruGY1e4dDUnITgAR06IN5ooIjUa1-K_cLnRE79xktgXp0OG7jYT81fN22tvzHykNBl3YS9znQdUCuqkoniUitzzoqN8yzluBYA9k3xKSTYXose2PceHue3_dZKYNae3kv__03yPi0nnSL"/>
+<span class="font-body-lg text-body-lg text-on-surface">Малика Юсупова</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#EA5B24]/10 text-[#EA5B24]">
+                                            Применил скидку
+                                        </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2 font-data-mono text-data-mono">
+<span class="text-on-surface-variant opacity-70">0%</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_right_alt</span>
+<span class="text-on-surface font-semibold text-[#EA5B24]">10%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<a class="font-label-md text-label-md text-[#EA5B24] hover:text-primary transition-colors flex items-center gap-1 group" href="#">
+                                            Студент: Даврон Зикиров (IELTS)
+                                            <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination (Static for demo) -->
+<div class="bg-surface-bright px-4 py-3 flex items-center justify-between border-t border-outline-variant sm:px-6 rounded-b-[16px]">
+<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-on-surface-variant">
+                                    Показано <span class="font-medium">1</span> до <span class="font-medium">4</span> из <span class="font-medium">1,248</span> записей
+                                </p>
+</div>
+<div>
+<nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+<a class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-outline-variant bg-white text-sm font-medium text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="sr-only">Предыдущая</span>
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</a>
+<a aria-current="page" class="z-10 bg-primary/10 border-primary text-primary relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        1
+                                    </a>
+<a class="bg-white border-outline-variant text-on-surface-variant hover:bg-surface-container relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        2
+                                    </a>
+<a class="bg-white border-outline-variant text-on-surface-variant hover:bg-surface-container relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        3
+                                    </a>
+<a class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-outline-variant bg-white text-sm font-medium text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="sr-only">Следующая</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

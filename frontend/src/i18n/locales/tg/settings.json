@@ -1,0 +1,24 @@
+{
+  "title": "Танзимоти система",
+  "subtitle": "Идоракунии профил, параметрҳои система ва огоҳиҳо",
+  "saved": "Танзимот захира шуд!",
+  "tabs": {
+    "profile": "Профили корбар",
+    "system": "Параметрҳои системавӣ",
+    "notifications": "Огоҳиҳо ва Бот"
+  },
+  "profileSection": "Маълумоти шахсӣ",
+  "uploadAvatar": "Бор кардани аватар",
+  "firstName": "Ном",
+  "lastName": "Насаб",
+  "email": "Почтаи электронӣ",
+  "phone": "Телефон",
+  "systemSection": "Танзимоти умумии система",
+  "orgName": "Номи ташкилот",
+  "currency": "Валютаи асосии ҳисоб",
+  "tgWebhook": "Telegram Bot Webhook",
+  "webhookActive": "Фаъол",
+  "rulesSection": "Қоидаҳои огоҳиҳо",
+  "paymentNotify": "Огоҳиҳо дар бораи пардохтҳо",
+  "debtNotify": "Огоҳиҳо дар бораи қарзҳо"
+}

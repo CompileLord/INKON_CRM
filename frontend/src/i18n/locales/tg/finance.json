@@ -1,0 +1,47 @@
+{
+  "title": "Молия ва Пардохтҳо",
+  "subtitle": "Идоракунии пардохтҳо, баҳисобгирии касса ва рӯйхати қарздорон",
+  "acceptPayment": "Қабули пардохт",
+  "tabs": {
+    "analytics": "Нишондиҳандаҳои молиявӣ",
+    "debtors": "Рӯйхати қарздорон"
+  },
+  "overdueDaysCount": "{{count}} рӯз",
+  "analytics": {
+    "title": "Нишондиҳандаҳои молиявӣ",
+    "subtitle": "Обзори маблағҳои дарёфтшаванда ва ҷамъоваришуда",
+    "totalReceivable": "Қарзи софи расида",
+    "totalCollected": "Ҷамъоварӣ дар давра",
+    "unpaidStudentsCount": "Қарздорон (донишҷӯён)",
+    "topDebtors": "Қарздорони калонтарин",
+    "recentTransactions": "Транзаксияҳои охирин",
+    "studentNumber": "Донишҷӯи №{{id}}",
+    "courseNumber": "Курси №{{id}}",
+    "unapplied": "Тақсимнашуда"
+  },
+  "debtors": {
+    "title": "Рӯйхати қарздорон",
+    "subtitle": "Донишҷӯён бо қарзи пардохт",
+    "table": {
+      "student": "Донишҷӯ",
+      "course": "Курс",
+      "priceAtEnrollment": "Нарх",
+      "totalPaid": "Пардохт шуд",
+      "debtAmount": "Қарз",
+      "overdue": "Таъхир"
+    }
+  },
+  "paymentModal": {
+    "title": "Қабули пардохт",
+    "acceptPayment": "Қабули пардохт",
+    "amount": "Маблағ",
+    "date": "Сана",
+    "method": "Усули пардохт",
+    "totalToCredit": "Ҷамъ барои воридшавӣ",
+    "comment": "Шарҳ",
+    "commentPlaceholder": "Эзоҳ ба амалиёт...",
+    "selectCourse": "Курсро интихоб кунед",
+    "saveError": "Қабули пардохт ноком шуд",
+    "discountHint": "Пули гирифташуда. Тахфиф амалиёти алоҳида аст."
+  }
+}

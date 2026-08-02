@@ -1,0 +1,86 @@
+{
+  "appName": "ИМКОН CRM",
+  "search": "Ҷустуҷӯ...",
+  "cancel": "Бекор кардан",
+  "save": "Захира кардан",
+  "saveChanges": "Захираи тағйирот",
+  "delete": "Нобуд кардан",
+  "edit": "Таҳрир кардан",
+  "create": "Сохтан",
+  "add": "Илова кардан",
+  "actions": "Амалҳо",
+  "status": "Мақом",
+  "loading": "Боргирӣ...",
+  "saving": "Захиракунӣ...",
+  "error": "Хатогӣ",
+  "success": "Муваффақият",
+  "close": "Пӯшидан",
+  "confirm": "Тасдиқ кардан",
+  "back": "Бозгашт",
+  "all": "Ҳама",
+  "filter": "Филтр",
+  "download": "Боргирӣ",
+  "upload": "Бор кардан",
+  "retry": "Такрор кардан",
+  "details": "Муфассал",
+  "total": "Ҷамъ",
+  "page": "Саҳифаи",
+  "of": "аз",
+  "noData": "Маълумот ёфт нашуд",
+  "refresh": "Навсозӣ",
+  "showing": "Нишон дода мешавад",
+  "clearFilter": "Тоза кардани филтр",
+  "photo": "Расм",
+  "uploadPhoto": "Бор кардани расм",
+  "cancelUpload": "Бекор кардани боркунӣ",
+  "uploadError": "Боркунии расм ноком шуд",
+  "enums": {
+    "userRole": {
+      "superadmin": "Суперадмин",
+      "mentor": "Омӯзгор",
+      "student": "Донишҷӯ",
+      "accountant": "Муҳосиб"
+    },
+    "userStatus": {
+      "active": "Фаъол",
+      "archived": "Дар бойгонӣ",
+      "inactive": "Ғайрифаъол",
+      "expelled": "Хориҷшуда"
+    },
+    "courseStatus": {
+      "active": "Фаъол",
+      "archived": "Дар бойгонӣ"
+    },
+    "paymentMethod": {
+      "card": "Корт",
+      "cash": "Нақд",
+      "bank_transfer": "Интиқоли бонкӣ",
+      "transfer": "Интиқоли бонкӣ"
+    },
+    "auditAction": {
+      "CREATE": "Сохтан",
+      "UPDATE": "Навсозӣ",
+      "DELETE": "Нобуд кардан"
+    },
+    "examType": {
+      "weekly": "Ҳафтаина",
+      "monthly": "Моҳона"
+    }
+  },
+  "nav": {
+    "dashboard": "Панели идоракунӣ",
+    "students": "Донишҷӯён",
+    "mentors": "Омӯзгорон",
+    "courses": "Курсҳо",
+    "journals": "Журнал",
+    "finance": "Молия",
+    "audit": "Аудит",
+    "settings": "Танзимот",
+    "notifications": "Огоҳиҳо",
+    "logout": "Баромад"
+  },
+  "pagination": {
+    "previous": "Саҳифаи қаблӣ",
+    "next": "Саҳифаи оянда"
+  }
+}

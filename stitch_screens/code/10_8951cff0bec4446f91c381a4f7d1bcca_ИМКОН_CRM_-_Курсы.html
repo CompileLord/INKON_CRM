@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ИМКОН - Курсы</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#832700",
+                    "tertiary": "#006a40",
+                    "primary-fixed": "#ffdbcf",
+                    "secondary-container": "#426ce5",
+                    "tertiary-container": "#0d8552",
+                    "surface-tint": "#ab3500",
+                    "on-tertiary-fixed": "#002110",
+                    "inverse-surface": "#2f312f",
+                    "outline-variant": "#e2bfb4",
+                    "primary-fixed-dim": "#ffb59c",
+                    "on-surface-variant": "#594139",
+                    "surface-container": "#efeeeb",
+                    "surface-bright": "#faf9f6",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#90f7ba",
+                    "surface-container-highest": "#e3e2e0",
+                    "inverse-primary": "#ffb59c",
+                    "surface": "#faf9f6",
+                    "outline": "#8d7167",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f2f1ee",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#74db9f",
+                    "on-tertiary-container": "#f6fff5",
+                    "primary": "#a73400",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#fefbff",
+                    "surface-container-low": "#f4f3f1",
+                    "secondary-fixed-dim": "#b5c4ff",
+                    "secondary": "#2152ca",
+                    "on-secondary-fixed-variant": "#003cac",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#fffbff",
+                    "surface-container-high": "#e9e8e5",
+                    "primary-container": "#ce470e",
+                    "on-primary-fixed": "#390c00",
+                    "background": "#faf9f6",
+                    "on-surface": "#1a1c1a",
+                    "surface-dim": "#dbdad7",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#1a1c1a",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed": "#00164d",
+                    "secondary-fixed": "#dbe1ff",
+                    "on-tertiary-fixed-variant": "#005230",
+                    "surface-variant": "#e3e2e0",
+                    "error": "#ba1a1a",
+                    "accent-orange": "#EA5B24",
+                    "success-green": "#10B981"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "section-gap": "32px",
+                    "gutter": "16px",
+                    "container-padding": "24px"
+            },
+            "fontFamily": {
+                    "caption": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "body-lg": ["Inter"],
+                    "h1": ["Manrope"],
+                    "card-subheading": ["Manrope"],
+                    "label-md": ["Inter"],
+                    "kpi": ["Inter"],
+                    "section-heading": ["Manrope"]
+            },
+            "fontSize": {
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "card-subheading": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "section-heading": ["22px", {"lineHeight": "28px", "fontWeight": "700"}]
+            },
+            "boxShadow": {
+                "soft": "0 4px 16px rgba(28,27,26,0.08)",
+                "elevated": "0 8px 32px rgba(28,27,26,0.16)"
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-1 {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg overflow-x-hidden antialiased">
+<!-- App Shell: SideNavBar -->
+<nav class="bg-surface w-[240px] h-full fixed left-0 top-0 border-r border-outline-variant flex flex-col py-gutter px-4 z-50">
+<div class="mb-8">
+<h1 class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed tracking-tight">ИМКОН</h1>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container-low transition-colors duration-200 rounded-full" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Дашборд</span>
+</a>
+<a class="flex items-center gap-3 bg-surface-container-high text-secondary font-bold rounded-full px-4 py-2 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined fill-1">school</span>
+<span class="font-label-md text-label-md">Курсы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container-low transition-colors duration-200 rounded-full" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Журналы</span>
+</a>
+</div>
+<div class="mt-auto">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-2 hover:bg-surface-container-low transition-colors duration-200 rounded-full" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Настройки</span>
+</a>
+</div>
+</nav>
+<!-- App Shell: TopNavBar -->
+<header class="bg-surface h-16 w-full fixed top-0 z-40 border-b border-outline-variant flex justify-between items-center px-gutter ml-[240px] shadow-none w-[calc(100%-240px)]">
+<div class="flex-1 max-w-xl">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-[10px] border border-outline-variant bg-surface focus:border-secondary focus:ring-1 focus:ring-secondary text-label-md font-label-md text-on-surface placeholder-on-surface-variant outline-none transition-all" placeholder="Поиск..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-label-md font-medium">МЮ</div>
+<span class="font-label-md text-label-md text-on-surface font-medium hidden md:block">Малика Ю.</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-[240px] pt-16 min-h-screen">
+<div class="p-container-padding max-w-[1600px] mx-auto">
+<!-- Page Header & Toolbar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-section-gap">
+<div>
+<h2 class="font-section-heading text-section-heading text-on-surface">Курсы</h2>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Управление учебными программами</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2 bg-surface p-1 rounded-full border border-outline-variant">
+<button class="px-4 py-1.5 rounded-full text-label-md font-label-md bg-surface-container-highest text-on-surface font-medium">Все</button>
+<button class="px-4 py-1.5 rounded-full text-label-md font-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">Активен</button>
+<button class="px-4 py-1.5 rounded-full text-label-md font-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">Архив</button>
+</div>
+<select class="rounded-full border border-outline-variant bg-surface px-4 py-2 pr-8 text-label-md font-label-md text-on-surface focus:border-secondary focus:ring-secondary">
+<option>Все менторы</option>
+<option>Азиз Рахимов</option>
+<option>Малика Юсупова</option>
+<option>Даврон Зикиров</option>
+</select>
+<button class="ml-auto bg-accent-orange hover:bg-surface-tint text-white rounded-full px-6 py-2.5 font-label-md text-label-md font-medium flex items-center gap-2 transition-colors shadow-sm" onclick="document.getElementById('add-course-sheet').classList.remove('translate-x-full')">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                        Новый курс
+                    </button>
+</div>
+</div>
+<!-- Course Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface rounded-[16px] border border-outline-variant overflow-hidden hover:shadow-soft hover:bg-surface-container-lowest transition-all group cursor-pointer">
+<div class="h-32 w-full bg-gradient-to-r from-[#EA5B24] to-[#f48455] relative">
+<div class="absolute inset-0 bg-black/10"></div>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success-green"></span>
+<span class="font-caption text-caption font-medium text-on-surface">Активен</span>
+</div>
+</div>
+<div class="p-4 flex flex-col h-[calc(100%-8rem)]">
+<h3 class="font-card-subheading text-card-subheading text-on-surface mb-1 group-hover:text-primary transition-colors">SAT Math Prep</h3>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[16px]">person</span> Азиз Рахимов
+                        </p>
+<div class="mt-auto flex items-center justify-between border-t border-outline-variant pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">group</span>
+<span class="font-data-mono text-data-mono text-on-surface">12 <span class="font-caption text-caption text-on-surface-variant font-normal">студентов</span></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface rounded-[16px] border border-outline-variant overflow-hidden hover:shadow-soft hover:bg-surface-container-lowest transition-all group cursor-pointer">
+<div class="h-32 w-full bg-gradient-to-r from-tertiary-container to-tertiary-fixed-dim relative">
+<div class="absolute inset-0 bg-black/10"></div>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success-green"></span>
+<span class="font-caption text-caption font-medium text-on-surface">Активен</span>
+</div>
+</div>
+<div class="p-4 flex flex-col h-[calc(100%-8rem)]">
+<h3 class="font-card-subheading text-card-subheading text-on-surface mb-1 group-hover:text-primary transition-colors">IELTS Intensive</h3>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[16px]">person</span> Малика Юсупова
+                        </p>
+<div class="mt-auto flex items-center justify-between border-t border-outline-variant pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">group</span>
+<span class="font-data-mono text-data-mono text-on-surface">18 <span class="font-caption text-caption text-on-surface-variant font-normal">студентов</span></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface rounded-[16px] border border-outline-variant overflow-hidden hover:shadow-soft hover:bg-surface-container-lowest transition-all group cursor-pointer">
+<div class="h-32 w-full bg-gradient-to-r from-secondary to-secondary-fixed-dim relative">
+<div class="absolute inset-0 bg-black/10"></div>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-caption text-caption font-medium text-on-surface-variant">Архив</span>
+</div>
+</div>
+<div class="p-4 flex flex-col h-[calc(100%-8rem)]">
+<h3 class="font-card-subheading text-card-subheading text-on-surface mb-1 group-hover:text-primary transition-colors">Python для начинающих</h3>
+<p class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[16px]">person</span> Даврон Зикиров
+                        </p>
+<div class="mt-auto flex items-center justify-between border-t border-outline-variant pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">group</span>
+<span class="font-data-mono text-data-mono text-on-surface">15 <span class="font-caption text-caption text-on-surface-variant font-normal">студентов</span></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Side Sheet: Add New Course -->
+<div class="fixed inset-0 z-[60] flex justify-end pointer-events-none translate-x-full transition-transform duration-300 ease-in-out" id="add-course-sheet">
+<div class="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm pointer-events-auto opacity-0 transition-opacity duration-300" id="sheet-overlay" onclick="document.getElementById('add-course-sheet').classList.add('translate-x-full'); this.classList.remove('opacity-100');"></div>
+<div class="w-full max-w-[480px] bg-surface h-full shadow-elevated pointer-events-auto flex flex-col relative z-10 border-l border-outline-variant rounded-l-[16px]">
+<!-- Header -->
+<div class="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-bright rounded-tl-[16px]">
+<h2 class="font-section-heading text-section-heading text-on-surface">Новый курс</h2>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors" onclick="document.getElementById('add-course-sheet').classList.add('translate-x-full')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Название</label>
+<input class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg" placeholder="Например: Advanced English" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Ментор</label>
+<select class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg text-on-surface">
+<option disabled="" selected="" value="">Выберите ментора</option>
+<option>Азиз Рахимов</option>
+<option>Малика Юсупова</option>
+<option>Даврон Зикиров</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Цена</label>
+<div class="relative">
+<input class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 pr-16 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg font-data-mono" type="text" value="500 000"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 font-label-md text-on-surface-variant">UZS</span>
+</div>
+<p class="font-caption text-caption text-secondary mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">info</span> Как в последнем курсе</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Дата начала</label>
+<input class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg text-on-surface" type="date"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Дата окончания</label>
+<input class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg text-on-surface" type="date"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-3">Тип периода</label>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="w-5 h-5 rounded-full border border-outline-variant flex items-center justify-center group-hover:border-accent-orange relative">
+<div class="w-2.5 h-2.5 rounded-full bg-accent-orange scale-0 transition-transform absolute"></div>
+<input checked="" class="opacity-0 absolute peer" name="period" type="radio" value="weekly"/>
+<div class="peer-checked:scale-100 w-2.5 h-2.5 rounded-full bg-accent-orange transition-transform absolute"></div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Недельный</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="w-5 h-5 rounded-full border border-outline-variant flex items-center justify-center group-hover:border-accent-orange relative">
+<input class="opacity-0 absolute peer" name="period" type="radio" value="monthly"/>
+<div class="peer-checked:scale-100 w-2.5 h-2.5 rounded-full bg-accent-orange scale-0 transition-transform absolute"></div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Месячный</span>
+</label>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-[12px] border border-surface-variant">
+<label class="block font-label-md text-label-md text-on-surface mb-3 font-semibold">Расписание</label>
+<div class="space-y-3 mb-3">
+<div class="flex gap-2 items-center">
+<select class="w-1/2 rounded-[8px] border border-outline-variant bg-surface px-3 py-1.5 focus:border-secondary text-label-md text-on-surface">
+<option>Понедельник</option>
+<option>Вторник</option>
+</select>
+<input class="w-1/3 rounded-[8px] border border-outline-variant bg-surface px-3 py-1.5 focus:border-secondary text-label-md text-on-surface" type="time" value="14:00"/>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</div>
+<button class="text-secondary hover:bg-secondary/10 px-3 py-1.5 rounded-lg font-label-md text-label-md font-medium flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span> Добавить время
+                    </button>
+</div>
+<div class="border-t border-outline-variant pt-6">
+<label class="flex items-start gap-3 cursor-pointer">
+<input class="mt-1 w-5 h-5 rounded-[6px] border-outline-variant text-accent-orange focus:ring-accent-orange focus:ring-offset-0 bg-surface checked:bg-accent-orange checked:border-transparent transition-colors" onchange="document.getElementById('copy-students-div').classList.toggle('hidden', !this.checked)" type="checkbox"/>
+<div>
+<span class="font-body-lg text-body-lg text-on-surface font-medium block">Скопировать студентов из курса</span>
+<span class="font-caption text-caption text-on-surface-variant">Полезно для продолжения обучения группы</span>
+</div>
+</label>
+<div class="hidden mt-4 pl-8" id="copy-students-div">
+<select class="w-full rounded-[10px] border border-outline-variant bg-surface px-4 py-2 focus:border-secondary focus:ring-1 focus:ring-secondary text-body-lg text-on-surface mb-2">
+<option disabled="" selected="" value="">Выберите исходный курс</option>
+<option>SAT Math Prep (Уровень 1)</option>
+</select>
+<p class="font-caption text-caption text-tertiary-container flex items-center gap-1 bg-tertiary-container/10 px-3 py-2 rounded-lg"><span class="material-symbols-outlined text-[16px]">info</span> Будет скопировано: 12 активных студентов</p>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="px-6 py-4 border-t border-outline-variant bg-surface flex justify-end gap-3 rounded-bl-[16px]">
+<button class="px-6 py-2.5 rounded-full border border-outline-variant text-on-surface font-label-md text-label-md font-medium hover:bg-surface-container-low transition-colors bg-white" onclick="document.getElementById('add-course-sheet').classList.add('translate-x-full')">
+                    Отмена
+                </button>
+<button class="px-6 py-2.5 rounded-full bg-accent-orange hover:bg-surface-tint text-white font-label-md text-label-md font-medium transition-colors shadow-sm">
+                    Создать курс
+                </button>
+</div>
+</div>
+</div>
+<script>
+        // Simple script to handle sheet overlay visibility alongside transform
+        const sheet = document.getElementById('add-course-sheet');
+        const overlay = document.getElementById('sheet-overlay');
+        
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    if (sheet.classList.contains('translate-x-full')) {
+                        overlay.classList.remove('opacity-100');
+                    } else {
+                        overlay.classList.add('opacity-100');
+                    }
+                }
+            });
+        });
+        
+        observer.observe(sheet, { attributes: true });
+    </script>
+</body></html>

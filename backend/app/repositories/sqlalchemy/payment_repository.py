@@ -1,6 +1,5 @@
-from decimal import Decimal
 from typing import List
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.payment import Payment
 from app.repositories.interfaces.payment_repository import PaymentRepository
@@ -18,14 +17,3 @@ class SQLAlchemyPaymentRepository(SQLAlchemyBaseRepository[Payment], PaymentRepo
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
-
-    async def sum_effective_payments(self, student_id: int, course_id: int) -> Decimal:
-        query = select(func.sum(Payment.amount)).filter(
-            Payment.student_id == student_id,
-            Payment.course_id == course_id
-        )
-        result = await self.session.execute(query)
-        total = result.scalar()
-        if total is None:
-            return Decimal("0.00")
-        return Decimal(total)

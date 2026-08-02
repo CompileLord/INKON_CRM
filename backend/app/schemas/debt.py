@@ -19,7 +19,10 @@ class DebtCourseInfo(BaseModel):
 class DebtResponse(BaseModel):
     student: DebtStudentInfo
     course: DebtCourseInfo
+    # Contracted total for the enrollment — not the amount currently owed.
     price_at_enrollment: Decimal
+    # Charges that have come due so far.
+    billed_to_date: Decimal
     total_paid: Decimal
     debt: Decimal
     overdue_days: int

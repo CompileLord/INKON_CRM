@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Профиль Ментора - ИМКОН CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#00164d",
+                        "on-primary-fixed-variant": "#832700",
+                        "surface-container": "#efeeeb",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "background": "#faf9f6",
+                        "tertiary-container": "#0d8552",
+                        "tertiary-fixed-dim": "#74db9f",
+                        "on-surface-variant": "#594139",
+                        "outline": "#8d7167",
+                        "on-surface": "#1a1c1a",
+                        "inverse-primary": "#ffb59c",
+                        "inverse-on-surface": "#f2f1ee",
+                        "on-primary-container": "#fffbff",
+                        "secondary-container": "#426ce5",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-error-container": "#93000a",
+                        "surface": "#faf9f6",
+                        "primary-fixed": "#ffdbcf",
+                        "primary-fixed-dim": "#ffb59c",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#003cac",
+                        "inverse-surface": "#2f312f",
+                        "on-tertiary-container": "#f6fff5",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#002110",
+                        "tertiary": "#006a40",
+                        "on-secondary-container": "#fefbff",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#e2bfb4",
+                        "surface-variant": "#e3e2e0",
+                        "on-tertiary-fixed-variant": "#005230",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#b5c4ff",
+                        "surface-container-highest": "#e3e2e0",
+                        "surface-container-high": "#e9e8e5",
+                        "surface-tint": "#ab3500",
+                        "surface-dim": "#dbdad7",
+                        "surface-container-low": "#f4f3f1",
+                        "on-background": "#1a1c1a",
+                        "secondary": "#2152ca",
+                        "primary-container": "#ce470e",
+                        "tertiary-fixed": "#90f7ba",
+                        "surface-bright": "#faf9f6",
+                        "primary": "#a73400",
+                        "on-primary-fixed": "#390c00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "card": "16px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "container-padding": "24px",
+                        "base": "4px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter", "sans-serif"],
+                        "h1": ["Manrope", "sans-serif"],
+                        "data-mono": ["JetBrains Mono", "monospace"],
+                        "card-subheading": ["Manrope", "sans-serif"],
+                        "section-heading": ["Manrope", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "kpi": ["Inter", "sans-serif"],
+                        "caption": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "h1": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "card-subheading": ["18px", { "lineHeight": "26px", "fontWeight": "600" }],
+                        "section-heading": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "kpi": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background min-h-screen text-on-background font-body-lg">
+<div class="flex h-screen">
+<!-- SideNavBar - Suppressed since this is a sub-page with a "Back" action -->
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-surface-variant px-container-padding h-16 flex items-center justify-between sticky top-0 z-10 shrink-0">
+<a class="flex items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mr-2">arrow_back</span>
+<span class="font-label-md text-label-md">Менторы</span>
+</a>
+</header>
+<div class="p-container-padding flex-1 max-w-5xl mx-auto w-full">
+<!-- Profile Header -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-card p-container-padding mb-gutter flex flex-col sm:flex-row items-start sm:items-center justify-between gap-gutter shadow-sm">
+<div class="flex items-center gap-gutter">
+<div class="w-20 h-20 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed shrink-0 overflow-hidden">
+<span class="material-symbols-outlined text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div>
+<h2 class="font-h1 text-h1 text-on-surface mb-1">Малика Юсупова</h2>
+<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-on-surface-variant font-label-md text-label-md">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">mail</span> malika.y@example.com</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">call</span> +992 93 765 4321</span>
+</div>
+</div>
+</div>
+<button class="px-6 py-2 bg-error-container text-on-error-container font-label-md text-label-md rounded-full hover:bg-error hover:text-on-error transition-colors shrink-0">
+                        Деактивировать
+                    </button>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-section-gap">
+<div class="bg-surface-container-lowest border border-surface-variant rounded-card p-4 flex flex-col shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-2">Активных курсов</span>
+<span class="font-kpi text-kpi text-on-surface">3</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-variant rounded-card p-4 flex flex-col shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-2">Средний балл студентов</span>
+<span class="font-kpi text-kpi text-on-surface">4.8</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-variant rounded-card p-4 flex flex-col shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-2">Всего студентов</span>
+<span class="font-kpi text-kpi text-on-surface">42</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-card shadow-sm overflow-hidden flex flex-col h-full min-h-[400px]">
+<!-- Tabs -->
+<div class="flex border-b border-surface-variant px-4">
+<button class="px-4 py-3 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Курсы</button>
+<button class="px-4 py-3 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Успеваемость</button>
+<button class="px-4 py-3 font-label-md text-label-md text-secondary border-b-2 border-secondary font-semibold">Документы</button>
+</div>
+<!-- Tab Content (Документы) -->
+<div class="p-container-padding flex-1">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+<!-- Document Card 1 -->
+<div class="border border-surface-variant rounded-lg p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl">description</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface font-semibold">Договор</p>
+<p class="font-caption text-caption text-on-surface-variant">PDF, 1.2 MB</p>
+</div>
+</div>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-2">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+<!-- Document Card 2 -->
+<div class="border border-surface-variant rounded-lg p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl">workspace_premium</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface font-semibold">Сертификат IELTS</p>
+<p class="font-caption text-caption text-on-surface-variant">JPG, 3.4 MB</p>
+</div>
+</div>
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-2">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

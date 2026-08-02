@@ -1,0 +1,139 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1785643666977,
+  "projectRoot": "/home/compilelord/new/vibecoding/IMKON_CRM",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1785643666965,
+      "keyFiles": [
+        "alembic.ini",
+        "pyproject.toml",
+        "requirements.txt",
+        "test_live_all_groups.sh",
+        "test_live_backend.sh"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 13,
+      "lastAccessed": 1785643666970,
+      "keyFiles": [
+        "README.md",
+        "eslint.config.js",
+        "index.html",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    "stitch_screens": {
+      "path": "stitch_screens",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1785643666971,
+      "keyFiles": [
+        "summary.json"
+      ]
+    },
+    "backend/app": {
+      "path": "backend/app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1785643666972,
+      "keyFiles": [
+        "main.py"
+      ]
+    },
+    "backend/scripts": {
+      "path": "backend/scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 4,
+      "lastAccessed": 1785643666973,
+      "keyFiles": [
+        "backfill_finance.py",
+        "clean_db.py",
+        "generate_contract.py"
+      ]
+    },
+    "frontend/dist": {
+      "path": "frontend/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 3,
+      "lastAccessed": 1785643666974,
+      "keyFiles": [
+        "favicon.svg",
+        "icons.svg",
+        "index.html"
+      ]
+    },
+    "frontend/node_modules": {
+      "path": "frontend/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1785643666975,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "backend/app/models/payment.py",
+      "accessCount": 1,
+      "lastAccessed": 1785529401654,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/api/v1/finance.py",
+      "accessCount": 1,
+      "lastAccessed": 1785529401884,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/services/finance_service.py",
+      "accessCount": 1,
+      "lastAccessed": 1785529406698,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/schemas/payment.py",
+      "accessCount": 1,
+      "lastAccessed": 1785529407492,
+      "type": "file"
+    },
+    {
+      "path": "backend/scripts/generate_contract.py",
+      "accessCount": 1,
+      "lastAccessed": 1785536472630,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

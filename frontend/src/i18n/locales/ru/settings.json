@@ -1,0 +1,24 @@
+{
+  "title": "Настройки системы",
+  "subtitle": "Управление профилем, системными параметрами и уведомлениями",
+  "saved": "Настройки сохранены!",
+  "tabs": {
+    "profile": "Профиль пользователя",
+    "system": "Системные параметры",
+    "notifications": "Уведомления и Бот"
+  },
+  "profileSection": "Личные данные",
+  "uploadAvatar": "Загрузить аватар",
+  "firstName": "Имя",
+  "lastName": "Фамилия",
+  "email": "Email",
+  "phone": "Телефон",
+  "systemSection": "Общие настройки системы",
+  "orgName": "Название организации",
+  "currency": "Основная валюта учета",
+  "tgWebhook": "Telegram Bot Webhook",
+  "webhookActive": "Активен",
+  "rulesSection": "Правила уведомлений",
+  "paymentNotify": "Уведомления о платежах",
+  "debtNotify": "Напоминания о задолженностях"
+}

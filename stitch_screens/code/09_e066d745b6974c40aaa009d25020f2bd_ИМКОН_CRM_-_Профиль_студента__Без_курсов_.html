@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ИМКОН CRM - Профиль студента</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#00164d",
+                        "on-primary-fixed-variant": "#832700",
+                        "surface-container": "#efeeeb",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "background": "#faf9f6",
+                        "tertiary-container": "#0d8552",
+                        "tertiary-fixed-dim": "#74db9f",
+                        "on-surface-variant": "#594139",
+                        "outline": "#8d7167",
+                        "on-surface": "#1a1c1a",
+                        "inverse-primary": "#ffb59c",
+                        "inverse-on-surface": "#f2f1ee",
+                        "on-primary-container": "#fffbff",
+                        "secondary-container": "#426ce5",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-error-container": "#93000a",
+                        "surface": "#faf9f6",
+                        "primary-fixed": "#ffdbcf",
+                        "primary-fixed-dim": "#ffb59c",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#003cac",
+                        "inverse-surface": "#2f312f",
+                        "on-tertiary-container": "#f6fff5",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#002110",
+                        "tertiary": "#006a40",
+                        "on-secondary-container": "#fefbff",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#e2bfb4",
+                        "surface-variant": "#e3e2e0",
+                        "on-tertiary-fixed-variant": "#005230",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#b5c4ff",
+                        "surface-container-highest": "#e3e2e0",
+                        "surface-container-high": "#e9e8e5",
+                        "surface-tint": "#ab3500",
+                        "surface-dim": "#dbdad7",
+                        "surface-container-low": "#f4f3f1",
+                        "on-background": "#1a1c1a",
+                        "secondary": "#2152ca",
+                        "primary-container": "#ce470e",
+                        "tertiary-fixed": "#90f7ba",
+                        "surface-bright": "#faf9f6",
+                        "primary": "#a73400",
+                        "on-primary-fixed": "#390c00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "container-padding": "24px",
+                        "base": "4px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "h1": ["Manrope"],
+                        "data-mono": ["JetBrains Mono"],
+                        "card-subheading": ["Manrope"],
+                        "section-heading": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "kpi": ["Inter"],
+                        "caption": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "h1": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "card-subheading": ["18px", { "lineHeight": "26px", "fontWeight": "600" }],
+                        "section-heading": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "kpi": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Web) -->
+<aside class="hidden md:flex bg-surface dark:bg-surface-dim docked left h-full w-[240px] bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant flat no shadows fixed left-0 top-0 flex-col pt-16 z-40">
+<div class="px-6 pb-8">
+<h1 class="text-section-heading font-section-heading text-primary dark:text-primary-fixed">ИМКОН CRM</h1>
+<p class="text-caption font-caption text-on-surface-variant mt-1">Education CRM</p>
+</div>
+<nav class="flex-1 overflow-y-auto py-4 flex flex-col gap-2">
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Дашборд</span>
+</a>
+<a class="flex items-center gap-4 bg-surface-container-highest text-secondary font-bold rounded-full mx-2 px-4 py-2 Active: scale-95 transition-transform hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span>Студенты</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span>Менторы</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Курсы</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="import_contacts">import_contacts</span>
+<span>Журналы</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Финансы</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>Аудит</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant font-label-md px-4 py-2 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Настройки</span>
+</a>
+</nav>
+</aside>
+<!-- TopNavBar (Mobile & Desktop Header) -->
+<header class="bg-surface dark:bg-surface-dim docked full-width top h-[64px] bg-surface dark:bg-surface-dim border-b border-outline-variant flat no shadows fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant hover:bg-surface-container transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-h1 font-h1 text-primary dark:text-primary-fixed md:hidden">ИМКОН CRM</h1>
+<div class="hidden md:flex items-center ml-[240px] gap-2 text-on-surface-variant">
+<a class="text-label-md font-label-md hover:text-primary transition-colors" href="#">Студенты</a>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-label-md font-label-md text-on-surface">Новый студент</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container rounded-full text-label-md font-label-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary border-none w-64 placeholder-on-surface-variant" placeholder="Search" type="text"/>
+</div>
+<button class="sm:hidden text-on-surface-variant p-2">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<img alt="User profile photo" class="w-8 h-8 rounded-full object-cover border border-outline-variant cursor-pointer hover:opacity-80 transition-opacity" data-alt="A small, circular profile picture of an administrative user in a brightly lit modern office setting. The image should be highly detailed, realistic, and exude a professional yet warm corporate modern aesthetic, matching a light-mode CRM interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBopSp9v6yb045B5_ba3tver015pgwFU2_m9YLb8-XOBHm6b9y6uHDyVjlC08tdbs5TDAYtjctydGwvnxrb5ZsQdbTvCD94r2aKXIiwzgOJa05tNsEiyQ1H9pb0tbPyCSnh0g1rNcbSaKM-tP-Huj1Dl7lwob0f2FyQBfovOFaEKaFWxWTj0TkBcbclC1wHvIkzLnXQPD3JDFRSEO_-ttyzGkSvEt6qYggNk1hMj52kBjHzvocx6A0f1Kscsf0IzyOjC1qe7lPTM29h"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full md:pl-[240px] pt-[64px] min-h-screen bg-background">
+<div class="max-w-5xl mx-auto p-container-padding flex flex-col gap-section-gap">
+<!-- Student Header Profile Banner -->
+<div class="bg-surface rounded-[16px] border border-[#E7E4DC] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+<div class="w-24 h-24 rounded-full bg-surface-container-high border-4 border-surface flex-shrink-0 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-[48px] text-on-surface-variant">person</span>
+</div>
+<div class="flex-1">
+<h2 class="text-h1 font-h1 text-on-surface">Новый Студент</h2>
+<div class="flex flex-wrap gap-4 mt-2">
+<span class="inline-flex items-center gap-1 text-label-md font-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">id_card</span>
+                            ID: На стадии регистрации
+                        </span>
+<span class="inline-flex items-center gap-1 text-label-md font-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                            Дата добавления: Сегодня
+                        </span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 rounded-full border border-outline-variant bg-surface text-on-surface-variant font-label-md hover:bg-surface-container-high transition-colors">
+                        Редактировать
+                    </button>
+</div>
+</div>
+<!-- Profile Navigation Tabs -->
+<div class="border-b border-outline-variant">
+<nav class="flex gap-8 px-4">
+<a class="py-4 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Общая информация</a>
+<a class="py-4 text-label-md font-label-md text-secondary border-b-2 border-secondary font-semibold" href="#">Курсы</a>
+<a class="py-4 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Платежи</a>
+<a class="py-4 text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Документы</a>
+</nav>
+</div>
+<!-- Empty State Container for Courses -->
+<div class="flex-1 flex items-center justify-center min-h-[400px] bg-surface rounded-[16px] border border-[#E7E4DC] p-8">
+<div class="flex flex-col items-center text-center max-w-md">
+<!-- Decorative Empty State Icon -->
+<div class="w-24 h-24 bg-surface-container rounded-full flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-[48px] text-on-surface-variant opacity-50" data-icon="school">school</span>
+</div>
+<h3 class="text-section-heading font-section-heading text-on-surface mb-2">Нет активных курсов</h3>
+<p class="text-body-lg font-body-lg text-on-surface-variant mb-8">
+                        Студент ещё не зачислен ни на один курс. Выберите подходящую программу обучения для начала занятий.
+                    </p>
+<button class="bg-primary text-on-primary rounded-full px-8 py-3 font-label-md text-label-md font-semibold hover:bg-primary-container hover:text-on-primary-container transition-colors duration-200 shadow-[0_4px_16px_rgba(28,27,26,0.08)] flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                        Зачислить на курс
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around py-3 z-50 px-2 pb-safe">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-label-md">Дашборд</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-secondary" href="#">
+<div class="bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+</div>
+<span class="text-[10px] font-label-md font-bold">Студенты</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-[10px] font-label-md">Курсы</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="text-[10px] font-label-md">Ещё</span>
+</a>
+</nav>
+</body></html>

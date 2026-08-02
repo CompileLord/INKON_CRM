@@ -44,7 +44,6 @@ class CourseService:
         course = Course(
             title=data.title,
             description=data.description,
-            photo_path=data.photo_path,
             start_date=data.start_date,
             end_date=data.end_date,
             exam_type=data.exam_type,
@@ -165,7 +164,7 @@ class CourseService:
         content = await file.read()
         if len(content) > 5 * 1024 * 1024:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Image size exceeds the 5MB limit"
             )
         try:

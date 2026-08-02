@@ -1,0 +1,51 @@
+{
+  "title": "Teachers",
+  "subtitle": "Manage teaching staff and group schedules",
+  "addMentor": "Add Teacher",
+  "editMentor": "Edit Teacher",
+  "searchPlaceholder": "Search teacher...",
+  "name": "Teacher Name",
+  "contacts": "Contacts",
+  "specialization": "Specialization",
+  "activeGroups": "Active Groups",
+  "loading": "Loading teachers list...",
+  "empty": "No teachers found",
+  "notFound": "Teacher not found",
+  "loadError": "Failed to load mentor profile",
+  "period": "Period",
+  "price": "Price",
+  "month": "mo",
+  "activeCoursesCount": "Active Courses",
+  "avgStudentScore": "Average Score",
+  "activeStudentsCount": "Active Students",
+  "totalStudents": "Total Students",
+  "avgGroupScore": "Average Group Score",
+  "noActiveCourses": "No active courses",
+  "performanceTitle": "Performance",
+  "performanceSubtitle": "Average student score across all of the mentor's groups",
+  "performanceHelp": "Overall score (Sum) on a 100-point scale",
+  "tabs": {
+    "courses": "Courses",
+    "performance": "Performance",
+    "analytics": "Analytics",
+    "documents": "Documents"
+  },
+  "table": {
+    "mentor": "Teacher",
+    "phone": "Phone",
+    "paymentDay": "Payment day",
+    "created": "Registered",
+    "empty": "No teachers found",
+    "error": "Failed to load data"
+  },
+  "form": {
+    "newMentorTitle": "New Mentor",
+    "editMentorTitle": "Edit Mentor",
+    "firstNameLabel": "First Name",
+    "lastNameLabel": "Last Name",
+    "phoneLabel": "Phone",
+    "dobLabel": "Date of Birth",
+    "telegramChatIdLabel": "Telegram chat ID",
+    "saving": "Saving…"
+  }
+}

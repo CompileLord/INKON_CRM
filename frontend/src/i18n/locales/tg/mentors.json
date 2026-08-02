@@ -1,0 +1,51 @@
+{
+  "title": "Омӯзгорон",
+  "subtitle": "Идоракунии ҳайати омӯзгорон ва ҷадвали гуруҳҳо",
+  "addMentor": "Илова кардани омӯзгор",
+  "editMentor": "Таҳрири омӯзгор",
+  "searchPlaceholder": "Ҷустуҷӯи омӯзгор...",
+  "name": "Ному насаби омӯзгор",
+  "contacts": "Тамос",
+  "specialization": "Ихтисос",
+  "activeGroups": "Гуруҳҳои фаъол",
+  "loading": "Боргирии рӯйхати омӯзгорон...",
+  "empty": "Омӯзгорон ёфт нашуданд",
+  "notFound": "Омӯзгор ёфт нашуд",
+  "loadError": "Профили омӯзгорро бор кардан ноком шуд",
+  "period": "Давра",
+  "price": "Нарх",
+  "month": "моҳ",
+  "activeCoursesCount": "Курсҳои фаъол",
+  "avgStudentScore": "Балли миёна",
+  "activeStudentsCount": "Донишҷӯёни фаъол",
+  "totalStudents": "Ҷамъи донишҷӯён",
+  "avgGroupScore": "Балли миёнаи гуруҳ",
+  "noActiveCourses": "Курсҳои фаъол нестанд",
+  "performanceTitle": "Пешрафт",
+  "performanceSubtitle": "Балли миёнаи донишҷӯён дар ҳамаи гуруҳҳои омӯзгор",
+  "performanceHelp": "Балли умумӣ (Sum) аз рӯи миқёси 100-балла",
+  "tabs": {
+    "courses": "Курсҳо",
+    "performance": "Пешрафт",
+    "analytics": "Таҳлил",
+    "documents": "Ҳуҷҷатҳо"
+  },
+  "table": {
+    "mentor": "Омӯзгор",
+    "phone": "Телефон",
+    "paymentDay": "Рӯзи пардохт",
+    "created": "Санаи бақайдгирӣ",
+    "empty": "Омӯзгорон ёфт нашуданд",
+    "error": "Боргирии маълумот ноком шуд"
+  },
+  "form": {
+    "newMentorTitle": "Омӯзгори нав",
+    "editMentorTitle": "Таҳрири омӯзгор",
+    "firstNameLabel": "Ном",
+    "lastNameLabel": "Насаб",
+    "phoneLabel": "Телефон",
+    "dobLabel": "Санаи таваллуд",
+    "telegramChatIdLabel": "Telegram chat ID",
+    "saving": "Захиракунӣ…"
+  }
+}

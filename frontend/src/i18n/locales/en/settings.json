@@ -1,0 +1,24 @@
+{
+  "title": "System Settings",
+  "subtitle": "Manage profile, system parameters, and notifications",
+  "saved": "Settings saved!",
+  "tabs": {
+    "profile": "User Profile",
+    "system": "System Parameters",
+    "notifications": "Notifications & Bot"
+  },
+  "profileSection": "Personal Information",
+  "uploadAvatar": "Upload avatar",
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "email": "Email",
+  "phone": "Phone",
+  "systemSection": "General System Settings",
+  "orgName": "Organization Name",
+  "currency": "Primary Base Currency",
+  "tgWebhook": "Telegram Bot Webhook",
+  "webhookActive": "Active",
+  "rulesSection": "Notification Rules",
+  "paymentNotify": "Payment Notifications",
+  "debtNotify": "Debt Reminders"
+}

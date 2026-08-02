@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ИМКОН CRM - Дашборд</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#2152ca",
+                      "inverse-on-surface": "#f2f1ee",
+                      "on-secondary-container": "#fefbff",
+                      "primary-fixed-dim": "#ffb59c",
+                      "inverse-surface": "#2f312f",
+                      "inverse-primary": "#ffb59c",
+                      "primary-fixed": "#ffdbcf",
+                      "error": "#ba1a1a",
+                      "surface": "#faf9f6",
+                      "on-surface": "#1a1c1a",
+                      "surface-container": "#efeeeb",
+                      "primary": "#a73400",
+                      "surface-container-low": "#f4f3f1",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#390c00",
+                      "on-primary-container": "#fffbff",
+                      "outline": "#8d7167",
+                      "surface-variant": "#e3e2e0",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-tertiary-fixed-variant": "#005230",
+                      "surface-container-high": "#e9e8e5",
+                      "primary-container": "#ce470e",
+                      "on-tertiary-fixed": "#002110",
+                      "on-tertiary-container": "#f6fff5",
+                      "tertiary-container": "#0d8552",
+                      "surface-container-highest": "#e3e2e0",
+                      "tertiary-fixed": "#90f7ba",
+                      "surface-tint": "#ab3500",
+                      "secondary-container": "#426ce5",
+                      "error-container": "#ffdad6",
+                      "surface-dim": "#dbdad7",
+                      "surface-bright": "#faf9f6",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#003cac",
+                      "outline-variant": "#e2bfb4",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#dbe1ff",
+                      "on-secondary-fixed": "#00164d",
+                      "on-primary-fixed-variant": "#832700",
+                      "secondary-fixed-dim": "#b5c4ff",
+                      "on-background": "#1a1c1a",
+                      "tertiary-fixed-dim": "#74db9f",
+                      "tertiary": "#006a40",
+                      "background": "#faf9f6",
+                      "on-surface-variant": "#594139"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-gap": "32px",
+                      "base": "4px",
+                      "gutter": "16px",
+                      "container-padding": "24px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "section-heading": [
+                              "Manrope"
+                      ],
+                      "caption": [
+                              "Inter"
+                      ],
+                      "kpi": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Manrope"
+                      ],
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "card-subheading": [
+                              "Manrope"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "section-heading": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "kpi": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "card-subheading": [
+                              "18px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar (Shared Component) -->
+<nav class="w-[240px] h-full fixed left-0 top-0 border-r border-outline-variant dark:border-outline bg-surface dark:bg-surface flex flex-col h-screen py-gutter px-base hidden md:flex z-40">
+<div class="px-4 mb-8 mt-4">
+<h1 class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed">ИМКОН</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">CRM</p>
+</div>
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 bg-surface-container-high dark:bg-surface-container-high text-secondary dark:text-secondary-fixed-dim rounded-full px-4 py-2 font-bold scale-98 active:scale-95 transition-transform hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                    Дашборд
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">group</span>
+                    Студенты
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">school</span>
+                    Менторы
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+                    Курсы
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+                    Журналы
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">payments</span>
+                    Финансы
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                    Аудит
+                </a>
+</li>
+</ul>
+<div class="mt-auto">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-2 hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors rounded-full font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Настройки
+            </a>
+</div>
+</nav>
+<!-- TopNavBar (Shared Component) -->
+<header class="h-16 fixed top-0 right-0 left-0 md:left-[240px] border-b border-outline-variant dark:border-outline bg-surface dark:bg-surface flex items-center justify-between px-container-padding w-full duration-200 ease-in-out z-30">
+<div class="flex items-center gap-4 flex-1">
+<div class="md:hidden">
+<h1 class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed">ИМКОН</h1>
+</div>
+<!-- Centered pill search as requested in prompt, overriding TopNavBar slightly for functionality -->
+<div class="hidden md:flex flex-1 justify-center max-w-md mx-auto relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-full border border-outline-variant bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent font-label-md text-label-md" placeholder="Поиск студентов, курсов..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full ring-2 ring-surface"></span>
+</button>
+<div class="flex items-center gap-3 border-l border-outline-variant pl-6">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A small, professional portrait headshot of a corporate user named Азиз Р. in a brightly lit modern office setting, suitable for an avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAz-_reZ6V3VjxJ6kY4XjswLS7UnKwSLb2lIZPDSXLdXlZC7SNil9t4lsgof4DKfwqZ2NhooE0rkaYVe8-ryGVdCvd2CiuSKDAF-uPVk2mJZRx44dLKlIcjVWFdm1KVI4VV_bEgixXE8sZ4B41At6V3QDD9uwDktbAxQDA2cHHqbVX6aBFcd8hs1nob2gFqIPp6lruW6fwyNz-4VVk6kMVCRcHMeOW2gUbsxLjd24R6SLotRPcQeKY1AGkbfr635bId6qtfemaxtCGp"/>
+<span class="font-label-md text-label-md hidden sm:block font-medium">Азиз Р.</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[88px] pb-container-padding px-4 md:pl-[264px] md:pr-container-padding transition-all duration-300 max-w-7xl mx-auto space-y-section-gap">
+<!-- Welcome Banner -->
+<section class="rounded-[24px] bg-gradient-to-r from-primary-container/10 to-surface-container-low border border-outline-variant/30 p-8 flex flex-col justify-center min-h-[140px] relative overflow-hidden">
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+<h2 class="font-h1 text-h1 text-on-surface relative z-10">Доброе утро, Азиз</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2 relative z-10">Вот краткая сводка на сегодня.</p>
+</section>
+<!-- KPI Row -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1: Largest, surface-3 bg equivalent -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-high p-6 flex flex-col justify-between shadow-[0_4px_16px_rgba(28,27,26,0.08)] relative overflow-hidden">
+<div class="absolute right-0 top-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none"></div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Общая задолженность</h3>
+<div class="mt-4 flex items-end gap-4">
+<span class="font-kpi text-kpi text-on-surface tabular-nums">12 400 TJS</span>
+</div>
+</div>
+<div class="mt-4 inline-flex items-center gap-1 bg-tertiary/10 text-tertiary font-label-md text-label-md px-2.5 py-1 rounded-full w-fit">
+<span class="text-xs">▲</span>
+<span>4% за месяц</span>
+</div>
+</div>
+<!-- Card 2: Standard surface -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 flex flex-col justify-center transition-shadow hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)]">
+<div class="flex items-center gap-3 mb-2 text-primary">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<h3 class="font-section-heading text-section-heading text-on-surface">Активных курсов: 8</h3>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Все группы укомплектованы</p>
+</div>
+<!-- Card 3: Standard surface -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 flex flex-col justify-center transition-shadow hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)]">
+<div class="flex items-center gap-3 mb-2 text-secondary">
+<span class="material-symbols-outlined">group</span>
+</div>
+<h3 class="font-section-heading text-section-heading text-on-surface">Студентов: 214</h3>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">+12 новых в этом месяце</p>
+</div>
+</section>
+<!-- Two-Column Row -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Left Card: Требуют внимания сегодня -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden flex flex-col shadow-sm">
+<div class="p-5 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h3 class="font-card-subheading text-card-subheading text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">warning</span>
+                        Требуют внимания сегодня
+                    </h3>
+</div>
+<div class="p-0 flex-1 bg-surface-container-lowest">
+<ul class="divide-y divide-outline-variant/50">
+<li class="p-4 flex items-start gap-3 hover:bg-surface-container-low transition-colors group cursor-pointer">
+<div class="mt-1 flex-shrink-0 w-2 h-2 rounded-full bg-error"></div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface font-medium group-hover:text-primary transition-colors">6 студентов без оплаты более 10 дней</p>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Группы: IELTS Intensive, SAT Math Prep</p>
+</div>
+</li>
+<li class="p-4 flex items-start gap-3 hover:bg-surface-container-low transition-colors group cursor-pointer">
+<div class="mt-1 flex-shrink-0 w-2 h-2 rounded-full bg-primary-container"></div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface font-medium group-hover:text-primary transition-colors">2 журнала не заполнены за прошлую неделю</p>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Менторы: Зарина К., Алишер Д.</p>
+</div>
+</li>
+<li class="p-4 flex items-start gap-3 hover:bg-surface-container-low transition-colors group cursor-pointer">
+<div class="mt-1 flex-shrink-0 w-2 h-2 rounded-full bg-outline"></div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface font-medium group-hover:text-primary transition-colors">Заканчивается срок действия лицензии Zoom</p>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Осталось 3 дня</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="p-4 border-t border-outline-variant bg-surface-container-low/50">
+<button class="font-label-md text-label-md text-secondary hover:text-primary transition-colors flex items-center gap-1">
+                        Смотреть все задачи <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Card: Последняя активность -->
+<div class="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden flex flex-col shadow-sm">
+<div class="p-5 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h3 class="font-card-subheading text-card-subheading text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">history</span>
+                        Последняя активность
+                    </h3>
+</div>
+<div class="p-5 flex-1 overflow-y-auto">
+<div class="relative border-l border-outline-variant/50 ml-3 space-y-6 pb-2">
+<!-- Feed Item 1 -->
+<div class="relative pl-6">
+<span class="absolute -left-[1.125rem] top-1 bg-surface-container-lowest border-2 border-secondary rounded-full p-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-secondary">auto_stories</span>
+</span>
+<div class="bg-surface-container-low/50 rounded-lg p-3 border border-outline-variant/30">
+<p class="font-body-lg text-body-lg text-on-surface">
+<span class="font-medium">Журнал:</span> SAT Math Prep обновлён
+                                </p>
+<div class="flex items-center gap-2 mt-2 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> 10 мин назад</span>
+<span>•</span>
+<span>Малика Ю.</span>
+</div>
+</div>
+</div>
+<!-- Feed Item 2 -->
+<div class="relative pl-6">
+<span class="absolute -left-[1.125rem] top-1 bg-surface-container-lowest border-2 border-tertiary rounded-full p-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-tertiary">payments</span>
+</span>
+<div class="bg-surface-container-low/50 rounded-lg p-3 border border-outline-variant/30">
+<p class="font-body-lg text-body-lg text-on-surface">
+<span class="font-medium">Платёж:</span> Умед Р. (IELTS Intensive)
+                                </p>
+<p class="font-data-mono text-data-mono text-on-surface mt-1">800 TJS</p>
+<div class="flex items-center gap-2 mt-2 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> 1 час назад</span>
+<span>•</span>
+<span>Система</span>
+</div>
+</div>
+</div>
+<!-- Feed Item 3 -->
+<div class="relative pl-6">
+<span class="absolute -left-[1.125rem] top-1 bg-surface-container-lowest border-2 border-outline-variant rounded-full p-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">person_add</span>
+</span>
+<div class="bg-surface-container-low/50 rounded-lg p-3 border border-outline-variant/30">
+<p class="font-body-lg text-body-lg text-on-surface">
+<span class="font-medium">Новый лид:</span> заявка с сайта
+                                </p>
+<div class="flex items-center gap-2 mt-2 font-caption text-caption text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> 3 часа назад</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-outline-variant flex justify-around items-center px-2 pb-safe z-40">
+<a class="flex flex-col items-center gap-1 p-2 text-secondary w-16" href="#">
+<span class="material-symbols-outlined bg-secondary/10 rounded-full px-4 py-1" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Дашборд</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant w-16" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Студенты</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant w-16" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Курсы</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant w-16" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Финансы</span>
+</a>
+</nav>
+</body></html>

@@ -24,6 +24,7 @@ from app.models.document import Document
 from app.models.payment import Payment
 from app.models.notification_log import NotificationLog
 from app.models.audit_log import AuditLog
+from app.models.org_settings import OrgSettings
 
 
 config = context.config

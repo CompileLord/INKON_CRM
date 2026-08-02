@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"echo \\\"=== who READS notify_payments/notify_debts? ===\\\" && grep -rn \\\"notify_payments\\\\|notify_debts\\\" app/ | grep -v \\\"schemas/org_settings\\\\|models/org_settings\\\\|api/v1/settings\\\\|serv...",
+  "error": "Exit code 1\n=== who READS notify_payments/notify_debts? ===",
+  "timestamp": "2026-08-01T00:42:11.341Z",
+  "retry_count": 1
+}

@@ -1,0 +1,86 @@
+{
+  "appName": "ИМКОН CRM",
+  "search": "Поиск...",
+  "cancel": "Отмена",
+  "save": "Сохранить",
+  "saveChanges": "Сохранить изменения",
+  "delete": "Удалить",
+  "edit": "Редактировать",
+  "create": "Создать",
+  "add": "Добавить",
+  "actions": "Действия",
+  "status": "Статус",
+  "loading": "Загрузка...",
+  "saving": "Сохранение...",
+  "error": "Ошибка",
+  "success": "Успешно",
+  "close": "Закрыть",
+  "confirm": "Подтвердить",
+  "back": "Назад",
+  "all": "Все",
+  "filter": "Фильтр",
+  "download": "Скачать",
+  "upload": "Загрузить",
+  "retry": "Повторить",
+  "details": "Подробнее",
+  "total": "Всего",
+  "page": "Страница",
+  "of": "из",
+  "noData": "Данные не найдены",
+  "refresh": "Обновить",
+  "showing": "Показано",
+  "clearFilter": "Сбросить фильтр",
+  "photo": "Фото",
+  "uploadPhoto": "Загрузить фото",
+  "cancelUpload": "Отменить загрузку",
+  "uploadError": "Не удалось загрузить фото",
+  "enums": {
+    "userRole": {
+      "superadmin": "Суперадмин",
+      "mentor": "Преподаватель",
+      "student": "Студент",
+      "accountant": "Бухгалтер"
+    },
+    "userStatus": {
+      "active": "Активен",
+      "archived": "В архиве",
+      "inactive": "Неактивен",
+      "expelled": "Отчислен"
+    },
+    "courseStatus": {
+      "active": "Активен",
+      "archived": "В архиве"
+    },
+    "paymentMethod": {
+      "card": "Карта",
+      "cash": "Наличные",
+      "bank_transfer": "Перечисление",
+      "transfer": "Перечисление"
+    },
+    "auditAction": {
+      "CREATE": "Создание",
+      "UPDATE": "Обновление",
+      "DELETE": "Удаление"
+    },
+    "examType": {
+      "weekly": "Еженедельный",
+      "monthly": "Ежемесячный"
+    }
+  },
+  "nav": {
+    "dashboard": "Дашборд",
+    "students": "Студенты",
+    "mentors": "Преподаватели",
+    "courses": "Курсы",
+    "journals": "Журнал",
+    "finance": "Финансы",
+    "audit": "Аудит",
+    "settings": "Настройки",
+    "notifications": "Уведомления",
+    "logout": "Выйти"
+  },
+  "pagination": {
+    "previous": "Предыдущая страница",
+    "next": "Следующая страница"
+  }
+}

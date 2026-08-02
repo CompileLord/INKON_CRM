@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Студенты - ИМКОН CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#faf9f6",
+                        "surface-variant": "#e3e2e0",
+                        "on-tertiary-fixed": "#002110",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#0d8552",
+                        "on-primary-fixed-variant": "#832700",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#ffb59c",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#00164d",
+                        "on-background": "#1a1c1a",
+                        "tertiary": "#006a40",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#ab3500",
+                        "outline-variant": "#e2bfb4",
+                        "on-surface": "#1a1c1a",
+                        "on-tertiary-container": "#f6fff5",
+                        "on-surface-variant": "#594139",
+                        "inverse-surface": "#2f312f",
+                        "secondary-fixed-dim": "#b5c4ff",
+                        "primary-fixed": "#ffdbcf",
+                        "tertiary-fixed": "#90f7ba",
+                        "surface-dim": "#dbdad7",
+                        "secondary-container": "#426ce5",
+                        "on-secondary-fixed-variant": "#003cac",
+                        "surface-container-low": "#f4f3f1",
+                        "on-tertiary-fixed-variant": "#005230",
+                        "tertiary-fixed-dim": "#74db9f",
+                        "surface-container-highest": "#e3e2e0",
+                        "on-primary": "#ffffff",
+                        "secondary": "#2152ca",
+                        "primary": "#a73400",
+                        "primary-fixed-dim": "#ffb59c",
+                        "surface-container-high": "#e9e8e5",
+                        "on-secondary-container": "#fefbff",
+                        "secondary-fixed": "#dbe1ff",
+                        "outline": "#8d7167",
+                        "primary-container": "#ce470e",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#faf9f6",
+                        "surface-container": "#efeeeb",
+                        "background": "#faf9f6",
+                        "on-primary-container": "#fffbff",
+                        "on-primary-fixed": "#390c00",
+                        "inverse-on-surface": "#f2f1ee",
+                        
+                        "accent-orange": "#EA5B24",
+                        "info-blue": "#2152ca",
+                        "success-green": "#0d8552",
+                        "border-color": "#E7E4DC",
+                        "surface-1": "#FFFFFF",
+                        "surface-2": "#F4F3F1",
+                        "surface-3": "#E9E8E5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "sheet": "24px",
+                        "card": "16px",
+                        "input": "10px",
+                        "checkbox": "6px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "container-padding": "24px",
+                        "section-gap": "32px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "kpi": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "card-subheading": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "section-heading": ["Manrope"],
+                        "caption": ["Inter"],
+                        "h1": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "card-subheading": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "section-heading": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "caption": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "h1": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 16px rgba(28,27,26,0.08)',
+                        'elevated': '0 8px 32px rgba(28,27,26,0.16)',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #FAF9F6; color: #1a1c1a; }
+        h1, h2, h3, h4, h5, h6, .font-section-heading, .font-card-subheading, .font-h1 { font-family: 'Manrope', sans-serif; }
+        .data-number { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+        
+        /* Custom scrollbar for subtle look */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E3E2E0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #DBDAD7; }
+
+        .lucide { width: 20px; height: 20px; stroke-width: 1.5px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+        .lucide-sidebar { width: 24px; height: 24px; }
+        .lucide-table { width: 16px; height: 16px; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-border-color fixed top-0 right-0 left-[240px] h-16 flex justify-between items-center px-container-padding w-[calc(100%-240px)] z-20">
+<div class="flex items-center">
+<!-- Brand Logo handled by sidebar, optionally repeat or leave space -->
+</div>
+<!-- Search Bar (Centered Pill) -->
+<div class="flex-1 max-w-xl mx-auto hidden md:flex">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-2 border border-border-color rounded-full py-2 pl-10 pr-4 text-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors placeholder:text-on-surface-variant font-body-lg" placeholder="Поиск по системе..." type="text"/>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<button class="p-2 text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button class="p-2 text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-border-color cursor-pointer ml-2">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A small, professional portrait photograph of an office worker serving as a user avatar profile picture. Clean, well-lit, simple background. High key light-mode aesthetic, optimistic mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQIpYzkPtX_8HG0AMR1TPBUxJOj500IyEx7BXl-SRxZWS1kYfo3oEWyyXHz6q1jmT5Iw1Urt7TW6ZZ1Ct9Muk7HEaGRqrTj6mHQk8RfrmmklIHP_sgUjiXm01fKgKAHn2mfvSEzAsW9N_Hc-y3fckF9zfrIZjS-VzHPrVLjB7nyKLoEHs9vAz0Nw7FCfkGnW1a7sJxutZA3tXATWq4uJjdnUaIFk0qpCiEXi-p0XV4FEix_9JIlyoKGue9QVTR_7SvFkkvSi9CJ5En"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="bg-surface dark:bg-surface-dim border-r border-border-color fixed left-0 top-0 h-full w-[240px] flex flex-col gap-base p-gutter overflow-y-auto z-30">
+<div class="flex items-center gap-3 px-4 py-6 mb-4">
+<div class="w-8 h-8 rounded bg-accent-orange flex items-center justify-center text-white font-bold text-xl leading-none">И</div>
+<div class="flex flex-col">
+<span class="font-h1 text-h1 font-bold text-primary dark:text-primary-fixed text-lg leading-tight">ИМКОН CRM</span>
+<span class="font-caption text-caption text-on-surface-variant">Панель управления</span>
+</div>
+</div>
+<nav class="flex flex-col gap-1 w-full">
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                Дашборд
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full bg-surface-3 text-info-blue font-bold transition-all duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 1;">group</span>
+                Студенты
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">school</span>
+                Менторы
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">menu_book</span>
+                Курсы
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">import_contacts</span>
+                Журналы
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">payments</span>
+                Финансы
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">analytics</span>
+                Аудит
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant font-medium hover:bg-surface-container-low transition-colors duration-200 ease-in-out active:scale-95 font-label-md text-label-md mt-auto" href="#">
+<span class="material-symbols-outlined lucide-sidebar" style="font-variation-settings: 'FILL' 0;">settings</span>
+                Настройки
+            </a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[240px] mt-16 p-container-padding w-full h-[calc(100vh-64px)] overflow-y-auto flex gap-6 relative">
+<!-- Primary Canvas -->
+<div class="flex-1 flex flex-col min-w-0 transition-all duration-300 pr-[480px]"> <!-- Added pr-[480px] to make room for side sheet -->
+<!-- Page Header & Toolbar -->
+<div class="flex justify-between items-end mb-6">
+<div>
+<h1 class="font-section-heading text-section-heading text-on-background mb-4">Студенты</h1>
+<div class="flex items-center gap-3">
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-1 border border-border-color rounded-input py-1.5 pl-9 pr-3 text-label-md font-label-md focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue placeholder:text-on-surface-variant" placeholder="Поиск по имени или email" type="text"/>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-full border border-info-blue bg-surface-3 text-info-blue font-label-md text-label-md transition-colors whitespace-nowrap">Активен</button>
+<button class="px-3 py-1.5 rounded-full border border-border-color bg-surface-1 text-on-surface-variant hover:bg-surface-2 font-label-md text-label-md transition-colors whitespace-nowrap">Архив</button>
+<button class="px-3 py-1.5 rounded-full border border-border-color bg-surface-1 text-on-surface-variant hover:bg-surface-2 font-label-md text-label-md transition-colors whitespace-nowrap">Ожидает первого входа</button>
+</div>
+</div>
+</div>
+<button class="bg-accent-orange hover:bg-[#D94F1C] text-white px-5 py-2.5 rounded-full font-label-md text-label-md shadow-soft transition-all duration-200 flex items-center gap-2 flex-shrink-0">
+<span class="material-symbols-outlined text-sm">add</span>
+                    Добавить студента
+                </button>
+</div>
+<!-- Table Container (Card) -->
+<div class="bg-surface-1 border border-border-color rounded-card flex-1 flex flex-col overflow-hidden shadow-sm">
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-1 sticky top-0 z-10 border-b border-border-color">
+<tr>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Фото + Имя</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Email</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Телефон</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap text-right">Активные курсы</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Статус</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap w-10"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-color">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-2 transition-colors group cursor-pointer">
+<td class="py-2.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-color flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A portrait of a young Central Asian male student, smiling slightly. Bright, even lighting. Professional, academic setting. Clean background. Vibrant colors but mostly white and soft grey tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmNX5FMqpZE_k8N2BGr6afkIlRCzcMOP5Qga2OQQx061rSUCd3-qKAJX2lcfAEH8NoKd7Y3p755PYMyNsWvfpmjvwaT6aAFU5r-ayM0X28xvTHR_iM6mVXCVrlZPsHX1oYsHYYQ7UpEP-SQbNronZm6au5K2Lw79IUFOGG4fh0VwGAfq-gw0oqVrH9Z-f7DhQn7IarDyO34PzQLArQGsfc63ptrjYxnZhzEtDx4wWFzcfhIjOXV8086LAHsR_ev6ivkznwmh5eOBio"/>
+</div>
+<span class="font-body-lg text-body-lg text-on-background font-medium whitespace-nowrap">Азиз Рахимов</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-body-lg text-body-lg text-on-surface-variant whitespace-nowrap">aziz.r@example.com</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap">+992 90 123 4567</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-background text-right">2</td>
+<td class="py-2.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f6fff5] text-success-green border border-[#90f7ba]">Активен</span>
+</td>
+<td class="py-2.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-info-blue p-1 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-sm">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-2 transition-colors group cursor-pointer">
+<td class="py-2.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-color flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A portrait of a young Central Asian female student with dark hair, looking confident. Bright, modern office or classroom lighting. Minimalist background. High-key aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYkWIFtW9utMN0H7CLRV9C_pC461beDxpjxT7o-Yx3Yj7TYJfnu8Am5u-b_ABkHF_VCTG0ywqxMddhnFJmU9ndRvTSNTCYF8WBTd8eD9v1PwjBmaK1nnXfmfG4fe-TuMKLA9l5s64UEoSTdMGgmXA8Np0GE1J2bTx6oa8I3APj1_orRR8LR7uNrHumnQSlVjM_9cvdXiGp-d7uoMgp56RLAsC5iOtJC77jKGCGg2wG12WNadgy_YB49nG0fQxVY-v0xdXqaybcgsgW"/>
+</div>
+<span class="font-body-lg text-body-lg text-on-background font-medium whitespace-nowrap">Малика Юсупова</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-body-lg text-body-lg text-on-surface-variant whitespace-nowrap">malika.yu@example.com</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap">+992 93 456 7890</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-background text-right">1</td>
+<td class="py-2.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f6fff5] text-success-green border border-[#90f7ba]">Активен</span>
+</td>
+<td class="py-2.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-info-blue p-1 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-sm">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-2 transition-colors group cursor-pointer">
+<td class="py-2.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-color flex-shrink-0">
+<div class="w-full h-full bg-secondary-fixed-dim text-on-secondary-fixed flex items-center justify-center font-bold text-sm">УР</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-background font-medium whitespace-nowrap">Умед Раджабов</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-body-lg text-body-lg text-on-surface-variant whitespace-nowrap">umed.radj@example.com</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap">+992 98 765 4321</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-background text-right">3</td>
+<td class="py-2.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f6fff5] text-success-green border border-[#90f7ba]">Активен</span>
+</td>
+<td class="py-2.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-info-blue p-1 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-sm">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-2 transition-colors group cursor-pointer bg-surface-bright">
+<td class="py-2.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-color flex-shrink-0 border-dashed border-2 p-[2px]">
+<div class="w-full h-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-bold text-sm rounded-full">ДЗ</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-background font-medium whitespace-nowrap opacity-80">Даврон Зикиров</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-body-lg text-body-lg text-on-surface-variant whitespace-nowrap opacity-80">davron.z@example.com</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap opacity-80">+992 00 111 2233</td>
+<td class="py-2.5 px-4 font-data-mono text-data-mono text-on-surface-variant text-right opacity-80">0</td>
+<td class="py-2.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-2 text-on-surface-variant border border-border-color">Ожидает первого входа</span>
+</td>
+<td class="py-2.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-info-blue p-1 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-sm">more_horiz</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-border-color bg-surface-1 flex justify-between items-center text-sm">
+<span class="font-body-lg text-body-lg text-on-surface-variant text-sm">Показано 1–20 из 148</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-color text-on-surface-variant disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-3 text-info-blue font-medium border border-transparent">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-2 transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-2 transition-colors">3</button>
+<span class="w-8 h-8 flex items-center justify-center text-on-surface-variant">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-2 transition-colors">8</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-border-color text-on-surface-variant hover:bg-surface-2 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Sheet (New Student Form) -->
+<aside class="fixed right-6 top-[88px] bottom-6 w-[480px] bg-surface-1 rounded-sheet shadow-elevated border border-border-color flex flex-col z-40 overflow-hidden transition-transform duration-300 transform translate-x-0">
+<!-- Header -->
+<div class="px-6 py-5 border-b border-border-color flex justify-between items-center bg-surface-1">
+<h2 class="font-section-heading text-section-heading text-on-background m-0 text-xl">Новый студент</h2>
+<button class="text-on-surface-variant hover:bg-surface-2 p-1.5 rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Form Content -->
+<div class="p-6 flex-1 overflow-y-auto bg-surface-1 flex flex-col gap-5">
+<div class="grid grid-cols-2 gap-4">
+<!-- Имя -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Имя <span class="text-error">*</span></label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors" type="text"/>
+</div>
+<!-- Фамилия -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Фамилия <span class="text-error">*</span></label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Email <span class="text-error">*</span></label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors placeholder:text-on-surface-variant/50" placeholder="example@domain.com" type="email"/>
+</div>
+<!-- Роль Select -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Роль</label>
+<div class="relative">
+<select class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg appearance-none focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors cursor-pointer">
+<option selected="">Студент</option>
+<option>Ментор</option>
+<option>Бухгалтер</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<div class="h-px bg-border-color my-2"></div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Телефон -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Телефон</label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 font-data-mono text-data-mono focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors placeholder:text-on-surface-variant/50" placeholder="+992 XX XXX XXXX" type="tel"/>
+</div>
+<!-- Дата рождения -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Дата рождения</label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors text-on-surface-variant" type="date"/>
+</div>
+</div>
+<!-- Telegram-чат родителя -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5">Telegram-чат родителя (Ссылка)</label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors placeholder:text-on-surface-variant/50" placeholder="https://t.me/..." type="url"/>
+</div>
+<!-- День оплаты -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1.5 flex items-center justify-between">
+<span>День оплаты (ежемесячно)</span>
+<span class="text-xs text-on-surface-variant/70 font-normal">Число от 1 до 28</span>
+</label>
+<input class="w-full bg-surface-1 border border-border-color rounded-input px-3 py-2 text-body-lg font-body-lg focus:outline-none focus:ring-1 focus:ring-info-blue focus:border-info-blue transition-colors placeholder:text-on-surface-variant/50" max="28" min="1" placeholder="Напр. 15" type="number"/>
+</div>
+<!-- Send invite toggle -->
+<div class="mt-2 flex items-center gap-3">
+<div class="relative flex items-center">
+<input checked="" class="peer sr-only" id="send_invite" type="checkbox"/>
+<div class="w-10 h-6 bg-border-color peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border-color after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-info-blue cursor-pointer"></div>
+</div>
+<label class="font-body-lg text-body-lg text-on-background cursor-pointer select-none" for="send_invite">Отправить приглашение на Email</label>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-6 border-t border-border-color bg-surface-bright flex justify-end gap-3 rounded-b-sheet">
+<button class="px-6 py-2.5 rounded-full border border-border-color bg-surface-1 text-on-background font-label-md text-label-md hover:bg-surface-2 transition-colors">
+                    Отмена
+                </button>
+<button class="px-6 py-2.5 rounded-full bg-accent-orange text-white font-label-md text-label-md hover:bg-[#D94F1C] transition-colors shadow-sm">
+                    Создать
+                </button>
+</div>
+</aside>
+</main>
+</body></html>

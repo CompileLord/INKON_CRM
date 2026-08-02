@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ИМКОН CRM - Дашборд</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#ffdbcf",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#ffb59c",
+                      "inverse-surface": "#2f312f",
+                      "inverse-primary": "#ffb59c",
+                      "on-secondary-container": "#fefbff",
+                      "secondary": "#2152ca",
+                      "inverse-on-surface": "#f2f1ee",
+                      "surface": "#faf9f6",
+                      "on-surface": "#1a1c1a",
+                      "primary": "#a73400",
+                      "surface-container": "#efeeeb",
+                      "surface-container-low": "#f4f3f1",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#fffbff",
+                      "on-primary-fixed": "#390c00",
+                      "on-tertiary-fixed-variant": "#005230",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error": "#ffffff",
+                      "surface-variant": "#e3e2e0",
+                      "outline": "#8d7167",
+                      "surface-container-high": "#e9e8e5",
+                      "surface-container-highest": "#e3e2e0",
+                      "tertiary-container": "#0d8552",
+                      "primary-container": "#ce470e",
+                      "on-tertiary-fixed": "#002110",
+                      "on-tertiary-container": "#f6fff5",
+                      "surface-tint": "#ab3500",
+                      "tertiary-fixed": "#90f7ba",
+                      "secondary-container": "#426ce5",
+                      "error-container": "#ffdad6",
+                      "on-error-container": "#93000a",
+                      "surface-dim": "#dbdad7",
+                      "surface-bright": "#faf9f6",
+                      "on-secondary-fixed": "#00164d",
+                      "on-primary-fixed-variant": "#832700",
+                      "secondary-fixed": "#dbe1ff",
+                      "outline-variant": "#e2bfb4",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#003cac",
+                      "on-background": "#1a1c1a",
+                      "secondary-fixed-dim": "#b5c4ff",
+                      "on-surface-variant": "#594139",
+                      "tertiary": "#006a40",
+                      "background": "#faf9f6",
+                      "tertiary-fixed-dim": "#74db9f",
+                      "info": "#2152ca",
+                      "success": "#006a40"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px",
+                      "2xl": "1rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "container-padding": "24px",
+                      "base": "4px",
+                      "section-gap": "32px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "data-mono": ["JetBrains Mono"],
+                      "card-subheading": ["Manrope"],
+                      "kpi": ["Inter"],
+                      "h1": ["Manrope"],
+                      "section-heading": ["Manrope"],
+                      "caption": ["Inter"],
+                      "label-md": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                      "card-subheading": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+                      "kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "h1": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "section-heading": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                      "caption": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+          font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shadow-soft {
+            box-shadow: 0 4px 16px rgba(28,27,26,0.08);
+        }
+        .shadow-elevated {
+            box-shadow: 0 8px 32px rgba(28,27,26,0.16);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg antialiased">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[240px] border-r border-surface-container-high bg-surface flex flex-col p-4 gap-2 z-40 transition-colors duration-200 ease-in-out">
+<div class="px-4 py-6 mb-4">
+<h1 class="font-h1 text-h1 text-primary">ИМКОН CRM</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Панель управления</p>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<!-- Active: Дашборд -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-lg px-4 py-3 font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Дашборд</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Студенты</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span>Менторы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Курсы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span>Журналы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Финансы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>Аудит</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container px-4 py-3 rounded-lg transition-colors duration-200 ease-in-out mt-auto" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Настройки</span>
+</a>
+</div>
+</nav>
+<!-- Main Layout Wrapper -->
+<div class="ml-[240px] min-h-screen flex flex-col relative">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 h-[64px] left-[240px] border-b border-surface-container-high bg-surface flex justify-between items-center px-6 z-30 transition-all duration-200">
+<div class="flex items-center gap-4">
+<h2 class="font-section-heading text-section-heading text-on-surface">ИМКОН</h2>
+</div>
+<div class="flex items-center gap-6 relative">
+<!-- Notifications Action -->
+<button class="relative p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors group" id="notifications-trigger">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="notifications">notifications</span>
+<!-- Unread Badge -->
+<span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[10px] font-bold text-on-error border-2 border-surface">2</span>
+</button>
+<!-- Profile Secondary Action -->
+<button class="flex items-center gap-3 px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors group">
+<span class="font-label-md text-label-md text-on-surface-variant group-hover:text-primary transition-colors">Profile</span>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A small circular avatar placeholder image showing a subtle gradient of corporate blue and white. The lighting is soft and neutral, typical of a modern CRM dashboard profile placeholder. Minimalist and clean aesthetic, conveying a professional corporate environment without a specific face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhnvKA9AS7NKep8CTMZVH-Q7vLkvw8z2itWpuNCh-YxS2CisL-ahq0qT5OrNwioKLJijPUPcbro1mrsqoDI7m1rqhMHfqO3UrqztQpeEoaQlGAc3-OvcdiyyCWoVw5ASpBZkyVAMenM68SsyaqrJkABHBwVuwLysaR6annKX4k1ijSgm6e6V9l8J1tVEndKnL4jiGOhdLiPNwl2cF1SKt2LurTiWajAvCs9OmP4x8hM2E_x46-1iZUhyUN-xSFAi1BNTVN20c9PT3z"/>
+</div>
+</button>
+<!-- Notifications Popover -->
+<div class="absolute top-14 right-24 w-80 bg-surface rounded-2xl shadow-elevated border border-surface-container-high z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" id="notifications-popover">
+<div class="px-5 py-4 border-b border-surface-container-high bg-surface flex justify-between items-center">
+<h3 class="font-card-subheading text-card-subheading text-on-surface">Уведомления</h3>
+<span class="font-caption text-caption text-on-surface-variant bg-surface-container px-2 py-1 rounded-full">2 новых</span>
+</div>
+<div class="flex-1 overflow-y-auto max-h-[320px] bg-surface flex flex-col">
+<!-- Notification Item 1 (Success) -->
+<div class="px-5 py-3 border-b border-surface-container-high hover:bg-surface-container-low transition-colors cursor-pointer group flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary" data-icon="check">check</span>
+</div>
+<div class="flex flex-col">
+<p class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Азиз Р. — напоминание об оплате</p>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">отправлено родителю · 5 мин назад</p>
+</div>
+</div>
+<!-- Notification Item 2 (Danger/Failed) -->
+<div class="px-5 py-3 border-b border-surface-container-high bg-surface-container-low/50 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center shrink-0 mt-0.5 relative">
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+<span class="material-symbols-outlined text-[18px] text-error" data-icon="close">close</span>
+</div>
+<div class="flex flex-col">
+<p class="font-label-md text-label-md text-on-surface font-semibold group-hover:text-primary transition-colors">Малика Х. — экзамен загружен</p>
+<p class="font-caption text-caption text-error mt-0.5">не отправлено: родитель не привязан к боту</p>
+</div>
+</div>
+<!-- Notification Item 3 (Success) -->
+<div class="px-5 py-3 border-b border-surface-container-high hover:bg-surface-container-low transition-colors cursor-pointer group flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary" data-icon="check">check</span>
+</div>
+<div class="flex flex-col">
+<p class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Умед Р. — зачислен на курс</p>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">отправлено студенту · 1 ч назад</p>
+</div>
+</div>
+<!-- Notification Item 4 (Danger/Failed) -->
+<div class="px-5 py-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center shrink-0 mt-0.5 relative">
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+<span class="material-symbols-outlined text-[18px] text-error" data-icon="close">close</span>
+</div>
+<div class="flex flex-col">
+<p class="font-label-md text-label-md text-on-surface font-semibold group-hover:text-primary transition-colors">Даврон З. — пропуск занятия</p>
+<p class="font-caption text-caption text-error mt-0.5">не отправлено: ошибка шлюза</p>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 bg-surface-container-lowest border-t border-surface-container-high text-center">
+<a class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-label-md text-label-md text-info hover:bg-info/10 transition-colors w-full" href="#">
+                            Все уведомления <span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area (Background Dashboard) -->
+<main class="flex-1 mt-[64px] p-container-padding opacity-40 pointer-events-none transition-opacity duration-300">
+<div class="max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-section-gap">
+<div>
+<h2 class="font-h1 text-h1 text-on-surface">Дашборд</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Сводка по учебному центру</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 rounded-full bg-surface border border-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-soft">Экспорт</button>
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-soft">Новый отчет</button>
+</div>
+</div>
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-section-gap">
+<!-- KPI Card 1 -->
+<div class="bg-surface border border-surface-container-high rounded-2xl p-6 shadow-soft">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant">Всего студентов</h3>
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="group">group</span>
+</div>
+</div>
+<div class="font-kpi text-kpi text-on-surface mb-2">1,248</div>
+<div class="flex items-center gap-2 font-caption text-caption text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span>+12% за месяц</span>
+</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="bg-surface border border-surface-container-high rounded-2xl p-6 shadow-soft">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant">Активные менторы</h3>
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="school">school</span>
+</div>
+</div>
+<div class="font-kpi text-kpi text-on-surface mb-2">42</div>
+<div class="flex items-center gap-2 font-caption text-caption text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span>+3 новых</span>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="bg-surface border border-surface-container-high rounded-2xl p-6 shadow-soft">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant">Выручка (Ожидаемая)</h3>
+<div class="w-10 h-10 rounded-full bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="payments">payments</span>
+</div>
+</div>
+<div class="font-kpi text-kpi text-on-surface mb-2">45M сум</div>
+<div class="flex items-center gap-2 font-caption text-caption text-error">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_down">trending_down</span>
+<span>-2% за неделю</span>
+</div>
+</div>
+</div>
+<!-- Recent Activity Placeholder -->
+<div class="bg-surface border border-surface-container-high rounded-2xl overflow-hidden shadow-soft">
+<div class="px-6 py-4 border-b border-surface-container-high bg-surface-container-low flex justify-between items-center">
+<h3 class="font-card-subheading text-card-subheading text-on-surface">Последние действия</h3>
+</div>
+<div class="p-6">
+<div class="flex flex-col gap-4">
+<div class="h-16 bg-surface-container-low rounded-lg w-full animate-pulse"></div>
+<div class="h-16 bg-surface-container-low rounded-lg w-full animate-pulse"></div>
+<div class="h-16 bg-surface-container-low rounded-lg w-full animate-pulse"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Overlay to ensure popover focus (optional, but requested implicitly by opacity change on main) -->
+<div class="absolute inset-0 bg-on-surface/5 z-20 pointer-events-none mt-[64px]"></div>
+</div>
+</body></html>

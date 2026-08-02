@@ -1,0 +1,15 @@
+{
+  "title": "Audit Log",
+  "subtitle": "History of all changes, user actions, and system events",
+  "time": "Time",
+  "user": "User",
+  "action": "Action",
+  "entity": "Entity",
+  "field": "Field",
+  "oldValue": "Old value",
+  "newValue": "New value",
+  "filterAction": "All actions",
+  "filterEntity": "All entities",
+  "loading": "Loading audit log...",
+  "empty": "No audit records found"
+}

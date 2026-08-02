@@ -123,6 +123,12 @@ class EnrollmentService:
         self.db.add_all(summaries_to_add)
 
         await self.db.flush()
+
+        # Generate financial charge schedule for enrollment
+        from app.services.finance_service import FinanceService
+        finance_service = FinanceService(self.db)
+        await finance_service.generate_schedule_for_enrollment(enrollment.id)
+
         await self.db.refresh(enrollment)
         return enrollment
 
@@ -135,6 +141,23 @@ class EnrollmentService:
             )
         enrollment.status = EnrollmentStatus.WITHDRAWN
         await self.enrollment_repo.update(enrollment)
+
+        # Cancel unbilled future open charges upon withdrawal. Charges already
+        # due stay as debt.
+        from app.models.charge import Charge, ChargeStatus
+        from app.services.finance_service import get_dushanbe_today
+        today = get_dushanbe_today()
+        cancel_q = select(Charge).filter(
+            Charge.enrollment_id == enrollment_id,
+            Charge.due_date > today,
+            Charge.status == ChargeStatus.OPEN,
+            Charge.is_deleted == False
+        )
+        c_res = await self.db.execute(cancel_q)
+        future_charges = list(c_res.scalars().all())
+        for fc in future_charges:
+            fc.status = ChargeStatus.CANCELLED
+
         await self.db.refresh(enrollment)
         return enrollment
 

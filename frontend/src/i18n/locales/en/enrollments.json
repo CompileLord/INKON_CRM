@@ -1,0 +1,10 @@
+{
+  "status": {
+    "active": "Active",
+    "withdrawn": "Withdrawn",
+    "completed": "Completed"
+  },
+  "enrolledAt": "Enrolled date: {{date}}",
+  "disenroll": "Disenroll from group",
+  "disenrollConfirm": "Are you sure you want to disenroll this student from the group?"
+}

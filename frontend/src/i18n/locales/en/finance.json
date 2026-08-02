@@ -1,0 +1,47 @@
+{
+  "title": "Finance & Payments",
+  "subtitle": "Manage payments, cash records, and the debt registry",
+  "acceptPayment": "Accept Payment",
+  "tabs": {
+    "analytics": "Financial Overview",
+    "debtors": "Debtors Registry"
+  },
+  "overdueDaysCount": "{{count}} days",
+  "analytics": {
+    "title": "Financial Overview",
+    "subtitle": "Overview of receivables and collections",
+    "totalReceivable": "Net receivable (due & unpaid)",
+    "totalCollected": "Collected this period",
+    "unpaidStudentsCount": "Unpaid Students",
+    "topDebtors": "Top Debtors",
+    "recentTransactions": "Recent Transactions",
+    "studentNumber": "Student #{{id}}",
+    "courseNumber": "Course #{{id}}",
+    "unapplied": "Unapplied"
+  },
+  "debtors": {
+    "title": "Debtors List",
+    "subtitle": "Students with an outstanding balance",
+    "table": {
+      "student": "Student",
+      "course": "Course",
+      "priceAtEnrollment": "Price",
+      "totalPaid": "Paid",
+      "debtAmount": "Debt",
+      "overdue": "Overdue"
+    }
+  },
+  "paymentModal": {
+    "title": "Accept Payment",
+    "acceptPayment": "Accept Payment",
+    "amount": "Amount",
+    "date": "Date",
+    "method": "Payment Method",
+    "totalToCredit": "Total to credit",
+    "comment": "Comment",
+    "commentPlaceholder": "Note about the transaction...",
+    "selectCourse": "Select course",
+    "saveError": "Failed to accept payment",
+    "discountHint": "Cash received. To grant a concession, record a discount separately."
+  }
+}

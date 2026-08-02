@@ -1,8 +1,11 @@
+import logging
 from typing import Any, Dict, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_log import AuditLog, AuditAction
 from app.repositories.sqlalchemy.audit_log_repository import SQLAlchemyAuditLogRepository
+
+logger = logging.getLogger(__name__)
 
 
 class AuditService:
@@ -33,10 +36,11 @@ class AuditService:
                 self.db.add(audit_log)
             await self.db.flush()
         except Exception:
-            try:
-                await self.db.rollback()
-            except Exception:
-                pass
+            # Audit must not break the operation being audited, but a silent
+            # swallow makes "everything is audited" unverifiable — log it.
+            logger.exception(
+                "Failed to write audit log for %s #%s (action=%s)", entity_type, entity_id, action
+            )
 
     async def list_logs(self, page: int, page_size: int) -> dict:
         query = select(AuditLog).order_by(AuditLog.id.desc())

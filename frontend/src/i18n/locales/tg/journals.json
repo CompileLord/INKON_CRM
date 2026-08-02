@@ -1,0 +1,40 @@
+{
+  "backToJournals": "Журналҳо",
+  "title": "Журнали электронӣ",
+  "openJournal": "Кушодани журнал",
+  "totalJournals": "Ҷамъи журналҳо",
+  "activeCourses": "Курсҳои фаъол",
+  "noJournals": "Журналҳо ёфт нашуданд",
+  "tryFilterChange": "Филтрро тағйир диҳед",
+  "notFound": "Журнал ёфт нашуд",
+  "loadFailedCourse": "Курсро бор кардан ноком шуд",
+  "loadFailed": "Маълумоти журналро бор кардан ноком шуд",
+  "loading": "Боргирӣ…",
+  "studentsCount": "{{count}} донишҷӯ",
+  "noPeriodsYet": "Давраҳои журнал ҳанӯз эҷод нашудаанд",
+  "entriesSaved": "Давомот захира шуд",
+  "entriesSaveFailed": "Захираи давомот ноком шуд",
+  "summarySaved": "Баллҳо захира шуданд",
+  "summarySaveFailed": "Захираи баллҳо ноком шуд",
+  "period": {
+    "week": "Ҳафтаи {{n}}",
+    "month": "Моҳи {{n}}"
+  },
+  "chart": {
+    "title": "Динамикаи баллҳо",
+    "average": "Миёна",
+    "noData": "Маълумот барои график нест"
+  },
+  "table": {
+    "students": "Донишҷӯён",
+    "endOfWeek": "Натиҷаи ҳафта",
+    "endOfMonth": "Натиҷаи моҳ",
+    "att": "Ҳузур",
+    "score": "Балл",
+    "bonus": "Бонус",
+    "exam": "Имтиҳон",
+    "sum": "Sum",
+    "comment": "Шарҳ",
+    "noStudentsInCourse": "Дар ин курс донишҷӯ нест"
+  }
+}

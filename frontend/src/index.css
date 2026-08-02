@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --color-cream: var(--imkon-cream);
+  --color-card: var(--imkon-card);
+  --color-border: var(--imkon-border);
+  --color-border-warm: var(--imkon-border-warm);
+  --color-maroon: var(--imkon-maroon);
+  --color-maroon-dark: var(--imkon-maroon-dark);
+  --color-ink: var(--imkon-ink);
+  --color-muted: var(--imkon-muted);
+  --color-beige: var(--imkon-beige);
+  --color-beige-dark: var(--imkon-beige-dark);
+  --color-banner-from: var(--imkon-banner-from);
+  --color-banner-to: var(--imkon-banner-to);
+  --color-strip: var(--imkon-strip);
+  --color-event-border: var(--imkon-event-border);
+  --color-dot-gray: var(--imkon-dot-gray);
+  --color-accent: var(--imkon-accent);
+  --color-accent-dark: var(--imkon-accent-dark);
+  --color-row-hover: var(--imkon-row-hover);
+  --color-nav: var(--imkon-nav);
+  --color-nav-hover: var(--imkon-nav-hover);
+  --color-label: var(--imkon-label);
+}
+
+:root {
+  --imkon-cream: #faf6f1;
+  --imkon-card: #ffffff;
+  --imkon-border: #ede6dd;
+  --imkon-border-warm: #ebd9c8;
+  --imkon-maroon: #8b2e2e;
+  --imkon-maroon-dark: #742525;
+  --imkon-ink: #1f1b16;
+  --imkon-muted: #8a8074;
+  --imkon-beige: #f1eae1;
+  --imkon-beige-dark: #f3ede4;
+  --imkon-banner-from: #f3ded0;
+  --imkon-banner-to: #faf0e6;
+  --imkon-strip: #fbf3ea;
+  --imkon-event-border: #f0e2d3;
+  --imkon-dot-gray: #b4aa9c;
+  --imkon-accent: #ea580c;
+  --imkon-accent-dark: #c2410c;
+  --imkon-row-hover: #fbf8f3;
+  --imkon-nav: #6b6257;
+  --imkon-nav-hover: #f7f2eb;
+  --imkon-label: #a89f92;
+  color-scheme: light;
+}
+
+.dark, html.dark {
+  --imkon-cream: #12100e;        /* Deep warm charcoal background */
+  --imkon-card: #1c1917;         /* Warm dark elevated surface */
+  --imkon-border: #2c2724;     /* Crisp warm border */
+  --imkon-border-warm: #383029; /* Warm border highlight */
+  --imkon-maroon: #ff7a50;     /* Vibrant warm orange highlight in dark mode */
+  --imkon-maroon-dark: #ff9e7d;
+  --imkon-ink: #f5f2eb;        /* Crisp warm off-white primary text */
+  --imkon-muted: #a89f91;      /* Readable secondary text */
+  --imkon-beige: #2b2520;        /* Surface 2 / active tab / hover */
+  --imkon-beige-dark: #362e27;   /* Surface 3 */
+  --imkon-banner-from: #3a2218;    /* Dark warm banner gradient */
+  --imkon-banner-to: #241711;
+  --imkon-strip: #221c17;        /* Stats strip background */
+  --imkon-event-border: #3d3328;
+  --imkon-dot-gray: #665d52;
+  --imkon-accent: #f97316;    /* Vibrant accent orange */
+  --imkon-accent-dark: #ff7a3d;
+  --imkon-row-hover: #26201a;       /* Row hover background */
+  --imkon-nav: #a89f91;        /* Nav link text */
+  --imkon-nav-hover: #2a241f;       /* Nav link hover background */
+  --imkon-label: #91877a;      /* Label text */
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-warm);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Input Autofill Styling for Dark Mode */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #f5f2eb;
+  -webkit-box-shadow: 0 0 0px 1000px #1c1917 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+@keyframes card-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

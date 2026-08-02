@@ -1,0 +1,40 @@
+{
+  "backToJournals": "Journals",
+  "title": "Electronic Gradebook",
+  "openJournal": "Open journal",
+  "totalJournals": "Total Journals",
+  "activeCourses": "Active Courses",
+  "noJournals": "No journals found",
+  "tryFilterChange": "Try changing the filter",
+  "notFound": "Journal not found",
+  "loadFailedCourse": "Failed to load course",
+  "loadFailed": "Failed to load journal data",
+  "loading": "Loading…",
+  "studentsCount": "{{count}} students",
+  "noPeriodsYet": "No journal periods have been created yet",
+  "entriesSaved": "Attendance saved",
+  "entriesSaveFailed": "Failed to save attendance",
+  "summarySaved": "Scores saved",
+  "summarySaveFailed": "Failed to save scores",
+  "period": {
+    "week": "Week {{n}}",
+    "month": "Month {{n}}"
+  },
+  "chart": {
+    "title": "Score progress",
+    "average": "Average",
+    "noData": "No chart data yet"
+  },
+  "table": {
+    "students": "Students",
+    "endOfWeek": "End of week",
+    "endOfMonth": "End of month",
+    "att": "Att",
+    "score": "Score",
+    "bonus": "Bonus",
+    "exam": "Exam",
+    "sum": "Sum",
+    "comment": "Comment",
+    "noStudentsInCourse": "There are no students in this course"
+  }
+}

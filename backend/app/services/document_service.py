@@ -49,7 +49,7 @@ class DocumentService:
         file_size = len(content)
         if file_size > 50 * 1024 * 1024:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="File size exceeds the 50MB limit"
             )
 

@@ -1,0 +1,43 @@
+{
+  "title": "Students",
+  "subtitle": "Manage student accounts, profiles, and documents",
+  "addStudent": "Add Student",
+  "editStudent": "Edit Student",
+  "searchPlaceholder": "Search by name, email, or phone...",
+  "filterStatus": "All statuses",
+  "name": "Student Name",
+  "contacts": "Contacts",
+  "courses": "Courses",
+  "registeredAt": "Registered At",
+  "actions": "Actions",
+  "loading": "Loading students list...",
+  "empty": "No students found",
+  "coursesTab": "Courses",
+  "performanceTab": "Performance",
+  "noCourses": "The student is not enrolled in any course",
+  "activeCourses": "Active courses",
+  "attendance": "Attendance",
+  "avgScore": "Average score",
+  "absences": "Absences",
+  "totalLessons": "Total lessons",
+  "table": {
+    "student": "Student",
+    "phone": "Phone",
+    "paymentDay": "Payment day",
+    "created": "Registered",
+    "empty": "No students found",
+    "error": "Failed to load data"
+  },
+  "form": {
+    "newStudentTitle": "New Student",
+    "editStudentTitle": "Edit Student",
+    "firstNameLabel": "First Name",
+    "lastNameLabel": "Last Name",
+    "phoneLabel": "Phone",
+    "dobLabel": "Date of Birth",
+    "telegramChatIdLabel": "Parent's Telegram chat ID",
+    "paymentDayLabel": "Payment day (monthly)",
+    "paymentDayHelp": "A number from 1 to 28",
+    "saving": "Saving…"
+  }
+}

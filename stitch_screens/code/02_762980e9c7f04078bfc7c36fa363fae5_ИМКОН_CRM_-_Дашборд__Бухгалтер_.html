@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Финансовый обзор - ИМКОН CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#ab3500",
+                      "primary-fixed-dim": "#ffb59c",
+                      "on-secondary-container": "#fefbff",
+                      "on-primary-fixed-variant": "#832700",
+                      "on-tertiary-container": "#f6fff5",
+                      "surface": "#faf9f6",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#ce470e",
+                      "error": "#ba1a1a",
+                      "tertiary-container": "#0d8552",
+                      "primary": "#a73400",
+                      "error-container": "#ffdad6",
+                      "on-primary-container": "#fffbff",
+                      "surface-dim": "#dbdad7",
+                      "outline": "#8d7167",
+                      "on-primary-fixed": "#390c00",
+                      "background": "#faf9f6",
+                      "on-surface": "#1a1c1a",
+                      "surface-variant": "#e3e2e0",
+                      "on-tertiary": "#ffffff",
+                      "surface-container": "#efeeeb",
+                      "on-error-container": "#93000a",
+                      "secondary-container": "#426ce5",
+                      "primary-fixed": "#ffdbcf",
+                      "on-secondary-fixed-variant": "#003cac",
+                      "on-tertiary-fixed": "#002110",
+                      "on-surface-variant": "#594139",
+                      "surface-container-low": "#f4f3f1",
+                      "on-background": "#1a1c1a",
+                      "inverse-primary": "#ffb59c",
+                      "secondary-fixed": "#dbe1ff",
+                      "tertiary-fixed-dim": "#74db9f",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#e3e2e0",
+                      "inverse-surface": "#2f312f",
+                      "tertiary-fixed": "#90f7ba",
+                      "secondary": "#2152ca",
+                      "outline-variant": "#e2bfb4",
+                      "on-tertiary-fixed-variant": "#005230",
+                      "surface-bright": "#faf9f6",
+                      "surface-container-high": "#e9e8e5",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#f2f1ee",
+                      "tertiary": "#006a40",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#b5c4ff",
+                      "on-secondary-fixed": "#00164d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "container-padding": "24px",
+                      "base": "4px",
+                      "section-gap": "32px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "card-subheading": [
+                              "Manrope"
+                      ],
+                      "caption": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "kpi": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Manrope"
+                      ],
+                      "section-heading": [
+                              "Manrope"
+                      ],
+                      "data-mono": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "card-subheading": [
+                              "18px",
+                              {
+                                      "lineHeight": "26px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "caption": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "kpi": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "section-heading": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-lg min-h-screen">
+<!-- App Shell -->
+<div class="flex">
+<!-- SideNavBar Component -->
+<nav class="w-[240px] h-full fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-gutter px-base z-20 hidden md:flex">
+<!-- Header -->
+<div class="px-4 mb-8">
+<div class="font-h1 text-h1 font-bold text-primary">ИМКОН</div>
+<div class="text-caption font-caption text-on-surface-variant">CRM</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 bg-surface-container-high text-secondary rounded-full px-4 py-2 font-bold font-label-md text-label-md scale-98 transition-transform group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span>Дашборд</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 font-label-md text-label-md hover:bg-surface-container-low transition-colors rounded-full active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Студенты</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 font-label-md text-label-md hover:bg-surface-container-low transition-colors rounded-full active:scale-95" href="#">
+<span class="material-symbols-outlined">school</span>
+<span>Курсы</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 font-label-md text-label-md hover:bg-surface-container-low transition-colors rounded-full active:scale-95" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Финансы</span>
+</a>
+</div>
+<!-- Footer -->
+<div class="mt-auto">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 font-label-md text-label-md hover:bg-surface-container-low transition-colors rounded-full active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>⚙ Настройки</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[240px] flex flex-col min-h-screen">
+<!-- TopNavBar Component -->
+<header class="h-16 fixed top-0 right-0 left-[240px] border-b border-outline-variant bg-surface flex items-center justify-between px-container-padding z-10 hidden md:flex">
+<div class="flex-1 max-w-md mr-8">
+<div class="relative group w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-full border border-outline-variant bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary outline-none font-label-md text-label-md text-on-surface transition-all" placeholder="Поиск..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 hover:bg-surface-container-lowest transition-colors rounded-full p-1 pl-3 duration-200 ease-in-out border border-transparent hover:border-outline-variant">
+<span class="font-label-md text-label-md text-on-surface">Фарход С.</span>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm">ФС</div>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="mt-16 p-container-padding flex-1 bg-surface-bright">
+<!-- Heading -->
+<div class="mb-section-gap">
+<h1 class="font-h1 text-h1 text-on-surface">Финансовый обзор</h1>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- KPI Cards (Top Row) -->
+<div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- KPI Card 1 -->
+<div class="bg-on-secondary rounded-xl p-6 border border-outline-variant hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)] transition-shadow duration-300">
+<h3 class="font-card-subheading text-card-subheading text-on-surface-variant mb-2">К получению</h3>
+<div class="font-kpi text-kpi text-on-surface font-data-mono text-right tabular-nums">48 200 TJS</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="bg-on-secondary rounded-xl p-6 border border-outline-variant hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)] transition-shadow duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-24 h-24 bg-error-container opacity-20 rounded-bl-full -mr-4 -mt-4 pointer-events-none"></div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-card-subheading text-card-subheading text-on-surface-variant">Не оплатили</h3>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Внимание</span>
+</div>
+<div class="font-kpi text-kpi text-error font-data-mono text-right tabular-nums">12 400 TJS</div>
+</div>
+</div>
+<!-- Comparison Section -->
+<div class="lg:col-span-5 bg-on-secondary rounded-xl p-6 border border-outline-variant hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)] transition-shadow duration-300 flex flex-col">
+<h2 class="font-section-heading text-section-heading text-on-surface mb-6">Сбор платежей за месяц</h2>
+<div class="flex-1 flex flex-col justify-center gap-8">
+<!-- Progress Bar Container -->
+<div class="relative pt-8 pb-4">
+<!-- Labels -->
+<div class="flex justify-between text-label-md font-label-md mb-3">
+<span class="text-tertiary">Собрано</span>
+<span class="text-on-surface-variant">Ожидается</span>
+</div>
+<!-- Bar -->
+<div class="h-6 w-full bg-surface-container-highest rounded-full overflow-hidden flex relative">
+<!-- Gathered (Success Green) -->
+<div class="h-full bg-tertiary rounded-l-full" style="width: 74%;"></div>
+</div>
+<!-- Values -->
+<div class="flex justify-between font-data-mono text-data-mono mt-3">
+<span class="text-tertiary font-bold tabular-nums">35 800 TJS</span>
+<span class="text-on-surface-variant tabular-nums">48 200 TJS</span>
+</div>
+<!-- Percentage Indicator (Calculated ~74%) -->
+<div class="absolute top-0 left-[74%] -translate-x-1/2 bg-surface-variant px-2 py-1 rounded text-caption font-caption text-on-surface font-bold shadow-sm before:content-[''] before:absolute before:-bottom-1 before:left-1/2 before:-translate-x-1/2 before:border-l-4 before:border-l-transparent before:border-r-4 before:border-r-transparent before:border-t-4 before:border-t-surface-variant">
+                                    74%
+                                </div>
+</div>
+</div>
+</div>
+<!-- Debtors Preview List -->
+<div class="lg:col-span-7 bg-on-secondary rounded-xl p-0 border border-outline-variant hover:shadow-[0_4px_16px_rgba(28,27,26,0.08)] transition-shadow duration-300 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-surface-variant">
+<h2 class="font-section-heading text-section-heading text-on-surface">Список должников (Топ-5)</h2>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface sticky top-0 border-b border-surface-variant">
+<tr>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Студент</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap">Курс</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap text-right">Сумма долга</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant font-medium whitespace-nowrap text-right">Дней просрочки</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="p-4 font-body-lg text-body-lg text-on-surface font-medium">Умед Раджабов</td>
+<td class="p-4 font-label-md text-label-md text-on-surface-variant">IELTS Intensive</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right font-medium tabular-nums">800 TJS</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right tabular-nums">
+<span class="inline-flex items-center justify-center bg-error-container text-error rounded-full px-2 py-0.5 text-xs font-bold">12 дней</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="p-4 font-body-lg text-body-lg text-on-surface font-medium">Даврон Зикиров</td>
+<td class="p-4 font-label-md text-label-md text-on-surface-variant">SAT Math Prep</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right font-medium tabular-nums">1200 TJS</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right tabular-nums">
+<span class="inline-flex items-center justify-center bg-error-container text-error rounded-full px-2 py-0.5 text-xs font-bold">10 дней</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="p-4 font-body-lg text-body-lg text-on-surface font-medium">Малика Юсупова</td>
+<td class="p-4 font-label-md text-label-md text-on-surface-variant">Python для начинающих</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right font-medium tabular-nums">600 TJS</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right tabular-nums">
+<span class="inline-flex items-center justify-center bg-error-container text-error rounded-full px-2 py-0.5 text-xs font-bold">8 дней</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="p-4 font-body-lg text-body-lg text-on-surface font-medium">Шахриёр А.</td>
+<td class="p-4 font-label-md text-label-md text-on-surface-variant">SAT Math Prep</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right font-medium tabular-nums">1200 TJS</td>
+<td class="p-4 font-data-mono text-data-mono text-error-container bg-error-container text-error rounded-full inline-block px-2 py-0.5 text-xs font-bold w-fit ml-auto float-right">5 дней</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="p-4 font-body-lg text-body-lg text-on-surface font-medium">Фахридин М.</td>
+<td class="p-4 font-label-md text-label-md text-on-surface-variant">IELTS Intensive</td>
+<td class="p-4 font-data-mono text-data-mono text-error text-right font-medium tabular-nums">800 TJS</td>
+<td class="p-4 font-data-mono text-data-mono text-error-container bg-error-container text-error rounded-full inline-block px-2 py-0.5 text-xs font-bold w-fit ml-auto float-right">3 дня</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-surface mt-auto flex justify-end">
+<a class="font-label-md text-label-md text-secondary hover:bg-secondary/10 px-4 py-2 rounded-lg transition-colors flex items-center gap-1 group" href="#">
+                                Открыть полную аналитику
+                                <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

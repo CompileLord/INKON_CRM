@@ -1,0 +1,7 @@
+{
+  "tool_name": "WebFetch",
+  "tool_input_preview": "{\"url\":\"https://antigravity.google/docs/cli/headless\",\"prompt\":\"How does agy determine its project/workspace folder when run in headless/print mode (agy -p or --print)? Does it default to the current ...",
+  "error": "timeout of 60000ms exceeded",
+  "timestamp": "2026-07-31T22:55:50.742Z",
+  "retry_count": 1
+}

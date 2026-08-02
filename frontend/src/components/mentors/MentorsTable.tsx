@@ -1,0 +1,239 @@
+import { useNavigate } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { PersonAvatar } from "../ui/PersonAvatar";
+import { UserStatusBadge } from "../ui/UserStatusBadge";
+import { Pagination } from "../ui/Pagination";
+import { TableSkeletonRows } from "../ui/TableSkeletonRows";
+import { TableErrorState } from "../ui/TableErrorState";
+import { resolveMediaUrl } from "../../lib/users/media";
+import type { User } from "../../lib/users/types";
+
+const COLUMN_COUNT = 6;
+
+interface MentorsTableProps {
+  mentors: User[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  onPageChange: (page: number) => void;
+  onEdit: (mentor: User) => void;
+  onDeleteRequest: (mentor: User) => void;
+}
+
+function formatCreatedAt(iso: string, locale: string = "ru-RU") {
+  return new Date(iso).toLocaleDateString(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+export function MentorsTable({
+  mentors,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  isLoading,
+  isError,
+  onRetry,
+  onPageChange,
+  onEdit,
+  onDeleteRequest,
+}: MentorsTableProps) {
+  const { t, i18n } = useTranslation(["mentors", "common"]);
+  const navigate = useNavigate();
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const showEmpty = !isLoading && !isError && mentors.length === 0;
+  const showRows = !isLoading && !isError && mentors.length > 0;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border-warm bg-card">
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-180 border-collapse text-left">
+          <thead>
+            <tr className="border-b border-border-warm bg-strip">
+              <th className="px-5 py-3 text-[13px] font-semibold text-nav">{t("table.mentor")}</th>
+              <th className="px-5 py-3 text-[13px] font-semibold text-nav">{t("table.phone")}</th>
+              <th className="px-5 py-3 text-[13px] font-semibold text-nav">{t("table.paymentDay")}</th>
+              <th className="px-5 py-3 text-[13px] font-semibold text-nav">{t("common:status")}</th>
+              <th className="px-5 py-3 text-[13px] font-semibold text-nav">{t("table.created")}</th>
+              <th className="px-5 py-3 text-right text-[13px] font-semibold text-nav">
+                {t("common:actions")}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && <TableSkeletonRows columns={COLUMN_COUNT} />}
+            {!isLoading && isError && <TableErrorState columns={COLUMN_COUNT} onRetry={onRetry} />}
+
+            {showRows &&
+              mentors.map((mentor) => (
+                <tr
+                  key={mentor.id}
+                  onClick={() => navigate(`/mentors/${mentor.id}`)}
+                  className="border-b border-beige transition-colors duration-150 last:border-b-0 hover:bg-row-hover cursor-pointer"
+                >
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <PersonAvatar
+                        firstName={mentor.first_name}
+                        lastName={mentor.last_name}
+                        photoUrl={resolveMediaUrl(mentor.thumbnail_path) ?? undefined}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-ink hover:underline">
+                          {mentor.first_name} {mentor.last_name}
+                        </div>
+                        <div className="truncate text-xs text-muted">{mentor.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-sm text-ink">{mentor.phone ?? "—"}</td>
+                  <td className="px-5 py-3 text-sm text-ink">
+                    {mentor.payment_day_of_month ?? "—"}
+                  </td>
+                  <td className="px-5 py-3">
+                    <UserStatusBadge isDeleted={mentor.is_deleted} />
+                  </td>
+                  <td className="px-5 py-3 text-sm text-ink">
+                    {formatCreatedAt(mentor.created_at, i18n.language)}
+                  </td>
+                  <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(mentor);
+                        }}
+                        aria-label={t("common:edit")}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteRequest(mentor);
+                        }}
+                        aria-label={t("common:delete")}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+            {showEmpty && (
+              <tr>
+                <td colSpan={COLUMN_COUNT} className="px-5 py-10 text-center text-sm text-muted">
+                  {t("table.empty")}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Stacked cards — below md */}
+      <div className="flex flex-col gap-3 p-3 md:hidden">
+        {isLoading &&
+          Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-lg bg-beige" />
+          ))}
+
+        {!isLoading && isError && (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-sm text-muted">{t("table.error")}</p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-lg border border-border-warm bg-card px-3 py-2 text-sm font-medium text-ink hover:bg-strip"
+            >
+              {t("common:retry")}
+            </button>
+          </div>
+        )}
+
+        {showEmpty && <p className="px-2 py-6 text-center text-sm text-muted">{t("table.empty")}</p>}
+
+        {showRows &&
+          mentors.map((mentor) => (
+            <div key={mentor.id} className="rounded-lg border border-border-warm p-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <PersonAvatar
+                    firstName={mentor.first_name}
+                    lastName={mentor.last_name}
+                    photoUrl={resolveMediaUrl(mentor.thumbnail_path) ?? undefined}
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-ink">
+                      {mentor.first_name} {mentor.last_name}
+                    </div>
+                    <div className="truncate text-xs text-muted">{mentor.email}</div>
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(mentor)}
+                    aria-label={t("common:edit")}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteRequest(mentor)}
+                    aria-label={t("common:delete")}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted">
+                <div>
+                  <dt>{t("table.phone")}</dt>
+                  <dd className="text-ink">{mentor.phone ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt>{t("table.paymentDay")}</dt>
+                  <dd className="text-ink">{mentor.payment_day_of_month ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt>{t("common:status")}</dt>
+                  <dd>
+                    <UserStatusBadge isDeleted={mentor.is_deleted} />
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("table.created")}</dt>
+                  <dd className="text-ink">{formatCreatedAt(mentor.created_at, i18n.language)}</dd>
+                </div>
+              </dl>
+            </div>
+          ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-warm px-5 py-3.5">
+        <p className="text-sm text-muted">
+          {total > 0 ? `${t("common:showing")} ${from}–${to} ${t("common:of")} ${total}` : t("common:noData")}
+        </p>
+        <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,51 @@
+{
+  "title": "Преподаватели",
+  "subtitle": "Управление преподавательским составом и расписанием групп",
+  "addMentor": "Добавить преподавателя",
+  "editMentor": "Редактировать преподавателя",
+  "searchPlaceholder": "Поиск преподавателя...",
+  "name": "ФИО Преподавателя",
+  "contacts": "Контакты",
+  "specialization": "Специализация",
+  "activeGroups": "Активные группы",
+  "loading": "Загрузка списка преподавателей...",
+  "empty": "Преподаватели не найдены",
+  "notFound": "Преподаватель не найден",
+  "loadError": "Не удалось загрузить профиль ментора",
+  "period": "Период",
+  "price": "Цена",
+  "month": "мес",
+  "activeCoursesCount": "Активных курсов",
+  "avgStudentScore": "Средний балл",
+  "activeStudentsCount": "Активных студентов",
+  "totalStudents": "Всего студентов",
+  "avgGroupScore": "Средний балл группы",
+  "noActiveCourses": "Активных курсов нет",
+  "performanceTitle": "Успеваемость",
+  "performanceSubtitle": "Средний балл студентов по всем группам ментора",
+  "performanceHelp": "Итоговый балл (Sum) по 100-балльной шкале",
+  "tabs": {
+    "courses": "Курсы",
+    "performance": "Успеваемость",
+    "analytics": "Аналитика",
+    "documents": "Документы"
+  },
+  "table": {
+    "mentor": "Преподаватель",
+    "phone": "Телефон",
+    "paymentDay": "День оплаты",
+    "created": "Дата регистрации",
+    "empty": "Преподаватели не найдены",
+    "error": "Не удалось загрузить данные"
+  },
+  "form": {
+    "newMentorTitle": "Новый ментор",
+    "editMentorTitle": "Редактировать ментора",
+    "firstNameLabel": "Имя",
+    "lastNameLabel": "Фамилия",
+    "phoneLabel": "Телефон",
+    "dobLabel": "Дата рождения",
+    "telegramChatIdLabel": "Telegram chat ID",
+    "saving": "Сохранение…"
+  }
+}

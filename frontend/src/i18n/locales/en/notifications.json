@@ -1,0 +1,18 @@
+{
+  "title": "System Notifications Log",
+  "subtitle": "Dispatch log of Telegram & client messages",
+  "searchPlaceholder": "Search by recipient or text...",
+  "allStatuses": "All statuses",
+  "sent": "Sent",
+  "failed": "Failed",
+  "recipient": "Recipient",
+  "type": "Type",
+  "message": "Message",
+  "retry": "Retry",
+  "retrying": "Resending for #{{id}}",
+  "markAllRead": "Mark all as read",
+  "viewHistory": "View notification history",
+  "markRead": "Mark as read",
+  "read": "Read",
+  "noNotifications": "No notifications"
+}

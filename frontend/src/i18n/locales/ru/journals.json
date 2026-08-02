@@ -1,0 +1,40 @@
+{
+  "backToJournals": "Журналы",
+  "title": "Электронный журнал",
+  "openJournal": "Открыть журнал",
+  "totalJournals": "Всего журналов",
+  "activeCourses": "Активные курсы",
+  "noJournals": "Журналы не найдены",
+  "tryFilterChange": "Попробуйте изменить фильтр",
+  "notFound": "Журнал не найден",
+  "loadFailedCourse": "Не удалось загрузить курс",
+  "loadFailed": "Не удалось загрузить данные журнала",
+  "loading": "Загрузка…",
+  "studentsCount": "{{count}} студентов",
+  "noPeriodsYet": "Периоды журнала ещё не созданы",
+  "entriesSaved": "Посещаемость сохранена",
+  "entriesSaveFailed": "Не удалось сохранить посещаемость",
+  "summarySaved": "Баллы сохранены",
+  "summarySaveFailed": "Не удалось сохранить баллы",
+  "period": {
+    "week": "Неделя {{n}}",
+    "month": "Месяц {{n}}"
+  },
+  "chart": {
+    "title": "Динамика баллов",
+    "average": "Среднее",
+    "noData": "Пока нет данных для графика"
+  },
+  "table": {
+    "students": "Студенты",
+    "endOfWeek": "Итоги недели",
+    "endOfMonth": "Итоги месяца",
+    "att": "Явка",
+    "score": "Балл",
+    "bonus": "Бонус",
+    "exam": "Экзамен",
+    "sum": "Sum",
+    "comment": "Комментарий",
+    "noStudentsInCourse": "В этом курсе нет студентов"
+  }
+}

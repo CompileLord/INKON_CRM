@@ -1,0 +1,86 @@
+{
+  "appName": "IMKON CRM",
+  "search": "Search...",
+  "cancel": "Cancel",
+  "save": "Save",
+  "saveChanges": "Save changes",
+  "delete": "Delete",
+  "edit": "Edit",
+  "create": "Create",
+  "add": "Add",
+  "actions": "Actions",
+  "status": "Status",
+  "loading": "Loading...",
+  "saving": "Saving...",
+  "error": "Error",
+  "success": "Success",
+  "close": "Close",
+  "confirm": "Confirm",
+  "back": "Back",
+  "all": "All",
+  "filter": "Filter",
+  "download": "Download",
+  "upload": "Upload",
+  "retry": "Retry",
+  "details": "Details",
+  "total": "Total",
+  "page": "Page",
+  "of": "of",
+  "noData": "No data found",
+  "refresh": "Refresh",
+  "showing": "Showing",
+  "clearFilter": "Clear filter",
+  "photo": "Photo",
+  "uploadPhoto": "Upload Photo",
+  "cancelUpload": "Cancel upload",
+  "uploadError": "Failed to upload photo",
+  "enums": {
+    "userRole": {
+      "superadmin": "Superadmin",
+      "mentor": "Teacher",
+      "student": "Student",
+      "accountant": "Accountant"
+    },
+    "userStatus": {
+      "active": "Active",
+      "archived": "Archived",
+      "inactive": "Inactive",
+      "expelled": "Expelled"
+    },
+    "courseStatus": {
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "paymentMethod": {
+      "card": "Card",
+      "cash": "Cash",
+      "bank_transfer": "Bank Transfer",
+      "transfer": "Bank Transfer"
+    },
+    "auditAction": {
+      "CREATE": "Create",
+      "UPDATE": "Update",
+      "DELETE": "Delete"
+    },
+    "examType": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "students": "Students",
+    "mentors": "Teachers",
+    "courses": "Courses",
+    "journals": "Journals",
+    "finance": "Finance",
+    "audit": "Audit",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "logout": "Log out"
+  },
+  "pagination": {
+    "previous": "Previous page",
+    "next": "Next page"
+  }
+}

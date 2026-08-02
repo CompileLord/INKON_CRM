@@ -1,0 +1,87 @@
+{
+  "title": "Courses & Groups",
+  "subtitle": "Course catalog, teacher assignments, and student rosters",
+  "addCourse": "Create Course",
+  "editCourse": "Edit Course",
+  "searchPlaceholder": "Search course by title...",
+  "filter": {
+    "all": "All",
+    "active": "Active",
+    "archived": "Archive"
+  },
+  "sort": {
+    "newest": "Newest first",
+    "price": "By price"
+  },
+  "view": {
+    "grid": "Grid",
+    "list": "List"
+  },
+  "filterStatus": "All directions",
+  "activeCourses": "Active Courses",
+  "archivedCourses": "Archived Courses",
+  "price": "Price",
+  "examType": "Exam Type",
+  "mentors": "Teachers",
+  "enrolledStudents": "Enrolled Students",
+  "roster": "Group Roster",
+  "enrollStudent": "Enroll Student",
+  "loading": "Loading courses...",
+  "empty": "No courses found",
+  "noProgressData": "No progress chart data yet",
+  "courseProgress": "Course progress",
+  "notFound": "Course not found",
+  "loadError": "Failed to load course",
+  "period": "Period",
+  "month": "mo",
+  "schedule": "Schedule",
+  "noSchedule": "No schedule set",
+  "mentorHistory": "Mentor history",
+  "noMentorHistory": "No mentor changes yet",
+  "duplicate": "Duplicate",
+  "duplicateTitle": "Duplicate course",
+  "duplicateMsg": "Create a copy of \"{{title}}\" with the same schedule, price, and mentor?",
+  "deleteTitle": "Delete course",
+  "deleteMsg": "Delete \"{{title}}\"? This action cannot be undone.",
+  "copySuffix": "copy",
+  "courseCopied": "Course copied",
+  "courseCopyError": "Failed to copy course",
+  "courseUpdated": "Course updated",
+  "courseDeleteError": "Failed to delete course",
+  "assignedFromPresent": "from {{start}} — present",
+  "days": {
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
+  },
+  "examTypeLabel": {
+    "weekly": "Weekly exam",
+    "monthly": "Monthly exam"
+  },
+  "profile": {
+    "title": "Course Page",
+    "schedule": "Class Schedule",
+    "studentsCount": "Students in group: {{count}}",
+    "maxCapacity": "Max capacity: {{count}}"
+  },
+  "form": {
+    "newCourseTitle": "New Course",
+    "editCourseTitle": "Edit Course",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "photoPathLabel": "Photo (path/URL)",
+    "startDateLabel": "Start Date",
+    "endDateLabel": "End Date",
+    "mentorLabel": "Mentor",
+    "selectMentor": "Select mentor",
+    "examTypeLabel": "Exam Type",
+    "priceLabel": "Price, TJS",
+    "immutableNotice": "Exam type, price, and schedule cannot be changed after the course is created.",
+    "scheduleLabel": "Schedule",
+    "saving": "Saving…"
+  }
+}

@@ -16,6 +16,7 @@ from app.api.v1.documents import router as documents_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.telegram import router as telegram_router
+from app.api.v1.settings import router as settings_router
 
 
 @asynccontextmanager
@@ -62,6 +63,11 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     )
 
+import os
+from fastapi.staticfiles import StaticFiles
+os.makedirs(settings.STORAGE_PATH, exist_ok=True)
+app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 app.include_router(students_router, prefix=f"{settings.API_V1_STR}/students", tags=["Students"])
@@ -74,6 +80,7 @@ app.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", 
 app.include_router(audit_logs_router, prefix=f"{settings.API_V1_STR}/audit-log", tags=["Audit Log"])
 app.include_router(notifications_router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
 app.include_router(telegram_router, prefix=f"{settings.API_V1_STR}/telegram", tags=["Telegram"])
+app.include_router(settings_router, prefix=f"{settings.API_V1_STR}", tags=["Settings"])
 
 
 @app.middleware("http")

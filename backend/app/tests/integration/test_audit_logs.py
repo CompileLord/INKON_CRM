@@ -74,8 +74,7 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
             "course_id": course_id,
             "amount": "100.00",
             "paid_at": "2026-07-12T12:00:00Z",
-            "method": "cash",
-            "discount_percent": 15
+            "method": "cash"
         },
         headers=acc_headers
     )
@@ -91,10 +90,10 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
     assert len(course_log) > 0
     assert course_log[0]["field_name"] == "mentor_id"
 
-    # Check for payment discount log
+    # Every payment is audited now, not only discounted ones.
     payment_log = [l for l in logs if l["entity_type"] == "payment"]
     assert len(payment_log) > 0
-    assert payment_log[0]["field_name"] == "discount_percent"
+    assert "amount" in {l["field_name"] for l in payment_log}
 
     # 4. Attempt retrieve as Mentor -> verify 403
     mentor_token = create_access_token(test_mentor.id, test_mentor.role)

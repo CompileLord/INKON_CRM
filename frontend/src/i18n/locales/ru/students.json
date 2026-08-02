@@ -1,0 +1,43 @@
+{
+  "title": "Студенты",
+  "subtitle": "Управление учетными записями студентов, профилями и документами",
+  "addStudent": "Добавить студента",
+  "editStudent": "Редактировать студента",
+  "searchPlaceholder": "Поиск по имени, email или телефону...",
+  "filterStatus": "Все статусы",
+  "name": "ФИО Студента",
+  "contacts": "Контакты",
+  "courses": "Курсы",
+  "registeredAt": "Дата регистрации",
+  "actions": "Действия",
+  "loading": "Загрузка списка студентов...",
+  "empty": "Студенты не найдены",
+  "coursesTab": "Курсы",
+  "performanceTab": "Успеваемость",
+  "noCourses": "Студент не зачислен ни на один курс",
+  "activeCourses": "Активные курсы",
+  "attendance": "Посещаемость",
+  "avgScore": "Средний балл",
+  "absences": "Пропущено",
+  "totalLessons": "Всего занятий",
+  "table": {
+    "student": "Студент",
+    "phone": "Телефон",
+    "paymentDay": "День оплаты",
+    "created": "Дата регистрации",
+    "empty": "Студенты не найдены",
+    "error": "Не удалось загрузить данные"
+  },
+  "form": {
+    "newStudentTitle": "Новый студент",
+    "editStudentTitle": "Редактировать студента",
+    "firstNameLabel": "Имя",
+    "lastNameLabel": "Фамилия",
+    "phoneLabel": "Телефон",
+    "dobLabel": "Дата рождения",
+    "telegramChatIdLabel": "Telegram chat ID родителя",
+    "paymentDayLabel": "День оплаты (ежемесячно)",
+    "paymentDayHelp": "Число от 1 до 28",
+    "saving": "Сохранение…"
+  }
+}

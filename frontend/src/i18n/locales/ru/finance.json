@@ -1,0 +1,47 @@
+{
+  "title": "Финансы и Оплаты",
+  "subtitle": "Управление платежами, учет кассы и реестр задолженностей",
+  "acceptPayment": "Принять платеж",
+  "tabs": {
+    "analytics": "Финансовые показатели",
+    "debtors": "Реестр должников"
+  },
+  "overdueDaysCount": "{{count}} дн.",
+  "analytics": {
+    "title": "Финансовые показатели",
+    "subtitle": "Обзор поступлений и задолженностей",
+    "totalReceivable": "Чистая дебиторка (срок наступил)",
+    "totalCollected": "Собрано за период",
+    "unpaidStudentsCount": "Должников (студентов)",
+    "topDebtors": "Крупнейшие должники",
+    "recentTransactions": "Последние транзакции",
+    "studentNumber": "Студент №{{id}}",
+    "courseNumber": "Курс №{{id}}",
+    "unapplied": "Не распределён"
+  },
+  "debtors": {
+    "title": "Список должников",
+    "subtitle": "Студенты с задолженностью по оплате",
+    "table": {
+      "student": "Студент",
+      "course": "Курс",
+      "priceAtEnrollment": "Стоимость",
+      "totalPaid": "Оплачено",
+      "debtAmount": "Долг",
+      "overdue": "Просрочка"
+    }
+  },
+  "paymentModal": {
+    "title": "Принять оплату",
+    "acceptPayment": "Принять платеж",
+    "amount": "Сумма",
+    "date": "Дата",
+    "method": "Способ оплаты",
+    "totalToCredit": "Итог к зачислению",
+    "comment": "Комментарий",
+    "commentPlaceholder": "Примечание к транзакции...",
+    "selectCourse": "Выберите курс",
+    "saveError": "Не удалось принять платеж",
+    "discountHint": "Полученные наличные. Скидка оформляется отдельной операцией."
+  }
+}
