@@ -4,6 +4,11 @@ MAX_HOMEWORK_SCORE_PER_LESSON: int = 5
 ATTENDANCE_POINT_PER_LESSON: int = 1
 MAX_BONUS_SCORE: int = 20
 EXAM_MAX_SCORE_LIMIT: int = 100
+
+# Matches the journals.exam_max_score column default; used when a journal's own
+# weight cannot be read.
+DEFAULT_JOURNAL_EXAM_MAX_SCORE: int = 70
+
 DEFAULT_EXAM_MAX_SCORE: dict[CourseExamType, int] = {
     CourseExamType.WEEKLY: 70,
     CourseExamType.MONTHLY: 60,
@@ -15,8 +20,8 @@ def default_exam_max_score(exam_type: CourseExamType | str) -> int:
         try:
             exam_type = CourseExamType(exam_type)
         except ValueError:
-            return 70
-    return DEFAULT_EXAM_MAX_SCORE.get(exam_type, 70)
+            return DEFAULT_JOURNAL_EXAM_MAX_SCORE
+    return DEFAULT_EXAM_MAX_SCORE.get(exam_type, DEFAULT_JOURNAL_EXAM_MAX_SCORE)
 
 
 def max_period_score(total_lessons: int, exam_max_score: int) -> int:

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
-from app.core.scoring import ATTENDANCE_POINT_PER_LESSON, max_period_score
+from app.core.scoring import ATTENDANCE_POINT_PER_LESSON, DEFAULT_JOURNAL_EXAM_MAX_SCORE, max_period_score
 
 
 class SumCalculationService:
@@ -13,7 +13,7 @@ class SumCalculationService:
     async def recalculate(self, journal_id: int, student_id: int) -> None:
         journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
         journal = journal_result.scalars().first()
-        exam_max_score_val = journal.exam_max_score if journal else 70
+        exam_max_score_val = journal.exam_max_score if journal else DEFAULT_JOURNAL_EXAM_MAX_SCORE
 
         entries_query = select(JournalEntry).filter(
             JournalEntry.journal_id == journal_id,

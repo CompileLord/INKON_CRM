@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.scoring import max_period_score
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
@@ -111,9 +112,12 @@ class EnrollmentService:
             summaries_to_add.append(JournalStudentSummary(
                 journal_id=journal.id,
                 student_id=student_id,
+                homework_score=0,
+                attendance_score=0,
                 exam_score=0,
                 bonus_score=0,
                 sum_score=0,
+                max_period_score=max_period_score(len(lesson_dates), journal.exam_max_score),
                 attendance_count=0,
                 total_lessons=len(lesson_dates),
                 version=1

@@ -2,6 +2,7 @@ from datetime import date, timedelta
 import calendar
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.scoring import default_exam_max_score
 from app.models.course import Course, CourseExamType
 from app.models.journal import Journal, JournalPeriodType
 
@@ -14,6 +15,7 @@ class JournalGenerationService:
         journals: List[Journal] = []
         start_date = course.start_date
         end_date = course.end_date
+        exam_max_score = default_exam_max_score(course.exam_type)
 
         if course.exam_type == CourseExamType.WEEKLY:
             curr_start = start_date
@@ -25,7 +27,8 @@ class JournalGenerationService:
                     period_label=f"Week {week_idx}",
                     period_start=curr_start,
                     period_end=curr_end,
-                    period_type=JournalPeriodType.WEEK
+                    period_type=JournalPeriodType.WEEK,
+                    exam_max_score=exam_max_score
                 )
                 self.db.add(journal)
                 journals.append(journal)
@@ -45,7 +48,8 @@ class JournalGenerationService:
                     period_label=f"Month {month_idx}",
                     period_start=period_start,
                     period_end=period_end,
-                    period_type=JournalPeriodType.MONTH
+                    period_type=JournalPeriodType.MONTH,
+                    exam_max_score=exam_max_score
                 )
                 self.db.add(journal)
                 journals.append(journal)

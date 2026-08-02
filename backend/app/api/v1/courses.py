@@ -226,15 +226,19 @@ async def get_progress_chart(
     for idx, enroll in enumerate(enrollments):
         student = enroll.student
         scores = []
+        max_scores = []
         percentages = []
         for j in journals:
             sum_score, max_score = summary_map.get((student.id, j.id), (0, 0))
             scores.append(sum_score)
+            max_scores.append(max_score)
             percentages.append(score_percentage(sum_score, max_score))
 
         avg = round(sum(scores) / len(journals), 2) if journals else 0.0
+        avg_max = round(sum(max_scores) / len(journals), 2) if journals else 0.0
         avg_pct = round(sum(percentages) / len(journals), 2) if journals else 0.0
         scores.append(avg)
+        max_scores.append(avg_max)
         percentages.append(avg_pct)
 
         color_hex = enroll.color_hex if enroll.color_hex and enroll.color_hex != "#FF5733" else COLOR_PALETTE[idx % len(COLOR_PALETTE)]
@@ -244,11 +248,18 @@ async def get_progress_chart(
             "name": f"{student.first_name} {student.last_name}",
             "color_hex": color_hex,
             "scores": scores,
+            "max_scores": max_scores,
             "percentages": percentages
         })
 
+    periods = [
+        {"id": j.id, "period_label": j.period_label}
+        for j in journals
+    ]
+
     return {
         "labels": labels,
+        "periods": periods,
         "datasets": datasets
     }
 

@@ -105,6 +105,30 @@
   },
   "hotPaths": [
     {
+      "path": "backend/app/services/journal_generation_service.py",
+      "accessCount": 4,
+      "lastAccessed": 1785672037993,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/services/journal_service.py",
+      "accessCount": 2,
+      "lastAccessed": 1785647239955,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/services/enrollment_service.py",
+      "accessCount": 2,
+      "lastAccessed": 1785672047931,
+      "type": "file"
+    },
+    {
+      "path": "PRD-IMKON-CRM.md",
+      "accessCount": 2,
+      "lastAccessed": 1785672107010,
+      "type": "file"
+    },
+    {
       "path": "backend/app/models/payment.py",
       "accessCount": 1,
       "lastAccessed": 1785529401654,
@@ -132,6 +156,30 @@
       "path": "backend/scripts/generate_contract.py",
       "accessCount": 1,
       "lastAccessed": 1785536472630,
+      "type": "file"
+    },
+    {
+      "path": "backend/app/api/v1/courses.py",
+      "accessCount": 1,
+      "lastAccessed": 1785647224718,
+      "type": "file"
+    },
+    {
+      "path": "COURSE_DETAIL_PAGE_PLAN.md",
+      "accessCount": 1,
+      "lastAccessed": 1785671012553,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/pages/JournalDetail.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1785673016994,
+      "type": "file"
+    },
+    {
+      "path": "frontend/src/components/journals/JournalScoreChart.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1785673017202,
       "type": "file"
     }
   ],

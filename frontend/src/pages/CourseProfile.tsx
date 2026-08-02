@@ -12,6 +12,7 @@ import {
 } from "../lib/courses/hooks";
 import { buildCourseCreatePayload, buildCourseFormValues } from "../lib/courses/formMapping";
 import { useMentorProfile } from "../lib/users/hooks";
+import { useCourseRoster } from "../lib/enrollments/hooks";
 import { dateOnlyToDate } from "../lib/users/dates";
 import { resolveMediaUrl } from "../lib/users/media";
 import { formatMoney } from "../lib/money";
@@ -22,6 +23,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { CourseFormPanel } from "../components/courses/CourseFormPanel";
 import { CourseProgressChart } from "../components/courses/CourseProgressChart";
 import { CourseRosterSection } from "../components/courses/CourseRosterSection";
+import { CourseDetailMetricsStrip } from "../components/courses/CourseDetailMetricsStrip";
 
 import { useAuthStore } from "../store/authStore";
 
@@ -58,7 +60,6 @@ export function CourseProfile() {
   const numericId = id ? Number(id) : undefined;
   const courseId = Number.isFinite(numericId) ? numericId : undefined;
 
-  // 0=Mon … 6=Sun — must match ScheduleEditor DAYS array convention
   const dayLabels = [
     t("days.mon", "Пн"),
     t("days.tue", "Вт"),
@@ -74,11 +75,12 @@ export function CourseProfile() {
     monthly: t("examTypeLabel.monthly", "Ежемесячный экзамен"),
   };
 
-  const { data: course, isLoading, isError, refetch } = useCourse(courseId);
+  const { data: course, isLoading, isFetching, isError, refetch } = useCourse(courseId);
   const { data: schedule } = useCourseSchedule(courseId);
   const { data: mentorHistory } = useCourseMentorHistory(courseId, isSuperAdmin);
   const { data: progressChart } = useCourseProgressChart(courseId);
   const { data: mentorProfile } = useMentorProfile(course?.mentor_id);
+  const { rows: rosterRows } = useCourseRoster(courseId);
 
   const copyCourse = useCopyCourse();
   const deleteCourse = useDeleteCourse();
@@ -134,7 +136,10 @@ export function CourseProfile() {
   };
 
   const backLink = (
-    <Link to="/courses" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
+    <Link
+      to="/courses"
+      className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-maroon hover:underline dark:text-maroon-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon/30 rounded-md px-1"
+    >
       <ArrowLeft size={16} /> {t("common:nav.courses", "Курсы")}
     </Link>
   );
@@ -150,9 +155,33 @@ export function CourseProfile() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 animate-pulse">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading", "Загрузка…")}</div>
+
+        <div className="rounded-2xl border border-border-warm bg-card p-6">
+          <div className="flex flex-wrap justify-between gap-4">
+            <div className="space-y-3">
+              <div className="h-5 w-24 rounded-full bg-strip" />
+              <div className="h-7 w-64 rounded-lg bg-strip" />
+              <div className="h-4 w-96 rounded-md bg-strip" />
+            </div>
+            <div className="h-10 w-32 rounded-lg bg-strip" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 rounded-2xl border border-border-warm bg-card p-4">
+              <div className="h-4 w-20 rounded-md bg-strip" />
+              <div className="mt-3 h-7 w-16 rounded-md bg-strip" />
+            </div>
+          ))}
+        </div>
+
+        <div className="h-72 rounded-2xl border border-border-warm bg-card p-5">
+          <div className="h-6 w-40 rounded-md bg-strip" />
+          <div className="mt-4 h-48 w-full rounded-xl bg-strip" />
+        </div>
       </div>
     );
   }
@@ -174,16 +203,16 @@ export function CourseProfile() {
   const isActive = course.status === "active";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className={`flex flex-col gap-5 ${isFetching ? "opacity-75 transition-opacity duration-200" : ""}`}>
       {backLink}
 
-      <div className="overflow-hidden rounded-xl border border-border-warm bg-card">
+      <div className="overflow-hidden rounded-2xl border border-border-warm bg-card shadow-xs">
         {course.photo_path && (
           <div className="h-44 w-full overflow-hidden border-b border-border-warm bg-strip">
             <img
               src={resolveMediaUrl(course.photo_path) ?? undefined}
               alt={course.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
             />
           </div>
         )}
@@ -192,8 +221,10 @@ export function CourseProfile() {
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={[
-                  "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium",
-                  isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-600",
+                  "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border",
+                  isActive
+                    ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-stone-500/10 text-stone-600 dark:bg-stone-500/20 dark:text-stone-400 border-stone-500/20",
                 ].join(" ")}
               >
                 {isActive ? t("common:enums.courseStatus.active", "Активен") : t("common:enums.courseStatus.archived", "Архив")}
@@ -202,14 +233,14 @@ export function CourseProfile() {
                 {examTypeLabels[course.exam_type]}
               </span>
             </div>
-            <h1 className="mt-1.5 text-xl font-bold text-ink">{course.title}</h1>
+            <h1 className="mt-1.5 text-2xl font-bold text-ink">{course.title}</h1>
             <p className="mt-1 max-w-2xl text-sm text-muted">{course.description}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <Link
               to={`/journals/${course.id}`}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              className="inline-flex items-center gap-2 rounded-lg bg-maroon px-4 py-2 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-maroon-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon/40"
             >
               <BookOpen size={16} />
               <span>{t("openJournal", "Журнал курса")}</span>
@@ -220,7 +251,7 @@ export function CourseProfile() {
                   type="button"
                   onClick={() => setEditOpen(true)}
                   aria-label={t("common:edit", "Редактировать")}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon/30"
                 >
                   <Pencil size={16} />
                 </button>
@@ -228,7 +259,7 @@ export function CourseProfile() {
                   type="button"
                   onClick={() => setCopyConfirmOpen(true)}
                   aria-label={t("duplicate", "Дублировать")}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon/30"
                 >
                   <Copy size={16} />
                 </button>
@@ -236,7 +267,7 @@ export function CourseProfile() {
                   type="button"
                   onClick={() => setDeleteConfirmOpen(true)}
                   aria-label={t("common:delete", "Удалить")}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-red-600 dark:text-red-400 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -245,7 +276,7 @@ export function CourseProfile() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 border-t border-beige px-6 py-4">
+        <div className="flex flex-wrap items-center gap-4 border-t border-border-warm px-6 py-4">
           {mentorProfile && (
             <span className="flex items-center gap-2">
               <PersonAvatar
@@ -254,7 +285,7 @@ export function CourseProfile() {
                 photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
                 size={28}
               />
-              <span className="text-sm text-nav">
+              <span className="text-sm font-medium text-nav">
                 {mentorProfile.user.first_name} {mentorProfile.user.last_name}
               </span>
             </span>
@@ -263,23 +294,38 @@ export function CourseProfile() {
             <Calendar size={14} />
             {formatDateOnly(course.start_date, i18n.language)} – {formatDateOnly(course.end_date, i18n.language)}
           </span>
-          <span className="ml-auto whitespace-nowrap text-[17px] font-bold tabular-nums text-maroon">
+          <span className="ml-auto whitespace-nowrap text-lg font-bold tabular-nums text-maroon dark:text-maroon-dark">
             {formatMoney(course.price, { suffix: ` TJS/${t("month", "мес")}` })}
           </span>
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 ${isSuperAdmin ? "lg:grid-cols-2" : ""}`}>
-        <div className="rounded-xl border border-border-warm bg-card p-5">
-          <h3 className="text-[15px] font-semibold text-ink">{t("schedule", "Расписание")}</h3>
+      <CourseDetailMetricsStrip
+        enrolledCount={rosterRows ? rosterRows.length : 0}
+        progressChart={progressChart}
+      />
+
+      {progressChart ? (
+        <CourseProgressChart data={progressChart} courseId={course.id} />
+      ) : (
+        <div className="rounded-2xl border border-border-warm bg-card p-6 text-center text-muted">
+          {t("noProgressData", "Данные успеваемости недоступны")}
+        </div>
+      )}
+
+      <CourseRosterSection courseId={course.id} onToast={showToast} />
+
+      <div className={`grid grid-cols-1 gap-5 ${isSuperAdmin ? "lg:grid-cols-2" : ""}`}>
+        <div className="rounded-2xl border border-border-warm bg-card p-5">
+          <h2 className="text-base font-semibold text-ink">{t("schedule", "Расписание")}</h2>
           {!schedule || schedule.length === 0 ? (
             <p className="mt-3 text-sm text-muted">{t("noSchedule", "Расписание не задано")}</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
               {schedule.map((row) => (
-                <li key={row.id} className="flex items-center justify-between rounded-lg bg-strip px-3 py-2 text-sm">
+                <li key={row.id} className="flex items-center justify-between rounded-xl bg-strip px-3.5 py-2.5 text-sm">
                   <span className="font-medium text-ink">{dayLabels[row.day_of_week] ?? row.day_of_week}</span>
-                  <span className="text-nav">
+                  <span className="font-mono text-xs font-semibold text-nav">
                     {formatTime(row.time_start)} – {formatTime(row.time_end)}
                   </span>
                 </li>
@@ -289,15 +335,15 @@ export function CourseProfile() {
         </div>
 
         {isSuperAdmin && (
-          <div className="rounded-xl border border-border-warm bg-card p-5">
-            <h3 className="text-[15px] font-semibold text-ink">{t("mentorHistory", "История менторов")}</h3>
+          <div className="rounded-2xl border border-border-warm bg-card p-5">
+            <h2 className="text-base font-semibold text-ink">{t("mentorHistory", "История менторов")}</h2>
             {!mentorHistory || mentorHistory.length === 0 ? (
               <p className="mt-3 text-sm text-muted">{t("noMentorHistory", "Смен ментора не было")}</p>
             ) : (
               <ul className="mt-3 flex flex-col gap-2">
                 {mentorHistory.map((entry) => (
-                  <li key={entry.id} className="flex items-center gap-3 rounded-lg bg-strip px-3 py-2">
-                    <PersonAvatar firstName={entry.mentor.first_name} lastName={entry.mentor.last_name} size={26} />
+                  <li key={entry.id} className="flex items-center gap-3 rounded-xl bg-strip px-3.5 py-2.5">
+                    <PersonAvatar firstName={entry.mentor.first_name} lastName={entry.mentor.last_name} size={28} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-ink">
                         {entry.mentor.first_name} {entry.mentor.last_name}
@@ -315,10 +361,6 @@ export function CourseProfile() {
           </div>
         )}
       </div>
-
-      {progressChart && <CourseProgressChart data={progressChart} />}
-
-      <CourseRosterSection courseId={course.id} onToast={showToast} />
 
       <CourseFormPanel
         open={editOpen}
