@@ -10,20 +10,62 @@
   "loadFailedCourse": "Failed to load course",
   "loadFailed": "Failed to load journal data",
   "loading": "Loading…",
+  "studentsCount_one": "{{count}} student",
+  "studentsCount_other": "{{count}} students",
   "studentsCount": "{{count}} students",
   "noPeriodsYet": "No journal periods have been created yet",
   "entriesSaved": "Attendance saved",
   "entriesSaveFailed": "Failed to save attendance",
   "summarySaved": "Scores saved",
   "summarySaveFailed": "Failed to save scores",
+  "save": {
+    "allSaved": "All changes saved",
+    "pending": "Saving soon…",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "failed_one": "{{count}} change not saved",
+    "failed_other": "{{count}} changes not saved",
+    "retry": "Retry",
+    "saveNow": "Save now",
+    "offline": "Offline mode",
+    "unsavedWarning": "You have unsaved changes that will be lost."
+  },
+  "conflict": {
+    "title": "Version conflict detected",
+    "body": "Another user updated this cell while you were editing.",
+    "keepMine": "Keep mine",
+    "keepTheirs": "Keep theirs"
+  },
   "period": {
     "week": "Week {{n}}",
-    "month": "Month {{n}}"
+    "month": "Month {{n}}",
+    "current": "Current",
+    "range": "{{start}} – {{end}}",
+    "lessons_one": "{{count}} lesson",
+    "lessons_other": "{{count}} lessons",
+    "completion": "{{marked}} of {{total}} marked",
+    "average": "Avg: {{avg}}%"
   },
   "chart": {
     "title": "Score progress",
     "average": "Average",
-    "noData": "No chart data yet"
+    "noData": "No chart data yet",
+    "classAverage": "Class average",
+    "studentAverage": "Student average",
+    "sortBy": "Sort by",
+    "sortAvgDesc": "Average (high to low)",
+    "sortName": "Name",
+    "sortLatest": "Latest period",
+    "searchStudent": "Search student…",
+    "showAll": "Show all",
+    "topN": "Top 5",
+    "trendUp": "Up by {{delta}}%",
+    "trendDown": "Down by {{delta}}%",
+    "trendFlat": "No change",
+    "hideSeries": "Hide {{name}}",
+    "showSeries": "Show {{name}}",
+    "ariaSummary": "Score progress chart for {{students}} students across {{periods}} periods.",
+    "loading": "Loading chart data…"
   },
   "table": {
     "students": "Students",
@@ -33,8 +75,26 @@
     "score": "Score",
     "bonus": "Bonus",
     "exam": "Exam",
-    "sum": "Sum",
+    "sum": "Total",
     "comment": "Comment",
-    "noStudentsInCourse": "There are no students in this course"
+    "noStudentsInCourse": "There are no students in this course",
+    "examMax": "Exam Max",
+    "editExamWeight": "Edit Exam Weight",
+    "examWeightTitle": "Edit Exam Weight Limit",
+    "examWeightWarning": "Changing the exam weight limit recalculates period max scores.",
+    "examWeightLabel": "Maximum score",
+    "examMaxUpdated": "Exam weight updated successfully",
+    "examMaxUpdateFailed": "Failed to update exam weight",
+    "maxN": "(max {{n}})",
+    "scoreCellLabel": "Score for {{name}} on {{date}}",
+    "attendanceCellLabel": "Attendance for {{name}} on {{date}}",
+    "commentCellLabel": "Comment for {{name}} on {{date}}",
+    "gridHelp": "Use arrow keys to navigate cells. Press 0–5 to grade, Space for attendance, C for comments."
+  },
+  "metrics": {
+    "classAverage": "Class Average",
+    "attendanceRate": "Attendance Rate",
+    "periodsDone": "Periods Completed",
+    "atRisk": "At Risk (<60%)"
   }
 }

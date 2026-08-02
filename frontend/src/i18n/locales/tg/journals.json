@@ -10,20 +10,62 @@
   "loadFailedCourse": "Курсро бор кардан ноком шуд",
   "loadFailed": "Маълумоти журналро бор кардан ноком шуд",
   "loading": "Боргирӣ…",
+  "studentsCount_one": "{{count}} донишҷӯ",
+  "studentsCount_other": "{{count}} донишҷӯ",
   "studentsCount": "{{count}} донишҷӯ",
   "noPeriodsYet": "Давраҳои журнал ҳанӯз эҷод нашудаанд",
   "entriesSaved": "Давомот захира шуд",
   "entriesSaveFailed": "Захираи давомот ноком шуд",
   "summarySaved": "Баллҳо захира шуданд",
   "summarySaveFailed": "Захираи баллҳо ноком шуд",
+  "save": {
+    "allSaved": "Ҳама тағйиротҳо захира шуданд",
+    "pending": "Захира мешавад…",
+    "saving": "Захира мешавад…",
+    "saved": "Захира шуд",
+    "failed_one": "{{count}} тағйирот захира нашуд",
+    "failed_other": "{{count}} тағйирот захира нашуданд",
+    "retry": "Такрор кардан",
+    "saveNow": "Ҳозир захира кардан",
+    "offline": "Ҳолати офлайн",
+    "unsavedWarning": "Тағйиротҳои захиранашуда доред."
+  },
+  "conflict": {
+    "title": "Низои силсила пайдо шуд",
+    "body": "Истифодабарандаи дигар ин ячейкаро таҳрир кард.",
+    "keepMine": "Моли худам",
+    "keepTheirs": "Моли сервер"
+  },
   "period": {
     "week": "Ҳафтаи {{n}}",
-    "month": "Моҳи {{n}}"
+    "month": "Моҳи {{n}}",
+    "current": "Ҷорӣ",
+    "range": "{{start}} – {{end}}",
+    "lessons_one": "{{count}} дарс",
+    "lessons_other": "{{count}} дарс",
+    "completion": "{{marked}} аз {{total}} пур шуд",
+    "average": "Миёна: {{avg}}%"
   },
   "chart": {
     "title": "Динамикаи баллҳо",
     "average": "Миёна",
-    "noData": "Маълумот барои график нест"
+    "noData": "Маълумот барои график нест",
+    "classAverage": "Миёнаи синф",
+    "studentAverage": "Миёнаи донишҷӯ",
+    "sortBy": "Тартибдиҳӣ",
+    "sortAvgDesc": "Балли миёна (баланд)",
+    "sortName": "Ном",
+    "sortLatest": "Давраи охирин",
+    "searchStudent": "Ҷустуҷӯи донишҷӯ…",
+    "showAll": "Ҳамаро нишон додан",
+    "topN": "Топ 5",
+    "trendUp": "Афзоиш {{delta}}%",
+    "trendDown": "Коҳиш {{delta}}%",
+    "trendFlat": "Бе тағйир",
+    "hideSeries": "Пинҳон кардани {{name}}",
+    "showSeries": "Нишон додани {{name}}",
+    "ariaSummary": "Графикаи баллҳо барои {{students}} донишҷӯ дар {{periods}} давра.",
+    "loading": "Боргирии маълумоти график…"
   },
   "table": {
     "students": "Донишҷӯён",
@@ -33,8 +75,26 @@
     "score": "Балл",
     "bonus": "Бонус",
     "exam": "Имтиҳон",
-    "sum": "Sum",
+    "sum": "Ҷамъ",
     "comment": "Шарҳ",
-    "noStudentsInCourse": "Дар ин курс донишҷӯ нест"
+    "noStudentsInCourse": "Дар ин курс донишҷӯ нест",
+    "examMax": "Макс. имтиҳон",
+    "editExamWeight": "Тағйири вазни имтиҳон",
+    "examWeightTitle": "Таҳрири ҳадди балли имтиҳон",
+    "examWeightWarning": "Тағйири балли имтиҳон баллҳои давраро аз нав ҳисоб мекунад.",
+    "examWeightLabel": "Балли максималӣ",
+    "examMaxUpdated": "Вазни имтиҳон нав карда шуд",
+    "examMaxUpdateFailed": "Навсозии вазни имтиҳон ноком шуд",
+    "maxN": "(макс. {{n}})",
+    "scoreCellLabel": "Балл барои {{name}} дар {{date}}",
+    "attendanceCellLabel": "Иштирок барои {{name}} дар {{date}}",
+    "commentCellLabel": "Шарҳ барои {{name}} дар {{date}}",
+    "gridHelp": "Калидҳои тирчаро барои паймоиш истифода баред. 0–5 барои балл, Пробел барои иштирок, C барои шарҳ."
+  },
+  "metrics": {
+    "classAverage": "Балли миёна",
+    "attendanceRate": "Иштирок",
+    "periodsDone": "Давраҳои хатмшуда",
+    "atRisk": "Дар хавф (<60%)"
   }
 }

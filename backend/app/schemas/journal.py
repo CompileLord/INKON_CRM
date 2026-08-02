@@ -54,3 +54,33 @@ class JournalStudentSummaryResponse(BaseModel):
     version: int
 
     model_config = {"from_attributes": True}
+
+
+class JournalEntryStateResponse(BaseModel):
+    student_id: int
+    lesson_date: date
+    attendance: bool
+    score: int
+    comment: Optional[str] = None
+    version: int
+
+    model_config = {"from_attributes": True}
+
+
+class JournalEntryConflictResponse(BaseModel):
+    student_id: int
+    lesson_date: date
+    submitted_version: int
+    current: Optional[JournalEntryStateResponse] = None
+
+
+class JournalBatchUpdateResponse(BaseModel):
+    applied: list[JournalEntryStateResponse]
+    conflicts: list[JournalEntryConflictResponse]
+    summaries: list[JournalStudentSummaryResponse]
+
+
+class JournalExamMaxScoreUpdateResponse(BaseModel):
+    journal: JournalResponse
+    summaries: list[JournalStudentSummaryResponse]
+

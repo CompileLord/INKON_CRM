@@ -1,78 +1,161 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Search, TrendingUp, TrendingDown, Minus, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { CourseProgressChartResponse } from "../../lib/courses/types";
 
 interface JournalScoreChartProps {
   data: CourseProgressChartResponse | undefined;
-}
-
-const WIDTH = 1000;
-const HEIGHT = 300;
-const PADDING = { top: 20, right: 20, bottom: 32, left: 45 };
-const PLOT_WIDTH = WIDTH - PADDING.left - PADDING.right;
-const PLOT_HEIGHT = HEIGHT - PADDING.top - PADDING.bottom;
-const GRID_LINES = 4;
-
-function niceCeil(value: number): number {
-  if (value <= 0) return 100;
-  const magnitude = 10 ** Math.floor(Math.log10(value));
-  const normalized = value / magnitude;
-  const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-  return step * magnitude;
-}
-
-function xFor(index: number, count: number): number {
-  if (count <= 1) return PADDING.left + PLOT_WIDTH / 2;
-  return PADDING.left + (index / (count - 1)) * PLOT_WIDTH;
-}
-
-function yFor(value: number, max: number): number {
-  return PADDING.top + PLOT_HEIGHT - (value / max) * PLOT_HEIGHT;
+  isLoading?: boolean;
 }
 
 const COLOR_PALETTE = [
-  "#E53E3E", "#319795", "#3182CE", "#D69E2E", "#D53F8C",
-  "#805AD5", "#DD6B20", "#38A169", "#00B5D8", "#B83280",
-  "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
-  "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
+  "#2A78D6", // Blue
+  "#E05252", // Red
+  "#27AE60", // Green
+  "#F2994A", // Orange
+  "#9B51E0", // Purple
+  "#2F80ED", // Sky Blue
+  "#10B981", // Teal
+  "#EC4899", // Pink
 ];
 
-export function JournalScoreChart({ data }: JournalScoreChartProps) {
-  const { t } = useTranslation("journals");
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [hiddenStudents, setHiddenStudents] = useState<Set<number>>(new Set());
+type SortMode = "avgDesc" | "name" | "latest";
 
-  const labels = useMemo(() => data?.labels ?? [], [data]);
-  const datasets = useMemo(() => {
-    const raw = data?.datasets ?? [];
-    const used = new Set<string>();
-    return raw.map((d, idx) => {
-      let color = d.color_hex;
-      if (!color || color === "#FF5733" || used.has(color)) {
-        color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
+export const JournalScoreChart: React.FC<JournalScoreChartProps> = ({ data, isLoading = false }) => {
+  const { t } = useTranslation("journals");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("avgDesc");
+  const [hiddenStudents, setHiddenStudents] = useState<Set<number>>(new Set());
+  const [hoveredStudentId, setHoveredStudentId] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Slice off the "Average" summary column from plotted periods if present
+  const { periodLabels, studentStats, classAverageByPeriod, overallClassAvg } = useMemo(() => {
+    if (!data || !data.datasets || data.datasets.length === 0) {
+      return { periodLabels: [], studentStats: [], classAverageByPeriod: [], overallClassAvg: 0 };
+    }
+
+    const rawLabels = data.labels;
+    const hasAverageLabel = rawLabels[rawLabels.length - 1]?.toLowerCase().includes("average") ||
+      rawLabels[rawLabels.length - 1]?.toLowerCase().includes("среднее");
+
+    const periodLabels = hasAverageLabel ? rawLabels.slice(0, -1) : rawLabels;
+
+    const stats = data.datasets.map((ds, idx) => {
+      const rawValues = ds.values;
+      const values = hasAverageLabel ? rawValues.slice(0, -1) : rawValues;
+      const averageValue = hasAverageLabel
+        ? rawValues[rawValues.length - 1]
+        : values.length > 0
+        ? values.reduce((a, b) => a + b, 0) / values.length
+        : 0;
+
+      let trend: "up" | "down" | "flat" = "flat";
+      let trendDelta = 0;
+      if (values.length >= 2) {
+        const last = values[values.length - 1];
+        const prev = values[values.length - 2];
+        trendDelta = last - prev;
+        if (trendDelta >= 3) trend = "up";
+        else if (trendDelta <= -3) trend = "down";
       }
-      used.add(color);
-      return { ...d, color_hex: color };
+
+      return {
+        studentId: ds.student_id,
+        name: ds.label,
+        colorHex: ds.color_hex,
+        values,
+        averageValue,
+        trend,
+        trendDelta: Math.abs(trendDelta),
+        originalIndex: idx,
+      };
     });
+
+    const periodCount = periodLabels.length;
+    const classAvgByPeriod: number[] = [];
+    for (let p = 0; p < periodCount; p++) {
+      let sum = 0;
+      let count = 0;
+      stats.forEach((s) => {
+        if (s.values[p] !== undefined) {
+          sum += s.values[p];
+          count += 1;
+        }
+      });
+      classAvgByPeriod.push(count > 0 ? sum / count : 0);
+    }
+
+    const totalAvgSum = stats.reduce((acc, s) => acc + s.averageValue, 0);
+    const overallClassAvg = stats.length > 0 ? totalAvgSum / stats.length : 0;
+
+    return {
+      periodLabels,
+      studentStats: stats,
+      classAverageByPeriod: classAvgByPeriod,
+      overallClassAvg,
+    };
   }, [data]);
 
-  const max = useMemo(() => {
-    const allValues = datasets.flatMap((d) => (d.percentages ? d.percentages : d.scores));
-    return niceCeil(Math.max(...allValues, 100));
-  }, [datasets]);
+  // Sort and filter students for the rail
+  const sortedStudents = useMemo(() => {
+    let result = [...studentStats];
 
-  if (labels.length === 0 || datasets.length === 0) {
-    return (
-      <div className="rounded-xl border border-border-warm bg-card px-5 py-10 text-center text-sm text-muted">
-        {t("chart.noData")}
-      </div>
-    );
-  }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q));
+    }
 
-  const visibleDatasets = datasets.filter((d) => !hiddenStudents.has(d.student_id));
-  const lastIndex = labels.length - 1;
+    if (sortMode === "avgDesc") {
+      result.sort((a, b) => b.averageValue - a.averageValue);
+    } else if (sortMode === "name") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === "latest") {
+      result.sort((a, b) => {
+        const lastA = a.values[a.values.length - 1] ?? 0;
+        const lastB = b.values[b.values.length - 1] ?? 0;
+        return lastB - lastA;
+      });
+    }
 
-  const toggleStudent = (studentId: number) => {
+    return result;
+  }, [studentStats, searchQuery, sortMode]);
+
+  // Color mapping: assign palette colors to top 8 by average, neutral to rest
+  const colorMap = useMemo(() => {
+    const map = new Map<number, string>();
+    const topByAvg = [...studentStats].sort((a, b) => b.averageValue - a.averageValue);
+
+    topByAvg.forEach((s, idx) => {
+      if (s.colorHex) {
+        map.set(s.studentId, s.colorHex);
+      } else if (idx < COLOR_PALETTE.length) {
+        map.set(s.studentId, COLOR_PALETTE[idx]);
+      } else {
+        map.set(s.studentId, "var(--color-border, #9CA3AF)");
+      }
+    });
+
+    return map;
+  }, [studentStats]);
+
+  const visibleStats = useMemo(() => {
+    return studentStats.filter((s) => !hiddenStudents.has(s.studentId));
+  }, [studentStats, hiddenStudents]);
+
+  const yMax = useMemo(() => {
+    if (visibleStats.length === 0) return 100;
+    let highest = 100;
+    visibleStats.forEach((s) => {
+      s.values.forEach((v) => {
+        if (v > highest) highest = v;
+      });
+    });
+    return Math.ceil(highest / 10) * 10;
+  }, [visibleStats]);
+
+  const toggleStudentVisibility = (studentId: number) => {
     setHiddenStudents((prev) => {
       const next = new Set(prev);
       if (next.has(studentId)) next.delete(studentId);
@@ -81,139 +164,325 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
     });
   };
 
-  const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const relativeX = ((e.clientX - rect.left) / rect.width) * WIDTH;
-    const closest = labels.reduce(
-      (best, _, i) => {
-        const dist = Math.abs(xFor(i, labels.length) - relativeX);
-        return dist < best.dist ? { index: i, dist } : best;
-      },
-      { index: 0, dist: Infinity },
+  if (isLoading) {
+    return (
+      <div className="p-8 border border-border rounded-xl bg-card shadow-sm flex flex-col items-center justify-center text-muted-foreground gap-2 min-h-[300px]">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <p className="text-xs font-medium">{t("chart.loading")}</p>
+      </div>
     );
-    setHoverIndex(closest.index);
+  }
+
+  if (!data || studentStats.length === 0) {
+    return (
+      <div className="p-8 border border-border rounded-xl bg-card shadow-sm flex flex-col items-center justify-center text-muted-foreground gap-2 min-h-[250px]">
+        <p className="text-sm font-medium">{t("chart.noData")}</p>
+      </div>
+    );
+  }
+
+  const svgWidth = 600;
+  const svgHeight = 240;
+  const padding = { top: 20, right: 30, bottom: 35, left: 40 };
+  const graphWidth = svgWidth - padding.left - padding.right;
+  const graphHeight = svgHeight - padding.top - padding.bottom;
+
+  const getX = (index: number) => {
+    if (periodLabels.length <= 1) return padding.left + graphWidth / 2;
+    return padding.left + (index / (periodLabels.length - 1)) * graphWidth;
   };
 
-  const tooltipRows =
-    hoverIndex !== null
-      ? [...visibleDatasets]
-          .map((d) => {
-            const val = d.percentages ? d.percentages[hoverIndex] : d.scores[hoverIndex];
-            const isPct = Boolean(d.percentages);
-            return { name: d.name, color: d.color_hex, value: val ?? 0, isPct };
-          })
-          .sort((a, b) => b.value - a.value)
-      : [];
+  const getY = (val: number) => {
+    return padding.top + graphHeight - (val / yMax) * graphHeight;
+  };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border-warm bg-card">
-      <div className="border-b border-border-warm bg-strip px-5 py-3.5">
-        <h3 className="text-[15px] font-semibold text-ink">{t("chart.title")}</h3>
+    <div
+      className="border border-border rounded-xl bg-card shadow-sm overflow-hidden"
+      role="img"
+      aria-label={t("chart.ariaSummary", { students: studentStats.length, periods: periodLabels.length })}
+    >
+      <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-bold text-base text-foreground">{t("chart.title")}</h3>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("chart.searchStudent")}
+              className="pl-8 pr-3 py-1 text-xs border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary w-40"
+            />
+          </div>
+
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            className="px-2.5 py-1 text-xs border border-border rounded-lg bg-background font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="avgDesc">{t("chart.sortAvgDesc")}</option>
+            <option value="name">{t("chart.sortName")}</option>
+            <option value="latest">{t("chart.sortLatest")}</option>
+          </select>
+        </div>
       </div>
 
-      <div className="relative p-5">
-        <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="w-full touch-none"
-          onPointerMove={handlePointerMove}
-          onPointerLeave={() => setHoverIndex(null)}
-        >
-          {Array.from({ length: GRID_LINES + 1 }, (_, i) => {
-            const value = (max / GRID_LINES) * i;
-            const y = yFor(value, max);
-            return (
-              <g key={i}>
-                <line
-                  x1={PADDING.left}
-                  x2={WIDTH - PADDING.right}
-                  y1={y}
-                  y2={y}
-                  stroke="currentColor"
-                  className="text-border"
-                  strokeDasharray="3 3"
-                />
-                <text x={PADDING.left - 8} y={y + 4} textAnchor="end" className="fill-muted text-[10px]">
-                  {Math.round(value)}%
-                </text>
-              </g>
-            );
-          })}
+      <div className="flex flex-col lg:flex-row">
+        {/* Left rail / student list */}
+        <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20 flex flex-col shrink-0">
+          <div className="max-h-[280px] overflow-y-auto divide-y divide-border/50 p-2 space-y-1">
+            {sortedStudents.map((student) => {
+              const isHidden = hiddenStudents.has(student.studentId);
+              const color = colorMap.get(student.studentId) || "#9CA3AF";
+              const isHovered = hoveredStudentId === student.studentId;
 
-          {labels.map((label, i) => (
-            <text
-              key={i}
-              x={xFor(i, labels.length)}
-              y={HEIGHT - 8}
-              textAnchor="middle"
-              className="fill-muted text-[10px]"
-            >
-              {i === lastIndex ? t("chart.average") : label}
-            </text>
-          ))}
+              return (
+                <button
+                  key={student.studentId}
+                  type="button"
+                  onClick={() => toggleStudentVisibility(student.studentId)}
+                  onMouseEnter={() => setHoveredStudentId(student.studentId)}
+                  onMouseLeave={() => setHoveredStudentId(null)}
+                  aria-pressed={!isHidden}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors ${
+                    isHidden
+                      ? "opacity-50 bg-transparent"
+                      : isHovered
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0 border"
+                      style={{
+                        backgroundColor: isHidden ? "transparent" : color,
+                        borderColor: color,
+                      }}
+                    />
+                    <span className="truncate font-medium">{student.name}</span>
+                  </div>
 
-          {hoverIndex !== null && (
-            <line
-              x1={xFor(hoverIndex, labels.length)}
-              x2={xFor(hoverIndex, labels.length)}
-              y1={PADDING.top}
-              y2={PADDING.top + PLOT_HEIGHT}
-              stroke="currentColor"
-              className="text-border-warm"
-            />
-          )}
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                    <span className="font-semibold tabular-nums">
+                      {student.averageValue.toFixed(1)}%
+                    </span>
 
-          {visibleDatasets.map((dataset) => {
-            const values = dataset.percentages ? dataset.percentages : dataset.scores;
-            const points = values.map((val, i) => `${xFor(i, labels.length)},${yFor(val, max)}`);
-            return (
-              <g key={dataset.student_id}>
-                <path d={`M ${points.join(" L ")}`} fill="none" stroke={dataset.color_hex} strokeWidth={2} />
-                {values.map((val, i) => (
-                  <circle
-                    key={i}
-                    cx={xFor(i, labels.length)}
-                    cy={yFor(val, max)}
-                    r={hoverIndex === i ? 5 : 3}
-                    fill={dataset.color_hex}
-                  />
-                ))}
-              </g>
-            );
-          })}
-        </svg>
+                    {student.trend === "up" && (
+                      <TrendingUp className="w-3 h-3 text-emerald-500" title={t("chart.trendUp", { delta: student.trendDelta.toFixed(1) })} />
+                    )}
+                    {student.trend === "down" && (
+                      <TrendingDown className="w-3 h-3 text-red-500" title={t("chart.trendDown", { delta: student.trendDelta.toFixed(1) })} />
+                    )}
+                    {student.trend === "flat" && (
+                      <Minus className="w-3.5 h-3.5 text-muted-foreground" title={t("chart.trendFlat")} />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-        {hoverIndex !== null && tooltipRows.length > 0 && (
-          <div
-            className="pointer-events-none absolute top-5 z-10 flex flex-col gap-0.5 rounded-lg border border-border-warm bg-card px-3 py-2 text-xs shadow-md"
-            style={{
-              left: `${(xFor(hoverIndex, labels.length) / WIDTH) * 100}%`,
-              transform: "translateX(8px)",
+          <div className="p-3 border-t border-border bg-card flex items-center justify-between text-xs font-semibold">
+            <span className="text-muted-foreground">{t("chart.classAverage")}</span>
+            <span className="tabular-nums text-primary">{overallClassAvg.toFixed(1)}%</span>
+          </div>
+        </div>
+
+        {/* Right pane / Line chart */}
+        <div className="flex-1 p-4 relative overflow-hidden flex flex-col justify-center">
+          <svg
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            className="w-full h-auto overflow-visible select-none"
+            onMouseLeave={() => {
+              setHoveredIndex(null);
             }}
           >
-            {tooltipRows.map((row) => (
-              <span key={row.name} className="font-medium" style={{ color: row.color }}>
-                {row.name} — {row.value}{row.isPct ? "%" : ""}
-              </span>
-            ))}
-          </div>
-        )}
+            {/* Grid lines */}
+            {[0, 25, 50, 75, 100].map((tick) => {
+              if (tick > yMax) return null;
+              const y = getY(tick);
+              return (
+                <g key={tick}>
+                  <line
+                    x1={padding.left}
+                    y1={y}
+                    x2={svgWidth - padding.right}
+                    y2={y}
+                    stroke="currentColor"
+                    strokeOpacity={0.1}
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={padding.left - 8}
+                    y={y + 4}
+                    textAnchor="end"
+                    className="text-[10px] fill-muted-foreground tabular-nums"
+                  >
+                    {tick}%
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* X-axis period labels */}
+            {periodLabels.map((label, idx) => {
+              const x = getX(idx);
+              return (
+                <text
+                  key={label}
+                  x={x}
+                  y={svgHeight - 10}
+                  textAnchor="middle"
+                  className="text-[10px] fill-muted-foreground font-medium"
+                >
+                  {label}
+                </text>
+              );
+            })}
+
+            {/* Class Average line */}
+            {classAverageByPeriod.length > 0 && (
+              <path
+                d={classAverageByPeriod
+                  .map((val, i) => `${i === 0 ? "M" : "L"} ${getX(i)} ${getY(val)}`)
+                  .join(" ")}
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity={0.3}
+                strokeWidth={2}
+                strokeDasharray="6 4"
+              />
+            )}
+
+            {/* Student dataset lines */}
+            {visibleStats.map((student) => {
+              const color = colorMap.get(student.studentId) || "#9CA3AF";
+              const isHovered = hoveredStudentId === student.studentId;
+              const opacity = hoveredStudentId !== null ? (isHovered ? 1 : 0.2) : 0.85;
+              const strokeWidth = isHovered ? 3 : 2;
+
+              const points = student.values.map((val, i) => ({
+                x: getX(i),
+                y: getY(val),
+                val,
+              }));
+
+              const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+
+              return (
+                <g key={student.studentId} style={{ opacity, transition: "opacity 0.2s" }}>
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {points.map((p, i) => {
+                    const isPointHovered = hoveredIndex === i || i === 0 || i === points.length - 1;
+                    if (!isPointHovered && !isHovered) return null;
+                    return (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={isHovered ? 4 : 3}
+                        fill={color}
+                        className="transition-all"
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
+
+            {/* Hover overlay column trigger */}
+            {periodLabels.map((_, idx) => {
+              const x = getX(idx);
+              const colWidth = graphWidth / Math.max(1, periodLabels.length - 1);
+              return (
+                <rect
+                  key={idx}
+                  x={x - colWidth / 2}
+                  y={padding.top}
+                  width={colWidth}
+                  height={graphHeight}
+                  fill="transparent"
+                  onMouseEnter={() => setHoveredIndex(idx)}
+                />
+              );
+            })}
+          </svg>
+
+          {/* Single focused tooltip */}
+          {hoveredIndex !== null && periodLabels[hoveredIndex] && (
+            <div
+              className={`absolute top-6 z-20 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2.5 text-xs pointer-events-none transition-all duration-150 ${
+                hoveredIndex > periodLabels.length / 2 ? "-translate-x-full -ml-3" : "ml-3"
+              }`}
+              style={{
+                left: `${(getX(hoveredIndex) / svgWidth) * 100}%`,
+              }}
+            >
+              <div className="font-bold border-b border-border pb-1 mb-1.5">
+                {periodLabels[hoveredIndex]}
+              </div>
+
+              {hoveredStudentId !== null ? (
+                (() => {
+                  const s = studentStats.find((st) => st.studentId === hoveredStudentId);
+                  if (!s) return null;
+                  const val = s.values[hoveredIndex];
+                  return (
+                    <div className="space-y-1">
+                      <div className="font-semibold">{s.name}</div>
+                      <div className="text-primary font-bold tabular-nums">
+                        {val !== undefined ? `${val.toFixed(1)}%` : "—"}
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="space-y-1">
+                  <div className="text-muted-foreground">{t("chart.classAverage")}</div>
+                  <div className="font-bold tabular-nums text-primary">
+                    {classAverageByPeriod[hoveredIndex]?.toFixed(1)}%
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 border-t border-border-warm px-5 py-3.5">
-        {datasets.map((dataset) => (
-          <button
-            key={dataset.student_id}
-            type="button"
-            onClick={() => toggleStudent(dataset.student_id)}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-opacity ${
-              hiddenStudents.has(dataset.student_id) ? "opacity-40" : ""
-            }`}
-          >
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dataset.color_hex }} />
-            <span className="text-ink">{dataset.name}</span>
-          </button>
-        ))}
-      </div>
+      {/* Accessible table fallback for screen readers */}
+      <table className="sr-only">
+        <caption>{t("chart.ariaSummary", { students: studentStats.length, periods: periodLabels.length })}</caption>
+        <thead>
+          <tr>
+            <th>Student</th>
+            {periodLabels.map((l) => (
+              <th key={l}>{l}</th>
+            ))}
+            <th>Average</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentStats.map((s) => (
+            <tr key={s.studentId}>
+              <td>{s.name}</td>
+              {s.values.map((v, i) => (
+                <td key={i}>{v}%</td>
+              ))}
+              <td>{s.averageValue}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
-}
+};

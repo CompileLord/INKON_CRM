@@ -1665,7 +1665,43 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Responses:**
 - **200**: Successful Response
   ```json
-  object
+  {
+    "applied": [
+      {
+        "student_id": integer,
+        "lesson_date": string,
+        "attendance": boolean,
+        "score": integer,
+        "comment?": string,
+        "version": integer,
+      }
+    ],
+    "conflicts": [
+      {
+        "student_id": integer,
+        "lesson_date": string,
+        "submitted_version": integer,
+        "current?": any,
+      }
+    ],
+    "summaries": [
+      {
+        "id": integer,
+        "journal_id": integer,
+        "student_id": integer,
+        "homework_score": integer,
+        "attendance_score": integer,
+        "exam_score": integer,
+        "bonus_score": integer,
+        "sum_score": integer,
+        "max_period_score": integer,
+        "percentage": number,
+        "attendance_count": integer,
+        "total_lessons": integer,
+        "version": integer,
+      }
+    ],
+  }
   ```
 - **422**: Validation Error
   ```json
@@ -1755,13 +1791,32 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 - **200**: Successful Response
   ```json
   {
-    "id": integer,
-    "course_id": integer,
-    "period_label": string,
-    "period_start": string,
-    "period_end": string,
-    "period_type": "week" | "month",
-    "exam_max_score": integer,
+    "journal": {
+      "id": integer,
+      "course_id": integer,
+      "period_label": string,
+      "period_start": string,
+      "period_end": string,
+      "period_type": "week" | "month",
+      "exam_max_score": integer,
+    },
+    "summaries": [
+      {
+        "id": integer,
+        "journal_id": integer,
+        "student_id": integer,
+        "homework_score": integer,
+        "attendance_score": integer,
+        "exam_score": integer,
+        "bonus_score": integer,
+        "sum_score": integer,
+        "max_period_score": integer,
+        "percentage": number,
+        "attendance_count": integer,
+        "total_lessons": integer,
+        "version": integer,
+      }
+    ],
   }
   ```
 - **422**: Validation Error

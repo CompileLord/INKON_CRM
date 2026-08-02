@@ -11,6 +11,8 @@ from app.schemas.journal import (
     JournalStudentSummaryResponse,
     JournalExamMaxScoreUpdate,
     JournalResponse,
+    JournalBatchUpdateResponse,
+    JournalExamMaxScoreUpdateResponse,
 )
 from app.services.journal_service import JournalService
 
@@ -27,7 +29,7 @@ async def get_journal(
     return await journal_service.get_journal(id, current_user)
 
 
-@router.put("/{id}/entries", status_code=status.HTTP_200_OK)
+@router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK)
 async def batch_update_entries(
     id: int,
     payload: List[JournalEntryUpdate],
@@ -57,16 +59,17 @@ async def update_exam_or_bonus(
     )
 
 
-@router.patch("/{id}/exam-max-score", response_model=JournalResponse)
+@router.patch("/{id}/exam-max-score", response_model=JournalExamMaxScoreUpdateResponse)
 async def update_exam_max_score(
     id: int,
     payload: JournalExamMaxScoreUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
-) -> Journal:
+) -> dict:
     journal_service = JournalService(db)
     return await journal_service.update_exam_max_score(
         journal_id=id,
         exam_max_score=payload.exam_max_score,
         current_user=current_user
     )
+

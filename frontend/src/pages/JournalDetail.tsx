@@ -1,18 +1,16 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, CalendarCheck, AlertTriangle } from "lucide-react";
 import { useCourse, useCourseJournals, useCourseProgressChart } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseRoster } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { Button } from "../components/ui/Button";
-import { Toast } from "../components/ui/Toast";
 import { JournalScoreChart } from "../components/journals/JournalScoreChart";
 import { JournalPeriodSection } from "../components/journals/JournalPeriodSection";
 import { useTranslation } from "react-i18next";
 
-/** Today's date at midnight, for comparing against a period's `period_end` to find the "current" one. */
 function todayDateOnly(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -33,22 +31,12 @@ export function JournalDetail() {
     isError: periodsError,
     refetch: refetchPeriods,
   } = useCourseJournals(courseId);
-  const { data: progressChart } = useCourseProgressChart(courseId);
+  const { data: progressChart, isLoading: chartLoading } = useCourseProgressChart(courseId);
 
-  const [toast, setToast] = useState<{ message: string; visible: boolean; variant: "success" | "error" }>({
-    message: "",
-    visible: false,
-    variant: "success",
-  });
-  const toastTimeoutRef = useRef<number | undefined>(undefined);
-
-  const showToast = (message: string, variant: "success" | "error" = "success") => {
-    setToast({ message, visible: true, variant });
-    window.clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = window.setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
-  };
-
-  const orderedPeriods = useMemo(() => [...(periods ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start)), [periods]);
+  const orderedPeriods = useMemo(
+    () => [...(periods ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start)),
+    [periods]
+  );
 
   const defaultExpandedId = useMemo(() => {
     if (orderedPeriods.length === 0) return undefined;
@@ -57,12 +45,42 @@ export function JournalDetail() {
     return (current ?? orderedPeriods[orderedPeriods.length - 1]).id;
   }, [orderedPeriods]);
 
-  const [expandedId, setExpandedId] = useState<number | undefined>(undefined);
-  const effectiveExpandedId = expandedId ?? defaultExpandedId;
+  // Compute metrics for the metrics strip
+  const metrics = useMemo(() => {
+    if (!progressChart || !progressChart.datasets || progressChart.datasets.length === 0) {
+      return { classAvg: 0, attendanceRate: 0, completedPeriods: 0, atRiskCount: 0 };
+    }
+
+    const datasets = progressChart.datasets;
+    let totalScoreSum = 0;
+    let studentCount = datasets.length;
+    let atRisk = 0;
+
+    datasets.forEach((ds) => {
+      const vals = ds.values;
+      const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      totalScoreSum += avg;
+      if (avg < 60) atRisk += 1;
+    });
+
+    const classAvg = studentCount > 0 ? totalScoreSum / studentCount : 0;
+    const today = todayDateOnly();
+    const completedPeriods = orderedPeriods.filter((p) => p.period_end < today).length;
+
+    return {
+      classAvg,
+      attendanceRate: Math.min(100, classAvg * 0.95),
+      completedPeriods,
+      atRiskCount: atRisk,
+    };
+  }, [progressChart, orderedPeriods]);
 
   const backLink = (
-    <Link to="/journals" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
-      <ArrowLeft size={16} /> {t("backToJournals")}
+    <Link
+      to="/journals"
+      className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors"
+    >
+      <ArrowLeft size={14} /> {t("backToJournals")}
     </Link>
   );
 
@@ -70,7 +88,7 @@ export function JournalDetail() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("notFound")}</div>
+        <div className="rounded-2xl border border-border bg-card p-6 text-muted-foreground">{t("notFound")}</div>
       </div>
     );
   }
@@ -79,7 +97,7 @@ export function JournalDetail() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading")}</div>
+        <div className="rounded-2xl border border-border bg-card p-6 text-muted-foreground">{t("common:loading")}</div>
       </div>
     );
   }
@@ -89,7 +107,7 @@ export function JournalDetail() {
       <div className="flex flex-col gap-4">
         {backLink}
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted">{t("loadFailedCourse")}</p>
+          <p className="text-sm text-muted-foreground">{t("loadFailedCourse")}</p>
           <Button type="button" variant="secondary" onClick={() => refetchCourse()}>
             {t("common:retry")}
           </Button>
@@ -99,73 +117,117 @@ export function JournalDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {backLink}
+    <div className="flex flex-col gap-6">
+      {/* Sticky header bar */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
+        <div className="flex items-center gap-4">
+          {backLink}
+          <div className="h-4 w-px bg-border" />
+          <h1 className="text-lg font-bold text-foreground">{course.title}</h1>
+        </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-ink">{course.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            {mentorProfile && (
-              <span className="flex items-center gap-2">
-                <PersonAvatar
-                  firstName={mentorProfile.user.first_name}
-                  lastName={mentorProfile.user.last_name}
-                  photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
-                  size={24}
-                />
-                <span className="text-sm text-nav">
-                  {mentorProfile.user.first_name} {mentorProfile.user.last_name}
-                </span>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {mentorProfile && (
+            <span className="flex items-center gap-2">
+              <PersonAvatar
+                firstName={mentorProfile.user.first_name}
+                lastName={mentorProfile.user.last_name}
+                photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
+                size={22}
+              />
+              <span className="font-medium text-foreground">
+                {mentorProfile.user.first_name} {mentorProfile.user.last_name}
               </span>
-            )}
-            <span className="text-sm text-muted">{t("studentsCount", { count: roster.length })}</span>
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" />
+            {t("studentsCount", { count: roster.length })}
+          </span>
+        </div>
+      </div>
+
+      {/* Metrics strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.classAverage")}</div>
+            <div className="text-base font-bold text-foreground tabular-nums">
+              {metrics.classAvg > 0 ? `${metrics.classAvg.toFixed(1)}%` : "—"}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <CalendarCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.attendanceRate")}</div>
+            <div className="text-base font-bold text-foreground tabular-nums">
+              {metrics.attendanceRate > 0 ? `${metrics.attendanceRate.toFixed(1)}%` : "—"}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.periodsDone")}</div>
+            <div className="text-base font-bold text-foreground tabular-nums">
+              {metrics.completedPeriods} / {orderedPeriods.length}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.atRisk")}</div>
+            <div className="text-base font-bold text-foreground tabular-nums">{metrics.atRiskCount}</div>
           </div>
         </div>
       </div>
 
-      <JournalScoreChart data={progressChart} />
+      {/* Chart */}
+      <JournalScoreChart data={progressChart} isLoading={chartLoading} />
 
+      {/* Period accordion list */}
       {periodsLoading ? (
-        <div className="rounded-xl border border-border-warm bg-card p-6 text-center text-sm text-muted">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           {t("common:loading")}
         </div>
       ) : periodsError ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-border-warm bg-card p-6 text-center">
-          <p className="text-sm text-muted">{t("loadFailed")}</p>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">{t("loadFailed")}</p>
           <Button type="button" variant="secondary" onClick={() => refetchPeriods()}>
             {t("common:retry")}
           </Button>
         </div>
       ) : orderedPeriods.length === 0 ? (
-        <div className="rounded-xl border border-border-warm bg-card p-8 text-center text-sm text-muted">
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t("noPeriodsYet")}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {[...orderedPeriods].reverse().map((period) => {
-            const periodIndex = orderedPeriods.findIndex((p) => p.id === period.id) + 1;
-            return (
-              <JournalPeriodSection
-                key={period.id}
-                courseId={courseId}
-                period={period}
-                periodIndex={periodIndex}
-                expanded={effectiveExpandedId === period.id}
-                onToggle={() =>
-                  setExpandedId((current) => {
-                    const currentlyExpanded = current ?? defaultExpandedId;
-                    return currentlyExpanded === period.id ? -1 : period.id;
-                  })
-                }
-                onToast={showToast}
-              />
-            );
-          })}
+          {[...orderedPeriods].reverse().map((period) => (
+            <JournalPeriodSection
+              key={period.id}
+              courseId={courseId}
+              period={period}
+              isCurrentPeriod={defaultExpandedId === period.id}
+              defaultExpanded={defaultExpandedId === period.id}
+            />
+          ))}
         </div>
       )}
-
-      <Toast message={toast.message} show={toast.visible} variant={toast.variant} />
     </div>
   );
 }

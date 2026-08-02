@@ -210,17 +210,8 @@ class JournalService:
                 detail="Not enough permissions"
             )
 
-        updated_student_ids = set()
-
-        for update_item in entries_updates:
-            if not (0 <= update_item.score <= 5):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Score must be between 0 and 5"
-                )
-
         if not entries_updates:
-            return {"status": "success"}
+            return {"applied": [], "conflicts": [], "summaries": []}
 
         student_ids = list(set(u.student_id for u in entries_updates))
         dates = list(set(u.lesson_date for u in entries_updates))
@@ -237,19 +228,36 @@ class JournalService:
         from app.services.audit_service import AuditService
         audit_service = AuditService(self.db)
 
+        applied_entries = []
+        conflicts = []
+        updated_student_ids = set()
+
         for update_item in entries_updates:
             entry = entries_map.get((update_item.student_id, update_item.lesson_date))
             if not entry:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Journal entry not found for student {update_item.student_id} on {update_item.lesson_date}"
-                )
+                conflicts.append({
+                    "student_id": update_item.student_id,
+                    "lesson_date": update_item.lesson_date,
+                    "submitted_version": update_item.version,
+                    "current": None
+                })
+                continue
 
             if entry.version != update_item.version:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
-                )
+                conflicts.append({
+                    "student_id": update_item.student_id,
+                    "lesson_date": update_item.lesson_date,
+                    "submitted_version": update_item.version,
+                    "current": {
+                        "student_id": entry.student_id,
+                        "lesson_date": entry.lesson_date,
+                        "attendance": entry.attendance,
+                        "score": entry.score,
+                        "comment": entry.comment,
+                        "version": entry.version
+                    }
+                })
+                continue
 
             target_attendance = True if update_item.score > 0 else update_item.attendance
 
@@ -265,7 +273,6 @@ class JournalService:
                 entry.attendance = target_attendance
                 entry.score = update_item.score
                 entry.comment = update_item.comment
-                updated_student_ids.add(update_item.student_id)
 
                 await audit_service.log(
                     user_id=current_user.id,
@@ -274,6 +281,15 @@ class JournalService:
                     entity_id=entry.id,
                     changes=changes
                 )
+
+            updated_student_ids.add(update_item.student_id)
+            applied_entries.append(entry)
+
+        if conflicts and not applied_entries:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
+            )
 
         try:
             await self.db.flush()
@@ -284,11 +300,34 @@ class JournalService:
                 detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
             )
 
-        sum_service = SumCalculationService(self.db)
-        for s_id in updated_student_ids:
-            await sum_service.recalculate(journal_id, s_id)
+        if updated_student_ids:
+            sum_service = SumCalculationService(self.db)
+            await sum_service.recalculate_journal(journal_id)
 
-        return {"status": "success"}
+        summaries_query = select(JournalStudentSummary).filter(
+            JournalStudentSummary.journal_id == journal_id,
+            JournalStudentSummary.student_id.in_(student_ids)
+        )
+        summaries_result = await self.db.execute(summaries_query)
+        summaries_list = list(summaries_result.scalars().all())
+
+        applied_data = [
+            {
+                "student_id": e.student_id,
+                "lesson_date": e.lesson_date,
+                "attendance": e.attendance,
+                "score": e.score,
+                "comment": e.comment,
+                "version": e.version
+            }
+            for e in applied_entries
+        ]
+
+        return {
+            "applied": applied_data,
+            "conflicts": conflicts,
+            "summaries": summaries_list
+        }
 
     async def update_exam_or_bonus(
         self,
@@ -399,7 +438,7 @@ class JournalService:
         journal_id: int,
         exam_max_score: int,
         current_user: User
-    ) -> Journal:
+    ) -> dict:
         journal = await self.db.get(Journal, journal_id)
         if not journal:
             raise HTTPException(
@@ -476,4 +515,14 @@ class JournalService:
 
         await self.db.flush()
         await self.db.refresh(journal)
-        return journal
+
+        summaries_query = select(JournalStudentSummary).filter(
+            JournalStudentSummary.journal_id == journal_id
+        )
+        summaries_result = await self.db.execute(summaries_query)
+        summaries = list(summaries_result.scalars().all())
+
+        return {
+            "journal": journal,
+            "summaries": summaries
+        }
