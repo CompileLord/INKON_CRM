@@ -37,7 +37,7 @@ export function FinanceAnalyticsTab() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-maroon px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-maroon/90"
+          className="flex items-center gap-2 rounded-xl bg-maroon px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-maroon-dark active:scale-95 transition-[background-color,transform,box-shadow] duration-150 ease-out"
         >
           <Plus size={15} /> {t("paymentModal.acceptPayment")}
         </button>
@@ -45,38 +45,38 @@ export function FinanceAnalyticsTab() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs transition-[box-shadow,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sm">
           <div className="flex items-center justify-between text-muted">
             <span className="text-xs font-semibold">{t("analytics.totalReceivable")}</span>
             <div className="rounded-xl bg-blue-50 dark:bg-blue-950/60 p-2 text-blue-600 dark:text-blue-400">
               <TrendingUp size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-ink">
+          <div className="mt-3 text-2xl font-bold text-ink tabular-nums">
             {analyticsLoading ? "..." : `${formatSum(analytics?.net_receivable ?? 0)} TJS`}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs transition-[box-shadow,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sm">
           <div className="flex items-center justify-between text-muted">
             <span className="text-xs font-semibold">{t("analytics.totalCollected")}</span>
             <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 p-2 text-emerald-600 dark:text-emerald-400">
               <TrendingUp size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-ink">
+          <div className="mt-3 text-2xl font-bold text-ink tabular-nums">
             {analyticsLoading ? "..." : `${formatSum(analytics?.collected_in_period ?? 0)} TJS`}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs transition-[box-shadow,border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sm">
           <div className="flex items-center justify-between text-muted">
             <span className="text-xs font-semibold">{t("analytics.unpaidStudentsCount")}</span>
             <div className="rounded-xl bg-amber-50 dark:bg-amber-950/60 p-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle size={18} />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-ink">
+          <div className="mt-3 text-2xl font-bold text-ink tabular-nums">
             {analyticsLoading ? "..." : (analytics?.unpaid_students_count ?? 0)}
           </div>
         </div>
@@ -85,7 +85,7 @@ export function FinanceAnalyticsTab() {
       {/* Top debtors preview */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
         <h4 className="text-sm font-bold text-ink mb-4 flex items-center gap-2">
-          <Users size={16} className="text-maroon" /> {t("analytics.topDebtors")}
+          <Users size={16} className="text-maroon dark:text-accent" /> {t("analytics.topDebtors")}
         </h4>
         {analyticsLoading ? (
           <CardSkeleton rows={2} />
@@ -94,7 +94,7 @@ export function FinanceAnalyticsTab() {
             <p className="text-rose-600 font-semibold">{t("errorLoading", "Ошибка загрузки аналитики")}</p>
             <button
               onClick={() => refetchAnalytics()}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-xs font-medium text-ink hover:bg-cream"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-xs font-medium text-ink hover:bg-cream active:scale-95 transition-[background-color,transform] duration-150 ease-out"
             >
               <RefreshCw size={12} /> {t("common:retry", "Повторить")}
             </button>
@@ -111,7 +111,7 @@ export function FinanceAnalyticsTab() {
                 <span className="font-semibold text-ink">
                   {d.first_name} {d.last_name}
                 </span>
-                <span className="font-bold text-rose-600 dark:text-rose-400">{formatSum(d.debt)} TJS</span>
+                <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums">{formatSum(d.debt)} TJS</span>
               </div>
             ))}
           </div>
@@ -122,7 +122,7 @@ export function FinanceAnalyticsTab() {
       <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-sm font-bold text-ink">{t("analytics.recentTransactions")}</h4>
-          <span className="text-xs text-muted">
+          <span className="text-xs text-muted tabular-nums">
             {t("common:total")}: {paymentsData?.total ?? 0}
           </span>
         </div>
@@ -153,7 +153,7 @@ export function FinanceAnalyticsTab() {
               ) : (
                 payments.map((p) => (
                   <tr key={p.id} className="hover:bg-cream/40 transition-colors">
-                    <td className="py-3.5 font-mono font-medium text-muted">#{p.id}</td>
+                    <td className="py-3.5 font-mono font-medium text-muted tabular-nums">#{p.id}</td>
                     <td className="py-3.5 font-semibold text-ink">
                       {t("analytics.studentNumber", { id: p.student_id, defaultValue: `Student #${p.student_id}` })}
                     </td>
@@ -162,9 +162,9 @@ export function FinanceAnalyticsTab() {
                         ? p.allocations.map((a) => a.course_title).join(", ")
                         : t("analytics.unapplied", "Не распределён")}
                     </td>
-                    <td className="py-3.5 font-bold text-emerald-700 dark:text-emerald-400">{formatSum(p.amount)} TJS</td>
+                    <td className="py-3.5 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{formatSum(p.amount)} TJS</td>
                     <td className="py-3.5">{getMethodLabel(p.method ?? undefined)}</td>
-                    <td className="py-3.5 text-muted">{formatDate(p.paid_at, i18n.language)}</td>
+                    <td className="py-3.5 text-muted tabular-nums">{formatDate(p.paid_at, i18n.language)}</td>
                   </tr>
                 ))
               )}

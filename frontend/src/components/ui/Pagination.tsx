@@ -36,14 +36,14 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
         aria-label={t("pagination.previous")}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-colors duration-150 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
       >
         <ChevronLeft size={16} />
       </button>
 
       {pages.map((p, i) =>
         p === "ellipsis" ? (
-          <span key={`ellipsis-${i}`} className="px-1.5 text-sm text-muted">
+          <span key={`ellipsis-${i}`} className="px-1.5 text-sm text-muted tabular-nums">
             …
           </span>
         ) : (
@@ -52,7 +52,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
             type="button"
             onClick={() => onPageChange(p)}
             className={[
-              "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition-colors duration-150",
+              "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-[background-color,color,transform,box-shadow] duration-150 ease-out active:scale-95",
               p === page
                 ? "bg-maroon text-white dark:bg-accent dark:text-white font-bold shadow-xs"
                 : "text-ink hover:bg-strip",
@@ -68,7 +68,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
         aria-label={t("pagination.next")}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-colors duration-150 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
       >
         <ChevronRight size={16} />
       </button>

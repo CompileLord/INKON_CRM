@@ -209,30 +209,47 @@ async def get_progress_chart(
         summary_res = await db.execute(summary_stmt)
         summaries = list(summary_res.scalars().all())
 
-    summary_map = {(s.student_id, s.journal_id): s.sum_score for s in summaries}
+    summary_map = {(s.student_id, s.journal_id): (s.sum_score, s.max_period_score) for s in summaries}
 
     labels = [j.period_label for j in journals] + ["Average"]
     datasets = []
 
-    for enroll in enrollments:
+    COLOR_PALETTE = [
+        "#E53E3E", "#319795", "#3182CE", "#D69E2E", "#D53F8C",
+        "#805AD5", "#DD6B20", "#38A169", "#00B5D8", "#B83280",
+        "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
+        "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
+    ]
+
+    from app.core.scoring import score_percentage
+
+    for idx, enroll in enumerate(enrollments):
         student = enroll.student
         scores = []
+        percentages = []
         for j in journals:
-            score = summary_map.get((student.id, j.id), 0)
-            scores.append(score)
+            sum_score, max_score = summary_map.get((student.id, j.id), (0, 0))
+            scores.append(sum_score)
+            percentages.append(score_percentage(sum_score, max_score))
 
         avg = round(sum(scores) / len(journals), 2) if journals else 0.0
+        avg_pct = round(sum(percentages) / len(journals), 2) if journals else 0.0
         scores.append(avg)
+        percentages.append(avg_pct)
+
+        color_hex = enroll.color_hex if enroll.color_hex and enroll.color_hex != "#FF5733" else COLOR_PALETTE[idx % len(COLOR_PALETTE)]
 
         datasets.append({
             "student_id": student.id,
             "name": f"{student.first_name} {student.last_name}",
-            "color_hex": enroll.color_hex,
-            "scores": scores
+            "color_hex": color_hex,
+            "scores": scores,
+            "percentages": percentages
         })
 
     return {
         "labels": labels,
         "datasets": datasets
     }
+
 

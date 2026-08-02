@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Any, Dict, List, Optional
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
@@ -66,15 +66,20 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         courses = list(courses_result.scalars().all())
 
         stats_query = select(
-            func.avg(JournalStudentSummary.sum_score),
+            func.avg(
+                case(
+                    (JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
+                    else_=0.0
+                )
+            ),
             func.sum(JournalStudentSummary.attendance_count),
             func.sum(JournalStudentSummary.total_lessons)
         ).filter(JournalStudentSummary.student_id == student_id)
-        
+
         stats_result = await self.session.execute(stats_query)
         avg_score, attendance_count, total_lessons = stats_result.one()
 
-        avg_score = float(avg_score) if avg_score is not None else 0.0
+        avg_score = round(float(avg_score), 2) if avg_score is not None else 0.0
         total_lessons = int(total_lessons) if total_lessons is not None else 0
         attendance_count = int(attendance_count) if attendance_count is not None else 0
         absences = total_lessons - attendance_count
@@ -103,7 +108,14 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         active_students_result = await self.session.execute(active_students_query)
         active_students_count = active_students_result.scalar() or 0
 
-        avg_score_query = select(func.avg(JournalStudentSummary.sum_score)).join(
+        avg_score_query = select(
+            func.avg(
+                case(
+                    (JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
+                    else_=0.0
+                )
+            )
+        ).join(
             Journal, JournalStudentSummary.journal_id == Journal.id
         ).join(Course, Journal.course_id == Course.id).filter(
             Course.mentor_id == mentor_id
@@ -114,5 +126,6 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         return {
             "active_courses": active_courses,
             "active_students_count": active_students_count,
-            "avg_score": float(avg_score) if avg_score is not None else 0.0
+            "avg_score": round(float(avg_score), 2) if avg_score is not None else 0.0
         }
+

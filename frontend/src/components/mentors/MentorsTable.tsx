@@ -96,14 +96,14 @@ export function MentorsTable({
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink">{mentor.phone ?? "—"}</td>
-                  <td className="px-5 py-3 text-sm text-ink">
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">{mentor.phone ?? "—"}</td>
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">
                     {mentor.payment_day_of_month ?? "—"}
                   </td>
                   <td className="px-5 py-3">
                     <UserStatusBadge isDeleted={mentor.is_deleted} />
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink">
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">
                     {formatCreatedAt(mentor.created_at, i18n.language)}
                   </td>
                   <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
@@ -115,7 +115,7 @@ export function MentorsTable({
                           onEdit(mentor);
                         }}
                         aria-label={t("common:edit")}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip"
                       >
                         <Pencil size={15} />
                       </button>
@@ -126,7 +126,7 @@ export function MentorsTable({
                           onDeleteRequest(mentor);
                         }}
                         aria-label={t("common:delete")}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -159,7 +159,7 @@ export function MentorsTable({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-lg border border-border-warm bg-card px-3 py-2 text-sm font-medium text-ink hover:bg-strip"
+              className="rounded-lg border border-border-warm bg-card px-3 py-2 text-sm font-medium text-ink hover:bg-strip active:scale-95 transition-transform"
             >
               {t("common:retry")}
             </button>
@@ -170,7 +170,7 @@ export function MentorsTable({
 
         {showRows &&
           mentors.map((mentor) => (
-            <div key={mentor.id} className="rounded-lg border border-border-warm p-3.5">
+            <div key={mentor.id} className="rounded-lg border border-border-warm p-3.5 shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <PersonAvatar
@@ -190,7 +190,7 @@ export function MentorsTable({
                     type="button"
                     onClick={() => onEdit(mentor)}
                     aria-label={t("common:edit")}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip active:scale-95 transition-transform"
                   >
                     <Pencil size={15} />
                   </button>
@@ -198,7 +198,7 @@ export function MentorsTable({
                     type="button"
                     onClick={() => onDeleteRequest(mentor)}
                     aria-label={t("common:delete")}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 active:scale-95 transition-transform"
                   >
                     <Trash2 size={15} />
                   </button>
@@ -207,11 +207,11 @@ export function MentorsTable({
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted">
                 <div>
                   <dt>{t("table.phone")}</dt>
-                  <dd className="text-ink">{mentor.phone ?? "—"}</dd>
+                  <dd className="text-ink tabular-nums">{mentor.phone ?? "—"}</dd>
                 </div>
                 <div>
                   <dt>{t("table.paymentDay")}</dt>
-                  <dd className="text-ink">{mentor.payment_day_of_month ?? "—"}</dd>
+                  <dd className="text-ink tabular-nums">{mentor.payment_day_of_month ?? "—"}</dd>
                 </div>
                 <div>
                   <dt>{t("common:status")}</dt>
@@ -221,7 +221,7 @@ export function MentorsTable({
                 </div>
                 <div>
                   <dt>{t("table.created")}</dt>
-                  <dd className="text-ink">{formatCreatedAt(mentor.created_at, i18n.language)}</dd>
+                  <dd className="text-ink tabular-nums">{formatCreatedAt(mentor.created_at, i18n.language)}</dd>
                 </div>
               </dl>
             </div>
@@ -229,7 +229,7 @@ export function MentorsTable({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-warm px-5 py-3.5">
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted tabular-nums">
           {total > 0 ? `${t("common:showing")} ${from}–${to} ${t("common:of")} ${total}` : t("common:noData")}
         </p>
         <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />

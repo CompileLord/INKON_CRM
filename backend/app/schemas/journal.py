@@ -11,6 +11,7 @@ class JournalResponse(BaseModel):
     period_start: date
     period_end: date
     period_type: JournalPeriodType
+    exam_max_score: int
 
     model_config = {"from_attributes": True}
 
@@ -32,13 +33,24 @@ class JournalStudentSummaryUpdate(BaseModel):
     version: int
 
 
+class JournalExamMaxScoreUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+    exam_max_score: int = Field(ge=0, le=100)
+
+
 class JournalStudentSummaryResponse(BaseModel):
     id: int
     journal_id: int
     student_id: int
+    homework_score: int
+    attendance_score: int
     exam_score: int
     bonus_score: int
     sum_score: int
+    max_period_score: int
+    percentage: float
     attendance_count: int
     total_lessons: int
     version: int
+
+    model_config = {"from_attributes": True}

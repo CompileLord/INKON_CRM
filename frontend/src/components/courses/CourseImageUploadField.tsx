@@ -10,9 +10,7 @@ interface CourseImageUploadFieldProps {
 }
 
 export function CourseImageUploadField({
-  courseId: _courseId,
   currentPhotoPath,
-  onPhotoUploaded: _onPhotoUploaded,
   onFileSelected,
 }: CourseImageUploadFieldProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

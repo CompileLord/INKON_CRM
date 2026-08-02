@@ -605,32 +605,36 @@ CRM-система для образовательного центра «ИМК
 **User story:** Как Ментор / SuperAdmin, я хочу, чтобы итоговый балл (Sum) за период рассчитывался автоматически по формуле, чтобы исключить ручные ошибки.
 
 **Как это работает (пошагово):**
-1. При любом изменении `score`, `exam_score` или `bonus_score` — в той же транзакции пересчитывается Sum.
-2. **Формула:** `Sum = Σ(score за каждый день, max 5 за день) + exam_score + bonus_score`
-3. **Ограничение:** `exam_score + bonus_score <= 500` (лимит на сумму двух полей).
-4. Результат сохраняется в поле `sum_score` (денормализация для быстрого чтения).
+1. При любом изменении `score`, `attendance`, `exam_score` или `bonus_score` — в той же транзакции пересчитывается Sum.
+2. **Формула:**
+   - `homework_score = Σ(score за каждый день, max 5 за день)`
+   - `attendance_score = count(attendance is True) × 1`
+   - `sum_score = homework_score + attendance_score + exam_score + bonus_score`
+   - `max_period_score = total_lessons × (5 + 1) + journal.exam_max_score`
+   - `percentage = sum_score / max_period_score × 100`
+3. **Ограничения:** `exam_score <= journal.exam_max_score` (0–100), `bonus_score <= 20` (0–20).
+4. Результаты сохраняются в `journal_student_summaries` (`homework_score`, `attendance_score`, `sum_score`, `max_period_score`).
 
 **Что видит пользователь / основные экраны:**
-- Колонка «Sum» в таблице журнала, обновляется при сохранении оценок.
-- Цветовая индикация Sum (фронтенд, на основе закреплённого цвета студента из enrollment).
+- Колонка «Sum» в таблице журнала в формате `sum_score/max_period_score (percentage%)`.
+- Цветовая индикация Sum (фронтенд, на основе процента: >=90% зеленый, >=75% салатовый, >=60% желтый, <60% красный).
 
 **Граничные случаи и обработка ошибок:**
-- `exam_score + bonus_score > 500` → 400 Validation Error при попытке сохранить.
-- Все оценки = 0 → Sum = 0.
-- Студент не посещал ни одного дня → Sum = exam_score + bonus_score (если проставлены).
+- `exam_score > journal.exam_max_score` или `bonus_score > 20` → 400 Validation Error при попытке сохранить.
+- Все оценки = 0 и не было посещений → Sum = 0.
+- Студент не посещал ни одного дня → homework_score = 0, attendance_score = 0, Sum = exam_score + bonus_score (если проставлены).
 
 **Acceptance criteria:**
 - [ ] Sum рассчитывается автоматически, не вводится вручную.
-- [ ] Формула: `Sum = Σ(daily_scores) + exam + bonus`.
-- [ ] Ограничение: `exam + bonus <= 500`, проверяется на уровне сервиса перед сохранением.
+- [ ] Формула: `Sum = homework_score + attendance_score + exam_score + bonus_score`.
+- [ ] Ограничения: `exam_score <= journal.exam_max_score` и `bonus_score <= 20`, проверяются сервисом перед сохранением.
 - [ ] Пересчёт происходит в той же транзакции, что и изменение оценки (не Arq-задачей).
-- [ ] Sum сохраняется как денормализованное поле для быстрого чтения.
+- [ ] `homework_score`, `attendance_score`, `sum_score` и `max_period_score` сохраняются в денормализованной таблице `journal_student_summary`.
 
 **Technical considerations:**
-- Хранение Sum: поле `sum_score` в связке (journal_id, student_id) — можно в отдельной таблице `journal_student_summary` или в `journal_exam_result`.
-- Рекомендуется единая таблица `journal_student_summary`: `journal_id`, `student_id`, `exam_score`, `bonus_score`, `sum_score`, `attendance_count`, `total_lessons`.
+- Хранение Sum: таблица `journal_student_summary`: `journal_id`, `student_id`, `homework_score`, `attendance_score`, `exam_score`, `bonus_score`, `sum_score`, `max_period_score`, `attendance_count`, `total_lessons`.
 - Пересчёт: `SumCalculationService.recalculate(journal_id, student_id)` вызывается из JournalService при любом update.
-- Validation: `if exam_score + bonus_score > 500: raise ValidationError`.
+- Validation: `if exam_score > journal.exam_max_score or bonus_score > 20: raise ValidationError`.
 
 ---
 
@@ -659,14 +663,14 @@ CRM-система для образовательного центра «ИМК
 
 **Acceptance criteria:**
 - [ ] Exam и Bonus — отдельные числовые поля для каждого студента в каждом журнале.
-- [ ] Валидация: `exam + bonus <= 500`.
-- [ ] Оба поля nullable/default 0, не обязательны для заполнения.
-- [ ] Порядок колонок: [дни занятий] → Bonus → Exam → Sum.
+- [ ] Валидация: `exam_score <= journal.exam_max_score` и `bonus_score <= 20`.
+- [ ] Оба поля default 0, не обязательны для заполнения.
+- [ ] Порядок колонок: [дни занятий] → Attendance → Bonus → Exam → Sum.
 - [ ] Изменение Exam или Bonus триггерит пересчёт Sum.
 
 **Technical considerations:**
-- Хранение: таблица `journal_student_summary` (или отдельные таблицы `journal_exam_result` и `journal_bonus`).
-- Рекомендация: единая таблица `journal_student_summary`: `journal_id`, `student_id`, `exam_score` (int, default 0), `bonus_score` (int, default 0), `sum_score` (int, computed).
+- Хранение: таблица `journal_student_summary`.
+- Рекомендация: единая таблица `journal_student_summary`: `journal_id`, `student_id`, `homework_score` (int, default 0), `attendance_score` (int, default 0), `exam_score` (int, default 0), `bonus_score` (int, default 0), `sum_score` (int, computed), `max_period_score` (int, computed).
 - Связь с F-13 (Sum).
 
 ---
@@ -1056,8 +1060,8 @@ CRM-система для образовательного центра «ИМК
     ]
   }
   ```
-- SQL: `SELECT journal_id, student_id, sum_score FROM journal_student_summary WHERE course_id = :id ORDER BY journal.period_start`.
-- Average = `AVG(sum_score)` per student.
+- SQL: `SELECT journal_id, student_id, sum_score, max_period_score FROM journal_student_summary WHERE course_id = :id ORDER BY journal.period_start`.
+- Average = `AVG(sum_score / max_period_score * 100)` per student.
 
 ---
 
@@ -1636,6 +1640,7 @@ erDiagram
         date period_start
         date period_end
         enum period_type "week/month"
+        int exam_max_score "default 70"
     }
 
     JOURNAL_ENTRIES {
@@ -1652,9 +1657,12 @@ erDiagram
         int id PK
         int journal_id FK
         int student_id FK
+        int homework_score "default 0"
+        int attendance_score "default 0"
         int exam_score "default 0"
         int bonus_score "default 0"
         int sum_score "computed"
+        int max_period_score "computed"
         int attendance_count
         int total_lessons
     }

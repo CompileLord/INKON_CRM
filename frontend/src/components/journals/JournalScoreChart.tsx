@@ -8,14 +8,13 @@ interface JournalScoreChartProps {
 
 const WIDTH = 1000;
 const HEIGHT = 300;
-const PADDING = { top: 20, right: 20, bottom: 32, left: 40 };
+const PADDING = { top: 20, right: 20, bottom: 32, left: 45 };
 const PLOT_WIDTH = WIDTH - PADDING.left - PADDING.right;
 const PLOT_HEIGHT = HEIGHT - PADDING.top - PADDING.bottom;
-const GRID_LINES = 4; // 5 ticks: 0, 25%, 50%, 75%, 100% of niceMax
+const GRID_LINES = 4;
 
-/** Rounds a max value up to a "nice" round number so gridlines read cleanly (0/25/50/75/100-style spacing). */
 function niceCeil(value: number): number {
-  if (value <= 0) return 1;
+  if (value <= 0) return 100;
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const normalized = value / magnitude;
   const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
@@ -31,17 +30,35 @@ function yFor(value: number, max: number): number {
   return PADDING.top + PLOT_HEIGHT - (value / max) * PLOT_HEIGHT;
 }
 
+const COLOR_PALETTE = [
+  "#E53E3E", "#319795", "#3182CE", "#D69E2E", "#D53F8C",
+  "#805AD5", "#DD6B20", "#38A169", "#00B5D8", "#B83280",
+  "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
+  "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
+];
+
 export function JournalScoreChart({ data }: JournalScoreChartProps) {
   const { t } = useTranslation("journals");
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hiddenStudents, setHiddenStudents] = useState<Set<number>>(new Set());
 
   const labels = useMemo(() => data?.labels ?? [], [data]);
-  const datasets = useMemo(() => data?.datasets ?? [], [data]);
+  const datasets = useMemo(() => {
+    const raw = data?.datasets ?? [];
+    const used = new Set<string>();
+    return raw.map((d, idx) => {
+      let color = d.color_hex;
+      if (!color || color === "#FF5733" || used.has(color)) {
+        color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
+      }
+      used.add(color);
+      return { ...d, color_hex: color };
+    });
+  }, [data]);
 
   const max = useMemo(() => {
-    const allScores = datasets.flatMap((d) => d.scores);
-    return niceCeil(Math.max(...allScores, 1));
+    const allValues = datasets.flatMap((d) => (d.percentages ? d.percentages : d.scores));
+    return niceCeil(Math.max(...allValues, 100));
   }, [datasets]);
 
   if (labels.length === 0 || datasets.length === 0) {
@@ -80,7 +97,11 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
   const tooltipRows =
     hoverIndex !== null
       ? [...visibleDatasets]
-          .map((d) => ({ name: d.name, color: d.color_hex, value: d.scores[hoverIndex] ?? 0 }))
+          .map((d) => {
+            const val = d.percentages ? d.percentages[hoverIndex] : d.scores[hoverIndex];
+            const isPct = Boolean(d.percentages);
+            return { name: d.name, color: d.color_hex, value: val ?? 0, isPct };
+          })
           .sort((a, b) => b.value - a.value)
       : [];
 
@@ -97,7 +118,6 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setHoverIndex(null)}
         >
-          {/* Gridlines + y-axis labels */}
           {Array.from({ length: GRID_LINES + 1 }, (_, i) => {
             const value = (max / GRID_LINES) * i;
             const y = yFor(value, max);
@@ -113,13 +133,12 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
                   strokeDasharray="3 3"
                 />
                 <text x={PADDING.left - 8} y={y + 4} textAnchor="end" className="fill-muted text-[10px]">
-                  {Math.round(value)}
+                  {Math.round(value)}%
                 </text>
               </g>
             );
           })}
 
-          {/* X-axis labels */}
           {labels.map((label, i) => (
             <text
               key={i}
@@ -132,7 +151,6 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
             </text>
           ))}
 
-          {/* Hover guideline */}
           {hoverIndex !== null && (
             <line
               x1={xFor(hoverIndex, labels.length)}
@@ -144,17 +162,17 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
             />
           )}
 
-          {/* Lines + points */}
           {visibleDatasets.map((dataset) => {
-            const points = dataset.scores.map((score, i) => `${xFor(i, labels.length)},${yFor(score, max)}`);
+            const values = dataset.percentages ? dataset.percentages : dataset.scores;
+            const points = values.map((val, i) => `${xFor(i, labels.length)},${yFor(val, max)}`);
             return (
               <g key={dataset.student_id}>
                 <path d={`M ${points.join(" L ")}`} fill="none" stroke={dataset.color_hex} strokeWidth={2} />
-                {dataset.scores.map((score, i) => (
+                {values.map((val, i) => (
                   <circle
                     key={i}
                     cx={xFor(i, labels.length)}
-                    cy={yFor(score, max)}
+                    cy={yFor(val, max)}
                     r={hoverIndex === i ? 5 : 3}
                     fill={dataset.color_hex}
                   />
@@ -174,7 +192,7 @@ export function JournalScoreChart({ data }: JournalScoreChartProps) {
           >
             {tooltipRows.map((row) => (
               <span key={row.name} className="font-medium" style={{ color: row.color }}>
-                {row.name} — {row.value}
+                {row.name} — {row.value}{row.isPct ? "%" : ""}
               </span>
             ))}
           </div>

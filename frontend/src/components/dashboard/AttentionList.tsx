@@ -11,7 +11,7 @@ export function AttentionList() {
   const debts = data?.items ?? [];
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-border-warm bg-card">
+    <div className="flex h-full flex-col rounded-xl border border-border-warm bg-card shadow-xs transition-[box-shadow,border-color] duration-200">
       <div className="flex items-center gap-2 rounded-t-xl border-b border-border-warm bg-strip px-5 py-3.5">
         <AlertTriangle size={16} className="text-amber-600" />
         <h3 className="text-[15px] font-semibold text-ink">{t("attentionToday")}</h3>
@@ -25,7 +25,7 @@ export function AttentionList() {
             <p className="text-rose-600 font-semibold">{t("errorLoading", "Ошибка загрузки должников")}</p>
             <button
               onClick={() => refetch()}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-xs font-medium text-ink hover:bg-cream"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-xs font-medium text-ink hover:bg-cream active:scale-95 transition-[background-color,transform] duration-150 ease-out"
             >
               <RefreshCw size={12} /> {t("common:retry", "Повторить")}
             </button>
@@ -35,7 +35,7 @@ export function AttentionList() {
         ) : (
           <ul className="divide-y divide-beige">
             {debts.map((item) => (
-              <li key={`${item.student.id}-${item.course.id}`} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+              <li key={`${item.student.id}-${item.course.id}`} className="flex gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-strip">
                 <span
                   className={[
                     "mt-1.5 h-2 w-2 shrink-0 rounded-full",
@@ -47,10 +47,10 @@ export function AttentionList() {
                     <p className="text-sm font-medium text-ink">
                       {item.student.first_name} {item.student.last_name}
                     </p>
-                    <span className="text-xs font-bold text-rose-600">{formatSum(item.debt)} TJS</span>
+                    <span className="text-xs font-bold text-rose-600 tabular-nums">{formatSum(item.debt)} TJS</span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted">
-                    {item.course.title} • {t("overdueDays", { days: item.overdue_days })}
+                    {item.course.title} • <span className="tabular-nums">{t("overdueDays", { days: item.overdue_days })}</span>
                   </p>
                 </div>
               </li>
@@ -62,7 +62,7 @@ export function AttentionList() {
       <div className="border-t border-beige px-5 py-3.5">
         <Link
           to="/finance"
-          className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 no-underline hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 no-underline hover:underline active:scale-95 transition-transform duration-150"
         >
           {t("viewAllDebts")} <ChevronRight size={14} />
         </Link>

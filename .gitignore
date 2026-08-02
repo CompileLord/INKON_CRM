@@ -48,4 +48,5 @@ storage/avatar/*
 storage/student/*
 !storage/student/.gitkeep
 tasks/
+.omc/
 

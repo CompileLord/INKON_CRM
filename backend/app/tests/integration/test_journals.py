@@ -4,11 +4,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.security import create_access_token
 from app.models.user import User
-from app.models.course import Course
-from app.models.enrollment import Enrollment
+from app.models.course import Course, CourseStatus, CourseExamType
 from app.models.journal import Journal
-from app.models.journal_entry import JournalEntry
-from app.models.journal_student_summary import JournalStudentSummary
+from app.core.scoring import default_exam_max_score, max_period_score, score_percentage, MAX_BONUS_SCORE
+
+
+def test_scoring_rules_unit() -> None:
+    assert default_exam_max_score(CourseExamType.WEEKLY) == 70
+    assert default_exam_max_score(CourseExamType.MONTHLY) == 60
+
+    max_weekly = max_period_score(total_lessons=5, exam_max_score=70)
+    assert max_weekly == 100
+    assert score_percentage(100, max_weekly) == 100.0
+
+    max_monthly = max_period_score(total_lessons=12, exam_max_score=60)
+    assert max_monthly == 132
+    assert score_percentage(66, max_monthly) == 50.0
+
+    assert score_percentage(0, 0) == 0.0
 
 
 @pytest.mark.asyncio
@@ -16,7 +29,6 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-    # 1. Create Course and enroll student
     course_resp = await client.post(
         "/api/v1/courses/",
         json={
@@ -49,14 +61,12 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     )
     assert enroll_resp.status_code == 201
 
-    # Get the generated journals
     async with db_session.begin():
         journals_res = await db_session.execute(select(Journal).filter(Journal.course_id == course_id))
         journals = list(journals_res.scalars().all())
         assert len(journals) == 5
         journal_id = journals[0].id
 
-    # 2. Get Journal as Mentor
     mentor_token = create_access_token(test_mentor.id, test_mentor.role)
     mentor_headers = {"Authorization": f"Bearer {mentor_token}"}
 
@@ -64,20 +74,20 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     assert get_resp.status_code == 200
     grid = get_resp.json()
     assert grid["journal_id"] == journal_id
+    assert grid["exam_max_score"] == 70
     assert len(grid["students"]) == 1
     student_record = grid["students"][0]
     assert student_record["student_id"] == test_student.id
-    assert len(student_record["entries"]) == 1 # 1 Monday per week
+    assert len(student_record["entries"]) == 1
     entry_val = student_record["entries"][0]
 
-    # 3. Batch Update entries (success)
     put_resp = await client.put(
         f"/api/v1/journals/{journal_id}/entries",
         json=[
             {
                 "student_id": test_student.id,
                 "lesson_date": str(entry_val["lesson_date"]),
-                "attendance": True,
+                "attendance": False,
                 "score": 4,
                 "comment": "Good job",
                 "version": entry_val["version"]
@@ -87,13 +97,15 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     )
     assert put_resp.status_code == 200
 
-    # 4. Verify score saved and sum recalculated
     get_resp2 = await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)
     summary_data = get_resp2.json()["students"][0]["summary"]
-    assert summary_data["sum_score"] == 4
+    assert summary_data["homework_score"] == 4
+    assert summary_data["attendance_score"] == 1
     assert summary_data["attendance_count"] == 1
+    assert summary_data["sum_score"] == 5
+    assert summary_data["max_period_score"] == 76
+    assert summary_data["percentage"] == 6.58
 
-    # 5. Batch Update with score=6 -> verify 400
     put_invalid_score = await client.put(
         f"/api/v1/journals/{journal_id}/entries",
         json=[
@@ -108,9 +120,8 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
         ],
         headers=mentor_headers
     )
-    assert put_invalid_score.status_code == 422 # Pydantic validation handles ge/le range
+    assert put_invalid_score.status_code == 422
 
-    # 6. Check concurrent write conflict on entries -> verify 409
     put_conflict = await client.put(
         f"/api/v1/journals/{journal_id}/entries",
         json=[
@@ -120,14 +131,13 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
                 "attendance": True,
                 "score": 5,
                 "comment": "Conflict test",
-                "version": entry_val["version"] # Outdated version, database now has version 2
+                "version": entry_val["version"]
             }
         ],
         headers=mentor_headers
     )
     assert put_conflict.status_code == 409
 
-    # 7. Check non-owner mentor access -> verify 403
     other_mentor = User(
         email="mentorother@example.com",
         first_name="Mentor",
@@ -144,43 +154,98 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     bad_get = await client.get(f"/api/v1/journals/{journal_id}", headers=other_mentor_headers)
     assert bad_get.status_code == 403
 
-    # 8. Update exam & bonus summary (success)
     current_summary_version = summary_data["version"]
     patch_summary_resp = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
         json={
-            "exam_score": 100,
-            "bonus_score": 50,
+            "exam_score": 70,
+            "bonus_score": 15,
             "version": current_summary_version
         },
         headers=mentor_headers
     )
     assert patch_summary_resp.status_code == 200
     patched_summary = patch_summary_resp.json()
-    assert patched_summary["exam_score"] == 100
-    assert patched_summary["bonus_score"] == 50
-    assert patched_summary["sum_score"] == 154 # 4 (daily) + 100 + 50
+    assert patched_summary["exam_score"] == 70
+    assert patched_summary["bonus_score"] == 15
+    assert patched_summary["sum_score"] == 90
+    assert patched_summary["percentage"] == 118.42
 
-    # 9. Update summary invalid sum (100 + 401 = 501 > 500) -> verify 400
-    patch_invalid_sum = await client.patch(
+    patch_exceed_exam = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
         json={
-            "exam_score": 401,
-            "bonus_score": 100,
+            "exam_score": 71,
+            "bonus_score": 0,
             "version": patched_summary["version"]
         },
         headers=mentor_headers
     )
-    assert patch_invalid_sum.status_code == 400
+    assert patch_exceed_exam.status_code == 400
 
-    # 10. Update summary concurrent conflict -> verify 409
+    patch_exceed_bonus = await client.patch(
+        f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
+        json={
+            "exam_score": 50,
+            "bonus_score": 21,
+            "version": patched_summary["version"]
+        },
+        headers=mentor_headers
+    )
+    assert patch_exceed_bonus.status_code == 400
+
     patch_conflict = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
         json={
-            "exam_score": 200,
-            "bonus_score": 50,
-            "version": current_summary_version # outdated version
+            "exam_score": 50,
+            "bonus_score": 10,
+            "version": current_summary_version
         },
         headers=mentor_headers
     )
     assert patch_conflict.status_code == 409
+
+    patch_weight_too_low = await client.patch(
+        f"/api/v1/journals/{journal_id}/exam-max-score",
+        json={"exam_max_score": 60},
+        headers=mentor_headers
+    )
+    assert patch_weight_too_low.status_code == 400
+
+    patch_weight_ok = await client.patch(
+        f"/api/v1/journals/{journal_id}/exam-max-score",
+        json={"exam_max_score": 80},
+        headers=mentor_headers
+    )
+    assert patch_weight_ok.status_code == 200
+    assert patch_weight_ok.json()["exam_max_score"] == 80
+
+    get_resp3 = await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)
+    summary_data3 = get_resp3.json()["students"][0]["summary"]
+    assert summary_data3["max_period_score"] == 86
+
+    student_token = create_access_token(test_student.id, test_student.role)
+    student_headers = {"Authorization": f"Bearer {student_token}"}
+    patch_student_forbidden = await client.patch(
+        f"/api/v1/journals/{journal_id}/exam-max-score",
+        json={"exam_max_score": 50},
+        headers=student_headers
+    )
+    assert patch_student_forbidden.status_code == 403
+
+    patch_other_mentor_forbidden = await client.patch(
+        f"/api/v1/journals/{journal_id}/exam-max-score",
+        json={"exam_max_score": 50},
+        headers=other_mentor_headers
+    )
+    assert patch_other_mentor_forbidden.status_code == 403
+
+    async with db_session.begin():
+        course = await db_session.get(Course, course_id)
+        course.status = CourseStatus.ARCHIVED
+
+    patch_archived_forbidden = await client.patch(
+        f"/api/v1/journals/{journal_id}/exam-max-score",
+        json={"exam_max_score": 50},
+        headers=mentor_headers
+    )
+    assert patch_archived_forbidden.status_code == 403

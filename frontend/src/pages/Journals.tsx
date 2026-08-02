@@ -76,10 +76,10 @@ export function Journals() {
               type="button"
               onClick={() => setStatus(f.value)}
               className={[
-                "rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-150",
+                "rounded-full border px-4 py-2 text-sm font-medium active:scale-95 transition-[background-color,border-color,color,transform] duration-150 ease-out",
                 FOCUS_RING,
                 status === f.value
-                  ? "border-blue-600 bg-blue-50 text-blue-600"
+                  ? "border-blue-600 bg-blue-50 text-blue-600 dark:border-accent dark:bg-accent/10 dark:text-accent font-semibold"
                   : "border-border-warm bg-card text-nav hover:bg-strip",
               ].join(" ")}
             >

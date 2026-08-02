@@ -52,7 +52,7 @@ async def test_enroll_student_success(client: AsyncClient, test_admin: User, tes
     enrollment_data = response.json()
     assert enrollment_data["status"] == "active"
     assert float(enrollment_data["price_at_enrollment"]) == 200.0
-    assert enrollment_data["color_hex"] == "#FF5733" # First color in palette
+    assert enrollment_data["color_hex"] == "#E53E3E" # First color in palette
 
     # 3. Check JournalEntries and summaries in DB
     async with db_session.begin():

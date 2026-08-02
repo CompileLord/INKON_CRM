@@ -1434,6 +1434,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "period_start": string,
       "period_end": string,
       "period_type": "week" | "month",
+      "exam_max_score": integer,
     }
   ]
   ```
@@ -1707,12 +1708,60 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "id": integer,
     "journal_id": integer,
     "student_id": integer,
+    "homework_score": integer,
+    "attendance_score": integer,
     "exam_score": integer,
     "bonus_score": integer,
     "sum_score": integer,
+    "max_period_score": integer,
+    "percentage": number,
     "attendance_count": integer,
     "total_lessons": integer,
     "version": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## PATCH /api/v1/journals/{id}/exam-max-score
+
+**Summary:** Update Exam Max Score
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Request Body (JSON):**
+```json
+{
+  "exam_max_score": integer,
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "id": integer,
+    "course_id": integer,
+    "period_label": string,
+    "period_start": string,
+    "period_end": string,
+    "period_type": "week" | "month",
+    "exam_max_score": integer,
   }
   ```
 - **422**: Validation Error

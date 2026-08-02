@@ -5,7 +5,7 @@ export function UserStatusBadge({ isDeleted }: { isDeleted: boolean }) {
   return (
     <span
       className={[
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-black/5 dark:ring-white/10",
         isDeleted
           ? "bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:text-stone-300"
           : "bg-green-100 text-green-700 dark:bg-green-950/70 dark:text-green-300",

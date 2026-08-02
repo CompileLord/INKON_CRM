@@ -250,8 +250,11 @@ async def seed_demo_data() -> None:
                 "mentor_id": mentor_sukhrob.id,
                 "schedules": [
                     {"day_of_week": 0, "time_start": time(18, 0), "time_end": time(20, 0)},
+                    {"day_of_week": 1, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 2, "time_start": time(18, 0), "time_end": time(20, 0)},
-                    {"day_of_week": 4, "time_start": time(18, 0), "time_end": time(20, 0)}
+                    {"day_of_week": 3, "time_start": time(18, 0), "time_end": time(20, 0)},
+                    {"day_of_week": 4, "time_start": time(18, 0), "time_end": time(20, 0)},
+                    {"day_of_week": 5, "time_start": time(18, 0), "time_end": time(20, 0)}
                 ],
                 "banner": ("Python Backend Dev", "1-Month Intensive Programming", (20, 83, 45), (52, 211, 153)),
                 "student_slice": slice(16, 24)
@@ -266,8 +269,11 @@ async def seed_demo_data() -> None:
                 "price": Decimal("750.00"),
                 "mentor_id": mentor_sukhrob.id,
                 "schedules": [
+                    {"day_of_week": 0, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 1, "time_start": time(18, 0), "time_end": time(20, 0)},
+                    {"day_of_week": 2, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 3, "time_start": time(18, 0), "time_end": time(20, 0)},
+                    {"day_of_week": 4, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 5, "time_start": time(18, 0), "time_end": time(20, 0)}
                 ],
                 "banner": ("Web Frontend Dev", "1-Month Intensive Programming", (109, 40, 217), (167, 139, 250)),
@@ -360,8 +366,8 @@ async def seed_demo_data() -> None:
             summaries: List[JournalStudentSummary] = list(summaries_res.scalars().all())
 
             for summary in summaries:
-                summary.exam_score = 15 + ((summary.student_id * 3) % 10)
-                summary.bonus_score = (summary.student_id % 3)
+                summary.exam_score = min(journal.exam_max_score, 40 + ((summary.student_id * 3) % 20))
+                summary.bonus_score = (summary.student_id % 5)
                 await sum_service.recalculate(summary.journal_id, summary.student_id)
 
         await session.commit()

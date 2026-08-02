@@ -50,7 +50,7 @@ export function CourseCard({ course, mentor, justCreated = false }: CourseCardPr
         ) : null}
         <span
           className={[
-            "absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium shadow-xs backdrop-blur-xs",
+            "absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium shadow-xs backdrop-blur-xs ring-1 ring-black/5 dark:ring-white/10",
             isActive ? "bg-green-500/90 text-white" : "bg-gray-800/80 text-white",
           ].join(" ")}
         >
@@ -63,7 +63,7 @@ export function CourseCard({ course, mentor, justCreated = false }: CourseCardPr
         <h3 className="truncate text-[17px] font-semibold text-ink">{course.title}</h3>
         <p className="line-clamp-2 text-[13px] text-muted">{course.description}</p>
 
-        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-nav">
+        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-nav tabular-nums">
           <Calendar size={14} />
           {formatDateOnly(course.start_date)} – {formatDateOnly(course.end_date)}
         </div>
@@ -72,13 +72,13 @@ export function CourseCard({ course, mentor, justCreated = false }: CourseCardPr
       </div>
 
       <div className="flex items-center justify-between border-t border-beige px-5 py-3">
-        <span className="whitespace-nowrap text-[15px] font-bold tabular-nums text-maroon">
+        <span className="whitespace-nowrap text-[15px] font-bold tabular-nums text-maroon dark:text-accent">
           {formatMoney(course.price, { suffix: "TJS/мес" })}
         </span>
         <button
           type="button"
           aria-label="Подробнее"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-[background-color,color,transform] duration-150 ease-out active:scale-95 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
           <ArrowRight size={16} />
         </button>

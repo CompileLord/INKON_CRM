@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { User as UserIcon, Settings as SettingsIcon, Bell, Send, CheckCircle2, Save, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/authStore";
@@ -30,24 +30,24 @@ export function Settings() {
 
   const [saved, setSaved] = useState<boolean>(false);
 
-  // Populate profile form
-  useEffect(() => {
-    if (currentUser) {
-      setFirstName(currentUser.first_name || "");
-      setLastName(currentUser.last_name || "");
-      setEmail(currentUser.email || "");
-      setPhone(currentUser.phone || "");
-    }
-  }, [currentUser]);
+  // Populate profile form when currentUser arrives
+  const [loadedUserId, setLoadedUserId] = useState<number | null>(null);
+  if (currentUser && currentUser.id !== loadedUserId) {
+    setLoadedUserId(currentUser.id);
+    setFirstName(currentUser.first_name || "");
+    setLastName(currentUser.last_name || "");
+    setEmail(currentUser.email || "");
+    setPhone(currentUser.phone || "");
+  }
 
-  // Populate org settings form
-  useEffect(() => {
-    if (orgSettings) {
-      setOrgName(orgSettings.org_name || "Учебный центр ИМКОН");
-      setNotifyPayments(orgSettings.notify_payments ?? true);
-      setNotifyDebts(orgSettings.notify_debts ?? true);
-    }
-  }, [orgSettings]);
+  // Populate org settings form when orgSettings arrives
+  const [orgLoaded, setOrgLoaded] = useState<boolean>(false);
+  if (orgSettings && !orgLoaded) {
+    setOrgLoaded(true);
+    setOrgName(orgSettings.org_name || "Учебный центр ИМКОН");
+    setNotifyPayments(orgSettings.notify_payments ?? true);
+    setNotifyDebts(orgSettings.notify_debts ?? true);
+  }
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();

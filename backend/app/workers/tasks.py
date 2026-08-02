@@ -102,7 +102,8 @@ async def send_exam_result_notification_task(ctx, student_id: int, journal_id: i
 
         async def send_func(is_update: bool) -> None:
             prefix = "[Обновлено] " if is_update else ""
-            text = f"{prefix}Результаты за {journal.period_label} по курсу {course.title}: Sum = {summary.sum_score}. Посещаемость: {summary.attendance_count}/{summary.total_lessons} дней."
+            text = f"{prefix}Результаты за {journal.period_label} по курсу {course.title}: Sum = {summary.sum_score}/{summary.max_period_score}. Посещаемость: {summary.attendance_count}/{summary.total_lessons} дней."
+
             
             if document:
                 if document.file_size > 50 * 1024 * 1024:

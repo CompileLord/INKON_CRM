@@ -19,9 +19,9 @@ export function Finance() {
       <div className="flex items-center border-b border-border gap-6">
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold active:scale-95 transition-[color,border-color,transform] duration-150 ease-out ${
             activeTab === "analytics"
-              ? "border-maroon text-maroon"
+              ? "border-maroon text-maroon dark:border-accent dark:text-accent"
               : "border-transparent text-muted hover:text-ink"
           }`}
         >
@@ -29,9 +29,9 @@ export function Finance() {
         </button>
         <button
           onClick={() => setActiveTab("debtors")}
-          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold active:scale-95 transition-[color,border-color,transform] duration-150 ease-out ${
             activeTab === "debtors"
-              ? "border-maroon text-maroon"
+              ? "border-maroon text-maroon dark:border-accent dark:text-accent"
               : "border-transparent text-muted hover:text-ink"
           }`}
         >

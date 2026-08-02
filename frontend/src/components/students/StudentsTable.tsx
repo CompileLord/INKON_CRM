@@ -96,21 +96,21 @@ export function StudentsTable({
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink">
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">
                     <div>{student.phone ?? "—"}</div>
                     {student.parent_phone && (
-                      <div className="text-xs text-blue-600 font-medium mt-0.5">
+                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 tabular-nums">
                         Род: {student.parent_phone}
                       </div>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink">
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">
                     {student.payment_day_of_month ?? "—"}
                   </td>
                   <td className="px-5 py-3">
                     <UserStatusBadge isDeleted={student.is_deleted} />
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink">
+                  <td className="px-5 py-3 text-sm text-ink tabular-nums">
                     {formatCreatedAt(student.created_at, i18n.language)}
                   </td>
                   <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
@@ -122,7 +122,7 @@ export function StudentsTable({
                           onEdit(student);
                         }}
                         aria-label={t("common:edit")}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip"
                       >
                         <Pencil size={15} />
                       </button>
@@ -133,7 +133,7 @@ export function StudentsTable({
                           onDeleteRequest(student);
                         }}
                         aria-label={t("common:delete")}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -166,7 +166,7 @@ export function StudentsTable({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-lg border border-border-warm bg-card px-3 py-2 text-sm font-medium text-ink hover:bg-strip"
+              className="rounded-lg border border-border-warm bg-card px-3 py-2 text-sm font-medium text-ink hover:bg-strip active:scale-95 transition-transform"
             >
               {t("common:retry")}
             </button>
@@ -177,7 +177,7 @@ export function StudentsTable({
 
         {showRows &&
           students.map((student) => (
-            <div key={student.id} className="rounded-lg border border-border-warm p-3.5">
+            <div key={student.id} className="rounded-lg border border-border-warm p-3.5 shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <PersonAvatar
@@ -197,7 +197,7 @@ export function StudentsTable({
                     type="button"
                     onClick={() => onEdit(student)}
                     aria-label={t("common:edit")}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip active:scale-95 transition-transform"
                   >
                     <Pencil size={15} />
                   </button>
@@ -205,7 +205,7 @@ export function StudentsTable({
                     type="button"
                     onClick={() => onDeleteRequest(student)}
                     aria-label={t("common:delete")}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 active:scale-95 transition-transform"
                   >
                     <Trash2 size={15} />
                   </button>
@@ -214,11 +214,11 @@ export function StudentsTable({
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted">
                 <div>
                   <dt>{t("table.phone")}</dt>
-                  <dd className="text-ink">{student.phone ?? "—"}</dd>
+                  <dd className="text-ink tabular-nums">{student.phone ?? "—"}</dd>
                 </div>
                 <div>
                   <dt>{t("table.paymentDay")}</dt>
-                  <dd className="text-ink">{student.payment_day_of_month ?? "—"}</dd>
+                  <dd className="text-ink tabular-nums">{student.payment_day_of_month ?? "—"}</dd>
                 </div>
                 <div>
                   <dt>{t("common:status")}</dt>
@@ -228,7 +228,7 @@ export function StudentsTable({
                 </div>
                 <div>
                   <dt>{t("table.created")}</dt>
-                  <dd className="text-ink">{formatCreatedAt(student.created_at, i18n.language)}</dd>
+                  <dd className="text-ink tabular-nums">{formatCreatedAt(student.created_at, i18n.language)}</dd>
                 </div>
               </dl>
             </div>
@@ -236,7 +236,7 @@ export function StudentsTable({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-warm px-5 py-3.5">
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted tabular-nums">
           {total > 0 ? `${t("common:showing")} ${from}–${to} ${t("common:of")} ${total}` : t("common:noData")}
         </p>
         <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />

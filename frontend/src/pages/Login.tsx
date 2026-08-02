@@ -133,7 +133,7 @@ export function Login() {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors duration-150 hover:text-ink"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted active:scale-95 transition-[color,transform] duration-150 ease-out hover:text-ink"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

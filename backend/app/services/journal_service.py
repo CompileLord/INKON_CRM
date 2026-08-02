@@ -13,6 +13,7 @@ from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.services.sum_calculation_service import SumCalculationService
+from app.core.scoring import MAX_BONUS_SCORE, EXAM_MAX_SCORE_LIMIT, score_percentage
 
 
 def get_lesson_dates(period_start: date, period_end: date, schedules: List[CourseSchedule]) -> List[date]:
@@ -95,7 +96,6 @@ class JournalService:
 
         student_ids = [s_user.id for s_user, _ in students_list]
 
-        # Batch-load all entries for this journal (eliminates N+1)
         all_entries_query = select(JournalEntry).filter(
             JournalEntry.journal_id == journal_id,
             JournalEntry.student_id.in_(student_ids)
@@ -107,7 +107,6 @@ class JournalService:
         for entry in all_entries:
             entries_by_student[entry.student_id].append(entry)
 
-        # Batch-load all summaries for this journal (eliminates N+1)
         all_summaries_query = select(JournalStudentSummary).filter(
             JournalStudentSummary.journal_id == journal_id,
             JournalStudentSummary.student_id.in_(student_ids)
@@ -139,9 +138,15 @@ class JournalService:
             if summary:
                 summary_data = {
                     "id": summary.id,
+                    "journal_id": summary.journal_id,
+                    "student_id": summary.student_id,
+                    "homework_score": summary.homework_score,
+                    "attendance_score": summary.attendance_score,
                     "exam_score": summary.exam_score,
                     "bonus_score": summary.bonus_score,
                     "sum_score": summary.sum_score,
+                    "max_period_score": summary.max_period_score,
+                    "percentage": score_percentage(summary.sum_score, summary.max_period_score),
                     "attendance_count": summary.attendance_count,
                     "total_lessons": summary.total_lessons,
                     "version": summary.version
@@ -164,6 +169,7 @@ class JournalService:
             "period_start": journal.period_start,
             "period_end": journal.period_end,
             "period_type": journal.period_type,
+            "exam_max_score": journal.exam_max_score,
             "lesson_dates": lesson_dates,
             "students": students_data
         }
@@ -205,8 +211,7 @@ class JournalService:
             )
 
         updated_student_ids = set()
-        
-        # Pre-validate scores
+
         for update_item in entries_updates:
             if not (0 <= update_item.score <= 5):
                 raise HTTPException(
@@ -219,8 +224,7 @@ class JournalService:
 
         student_ids = list(set(u.student_id for u in entries_updates))
         dates = list(set(u.lesson_date for u in entries_updates))
-        
-        # Batch load all entries
+
         entry_query = select(JournalEntry).filter(
             JournalEntry.journal_id == journal_id,
             JournalEntry.student_id.in_(student_ids),
@@ -247,16 +251,18 @@ class JournalService:
                     detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
                 )
 
+            target_attendance = True if update_item.score > 0 else update_item.attendance
+
             changes = {}
-            if entry.attendance != update_item.attendance:
-                changes["attendance"] = (entry.attendance, update_item.attendance)
+            if entry.attendance != target_attendance:
+                changes["attendance"] = (entry.attendance, target_attendance)
             if entry.score != update_item.score:
                 changes["score"] = (entry.score, update_item.score)
             if entry.comment != update_item.comment:
                 changes["comment"] = (entry.comment, update_item.comment)
 
             if changes:
-                entry.attendance = update_item.attendance
+                entry.attendance = target_attendance
                 entry.score = update_item.score
                 entry.comment = update_item.comment
                 updated_student_ids.add(update_item.student_id)
@@ -334,10 +340,16 @@ class JournalService:
                 detail="Scores cannot be negative"
             )
 
-        if exam_score + bonus_score > 500:
+        if exam_score > journal.exam_max_score:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Combined exam and bonus score cannot exceed 500"
+                detail=f"Exam score cannot exceed journal maximum of {journal.exam_max_score}"
+            )
+
+        if bonus_score > MAX_BONUS_SCORE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Bonus score cannot exceed {MAX_BONUS_SCORE}"
             )
 
         summary_query = select(JournalStudentSummary).filter(
@@ -373,7 +385,6 @@ class JournalService:
         sum_service = SumCalculationService(self.db)
         await sum_service.recalculate(journal_id, student_id)
 
-        # Enqueue arq task for exam result notification (uses singleton pool)
         from app.core.redis import enqueue_job
         try:
             await enqueue_job("send_exam_result_notification_task", student_id, journal_id)
@@ -382,3 +393,87 @@ class JournalService:
 
         await self.db.refresh(summary)
         return summary
+
+    async def update_exam_max_score(
+        self,
+        journal_id: int,
+        exam_max_score: int,
+        current_user: User
+    ) -> Journal:
+        journal = await self.db.get(Journal, journal_id)
+        if not journal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Journal not found"
+            )
+
+        course_query = select(Course).filter(Course.id == journal.course_id)
+        course_result = await self.db.execute(course_query)
+        course = course_result.scalars().first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Course not found"
+            )
+
+        if current_user.role == UserRole.SUPERADMIN:
+            pass
+        elif current_user.role == UserRole.MENTOR:
+            if course.mentor_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not enough permissions"
+                )
+            if course.status == CourseStatus.ARCHIVED:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot update archived course"
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+
+        if not (0 <= exam_max_score <= EXAM_MAX_SCORE_LIMIT):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Exam max score must be between 0 and {EXAM_MAX_SCORE_LIMIT}"
+            )
+
+        higher_scores_query = select(JournalStudentSummary).filter(
+            JournalStudentSummary.journal_id == journal_id,
+            JournalStudentSummary.exam_score > exam_max_score
+        )
+        higher_result = await self.db.execute(higher_scores_query)
+        higher_summaries = list(higher_result.scalars().all())
+
+        if higher_summaries:
+            student_ids = [s.student_id for s in higher_summaries]
+            users_result = await self.db.execute(select(User).filter(User.id.in_(student_ids)))
+            users = list(users_result.scalars().all())
+            student_names = [f"{u.first_name} {u.last_name}" for u in users]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot lower exam max score to {exam_max_score}: student(s) {', '.join(student_names)} already have higher exam scores"
+            )
+
+        old_exam_max_score = journal.exam_max_score
+        journal.exam_max_score = exam_max_score
+
+        sum_service = SumCalculationService(self.db)
+        await sum_service.recalculate_journal(journal_id)
+
+        from app.services.audit_service import AuditService
+        audit_service = AuditService(self.db)
+        await audit_service.log(
+            user_id=current_user.id,
+            action="update",
+            entity_type="journal",
+            entity_id=journal.id,
+            changes={"exam_max_score": (old_exam_max_score, exam_max_score)}
+        )
+
+        await self.db.flush()
+        await self.db.refresh(journal)
+        return journal

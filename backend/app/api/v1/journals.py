@@ -3,8 +3,15 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user
 from app.models.user import User
+from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
-from app.schemas.journal import JournalEntryUpdate, JournalStudentSummaryUpdate, JournalStudentSummaryResponse
+from app.schemas.journal import (
+    JournalEntryUpdate,
+    JournalStudentSummaryUpdate,
+    JournalStudentSummaryResponse,
+    JournalExamMaxScoreUpdate,
+    JournalResponse,
+)
 from app.services.journal_service import JournalService
 
 router = APIRouter()
@@ -46,5 +53,20 @@ async def update_exam_or_bonus(
         exam_score=payload.exam_score,
         bonus_score=payload.bonus_score,
         version=payload.version,
+        current_user=current_user
+    )
+
+
+@router.patch("/{id}/exam-max-score", response_model=JournalResponse)
+async def update_exam_max_score(
+    id: int,
+    payload: JournalExamMaxScoreUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> Journal:
+    journal_service = JournalService(db)
+    return await journal_service.update_exam_max_score(
+        journal_id=id,
+        exam_max_score=payload.exam_max_score,
         current_user=current_user
     )

@@ -21,13 +21,13 @@ export function Audit() {
   const getActionBadge = (action: string) => {
     switch (action) {
       case "CREATE":
-        return <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">CREATE</span>;
+        return <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 ring-1 ring-black/5 dark:ring-white/10">CREATE</span>;
       case "UPDATE":
-        return <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">UPDATE</span>;
+        return <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/70 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 ring-1 ring-black/5 dark:ring-white/10">UPDATE</span>;
       case "DELETE":
-        return <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">DELETE</span>;
+        return <span className="inline-flex items-center rounded-full bg-rose-50 dark:bg-rose-950/70 px-2.5 py-0.5 text-xs font-bold text-rose-700 dark:text-rose-300 ring-1 ring-black/5 dark:ring-white/10">DELETE</span>;
       default:
-        return <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple-700">{action}</span>;
+        return <span className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-950/70 px-2.5 py-0.5 text-xs font-bold text-purple-700 dark:text-purple-300 ring-1 ring-black/5 dark:ring-white/10">{action}</span>;
     }
   };
 
@@ -46,13 +46,13 @@ export function Audit() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-ink flex items-center gap-2">
-            <ShieldCheck className="text-maroon" size={24} /> {t("title")}
+            <ShieldCheck className="text-maroon dark:text-accent" size={24} /> {t("title")}
           </h2>
           <p className="text-xs text-muted">{t("subtitle")}</p>
         </div>
         <button
           onClick={() => refetch()}
-          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-cream"
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-cream active:scale-95 transition-[background-color,transform] duration-150 ease-out"
         >
           <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> {t("common:refresh")}
         </button>
@@ -115,23 +115,23 @@ export function Audit() {
               ) : (
                 filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-cream/40 transition-colors">
-                    <td className="py-3.5 font-mono text-muted font-medium">#{log.id}</td>
-                    <td className="py-3.5 text-muted whitespace-nowrap">
+                    <td className="py-3.5 font-mono text-muted font-medium tabular-nums">#{log.id}</td>
+                    <td className="py-3.5 text-muted whitespace-nowrap tabular-nums">
                       {formatDateTime(log.created_at, i18n.language)}
                     </td>
                     <td className="py-3.5 font-bold text-ink">{log.user_name || `User #${log.user_id}`}</td>
                     <td className="py-3.5">{getActionBadge(log.action)}</td>
                     <td className="py-3.5">
-                      <span className="font-semibold text-slate-700">{log.entity_type}</span>
-                      <span className="ml-1 text-muted font-mono">#{log.entity_id}</span>
+                      <span className="font-semibold text-ink">{log.entity_type}</span>
+                      <span className="ml-1 text-muted font-mono tabular-nums">#{log.entity_id}</span>
                     </td>
                     <td className="py-3.5">
                       {log.field_name ? (
                         <div className="flex items-center gap-1.5 font-mono text-[11px]">
                           <span className="font-semibold text-ink">{log.field_name}:</span>
-                          <span className="text-rose-600 line-through">{log.old_value || "null"}</span>
+                          <span className="text-rose-600 dark:text-rose-400 line-through tabular-nums">{log.old_value || "null"}</span>
                           <span className="text-muted">➔</span>
-                          <span className="text-emerald-700 font-bold">{log.new_value || "null"}</span>
+                          <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">{log.new_value || "null"}</span>
                         </div>
                       ) : (
                         <span className="text-muted">—</span>
@@ -140,7 +140,7 @@ export function Audit() {
                     <td className="py-3.5 text-right">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted hover:bg-cream hover:text-ink transition-colors"
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted hover:bg-cream hover:text-ink active:scale-95 transition-[background-color,transform,color] duration-150 ease-out"
                       >
                         <Eye size={13} /> {t("common:details")}
                       </button>
@@ -164,11 +164,11 @@ export function Audit() {
           <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h3 className="text-lg font-bold text-ink flex items-center gap-2">
-                <Layers size={18} className="text-maroon" /> {t("common:details")} #{selectedLog.id}
+                <Layers size={18} className="text-maroon dark:text-accent" /> {t("common:details")} <span className="tabular-nums">#{selectedLog.id}</span>
               </h3>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="rounded-lg p-1 text-muted hover:bg-cream hover:text-ink"
+                className="rounded-lg p-1 text-muted hover:bg-cream hover:text-ink active:scale-95 transition-transform"
               >
                 ✕
               </button>
@@ -180,20 +180,20 @@ export function Audit() {
               </div>
               <div>
                 <span className="font-semibold text-muted">{t("time")}:</span>{" "}
-                <span className="text-ink">{formatDateTime(selectedLog.created_at, i18n.language)}</span>
+                <span className="text-ink tabular-nums">{formatDateTime(selectedLog.created_at, i18n.language)}</span>
               </div>
               <div>
                 <span className="font-semibold text-muted">{t("entity")}:</span>{" "}
-                <span className="text-ink font-mono">{selectedLog.entity_type} (ID: {selectedLog.entity_id})</span>
+                <span className="text-ink font-mono tabular-nums">{selectedLog.entity_type} (ID: {selectedLog.entity_id})</span>
               </div>
-              <div className="mt-2 rounded-xl bg-slate-950 p-4 text-emerald-400 font-mono text-[11px] overflow-x-auto">
+              <div className="mt-2 rounded-xl bg-slate-950 p-4 text-emerald-400 font-mono text-[11px] overflow-x-auto tabular-nums">
                 <pre>{JSON.stringify(selectedLog, null, 2)}</pre>
               </div>
             </div>
             <div className="mt-5 flex justify-end">
               <button
                 onClick={() => setSelectedLog(null)}
-                className="rounded-xl bg-maroon px-4 py-2 text-xs font-semibold text-white hover:bg-maroon/90"
+                className="rounded-xl bg-maroon px-4 py-2 text-xs font-semibold text-white hover:bg-maroon-dark active:scale-95 transition-[background-color,transform] duration-150 ease-out"
               >
                 {t("common:close")}
               </button>

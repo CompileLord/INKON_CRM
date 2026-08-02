@@ -102,22 +102,22 @@ export function Notifications() {
               ) : (
                 filtered.map((log) => (
                   <tr key={log.id} className="hover:bg-cream/40 transition-colors">
-                    <td className="py-3.5 font-mono text-muted font-medium">#{log.id}</td>
-                    <td className="py-3.5 text-muted whitespace-nowrap">
+                    <td className="py-3.5 font-mono text-muted font-medium tabular-nums">#{log.id}</td>
+                    <td className="py-3.5 text-muted whitespace-nowrap tabular-nums">
                       {formatDateTime(log.sent_at || log.notification_date, i18n.language)}
                     </td>
                     <td className="py-3.5 font-bold text-ink">{log.recipient}</td>
-                    <td className="py-3.5 font-mono text-[11px] text-slate-700">{log.type}</td>
-                    <td className="py-3.5 text-muted max-w-xs truncate">
+                    <td className="py-3.5 font-mono text-[11px] text-muted">{log.type}</td>
+                    <td className="py-3.5 text-muted max-w-xs truncate tabular-nums">
                       {log.error_message || `Related Entity ID #${log.related_entity_id}`}
                     </td>
                     <td className="py-3.5">
                       {log.status.toLowerCase() === "sent" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 ring-1 ring-black/5 dark:ring-white/10">
                           <CheckCircle2 size={13} /> {t("sent", "Отправлено")}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-950/70 px-2.5 py-0.5 text-xs font-bold text-rose-700 dark:text-rose-300 ring-1 ring-black/5 dark:ring-white/10 tabular-nums">
                           <AlertTriangle size={13} /> {t("failed", "Ошибка")} ({log.attempts})
                         </span>
                       )}
@@ -126,7 +126,7 @@ export function Notifications() {
                       {!log.read_at ? (
                         <button
                           onClick={() => markRead.mutate(log.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted hover:bg-cream hover:text-ink transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted hover:bg-cream hover:text-ink active:scale-95 transition-[background-color,transform,color] duration-150 ease-out"
                         >
                           <Check size={12} /> {t("markRead", "Прочитано")}
                         </button>

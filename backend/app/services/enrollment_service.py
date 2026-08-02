@@ -15,10 +15,10 @@ from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseReposi
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 
 PALETTE: List[str] = [
-    "#FF5733", "#33FF57", "#3357FF", "#F3FF33", "#FF33F3",
-    "#33FFF0", "#FFAF33", "#AF33FF", "#33FFAF", "#FF3333",
-    "#3399FF", "#99FF33", "#FF3399", "#33FF99", "#9933FF",
-    "#FF9933", "#33FFCC", "#CC33FF", "#FF33CC", "#33CCFF"
+    "#E53E3E", "#319795", "#3182CE", "#D69E2E", "#D53F8C",
+    "#805AD5", "#DD6B20", "#38A169", "#00B5D8", "#B83280",
+    "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
+    "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
 ]
 
 
@@ -68,12 +68,12 @@ class EnrollmentService:
             )
 
         count_query = select(func.count(Enrollment.id)).filter(
-            Enrollment.student_id == student_id,
+            Enrollment.course_id == course_id,
             Enrollment.is_deleted == False
         )
         count_result = await self.db.execute(count_query)
         count_existing_enrollments = count_result.scalar() or 0
-        color_hex = PALETTE[count_existing_enrollments % 20]
+        color_hex = PALETTE[count_existing_enrollments % len(PALETTE)]
 
         enrollment = Enrollment(
             student_id=student_id,

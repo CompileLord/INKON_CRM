@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Search, Bell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NotificationPopover } from "./notifications/NotificationPopover";
-import { LanguageSwitcher } from "./ui/LanguageSwitcher";
-import { ThemeToggle } from "./ui/ThemeToggle";
+import { QuickSettingsChanger } from "./ui/QuickSettingsChanger";
 import { useUnreadNotificationCount } from "../lib/notifications/hooks";
 
 export function Header() {
@@ -30,17 +29,16 @@ export function Header() {
 
         {/* Header Right Actions */}
         <div className="relative flex items-center gap-3">
-          <ThemeToggle />
-          <LanguageSwitcher />
+          <QuickSettingsChanger />
 
           <button
             onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-            className="relative rounded-full border border-border bg-card p-2.5 text-muted hover:bg-cream hover:text-ink transition-colors shadow-xs"
+            className="relative rounded-full border border-border bg-card p-2.5 text-muted hover:bg-cream hover:text-ink active:scale-95 transition-[background-color,transform,color,border-color] duration-150 ease-out shadow-xs"
             title={t("nav.notifications")}
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-maroon text-[10px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-maroon text-[10px] font-bold text-white tabular-nums">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}

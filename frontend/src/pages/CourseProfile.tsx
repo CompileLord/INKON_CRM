@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, Copy, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, Copy, Pencil, Trash2 } from "lucide-react";
 import {
   useCopyCourse,
   useCourse,
@@ -206,34 +206,43 @@ export function CourseProfile() {
             <p className="mt-1 max-w-2xl text-sm text-muted">{course.description}</p>
           </div>
 
-          {isSuperAdmin && (
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setEditOpen(true)}
-                aria-label={t("common:edit", "Редактировать")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setCopyConfirmOpen(true)}
-                aria-label={t("duplicate", "Дублировать")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
-              >
-                <Copy size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmOpen(true)}
-                aria-label={t("common:delete", "Удалить")}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to={`/journals/${course.id}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            >
+              <BookOpen size={16} />
+              <span>{t("openJournal", "Журнал курса")}</span>
+            </Link>
+            {isSuperAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  aria-label={t("common:edit", "Редактировать")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCopyConfirmOpen(true)}
+                  aria-label={t("duplicate", "Дублировать")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink"
+                >
+                  <Copy size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  aria-label={t("common:delete", "Удалить")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition-colors duration-150 hover:bg-red-50"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-beige px-6 py-4">

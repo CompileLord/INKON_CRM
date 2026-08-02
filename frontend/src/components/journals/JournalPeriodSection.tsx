@@ -1,11 +1,16 @@
 import { Fragment, useMemo, useState } from "react";
-import { ChevronDown, MessageSquare } from "lucide-react";
+import { ChevronDown, MessageSquare, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { AuthApiError } from "../../lib/auth/errors";
-import { useBatchUpdateJournalEntries, useJournal, useUpdateJournalStudentSummary } from "../../lib/journals/hooks";
+import {
+  useBatchUpdateJournalEntries,
+  useJournal,
+  useUpdateJournalExamMaxScore,
+  useUpdateJournalStudentSummary,
+} from "../../lib/journals/hooks";
 import { entryKey } from "../../lib/journals/types";
 import { formatDate } from "../../i18n/formatters";
 import type { JournalPeriod } from "../../lib/courses/types";
@@ -22,10 +27,10 @@ interface JournalPeriodSectionProps {
   onToast: (message: string, variant?: "success" | "error") => void;
 }
 
-function sumBadgeClass(sum: number): string {
-  if (sum >= 90) return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300";
-  if (sum >= 75) return "bg-lime-100 text-lime-800 dark:bg-lime-950/70 dark:text-lime-300";
-  if (sum >= 60) return "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300";
+function sumBadgeClass(percentage: number): string {
+  if (percentage >= 90) return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300";
+  if (percentage >= 75) return "bg-lime-100 text-lime-800 dark:bg-lime-950/70 dark:text-lime-300";
+  if (percentage >= 60) return "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300";
   return "bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300";
 }
 
@@ -49,6 +54,7 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
   const { data: detail, isLoading, isError, refetch } = useJournal(expanded ? period.id : undefined);
   const batchUpdate = useBatchUpdateJournalEntries(period.id, courseId);
   const updateSummary = useUpdateJournalStudentSummary(period.id, courseId);
+  const updateExamMaxScore = useUpdateJournalExamMaxScore(period.id, courseId);
   const [savingSummaryFor, setSavingSummaryFor] = useState<number | null>(null);
 
   const [pending, setPending] = useState<Map<string, JournalEntryUpdate>>(new Map());
@@ -57,6 +63,9 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
   const [summaryDrafts, setSummaryDrafts] = useState<Map<number, { exam_score: number; bonus_score: number }>>(
     new Map(),
   );
+
+  const [examMaxScoreModalOpen, setExamMaxScoreModalOpen] = useState(false);
+  const [examMaxScoreDraft, setExamMaxScoreDraft] = useState<number>(70);
 
   const periodLabel =
     period.period_type === "week"
@@ -92,7 +101,11 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
   const updateCell = (studentId: number, lessonDate: string, patch: Partial<JournalEntryUpdate>) => {
     const key = entryKey(studentId, lessonDate);
     const current = cellFor(studentId, lessonDate);
-    setPending((prev) => new Map(prev).set(key, { ...current, ...patch }));
+    const next = { ...current, ...patch };
+    if (next.score > 0) {
+      next.attendance = true;
+    }
+    setPending((prev) => new Map(prev).set(key, next));
   };
 
   const openCommentEditor = (studentId: number, lessonDate: string) => {
@@ -114,9 +127,10 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
       await batchUpdate.mutateAsync([...pending.values()]);
       setPending(new Map());
       onToast(t("entriesSaved"));
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof AuthApiError && err.status === 409) await refetch();
-      onToast(err instanceof AuthApiError ? err.message : t("entriesSaveFailed"), "error");
+      const msg = err?.response?.data?.detail || (err instanceof AuthApiError ? err.message : t("entriesSaveFailed"));
+      onToast(msg, "error");
     }
   };
 
@@ -141,12 +155,36 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
           });
           onToast(t("summarySaved"));
         },
-        onError: (err) => {
+        onError: (err: any) => {
           if (err instanceof AuthApiError && err.status === 409) refetch();
-          onToast(err instanceof AuthApiError ? err.message : t("summarySaveFailed"), "error");
+          const msg = err?.response?.data?.detail || (err instanceof AuthApiError ? err.message : t("summarySaveFailed"));
+          onToast(msg, "error");
         },
         onSettled: () => setSavingSummaryFor(null),
       },
+    );
+  };
+
+  const handleOpenExamMaxScoreModal = () => {
+    if (detail) {
+      setExamMaxScoreDraft(detail.exam_max_score);
+    }
+    setExamMaxScoreModalOpen(true);
+  };
+
+  const handleSaveExamMaxScore = () => {
+    updateExamMaxScore.mutate(
+      { exam_max_score: examMaxScoreDraft },
+      {
+        onSuccess: () => {
+          setExamMaxScoreModalOpen(false);
+          onToast(t("examMaxScoreUpdated", "Exam maximum score updated"));
+        },
+        onError: (err: any) => {
+          const msg = err?.response?.data?.detail || (err instanceof AuthApiError ? err.message : "Failed to update exam maximum score");
+          onToast(msg, "error");
+        },
+      }
     );
   };
 
@@ -176,7 +214,22 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
             <div className="p-8 text-center text-sm text-muted">{t("table.noStudentsInCourse")}</div>
           ) : (
             <>
-              <div className="flex justify-end px-5 pt-3.5">
+              <div className="flex items-center justify-between px-5 pt-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted">
+                    Exam Max: <strong className="text-ink">{detail.exam_max_score}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOpenExamMaxScoreModal}
+                    title="Edit period exam maximum score"
+                    className="inline-flex items-center gap-1 rounded-md border border-border-warm bg-card px-2 py-1 text-xs font-medium text-nav hover:bg-row-hover"
+                  >
+                    <Settings size={13} />
+                    <span>Edit Exam Weight</span>
+                  </button>
+                </div>
+
                 <Button
                   type="button"
                   variant="accent"
@@ -216,8 +269,8 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
                         </Fragment>
                       ))}
                       <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.att")}</th>
-                      <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.bonus")}</th>
-                      <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.exam")}</th>
+                      <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.bonus")} (max 20)</th>
+                      <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.exam")} (max {detail.exam_max_score})</th>
                       <th className="px-2 py-2 text-center text-[11px] font-medium text-muted">{t("table.sum")}</th>
                     </tr>
                   </thead>
@@ -297,10 +350,11 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
                             <input
                               type="number"
                               min={0}
+                              max={20}
                               value={draft.bonus_score}
                               onChange={(e) =>
                                 setSummaryDraft(student.student_id, summary?.exam_score ?? 0, summary?.bonus_score ?? 0, {
-                                  bonus_score: Math.max(0, Number(e.target.value)),
+                                  bonus_score: Math.max(0, Math.min(20, Number(e.target.value))),
                                 })
                               }
                               className="w-16 rounded-md border border-border-warm bg-card px-2 py-1 text-center text-xs text-ink"
@@ -310,10 +364,11 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
                             <input
                               type="number"
                               min={0}
+                              max={detail.exam_max_score}
                               value={draft.exam_score}
                               onChange={(e) =>
                                 setSummaryDraft(student.student_id, summary?.exam_score ?? 0, summary?.bonus_score ?? 0, {
-                                  exam_score: Math.max(0, Number(e.target.value)),
+                                  exam_score: Math.max(0, Math.min(detail.exam_max_score, Number(e.target.value))),
                                 })
                               }
                               className="w-16 rounded-md border border-border-warm bg-card px-2 py-1 text-center text-xs text-ink"
@@ -322,9 +377,9 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
                           <td className="px-2 py-2 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <span
-                                className={`inline-flex min-w-9 items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${sumBadgeClass(summary?.sum_score ?? 0)}`}
+                                className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums ${sumBadgeClass(summary?.percentage ?? 0)}`}
                               >
-                                {summary?.sum_score ?? "—"}
+                                {summary ? `${summary.sum_score}/${summary.max_period_score} (${summary.percentage}%)` : "—"}
                               </span>
                               {summaryDirty && (
                                 <button
@@ -367,6 +422,33 @@ export function JournalPeriodSection({ courseId, period, periodIndex, expanded, 
           <Button type="button" variant="accent" onClick={saveComment}>
             {t("common:save")}
           </Button>
+        </div>
+      </Modal>
+
+      <Modal open={examMaxScoreModalOpen} onClose={() => setExamMaxScoreModalOpen(false)} title="Edit Period Exam Weight">
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-muted">
+            Warning: Changing the exam maximum score will recalculate the period maximum score for all students in this period.
+          </p>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-ink">Exam Max Score (0 - 100):</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={examMaxScoreDraft}
+              onChange={(e) => setExamMaxScoreDraft(Math.max(0, Math.min(100, Number(e.target.value))))}
+              className="w-full rounded-md border border-border-warm bg-card p-2 text-sm text-ink"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setExamMaxScoreModalOpen(false)}>
+              {t("common:cancel")}
+            </Button>
+            <Button type="button" variant="accent" loading={updateExamMaxScore.isPending} onClick={handleSaveExamMaxScore}>
+              {t("common:save")}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

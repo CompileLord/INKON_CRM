@@ -31,7 +31,7 @@ export function PersonAvatar({ firstName, lastName, photoUrl, size = 32 }: Perso
         src={photoUrl}
         alt={`${firstName} ${lastName}`}
         style={dimensionStyle}
-        className="shrink-0 rounded-full object-cover"
+        className="shrink-0 rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10 shadow-xs"
       />
     );
   }
@@ -42,7 +42,7 @@ export function PersonAvatar({ firstName, lastName, photoUrl, size = 32 }: Perso
   return (
     <div
       style={{ ...dimensionStyle, fontSize: Math.round(size * 0.4) }}
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${colorClass}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ring-1 ring-black/5 dark:ring-white/10 shadow-xs ${colorClass}`}
     >
       {initials}
     </div>
