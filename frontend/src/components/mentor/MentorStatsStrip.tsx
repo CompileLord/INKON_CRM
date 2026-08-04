@@ -13,8 +13,8 @@ const cardClass =
 
 export const MentorStatsStrip: React.FC = () => {
   const { t } = useTranslation("journals");
-  const userId = useAuthStore((s) => s.user?.id);
-  const { data: profile } = useMentorProfile(userId, !!userId);
+  const userId = useAuthStore((s) => s.userId ?? undefined);
+  const { data: profile } = useMentorProfile(userId);
   const { data: activeCoursesPage } = useCourses({ status: "active", page_size: 1 });
   const { data: queue } = useMentorGradingQueue();
 

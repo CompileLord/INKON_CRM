@@ -132,3 +132,26 @@ export function entryKey(studentId: number, lessonDate: string): string {
   return `${studentId}:${lessonDate}`;
 }
 
+export interface CourseJournalMetricsResponse {
+  class_avg_percentage: number;
+  attendance_rate: number;
+  periods_total: number;
+  periods_complete: number;
+  at_risk_count: number;
+  at_risk_threshold: number;
+}
+
+export interface GradingQueueItemResponse {
+  journal_id: number;
+  course_id: number;
+  course_title: string;
+  period_label: string;
+  period_start: string;
+  period_end: string;
+  state: "upcoming" | "empty" | "partial" | "complete";
+  cells_filled: number;
+  cells_expected: number;
+  is_current: boolean;
+}
+
+

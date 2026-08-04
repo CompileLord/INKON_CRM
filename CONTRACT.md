@@ -714,6 +714,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
           "is_deleted": any,
           "created_at": any,
           "updated_at": any,
+          "schedules?": any,
         },
         "enrollment_status": string,
         "bucket": string,
@@ -837,6 +838,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
           "is_deleted": any,
           "created_at": any,
           "updated_at": any,
+          "schedules?": any,
         },
         "enrollment_status": string,
         "bucket": string,
@@ -970,11 +972,37 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "schedules?": array[],
       }
     ],
     "active_students_count": integer,
     "avg_score": number,
   }
+  ```
+
+---
+
+## GET /api/v1/mentors/me/grading-queue
+
+**Summary:** Get My Grading Queue
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  [
+    {
+      "journal_id": integer,
+      "course_id": integer,
+      "course_title": string,
+      "period_label": string,
+      "period_start": string,
+      "period_end": string,
+      "state": string,
+      "cells_filled": integer,
+      "cells_expected": integer,
+      "is_current": boolean,
+    }
+  ]
   ```
 
 ---
@@ -1023,6 +1051,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "schedules?": array[],
       }
     ],
     "active_students_count": integer,
@@ -1103,6 +1132,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "schedules?": array[],
       }
     ],
     "total": integer,
@@ -1169,6 +1199,15 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "schedules?": [
+      {
+        "id": integer,
+        "course_id": integer,
+        "day_of_week": integer,
+        "time_start": string,
+        "time_end": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error
@@ -1212,6 +1251,15 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "schedules?": [
+      {
+        "id": integer,
+        "course_id": integer,
+        "day_of_week": integer,
+        "time_start": string,
+        "time_end": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error
@@ -1267,6 +1315,15 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "schedules?": [
+      {
+        "id": integer,
+        "course_id": integer,
+        "day_of_week": integer,
+        "time_start": string,
+        "time_end": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error
@@ -1343,6 +1400,15 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "schedules?": [
+      {
+        "id": integer,
+        "course_id": integer,
+        "day_of_week": integer,
+        "time_start": string,
+        "time_end": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error
@@ -1443,6 +1509,15 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "schedules?": [
+      {
+        "id": integer,
+        "course_id": integer,
+        "day_of_week": integer,
+        "time_start": string,
+        "time_end": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error

@@ -60,6 +60,7 @@ export interface CourseResponse {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  schedules?: CourseScheduleResponse[];
 }
 
 export interface MentorMiniResponse {
@@ -117,6 +118,15 @@ export interface StudentCourseProgressChartResponse {
   class_size: number;
 }
 
+export interface CourseJournalMetricsResponse {
+  class_avg_percentage: number;
+  attendance_rate: number;
+  periods_total: number;
+  periods_complete: number;
+  at_risk_count: number;
+  at_risk_threshold: number;
+}
+
 export type JournalPeriodType = "week" | "month";
 
 /** A single period (week or month) that a course has been split into for attendance/grading. */
@@ -128,4 +138,10 @@ export interface JournalPeriod {
   period_end: string;
   period_type: JournalPeriodType;
   exam_max_score?: number;
+  student_count?: number;
+  lesson_count?: number;
+  cells_expected?: number;
+  cells_filled?: number;
+  avg_percentage?: number | null;
+  state?: "upcoming" | "empty" | "partial" | "complete";
 }

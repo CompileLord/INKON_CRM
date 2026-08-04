@@ -1,7 +1,7 @@
 import { BookOpen, GraduationCap, Users } from "lucide-react";
 import { useCourses } from "../../lib/courses/hooks";
 import { useEnrollmentsTotal } from "../../lib/enrollments/hooks";
-import { useAuthStore } from "../../lib/auth/authStore";
+import { useAuthStore } from "../../store/authStore";
 
 const labelClass = "text-xs font-medium uppercase tracking-[0.5px] text-muted";
 const valueClass = "mt-1.5 text-[26px] font-bold tabular-nums text-ink";
@@ -9,7 +9,7 @@ const cardClass =
   "flex h-23 flex-col justify-center rounded-xl border border-border-warm bg-card px-5 py-4";
 
 export function CoursesStatsStrip() {
-  const role = useAuthStore((state) => state.user?.role);
+  const role = useAuthStore((state) => state.role);
   const isSuperAdmin = role === "superadmin";
 
   const { data: allPage } = useCourses({ page_size: 1 });

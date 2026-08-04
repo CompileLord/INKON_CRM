@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
@@ -214,7 +215,7 @@ class CourseService:
         page_size: int,
         current_user: User
     ) -> dict:
-        query = select(Course).filter(Course.is_deleted == False)
+        query = select(Course).options(selectinload(Course.schedules)).filter(Course.is_deleted == False)
 
         if current_user.role == UserRole.MENTOR:
             query = query.filter(Course.mentor_id == current_user.id)
