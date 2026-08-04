@@ -61,12 +61,60 @@ class UserResponse(BaseModel):
 from app.schemas.course import CourseResponse
 
 
-class StudentProfileResponse(BaseModel):
-    user: UserResponse
-    courses: list[CourseResponse]
-    avg_score: float
+class StudentTotalsResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    avg_percentage: float
+    attendance_percentage: float
     absences: int
     total_lessons: int
+    active_course_count: int
+    archived_course_count: int
+
+
+class StudentCourseProfileResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    course: CourseResponse
+    enrollment_status: str
+    bucket: str
+    my_avg_percentage: float
+    attendance_percentage: float
+    absences: int
+    periods_total: int
+    periods_graded: int
+    my_rank: int
+    class_size: int
+    class_avg_percentage: float
+    next_lesson_at: Optional[datetime] = None
+
+
+class StudentProfileResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    user: UserResponse
+    totals: StudentTotalsResponse
+    courses: list[StudentCourseProfileResponse]
+    avg_score: float = 0.0
+    absences: int = 0
+    total_lessons: int = 0
+
+
+class StudentJournalPeriodResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    journal_id: int
+    course_id: int
+    course_title: str
+    period_label: str
+    period_start: date
+    period_end: date
+    homework_score: float = 0.0
+    attendance_score: float = 0.0
+    exam_score: float = 0.0
+    bonus_score: float = 0.0
+    sum_score: float
+    max_period_score: float
+    percentage: float
+    attendance_count: int
+    total_lessons: int
+    state: str
 
 
 class MentorProfileResponse(BaseModel):
@@ -74,4 +122,5 @@ class MentorProfileResponse(BaseModel):
     active_courses: list[CourseResponse]
     active_students_count: int
     avg_score: float
+
 

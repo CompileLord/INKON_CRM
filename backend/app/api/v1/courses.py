@@ -177,16 +177,13 @@ async def get_progress_chart(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     await check_course_access(id, current_user, db)
-    if current_user.role not in (UserRole.SUPERADMIN, UserRole.MENTOR):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
     from app.models.enrollment import Enrollment, EnrollmentStatus
     from app.models.journal_student_summary import JournalStudentSummary
     from sqlalchemy.orm import joinedload
+    from app.core.scoring import score_percentage
 
     journals = await get_course_journals(id, db)
+    journal_ids = [j.id for j in journals]
 
     enroll_stmt = (
         select(Enrollment)
@@ -199,8 +196,8 @@ async def get_progress_chart(
     )
     enroll_res = await db.execute(enroll_stmt)
     enrollments = list(enroll_res.scalars().all())
+    class_size = len(enrollments)
 
-    journal_ids = [j.id for j in journals]
     summaries = []
     if journal_ids:
         summary_stmt = select(JournalStudentSummary).filter(
@@ -211,6 +208,58 @@ async def get_progress_chart(
 
     summary_map = {(s.student_id, s.journal_id): (s.sum_score, s.max_period_score) for s in summaries}
 
+    periods = [
+        {"id": j.id, "period_label": j.period_label}
+        for j in journals
+    ]
+
+    if current_user.role == UserRole.STUDENT:
+        my_percentages = []
+        my_graded_pcts = []
+        for j in journals:
+            sum_score, max_score = summary_map.get((current_user.id, j.id), (0, 0))
+            pct = score_percentage(sum_score, max_score)
+            my_percentages.append(pct)
+            if max_score > 0:
+                my_graded_pcts.append(pct)
+        my_avg = round(sum(my_graded_pcts) / len(my_graded_pcts), 1) if my_graded_pcts else 0.0
+        my_series = my_percentages + [my_avg]
+
+        class_avg_series = []
+        graded_class_avgs = []
+        for j in journals:
+            j_summaries = [s for s in summaries if s.journal_id == j.id and s.max_period_score > 0]
+            if j_summaries:
+                j_pcts = [score_percentage(s.sum_score, s.max_period_score) for s in j_summaries]
+                period_avg = round(sum(j_pcts) / len(j_pcts), 1)
+                class_avg_series.append(period_avg)
+                graded_class_avgs.append(period_avg)
+            else:
+                class_avg_series.append(0.0)
+        overall_class_avg = round(sum(graded_class_avgs) / len(graded_class_avgs), 1) if graded_class_avgs else 0.0
+        class_avg_series.append(overall_class_avg)
+
+        student_avgs = {}
+        for enroll in enrollments:
+            s_id = enroll.student.id
+            s_pcts = []
+            for j in journals:
+                sum_score, max_score = summary_map.get((s_id, j.id), (0, 0))
+                if max_score > 0:
+                    s_pcts.append(score_percentage(sum_score, max_score))
+            student_avgs[s_id] = sum(s_pcts) / len(s_pcts) if s_pcts else 0.0
+
+        sorted_student_ids = sorted(student_avgs.keys(), key=lambda sid: student_avgs[sid], reverse=True)
+        my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
+
+        return {
+            "periods": periods,
+            "my_series": my_series,
+            "class_avg_series": class_avg_series,
+            "my_rank": my_rank,
+            "class_size": class_size
+        }
+
     labels = [j.period_label for j in journals] + ["Average"]
     datasets = []
 
@@ -220,8 +269,6 @@ async def get_progress_chart(
         "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
         "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
     ]
-
-    from app.core.scoring import score_percentage
 
     for idx, enroll in enumerate(enrollments):
         student = enroll.student
@@ -251,11 +298,6 @@ async def get_progress_chart(
             "max_scores": max_scores,
             "percentages": percentages
         })
-
-    periods = [
-        {"id": j.id, "period_label": j.period_label}
-        for j in journals
-    ]
 
     return {
         "labels": labels,

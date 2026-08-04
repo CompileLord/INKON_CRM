@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.security import create_access_token
+from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
 
 
@@ -74,3 +74,4 @@ async def test_student_cannot_view_other_student_profile(
 
     response = await client.get(f"/api/v1/students/{other_student.id}/profile", headers=headers)
     assert response.status_code == 403
+

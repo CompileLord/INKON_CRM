@@ -37,6 +37,9 @@ export function formatDateTime(date: string | Date | null | undefined, lng?: str
 
 export function formatTime(date: string | Date | null | undefined, lng?: string): string {
   if (!date) return "";
+  if (typeof date === "string" && /^\d{2}:\d{2}(:\d{2})?$/.test(date)) {
+    return date.slice(0, 5);
+  }
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
   return new Intl.DateTimeFormat(getActiveLocale(lng), {

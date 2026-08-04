@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError as StaleObjectError
 from app.models.journal import Journal
@@ -96,23 +96,25 @@ class JournalService:
 
         student_ids = [s_user.id for s_user, _ in students_list]
 
-        all_entries_query = select(JournalEntry).filter(
-            JournalEntry.journal_id == journal_id,
-            JournalEntry.student_id.in_(student_ids)
-        ).order_by(JournalEntry.student_id, JournalEntry.lesson_date)
-        all_entries_result = await self.db.execute(all_entries_query)
-        all_entries = list(all_entries_result.scalars().all())
+        all_entries = []
+        all_summaries = []
+        if student_ids:
+            all_entries_query = select(JournalEntry).filter(
+                JournalEntry.journal_id == journal_id,
+                JournalEntry.student_id.in_(student_ids)
+            ).order_by(JournalEntry.student_id, JournalEntry.lesson_date)
+            all_entries_result = await self.db.execute(all_entries_query)
+            all_entries = list(all_entries_result.scalars().all())
 
+            all_summaries_query = select(JournalStudentSummary).filter(
+                JournalStudentSummary.journal_id == journal_id,
+                JournalStudentSummary.student_id.in_(student_ids)
+            )
+            all_summaries_result = await self.db.execute(all_summaries_query)
+            all_summaries = list(all_summaries_result.scalars().all())
         entries_by_student = defaultdict(list)
         for entry in all_entries:
             entries_by_student[entry.student_id].append(entry)
-
-        all_summaries_query = select(JournalStudentSummary).filter(
-            JournalStudentSummary.journal_id == journal_id,
-            JournalStudentSummary.student_id.in_(student_ids)
-        )
-        all_summaries_result = await self.db.execute(all_summaries_query)
-        all_summaries = list(all_summaries_result.scalars().all())
 
         summaries_by_student = {s.student_id: s for s in all_summaries}
 
@@ -162,7 +164,7 @@ class JournalService:
                 "summary": summary_data
             })
 
-        return {
+        result_dict = {
             "journal_id": journal.id,
             "course_id": journal.course_id,
             "period_label": journal.period_label,
@@ -173,6 +175,37 @@ class JournalService:
             "lesson_dates": lesson_dates,
             "students": students_data
         }
+
+        if current_user.role == UserRole.STUDENT:
+            all_course_enrollments_query = select(func.count(Enrollment.id)).filter(
+                Enrollment.course_id == course.id,
+                Enrollment.is_deleted == False
+            )
+            class_size_res = await self.db.execute(all_course_enrollments_query)
+            class_size = class_size_res.scalar() or 0
+
+            period_summaries_query = select(JournalStudentSummary).filter(
+                JournalStudentSummary.journal_id == journal_id
+            )
+            period_summaries_res = await self.db.execute(period_summaries_query)
+            period_summaries = list(period_summaries_res.scalars().all())
+
+            if period_summaries:
+                valid_sums = [score_percentage(s.sum_score, s.max_period_score) for s in period_summaries if s.max_period_score > 0]
+                class_avg_percentage = round(sum(valid_sums) / len(valid_sums), 1) if valid_sums else 0.0
+
+                student_pcts = {s.student_id: score_percentage(s.sum_score, s.max_period_score) for s in period_summaries}
+                sorted_student_ids = sorted(student_pcts.keys(), key=lambda sid: student_pcts[sid], reverse=True)
+                my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
+            else:
+                class_avg_percentage = 0.0
+                my_rank = 1
+
+            result_dict["class_size"] = class_size
+            result_dict["class_avg_percentage"] = class_avg_percentage
+            result_dict["my_rank"] = my_rank
+
+        return result_dict
 
     async def batch_update_entries(self, journal_id: int, entries_updates: list, current_user: User) -> dict:
         journal = await self.db.get(Journal, journal_id)

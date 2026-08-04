@@ -30,6 +30,7 @@ const navItemDefs: NavItemDef[] = [
   { navKey: "students", key: "nav.students", to: "/students", icon: Users },
   { navKey: "mentors", key: "nav.mentors", to: "/mentors", icon: GraduationCap },
   { navKey: "courses", key: "nav.courses", to: "/courses", icon: BookOpen },
+  { navKey: "myCourses", key: "nav.myCourses", to: "/my/courses", icon: BookOpen },
   { navKey: "journals", key: "nav.journals", to: "/journals", icon: ClipboardList },
   { navKey: "finance", key: "nav.finance", to: "/finance", icon: Wallet },
   { navKey: "audit", key: "nav.audit", to: "/audit", icon: BarChart3 },
@@ -67,6 +68,7 @@ export function Sidebar() {
       onClick={handleSidebarClick}
       className={[
         "relative sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r border-border bg-card transition-[width] duration-300 ease-[cubic-bezier(0.2,0,0,1)] select-none",
+        role === "student" ? "hidden md:flex" : "",
         isCollapsed ? "w-16 md:w-20 cursor-pointer" : "w-16 md:w-64",
       ].join(" ")}
       title={isCollapsed ? t("sidebar.clickToExpand", "Нажмите, чтобы развернуть меню") : undefined}

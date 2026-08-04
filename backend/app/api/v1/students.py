@@ -7,7 +7,7 @@ from app.models.user import User, UserRole
 from app.models.enrollment import Enrollment
 from app.models.course import Course
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.user import StudentProfileResponse, UserResponse
+from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, UserResponse
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -45,11 +45,27 @@ async def get_my_profile(
     stats = await user_repo.get_student_profile_stats(current_user.id)
     return {
         "user": current_user,
+        "totals": stats["totals"],
         "courses": stats["courses"],
         "avg_score": stats["avg_score"],
         "absences": stats["absences"],
         "total_lessons": stats["total_lessons"]
     }
+
+
+@router.get("/me/journals", response_model=List[StudentJournalPeriodResponse])
+async def get_my_journals(
+    course_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> List[dict]:
+    if current_user.role != UserRole.STUDENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Current user is not a student"
+        )
+    user_repo = SQLAlchemyUserRepository(db)
+    return await user_repo.get_student_journals(student_id=current_user.id, course_id=course_id)
 
 
 @router.get("/{id}/profile", response_model=StudentProfileResponse)
@@ -89,6 +105,7 @@ async def get_student_profile(
     stats = await user_repo.get_student_profile_stats(id)
     return {
         "user": target_user,
+        "totals": stats["totals"],
         "courses": stats["courses"],
         "avg_score": stats["avg_score"],
         "absences": stats["absences"],

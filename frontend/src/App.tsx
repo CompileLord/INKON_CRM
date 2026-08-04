@@ -23,6 +23,10 @@ import { GuestRoute } from "./components/auth/GuestRoute";
 import { SetPasswordRoute } from "./components/auth/SetPasswordRoute";
 import { bootstrapAuth } from "./lib/authBootstrap";
 
+import { MyCourses } from "./pages/student/MyCourses";
+import { MyCourseDetail } from "./pages/student/MyCourseDetail";
+import { MyJournalPeriod } from "./pages/student/MyJournalPeriod";
+
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -59,6 +63,9 @@ const router = createBrowserRouter([
             element: <AppLayout />,
             children: [
               { index: true, element: <Dashboard /> },
+              { path: "my/courses", element: <MyCourses /> },
+              { path: "my/courses/:courseId", element: <MyCourseDetail /> },
+              { path: "my/journal/:journalId", element: <MyJournalPeriod /> },
               { path: "students", element: <Students /> },
               { path: "students/:id", element: <StudentProfile /> },
               { path: "mentors", element: <Mentors /> },

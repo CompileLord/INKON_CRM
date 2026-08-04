@@ -28,7 +28,9 @@ def max_period_score(total_lessons: int, exam_max_score: int) -> int:
     return total_lessons * (MAX_HOMEWORK_SCORE_PER_LESSON + ATTENDANCE_POINT_PER_LESSON) + exam_max_score
 
 
-def score_percentage(sum_score: int, max_period_score_val: int) -> float:
-    if max_period_score_val <= 0:
+def score_percentage(sum_score: float | int | None, max_period_score_val: float | int | None) -> float:
+    sum_val = float(sum_score or 0.0)
+    max_val = float(max_period_score_val or 0.0)
+    if max_val <= 0.0:
         return 0.0
-    return round((sum_score / max_period_score_val) * 100.0, 2)
+    return round((sum_val / max_val) * 100.0, 2)

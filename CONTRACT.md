@@ -690,26 +690,95 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "created_at": string,
       "updated_at": string,
     },
+    "totals": {
+      "avg_percentage": number,
+      "attendance_percentage": number,
+      "absences": integer,
+      "total_lessons": integer,
+      "active_course_count": integer,
+      "archived_course_count": integer,
+    },
     "courses": [
       {
-        "id": integer,
-        "title": string,
-        "description": string,
-        "photo_path?": string,
-        "start_date": string,
-        "end_date": string,
-        "exam_type": "weekly" | "monthly",
-        "price": string,
-        "mentor_id": integer,
-        "status": "active" | "archived",
-        "is_deleted": boolean,
-        "created_at": string,
-        "updated_at": string,
+        "course": {
+          "id": any,
+          "title": any,
+          "description": any,
+          "photo_path?": any,
+          "start_date": any,
+          "end_date": any,
+          "exam_type": any,
+          "price": any,
+          "mentor_id": any,
+          "status": any,
+          "is_deleted": any,
+          "created_at": any,
+          "updated_at": any,
+        },
+        "enrollment_status": string,
+        "bucket": string,
+        "my_avg_percentage": number,
+        "attendance_percentage": number,
+        "absences": integer,
+        "periods_total": integer,
+        "periods_graded": integer,
+        "my_rank": integer,
+        "class_size": integer,
+        "class_avg_percentage": number,
+        "next_lesson_at?": string,
       }
     ],
-    "avg_score": number,
-    "absences": integer,
-    "total_lessons": integer,
+    "avg_score?": number,
+    "absences?": integer,
+    "total_lessons?": integer,
+  }
+  ```
+
+---
+
+## GET /api/v1/students/me/journals
+
+**Summary:** Get My Journals
+
+**Parameters:**
+- `course_id` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  [
+    {
+      "journal_id": integer,
+      "course_id": integer,
+      "course_title": string,
+      "period_label": string,
+      "period_start": string,
+      "period_end": string,
+      "homework_score?": number,
+      "attendance_score?": number,
+      "exam_score?": number,
+      "bonus_score?": number,
+      "sum_score": number,
+      "max_period_score": number,
+      "percentage": number,
+      "attendance_count": integer,
+      "total_lessons": integer,
+      "state": string,
+    }
+  ]
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
   }
   ```
 
@@ -744,26 +813,47 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "created_at": string,
       "updated_at": string,
     },
+    "totals": {
+      "avg_percentage": number,
+      "attendance_percentage": number,
+      "absences": integer,
+      "total_lessons": integer,
+      "active_course_count": integer,
+      "archived_course_count": integer,
+    },
     "courses": [
       {
-        "id": integer,
-        "title": string,
-        "description": string,
-        "photo_path?": string,
-        "start_date": string,
-        "end_date": string,
-        "exam_type": "weekly" | "monthly",
-        "price": string,
-        "mentor_id": integer,
-        "status": "active" | "archived",
-        "is_deleted": boolean,
-        "created_at": string,
-        "updated_at": string,
+        "course": {
+          "id": any,
+          "title": any,
+          "description": any,
+          "photo_path?": any,
+          "start_date": any,
+          "end_date": any,
+          "exam_type": any,
+          "price": any,
+          "mentor_id": any,
+          "status": any,
+          "is_deleted": any,
+          "created_at": any,
+          "updated_at": any,
+        },
+        "enrollment_status": string,
+        "bucket": string,
+        "my_avg_percentage": number,
+        "attendance_percentage": number,
+        "absences": integer,
+        "periods_total": integer,
+        "periods_graded": integer,
+        "my_rank": integer,
+        "class_size": integer,
+        "class_avg_percentage": number,
+        "next_lesson_at?": string,
       }
     ],
-    "avg_score": number,
-    "absences": integer,
-    "total_lessons": integer,
+    "avg_score?": number,
+    "absences?": integer,
+    "total_lessons?": integer,
   }
   ```
 - **422**: Validation Error

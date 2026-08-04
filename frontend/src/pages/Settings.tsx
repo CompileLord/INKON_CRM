@@ -1,18 +1,23 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { User as UserIcon, Settings as SettingsIcon, Bell, Send, CheckCircle2, Save, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/authStore";
-import { useCurrentUser, useUpdateOwnProfile } from "../lib/users/hooks";
+import { useCurrentUser, useUpdateOwnProfile, useUploadAvatar } from "../lib/users/hooks";
 import { useOrgSettings, useUpdateOrgSettings } from "../lib/settings/hooks";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
+import { LanguageSwitcher } from "../components/ui/LanguageSwitcher";
+import { PersonAvatar } from "../components/ui/PersonAvatar";
+import { resolveMediaUrl, validateAvatarFile } from "../lib/users/media";
 
 export function Settings() {
   const { t } = useTranslation(["settings", "common"]);
   const role = useAuthStore((s) => s.role);
   const [activeTab, setActiveTab] = useState<"profile" | "system" | "notifications">("profile");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const { data: currentUser } = useCurrentUser();
   const updateOwnProfileMutation = useUpdateOwnProfile();
+  const uploadAvatarMutation = useUploadAvatar(role === "student" ? "student" : "mentor");
 
   const { data: orgSettings } = useOrgSettings();
   const updateOrgSettingsMutation = useUpdateOrgSettings();
@@ -29,6 +34,7 @@ export function Settings() {
   const [notifyDebts, setNotifyDebts] = useState<boolean>(true);
 
   const [saved, setSaved] = useState<boolean>(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   // Populate profile form when currentUser arrives
   const [loadedUserId, setLoadedUserId] = useState<number | null>(null);
@@ -83,6 +89,22 @@ export function Settings() {
     );
   };
 
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+    const validationErr = validateAvatarFile(file);
+    if (validationErr) {
+      setAvatarError(validationErr);
+      return;
+    }
+    setAvatarError(null);
+    uploadAvatarMutation.mutate({
+      id: currentUser.id,
+      file,
+    });
+    e.target.value = "";
+  };
+
   const isSuperAdmin = role === "superadmin";
 
   return (
@@ -106,6 +128,7 @@ export function Settings() {
       {/* Tabs */}
       <div className="flex items-center border-b border-border gap-6">
         <button
+          type="button"
           onClick={() => setActiveTab("profile")}
           className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
             activeTab === "profile"
@@ -117,6 +140,7 @@ export function Settings() {
         </button>
         {isSuperAdmin && (
           <button
+            type="button"
             onClick={() => setActiveTab("system")}
             className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
               activeTab === "system"
@@ -127,16 +151,19 @@ export function Settings() {
             <SettingsIcon size={18} /> {t("tabs.system")}
           </button>
         )}
-        <button
-          onClick={() => setActiveTab("notifications")}
-          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
-            activeTab === "notifications"
-              ? "border-maroon text-maroon"
-              : "border-transparent text-muted hover:text-ink"
-          }`}
-        >
-          <Bell size={18} /> {t("tabs.notifications")}
-        </button>
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("notifications")}
+            className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-all ${
+              activeTab === "notifications"
+                ? "border-maroon text-maroon"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            <Bell size={18} /> {t("tabs.notifications")}
+          </button>
+        )}
       </div>
 
       {/* Profile Settings Tab */}
@@ -146,17 +173,30 @@ export function Settings() {
             <h3 className="text-sm font-bold text-ink">{t("profileSection")}</h3>
 
             <div className="flex items-center gap-4 border-b border-border pb-5">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-maroon/10 text-xl font-bold text-maroon border border-maroon/20">
-                {(firstName[0] || "").toUpperCase()}{(lastName[0] || "").toUpperCase()}
-              </div>
+              <PersonAvatar
+                firstName={firstName || "U"}
+                lastName={lastName || "N"}
+                photoUrl={currentUser ? (resolveMediaUrl(currentUser.thumbnail_path ?? currentUser.photo_path) ?? undefined) : undefined}
+                size={64}
+              />
               <div className="flex flex-col gap-1">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarSelect}
+                />
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-xl border border-border bg-cream px-3.5 py-1.5 text-xs font-semibold text-ink hover:bg-border transition-colors"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadAvatarMutation.isPending}
+                  className="flex items-center gap-2 rounded-xl border border-border bg-cream px-3.5 py-1.5 text-xs font-semibold text-ink hover:bg-border transition-colors disabled:opacity-50"
                 >
                   <Upload size={14} /> {t("uploadAvatar")}
                 </button>
                 <span className="text-[11px] text-muted">JPG, PNG</span>
+                {avatarError && <p className="text-xs text-red-600">{avatarError}</p>}
               </div>
             </div>
 
@@ -203,12 +243,15 @@ export function Settings() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex items-center justify-between">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-ink">{t("appearance", "Тема оформления")}</h3>
-              <p className="text-xs text-muted mt-0.5">{t("appearanceSubtitle", "Выберите светлый, тёмный или системный режим интерфейса")}</p>
+              <h3 className="text-sm font-bold text-ink">{t("appearance", "Тема и язык")}</h3>
+              <p className="text-xs text-muted mt-0.5">{t("appearanceSubtitle", "Выберите режим интерфейса и язык приложения")}</p>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
 
           <div className="flex justify-end">
@@ -278,7 +321,7 @@ export function Settings() {
       )}
 
       {/* Notifications Tab */}
-      {activeTab === "notifications" && (
+      {activeTab === "notifications" && isSuperAdmin && (
         <form onSubmit={handleSaveOrgSettings} className="flex flex-col gap-6 max-w-2xl">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col gap-5">
             <h3 className="text-sm font-bold text-ink">{t("rulesSection")}</h3>

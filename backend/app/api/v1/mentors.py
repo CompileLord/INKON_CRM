@@ -1,8 +1,11 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User, UserRole
+from app.models.course import Course
+from app.models.enrollment import Enrollment
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.user import MentorProfileResponse, UserResponse
 from app.services.user_service import UserService
@@ -54,7 +57,19 @@ async def get_mentor_profile(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to other mentor profiles"
         )
-    if current_user.role not in [UserRole.SUPERADMIN, UserRole.MENTOR]:
+    if current_user.role == UserRole.STUDENT:
+        enroll_query = select(Enrollment).join(Course).filter(
+            Enrollment.student_id == current_user.id,
+            Course.mentor_id == id,
+            Enrollment.is_deleted == False
+        )
+        enroll_res = await db.execute(enroll_query)
+        if not enroll_res.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enrolled in any course with this mentor"
+            )
+    elif current_user.role not in [UserRole.SUPERADMIN, UserRole.MENTOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
