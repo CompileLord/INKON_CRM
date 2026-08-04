@@ -80,7 +80,6 @@ class CourseResponse(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
-    schedules: List[CourseScheduleResponse] = []
 
 
 class MentorMiniResponse(BaseModel):

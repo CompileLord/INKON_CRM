@@ -60,7 +60,6 @@ export interface CourseResponse {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
-  schedules?: CourseScheduleResponse[];
 }
 
 export interface MentorMiniResponse {

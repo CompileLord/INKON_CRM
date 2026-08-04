@@ -215,7 +215,7 @@ class CourseService:
         page_size: int,
         current_user: User
     ) -> dict:
-        query = select(Course).options(selectinload(Course.schedules)).filter(Course.is_deleted == False)
+        query = select(Course).filter(Course.is_deleted == False)
 
         if current_user.role == UserRole.MENTOR:
             query = query.filter(Course.mentor_id == current_user.id)
