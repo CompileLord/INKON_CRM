@@ -82,7 +82,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     if (date) setActiveColDate(date);
   }, []);
 
-  // Arrow-key roaming across the grid — the help text below the table promises it.
   const handleCellNavigate = useCallback(
     (key: string, direction: CellNavDirection) => {
       const [studentIdRaw, ...dateParts] = key.split(":");
@@ -101,7 +100,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
       else if (direction === "left") nextCol -= 1;
       else nextCol += 1;
 
-      // Wrap horizontally onto the neighbouring row so long periods stay traversable.
       if (nextCol < 0) {
         if (nextRow === 0) return;
         nextRow -= 1;

@@ -23,10 +23,6 @@ interface JournalScoreCellProps {
   onChange: (patch: { attendance: boolean; score: number; comment?: string | null }) => void;
 }
 
-/**
- * Anchors an overlay to a cell using fixed coordinates so it escapes the grid's
- * `overflow-x-auto` clipping, and keeps it inside the viewport.
- */
 function useAnchoredOverlay(
   anchorRef: React.RefObject<HTMLElement | null>,
   open: boolean,
@@ -75,8 +71,6 @@ function useAnchoredOverlay(
 
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    // The anchor lives in a scroll container; re-anchoring on every scroll frame
-    // is jittery, so dismiss instead.
     window.addEventListener("scroll", onClose, true);
     window.addEventListener("resize", onClose);
 
@@ -119,7 +113,6 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
   const scoreOverlay = useAnchoredOverlay(cellRef, popoverOpen, closeScorePopover, 190);
   const commentOverlay = useAnchoredOverlay(cellRef, commentOpen, closeCommentPopover, 232);
 
-  // Keep the roving-tabindex cell in sync with keyboard navigation.
   useEffect(() => {
     if (isFocused && autoFocus && cellRef.current && !cellRef.current.contains(document.activeElement)) {
       cellRef.current.focus({ preventScroll: false });
@@ -148,7 +141,6 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Let the comment editor own its own keystrokes.
     if (commentOpen) return;
 
     const navKeys: Record<string, CellNavDirection> = {
@@ -220,7 +212,6 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         {score > 0 ? score : "—"}
       </button>
 
-      {/* Always mounted so a comment can be added, not only edited once one exists. */}
       <button
         type="button"
         onClick={openCommentEditor}

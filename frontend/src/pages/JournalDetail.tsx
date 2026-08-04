@@ -108,7 +108,6 @@ export function JournalDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Sticky header bar */}
       <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
         <div className="flex items-center gap-4">
           {backLink}
@@ -147,7 +146,6 @@ export function JournalDetail() {
         </div>
       </div>
 
-      {/* Metrics strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
           <div className="p-2 rounded-lg bg-maroon/10 text-maroon dark:bg-accent/10 dark:text-accent">
@@ -198,10 +196,8 @@ export function JournalDetail() {
         </div>
       </div>
 
-      {/* Chart */}
       <JournalScoreChart data={progressChart} isLoading={chartLoading} />
 
-      {/* Period accordion list */}
       {periodsLoading ? (
         <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted">
           {t("common:loading")}

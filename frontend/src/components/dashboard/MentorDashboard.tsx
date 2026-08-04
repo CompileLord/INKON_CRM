@@ -15,7 +15,6 @@ export const MentorDashboard: React.FC = () => {
 
   const courses = coursesData?.items ?? [];
 
-  // Monday = 0, Tuesday = 1, ..., Sunday = 6
   const todayDayOfWeek = (new Date().getDay() + 6) % 7;
   const todaysCourses = courses.filter((c) =>
     c.schedules?.some((s) => s.day_of_week === todayDayOfWeek)
@@ -23,7 +22,6 @@ export const MentorDashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header Banner & Stats Strip */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
@@ -34,7 +32,6 @@ export const MentorDashboard: React.FC = () => {
         <MentorStatsStrip />
       </div>
 
-      {/* Primary Block: Grading Queue */}
       <div className="rounded-2xl border border-border-warm bg-card p-6 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -75,9 +72,7 @@ export const MentorDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Grid: Today's Schedule & My Active Courses */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Today's Schedule */}
         <div className="rounded-2xl border border-border-warm bg-card p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-ink flex items-center gap-2">
@@ -124,7 +119,6 @@ export const MentorDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* My Active Courses */}
         <div className="rounded-2xl border border-border-warm bg-card p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-ink flex items-center gap-2">
