@@ -18,10 +18,11 @@ router = APIRouter()
 
 
 
-async def get_course_journals(course_id: int, db: AsyncSession) -> List[Journal]:
-    journals_stmt = select(Journal).filter(Journal.course_id == course_id).order_by(Journal.period_start.asc())
-    journals_res = await db.execute(journals_stmt)
-    return list(journals_res.scalars().all())
+from app.services.journal_service import JournalService
+
+async def get_course_journals(course_id: int, db: AsyncSession) -> List[JournalResponse]:
+    journal_service = JournalService(db)
+    return await journal_service.get_course_journals_aggregated(course_id)
 
 
 async def check_course_access(course_id: int, current_user: User, db: AsyncSession) -> Course:
@@ -160,14 +161,27 @@ async def get_course_mentor_history(
     return await course_service.get_mentor_history(id)
 
 
+from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
+
 @router.get("/{id}/journals", response_model=List[JournalResponse])
 async def list_course_journals(
     id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
-) -> List[Journal]:
+) -> List[JournalResponse]:
     await check_course_access(id, current_user, db)
     return await get_course_journals(id, db)
+
+
+@router.get("/{id}/journal-metrics", response_model=CourseJournalMetricsResponse)
+async def get_course_journal_metrics(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> CourseJournalMetricsResponse:
+    await check_course_access(id, current_user, db)
+    journal_service = JournalService(db)
+    return await journal_service.get_course_journal_metrics(id)
 
 
 @router.get("/{id}/progress-chart")

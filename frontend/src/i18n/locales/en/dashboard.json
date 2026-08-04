@@ -50,5 +50,12 @@
   "studentHelpText": "Navigate to the students list or your profile for detailed attendance and exam scores.",
   "openStudentProfile": "Open Student Profile #{{id}}",
   "progressTitle": "Progress",
-  "progressHelpText": "Total scores (Sum) are calculated automatically: attendance + weekly/monthly exams + bonuses."
+  "progressHelpText": "Total scores (Sum) are calculated automatically: attendance + weekly/monthly exams + bonuses.",
+  "needsGrading": "Needs Grading",
+  "everythingGraded": "Everything is graded! 🎉",
+  "todaysSchedule": "Today's Schedule",
+  "noClassesToday": "No classes scheduled for today",
+  "atRiskStudents": "Students Needing Attention (<60% average)",
+  "myActiveCourses": "My Active Courses",
+  "room": "Room {{room}}"
 }

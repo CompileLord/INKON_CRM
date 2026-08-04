@@ -1525,8 +1525,50 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "period_end": string,
       "period_type": "week" | "month",
       "exam_max_score": integer,
+      "student_count?": integer,
+      "lesson_count?": integer,
+      "cells_expected?": integer,
+      "cells_filled?": integer,
+      "avg_percentage?": number,
+      "state?": string,
     }
   ]
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/courses/{id}/journal-metrics
+
+**Summary:** Get Course Journal Metrics
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "class_avg_percentage": number,
+    "attendance_rate": number,
+    "periods_total": integer,
+    "periods_complete": integer,
+    "at_risk_count": integer,
+    "at_risk_threshold?": integer,
+  }
   ```
 - **422**: Validation Error
   ```json
@@ -1889,6 +1931,12 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "period_end": string,
       "period_type": "week" | "month",
       "exam_max_score": integer,
+      "student_count?": integer,
+      "lesson_count?": integer,
+      "cells_expected?": integer,
+      "cells_filled?": integer,
+      "avg_percentage?": number,
+      "state?": string,
     },
     "summaries": [
       {

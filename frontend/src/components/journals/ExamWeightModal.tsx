@@ -42,7 +42,7 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+          className="absolute top-4 right-4 text-muted hover:text-ink transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -55,14 +55,14 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg">
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs rounded-lg">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted mb-1">
               {t("table.examWeightLabel")}
             </label>
             <input
@@ -71,7 +71,7 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
               max={100}
               value={val}
               onChange={(e) => setVal(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-input rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               required
             />
           </div>
@@ -80,7 +80,7 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium border border-input rounded-lg hover:bg-accent hover:text-accent-foreground"
+              className="px-4 py-2 text-xs font-medium border border-border rounded-lg text-muted hover:bg-beige hover:text-ink transition-colors"
               disabled={loading}
             >
               {t("common:cancel", "Cancel")}
@@ -88,7 +88,7 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              className="px-4 py-2 text-xs font-semibold bg-accent text-white rounded-lg hover:bg-accent-dark disabled:opacity-50 transition-colors"
             >
               {loading ? t("loading") : t("common:save", "Save")}
             </button>

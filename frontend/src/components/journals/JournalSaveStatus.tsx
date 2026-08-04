@@ -24,21 +24,21 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({
     <div className="flex items-center gap-3" role="status" aria-live="polite">
       <div className="flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full border border-border bg-card">
         {status === "idle" && (
-          <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-muted">
             <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             {t("save.allSaved")}
           </span>
         )}
 
         {status === "pending" && (
-          <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-muted">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             {t("save.pending")}
           </span>
         )}
 
         {status === "saving" && (
-          <span className="flex items-center gap-1.5 text-primary">
+          <span className="flex items-center gap-1.5 text-accent">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             {t("save.saving")}
           </span>
@@ -52,7 +52,7 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({
         )}
 
         {status === "error" && (
-          <div className="flex items-center gap-2 text-destructive">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>
               {errorCount > 0
@@ -75,7 +75,7 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({
         type="button"
         onClick={onSaveNow}
         disabled={!hasPendingEdits || status === "saving"}
-        className="px-2.5 py-1 text-xs font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+        className="px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-beige text-ink hover:bg-beige-dark disabled:opacity-50 disabled:pointer-events-none transition-colors"
       >
         {t("save.saveNow")}
       </button>

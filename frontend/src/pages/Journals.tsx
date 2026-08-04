@@ -1,29 +1,32 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useCourses } from "../lib/courses/hooks";
 import { useMentors } from "../lib/users/hooks";
 import { useAuthStore } from "../store/authStore";
 import { JournalCard } from "../components/journals/JournalCard";
 import { JournalsStatsStrip } from "../components/journals/JournalsStatsStrip";
+import { MentorStatsStrip } from "../components/mentor/MentorStatsStrip";
 import { EmptyState } from "../components/journals/EmptyState";
 import { Button } from "../components/ui/Button";
 
 type StatusFilter = "all" | "active" | "archived";
 
-const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
-  { label: "Все", value: "all" },
-  { label: "Активные", value: "active" },
-  { label: "Архив", value: "archived" },
-];
-
 const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 dark:focus-visible:ring-accent";
 
 export function Journals() {
+  const { t } = useTranslation(["journals", "common"]);
   const role = useAuthStore((s) => s.role);
   const isSuperAdmin = role === "superadmin";
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+
+  const statusFilters: { label: string; value: StatusFilter }[] = [
+    { label: t("filter.all"), value: "all" },
+    { label: t("filter.active"), value: "active" },
+    { label: t("filter.archived"), value: "archived" },
+  ];
 
   const {
     data: coursesPage,
@@ -47,13 +50,13 @@ export function Journals() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-[22px] font-bold text-ink">Журналы</h1>
+        <h1 className="text-[22px] font-bold text-ink">{t("hubTitle")}</h1>
         <p className="mt-0.5 text-[13px] text-muted">
-          У каждого курса свой журнал — посещаемость, баллы, экзамен и бонусы
+          {t("hubSubtitle")}
         </p>
       </div>
 
-      <JournalsStatsStrip />
+      {role === "mentor" ? <MentorStatsStrip /> : <JournalsStatsStrip />}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
@@ -64,13 +67,13 @@ export function Journals() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Поиск по названию курса…"
+            placeholder={t("searchCoursePlaceholder")}
             className={`w-72 rounded-full border border-border-warm bg-card py-2 pl-9 pr-4 text-sm text-ink placeholder:text-muted ${FOCUS_RING}`}
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {STATUS_FILTERS.map((f) => (
+          {statusFilters.map((f) => (
             <button
               key={f.value}
               type="button"
@@ -79,7 +82,7 @@ export function Journals() {
                 "rounded-full border px-4 py-2 text-sm font-medium active:scale-95 transition-[background-color,border-color,color,transform] duration-150 ease-out",
                 FOCUS_RING,
                 status === f.value
-                  ? "border-blue-600 bg-blue-50 text-blue-600 dark:border-accent dark:bg-accent/10 dark:text-accent font-semibold"
+                  ? "border-maroon bg-maroon/10 text-maroon dark:border-accent dark:bg-accent/10 dark:text-accent font-semibold"
                   : "border-border-warm bg-card text-nav hover:bg-strip",
               ].join(" ")}
             >
@@ -97,10 +100,10 @@ export function Journals() {
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-10 text-center">
-          <AlertCircle size={22} className="text-red-600" />
-          <p className="text-sm text-muted">Не удалось загрузить журналы</p>
+          <AlertCircle size={22} className="text-red-600 dark:text-red-400" />
+          <p className="text-sm text-muted">{t("loadFailedHub")}</p>
           <Button type="button" variant="secondary" onClick={() => refetch()}>
-            Повторить
+            {t("common:retry")}
           </Button>
         </div>
       ) : filtered.length === 0 ? (

@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Users, TrendingUp, CalendarCheck, AlertTriangle } from "lucide-react";
-import { useCourse, useCourseJournals, useCourseProgressChart } from "../lib/courses/hooks";
+import { useMemo, useEffect, useRef } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Users, TrendingUp, CalendarCheck, AlertTriangle, Target } from "lucide-react";
+import { useCourse, useCourseJournals, useCourseJournalMetrics, useCourseProgressChart } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseRoster } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
@@ -19,6 +19,7 @@ function todayDateOnly(): string {
 export function JournalDetail() {
   const { t } = useTranslation(["journals", "common"]);
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const numericId = id ? Number(id) : undefined;
   const courseId = Number.isFinite(numericId) ? numericId : undefined;
 
@@ -32,6 +33,7 @@ export function JournalDetail() {
     refetch: refetchPeriods,
   } = useCourseJournals(courseId);
   const { data: progressChart, isLoading: chartLoading } = useCourseProgressChart(courseId);
+  const { data: metrics } = useCourseJournalMetrics(courseId);
 
   const orderedPeriods = useMemo(
     () => [...(periods ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start)),
@@ -45,40 +47,28 @@ export function JournalDetail() {
     return (current ?? orderedPeriods[orderedPeriods.length - 1]).id;
   }, [orderedPeriods]);
 
-  // Compute metrics for the metrics strip
-  const metrics = useMemo(() => {
-    if (!progressChart || !progressChart.datasets || progressChart.datasets.length === 0) {
-      return { classAvg: 0, attendanceRate: 0, completedPeriods: 0, atRiskCount: 0 };
+  const periodQueryParam = searchParams.get("period");
+  const activePeriodId = periodQueryParam ? Number(periodQueryParam) : defaultExpandedId;
+
+  const periodRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (periodQueryParam && periodRefs.current[Number(periodQueryParam)]) {
+      periodRefs.current[Number(periodQueryParam)]?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+  }, [periodQueryParam]);
 
-    const datasets = progressChart.datasets;
-    let totalScoreSum = 0;
-    let studentCount = datasets.length;
-    let atRisk = 0;
-
-    datasets.forEach((ds) => {
-      const vals = ds.values;
-      const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-      totalScoreSum += avg;
-      if (avg < 60) atRisk += 1;
-    });
-
-    const classAvg = studentCount > 0 ? totalScoreSum / studentCount : 0;
-    const today = todayDateOnly();
-    const completedPeriods = orderedPeriods.filter((p) => p.period_end < today).length;
-
-    return {
-      classAvg,
-      attendanceRate: Math.min(100, classAvg * 0.95),
-      completedPeriods,
-      atRiskCount: atRisk,
-    };
-  }, [progressChart, orderedPeriods]);
+  const handleJumpToCurrent = () => {
+    if (defaultExpandedId) {
+      setSearchParams({ period: String(defaultExpandedId) });
+      periodRefs.current[defaultExpandedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
   const backLink = (
     <Link
       to="/journals"
-      className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors"
+      className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-maroon dark:text-accent hover:underline transition-colors"
     >
       <ArrowLeft size={14} /> {t("backToJournals")}
     </Link>
@@ -88,7 +78,7 @@ export function JournalDetail() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted-foreground">{t("notFound")}</div>
+        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("notFound")}</div>
       </div>
     );
   }
@@ -97,7 +87,7 @@ export function JournalDetail() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted-foreground">{t("common:loading")}</div>
+        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading")}</div>
       </div>
     );
   }
@@ -107,7 +97,7 @@ export function JournalDetail() {
       <div className="flex flex-col gap-4">
         {backLink}
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted-foreground">{t("loadFailedCourse")}</p>
+          <p className="text-sm text-muted">{t("loadFailedCourse")}</p>
           <Button type="button" variant="secondary" onClick={() => refetchCourse()}>
             {t("common:retry")}
           </Button>
@@ -119,14 +109,24 @@ export function JournalDetail() {
   return (
     <div className="flex flex-col gap-6">
       {/* Sticky header bar */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
+      <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
         <div className="flex items-center gap-4">
           {backLink}
           <div className="h-4 w-px bg-border" />
-          <h1 className="text-lg font-bold text-foreground">{course.title}</h1>
+          <h1 className="text-lg font-bold text-ink">{course.title}</h1>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4 text-xs text-muted">
+          {defaultExpandedId && (
+            <button
+              type="button"
+              onClick={handleJumpToCurrent}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-warm bg-card px-2.5 py-1 text-xs font-semibold text-ink hover:bg-strip transition-colors shadow-xs"
+            >
+              <Target size={14} className="text-maroon dark:text-accent" />
+              {t("jumpToCurrent")}
+            </button>
+          )}
           {mentorProfile && (
             <span className="flex items-center gap-2">
               <PersonAvatar
@@ -135,7 +135,7 @@ export function JournalDetail() {
                 photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
                 size={22}
               />
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-ink">
                 {mentorProfile.user.first_name} {mentorProfile.user.last_name}
               </span>
             </span>
@@ -150,13 +150,13 @@ export function JournalDetail() {
       {/* Metrics strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+          <div className="p-2 rounded-lg bg-maroon/10 text-maroon dark:bg-accent/10 dark:text-accent">
             <TrendingUp className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.classAverage")}</div>
-            <div className="text-base font-bold text-foreground tabular-nums">
-              {metrics.classAvg > 0 ? `${metrics.classAvg.toFixed(1)}%` : "—"}
+            <div className="text-[11px] text-muted font-medium">{t("metrics.classAverage")}</div>
+            <div className="text-base font-bold text-ink tabular-nums">
+              {metrics && metrics.class_avg_percentage > 0 ? `${metrics.class_avg_percentage.toFixed(1)}%` : "—"}
             </div>
           </div>
         </div>
@@ -166,9 +166,9 @@ export function JournalDetail() {
             <CalendarCheck className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.attendanceRate")}</div>
-            <div className="text-base font-bold text-foreground tabular-nums">
-              {metrics.attendanceRate > 0 ? `${metrics.attendanceRate.toFixed(1)}%` : "—"}
+            <div className="text-[11px] text-muted font-medium">{t("metrics.attendanceRate")}</div>
+            <div className="text-base font-bold text-ink tabular-nums">
+              {metrics && metrics.attendance_rate > 0 ? `${metrics.attendance_rate.toFixed(1)}%` : "—"}
             </div>
           </div>
         </div>
@@ -178,9 +178,9 @@ export function JournalDetail() {
             <Users className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.periodsDone")}</div>
-            <div className="text-base font-bold text-foreground tabular-nums">
-              {metrics.completedPeriods} / {orderedPeriods.length}
+            <div className="text-[11px] text-muted font-medium">{t("metrics.periodsDone")}</div>
+            <div className="text-base font-bold text-ink tabular-nums">
+              {metrics ? metrics.periods_complete : 0} / {metrics ? metrics.periods_total : orderedPeriods.length}
             </div>
           </div>
         </div>
@@ -190,8 +190,10 @@ export function JournalDetail() {
             <AlertTriangle className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-muted-foreground font-medium">{t("metrics.atRisk")}</div>
-            <div className="text-base font-bold text-foreground tabular-nums">{metrics.atRiskCount}</div>
+            <div className="text-[11px] text-muted font-medium">{t("metrics.atRisk")}</div>
+            <div className="text-base font-bold text-ink tabular-nums">
+              {metrics ? metrics.at_risk_count : 0}
+            </div>
           </div>
         </div>
       </div>
@@ -201,30 +203,31 @@ export function JournalDetail() {
 
       {/* Period accordion list */}
       {periodsLoading ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted">
           {t("common:loading")}
         </div>
       ) : periodsError ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted-foreground">{t("loadFailed")}</p>
+          <p className="text-sm text-muted">{t("loadFailed")}</p>
           <Button type="button" variant="secondary" onClick={() => refetchPeriods()}>
             {t("common:retry")}
           </Button>
         </div>
       ) : orderedPeriods.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted">
           {t("noPeriodsYet")}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {[...orderedPeriods].reverse().map((period) => (
-            <JournalPeriodSection
-              key={period.id}
-              courseId={courseId}
-              period={period}
-              isCurrentPeriod={defaultExpandedId === period.id}
-              defaultExpanded={defaultExpandedId === period.id}
-            />
+            <div key={period.id} ref={(el) => { periodRefs.current[period.id] = el; }}>
+              <JournalPeriodSection
+                courseId={courseId}
+                period={period}
+                isCurrentPeriod={defaultExpandedId === period.id}
+                defaultExpanded={activePeriodId === period.id}
+              />
+            </div>
           ))}
         </div>
       )}

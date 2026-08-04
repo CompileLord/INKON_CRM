@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { JournalScoreCell } from "./JournalScoreCell";
+import { JournalScoreCell, type CellNavDirection } from "./JournalScoreCell";
 import type { CellSaveStatus } from "../../lib/journals/useJournalAutosave";
 import type { JournalStudentResponse } from "../../lib/journals/types";
 
@@ -11,7 +11,10 @@ interface JournalStudentRowProps {
   examMaxScore: number;
   cellStatus: Map<string, CellSaveStatus>;
   focusedCellKey: string | null;
+  focusFromKeyboard: boolean;
+  activeColDate?: string | null;
   onCellFocus: (key: string) => void;
+  onCellNavigate: (key: string, direction: CellNavDirection) => void;
   onEntryChange: (key: string, patch: { student_id: number; lesson_date: string; attendance: boolean; score: number; comment?: string | null; version: number }) => void;
   onSummaryChange: (studentId: number, patch: { bonus_score: number; exam_score: number; version: number }) => void;
 }
@@ -22,7 +25,10 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   examMaxScore,
   cellStatus,
   focusedCellKey,
+  focusFromKeyboard,
+  activeColDate,
   onCellFocus,
+  onCellNavigate,
   onEntryChange,
   onSummaryChange,
 }) => {
@@ -65,10 +71,10 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   const entriesMap = new Map(student.entries.map((e) => [e.lesson_date, e]));
 
   return (
-    <tr className="hover:bg-muted/40 transition-colors border-b border-border/50">
+    <tr className="group/row hover:bg-row-hover transition-colors border-b border-border-warm last:border-b-0">
       <th
         scope="row"
-        className="sticky left-0 z-10 bg-card px-4 py-2.5 text-left text-xs font-medium text-foreground border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]"
+        className="sticky left-0 z-10 bg-card group-hover/row:bg-row-hover transition-colors px-4 py-2.5 text-left text-xs font-medium text-ink border-r border-border"
       >
         <div className="flex items-center gap-2">
           {student.color_hex && (
@@ -92,7 +98,12 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         const currentComment = entry ? entry.comment : null;
 
         return (
-          <td key={date} className="px-2 py-2 text-center align-middle">
+          <td
+            key={date}
+            className={`px-2 py-2 text-center align-middle transition-colors ${
+              date === activeColDate ? "bg-maroon/5 dark:bg-accent/5" : ""
+            }`}
+          >
             <JournalScoreCell
               studentId={student.student_id}
               studentName={`${student.first_name} ${student.last_name}`}
@@ -103,7 +114,9 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
               version={currentVersion}
               status={cellStatus.get(cellKey)}
               isFocused={focusedCellKey === cellKey}
+              autoFocus={focusedCellKey === cellKey && focusFromKeyboard}
               onFocus={() => onCellFocus(cellKey)}
+              onNavigate={(direction) => onCellNavigate(cellKey, direction)}
               onChange={(patch) =>
                 onEntryChange(cellKey, {
                   student_id: student.student_id,
@@ -126,7 +139,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
           value={bonusInput}
           onChange={(e) => setBonusInput(e.target.value)}
           onBlur={handleBonusBlur}
-          className="w-12 h-7 text-center text-xs border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+          className="w-12 h-7 text-center text-xs border border-border rounded bg-card text-ink focus:outline-none focus:ring-1 focus:ring-accent tabular-nums"
           aria-label={t("table.bonus")}
         />
       </td>
@@ -138,16 +151,17 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
           value={examInput}
           onChange={(e) => setExamInput(e.target.value)}
           onBlur={handleExamBlur}
-          className="w-12 h-7 text-center text-xs border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+          className="w-12 h-7 text-center text-xs border border-border rounded bg-card text-ink focus:outline-none focus:ring-1 focus:ring-accent tabular-nums"
           aria-label={t("table.exam")}
         />
       </td>
 
-      <td className="px-3 py-2 text-center align-middle font-bold text-xs tabular-nums text-foreground">
+      {/* Totals stay pinned to the right edge so they survive horizontal scrolling. */}
+      <td className="sticky right-16 z-10 w-16 min-w-16 bg-card group-hover/row:bg-row-hover transition-colors border-l border-border px-3 py-2 text-center align-middle font-bold text-xs tabular-nums text-ink">
         {summary ? summary.sum_score : 0}
       </td>
 
-      <td className="px-3 py-2 text-center align-middle text-xs tabular-nums font-semibold text-muted-foreground">
+      <td className="sticky right-0 z-10 w-16 min-w-16 bg-card group-hover/row:bg-row-hover transition-colors px-3 py-2 text-center align-middle text-xs tabular-nums font-semibold text-muted">
         {summary ? `${summary.percentage.toFixed(1)}%` : "0%"}
       </td>
     </tr>

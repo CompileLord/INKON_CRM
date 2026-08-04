@@ -46,6 +46,23 @@ async def get_my_profile(
     }
 
 
+from app.schemas.journal import GradingQueueItemResponse
+from app.services.journal_service import JournalService
+
+@router.get("/me/grading-queue", response_model=List[GradingQueueItemResponse])
+async def get_my_grading_queue(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> List[GradingQueueItemResponse]:
+    if current_user.role not in [UserRole.MENTOR, UserRole.SUPERADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors or admins can view the grading queue"
+        )
+    journal_service = JournalService(db)
+    return await journal_service.get_mentor_grading_queue(current_user.id)
+
+
 @router.get("/{id}/profile", response_model=MentorProfileResponse)
 async def get_mentor_profile(
     id: int,

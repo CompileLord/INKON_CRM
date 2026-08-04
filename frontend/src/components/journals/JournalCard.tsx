@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { resolveMediaUrl } from "../../lib/users/media";
+import { useAuthStore } from "../../store/authStore";
 import type { CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
@@ -14,6 +15,8 @@ interface JournalCardProps {
 export function JournalCard({ course, mentor }: JournalCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation(["journals", "common"]);
+  const role = useAuthStore((s) => s.role);
+  const isMentorRole = role === "mentor";
   const isActive = course.status === "active";
 
   return (
@@ -30,7 +33,7 @@ export function JournalCard({ course, mentor }: JournalCardProps) {
         <span
           className={[
             "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
-            isActive ? "bg-green-100 text-green-700 dark:bg-green-950/70 dark:text-green-300" : "bg-stone-100 text-stone-600 dark:bg-stone-800/80 dark:text-stone-300",
+            isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-strip text-muted",
           ].join(" ")}
         >
           {isActive ? t("common:enums.courseStatus.active") : t("common:enums.courseStatus.archived")}
@@ -39,7 +42,7 @@ export function JournalCard({ course, mentor }: JournalCardProps) {
 
       <p className="text-xs font-medium text-muted">{t(`common:enums.examType.${course.exam_type}`, course.exam_type)}</p>
 
-      {mentor && (
+      {!isMentorRole && mentor && (
         <div className="flex items-center gap-2">
           <PersonAvatar
             firstName={mentor.first_name}
@@ -53,11 +56,11 @@ export function JournalCard({ course, mentor }: JournalCardProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-end border-t border-beige pt-3">
+      <div className="flex items-center justify-end border-t border-border-warm pt-3">
         <button
           type="button"
           aria-label={t("openJournal")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <ArrowRight size={16} />
         </button>

@@ -37,6 +37,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
       ? `${students[0].student_id}:${lessonDates[0]}`
       : null
   );
+  const [activeColDate, setActiveColDate] = useState<string | null>(
+    lessonDates.length > 0 ? lessonDates[0] : null
+  );
   const [focusFromKeyboard, setFocusFromKeyboard] = useState(false);
   const tableWrapperRef = React.useRef<HTMLDivElement>(null);
 
@@ -75,6 +78,8 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   const handleCellFocus = useCallback((key: string) => {
     setFocusedCellKey(key);
     setFocusFromKeyboard(false);
+    const date = key.split(":")[1];
+    if (date) setActiveColDate(date);
   }, []);
 
   // Arrow-key roaming across the grid — the help text below the table promises it.
@@ -109,7 +114,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
 
       if (nextRow < 0 || nextRow > students.length - 1) return;
 
-      setFocusedCellKey(`${students[nextRow].student_id}:${lessonDates[nextCol]}`);
+      const nextDate = lessonDates[nextCol];
+      setFocusedCellKey(`${students[nextRow].student_id}:${nextDate}`);
+      setActiveColDate(nextDate);
       setFocusFromKeyboard(true);
     },
     [students, lessonDates]
@@ -126,7 +133,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
             return (
               <div
                 key={`${conflict.student_id}:${conflict.lesson_date}`}
-                className="flex items-center justify-between gap-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-xs text-destructive"
+                className="flex items-center justify-between gap-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-600 dark:text-red-400"
               >
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -138,15 +145,14 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   <button
                     type="button"
                     onClick={() => onResolveConflict(conflict, "keepMine")}
-                    className="px-2.5 py-1 text-xs font-semibold bg-destructive text-white rounded hover:opacity-90 transition-opacity flex items-center gap-1"
+                    className="px-2.5 py-1 text-xs font-semibold bg-maroon text-white dark:bg-accent dark:text-ink rounded hover:opacity-90 transition-opacity"
                   >
-                    <Check className="w-3 h-3" />
                     {t("conflict.keepMine")}
                   </button>
                   <button
                     type="button"
                     onClick={() => onResolveConflict(conflict, "keepTheirs")}
-                    className="px-2.5 py-1 text-xs font-semibold border border-destructive/40 rounded hover:bg-destructive/20 transition-colors flex items-center gap-1"
+                    className="px-2.5 py-1 text-xs font-semibold border border-red-500/40 rounded hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors flex items-center gap-1"
                   >
                     <X className="w-3 h-3" />
                     {t("conflict.keepTheirs")}
@@ -170,7 +176,14 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 const dateObj = new Date(date);
                 const dateFormatted = `${dateObj.getDate().toString().padStart(2, "0")}.${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`;
                 return (
-                  <th key={date} scope="col" className="px-2 py-3 text-center min-w-[70px]">
+                  <th
+                    key={date}
+                    scope="col"
+                    onMouseEnter={() => setActiveColDate(date)}
+                    className={`px-2 py-3 text-center min-w-[70px] transition-colors cursor-pointer ${
+                      activeColDate === date ? "bg-maroon/10 dark:bg-accent/10 text-ink" : ""
+                    }`}
+                  >
                     {dateFormatted}
                   </th>
                 );
@@ -225,6 +238,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   cellStatus={cellStatus}
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}
+                  activeColDate={activeColDate}
                   onCellFocus={handleCellFocus}
                   onCellNavigate={handleCellNavigate}
                   onEntryChange={onEntryChange}

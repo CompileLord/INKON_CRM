@@ -44,9 +44,10 @@ def create_access_token(
     else:
         expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
+    role_str = role.value if hasattr(role, "value") else str(role)
     to_encode: Dict[str, Any] = {
         "sub": str(user_id),
-        "role": role,
+        "role": role_str,
         "exp": int(expire.timestamp()),
         "iat": int(now.timestamp())
     }

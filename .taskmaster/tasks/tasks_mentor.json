@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "title": "Token rewrite in journal components",
+    "status": "completed",
+    "description": "Rewrite style classes in 8 journal files to IMKON design tokens as per §2.1"
+  },
+  {
+    "id": "2",
+    "title": "Role-gate stats strip",
+    "status": "completed",
+    "description": "Gate stats strip by role to stop 403 on mentor loads as per §2.4 + §3.4"
+  },
+  {
+    "id": "3",
+    "title": "Period aggregates and collapsed row summaries",
+    "status": "completed",
+    "description": "Extend course journal listing with per-period aggregates (§3.1) and update collapsed accordion rows (§2.3)"
+  },
+  {
+    "id": "4",
+    "title": "Journal metrics endpoint and calculation fixes",
+    "status": "completed",
+    "description": "Implement GET /courses/{id}/journal-metrics (§3.2), fix real attendance (§2.2), and server at-risk threshold (§2.6)"
+  },
+  {
+    "id": "5",
+    "title": "i18n for Journals.tsx and stats strip",
+    "status": "completed",
+    "description": "Add translations across en, ru, tg for Journals.tsx and stats strip, update parity tests (§2.5, §6)"
+  },
+  {
+    "id": "6",
+    "title": "Contract regeneration and TypeScript types sync",
+    "status": "completed",
+    "description": "Regenerate CONTRACT.md and sync frontend TypeScript interfaces in lib/courses/types.ts and lib/journals/types.ts"
+  },
+  {
+    "id": "7",
+    "title": "Grading queue endpoint and shared mentor components",
+    "status": "completed",
+    "description": "Implement GET /mentors/me/grading-queue (§3.3) and shared components GradingQueueRow, MentorStatsStrip, PeriodStateBadge (§5)"
+  },
+  {
+    "id": "8",
+    "title": "Rebuild Mentor Dashboard",
+    "status": "completed",
+    "description": "Rebuild MentorDashboard around grading queue, today's lessons, my courses, and at-risk students (§4.1)"
+  },
+  {
+    "id": "9",
+    "title": "Rebuild Journals hub page",
+    "status": "completed",
+    "description": "Rebuild /journals page with role-shaped stats, i18n filters, and enhanced JournalCard with progress (§4.2)"
+  },
+  {
+    "id": "10",
+    "title": "Course journal header fix, jump button, and period deep-linking",
+    "status": "completed",
+    "description": "Update /journals/:id with sticky header fix, jump button, server metrics tiles, and period query param deep-linking (§4.3.1-4.3.3)"
+  },
+  {
+    "id": "11",
+    "title": "Grid ergonomics and keyboard navigation",
+    "status": "completed",
+    "description": "Add arrow-key navigation, column highlight, and styling polish to JournalGrid (§4.3.4)"
+  }
+]

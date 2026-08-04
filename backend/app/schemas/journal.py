@@ -12,8 +12,36 @@ class JournalResponse(BaseModel):
     period_end: date
     period_type: JournalPeriodType
     exam_max_score: int
+    student_count: int = 0
+    lesson_count: int = 0
+    cells_expected: int = 0
+    cells_filled: int = 0
+    avg_percentage: Optional[float] = None
+    state: str = "empty"
 
     model_config = {"from_attributes": True}
+
+
+class CourseJournalMetricsResponse(BaseModel):
+    class_avg_percentage: float
+    attendance_rate: float
+    periods_total: int
+    periods_complete: int
+    at_risk_count: int
+    at_risk_threshold: int = 60
+
+
+class GradingQueueItemResponse(BaseModel):
+    journal_id: int
+    course_id: int
+    course_title: str
+    period_label: str
+    period_start: date
+    period_end: date
+    state: str
+    cells_filled: int
+    cells_expected: int
+    is_current: bool
 
 
 class JournalEntryUpdate(BaseModel):

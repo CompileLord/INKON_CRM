@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError as StaleObjectError
 from app.models.journal import Journal
@@ -14,6 +14,7 @@ from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import MAX_BONUS_SCORE, EXAM_MAX_SCORE_LIMIT, score_percentage
+from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
 
 
 def get_lesson_dates(period_start: date, period_end: date, schedules: List[CourseSchedule]) -> List[date]:
@@ -30,6 +31,170 @@ def get_lesson_dates(period_start: date, period_end: date, schedules: List[Cours
 class JournalService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+
+    async def get_course_journals_aggregated(self, course_id: int) -> List[JournalResponse]:
+        journals_stmt = select(Journal).filter(Journal.course_id == course_id).order_by(Journal.period_start.asc())
+        journals_res = await self.db.execute(journals_stmt)
+        journals = list(journals_res.scalars().all())
+        if not journals:
+            return []
+
+        schedules_stmt = select(CourseSchedule).filter(CourseSchedule.course_id == course_id)
+        schedules_res = await self.db.execute(schedules_stmt)
+        schedules = list(schedules_res.scalars().all())
+
+        enrolled_count_stmt = select(func.count(Enrollment.id)).filter(
+            Enrollment.course_id == course_id,
+            Enrollment.is_deleted == False
+        )
+        enrolled_res = await self.db.execute(enrolled_count_stmt)
+        student_count = enrolled_res.scalar() or 0
+
+        journal_ids = [j.id for j in journals]
+
+        entry_counts_stmt = select(
+            JournalEntry.journal_id,
+            func.count(JournalEntry.id)
+        ).filter(
+            JournalEntry.journal_id.in_(journal_ids)
+        ).group_by(JournalEntry.journal_id)
+        entry_counts_res = await self.db.execute(entry_counts_stmt)
+        entry_counts_map = dict(entry_counts_res.all())
+
+        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=0.0)
+
+        summary_avg_stmt = select(
+            JournalStudentSummary.journal_id,
+            func.avg(pct_expr)
+        ).filter(
+            JournalStudentSummary.journal_id.in_(journal_ids)
+        ).group_by(JournalStudentSummary.journal_id)
+        summary_avg_res = await self.db.execute(summary_avg_stmt)
+        summary_avg_map = dict(summary_avg_res.all())
+
+        today = date.today()
+        results = []
+        for j in journals:
+            lesson_dates = get_lesson_dates(j.period_start, j.period_end, schedules)
+            lesson_count = len(lesson_dates)
+            cells_expected = student_count * lesson_count
+            cells_filled = entry_counts_map.get(j.id, 0)
+            raw_avg = summary_avg_map.get(j.id)
+            avg_percentage = round(float(raw_avg), 1) if raw_avg is not None else None
+
+            if j.period_start > today:
+                state = "upcoming"
+            elif cells_filled == 0:
+                state = "empty"
+            elif cells_expected > 0 and cells_filled >= cells_expected:
+                state = "complete"
+            else:
+                state = "partial"
+
+            results.append(JournalResponse(
+                id=j.id,
+                course_id=j.course_id,
+                period_label=j.period_label,
+                period_start=j.period_start,
+                period_end=j.period_end,
+                period_type=j.period_type,
+                exam_max_score=j.exam_max_score,
+                student_count=student_count,
+                lesson_count=lesson_count,
+                cells_expected=cells_expected,
+                cells_filled=cells_filled,
+                avg_percentage=avg_percentage,
+                state=state,
+            ))
+        return results
+
+    async def get_course_journal_metrics(self, course_id: int) -> CourseJournalMetricsResponse:
+        AT_RISK_THRESHOLD = 60
+
+        journals_agg = await self.get_course_journals_aggregated(course_id)
+        periods_total = len(journals_agg)
+        periods_complete = sum(1 for j in journals_agg if j.state == "complete")
+
+        journal_ids = [j.id for j in journals_agg]
+        if not journal_ids:
+            return CourseJournalMetricsResponse(
+                class_avg_percentage=0.0,
+                attendance_rate=0.0,
+                periods_total=0,
+                periods_complete=0,
+                at_risk_count=0,
+                at_risk_threshold=AT_RISK_THRESHOLD,
+            )
+
+        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=0.0)
+
+        summary_totals_stmt = select(
+            func.avg(pct_expr),
+            func.sum(JournalStudentSummary.attendance_count),
+            func.sum(JournalStudentSummary.total_lessons)
+        ).filter(JournalStudentSummary.journal_id.in_(journal_ids))
+        summary_res = await self.db.execute(summary_totals_stmt)
+        avg_pct, sum_att, sum_lessons = summary_res.first() or (0.0, 0, 0)
+
+        class_avg_percentage = round(float(avg_pct), 1) if avg_pct is not None else 0.0
+
+        attendance_rate = 0.0
+        if sum_lessons and sum_lessons > 0 and sum_att is not None:
+            attendance_rate = round((float(sum_att) / float(sum_lessons)) * 100.0, 1)
+
+        student_avg_stmt = select(
+            JournalStudentSummary.student_id,
+            func.avg(pct_expr)
+        ).filter(
+            JournalStudentSummary.journal_id.in_(journal_ids)
+        ).group_by(JournalStudentSummary.student_id)
+        student_avg_res = await self.db.execute(student_avg_stmt)
+        at_risk_count = 0
+        for student_id, st_avg in student_avg_res.all():
+            if st_avg is not None and float(st_avg) < AT_RISK_THRESHOLD:
+                at_risk_count += 1
+
+        return CourseJournalMetricsResponse(
+            class_avg_percentage=class_avg_percentage,
+            attendance_rate=attendance_rate,
+            periods_total=periods_total,
+            periods_complete=periods_complete,
+            at_risk_count=at_risk_count,
+            at_risk_threshold=AT_RISK_THRESHOLD,
+        )
+
+    async def get_mentor_grading_queue(self, mentor_id: int) -> List[GradingQueueItemResponse]:
+        courses_stmt = select(Course).filter(
+            Course.mentor_id == mentor_id,
+            Course.status == CourseStatus.ACTIVE,
+            Course.is_deleted == False
+        )
+        courses_res = await self.db.execute(courses_stmt)
+        courses = list(courses_res.scalars().all())
+
+        today = date.today()
+        queue: List[GradingQueueItemResponse] = []
+
+        for course in courses:
+            journals = await self.get_course_journals_aggregated(course.id)
+            for j in journals:
+                if j.state in ("empty", "partial") and j.period_start <= today:
+                    is_current = j.period_start <= today <= j.period_end
+                    queue.append(GradingQueueItemResponse(
+                        journal_id=j.id,
+                        course_id=course.id,
+                        course_title=course.title,
+                        period_label=j.period_label,
+                        period_start=j.period_start,
+                        period_end=j.period_end,
+                        state=j.state,
+                        cells_filled=j.cells_filled,
+                        cells_expected=j.cells_expected,
+                        is_current=is_current,
+                    ))
+
+        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
+        return queue
 
     async def get_journal(self, journal_id: int, current_user: User) -> dict:
         journal = await self.db.get(Journal, journal_id)

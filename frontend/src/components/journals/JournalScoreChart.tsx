@@ -394,7 +394,7 @@ export const JournalScoreChart: React.FC<JournalScoreChartProps> = ({ data, isLo
                       {delta !== undefined && Math.abs(delta) >= 0.05 && (
                         <span
                           className={`text-[10px] font-medium ${
-                            delta > 0 ? "text-emerald-500" : "text-destructive"
+                            delta > 0 ? "text-emerald-500" : "text-red-600 dark:text-red-400"
                           }`}
                         >
                           {delta > 0 ? "+" : "−"}

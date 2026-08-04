@@ -1,5 +1,6 @@
 {
   "backToJournals": "Journals",
+  "jumpToCurrent": "Jump to current period",
   "title": "Electronic Gradebook",
   "openJournal": "Open journal",
   "totalJournals": "Total Journals",
@@ -36,6 +37,20 @@
     "keepMine": "Keep mine",
     "keepTheirs": "Keep theirs"
   },
+  "hubTitle": "Journals",
+  "hubSubtitle": "Each course has its own journal — attendance, scores, exam, and bonuses",
+  "searchCoursePlaceholder": "Search course by title…",
+  "loadFailedHub": "Failed to load journals",
+  "filter": {
+    "all": "All",
+    "active": "Active",
+    "archived": "Archived"
+  },
+  "mentorStats": {
+    "myCourses": "My Active Courses",
+    "myStudents": "My Students",
+    "periodsNeedingGrading": "Needs Grading"
+  },
   "period": {
     "week": "Week {{n}}",
     "month": "Month {{n}}",
@@ -44,7 +59,11 @@
     "lessons_one": "{{count}} lesson",
     "lessons_other": "{{count}} lessons",
     "completion": "{{marked}} of {{total}} marked",
-    "average": "Avg: {{avg}}%"
+    "average": "Avg: {{avg}}%",
+    "stateUpcoming": "Upcoming",
+    "stateEmpty": "Not started",
+    "statePartial": "In progress",
+    "stateComplete": "Complete"
   },
   "chart": {
     "title": "Score progress",
@@ -65,7 +84,9 @@
     "hideSeries": "Hide {{name}}",
     "showSeries": "Show {{name}}",
     "ariaSummary": "Score progress chart for {{students}} students across {{periods}} periods.",
-    "loading": "Loading chart data…"
+    "loading": "Loading chart data…",
+    "hoverHint": "Hover a period to see every student's score",
+    "noMatches": "No students match your search"
   },
   "table": {
     "students": "Students",
@@ -89,7 +110,12 @@
     "scoreCellLabel": "Score for {{name}} on {{date}}",
     "attendanceCellLabel": "Attendance for {{name}} on {{date}}",
     "commentCellLabel": "Comment for {{name}} on {{date}}",
-    "gridHelp": "Use arrow keys to navigate cells. Press 0–5 to grade, Space for attendance, C for comments."
+    "gridHelp": "Use arrow keys to navigate cells. Press 0–5 to grade, Space for attendance, C for comments.",
+    "addComment": "Add comment",
+    "addCommentCellLabel": "Add comment for {{name}} on {{date}}",
+    "commentPlaceholder": "Note for this lesson…",
+    "commentCancel": "Cancel",
+    "commentSave": "Save"
   },
   "metrics": {
     "classAverage": "Class Average",

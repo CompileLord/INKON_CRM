@@ -17,16 +17,27 @@ function getKeys(obj: Record<string, any>, prefix = ""): string[] {
 }
 
 describe("journals i18n key parity", () => {
-  it("ensures all keys present in en/journals.json exist in ru and tg", () => {
+  it("ensures all keys match bidirectionally across en, ru, and tg", () => {
     const enKeys = getKeys(enJournals).sort();
     const ruKeys = getKeys(ruJournals).sort();
     const tgKeys = getKeys(tgJournals).sort();
 
-    const missingInRu = enKeys.filter((k) => !ruKeys.includes(k));
-    const missingInTg = enKeys.filter((k) => !tgKeys.includes(k));
+    // Filter out plural variation keys like _one, _few, _many
+    const normalize = (keys: string[]) => keys.filter((k) => !k.endsWith("_few") && !k.endsWith("_many"));
+
+    const normEn = normalize(enKeys);
+    const normRu = normalize(ruKeys);
+    const normTg = normalize(tgKeys);
+
+    const missingInRu = normEn.filter((k) => !normRu.includes(k));
+    const missingInTg = normEn.filter((k) => !normTg.includes(k));
+    const strayInRu = normRu.filter((k) => !normEn.includes(k));
+    const strayInTg = normTg.filter((k) => !normEn.includes(k));
 
     expect(missingInRu).toEqual([]);
     expect(missingInTg).toEqual([]);
+    expect(strayInRu).toEqual([]);
+    expect(strayInTg).toEqual([]);
   });
 
   it("verifies that table.sum is translated properly across all locales", () => {

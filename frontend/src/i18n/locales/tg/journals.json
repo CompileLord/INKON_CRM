@@ -1,5 +1,6 @@
 {
   "backToJournals": "Журналҳо",
+  "jumpToCurrent": "Гузаштан ба давраи ҷорӣ",
   "title": "Журнали электронӣ",
   "openJournal": "Кушодани журнал",
   "totalJournals": "Ҷамъи журналҳо",
@@ -36,6 +37,20 @@
     "keepMine": "Моли худам",
     "keepTheirs": "Моли сервер"
   },
+  "hubTitle": "Журналҳо",
+  "hubSubtitle": "Ҳар як курс журнали худро дорад — давомот, баллҳо, имтиҳон ва бонусҳо",
+  "searchCoursePlaceholder": "Ҷустуҷӯ аз рӯи номи курс…",
+  "loadFailedHub": "Журналҳоро бор кардан ноком шуд",
+  "filter": {
+    "all": "Ҳама",
+    "active": "Фаъол",
+    "archived": "Архив"
+  },
+  "mentorStats": {
+    "myCourses": "Курсҳои фаъоли ман",
+    "myStudents": "Донишҷӯёни ман",
+    "periodsNeedingGrading": "Баҳодиҳиро талаб мекунанд"
+  },
   "period": {
     "week": "Ҳафтаи {{n}}",
     "month": "Моҳи {{n}}",
@@ -44,7 +59,11 @@
     "lessons_one": "{{count}} дарс",
     "lessons_other": "{{count}} дарс",
     "completion": "{{marked}} аз {{total}} пур шуд",
-    "average": "Миёна: {{avg}}%"
+    "average": "Миёна: {{avg}}%",
+    "stateUpcoming": "Оянда",
+    "stateEmpty": "Оғоз наёфтааст",
+    "statePartial": "Дар ҷараён",
+    "stateComplete": "Анҷом ёфт"
   },
   "chart": {
     "title": "Динамикаи баллҳо",
@@ -65,7 +84,9 @@
     "hideSeries": "Пинҳон кардани {{name}}",
     "showSeries": "Нишон додани {{name}}",
     "ariaSummary": "Графикаи баллҳо барои {{students}} донишҷӯ дар {{periods}} давра.",
-    "loading": "Боргирии маълумоти график…"
+    "loading": "Боргирии маълумоти график…",
+    "hoverHint": "Барои дидани баллҳои ҳамаи донишҷӯён ба давра нишон диҳед",
+    "noMatches": "Донишҷӯи мувофиқ ёфт нашуд"
   },
   "table": {
     "students": "Донишҷӯён",
@@ -89,7 +110,12 @@
     "scoreCellLabel": "Балл барои {{name}} дар {{date}}",
     "attendanceCellLabel": "Иштирок барои {{name}} дар {{date}}",
     "commentCellLabel": "Шарҳ барои {{name}} дар {{date}}",
-    "gridHelp": "Калидҳои тирчаро барои паймоиш истифода баред. 0–5 барои балл, Пробел барои иштирок, C барои шарҳ."
+    "gridHelp": "Калидҳои тирчаро барои паймоиш истифода баред. 0–5 барои балл, Пробел барои иштирок, C барои шарҳ.",
+    "addComment": "Илова кардани шарҳ",
+    "addCommentCellLabel": "Илова кардани шарҳ барои {{name}} дар {{date}}",
+    "commentPlaceholder": "Қайд барои ин дарс…",
+    "commentCancel": "Бекор кардан",
+    "commentSave": "Нигоҳ доштан"
   },
   "metrics": {
     "classAverage": "Балли миёна",

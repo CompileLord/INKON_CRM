@@ -6,6 +6,7 @@ import { useJournalAutosave } from "../../lib/journals/useJournalAutosave";
 import { JournalGrid } from "./JournalGrid";
 import { JournalSaveStatus } from "./JournalSaveStatus";
 import { ExamWeightModal } from "./ExamWeightModal";
+import { PeriodStateBadge, type PeriodState } from "./PeriodStateBadge";
 
 interface JournalPeriodSectionProps {
   period: {
@@ -14,7 +15,13 @@ interface JournalPeriodSectionProps {
     period_start: string;
     period_end: string;
     period_type: "week" | "month";
-    exam_max_score: number;
+    exam_max_score?: number;
+    student_count?: number;
+    lesson_count?: number;
+    cells_expected?: number;
+    cells_filled?: number;
+    avg_percentage?: number | null;
+    state?: PeriodState;
   };
   courseId: number;
   isCurrentPeriod?: boolean;
@@ -47,34 +54,23 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
     await updateExamMaxScoreMutation.mutateAsync({ exam_max_score: newWeight });
   };
 
-  let totalMarked = 0;
-  let totalCells = 0;
-  let periodAvg = 0;
-
+  let computedAvg = 0;
   if (detail && detail.students.length > 0) {
-    const studentCount = detail.students.length;
-    const lessonCount = detail.lesson_dates.length;
-    totalCells = studentCount * lessonCount;
-
-    let markedSum = 0;
     let percentSum = 0;
-
     detail.students.forEach((student) => {
-      markedSum += student.entries.filter((e) => e.attendance || e.score > 0).length;
       if (student.summary) {
         percentSum += student.summary.percentage;
       }
     });
-
-    totalMarked = markedSum;
-    periodAvg = percentSum / studentCount;
+    computedAvg = percentSum / detail.students.length;
   }
+  const effectiveAvg = computedAvg > 0 ? computedAvg : (period.avg_percentage ?? 0);
 
   return (
     <div className="border border-border rounded-xl bg-card shadow-sm overflow-hidden transition-all duration-200">
       <div
         onClick={handleToggleExpand}
-        className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+        className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-row-hover transition-colors select-none"
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -85,13 +81,13 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
         }}
       >
         <div className="flex items-center gap-3">
-          <div className="p-1 rounded-md text-muted-foreground hover:text-foreground">
+          <div className="p-1 rounded-md text-muted group-hover:text-ink transition-colors">
             {expanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-foreground">{period.period_label}</h3>
+              <h3 className="font-bold text-base text-ink">{period.period_label}</h3>
               {isCurrentPeriod && (
                 <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-maroon/10 text-maroon dark:bg-maroon/20 dark:text-red-400 border border-maroon/20">
                   {t("period.current")}
@@ -99,7 +95,7 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-3 text-xs text-muted mt-0.5">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
                 {t("period.range", { start: period.period_start, end: period.period_end })}
@@ -122,9 +118,15 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
 
           {!expanded && (
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1 font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-md">
+              {period.state && <PeriodStateBadge state={period.state} />}
+              {period.cells_expected !== undefined && period.cells_expected > 0 && (
+                <span className="text-muted tabular-nums text-xs">
+                  {period.cells_filled ?? 0}/{period.cells_expected}
+                </span>
+              )}
+              <span className="flex items-center gap-1 font-medium text-muted bg-beige px-2.5 py-1 rounded-md tabular-nums">
                 <Layers className="w-3.5 h-3.5" />
-                {periodAvg > 0 ? t("period.average", { avg: periodAvg.toFixed(1) }) : "—"}
+                {effectiveAvg > 0 ? t("period.average", { avg: effectiveAvg.toFixed(1) }) : "—"}
               </span>
             </div>
           )}
@@ -132,15 +134,15 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
       </div>
 
       {expanded && (
-        <div className="px-5 pb-5 pt-1 border-t border-border/60">
+        <div className="px-5 pb-5 pt-1 border-t border-border-warm">
           {isLoading && (
-            <div className="py-8 text-center text-xs text-muted-foreground">
+            <div className="py-8 text-center text-xs text-muted">
               {t("loading")}
             </div>
           )}
 
           {isError && (
-            <div className="py-8 text-center text-xs text-destructive">
+            <div className="py-8 text-center text-xs text-red-600 dark:text-red-400">
               {t("loadFailed")}
             </div>
           )}

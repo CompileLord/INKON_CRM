@@ -1,5 +1,6 @@
 {
   "backToJournals": "Журналы",
+  "jumpToCurrent": "Перейти к текущему периоду",
   "title": "Электронный журнал",
   "openJournal": "Открыть журнал",
   "totalJournals": "Всего журналов",
@@ -40,6 +41,20 @@
     "keepMine": "Оставить моё",
     "keepTheirs": "Принять серверное"
   },
+  "hubTitle": "Журналы",
+  "hubSubtitle": "У каждого курса свой журнал — посещаемость, баллы, экзамен и бонусы",
+  "searchCoursePlaceholder": "Поиск по названию курса…",
+  "loadFailedHub": "Не удалось загрузить журналы",
+  "filter": {
+    "all": "Все",
+    "active": "Активные",
+    "archived": "Архив"
+  },
+  "mentorStats": {
+    "myCourses": "Мои активные курсы",
+    "myStudents": "Мои студенты",
+    "periodsNeedingGrading": "Требуют оценки"
+  },
   "period": {
     "week": "Неделя {{n}}",
     "month": "Месяц {{n}}",
@@ -50,7 +65,11 @@
     "lessons_many": "{{count}} занятий",
     "lessons_other": "{{count}} занятий",
     "completion": "Заполнено {{marked}} из {{total}}",
-    "average": "Средний: {{avg}}%"
+    "average": "Средний: {{avg}}%",
+    "stateUpcoming": "Предстоящий",
+    "stateEmpty": "Не начат",
+    "statePartial": "В процессе",
+    "stateComplete": "Завершен"
   },
   "chart": {
     "title": "Динамика баллов",
@@ -71,7 +90,9 @@
     "hideSeries": "Скрыть {{name}}",
     "showSeries": "Показать {{name}}",
     "ariaSummary": "График динамики баллов для {{students}} студентов за {{periods}} периодов.",
-    "loading": "Загрузка данных графика…"
+    "loading": "Загрузка данных графика…",
+    "hoverHint": "Наведите на период, чтобы увидеть баллы всех студентов",
+    "noMatches": "Нет студентов по вашему запросу"
   },
   "table": {
     "students": "Студенты",
@@ -95,7 +116,12 @@
     "scoreCellLabel": "Оценка для {{name}} на {{date}}",
     "attendanceCellLabel": "Посещаемость для {{name}} на {{date}}",
     "commentCellLabel": "Комментарий для {{name}} на {{date}}",
-    "gridHelp": "Используйте стрелки для навигации. Клавиши 0–5 для оценок, Пробел для явки, C для комментариев."
+    "gridHelp": "Используйте стрелки для навигации. Клавиши 0–5 для оценок, Пробел для явки, C для комментариев.",
+    "addComment": "Добавить комментарий",
+    "addCommentCellLabel": "Добавить комментарий для {{name}} на {{date}}",
+    "commentPlaceholder": "Заметка к этому занятию…",
+    "commentCancel": "Отмена",
+    "commentSave": "Сохранить"
   },
   "metrics": {
     "classAverage": "Средний балл",
