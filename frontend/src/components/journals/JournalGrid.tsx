@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Settings, AlertCircle, Check, X } from "lucide-react";
 import { JournalStudentRow } from "./JournalStudentRow";
+import type { CellNavDirection } from "./JournalScoreCell";
 import type { CellSaveStatus } from "../../lib/journals/useJournalAutosave";
 import type { JournalEntryConflictResponse, JournalStudentResponse } from "../../lib/journals/types";
 
@@ -36,6 +37,83 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
       ? `${students[0].student_id}:${lessonDates[0]}`
       : null
   );
+  const [focusFromKeyboard, setFocusFromKeyboard] = useState(false);
+  const tableWrapperRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = tableWrapperRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const maxScrollLeft = el.scrollWidth - el.clientWidth;
+      if (maxScrollLeft <= 0) return;
+
+      const deltaY = e.deltaY;
+      const deltaX = e.deltaX;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        return;
+      }
+
+      if (deltaY !== 0) {
+        if (deltaY > 0 && el.scrollLeft < maxScrollLeft - 1) {
+          e.preventDefault();
+          el.scrollLeft += deltaY;
+        } else if (deltaY < 0 && el.scrollLeft > 1) {
+          e.preventDefault();
+          el.scrollLeft += deltaY;
+        }
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
+  const handleCellFocus = useCallback((key: string) => {
+    setFocusedCellKey(key);
+    setFocusFromKeyboard(false);
+  }, []);
+
+  // Arrow-key roaming across the grid — the help text below the table promises it.
+  const handleCellNavigate = useCallback(
+    (key: string, direction: CellNavDirection) => {
+      const [studentIdRaw, ...dateParts] = key.split(":");
+      const studentId = Number(studentIdRaw);
+      const date = dateParts.join(":");
+
+      const rowIndex = students.findIndex((s) => s.student_id === studentId);
+      const colIndex = lessonDates.indexOf(date);
+      if (rowIndex === -1 || colIndex === -1) return;
+
+      let nextRow = rowIndex;
+      let nextCol = colIndex;
+
+      if (direction === "up") nextRow -= 1;
+      else if (direction === "down") nextRow += 1;
+      else if (direction === "left") nextCol -= 1;
+      else nextCol += 1;
+
+      // Wrap horizontally onto the neighbouring row so long periods stay traversable.
+      if (nextCol < 0) {
+        if (nextRow === 0) return;
+        nextRow -= 1;
+        nextCol = lessonDates.length - 1;
+      } else if (nextCol > lessonDates.length - 1) {
+        if (nextRow === students.length - 1) return;
+        nextRow += 1;
+        nextCol = 0;
+      }
+
+      if (nextRow < 0 || nextRow > students.length - 1) return;
+
+      setFocusedCellKey(`${students[nextRow].student_id}:${lessonDates[nextCol]}`);
+      setFocusFromKeyboard(true);
+    },
+    [students, lessonDates]
+  );
 
   return (
     <div className="space-y-3">
@@ -48,7 +126,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
             return (
               <div
                 key={`${conflict.student_id}:${conflict.lesson_date}`}
-                className="flex items-center justify-between gap-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-700 dark:text-red-400"
+                className="flex items-center justify-between gap-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-xs text-destructive"
               >
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -60,7 +138,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   <button
                     type="button"
                     onClick={() => onResolveConflict(conflict, "keepMine")}
-                    className="px-2.5 py-1 text-xs font-semibold bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                    className="px-2.5 py-1 text-xs font-semibold bg-destructive text-white rounded hover:opacity-90 transition-opacity flex items-center gap-1"
                   >
                     <Check className="w-3 h-3" />
                     {t("conflict.keepMine")}
@@ -68,7 +146,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   <button
                     type="button"
                     onClick={() => onResolveConflict(conflict, "keepTheirs")}
-                    className="px-2.5 py-1 text-xs font-semibold border border-red-500/40 rounded hover:bg-red-500/20 flex items-center gap-1"
+                    className="px-2.5 py-1 text-xs font-semibold border border-destructive/40 rounded hover:bg-destructive/20 transition-colors flex items-center gap-1"
                   >
                     <X className="w-3 h-3" />
                     {t("conflict.keepTheirs")}
@@ -80,11 +158,11 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
         </div>
       )}
 
-      <div className="w-full overflow-x-auto border border-border rounded-xl bg-card shadow-sm">
+      <div ref={tableWrapperRef} className="w-full overflow-x-auto border border-border rounded-xl bg-card shadow-sm">
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
-              <th scope="col" className="sticky left-0 z-20 bg-muted/90 px-4 py-3 text-left border-r border-border min-w-[160px] shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
+            <tr className="bg-beige border-b border-border text-muted font-semibold">
+              <th scope="col" className="sticky left-0 z-20 bg-beige px-4 py-3 text-left border-r border-border min-w-[160px]">
                 {t("table.students")}
               </th>
 
@@ -108,22 +186,22 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   <button
                     type="button"
                     onClick={onOpenExamWeightModal}
-                    className="text-muted-foreground hover:text-foreground p-0.5 rounded"
+                    className="text-muted hover:text-ink p-0.5 rounded transition-colors"
                     title={t("table.editExamWeight")}
                   >
                     <Settings className="w-3 h-3" />
                   </button>
                 </div>
-                <span className="block text-[10px] font-normal text-muted-foreground">
+                <span className="block text-[10px] font-normal text-muted">
                   {t("table.maxN", { n: examMaxScore })}
                 </span>
               </th>
 
-              <th scope="col" className="px-3 py-3 text-center min-w-[60px]">
+              <th scope="col" className="sticky right-16 z-20 w-16 min-w-16 bg-beige border-l border-border px-3 py-3 text-center">
                 {t("table.sum")}
               </th>
 
-              <th scope="col" className="px-3 py-3 text-center min-w-[60px]">
+              <th scope="col" className="sticky right-0 z-20 w-16 min-w-16 bg-beige px-3 py-3 text-center">
                 %
               </th>
             </tr>
@@ -132,7 +210,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan={lessonDates.length + 5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={lessonDates.length + 5} className="px-4 py-8 text-center text-muted">
                   {t("table.noStudentsInCourse")}
                 </td>
               </tr>
@@ -146,7 +224,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   examMaxScore={examMaxScore}
                   cellStatus={cellStatus}
                   focusedCellKey={focusedCellKey}
-                  onCellFocus={(key) => setFocusedCellKey(key)}
+                  focusFromKeyboard={focusFromKeyboard}
+                  onCellFocus={handleCellFocus}
+                  onCellNavigate={handleCellNavigate}
                   onEntryChange={onEntryChange}
                   onSummaryChange={onSummaryChange}
                 />
@@ -156,7 +236,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
         </table>
       </div>
 
-      <p className="text-[11px] text-muted-foreground italic px-1">
+      <p className="text-[11px] text-muted italic px-1">
         {t("table.gridHelp")}
       </p>
     </div>
