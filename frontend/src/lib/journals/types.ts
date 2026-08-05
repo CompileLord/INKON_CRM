@@ -132,14 +132,7 @@ export function entryKey(studentId: number, lessonDate: string): string {
   return `${studentId}:${lessonDate}`;
 }
 
-export interface CourseJournalMetricsResponse {
-  class_avg_percentage: number;
-  attendance_rate: number;
-  periods_total: number;
-  periods_complete: number;
-  at_risk_count: number;
-  at_risk_threshold: number;
-}
+export type { CourseJournalMetricsResponse } from "../courses/types";
 
 export interface GradingQueueItemResponse {
   journal_id: number;
