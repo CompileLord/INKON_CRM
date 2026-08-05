@@ -24,6 +24,26 @@
   --color-nav: var(--imkon-nav);
   --color-nav-hover: var(--imkon-nav-hover);
   --color-label: var(--imkon-label);
+
+  /* Semantic aliases over the IMKON palette.
+     Components authored against shadcn-style names resolve here instead of
+     silently emitting no utility at all. */
+  --color-background: var(--imkon-cream);
+  --color-foreground: var(--imkon-ink);
+  --color-card-foreground: var(--imkon-ink);
+  --color-muted-foreground: var(--imkon-muted);
+  --color-popover: var(--imkon-card);
+  --color-popover-foreground: var(--imkon-ink);
+  --color-primary: var(--imkon-maroon);
+  --color-primary-foreground: var(--imkon-on-primary);
+  --color-secondary: var(--imkon-beige);
+  --color-secondary-foreground: var(--imkon-ink);
+  --color-accent-foreground: #ffffff;
+  --color-input: var(--imkon-border);
+  --color-ring: var(--imkon-accent);
+  --color-destructive: var(--imkon-destructive);
+  --color-surface: var(--imkon-beige);
+  --color-surface-strong: var(--imkon-beige-dark);
 }
 
 :root {
@@ -48,6 +68,8 @@
   --imkon-nav: #6b6257;
   --imkon-nav-hover: #f7f2eb;
   --imkon-label: #a89f92;
+  --imkon-destructive: #dc2626;
+  --imkon-on-primary: #ffffff;
   color-scheme: light;
 }
 
@@ -73,6 +95,8 @@
   --imkon-nav: #a89f91;        /* Nav link text */
   --imkon-nav-hover: #2a241f;       /* Nav link hover background */
   --imkon-label: #91877a;      /* Label text */
+  --imkon-destructive: #f87171;
+  --imkon-on-primary: #1a0f0b;  /* maroon is a light orange in dark mode */
   color-scheme: dark;
 }
 
@@ -110,6 +134,14 @@ p {
   transform: translate(-50%, -50%);
   min-width: 40px;
   min-height: 40px;
+}
+
+/* Native select dropdowns render their option list with the OS palette, which
+   left the popup list unreadable on the dark theme. Pin both explicitly. */
+select option,
+select optgroup {
+  background-color: var(--color-card);
+  color: var(--color-ink);
 }
 
 /* Custom Scrollbars */
