@@ -20,6 +20,7 @@ import { formatMoney } from "../../lib/money";
 import { ScheduleEditor } from "./ScheduleEditor";
 import { CourseImageUploadField } from "./CourseImageUploadField";
 import type { CourseResponse } from "../../lib/courses/types";
+import { useAuthStore } from "../../store/authStore";
 
 
 interface CourseFormPanelProps {
@@ -70,11 +71,13 @@ interface CourseFormFieldsProps {
 
 function CourseFormFields({ course, onClose, onSaved }: CourseFormFieldsProps) {
   const { t } = useTranslation(["courses", "common"]);
+  const role = useAuthStore((s) => s.role);
+  const isSuperAdmin = role === "superadmin";
   const isEditing = Boolean(course);
   const createCourse = useCreateCourse();
   const updateCourse = useUpdateCourse();
   const uploadImage = useUploadCourseImage();
-  const { data: mentorsPage, isLoading: mentorsLoading } = useMentors({ page_size: 100 });
+  const { data: mentorsPage, isLoading: mentorsLoading } = useMentors({ page_size: 100 }, isSuperAdmin);
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 

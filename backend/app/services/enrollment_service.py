@@ -172,4 +172,10 @@ class EnrollmentService:
         page_size: int
     ) -> dict:
         query = select(Enrollment).filter(Enrollment.is_deleted == False)
+        if "course_id" in filters and filters["course_id"] is not None:
+            query = query.filter(Enrollment.course_id == filters["course_id"])
+        if "student_id" in filters and filters["student_id"] is not None:
+            query = query.filter(Enrollment.student_id == filters["student_id"])
+        if "mentor_id" in filters and filters["mentor_id"] is not None:
+            query = query.join(Course, Enrollment.course_id == Course.id).filter(Course.mentor_id == filters["mentor_id"])
         return await self.enrollment_repo.get_paginated(query, page, page_size)

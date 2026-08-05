@@ -102,3 +102,41 @@ async def test_enroll_student_unauthorized(client: AsyncClient, test_student: Us
         headers=headers
     )
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_mentor_can_list_course_enrollments(client: AsyncClient, test_admin: User, test_mentor: User, test_student: User) -> None:
+    admin_headers = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
+    mentor_headers = {"Authorization": f"Bearer {create_access_token(test_mentor.id, test_mentor.role)}"}
+
+    course_res = await client.post(
+        "/api/v1/courses/",
+        json={
+            "title": "Mentor Course",
+            "description": "Course for mentor test",
+            "start_date": "2026-08-01",
+            "end_date": "2026-08-31",
+            "exam_type": "weekly",
+            "price": "150.00",
+            "mentor_id": test_mentor.id,
+            "schedules": [{"day_of_week": 1, "time_start": "10:00:00", "time_end": "12:00:00"}]
+        },
+        headers=admin_headers
+    )
+    assert course_res.status_code == 201
+    course_id = course_res.json()["id"]
+
+    enroll_res = await client.post(
+        "/api/v1/enrollments/",
+        json={"student_id": test_student.id, "course_id": course_id},
+        headers=admin_headers
+    )
+    assert enroll_res.status_code == 201
+
+    list_res = await client.get(f"/api/v1/enrollments/?course_id={course_id}", headers=mentor_headers)
+    assert list_res.status_code == 200
+    data = list_res.json()
+    assert data["total"] == 1
+    assert data["items"][0]["course_id"] == course_id
+    assert data["items"][0]["student_id"] == test_student.id
+
