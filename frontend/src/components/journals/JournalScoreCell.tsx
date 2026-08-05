@@ -16,7 +16,6 @@ interface JournalScoreCellProps {
   version: number;
   status?: CellSaveStatus;
   isFocused: boolean;
-  /** True when focus arrived via keyboard navigation, so the DOM node should be focused. */
   autoFocus?: boolean;
   onFocus: () => void;
   onNavigate?: (direction: CellNavDirection) => void;

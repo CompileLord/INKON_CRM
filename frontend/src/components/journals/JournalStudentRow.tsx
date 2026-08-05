@@ -156,7 +156,6 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         />
       </td>
 
-      {/* Totals stay pinned to the right edge so they survive horizontal scrolling. */}
       <td className="sticky right-16 z-10 w-16 min-w-16 bg-card group-hover/row:bg-row-hover transition-colors border-l border-border px-3 py-2 text-center align-middle font-bold text-xs tabular-nums text-ink">
         {summary ? summary.sum_score : 0}
       </td>
