@@ -1,24 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
+
 from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.course_schedule import CourseSchedule
-from app.models.enrollment import Enrollment
-from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseScheduleResponse, CourseMentorHistoryResponse
-from app.schemas.journal import JournalResponse
+from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
+from app.models.journal_student_summary import JournalStudentSummary
+from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseScheduleResponse, CourseMentorHistoryResponse
+from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
+from app.services.journal_service import JournalService
+from app.core.scoring import score_percentage
 
 router = APIRouter()
-
-
-
-from app.services.journal_service import JournalService
 
 async def get_course_journals(course_id: int, db: AsyncSession) -> List[JournalResponse]:
     journal_service = JournalService(db)
@@ -161,8 +162,6 @@ async def get_course_mentor_history(
     return await course_service.get_mentor_history(id)
 
 
-from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
-
 @router.get("/{id}/journals", response_model=List[JournalResponse])
 async def list_course_journals(
     id: int,
@@ -191,10 +190,6 @@ async def get_progress_chart(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     await check_course_access(id, current_user, db)
-    from app.models.enrollment import Enrollment, EnrollmentStatus
-    from app.models.journal_student_summary import JournalStudentSummary
-    from sqlalchemy.orm import joinedload
-    from app.core.scoring import score_percentage
 
     journals = await get_course_journals(id, db)
     journal_ids = [j.id for j in journals]
