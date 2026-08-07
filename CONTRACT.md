@@ -714,7 +714,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
           "is_deleted": any,
           "created_at": any,
           "updated_at": any,
-          "schedules?": any,
         },
         "enrollment_status": string,
         "bucket": string,
@@ -838,7 +837,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
           "is_deleted": any,
           "created_at": any,
           "updated_at": any,
-          "schedules?": any,
         },
         "enrollment_status": string,
         "bucket": string,
@@ -972,7 +970,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
-        "schedules?": array[],
       }
     ],
     "active_students_count": integer,
@@ -1051,7 +1048,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
-        "schedules?": array[],
       }
     ],
     "active_students_count": integer,
@@ -1132,7 +1128,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
-        "schedules?": array[],
       }
     ],
     "total": integer,
@@ -1199,15 +1194,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
-    "schedules?": [
-      {
-        "id": integer,
-        "course_id": integer,
-        "day_of_week": integer,
-        "time_start": string,
-        "time_end": string,
-      }
-    ],
   }
   ```
 - **422**: Validation Error
@@ -1251,15 +1237,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
-    "schedules?": [
-      {
-        "id": integer,
-        "course_id": integer,
-        "day_of_week": integer,
-        "time_start": string,
-        "time_end": string,
-      }
-    ],
   }
   ```
 - **422**: Validation Error
@@ -1315,15 +1292,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
-    "schedules?": [
-      {
-        "id": integer,
-        "course_id": integer,
-        "day_of_week": integer,
-        "time_start": string,
-        "time_end": string,
-      }
-    ],
   }
   ```
 - **422**: Validation Error
@@ -1400,15 +1368,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
-    "schedules?": [
-      {
-        "id": integer,
-        "course_id": integer,
-        "day_of_week": integer,
-        "time_start": string,
-        "time_end": string,
-      }
-    ],
   }
   ```
 - **422**: Validation Error
@@ -1509,15 +1468,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
-    "schedules?": [
-      {
-        "id": integer,
-        "course_id": integer,
-        "day_of_week": integer,
-        "time_start": string,
-        "time_end": string,
-      }
-    ],
   }
   ```
 - **422**: Validation Error
@@ -1696,6 +1646,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Summary:** List Enrollments
 
 **Parameters:**
+- `course_id` [query]
+- `student_id` [query]
 - `page` [query]
 - `page_size` [query]
 

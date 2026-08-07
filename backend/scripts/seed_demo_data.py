@@ -1,8 +1,10 @@
 import asyncio
+import io
 import os
 import shutil
 import sys
 import logging
+import urllib.request
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import List, Dict, Any, Tuple
@@ -20,6 +22,7 @@ from app.models.journal_student_summary import JournalStudentSummary
 from app.models.payment import PaymentMethod
 from app.core.security import hash_password
 from app.core.config import settings
+from app.core.scoring import MAX_HOMEWORK_SCORE_PER_LESSON, ATTENDANCE_POINT_PER_LESSON
 from app.services.course_service import CourseService
 from app.services.enrollment_service import EnrollmentService
 from app.services.finance_service import FinanceService
@@ -85,34 +88,83 @@ TAJIK_STUDENTS: List[Tuple[str, str, str, str]] = [
     ("Zarrina", "Boboyeva", "zarrina.boboyeva@gmail.com", "+992904440008"),
 ]
 
+SEED_CACHE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), ".seed_cache"))
 
-def generate_course_banner(course_id: int, title: str, subtitle: str, bg_color: Tuple[int, int, int], accent_color: Tuple[int, int, int]) -> str:
-    storage_dir: str = os.path.abspath(os.path.join(settings.STORAGE_PATH, "course", str(course_id)))
-    os.makedirs(storage_dir, exist_ok=True)
+COURSE_PHOTO_URLS: Dict[int, List[str]] = {
+    1: ["https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80", "https://picsum.photos/id/1025/800/400"],
+    2: ["https://images.unsplash.com/photo-1527866959252-deab85ef7d1b?w=800&q=80", "https://picsum.photos/id/24/800/400"],
+    3: ["https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80", "https://picsum.photos/id/60/800/400"],
+    4: ["https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80", "https://picsum.photos/id/180/800/400"]
+}
+
+MENTOR_PHOTO_URLS: Dict[str, List[str]] = {
+    "sukhrob.hakimov@imkon.tj": ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80", "https://picsum.photos/id/1005/400/400"],
+    "gulnora.saidova@imkon.tj": ["https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80", "https://picsum.photos/id/1027/400/400"],
+    "farhod.ziyoyev@imkon.tj": ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80", "https://picsum.photos/id/64/400/400"]
+}
+
+
+def get_or_download_real_photo(cache_filename: str, remote_urls: List[str]) -> bytes:
+    os.makedirs(SEED_CACHE_DIR, exist_ok=True)
+    cache_filepath: str = os.path.join(SEED_CACHE_DIR, cache_filename)
+
+    if os.path.exists(cache_filepath) and os.path.getsize(cache_filepath) > 0:
+        with open(cache_filepath, "rb") as file_handle:
+            return file_handle.read()
+
+    for url in remote_urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as response:
+                image_bytes: bytes = response.read()
+                with open(cache_filepath, "wb") as file_handle:
+                    file_handle.write(image_bytes)
+                return image_bytes
+        except Exception as exc:
+            logger.warning(f"Failed to download image from {url}: {exc}")
+            continue
+
+    img = Image.new("RGB", (600, 400), color=(50, 80, 120))
+    out = io.BytesIO()
+    img.save(out, format="JPEG")
+    bytes_data = out.getvalue()
+    with open(cache_filepath, "wb") as file_handle:
+        file_handle.write(bytes_data)
+    return bytes_data
+
+
+def save_course_photo(course_id: int, image_bytes: bytes) -> str:
+    target_dir: str = os.path.abspath(os.path.join(settings.STORAGE_PATH, "course", str(course_id)))
+    os.makedirs(target_dir, exist_ok=True)
     filename: str = "course_image.jpg"
-    file_path: str = os.path.join(storage_dir, filename)
+    file_path: str = os.path.join(target_dir, filename)
 
-    img: Image.Image = Image.new("RGB", (800, 400), color=bg_color)
-    draw: ImageDraw.ImageDraw = ImageDraw.Draw(img)
-
-    for i in range(0, 800, 40):
-        draw.line([(i, 0), (i + 200, 400)], fill=(bg_color[0] + 15, bg_color[1] + 15, bg_color[2] + 15), width=20)
-
-    draw.rectangle([30, 30, 770, 370], outline=accent_color, width=4)
-    draw.rectangle([40, 40, 760, 360], outline=(255, 255, 255, 80), width=2)
-
-    try:
-        font_title = ImageFont.truetype("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf", 36)
-        font_sub = ImageFont.truetype("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf", 22)
-    except Exception:
-        font_title = ImageFont.load_default()
-        font_sub = ImageFont.load_default()
-
-    draw.text((60, 140), title, fill=(255, 255, 255), font=font_title)
-    draw.text((60, 210), subtitle, fill=accent_color, font=font_sub)
-
-    img.save(file_path, "JPEG", quality=95)
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    img.save(file_path, format="JPEG", quality=92)
     return f"/storage/course/{course_id}/{filename}"
+
+
+def save_mentor_avatar(user_id: int, image_bytes: bytes) -> Tuple[str, str]:
+    target_dir: str = os.path.abspath(os.path.join(settings.STORAGE_PATH, "avatar", str(user_id)))
+    os.makedirs(target_dir, exist_ok=True)
+
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    avatar_filename: str = "avatar.jpg"
+    avatar_path: str = os.path.join(target_dir, avatar_filename)
+    img.save(avatar_path, format="JPEG", quality=92)
+
+    thumb_img = img.copy()
+    thumb_img.thumbnail((200, 200))
+    thumb_filename: str = "avatar_thumb.jpg"
+    thumb_path: str = os.path.join(target_dir, thumb_filename)
+    thumb_img.save(thumb_path, format="JPEG", quality=90)
+
+    return f"/storage/avatar/{user_id}/{avatar_filename}", f"/storage/avatar/{user_id}/{thumb_filename}"
 
 
 async def clean_database_and_storage() -> None:
@@ -134,8 +186,9 @@ async def seed_demo_data() -> None:
         password_hash_default: str = hash_password("password123")
 
         admin_user: User = User(
-            email="admin@test.com",
-            password_hash=password_hash_default,
+            email="superadmin@mail.com",
+            password_hash=hash_password("12341234"),
+            raw_password="12341234",
             first_name="SuperAdmin",
             last_name="System",
             role=UserRole.SUPERADMIN,
@@ -147,6 +200,7 @@ async def seed_demo_data() -> None:
         accountant_user: User = User(
             email="accountant@test.com",
             password_hash=password_hash_default,
+            raw_password="password123",
             first_name="Zarina",
             last_name="Karimova",
             role=UserRole.ACCOUNTANT,
@@ -158,6 +212,7 @@ async def seed_demo_data() -> None:
         mentor_sukhrob: User = User(
             email="sukhrob.hakimov@imkon.tj",
             password_hash=password_hash_default,
+            raw_password="password123",
             first_name="Sukhrob",
             last_name="Hakimov",
             role=UserRole.MENTOR,
@@ -167,6 +222,7 @@ async def seed_demo_data() -> None:
         mentor_gulnora: User = User(
             email="gulnora.saidova@imkon.tj",
             password_hash=password_hash_default,
+            raw_password="password123",
             first_name="Gulnora",
             last_name="Saidova",
             role=UserRole.MENTOR,
@@ -176,6 +232,7 @@ async def seed_demo_data() -> None:
         mentor_farhod: User = User(
             email="farhod.ziyoyev@imkon.tj",
             password_hash=password_hash_default,
+            raw_password="password123",
             first_name="Farhod",
             last_name="Ziyoyev",
             role=UserRole.MENTOR,
@@ -185,11 +242,20 @@ async def seed_demo_data() -> None:
         session.add_all([mentor_sukhrob, mentor_gulnora, mentor_farhod])
         await session.flush()
 
+        for mentor in [mentor_sukhrob, mentor_gulnora, mentor_farhod]:
+            url: str = MENTOR_PHOTO_URLS[mentor.email]
+            cache_name: str = f"mentor_{mentor.id}.jpg"
+            img_bytes: bytes = get_or_download_real_photo(cache_name, url)
+            photo_url, thumb_url = save_mentor_avatar(mentor.id, img_bytes)
+            mentor.photo_path = photo_url
+            mentor.thumbnail_path = thumb_url
+
         student_users: List[User] = []
         for idx, (first_name, last_name, email, phone) in enumerate(TAJIK_STUDENTS, start=1):
             student: User = User(
                 email=email,
                 password_hash=password_hash_default,
+                raw_password="password123",
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.STUDENT,
@@ -202,7 +268,7 @@ async def seed_demo_data() -> None:
             student_users.append(student)
 
         await session.flush()
-        logger.info(f"Seeded users: 1 Admin, 1 Accountant, 3 Mentors, {len(student_users)} Students.")
+        logger.info(f"Seeded users: 1 Admin, 1 Accountant, 3 Mentors (with real photos), {len(student_users)} Students.")
 
         course_definitions: List[Dict[str, Any]] = [
             {
@@ -219,7 +285,6 @@ async def seed_demo_data() -> None:
                     {"day_of_week": 2, "time_start": time(9, 0), "time_end": time(11, 0)},
                     {"day_of_week": 4, "time_start": time(9, 0), "time_end": time(11, 0)}
                 ],
-                "banner": ("English Elementary", "3-Month Language Course", (24, 76, 120), (245, 158, 11)),
                 "student_slice": slice(0, 8)
             },
             {
@@ -236,7 +301,6 @@ async def seed_demo_data() -> None:
                     {"day_of_week": 3, "time_start": time(14, 0), "time_end": time(16, 0)},
                     {"day_of_week": 5, "time_start": time(14, 0), "time_end": time(16, 0)}
                 ],
-                "banner": ("German A1 Beginner", "3-Month Language Course", (124, 45, 18), (251, 191, 36)),
                 "student_slice": slice(8, 16)
             },
             {
@@ -256,7 +320,6 @@ async def seed_demo_data() -> None:
                     {"day_of_week": 4, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 5, "time_start": time(18, 0), "time_end": time(20, 0)}
                 ],
-                "banner": ("Python Backend Dev", "1-Month Intensive Programming", (20, 83, 45), (52, 211, 153)),
                 "student_slice": slice(16, 24)
             },
             {
@@ -276,7 +339,6 @@ async def seed_demo_data() -> None:
                     {"day_of_week": 4, "time_start": time(18, 0), "time_end": time(20, 0)},
                     {"day_of_week": 5, "time_start": time(18, 0), "time_end": time(20, 0)}
                 ],
-                "banner": ("Web Frontend Dev", "1-Month Intensive Programming", (109, 40, 217), (167, 139, 250)),
                 "student_slice": slice(24, 32)
             }
         ]
@@ -285,13 +347,10 @@ async def seed_demo_data() -> None:
         enrollment_service: EnrollmentService = EnrollmentService(session)
 
         for cdef in course_definitions:
-            photo_path: str = generate_course_banner(
-                cdef["id"],
-                cdef["banner"][0],
-                cdef["banner"][1],
-                cdef["banner"][2],
-                cdef["banner"][3]
-            )
+            url: str = COURSE_PHOTO_URLS[cdef["id"]]
+            cache_name: str = f"course_{cdef['id']}.jpg"
+            img_bytes: bytes = get_or_download_real_photo(cache_name, url)
+            photo_path: str = save_course_photo(cdef["id"], img_bytes)
 
             course: Course = Course(
                 id=cdef["id"],
@@ -339,7 +398,7 @@ async def seed_demo_data() -> None:
                 )
 
             created_courses.append(course)
-            logger.info(f"Course '{course.title}' created with {len(assigned_students)} enrolled students.")
+            logger.info(f"Course '{course.title}' created with real photo and {len(assigned_students)} enrolled students.")
 
         await session.commit()
 
@@ -356,9 +415,34 @@ async def seed_demo_data() -> None:
             )
             entries: List[JournalEntry] = list(entries_res.scalars().all())
 
-            for idx, entry in enumerate(entries):
-                entry.attendance = True
-                entry.score = 3 + ((entry.student_id + idx) % 3)
+            entries_by_student: Dict[int, List[JournalEntry]] = {}
+            for entry in entries:
+                entries_by_student.setdefault(entry.student_id, []).append(entry)
+
+            sample_student_entries: List[JournalEntry] = next(iter(entries_by_student.values()), [])
+            lesson_count: int = len(sample_student_entries)
+            hw_att_max: int = lesson_count * (MAX_HOMEWORK_SCORE_PER_LESSON + ATTENDANCE_POINT_PER_LESSON)
+
+            target_exam_max: int = max(0, 100 - hw_att_max)
+            journal.exam_max_score = target_exam_max
+
+            for student_id, student_entries in entries_by_student.items():
+                performance_profile: int = student_id % 3
+                for entry_idx, entry in enumerate(student_entries):
+                    if performance_profile == 0:
+                        entry.attendance = True
+                        entry.score = 4 if entry_idx % 4 == 0 else 5
+                    elif performance_profile == 1:
+                        entry.attendance = True
+                        entry.score = 3 if entry_idx % 3 == 0 else 4
+                    else:
+                        is_absent: bool = (entry_idx == 1 or entry_idx == 5)
+                        if is_absent:
+                            entry.attendance = False
+                            entry.score = 0
+                        else:
+                            entry.attendance = True
+                            entry.score = 2 if entry_idx % 2 == 0 else 3
 
             summaries_res = await session.execute(
                 select(JournalStudentSummary).filter(JournalStudentSummary.journal_id == journal.id)
@@ -366,12 +450,21 @@ async def seed_demo_data() -> None:
             summaries: List[JournalStudentSummary] = list(summaries_res.scalars().all())
 
             for summary in summaries:
-                summary.exam_score = min(journal.exam_max_score, 40 + ((summary.student_id * 3) % 20))
-                summary.bonus_score = (summary.student_id % 5)
+                performance_profile: int = summary.student_id % 3
+                if performance_profile == 0:
+                    summary.exam_score = max(0, journal.exam_max_score - (summary.student_id % 3))
+                    summary.bonus_score = min(5, summary.student_id % 4)
+                elif performance_profile == 1:
+                    summary.exam_score = max(0, int(journal.exam_max_score * 0.8) - (summary.student_id % 4))
+                    summary.bonus_score = 0
+                else:
+                    summary.exam_score = max(0, int(journal.exam_max_score * 0.6) - (summary.student_id % 5))
+                    summary.bonus_score = 0
+
                 await sum_service.recalculate(summary.journal_id, summary.student_id)
 
         await session.commit()
-        logger.info("Gradebook entries and summaries updated successfully.")
+        logger.info("Gradebook entries and summaries updated successfully following 100-point period target rules.")
 
     async with AsyncSessionLocal() as session:
         logger.info("Seeding financial payments...")

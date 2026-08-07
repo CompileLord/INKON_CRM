@@ -177,8 +177,8 @@ export function PaymentModal({
                     {t("paymentModal.selectCourse")}
                   </option>
                   {studentProfile?.courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
+                    <option key={c.course.id} value={c.course.id}>
+                      {c.course.title}
                     </option>
                   ))}
                 </select>

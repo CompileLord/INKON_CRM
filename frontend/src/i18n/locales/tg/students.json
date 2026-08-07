@@ -20,6 +20,9 @@
   "avgScore": "Балли миёна",
   "absences": "Ғоибӣ",
   "totalLessons": "Ҷамъи дарсҳо",
+  "passwordLabel": "Парол",
+  "showPassword": "Нишон додани парол",
+  "hidePassword": "Пинҳон кардани парол",
   "table": {
     "student": "Донишҷӯ",
     "phone": "Телефон",

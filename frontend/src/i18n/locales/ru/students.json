@@ -20,6 +20,9 @@
   "avgScore": "Средний балл",
   "absences": "Пропущено",
   "totalLessons": "Всего занятий",
+  "passwordLabel": "Пароль",
+  "showPassword": "Показать пароль",
+  "hidePassword": "Скрыть пароль",
   "table": {
     "student": "Студент",
     "phone": "Телефон",

@@ -20,6 +20,9 @@
   "avgScore": "Average score",
   "absences": "Absences",
   "totalLessons": "Total lessons",
+  "passwordLabel": "Password",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
   "table": {
     "student": "Student",
     "phone": "Phone",

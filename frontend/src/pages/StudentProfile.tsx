@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Cake, Mail, Phone, Award, CheckCircle2, XCircle, BookOpen } from "lucide-react";
+import { ArrowLeft, Cake, Mail, Phone, Award, CheckCircle2, XCircle, BookOpen, Eye, EyeOff, Key } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStudentProfile } from "../lib/users/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
@@ -8,6 +8,7 @@ import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
 import type { CourseResponse } from "../lib/courses/types";
 import { formatDate } from "../i18n/formatters";
+import { useAuthStore } from "../store/authStore";
 
 function CourseCard({ course }: { course: CourseResponse }) {
   const { t, i18n } = useTranslation("common");
@@ -35,6 +36,8 @@ export function StudentProfile() {
   const numericId = id ? Number(id) : undefined;
   const { t, i18n } = useTranslation(["students", "common", "documents"]);
   const [tab, setTab] = useState<"courses" | "performance" | "documents">("courses");
+  const [showPassword, setShowPassword] = useState(false);
+  const role = useAuthStore((state) => state.role);
 
   const {
     data: profile,
@@ -128,6 +131,24 @@ export function StudentProfile() {
                 <Cake size={14} /> {formatDate(user.date_of_birth, i18n.language)}
               </span>
             )}
+            {role === "superadmin" && (
+              <span className="flex items-center gap-1.5 rounded-md bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                <Key size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{t("passwordLabel", "Пароль")}:</span>
+                <span className="font-mono font-bold tracking-wider">
+                  {showPassword ? (user.raw_password || "••••••••") : "••••••••"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="ml-0.5 p-0.5 text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200 transition-colors focus:outline-none"
+                  title={showPassword ? t("hidePassword", "Скрыть пароль") : t("showPassword", "Показать пароль")}
+                  aria-label={showPassword ? t("hidePassword", "Скрыть пароль") : t("showPassword", "Показать пароль")}
+                >
+                  {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -187,7 +208,7 @@ export function StudentProfile() {
               {t("noCourses")}
             </div>
           ) : (
-            courses.map((course) => <CourseCard key={course.id} course={course} />)
+            courses.map((item) => <CourseCard key={item.course.id} course={item.course} />)
           )}
         </div>
       )}
@@ -234,14 +255,14 @@ export function StudentProfile() {
               <p className="text-xs text-muted">{t("common:noData")}</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {courses.map((course) => (
-                  <div key={course.id} className="flex items-center justify-between border-b border-border-warm/60 pb-3 last:border-b-0 last:pb-0">
+                {courses.map((item) => (
+                  <div key={item.course.id} className="flex items-center justify-between border-b border-border-warm/60 pb-3 last:border-b-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-semibold text-ink">{course.title}</p>
-                      <p className="text-xs text-muted">{t(`common:enums.examType.${course.exam_type}`, course.exam_type)}</p>
+                      <p className="text-sm font-semibold text-ink">{item.course.title}</p>
+                      <p className="text-xs text-muted">{t(`common:enums.examType.${item.course.exam_type}`, item.course.exam_type)}</p>
                     </div>
                     <Link
-                      to={`/courses/${course.id}`}
+                      to={`/courses/${item.course.id}`}
                       className="rounded-lg border border-border-warm bg-strip px-3 py-1.5 text-xs font-semibold text-ink hover:bg-beige transition-colors"
                     >
                       {t("common:details")}

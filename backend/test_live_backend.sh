@@ -2,8 +2,8 @@
 
 # Configuration
 BASE_URL="http://localhost:8000/api/v1"
-ADMIN_EMAIL="admin@test.com"
-ADMIN_PASSWORD="password123"
+ADMIN_EMAIL="superadmin@mail.com"
+ADMIN_PASSWORD="12341234"
 
 echo "=========================================="
 echo "    IMKON CRM LIVE BACKEND E2E TEST"

@@ -105,6 +105,7 @@ async def main():
             admin_user = User(
                 email=email,
                 password_hash=hash_password(password),
+                raw_password=password,
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.SUPERADMIN,

@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.omc/
+**/.omc/
+backend/scripts/.seed_cache/
+backend/storage/
 .Python
 build/
 develop-eggs/

@@ -51,8 +51,9 @@ async def clean_database():
     # Seed default superadmin user
     async with AsyncSessionLocal() as session:
         admin = User(
-            email="admin@test.com",
-            password_hash=hash_password("password123"),
+            email="superadmin@mail.com",
+            password_hash=hash_password("12341234"),
+            raw_password="12341234",
             first_name="Admin",
             last_name="Super",
             role=UserRole.SUPERADMIN,
