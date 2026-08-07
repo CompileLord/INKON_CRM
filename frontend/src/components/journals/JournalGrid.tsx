@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, AlertCircle, Check, X } from "lucide-react";
+import { Settings, AlertCircle, X } from "lucide-react";
 import { JournalStudentRow } from "./JournalStudentRow";
 import type { CellNavDirection } from "./JournalScoreCell";
 import type { CellSaveStatus } from "../../lib/journals/useJournalAutosave";

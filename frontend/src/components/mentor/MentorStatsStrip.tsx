@@ -18,7 +18,7 @@ export const MentorStatsStrip: React.FC = () => {
   const { data: activeCoursesPage } = useCourses({ status: "active", page_size: 1 });
   const { data: queue } = useMentorGradingQueue();
 
-  const activeCoursesCount = profile?.active_courses ?? activeCoursesPage?.total ?? "—";
+  const activeCoursesCount = profile?.active_courses?.length ?? activeCoursesPage?.total ?? "—";
   const activeStudentsCount = profile?.active_students_count ?? "—";
   const needsGradingCount = queue ? queue.length : "—";
 

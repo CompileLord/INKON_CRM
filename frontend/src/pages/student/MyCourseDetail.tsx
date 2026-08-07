@@ -131,7 +131,7 @@ export function MyCourseDetail() {
           </div>
 
           {/* 5.3.3 Trend chart */}
-          <StudentTrendChart data={progressChart as StudentCourseProgressChartResponse} isLoading={isChartLoading} />
+          <StudentTrendChart data={progressChart as unknown as StudentCourseProgressChartResponse} isLoading={isChartLoading} />
 
           {/* 5.3.4 Period list */}
           <div className="flex flex-col gap-3 rounded-2xl border border-border-warm bg-card p-5">

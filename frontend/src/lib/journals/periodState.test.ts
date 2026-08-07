@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { JournalPeriod } from "../courses/types";
 
 export function derivePeriodState(filled: number, expected: number, startDate: string, today: string): "upcoming" | "empty" | "partial" | "complete" {
   if (startDate > today) return "upcoming";

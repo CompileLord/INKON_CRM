@@ -50,7 +50,7 @@ function SoonestLessonCard({ course, nextLessonAt }: { course: any; nextLessonAt
 }
 
 export function StudentDashboard() {
-  const { t, i18n } = useTranslation(["student", "dashboard", "common"]);
+  const { t } = useTranslation(["student", "dashboard", "common"]);
   const { data: profile, isLoading: isProfileLoading, isError: isProfileError, refetch: refetchProfile } = useMyStudentProfile();
   const { data: journals, isLoading: isJournalsLoading } = useMyStudentJournals();
 

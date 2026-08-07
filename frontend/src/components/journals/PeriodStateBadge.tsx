@@ -45,7 +45,7 @@ export const PeriodStateBadge: React.FC<PeriodStateBadgeProps> = ({ state, class
             : "bg-muted"
         }`}
       />
-      {t(config.key, config.key.split(".").pop())}
+      {t(config.key, { defaultValue: config.key.split(".").pop() })}
     </span>
   );
 };
