@@ -426,9 +426,7 @@ class FinanceService:
         if existing:
             return existing
 
-        enrolled = enrollment.enrolled_at or datetime.now(timezone.utc)
-        enrolled_date = enrolled.date() if isinstance(enrolled, datetime) else enrolled
-        start_date = max(enrolled_date, course.start_date)
+        start_date = course.start_date
         end_date = course.end_date
 
         total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1

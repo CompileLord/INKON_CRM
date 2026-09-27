@@ -15,8 +15,14 @@ from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatu
 
 @pytest.mark.asyncio
 async def test_schedule_generation_and_auto_allocation(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient,
+    test_admin: User,
+    test_accountant: User,
+    test_mentor: User,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", lambda: date(2026, 8, 10))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)

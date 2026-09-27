@@ -1,8 +1,12 @@
 import asyncio
+import os
 import sys
 import argparse
 import re
+from pathlib import Path
 from getpass import getpass
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
@@ -105,7 +109,6 @@ async def main():
             admin_user = User(
                 email=email,
                 password_hash=hash_password(password),
-                raw_password=password,
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.SUPERADMIN,

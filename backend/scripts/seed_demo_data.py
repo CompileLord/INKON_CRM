@@ -188,7 +188,6 @@ async def seed_demo_data() -> None:
         admin_user: User = User(
             email="superadmin@mail.com",
             password_hash=hash_password("12341234"),
-            raw_password="12341234",
             first_name="SuperAdmin",
             last_name="System",
             role=UserRole.SUPERADMIN,
@@ -200,7 +199,6 @@ async def seed_demo_data() -> None:
         accountant_user: User = User(
             email="accountant@test.com",
             password_hash=password_hash_default,
-            raw_password="password123",
             first_name="Zarina",
             last_name="Karimova",
             role=UserRole.ACCOUNTANT,
@@ -212,7 +210,6 @@ async def seed_demo_data() -> None:
         mentor_sukhrob: User = User(
             email="sukhrob.hakimov@imkon.tj",
             password_hash=password_hash_default,
-            raw_password="password123",
             first_name="Sukhrob",
             last_name="Hakimov",
             role=UserRole.MENTOR,
@@ -222,7 +219,6 @@ async def seed_demo_data() -> None:
         mentor_gulnora: User = User(
             email="gulnora.saidova@imkon.tj",
             password_hash=password_hash_default,
-            raw_password="password123",
             first_name="Gulnora",
             last_name="Saidova",
             role=UserRole.MENTOR,
@@ -232,7 +228,6 @@ async def seed_demo_data() -> None:
         mentor_farhod: User = User(
             email="farhod.ziyoyev@imkon.tj",
             password_hash=password_hash_default,
-            raw_password="password123",
             first_name="Farhod",
             last_name="Ziyoyev",
             role=UserRole.MENTOR,
@@ -255,7 +250,6 @@ async def seed_demo_data() -> None:
             student: User = User(
                 email=email,
                 password_hash=password_hash_default,
-                raw_password="password123",
                 first_name=first_name,
                 last_name=last_name,
                 role=UserRole.STUDENT,
