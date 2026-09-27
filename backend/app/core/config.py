@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic import AnyHttpUrl, BeforeValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
@@ -54,6 +54,8 @@ class Settings(BaseSettings):
 
     TIMEZONE: str = "Asia/Dushanbe"
     STORAGE_PATH: str = "storage"
+    GCS_BUCKET_NAME: Optional[str] = None
+    PORT: int = 8080
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_BOT_SECRET_TOKEN: str
     TELEGRAM_WEBHOOK_URL: str = "http://localhost:8000/api/v1/telegram/webhook"
