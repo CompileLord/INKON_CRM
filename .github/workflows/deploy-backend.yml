@@ -130,7 +130,7 @@ jobs:
           python -m pip install alembic asyncpg sqlalchemy psycopg2-binary
           alembic upgrade head || echo "Migration warning: ensure database is reachable from CI runner or execute via Cloud Run Job."
 
-      - name: Deploy to Cloud Run (Always Free: 512MB RAM, 1 vCPU, Scale to 0)
+      - name: "Deploy to Cloud Run (Always Free: 512MB RAM, 1 vCPU, Scale to 0)"
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
         with:
