@@ -122,13 +122,16 @@ jobs:
           python-version: '3.12'
 
       - name: Run Database Migrations (Pre-deploy)
-        if: ${{ secrets.DATABASE_URL != '' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          cd backend
-          python -m pip install alembic asyncpg sqlalchemy psycopg2-binary
-          alembic upgrade head || echo "Migration warning: ensure database is reachable from CI runner or execute via Cloud Run Job."
+          if [ -n "$DATABASE_URL" ]; then
+            cd backend
+            python -m pip install alembic asyncpg sqlalchemy psycopg2-binary
+            alembic upgrade head || echo "Migration warning: ensure database is reachable from CI runner or execute via Cloud Run Job."
+          else
+            echo "DATABASE_URL not set in secrets; skipping CI migration step."
+          fi
 
       - name: "Deploy to Cloud Run (Always Free: 512MB RAM, 1 vCPU, Scale to 0)"
         id: deploy
