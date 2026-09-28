@@ -1,0 +1,104 @@
+name: Frontend CI/CD to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'CONTRACT.md'
+      - '.github/workflows/deploy-frontend.yml'
+      - '!frontend/**/*.md'
+      - '!frontend/README.md'
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-and-build:
+    name: Frontend Quality & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run TypeScript Typecheck
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+      - name: Run Vitest Suite
+        run: |
+          cd frontend
+          npm run test
+
+      - name: Build Vite Production Bundle
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api-imkon-crm.shadowme.pro/api/v1' }}
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Verify Build Output and SPA Redirects
+        run: |
+          test -f frontend/dist/index.html || { echo "Error: dist/index.html missing"; exit 1; }
+          test -f frontend/dist/_redirects || { echo "Error: dist/_redirects missing"; exit 1; }
+          echo "Build artifacts and SPA routing rules verified successfully."
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    env:
+      PROJECT_NAME: 'imkon-crm'
+
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Deploy to Cloudflare Pages via Wrangler
+        id: pages_deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=main --commit-dirty=false
+
+      - name: Deployment Summary
+        run: |
+          echo "======================================================"
+          echo "Frontend deployed successfully to Cloudflare Pages!"
+          echo "Project:      ${{ env.PROJECT_NAME }}"
+          echo "Custom URL:   https://imkon-crm.shadowme.pro"
+          echo "Pages URL:    ${{ steps.pages_deploy.outputs.deployment-url }}"
+          echo "Alias URL:    ${{ steps.pages_deploy.outputs.pages-deployment-alias-url }}"
+          echo "======================================================"
