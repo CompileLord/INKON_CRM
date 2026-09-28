@@ -17,6 +17,7 @@ from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.telegram import router as telegram_router
 from app.api.v1.settings import router as settings_router
+from app.api.v1.cron import router as cron_router
 
 
 @asynccontextmanager
@@ -81,6 +82,7 @@ app.include_router(audit_logs_router, prefix=f"{settings.API_V1_STR}/audit-log",
 app.include_router(notifications_router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
 app.include_router(telegram_router, prefix=f"{settings.API_V1_STR}/telegram", tags=["Telegram"])
 app.include_router(settings_router, prefix=f"{settings.API_V1_STR}", tags=["Settings"])
+app.include_router(cron_router, prefix=f"{settings.API_V1_STR}/cron", tags=["Cron"])
 
 
 @app.middleware("http")

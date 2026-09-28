@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     STORAGE_PATH: str = "storage"
     GCS_BUCKET_NAME: Optional[str] = None
     PORT: int = 8080
+    CRON_SECRET: Optional[str] = None
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_BOT_SECRET_TOKEN: str
     TELEGRAM_WEBHOOK_URL: str = "http://localhost:8000/api/v1/telegram/webhook"

@@ -3164,6 +3164,64 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## POST /api/v1/cron/archive-courses
+
+**Summary:** Trigger Archive Courses
+
+**Parameters:**
+- `x-cloud-scheduler-secret` [header]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  object
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## POST /api/v1/cron/payment-reminders
+
+**Summary:** Trigger Payment Reminders
+
+**Parameters:**
+- `x-cloud-scheduler-secret` [header]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  object
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /health
 
 **Summary:** Health Check
