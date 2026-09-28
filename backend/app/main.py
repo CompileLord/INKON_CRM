@@ -93,9 +93,15 @@ async def add_security_headers(request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-XSS-Protection"] = "0"
+    path = request.url.path
+    if path.startswith("/storage"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        return response
+
     response.headers["Cache-Control"] = "no-store, max-age=0, must-revalidate"
 
-    path = request.url.path
     if path.startswith("/api/"):
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"

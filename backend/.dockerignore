@@ -11,6 +11,5 @@ htmlcov
 .gitignore
 .env
 .env.*
-storage
 tests
 *.log
