@@ -441,6 +441,17 @@ class JournalService:
                 })
                 continue
 
+            target_attendance = True if update_item.score > 0 else update_item.attendance
+
+            if (
+                entry.attendance == target_attendance
+                and entry.score == update_item.score
+                and entry.comment == update_item.comment
+            ):
+                updated_student_ids.add(update_item.student_id)
+                applied_entries.append(entry)
+                continue
+
             if entry.version != update_item.version:
                 conflicts.append({
                     "student_id": update_item.student_id,
@@ -456,8 +467,6 @@ class JournalService:
                     }
                 })
                 continue
-
-            target_attendance = True if update_item.score > 0 else update_item.attendance
 
             changes = {}
             if entry.attendance != target_attendance:

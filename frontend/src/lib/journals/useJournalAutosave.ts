@@ -185,7 +185,19 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
       });
       setAggregateStatus("saving");
 
-      try {
+        if (journalId) {
+          const cached = queryClient.getQueryData<JournalDetailResponse>(["journals", "detail", journalId]);
+          if (cached) {
+            inFlightRef.current.forEach((item) => {
+              const student = cached.students.find((s) => s.student_id === item.student_id);
+              const entry = student?.entries.find((e) => e.lesson_date === item.lesson_date);
+              if (entry && entry.version > item.version) {
+                item.version = entry.version;
+              }
+            });
+          }
+        }
+
         const entriesPayload = Array.from(inFlightRef.current.values());
         let res: JournalBatchUpdateResponse = { applied: [], conflicts: [], summaries: [] };
 
@@ -203,6 +215,42 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
         const summaryResults = await Promise.all(summaryPromises);
 
         updateCacheWithApplied(res.applied, [...res.summaries, ...summaryResults]);
+
+        res.applied.forEach((item) => {
+          const key = `${item.student_id}:${item.lesson_date}`;
+          const dirty = dirtyRef.current.get(key);
+          if (dirty) {
+            dirty.version = item.version;
+          }
+        });
+
+        const genuineConflicts: JournalEntryConflictResponse[] = [];
+
+        res.conflicts.forEach((conflict) => {
+          const key = `${conflict.student_id}:${conflict.lesson_date}`;
+          const inFlightItem = inFlightRef.current.get(key);
+
+          const isIdentical =
+            conflict.current &&
+            inFlightItem &&
+            conflict.current.attendance === inFlightItem.attendance &&
+            conflict.current.score === inFlightItem.score &&
+            conflict.current.comment === inFlightItem.comment;
+
+          if (isIdentical) {
+            updateCacheWithConflict(conflict);
+            return;
+          }
+
+          const dirtyItem = dirtyRef.current.get(key);
+          if (dirtyItem && conflict.current) {
+            dirtyItem.version = conflict.current.version;
+            needsReflushRef.current = true;
+            return;
+          }
+
+          genuineConflicts.push(conflict);
+        });
 
         setCellStatus((prev) => {
           const next = new Map(prev);
@@ -222,7 +270,7 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
               }, 1500);
             }
           });
-          res.conflicts.forEach((conflict) => {
+          genuineConflicts.forEach((conflict) => {
             const key = `${conflict.student_id}:${conflict.lesson_date}`;
             next.set(key, "conflict");
             updateCacheWithConflict(conflict);
@@ -230,8 +278,8 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
           return next;
         });
 
-        if (res.conflicts.length > 0) {
-          setConflicts((prev) => [...prev, ...res.conflicts]);
+        if (genuineConflicts.length > 0) {
+          setConflicts((prev) => [...prev, ...genuineConflicts]);
         }
 
         inFlightRef.current.clear();
@@ -376,15 +424,31 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
       setConflicts((prev) => prev.filter((c) => `${c.student_id}:${c.lesson_date}` !== key));
 
       if (choice === "keepMine" && conflict.current) {
+        let currentMineAttendance = conflict.current.attendance;
+        let currentMineScore = conflict.current.score;
+        let currentMineComment = conflict.current.comment;
+
+        if (journalId) {
+          const cached = queryClient.getQueryData<JournalDetailResponse>(["journals", "detail", journalId]);
+          const student = cached?.students.find((s) => s.student_id === conflict.student_id);
+          const entry = student?.entries.find((e) => e.lesson_date === conflict.lesson_date);
+          if (entry) {
+            currentMineAttendance = entry.attendance;
+            currentMineScore = entry.score;
+            currentMineComment = entry.comment;
+          }
+        }
+
         editEntry(key, {
           student_id: conflict.student_id,
           lesson_date: conflict.lesson_date,
-          attendance: conflict.current.attendance,
-          score: conflict.current.score,
-          comment: conflict.current.comment,
+          attendance: currentMineAttendance,
+          score: currentMineScore,
+          comment: currentMineComment,
           version: conflict.current.version,
         });
-      } else {
+      } else if (choice === "keepTheirs" && conflict.current) {
+        updateCacheWithConflict(conflict);
         setCellStatus((prev) => {
           const next = new Map(prev);
           next.delete(key);
@@ -392,7 +456,7 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
         });
       }
     },
-    [editEntry]
+    [editEntry, journalId, queryClient, updateCacheWithConflict]
   );
 
   useEffect(() => {
