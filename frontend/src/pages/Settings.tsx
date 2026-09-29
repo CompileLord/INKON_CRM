@@ -8,6 +8,7 @@ import { ThemeToggle } from "../components/ui/ThemeToggle";
 import { LanguageSwitcher } from "../components/ui/LanguageSwitcher";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { resolveMediaUrl, validateAvatarFile } from "../lib/users/media";
+import { FULL_VERSION_STRING } from "../config/version";
 
 export function Settings() {
   const { t } = useTranslation(["settings", "common"]);
@@ -364,6 +365,12 @@ export function Settings() {
           </div>
         </form>
       )}
+
+      <div className="pt-2 pb-2 flex items-center justify-start select-none">
+        <span className="text-[10px] font-mono tracking-wider text-muted/30 hover:text-muted/60 transition-colors">
+          {FULL_VERSION_STRING}
+        </span>
+      </div>
     </div>
   );
 }
