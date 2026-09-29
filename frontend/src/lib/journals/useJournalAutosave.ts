@@ -307,7 +307,20 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
   const editEntry = useCallback(
     (key: string, patch: JournalEntryUpdate) => {
       const targetAttendance = patch.score > 0 ? true : patch.attendance;
-      dirtyRef.current.set(key, { ...patch, attendance: targetAttendance });
+
+      let latestVersion = patch.version;
+      if (journalId) {
+        const cached = queryClient.getQueryData<JournalDetailResponse>(["journals", "detail", journalId]);
+        if (cached) {
+          const cachedStudent = cached.students.find((s) => s.student_id === patch.student_id);
+          const cachedEntry = cachedStudent?.entries.find((e) => e.lesson_date === patch.lesson_date);
+          if (cachedEntry) {
+            latestVersion = cachedEntry.version;
+          }
+        }
+      }
+
+      dirtyRef.current.set(key, { ...patch, attendance: targetAttendance, version: latestVersion });
 
       setCellStatus((prev) => {
         const next = new Map(prev);

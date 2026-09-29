@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Calendar, Layers } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { useJournal, useUpdateJournalExamMaxScore } from "../../lib/journals/hooks";
 import { useJournalAutosave } from "../../lib/journals/useJournalAutosave";
 import { JournalGrid } from "./JournalGrid";
@@ -93,13 +93,6 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
                   {t("period.current")}
                 </span>
               )}
-            </div>
-
-            <div className="flex items-center gap-3 text-xs text-muted mt-0.5">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {t("period.range", { start: period.period_start, end: period.period_end })}
-              </span>
             </div>
           </div>
         </div>

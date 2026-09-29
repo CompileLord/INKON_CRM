@@ -13,6 +13,7 @@ interface JournalStudentRowProps {
   focusedCellKey: string | null;
   focusFromKeyboard: boolean;
   activeColDate?: string | null;
+  animationIndex: number;
   onCellFocus: (key: string) => void;
   onCellNavigate: (key: string, direction: CellNavDirection) => void;
   onEntryChange: (key: string, patch: { student_id: number; lesson_date: string; attendance: boolean; score: number; comment?: string | null; version: number }) => void;
@@ -27,6 +28,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   focusedCellKey,
   focusFromKeyboard,
   activeColDate,
+  animationIndex,
   onCellFocus,
   onCellNavigate,
   onEntryChange,
@@ -71,7 +73,10 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   const entriesMap = new Map(student.entries.map((e) => [e.lesson_date, e]));
 
   return (
-    <tr className="group/row hover:bg-row-hover transition-colors border-b border-border-warm last:border-b-0">
+    <tr
+      className="group/row hover:bg-row-hover transition-colors border-b border-border-warm last:border-b-0 motion-safe:animate-[row-fade-in_200ms_ease-out_both]"
+      style={{ animationDelay: `${animationIndex * 30}ms` }}
+    >
       <th
         scope="row"
         className="sticky left-0 z-10 bg-card group-hover/row:bg-row-hover transition-colors px-4 py-2.5 text-left text-xs font-medium text-ink border-r border-border"

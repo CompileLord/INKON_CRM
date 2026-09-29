@@ -226,7 +226,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 </td>
               </tr>
             ) : (
-              students.map((student) => (
+              students.map((student, index) => (
                 <JournalStudentRow
                   key={student.student_id}
                   student={student}
@@ -237,6 +237,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}
                   activeColDate={activeColDate}
+                  animationIndex={index}
                   onCellFocus={handleCellFocus}
                   onCellNavigate={handleCellNavigate}
                   onEntryChange={onEntryChange}

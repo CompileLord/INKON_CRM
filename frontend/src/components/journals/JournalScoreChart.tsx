@@ -358,7 +358,7 @@ export const JournalScoreChart: React.FC<JournalScoreChartProps> = ({ data, isLo
         {/* Roster for the hovered period — replaces the old always-on side rail */}
         {hoveredIndex !== null && periodLabels[hoveredIndex] && (
           <div
-            className={`absolute top-6 z-20 w-60 bg-card text-ink border border-border rounded-lg shadow-lg text-xs pointer-events-none ${
+            className={`absolute top-6 z-20 w-60 bg-card text-ink border border-border rounded-lg shadow-lg text-xs pointer-events-none motion-safe:animate-[row-fade-in_150ms_ease-out_both] ${
               hoveredOnRightHalf ? "-translate-x-full -ml-3" : "ml-3"
             }`}
             style={{ left: `${(getX(hoveredIndex) / svgWidth) * 100}%` }}
