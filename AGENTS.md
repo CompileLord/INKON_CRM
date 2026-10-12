@@ -91,6 +91,16 @@ All AI coding assistants must follow this workflow to maintain project synchroni
 
 ---
 
+### 4.5. Persistent orchestration and executor notifications
+- Codex GPT orchestrators must keep the active turn open while authorized executors are running. A final reply ends the turn: a later child completion event can appear in the interface without restarting the orchestrator. This was observed in the Luna notification test; never promise automatic continuation after a final reply.
+- Wait for completion, failure, questions or other executor messages through event-aware tools. Short transport waits may be repeated silently; they are not permission to inspect progress repeatedly. Routine status inspection occurs only every 17 minutes, unless the user requests a check or a concrete failure requires earlier diagnosis. Respect the environment's maximum blocking-wait duration.
+- On a completion event, read the complete result and audit actual source, tests, screenshots and interactions. On a question or failure, resolve the bounded issue or preserve and report the blocker. Continue corrections and the next dependency-ready task without ending the turn merely because an executor is working or a page finished.
+- Finish the orchestration turn only when the authorized scope is complete, the user explicitly asks to stop, or a genuine blocker prevents further useful authorized work. Preserve execution state before any interruption. User messages steer ongoing work unless they cancel it.
+- Reuse an executor with the needed context for related tasks and corrections. Save its exact identity and use the appropriate resume mechanism. Never use agy `--continue`, replace a failed conversation to evade review, or silently change the requested model. Native child agents and external agy processes use different completion mechanisms; verify the actual result rather than assuming a missing live-agent entry means success.
+- Use multiple executors when dependencies and ownership permit. Isolate implementation in separate worktrees with named branches, exclusive source ownership, locale key boundaries and unique preview/API ports. Keep shared contracts and persistence owners under one writer. Do not advance a dependent page before its prerequisite passes audit; integrate accepted work sequentially and rerun integration gates.
+- Handoffs require implementation, meaningful tests, actual rendered self-review and a concise complete result. Self-checking does not replace independent audit. Never accept a SUCCESS label, stale test record, fabricated screenshot, unconditional passing probe or missing report as completion.
+- For this redesign, return subsequent implementation to agy with `gemini-3.8-flash-high` after the explicitly authorized Luna task is accepted. Preserve existing subgroup conversations and use the authorized bounded full-access flags; never expand scope or remove unrelated protections.
+
 ## 5. Development Environment & Tooling
 
 ### 5.1. System Environment

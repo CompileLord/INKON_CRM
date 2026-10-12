@@ -700,5 +700,15 @@
     ],
     "description": "Replace reused enrollment status badge raw palette with existing semantic light/dark tokens; preserve status labels and meaning. Prerequisite for accepting Students UI.",
     "testStrategy": "Actual rendered status label/contrast in both themes, locale parity, full frontend/backend/type gates; no new domain behavior."
+  },
+  {
+    "id": "KITOB-DOCS-03",
+    "title": "Persist event-driven executor orchestration rules",
+    "status": "completed",
+    "dependencies": [
+      "KITOB-DOCS-02"
+    ],
+    "description": "Record observed final-turn notification limitation, active waiting, context reuse, isolated parallel ownership and audit continuation in AGENTS.md.",
+    "testStrategy": "Review policy consistency and local links, JSON validity and docs-only diff."
   }
 ]
