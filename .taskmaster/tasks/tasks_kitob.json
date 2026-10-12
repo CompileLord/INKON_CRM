@@ -203,7 +203,7 @@
   {
     "id": "KITOB-02-03",
     "title": "Students tab and enrollment/withdrawal",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-03-CONTRACT",
@@ -218,7 +218,9 @@
     "status": "pending",
     "group": "02",
     "dependencies": [
-      "KITOB-02-03"
+      "KITOB-02-03",
+      "KITOB-02-04-SEMANTICS",
+      "KITOB-02-04-RESULT-CONTRACT"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -710,5 +712,27 @@
     ],
     "description": "Record observed final-turn notification limitation, active waiting, context reuse, isolated parallel ownership and audit continuation in AGENTS.md.",
     "testStrategy": "Review policy consistency and local links, JSON validity and docs-only diff."
+  },
+  {
+    "id": "KITOB-02-04-SEMANTICS",
+    "group": "02",
+    "title": "Audit course Progress grading source and prerequisite boundaries",
+    "status": "completed",
+    "dependencies": [
+      "KITOB-02-02"
+    ],
+    "description": "Read-only bounded prerequisite: establish actual average scopes, denominators, grading state and authorized period metadata before Progress implementation. Do not change scoring policy or implement deferred features.",
+    "testStrategy": "Root independently verifies source/guards and returned contract findings; map necessary tested schema work separately before dependent UI."
+  },
+  {
+    "id": "KITOB-02-04-RESULT-CONTRACT",
+    "group": "02",
+    "title": "Expose authorized course Progress result missingness and stored-value scope",
+    "status": "in_progress",
+    "dependencies": [
+      "KITOB-02-04-SEMANTICS"
+    ],
+    "description": "Bounded staff read contract: explicit missing summaries versus present stored totals, unknown grading provenance, stable dates and documented average scope. Preserve existing scoring and student payload; no historic grading inference or migration.",
+    "testStrategy": "Real role authorization, missing versus stored zero, positive and above100 totals, unknown grading state and unequal denominators; bounded SQL queries, schema/TypeScript synchronization, required full gates."
   }
 ]

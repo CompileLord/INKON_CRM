@@ -45,6 +45,7 @@ vi.mock("../lib/enrollments/hooks", async (importOriginal) => {
     ...actual,
     useCourseEnrollmentsCount: vi.fn(),
     useCourseRoster: vi.fn(),
+    useCourseRosterPage: vi.fn(),
   };
 });
 
@@ -274,6 +275,16 @@ describe("CourseProfile Component", () => {
       isError: false,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof enrollmentHooks.useCourseRoster>);
+    vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(
+      mockSuccessResult({
+        items: [],
+        total: 0,
+        page: 1,
+        page_size: 10,
+        total_pages: 1,
+        active_count: 0,
+      }),
+    );
     vi.mocked(userHooks.useMentorProfile).mockReturnValue(
       mockSuccessResult(mockMentorProfile),
     );
@@ -371,7 +382,7 @@ describe("CourseProfile Component", () => {
     it("isolates inactive panes by not mounting roster or progress chart in overview", () => {
       renderCourseProfile();
 
-      expect(enrollmentHooks.useCourseRoster).not.toHaveBeenCalled();
+      expect(enrollmentHooks.useCourseRosterPage).not.toHaveBeenCalled();
       expect(courseHooks.useCourseProgressChart).not.toHaveBeenCalled();
     });
 
@@ -383,7 +394,7 @@ describe("CourseProfile Component", () => {
 
       await waitFor(() => {
         expect(getLocation().search).toContain("tab=students");
-        expect(enrollmentHooks.useCourseRoster).toHaveBeenCalledWith(42);
+        expect(enrollmentHooks.useCourseRosterPage).toHaveBeenCalledWith(42, expect.anything());
       });
     });
 
@@ -1075,6 +1086,59 @@ describe("CourseProfile Component", () => {
         expect(getReturnLocation().search).toContain("period=5");
         expect(screen.getByDisplayValue("Zalina")).toBeDefined();
       });
+    });
+
+    it("restores Students tab return context with page, status, search, sort, and scroll without progress leakage or cross-course carryover", async () => {
+      const scrollToSpy = vi.fn();
+      window.scrollTo = scrollToSpy;
+
+      returnContext.recordCourseDetailNavigation(42, {
+        tab: "students",
+        rosterPage: 2,
+        rosterStatus: "withdrawn",
+        search: "Farrukh",
+        sort: "name_desc",
+        scrollY: 320,
+      });
+
+      const { getLocation: getCourse42Location } = renderCourseProfile([
+        { pathname: "/courses/42", state: { fromInternalReturn: true } },
+      ]);
+
+      await waitFor(() => {
+        expect(getCourse42Location().search).toContain("tab=students");
+      });
+
+      expect(getCourse42Location().search).not.toContain("period=");
+
+      expect(enrollmentHooks.useCourseRosterPage).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          page: 2,
+          status: "withdrawn",
+          search: "Farrukh",
+          sort: "name_desc",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(scrollToSpy).toHaveBeenCalledWith({ top: 320, behavior: "instant" });
+      });
+
+      const { getLocation: getCourse99Location } = renderCourseProfile([
+        { pathname: "/courses/99", state: { fromInternalReturn: true } },
+      ]);
+
+      expect(getCourse99Location().search).not.toContain("tab=students");
+      expect(enrollmentHooks.useCourseRosterPage).not.toHaveBeenCalledWith(
+        99,
+        expect.objectContaining({
+          page: 2,
+          status: "withdrawn",
+          search: "Farrukh",
+          sort: "name_desc",
+        }),
+      );
     });
 
     it("restores saved nonzero scroll position after course data is loaded", async () => {

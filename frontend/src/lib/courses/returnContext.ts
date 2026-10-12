@@ -198,12 +198,25 @@ export interface CourseDetailReturnContext {
   search?: string;
   sort?: string;
   view?: "matrix" | "table";
+  rosterPage?: number;
+  rosterStatus?: "active" | "withdrawn" | "completed";
   scrollY: number;
   timestamp: number;
 }
 
 const DETAIL_RETURN_STORAGE_PREFIX = "kitob_course_detail_return:";
-const SUPPORTED_DETAIL_SORTS = new Set(["avg_desc", "name_asc", "latest_desc", "price", "newest"]);
+const SUPPORTED_DETAIL_SORTS = new Set([
+  "avg_desc",
+  "name_asc",
+  "latest_desc",
+  "price",
+  "newest",
+  "enrolled_desc",
+  "enrolled_asc",
+  "name_desc",
+  "price_asc",
+  "price_desc",
+]);
 
 export function recordCourseDetailNavigation(
   courseId: number,
@@ -213,6 +226,8 @@ export function recordCourseDetailNavigation(
     search?: string;
     sort?: string;
     view?: "matrix" | "table";
+    rosterPage?: number;
+    rosterStatus?: "active" | "withdrawn" | "completed";
     scrollY?: number;
   } = {},
 ): CourseDetailReturnContext {
@@ -242,6 +257,18 @@ export function recordCourseDetailNavigation(
   const validView =
     options.view === "matrix" || options.view === "table" ? options.view : undefined;
 
+  const validRosterPage =
+    typeof options.rosterPage === "number" && Number.isSafeInteger(options.rosterPage) && options.rosterPage > 0
+      ? options.rosterPage
+      : undefined;
+
+  const validRosterStatus =
+    options.rosterStatus === "active" ||
+    options.rosterStatus === "withdrawn" ||
+    options.rosterStatus === "completed"
+      ? options.rosterStatus
+      : undefined;
+
   const context: CourseDetailReturnContext = {
     courseId,
     tab: options.tab || "overview",
@@ -249,6 +276,8 @@ export function recordCourseDetailNavigation(
     search: validSearch,
     sort: validSort,
     view: validView,
+    rosterPage: validRosterPage,
+    rosterStatus: validRosterStatus,
     scrollY,
     timestamp: Date.now(),
   };
@@ -343,6 +372,30 @@ export function getSavedCourseDetailContext(courseId: number): CourseDetailRetur
       validView = candidate.view;
     }
 
+    let validRosterPage: number | undefined = undefined;
+    if ("rosterPage" in candidate && candidate.rosterPage !== undefined) {
+      if (
+        typeof candidate.rosterPage !== "number" ||
+        !Number.isSafeInteger(candidate.rosterPage) ||
+        candidate.rosterPage <= 0
+      ) {
+        return null;
+      }
+      validRosterPage = candidate.rosterPage;
+    }
+
+    let validRosterStatus: "active" | "withdrawn" | "completed" | undefined = undefined;
+    if ("rosterStatus" in candidate && candidate.rosterStatus !== undefined) {
+      if (
+        candidate.rosterStatus !== "active" &&
+        candidate.rosterStatus !== "withdrawn" &&
+        candidate.rosterStatus !== "completed"
+      ) {
+        return null;
+      }
+      validRosterStatus = candidate.rosterStatus;
+    }
+
     return {
       courseId: candidate.courseId,
       tab: candidate.tab,
@@ -352,6 +405,8 @@ export function getSavedCourseDetailContext(courseId: number): CourseDetailRetur
       search: validSearch,
       sort: validSort,
       view: validView,
+      rosterPage: validRosterPage,
+      rosterStatus: validRosterStatus,
     };
   } catch {
     return null;

@@ -213,6 +213,8 @@ export function useEnrollStudent() {
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-course", enrollment.course_id] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-student", enrollment.student_id] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "courses", enrollment.course_id] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "count-by-course", enrollment.course_id] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "total"] });
       queryClient.invalidateQueries({
         queryKey: ["users", "students", "profile", enrollment.student_id],
       });
@@ -235,6 +237,8 @@ export function useWithdrawEnrollment() {
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-course", variables.courseId] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-student", variables.studentId] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "courses", variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "count-by-course", variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "total"] });
       queryClient.invalidateQueries({
         queryKey: ["users", "students", "profile", variables.studentId],
       });

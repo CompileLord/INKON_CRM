@@ -170,6 +170,36 @@ describe("course detail return context and journal URL building", () => {
     expect(getSavedCourseDetailContext(99)).toBeNull();
   });
 
+  it("records and restores students tab rosterPage and rosterStatus", () => {
+    const context = recordCourseDetailNavigation(42, {
+      tab: "students",
+      rosterPage: 3,
+      rosterStatus: "withdrawn",
+    });
+    expect(context.rosterPage).toBe(3);
+    expect(context.rosterStatus).toBe("withdrawn");
+
+    const saved = getSavedCourseDetailContext(42);
+    expect(saved).not.toBeNull();
+    expect(saved?.rosterPage).toBe(3);
+    expect(saved?.rosterStatus).toBe("withdrawn");
+  });
+
+  it("rejects invalid rosterPage and rosterStatus in stored payload", () => {
+    sessionStorage.setItem(
+      "kitob_course_detail_return:42",
+      JSON.stringify({
+        courseId: 42,
+        tab: "students",
+        rosterPage: "invalid",
+        rosterStatus: "unknown",
+        scrollY: 0,
+        timestamp: 1000,
+      }),
+    );
+    expect(getSavedCourseDetailContext(42)).toBeNull();
+  });
+
   it("defaults tab to overview when unspecified", () => {
     const context = recordCourseDetailNavigation(7);
     expect(context.tab).toBe("overview");

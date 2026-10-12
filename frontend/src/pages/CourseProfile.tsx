@@ -22,6 +22,8 @@ import { CourseFormPanel } from "../components/courses/CourseFormPanel";
 import { AdminCourseMenu } from "../components/courses/AdminCourseMenu";
 import { CourseOverviewPane } from "../components/courses/CourseOverviewPane";
 import { CourseStudentsPane } from "../components/courses/CourseStudentsPane";
+import type { CourseRosterSortOption } from "../components/courses/CourseRosterSection";
+import type { EnrollmentStatus } from "../lib/enrollments/types";
 import { CourseProgressPane } from "../components/courses/CourseProgressPane";
 import type { SortOption, ViewMode } from "../components/courses/CourseProgressChart";
 import {
@@ -72,14 +74,17 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
     const isReturning = isInternalReturnSignal(location.state, searchParams);
     if (!isReturning) return "";
     const saved = getSavedCourseDetailContext(courseId);
-    return saved?.search ?? "";
+    return saved?.tab === "progress" ? (saved?.search ?? "") : "";
   });
   const [progressSort, setProgressSort] = useState<SortOption>(() => {
     if (!courseId) return "avg_desc";
     const isReturning = isInternalReturnSignal(location.state, searchParams);
     if (!isReturning) return "avg_desc";
     const saved = getSavedCourseDetailContext(courseId);
-    if (saved?.sort === "avg_desc" || saved?.sort === "name_asc" || saved?.sort === "latest_desc") {
+    if (
+      saved?.tab === "progress" &&
+      (saved?.sort === "avg_desc" || saved?.sort === "name_asc" || saved?.sort === "latest_desc")
+    ) {
       return saved.sort;
     }
     return "avg_desc";
@@ -89,10 +94,50 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
     const isReturning = isInternalReturnSignal(location.state, searchParams);
     if (!isReturning) return "matrix";
     const saved = getSavedCourseDetailContext(courseId);
-    if (saved?.view === "matrix" || saved?.view === "table") {
+    if (saved?.tab === "progress" && (saved?.view === "matrix" || saved?.view === "table")) {
       return saved.view;
     }
     return "matrix";
+  });
+
+  const [rosterSearch, setRosterSearch] = useState(() => {
+    if (!courseId) return "";
+    const isReturning = isInternalReturnSignal(location.state, searchParams);
+    if (!isReturning) return "";
+    const saved = getSavedCourseDetailContext(courseId);
+    return saved?.tab === "students" ? (saved?.search ?? "") : "";
+  });
+  const [rosterSort, setRosterSort] = useState<CourseRosterSortOption>(() => {
+    if (!courseId) return "enrolled_desc";
+    const isReturning = isInternalReturnSignal(location.state, searchParams);
+    if (!isReturning) return "enrolled_desc";
+    const saved = getSavedCourseDetailContext(courseId);
+    if (
+      saved?.tab === "students" &&
+      (saved.sort === "enrolled_desc" ||
+        saved.sort === "enrolled_asc" ||
+        saved.sort === "name_asc" ||
+        saved.sort === "name_desc" ||
+        saved.sort === "price_desc" ||
+        saved.sort === "price_asc")
+    ) {
+      return saved.sort as CourseRosterSortOption;
+    }
+    return "enrolled_desc";
+  });
+  const [rosterPage, setRosterPage] = useState<number>(() => {
+    if (!courseId) return 1;
+    const isReturning = isInternalReturnSignal(location.state, searchParams);
+    if (!isReturning) return 1;
+    const saved = getSavedCourseDetailContext(courseId);
+    return saved?.tab === "students" && saved?.rosterPage ? saved.rosterPage : 1;
+  });
+  const [rosterStatus, setRosterStatus] = useState<EnrollmentStatus | undefined>(() => {
+    if (!courseId) return undefined;
+    const isReturning = isInternalReturnSignal(location.state, searchParams);
+    if (!isReturning) return undefined;
+    const saved = getSavedCourseDetailContext(courseId);
+    return saved?.tab === "students" && saved?.rosterStatus ? saved.rosterStatus : undefined;
   });
 
   const actionInvokerRef = useRef<HTMLElement | null>(null);
@@ -170,18 +215,40 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
 
     restoredContextRef.current = courseId;
 
-    if (saved.search !== undefined) {
-      setProgressSearch(saved.search);
-    }
-    if (
-      saved.sort === "avg_desc" ||
-      saved.sort === "name_asc" ||
-      saved.sort === "latest_desc"
-    ) {
-      setProgressSort(saved.sort);
-    }
-    if (saved.view === "matrix" || saved.view === "table") {
-      setProgressView(saved.view);
+    if (saved.tab === "students") {
+      if (saved.search !== undefined) {
+        setRosterSearch(saved.search);
+      }
+      if (
+        saved.sort === "enrolled_desc" ||
+        saved.sort === "enrolled_asc" ||
+        saved.sort === "name_asc" ||
+        saved.sort === "name_desc" ||
+        saved.sort === "price_desc" ||
+        saved.sort === "price_asc"
+      ) {
+        setRosterSort(saved.sort as CourseRosterSortOption);
+      }
+      if (saved.rosterPage !== undefined && saved.rosterPage > 0) {
+        setRosterPage(saved.rosterPage);
+      }
+      if (saved.rosterStatus !== undefined) {
+        setRosterStatus(saved.rosterStatus);
+      }
+    } else {
+      if (saved.search !== undefined) {
+        setProgressSearch(saved.search);
+      }
+      if (
+        saved.sort === "avg_desc" ||
+        saved.sort === "name_asc" ||
+        saved.sort === "latest_desc"
+      ) {
+        setProgressSort(saved.sort);
+      }
+      if (saved.view === "matrix" || saved.view === "table") {
+        setProgressView(saved.view);
+      }
     }
 
     setSearchParams(
@@ -206,6 +273,23 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
       pendingScrollYRef.current = saved.scrollY;
     }
   }, [courseId, location.state, searchParams, setSearchParams]);
+
+  const prevCourseIdRef = useRef<number | undefined>(courseId);
+  useEffect(() => {
+    if (prevCourseIdRef.current !== courseId) {
+      prevCourseIdRef.current = courseId;
+      const isReturning = isInternalReturnSignal(location.state, searchParams);
+      if (!isReturning) {
+        setRosterSearch("");
+        setRosterSort("enrolled_desc");
+        setRosterPage(1);
+        setRosterStatus(undefined);
+        setProgressSearch("");
+        setProgressSort("avg_desc");
+        setProgressView("matrix");
+      }
+    }
+  }, [courseId, location.state, searchParams]);
 
   const {
     data: course,
@@ -792,6 +876,7 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
                 id={`tab-${tab.id}`}
                 aria-selected={isActive}
                 aria-controls={`tabpanel-${tab.id}`}
+                aria-label={tab.label}
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => handleTabClick(tab.id)}
                 className={`shrink-0 min-h-[44px] px-3.5 sm:px-4 py-2 text-sm rounded-t-xl border-b-2 motion-safe:transition-colors motion-safe:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon ${
@@ -829,6 +914,24 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
         {activeTab === "students" ? (
           <CourseStudentsPane
             courseId={course.id}
+            courseTitle={course.title}
+            coursePrice={course.price}
+            isSuperAdmin={isSuperAdmin}
+            isMentor={role === "mentor"}
+            searchQuery={rosterSearch}
+            onSearchQueryChange={(q) => {
+              setRosterSearch(q);
+              setRosterPage(1);
+            }}
+            sortOption={rosterSort}
+            onSortOptionChange={setRosterSort}
+            page={rosterPage}
+            onPageChange={setRosterPage}
+            statusFilter={rosterStatus}
+            onStatusFilterChange={(s) => {
+              setRosterStatus(s);
+              setRosterPage(1);
+            }}
             onToast={showToast}
             onReady={() => handlePaneReady("students")}
           />
