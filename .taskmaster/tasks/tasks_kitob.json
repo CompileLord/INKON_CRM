@@ -206,7 +206,8 @@
     "status": "in_progress",
     "group": "02",
     "dependencies": [
-      "KITOB-02-03-CONTRACT"
+      "KITOB-02-03-CONTRACT",
+      "KITOB-02-STATUS"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -688,5 +689,16 @@
     ],
     "description": "Make documentation ownership, stable evidence paths and retention rules mandatory in AGENTS.md for planners, orchestrators, auditors and executors.",
     "testStrategy": "Validate policy links, JSON and active session mapping; review docs-only diff."
+  },
+  {
+    "id": "KITOB-02-STATUS",
+    "group": "02",
+    "title": "Shared enrollment status semantic tokens",
+    "status": "in_progress",
+    "dependencies": [
+      "KITOB-01-01"
+    ],
+    "description": "Replace reused enrollment status badge raw palette with existing semantic light/dark tokens; preserve status labels and meaning. Prerequisite for accepting Students UI.",
+    "testStrategy": "Actual rendered status label/contrast in both themes, locale parity, full frontend/backend/type gates; no new domain behavior."
   }
 ]
