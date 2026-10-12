@@ -95,16 +95,53 @@ describe("buildCourseUpdatePayload", () => {
 });
 
 describe("applyCourseFieldErrors", () => {
-  it("maps API field names onto form field names and reports whether anything matched", () => {
+  it("maps API field names onto form field names with translated error messages", () => {
     const setError = vi.fn();
     const applied = applyCourseFieldErrors(
-      { title: "Слишком длинное название", mentor_id: "Ментор не найден" },
+      { title: "Course with this title already exists", mentor_id: "Mentor not found" },
       setError,
     );
 
     expect(applied).toBe(true);
-    expect(setError).toHaveBeenCalledWith("title", { type: "server", message: "Слишком длинное название" });
-    expect(setError).toHaveBeenCalledWith("mentor_id", { type: "server", message: "Ментор не найден" });
+    expect(setError).toHaveBeenCalledWith("title", {
+      type: "server",
+      message: "courses:form.errors.titleAlreadyExists",
+    });
+    expect(setError).toHaveBeenCalledWith("mentor_id", {
+      type: "server",
+      message: "courses:form.errors.mentorNotFound",
+    });
+  });
+
+  it("maps nested schedule errors including dot and bracket notations", () => {
+    const setError = vi.fn();
+    const applied = applyCourseFieldErrors(
+      {
+        "schedules.0.time_start": "Required field",
+        "schedules[0].time_end": "End time must be after start time",
+      },
+      setError,
+    );
+
+    expect(applied).toBe(true);
+    expect(setError).toHaveBeenCalledWith("schedules.0.time_start", {
+      type: "server",
+      message: "courses:form.requiredFieldError",
+    });
+    expect(setError).toHaveBeenCalledWith("schedules.0.time_end", {
+      type: "server",
+      message: "courses:form.timeOrderError",
+    });
+  });
+
+  it("maps the create date contract error to the date order message", () => {
+    const setError = vi.fn();
+    applyCourseFieldErrors({ end_date: "start_date must be before end_date" }, setError);
+
+    expect(setError).toHaveBeenCalledWith("end_date", {
+      type: "server",
+      message: "courses:form.dateOrderError",
+    });
   });
 
   it("returns false when no API key matches a known form field", () => {
@@ -116,17 +153,19 @@ describe("applyCourseFieldErrors", () => {
 });
 
 describe("describeCourseApiError", () => {
-  it("never shows the connection-error message for a response that actually reached the browser", () => {
+  it("never exposes raw backend sentinels or details in error messages", () => {
     for (const status of [400, 403, 404, 409, 422, 500, 502, 503]) {
-      expect(describeCourseApiError(new AuthApiError(status, "some detail"))).not.toBe(
-        "Не удалось подключиться к серверу",
-      );
+      const result = describeCourseApiError(new AuthApiError(status, "RAW_INTERNAL_EXCEPTION_DETAIL"));
+      expect(result).not.toContain("RAW_INTERNAL_EXCEPTION_DETAIL");
     }
   });
 
-  it("maps 5xx to a fixed friendly message regardless of the raw detail", () => {
-    expect(describeCourseApiError(new AuthApiError(500, "Internal Server Error"))).toBe(
-      "Сервер недоступен, попробуйте позже",
-    );
+  it("maps status codes and known details to correct localized error keys", () => {
+    expect(describeCourseApiError(new AuthApiError(403, "Forbidden"))).toBe("courses:form.errors.forbidden");
+    expect(describeCourseApiError(new AuthApiError(404, "Not Found"))).toBe("courses:form.errors.notFound");
+    expect(describeCourseApiError(new AuthApiError(409, "Conflict"))).toBe("courses:form.errors.conflict");
+    expect(describeCourseApiError(new AuthApiError(500, "Internal Server Error"))).toBe("courses:form.errors.serverError");
+    expect(describeCourseApiError(new AuthApiError(400, "course already exists"))).toBe("courses:form.errors.titleAlreadyExists");
+    expect(describeCourseApiError(new AuthApiError(400, "mentor not found in database"))).toBe("courses:form.errors.mentorNotFound");
   });
 });

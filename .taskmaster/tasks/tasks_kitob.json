@@ -652,7 +652,7 @@
   {
     "id": "KITOB-02-05-FORM",
     "title": "Course create/edit fields, dirty dismissal and image recovery",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-05-DRAWER"

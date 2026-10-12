@@ -29,6 +29,36 @@ describe("courseFormSchema (create)", () => {
     // when editing — so the user sees nothing happen on save.
     expect(courseFormSchema.safeParse(editModeValues).success).toBe(false);
   });
+
+  it("requires the create end date to be later than the start date", () => {
+    const values = {
+      ...editModeValues,
+      price: "800.00",
+      schedules: [{ day_of_week: "1", time_start: "09:00", time_end: "10:00" }],
+    };
+
+    const equalDates = courseFormSchema.safeParse({ ...values, end_date: values.start_date });
+    expect(equalDates.success).toBe(false);
+    if (!equalDates.success) {
+      expect(equalDates.error.issues.find((issue) => issue.path.includes("end_date"))?.message).toBe("form.dateOrderError");
+    }
+
+    expect(courseFormSchema.safeParse({ ...values, end_date: "2000-02-11" }).success).toBe(true);
+  });
+
+  it("reports an overlong nonempty title with the title length error", () => {
+    const values = {
+      ...editModeValues,
+      price: "800.00",
+      schedules: [{ day_of_week: "1", time_start: "09:00", time_end: "10:00" }],
+    };
+    const result = courseFormSchema.safeParse({ ...values, title: "x".repeat(256) });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.find((issue) => issue.path.includes("title"))?.message).toBe("form.titleTooLongError");
+    }
+  });
 });
 
 describe("courseEditFormSchema", () => {
@@ -42,5 +72,9 @@ describe("courseEditFormSchema", () => {
     expect(
       courseEditFormSchema.safeParse({ ...editModeValues, start_date: "2000-03-01" }).success,
     ).toBe(false); // end_date now before start_date
+  });
+
+  it("preserves the edit policy that allows equal start and end dates", () => {
+    expect(courseEditFormSchema.safeParse({ ...editModeValues, end_date: editModeValues.start_date }).success).toBe(true);
   });
 });

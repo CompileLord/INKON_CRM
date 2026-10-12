@@ -80,7 +80,7 @@ export function SlideOver({
             <Dialog.Close
               disabled={isDismissBlocked}
               aria-label={t("close")}
-              className="flex h-11 w-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[10px] text-muted hover:text-ink hover:bg-strip transition-[color,background-color,transform] duration-150 ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100"
+              className="flex h-11 w-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[10px] text-muted hover:text-ink hover:bg-strip motion-safe:transition-[color,background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100"
             >
               <X size={20} />
             </Dialog.Close>

@@ -2,20 +2,11 @@ import { AuthApiError, NetworkError } from "../auth/errors";
 import type { CourseCreate, CourseExamType, CourseResponse, CourseStatus, CourseUpdate } from "./types";
 
 export interface CourseScheduleFormRow {
-  day_of_week: string; // "0".."6", string because it's a <select> value
-  time_start: string; // "HH:MM" from <input type="time">
+  day_of_week: string;
+  time_start: string;
   time_end: string;
 }
 
-/**
- * One shape covers both create and edit — `exam_type`/`price`/`schedules`
- * are only ever collected (and only ever sent) on create; CourseUpdate has
- * no such fields, so the edit form renders them read-only and
- * buildCourseUpdatePayload never looks at them.
- *
- * photo_path is intentionally excluded: images are uploaded via the
- * dedicated POST /courses/{id}/image/ endpoint, not via the JSON form body.
- */
 export interface CourseFormValues {
   title: string;
   description: string;
@@ -28,7 +19,6 @@ export interface CourseFormValues {
   schedules: CourseScheduleFormRow[];
 }
 
-// Default to Monday (0) to match the ScheduleEditor DAYS[0] = "Пн" convention
 export const emptyScheduleRow: CourseScheduleFormRow = {
   day_of_week: "0",
   time_start: "",
@@ -57,12 +47,11 @@ export function buildCourseFormValues(course: CourseResponse): CourseFormValues 
     price: course.price,
     mentor_id: String(course.mentor_id),
     status: course.status,
-    schedules: [{ ...emptyScheduleRow }], // not editable here — shown separately from live schedule data
+    schedules: [{ ...emptyScheduleRow }],
   };
 }
 
 function toTimeOfDay(value: string): string {
-  // <input type="time"> yields "HH:MM"; the API's `time` field wants seconds.
   return value.length === 5 ? `${value}:00` : value;
 }
 
@@ -94,7 +83,6 @@ const FIELD_TO_API_KEY: Record<EditableField, keyof CourseUpdate> = {
   status: "status",
 };
 
-/** Builds a PATCH payload containing only the keys react-hook-form marked dirty, restricted to the fields CourseUpdate actually supports. */
 export function buildCourseUpdatePayload(
   values: CourseFormValues,
   dirtyFields: Partial<Record<keyof CourseFormValues, unknown>>,
@@ -103,7 +91,7 @@ export function buildCourseUpdatePayload(
 
   for (const field of Object.keys(dirtyFields) as (keyof CourseFormValues)[]) {
     if (!dirtyFields[field]) continue;
-    if (!(field in FIELD_TO_API_KEY)) continue; // price/exam_type/schedules aren't patchable
+    if (!(field in FIELD_TO_API_KEY)) continue;
     const editableField = field as EditableField;
     const apiKey = FIELD_TO_API_KEY[editableField];
 
@@ -128,28 +116,61 @@ const API_KEY_TO_FIELD: Record<string, keyof CourseFormValues> = {
   status: "status",
 };
 
-/** Maps AuthApiError.fieldErrors (API key names) onto react-hook-form's setError. Returns whether any field matched. */
 export function applyCourseFieldErrors(
   fieldErrors: Record<string, string>,
-  setError: (field: keyof CourseFormValues, error: { type: string; message: string }) => void,
+  setError: (field: string, error: { type: string; message: string }) => void,
+  translator?: (key: string) => string,
 ): boolean {
+  const t = translator ?? ((key: string) => key);
   let applied = false;
-  for (const [apiKey, message] of Object.entries(fieldErrors)) {
-    const field = API_KEY_TO_FIELD[apiKey];
+  for (const [apiKey, rawMessage] of Object.entries(fieldErrors)) {
+    const normalizedKey = apiKey.replace(/\[(\d+)\]/g, ".$1");
+    const field = API_KEY_TO_FIELD[normalizedKey] || (normalizedKey.startsWith("schedules") ? normalizedKey : undefined);
     if (field) {
-      setError(field, { type: "server", message });
+      const lower = (rawMessage || "").toLowerCase();
+      let translatedMessage = t("courses:form.requiredFieldError");
+      if (lower.includes("already exists") || lower.includes("duplicate")) {
+        translatedMessage = t("courses:form.errors.titleAlreadyExists");
+      } else if (lower.includes("mentor") && lower.includes("not found")) {
+        translatedMessage = t("courses:form.errors.mentorNotFound");
+      } else if (lower.includes("not found")) {
+        translatedMessage = t("courses:form.errors.notFound");
+      } else if (lower.includes("greater than") || lower.includes("positive") || lower.includes("price")) {
+        translatedMessage = t("courses:form.positivePriceError");
+      } else if (normalizedKey === "end_date" && lower.includes("start_date") && lower.includes("before")) {
+        translatedMessage = t("courses:form.dateOrderError");
+      } else if (lower.includes("after") || lower.includes("order") || lower.includes("end time")) {
+        translatedMessage = t("courses:form.timeOrderError");
+      }
+      setError(field, { type: "server", message: translatedMessage });
       applied = true;
     }
   }
   return applied;
 }
 
-export function describeCourseApiError(err: unknown): string {
+export function describeCourseApiError(
+  err: unknown,
+  translator?: (key: string) => string,
+): string {
+  const t = translator ?? ((key: string) => key);
   if (err instanceof AuthApiError) {
-    if (err.status === 403) return "Недостаточно прав для этого действия";
-    if (err.status >= 500) return "Сервер недоступен, попробуйте позже";
-    return err.message;
+    if (err.status === 403) return t("courses:form.errors.forbidden");
+    if (err.status === 404) return t("courses:form.errors.notFound");
+    if (err.status === 409) return t("courses:form.errors.conflict");
+    if (err.status >= 500) return t("courses:form.errors.serverError");
+
+    const lower = (err.message || "").toLowerCase();
+    if (lower.includes("already exists") || lower.includes("duplicate")) {
+      return t("courses:form.errors.titleAlreadyExists");
+    }
+    if (lower.includes("mentor") && lower.includes("not found")) {
+      return t("courses:form.errors.mentorNotFound");
+    }
+    return t("courses:form.errors.generic");
   }
-  if (err instanceof NetworkError) return "Не удалось подключиться к серверу";
-  return "Что-то пошло не так. Попробуйте ещё раз.";
+  if (err instanceof NetworkError) {
+    return t("courses:form.errors.networkError");
+  }
+  return t("courses:form.errors.generic");
 }

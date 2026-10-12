@@ -1,54 +1,66 @@
 import { useState, useRef, useEffect, type ChangeEvent, type DragEvent } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, ImageOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { resolveMediaUrl } from "../../lib/users/media";
 
 interface CourseImageUploadFieldProps {
   courseId?: number;
   currentPhotoPath?: string | null;
-  onPhotoUploaded?: (photoPath: string) => void;
+  selectedFile?: File | null;
+  disabled?: boolean;
   onFileSelected?: (file: File | null) => void;
 }
 
 export function CourseImageUploadField({
   currentPhotoPath,
+  selectedFile,
+  disabled = false,
   onFileSelected,
 }: CourseImageUploadFieldProps) {
+  const { t } = useTranslation(["courses", "common"]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Revoke previous object URL to prevent memory leaks
   useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
+    if (selectedFile) {
+      try {
+        const objectUrl = URL.createObjectURL(selectedFile);
+        setPreviewUrl(objectUrl);
+        return () => {
+          URL.revokeObjectURL?.(objectUrl);
+        };
+      } catch {
+        setPreviewUrl(null);
+      }
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [selectedFile]);
 
   const currentMediaUrl = resolveMediaUrl(currentPhotoPath);
   const displayUrl = previewUrl || currentMediaUrl;
 
+  useEffect(() => {
+    setImageError(false);
+  }, [displayUrl]);
+
   const validateAndProcessFile = (file: File) => {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Формат файла должен быть JPEG, PNG или WEBP");
+      setError(t("form.imageFormatError"));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("Максимальный размер изображения: 5 МБ");
+      setError(t("form.imageSizeError"));
       return;
     }
 
     setError(null);
-    // Revoke previous object URL before creating a new one
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
     if (onFileSelected) {
       onFileSelected(file);
     }
-    // Upload is deferred to the form's onSubmit handler so it happens
-    // exactly once after the course record is created/updated.
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -58,27 +70,30 @@ export function CourseImageUploadField({
     }
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: DragEvent<HTMLElement>) => {
     e.preventDefault();
-    setIsDragging(true);
+    if (!disabled) {
+      setIsDragging(true);
+    }
   };
 
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = (e: DragEvent<HTMLElement>) => {
     e.preventDefault();
     setIsDragging(false);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
     e.preventDefault();
     setIsDragging(false);
+    if (disabled) return;
     const file = e.dataTransfer.files?.[0];
     if (file) {
       validateAndProcessFile(file);
     }
   };
 
-  const handleRemove = () => {
-    setPreviewUrl(null);
+  const handleRemoveSelected = () => {
+    setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -89,78 +104,111 @@ export function CourseImageUploadField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-ink flex items-center justify-between">
-        <span>Обложка курса (Изображение)</span>
-        <span className="text-xs text-muted font-normal">JPEG, PNG, WEBP до 5MB</span>
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-ink">
+          {t("form.imageSection")}{" "}
+          <span className="text-xs font-normal text-muted">({t("form.imageOptional")})</span>
+        </label>
+        <span className="text-xs text-muted">{t("form.imageFormats")}</span>
+      </div>
 
       <div
+        data-testid="course-image-dropzone"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center min-h-[140px] rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer overflow-hidden group ${
+        className={`relative flex flex-col items-center justify-center min-h-[140px] rounded-xl border-2 border-dashed overflow-hidden motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+          disabled ? "pointer-events-none opacity-50" : ""
+        } ${
           isDragging
-            ? "border-blue-500 bg-blue-50/50"
+            ? "border-accent bg-accent/10"
             : displayUrl
             ? "border-border-warm bg-card"
-            : "border-border-warm bg-beige/40 hover:bg-beige/70 hover:border-border-warm"
+            : "border-border-warm bg-beige/40 hover:bg-beige/70"
         }`}
       >
         <input
           ref={fileInputRef}
+          id="course-cover-image-input"
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onChange={handleFileChange}
-          className="hidden"
+          disabled={disabled}
+          className="sr-only"
+          aria-label={t("form.imageSection")}
         />
 
         {displayUrl ? (
-          <div className="relative w-full h-36 group">
-            <img
-              src={displayUrl}
-              alt="Course Cover"
-              className="w-full h-full object-cover rounded-lg"
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+          <div className="relative w-full h-40 group">
+            {!imageError ? (
+              <img
+                src={displayUrl}
+                alt={t("form.imageSection")}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-full bg-strip text-muted gap-2">
+                <ImageOff size={28} />
+                <span className="text-xs">{t("form.imageSection")}</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-ink/40 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100 motion-safe:transition-opacity motion-safe:duration-150 motion-safe:ease-out flex items-center justify-center gap-3 p-3">
               <button
                 type="button"
+                disabled={disabled}
                 onClick={(e) => {
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
-                className="px-3 py-1.5 rounded-lg bg-white/90 text-xs font-semibold text-ink hover:bg-white transition-colors"
+                className="min-h-11 px-4 py-2 rounded-lg bg-card text-xs font-semibold text-ink shadow-md hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Изменить
+                {t("form.imageChange")}
               </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemove();
-                }}
-                className="p-1.5 rounded-lg bg-red-600/90 text-white hover:bg-red-600 transition-colors"
-              >
-                <X size={15} />
-              </button>
+              {selectedFile ? (
+                <button
+                  type="button"
+                  aria-label={t("form.imageRemove")}
+                  disabled={disabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveSelected();
+                  }}
+                  className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-card text-destructive shadow-md hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X size={18} />
+                </button>
+              ) : null}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center p-4 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-2 group-hover:scale-110 transition-transform">
-              <Upload size={18} />
+          <label
+            htmlFor="course-cover-image-input"
+            tabIndex={disabled ? -1 : 0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            className="flex flex-col items-center p-4 text-center cursor-pointer w-full h-full justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-strip text-ink mb-2">
+              <Upload size={20} />
             </div>
-            <p className="text-sm font-medium text-ink">
-              Нажмите или перетащите файл изображения
-            </p>
-            <p className="text-xs text-muted mt-0.5">
-              Изображение будет отображаться в карточке курса
-            </p>
-          </div>
+            <span className="min-h-11 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-card text-xs font-semibold text-ink border border-border-warm shadow-xs hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]">
+              {t("form.imageUploadDrop")}
+            </span>
+            <span className="text-[11px] text-muted mt-2">{t("form.imageFormats")}</span>
+          </label>
         )}
       </div>
 
-      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
