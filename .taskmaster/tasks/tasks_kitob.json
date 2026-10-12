@@ -694,7 +694,7 @@
     "id": "KITOB-02-STATUS",
     "group": "02",
     "title": "Shared enrollment status semantic tokens",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": [
       "KITOB-01-01"
     ],
