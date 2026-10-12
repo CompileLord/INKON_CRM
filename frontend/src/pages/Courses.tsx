@@ -123,9 +123,36 @@ export function Courses() {
   });
   const toastTimeoutRef = useRef<number | undefined>(undefined);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const addCourseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const editInvokerRef = useRef<HTMLElement | null>(null);
   const deleteInvokerRef = useRef<HTMLElement | null>(null);
   const duplicateInvokerRef = useRef<HTMLElement | null>(null);
   const deleteSuccessRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const operationGenerationRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      operationGenerationRef.current++;
+    };
+  }, []);
+
+  const getFormFinalFocus = (): HTMLElement | null => {
+    if (editingCourse) {
+      const invoker = editInvokerRef.current;
+      if (invoker && invoker.isConnected) {
+        return invoker;
+      }
+    } else {
+      const addBtn = addCourseButtonRef.current;
+      if (addBtn && addBtn.isConnected) {
+        return addBtn;
+      }
+    }
+    return searchInputRef.current;
+  };
 
   const getDeleteFinalFocus = (): HTMLElement | null => {
     if (deleteSuccessRef.current) {
@@ -296,7 +323,8 @@ export function Courses() {
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
-  const handleStartEdit = (course: CourseResponse) => {
+  const handleStartEdit = (course: CourseResponse, triggerElement?: HTMLElement | null) => {
+    editInvokerRef.current = triggerElement ?? null;
     setEditingCourse(course);
     setPanelOpen(true);
   };
@@ -310,12 +338,14 @@ export function Courses() {
 
   const handleCancelDuplicate = () => {
     if (isCopyPending) return;
+    operationGenerationRef.current++;
     setCopyConfirmOpen(false);
     setCopyErrorMessage(undefined);
   };
 
   const handleConfirmCopy = async () => {
     if (!copyTargetCourse || isCopyPending) return;
+    const opGen = ++operationGenerationRef.current;
     setCopyErrorMessage(undefined);
     setIsCopyPending(true);
     try {
@@ -323,10 +353,12 @@ export function Courses() {
       try {
         schedule = await getCourseSchedule(copyTargetCourse.id);
       } catch {
+        if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
         setCopyErrorMessage(t("courseCopyError"));
         setIsCopyPending(false);
         return;
       }
+      if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
       if (!schedule || schedule.length === 0) {
         setCopyErrorMessage(t("courseCopyMissingSchedule"));
         setIsCopyPending(false);
@@ -350,6 +382,7 @@ export function Courses() {
         id: copyTargetCourse.id,
         payload,
       });
+      if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
       setCopyConfirmOpen(false);
       setCopyTargetCourse(undefined);
       setCopyErrorMessage(undefined);
@@ -357,9 +390,12 @@ export function Courses() {
       handleNavigateOut();
       navigate(`/courses/${created.id}`);
     } catch {
+      if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
       setCopyErrorMessage(t("courseCopyError"));
     } finally {
-      setIsCopyPending(false);
+      if (isMountedRef.current && operationGenerationRef.current === opGen) {
+        setIsCopyPending(false);
+      }
     }
   };
 
@@ -373,20 +409,24 @@ export function Courses() {
 
   const handleCancelDelete = () => {
     if (deleteMutation.isPending) return;
+    operationGenerationRef.current++;
     setDeleteConfirmOpen(false);
     setDeleteErrorMessage(undefined);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTargetCourse || deleteMutation.isPending) return;
+    const opGen = ++operationGenerationRef.current;
     setDeleteErrorMessage(undefined);
     try {
       await deleteMutation.mutateAsync(deleteTargetCourse.id);
+      if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
       deleteSuccessRef.current = true;
       setDeleteConfirmOpen(false);
       setDeleteErrorMessage(undefined);
       showToast(t("courseDeleted"));
     } catch {
+      if (!isMountedRef.current || operationGenerationRef.current !== opGen) return;
       setDeleteErrorMessage(t("courseDeleteError"));
     }
   };
@@ -432,6 +472,7 @@ export function Courses() {
 
         {isSuperAdmin ? (
           <Button
+            ref={addCourseButtonRef}
             variant="primary"
             onClick={() => {
               setEditingCourse(undefined);
@@ -773,6 +814,7 @@ export function Courses() {
         <CourseFormPanel
           open={panelOpen}
           course={editingCourse}
+          finalFocus={getFormFinalFocus}
           onClose={() => {
             setPanelOpen(false);
             setEditingCourse(undefined);
