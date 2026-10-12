@@ -1,6 +1,19 @@
+import type { TokenPair } from "./types";
+
 type LogoutListener = () => void;
+type RefreshListener = (tokens: TokenPair) => void;
 
 const listeners = new Set<LogoutListener>();
+const refreshListeners = new Set<RefreshListener>();
+
+export function onSessionRefresh(listener: RefreshListener): () => void {
+  refreshListeners.add(listener);
+  return () => refreshListeners.delete(listener);
+}
+
+export function emitSessionRefresh(tokens: TokenPair): void {
+  for (const listener of refreshListeners) listener(tokens);
+}
 
 /**
  * Fired when the session ends outside of an explicit user action — i.e. the

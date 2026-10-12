@@ -1,41 +1,39 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { useAuthStore } from "../store/authStore";
+import { getSafeRedirect, resolveLandingPath } from "./postAuthRedirect";
+import * as profiles from "./users/endpoints";
 
-vi.mock("./users/endpoints", () => ({
-  getMyStudentProfile: vi.fn(),
-  getMyMentorProfile: vi.fn(),
-}));
+afterEach(() => useAuthStore.getState().setUnauthenticated());
 
-const { getMyStudentProfile, getMyMentorProfile } = await import("./users/endpoints");
-const { resolveLandingPath } = await import("./postAuthRedirect");
-
-beforeEach(() => {
-  vi.mocked(getMyStudentProfile).mockReset();
-  vi.mocked(getMyMentorProfile).mockReset();
-});
-
-describe("resolveLandingPath", () => {
-  it("returns the student profile path when getMyStudentProfile succeeds", async () => {
-    vi.mocked(getMyStudentProfile).mockResolvedValue({
-      user: { id: 42 },
-    } as Awaited<ReturnType<typeof getMyStudentProfile>>);
-
-    await expect(resolveLandingPath()).resolves.toBe("/students/42");
-    expect(getMyMentorProfile).not.toHaveBeenCalled();
+describe("identity-owned landing context", () => {
+  it.each([
+    ["student", 42, "/students/42"],
+    ["mentor", 7, "/mentors/7"],
+    ["superadmin", 1, "/"],
+    ["accountant", 2, "/"],
+  ] as const)("uses %s identity without probing unauthorized profile endpoints", async (role, id, path) => {
+    const studentLookup = vi.spyOn(profiles, "getMyStudentProfile");
+    const mentorLookup = vi.spyOn(profiles, "getMyMentorProfile");
+    const payload = { sub: String(id), role, exp: Math.floor(Date.now() / 1000) + 3600 };
+    const token = `header.${btoa(JSON.stringify(payload))}.unit-fixture`;
+    useAuthStore.getState().setAuthenticated(token, null, false);
+    await expect(resolveLandingPath()).resolves.toBe(path);
+    expect(studentLookup).not.toHaveBeenCalled();
+    expect(mentorLookup).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 
-  it("falls back to the mentor profile path when the student lookup fails", async () => {
-    vi.mocked(getMyStudentProfile).mockRejectedValue(new Error("not a student"));
-    vi.mocked(getMyMentorProfile).mockResolvedValue({
-      user: { id: 7 },
-    } as Awaited<ReturnType<typeof getMyMentorProfile>>);
-
-    await expect(resolveLandingPath()).resolves.toBe("/mentors/7");
-  });
-
-  it("falls back to the dashboard when neither lookup succeeds", async () => {
-    vi.mocked(getMyStudentProfile).mockRejectedValue(new Error("nope"));
-    vi.mocked(getMyMentorProfile).mockRejectedValue(new Error("nope"));
-
-    await expect(resolveLandingPath()).resolves.toBe("/");
+  it("handles internal redirects safely and rejects open redirect attempts", () => {
+    expect(getSafeRedirect("/courses", "/")).toBe("/courses");
+    expect(getSafeRedirect("/journals?period=2", "/")).toBe("/journals?period=2");
+    expect(getSafeRedirect(null, "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("//evil.com", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("//evil.com/path", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("/\\evil.com", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("\\evil.com", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("/foo\\bar", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("https://evil.com", "/fallback")).toBe("/fallback");
+    expect(getSafeRedirect("javascript:alert(1)", "/fallback")).toBe("/fallback");
   });
 });

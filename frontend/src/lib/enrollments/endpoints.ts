@@ -1,5 +1,15 @@
 import { httpClient } from "../auth/httpClient";
-import type { EnrollmentCreate, EnrollmentResponse, ListEnrollmentsParams, PaginatedEnrollments } from "./types";
+import type {
+  CourseRosterParams,
+  CourseRosterResponse,
+  EligibleCandidatesParams,
+  EnrollmentCreate,
+  EnrollmentResponse,
+  ListEnrollmentsParams,
+  PaginatedEligibleCandidates,
+  PaginatedEnrollments,
+  RosterLocationResponse,
+} from "./types";
 
 export function createEnrollment(payload: EnrollmentCreate): Promise<EnrollmentResponse> {
   return httpClient.post<EnrollmentResponse>("/enrollments/", payload).then((res) => res.data);
@@ -11,4 +21,31 @@ export function listEnrollments(params: ListEnrollmentsParams = {}): Promise<Pag
 
 export function withdrawEnrollment(id: number): Promise<EnrollmentResponse> {
   return httpClient.patch<EnrollmentResponse>(`/enrollments/${id}/withdraw`).then((res) => res.data);
+}
+
+export function getCourseRoster(courseId: number, params: CourseRosterParams = {}): Promise<CourseRosterResponse> {
+  return httpClient
+    .get<CourseRosterResponse>(`/enrollments/courses/${courseId}/roster`, { params })
+    .then((res) => res.data);
+}
+
+export function locateRosterStudent(
+  courseId: number,
+  studentId: number,
+  params: Omit<CourseRosterParams, "student_id" | "locate_student_id"> = {}
+): Promise<RosterLocationResponse> {
+  return httpClient
+    .get<RosterLocationResponse>(`/enrollments/courses/${courseId}/roster/locate`, {
+      params: { student_id: studentId, ...params },
+    })
+    .then((res) => res.data);
+}
+
+export function getEligibleCandidates(
+  courseId: number,
+  params: EligibleCandidatesParams = {}
+): Promise<PaginatedEligibleCandidates> {
+  return httpClient
+    .get<PaginatedEligibleCandidates>(`/enrollments/courses/${courseId}/eligible-candidates`, { params })
+    .then((res) => res.data);
 }

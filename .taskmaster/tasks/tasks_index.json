@@ -1,6 +1,7 @@
 {
-  "active_task_file": "tasks_mentor.json",
+  "active_task_file": "tasks_kitob.json",
   "files": [
-    "tasks_mentor.json"
+    "tasks_mentor.json",
+    "tasks_kitob.json"
   ]
 }

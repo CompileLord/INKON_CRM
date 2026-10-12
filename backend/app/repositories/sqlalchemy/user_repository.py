@@ -13,9 +13,9 @@ from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
 
 from collections import defaultdict
-from app.core.schedule_utils import compute_next_lesson_at
 from app.core.scoring import score_percentage
 from app.models.course_schedule import CourseSchedule
+from app.schemas.schedule import CourseScheduleRuleDTO
 
 
 class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
@@ -173,11 +173,17 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 for cid, avg_val, att_cnt, tot_les, p_graded in student_course_res.all()
             }
 
-            schedules_query = select(CourseSchedule).filter(CourseSchedule.course_id.in_(course_ids))
+            schedules_query = select(
+                CourseSchedule.course_id,
+                CourseSchedule.day_of_week,
+                CourseSchedule.time_start,
+            ).filter(CourseSchedule.course_id.in_(course_ids))
             schedules_res = await self.session.execute(schedules_query)
             schedules_by_course = defaultdict(list)
-            for s in schedules_res.scalars().all():
-                schedules_by_course[s.course_id].append(s)
+            for cid, dow, t_start in schedules_res.all():
+                schedules_by_course[cid].append(
+                    CourseScheduleRuleDTO(day_of_week=dow, time_start=t_start)
+                )
 
             rank_map = {}
             for cid in course_ids:
@@ -215,7 +221,6 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 c_att = st_info["attendance_count"]
                 c_abs = c_tot - c_att
                 c_att_pct = round((c_att * 100.0 / c_tot), 1) if c_tot > 0 else 100.0
-                next_dt = compute_next_lesson_at(schedules_by_course.get(course.id, [])) if is_active else None
 
                 courses_data.append({
                     "course": course,
@@ -229,7 +234,8 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     "my_rank": rank_map.get(course.id, 1),
                     "class_size": class_size_map.get(course.id, 0),
                     "class_avg_percentage": class_avg_map.get(course.id, 0.0),
-                    "next_lesson_at": next_dt
+                    "schedules": schedules_by_course.get(course.id, []),
+                    "next_lesson_at": None
                 })
 
         return {

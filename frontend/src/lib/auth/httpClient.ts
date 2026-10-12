@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from "axios";
 import { API_BASE_URL } from "./env";
 import { AuthApiError, NetworkError } from "./errors";
-import { emitLogout } from "./session";
+import { emitLogout, emitSessionRefresh } from "./session";
 import { tokenStorage } from "./tokenStorage";
 import type { HTTPValidationError, TokenPair, ValidationErrorItem } from "./types";
 
@@ -35,13 +35,21 @@ httpClient.interceptors.request.use((config) => {
 
 let refreshPromise: Promise<TokenPair> | null = null;
 
+class SessionChangedError extends Error {}
+
 function performRefresh(): Promise<TokenPair> {
   const refreshToken = tokenStorage.getRefreshToken();
   if (!refreshToken) return Promise.reject(new Error("No refresh token available"));
 
   return httpClient
     .post<TokenPair>("/auth/refresh", { refresh_token: refreshToken }, { skipAuth: true })
-    .then((res) => res.data);
+    .then((res) => {
+      if (tokenStorage.getRefreshToken() !== refreshToken) throw new SessionChangedError();
+      const tokens = res.data;
+      tokenStorage.setTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token });
+      emitSessionRefresh(tokens);
+      return tokens;
+    });
 }
 
 /** Deduped: concurrent 401s across in-flight requests share one refresh call. */
@@ -67,17 +75,18 @@ httpClient.interceptors.response.use(
     const config = error.config;
 
     if (status === 401 && config && !config.skipAuth && !config._retried) {
+      const previousAccessToken = tokenStorage.getAccessToken();
+      let refreshedAccessToken: string | null = null;
       try {
         const tokens = await refreshAccessToken();
-        tokenStorage.setTokens({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-        });
+        refreshedAccessToken = tokens.access_token;
         config._retried = true;
         return await httpClient.request(config);
-      } catch {
-        tokenStorage.clear();
-        emitLogout();
+      } catch (refreshError) {
+        if (!(refreshError instanceof SessionChangedError) && tokenStorage.getAccessToken() === (refreshedAccessToken ?? previousAccessToken)) {
+          tokenStorage.clear();
+          emitLogout();
+        }
         throw new AuthApiError(401, detailFrom(data));
       }
     }

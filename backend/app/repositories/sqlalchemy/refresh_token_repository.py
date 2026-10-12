@@ -31,6 +31,7 @@ class SQLAlchemyRefreshTokenRepository(SQLAlchemyBaseRepository[RefreshToken], R
             RefreshToken.token_hash == token_hash,
             RefreshToken.revoked_at == None,
             RefreshToken.expires_at > now
-        )
+        ).limit(2)
         result = await self.session.execute(query)
-        return result.scalars().first()
+        matches: list[RefreshToken] = list(result.scalars().all())
+        return matches[0] if len(matches) == 1 else None

@@ -1,6 +1,6 @@
 # Agent Guidelines & Environment
 
-In this project, we use the `conda base` environment for Python and system commands.
+Use the available system environment for Python and system commands.
 # Development Rules & Guidelines (RULES.md)
 
 This file contains the strict coding standards, architectural rules, and workflow processes that all developers and AI coding agents (Cursor, Windsurf, Claude Code, etc.) must follow when working on the **IMKON CRM** project.
@@ -73,12 +73,28 @@ All AI coding assistants must follow this workflow to maintain project synchroni
 - Always process tasks in order of their dependencies. Do not jump to Task 19 before Task 3 is completed.
 - If a blocker is encountered, report it immediately, but keep other completed tasks marked as `"completed"`.
 
+### 4.3. Documentation ownership and recovery
+- These rules apply to planners, orchestrators, auditors and implementation agents, including delegated agy executors.
+- Start recovery with `git status`, [the documentation index](docs/README.md), `.taskmaster/tasks/tasks_index.json` and only the active task's record in [ledger.json](docs/redesign-execution/ledger.json). Read [SUBGROUPS.md](docs/redesign-execution/SUBGROUPS.md) for session and ownership boundaries. Do not load every historical audit, result or gallery into context.
+- Taskmaster owns task definitions, dependencies and status. The ledger owns saved conversation IDs, current attempts, worktrees, ownership, blockers, accepted commits and evidence pointers. Do not duplicate task descriptions, design specifications, full transcripts or directory inventories in the ledger. Git commits provide changed-file history; record only necessary source changes or contract boundaries.
+- The orchestrator alone updates task status and the ledger during delegated work. Executors implement, test, inspect their renders and return a concise result; they do not create plans, tracking documents or audit verdicts unless that is their explicitly assigned task.
+- Update status when a task starts, finishes or becomes blocked. Do not write progress documents or change plans after each command, retry or routine check. Keep approved specifications stable; failed implementation must be corrected rather than excused by a plan edit.
+
+### 4.4. Bounded handoffs and evidence
+- Use one reusable `handoff.md` per active task. Replace its unresolved correction section on retry; keep the task's acceptance criteria, exact prerequisite sections and allowed scope. Do not create `handoff-02.md`, `handoff-03.md` or append the whole previous conversation. Use readable sentences; do not compress words together.
+- The orchestrator maintains one `audit.md` per task with the current PASS/FAIL verdict, concrete unresolved defects and evidence. On acceptance, retain the final criteria, exact checks, evidence links and honest gaps. Do not keep separate audits for each attempt or a report that only repeats this audit.
+- Name permitted output paths in every delegation. Executors may create test code and required capture helpers, but documentation/evidence output is restricted to those paths. Return changed files, observed behavior, exact commands/results, screenshots and gaps in the conversation; do not copy a full executor response into another Markdown or JSON file.
+- Keep screenshots and probes in one stable `evidence/` directory per task, with `manifest.json`, `probes.json`, a screenshot folder and at most one final log per required check. Replace superseded captures after their successors are verified. Label simulations; preserve original baseline galleries. Existing accepted historical folders may keep their names to avoid broken links.
+- Raw executor monitors/results and temporary diagnostics stay in the wrapper's temporary directory or `/tmp`, not committed as numbered project artifacts. Persist the session ID and any unresolved failure facts before cleanup. Never delete active inputs, running logs, user files or the only evidence for an unresolved defect.
+- Before completing a task, remove its superseded handoffs, intermediate audits, rejected captures and duplicate logs; verify final evidence links and session recovery information. Use Git history for obsolete retry material, rather than a new archive folder.
+- Keep documentation entry points in `docs/README.md` and `docs/redesign-execution/README.md`. Link the final evidence there when useful; do not introduce another tracker. Create a new document only for an authorized specification, reusable contract, required final evidence or explicitly assigned documentation task.
+
 ---
 
 ## 5. Development Environment & Tooling
 
-### 5.1. Conda Environment
-- **Conda Base**: In this project, we use the `conda base` environment. Do not create, activate, or use a custom conda or Python virtual environment (`venv`). All commands, installations, and testing must run using the default conda `base` environment.
+### 5.1. System Environment
+- Run commands, installations, and tests in the available system environment. Conda is not required.
 
 ---
 

@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useDebts } from "../../lib/finance/hooks";
 import type { DebtItem } from "../../lib/finance/types";
 import { formatSum } from "../../lib/money";
+import { PaymentCompletion } from "./PaymentCompletion";
+import type { PaymentItem } from "../../lib/finance/types";
 import { PaymentModal } from "./PaymentModal";
 import { Pagination } from "../ui/Pagination";
 import { TableSkeletonRows } from "../ui/TableSkeletonRows";
@@ -18,6 +20,7 @@ interface SelectedDebt {
 
 export function DebtorsTab() {
   const { t } = useTranslation(["finance", "common"]);
+  const [recordedPayment, setRecordedPayment] = useState<PaymentItem | null>(null);
   const [page, setPage] = useState<number>(1);
   const { data, isLoading, isError, refetch } = useDebts(page);
   const debts = data?.items ?? [];
@@ -127,6 +130,7 @@ export function DebtorsTab() {
         )}
       </div>
 
+      <PaymentCompletion payment={recordedPayment} />
       {selectedDebt && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
@@ -134,7 +138,7 @@ export function DebtorsTab() {
             setIsPaymentModalOpen(false);
             setSelectedDebt(null);
           }}
-          onSuccess={() => refetch()}
+          onSuccess={payment => { setRecordedPayment(payment); refetch(); }}
           defaultStudentId={selectedDebt.studentId}
           defaultStudentName={selectedDebt.studentName}
           defaultCourseId={selectedDebt.courseId}

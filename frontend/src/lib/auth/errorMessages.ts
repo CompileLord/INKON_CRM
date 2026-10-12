@@ -1,10 +1,346 @@
 import { AuthApiError, NetworkError } from "./errors";
 
-/**
- * Shared status → message mapping for the login/verify-code/set-password
- * screens. 422 is handled separately by each form (field-level errors), so
- * it's not mapped here — callers should check for it first.
- */
+export type AuthErrorKind =
+  | "invalidCredentials"
+  | "forbidden"
+  | "rateLimited"
+  | "serverError"
+  | "networkError"
+  | "genericError";
+
+export function getAuthErrorKind(err: unknown): AuthErrorKind {
+  if (err instanceof AuthApiError) {
+    if (err.status === 401) return "invalidCredentials";
+    if (err.status === 403) return "forbidden";
+    if (err.status === 429) return "rateLimited";
+    if (err.status >= 500) return "serverError";
+    return "genericError";
+  }
+  if (err instanceof NetworkError) return "networkError";
+  if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) return "networkError";
+  return "genericError";
+}
+
+export interface MappedFieldError<T extends string = "email" | "password"> {
+  field: T;
+  messageKey: string;
+  params?: Record<string, unknown>;
+}
+
+export interface ValidationMappingResult<T extends string = "email" | "password"> {
+  fieldErrors: MappedFieldError<T>[];
+  formErrorKey: AuthErrorKind | null;
+}
+
+export function mapValidationError(detail: unknown): ValidationMappingResult {
+  const fieldErrors: MappedFieldError[] = [];
+  if (!Array.isArray(detail) || detail.length === 0) {
+    return { fieldErrors: [], formErrorKey: "genericError" };
+  }
+
+  let hasUnknownField = false;
+
+  for (const item of detail) {
+    if (!item || typeof item !== "object") {
+      hasUnknownField = true;
+      continue;
+    }
+    const loc = Array.isArray((item as { loc?: unknown[] }).loc)
+      ? (item as { loc: unknown[] }).loc
+      : [];
+    if (loc.length === 0) {
+      hasUnknownField = true;
+      continue;
+    }
+    const field = loc[loc.length - 1];
+    const type = typeof (item as { type?: unknown }).type === "string"
+      ? (item as { type: string }).type
+      : "";
+
+    if (field === "email") {
+      if (type === "missing") {
+        fieldErrors.push({ field: "email", messageKey: "validation:required" });
+      } else if (
+        type === "email_parsing" ||
+        type === "value_error.email" ||
+        (type === "value_error" &&
+          typeof (item as { ctx?: { reason?: unknown } }).ctx?.reason === "string")
+      ) {
+        fieldErrors.push({ field: "email", messageKey: "validation:invalidEmail" });
+      } else {
+        fieldErrors.push({ field: "email", messageKey: "auth:genericError" });
+      }
+    } else if (field === "password") {
+      if (type === "missing") {
+        fieldErrors.push({ field: "password", messageKey: "validation:required" });
+      } else {
+        fieldErrors.push({ field: "password", messageKey: "auth:genericError" });
+      }
+    } else {
+      hasUnknownField = true;
+    }
+  }
+
+  const formErrorKey =
+    fieldErrors.length === 0 || hasUnknownField ? "genericError" : null;
+
+  return { fieldErrors, formErrorKey };
+}
+
+export function mapVerifyCodeError(err: unknown): {
+  fieldErrors: MappedFieldError<"email" | "code">[];
+  formErrorKey: string | null;
+} {
+  if (err instanceof AuthApiError) {
+    if (err.status === 422) {
+      const fieldErrors: MappedFieldError<"email" | "code">[] = [];
+      let hasUnknownOrArbitrary = false;
+      if (Array.isArray(err.detail) && err.detail.length > 0) {
+        for (const item of err.detail) {
+          if (!item || typeof item !== "object") {
+            hasUnknownOrArbitrary = true;
+            continue;
+          }
+          const loc = Array.isArray((item as { loc?: unknown[] }).loc)
+            ? (item as { loc: unknown[] }).loc
+            : [];
+          const field = loc[loc.length - 1];
+          const type = typeof (item as { type?: unknown }).type === "string"
+            ? (item as { type: string }).type
+            : "";
+
+          if (field === "email") {
+            if (type === "missing") {
+              fieldErrors.push({ field: "email", messageKey: "validation:required" });
+            } else if (
+              type === "email_parsing" ||
+              type === "value_error.email" ||
+              (type === "value_error" &&
+                typeof (item as { ctx?: { reason?: unknown } }).ctx?.reason === "string")
+            ) {
+              fieldErrors.push({ field: "email", messageKey: "validation:invalidEmail" });
+            } else {
+              fieldErrors.push({ field: "email", messageKey: "auth:genericError" });
+              hasUnknownOrArbitrary = true;
+            }
+          } else if (field === "code") {
+            if (type === "missing") {
+              fieldErrors.push({ field: "code", messageKey: "validation:required" });
+            } else if (type === "string_too_short" || type === "string_too_long") {
+              fieldErrors.push({ field: "code", messageKey: "auth:invalidCode" });
+            } else {
+              fieldErrors.push({ field: "code", messageKey: "auth:genericError" });
+              hasUnknownOrArbitrary = true;
+            }
+          } else {
+            hasUnknownOrArbitrary = true;
+          }
+        }
+      } else {
+        hasUnknownOrArbitrary = true;
+      }
+      return {
+        fieldErrors,
+        formErrorKey: fieldErrors.length === 0 || hasUnknownOrArbitrary ? "genericError" : null,
+      };
+    }
+    if (err.status === 400) {
+      const detailStr = (typeof err.detail === "string" ? err.detail : err.message).trim();
+      if (detailStr === "Verification code expired or not requested") {
+        return { fieldErrors: [], formErrorKey: "codeExpired" };
+      }
+      if (detailStr === "Too many incorrect attempts. Code invalidated.") {
+        return { fieldErrors: [], formErrorKey: "tooManyAttempts" };
+      }
+      if (detailStr === "Invalid verification code") {
+        return {
+          fieldErrors: [{ field: "code", messageKey: "auth:invalidCode" }],
+          formErrorKey: null,
+        };
+      }
+      return { fieldErrors: [], formErrorKey: "genericError" };
+    }
+    if (err.status === 404) {
+      return {
+        fieldErrors: [{ field: "email", messageKey: "auth:userNotFound" }],
+        formErrorKey: null,
+      };
+    }
+    if (err.status === 429) {
+      return { fieldErrors: [], formErrorKey: "rateLimited" };
+    }
+    if (err.status >= 500) {
+      return { fieldErrors: [], formErrorKey: "serverError" };
+    }
+    return { fieldErrors: [], formErrorKey: "genericError" };
+  }
+  if (err instanceof NetworkError) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  return { fieldErrors: [], formErrorKey: "genericError" };
+}
+
+export function mapResendCodeError(err: unknown): {
+  fieldErrors: MappedFieldError<"email" | "code">[];
+  formErrorKey: string | null;
+} {
+  if (err instanceof AuthApiError) {
+    if (err.status === 422) {
+      const fieldErrors: MappedFieldError<"email" | "code">[] = [];
+      let hasUnknownOrArbitrary = false;
+      if (Array.isArray(err.detail) && err.detail.length > 0) {
+        for (const item of err.detail) {
+          if (!item || typeof item !== "object") {
+            hasUnknownOrArbitrary = true;
+            continue;
+          }
+          const loc = Array.isArray((item as { loc?: unknown[] }).loc)
+            ? (item as { loc: unknown[] }).loc
+            : [];
+          const field = loc[loc.length - 1];
+          const type = typeof (item as { type?: unknown }).type === "string"
+            ? (item as { type: string }).type
+            : "";
+
+          if (field === "email") {
+            if (type === "missing") {
+              fieldErrors.push({ field: "email", messageKey: "validation:required" });
+            } else if (
+              type === "email_parsing" ||
+              type === "value_error.email" ||
+              (type === "value_error" &&
+                typeof (item as { ctx?: { reason?: unknown } }).ctx?.reason === "string")
+            ) {
+              fieldErrors.push({ field: "email", messageKey: "validation:invalidEmail" });
+            } else {
+              fieldErrors.push({ field: "email", messageKey: "auth:genericError" });
+              hasUnknownOrArbitrary = true;
+            }
+          } else {
+            hasUnknownOrArbitrary = true;
+          }
+        }
+      } else {
+        hasUnknownOrArbitrary = true;
+      }
+      return {
+        fieldErrors,
+        formErrorKey: fieldErrors.length === 0 || hasUnknownOrArbitrary ? "resendError" : null,
+      };
+    }
+    if (err.status === 400) {
+      const detailStr = (typeof err.detail === "string" ? err.detail : err.message).trim();
+      if (detailStr === "Password already set") {
+        return { fieldErrors: [], formErrorKey: "passwordAlreadySet" };
+      }
+      return { fieldErrors: [], formErrorKey: "resendError" };
+    }
+    if (err.status === 404) {
+      return {
+        fieldErrors: [{ field: "email", messageKey: "auth:userNotFound" }],
+        formErrorKey: null,
+      };
+    }
+    if (err.status === 429) {
+      return { fieldErrors: [], formErrorKey: "rateLimited" };
+    }
+    if (err.status >= 500) {
+      return { fieldErrors: [], formErrorKey: "serverError" };
+    }
+    return { fieldErrors: [], formErrorKey: "resendError" };
+  }
+  if (err instanceof NetworkError) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  return { fieldErrors: [], formErrorKey: "resendError" };
+}
+
+export function mapSetPasswordError(err: unknown): {
+  fieldErrors: MappedFieldError<"newPassword" | "confirmPassword">[];
+  formErrorKey: string | null;
+} {
+  if (err instanceof AuthApiError) {
+    if (err.status === 422) {
+      const fieldErrors: MappedFieldError<"newPassword" | "confirmPassword">[] = [];
+      let hasUnknownOrArbitrary = false;
+      if (Array.isArray(err.detail) && err.detail.length > 0) {
+        for (const item of err.detail) {
+          if (!item || typeof item !== "object") {
+            hasUnknownOrArbitrary = true;
+            continue;
+          }
+          const loc = Array.isArray((item as { loc?: unknown[] }).loc)
+            ? (item as { loc: unknown[] }).loc
+            : [];
+          const field = loc[loc.length - 1];
+          const type = typeof (item as { type?: unknown }).type === "string"
+            ? (item as { type: string }).type
+            : "";
+
+          if (field === "new_password" || field === "newPassword") {
+            if (type === "missing") {
+              fieldErrors.push({ field: "newPassword", messageKey: "validation:required" });
+            } else if (type === "string_too_short") {
+              fieldErrors.push({
+                field: "newPassword",
+                messageKey: "validation:passwordMinLength",
+                params: { min: 8 },
+              });
+            } else {
+              fieldErrors.push({ field: "newPassword", messageKey: "auth:genericError" });
+              hasUnknownOrArbitrary = true;
+            }
+          } else {
+            hasUnknownOrArbitrary = true;
+          }
+        }
+      } else {
+        hasUnknownOrArbitrary = true;
+      }
+      return {
+        fieldErrors,
+        formErrorKey: fieldErrors.length === 0 || hasUnknownOrArbitrary ? "genericError" : null,
+      };
+    }
+    if (err.status === 400) {
+      const detailStr = (typeof err.detail === "string" ? err.detail : err.message).trim();
+      if (detailStr === "Password must be at least 8 characters and contain at least 1 digit") {
+        return {
+          fieldErrors: [{ field: "newPassword", messageKey: "auth:passwordPolicyError" }],
+          formErrorKey: null,
+        };
+      }
+      return { fieldErrors: [], formErrorKey: "setPasswordError" };
+    }
+    if (err.status === 401) {
+      return { fieldErrors: [], formErrorKey: "setPasswordError" };
+    }
+    if (err.status === 404) {
+      return { fieldErrors: [], formErrorKey: "userNotFound" };
+    }
+    if (err.status === 429) {
+      return { fieldErrors: [], formErrorKey: "rateLimited" };
+    }
+    if (err.status >= 500) {
+      return { fieldErrors: [], formErrorKey: "serverError" };
+    }
+    return { fieldErrors: [], formErrorKey: "setPasswordError" };
+  }
+  if (err instanceof NetworkError) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+    return { fieldErrors: [], formErrorKey: "networkError" };
+  }
+  return { fieldErrors: [], formErrorKey: "setPasswordError" };
+}
+
 export function describeAuthError(err: unknown, wrongCredentialsMessage: string): string {
   if (err instanceof AuthApiError) {
     if (err.status === 401) return wrongCredentialsMessage;

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { applyTheme, getEffectiveTheme, getStoredTheme, setStoredTheme, type ThemeMode } from "../lib/theme";
+import { applyTheme, getEffectiveTheme, getStoredTheme, setStoredTheme, subscribeTheme, type ThemeMode } from "../lib/theme";
 
 interface ThemeState {
   theme: ThemeMode;
@@ -27,3 +27,10 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     get().setTheme(nextTheme);
   },
 }));
+
+subscribeTheme((effectiveTheme, mode) => {
+  const current = useThemeStore.getState();
+  if (current.effectiveTheme !== effectiveTheme || current.theme !== mode) {
+    useThemeStore.setState({ effectiveTheme, theme: mode });
+  }
+});

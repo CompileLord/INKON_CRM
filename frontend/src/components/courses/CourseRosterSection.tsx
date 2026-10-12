@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, UserPlus, Users } from "lucide-react";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -15,17 +15,24 @@ import { useAuthStore } from "../../store/authStore";
 interface CourseRosterSectionProps {
   courseId: number;
   onToast: (message: string, variant: "success" | "error") => void;
+  onReady?: () => void;
 }
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export function CourseRosterSection({ courseId, onToast }: CourseRosterSectionProps) {
+export function CourseRosterSection({ courseId, onToast, onReady }: CourseRosterSectionProps) {
   const role = useAuthStore((s) => s.role);
   const isSuperAdmin = role === "superadmin";
 
   const { rows, unresolvedCount, isLoading, isError, refetch } = useCourseRoster(courseId);
+
+  useEffect(() => {
+    if (!isLoading) {
+      onReady?.();
+    }
+  }, [isLoading, onReady]);
   const enrollStudent = useEnrollStudent();
   const withdrawEnrollment = useWithdrawEnrollment();
 

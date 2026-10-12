@@ -1,55 +1,28 @@
-import { useState } from "react";
-import { Search, Bell } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft, Bell, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NotificationPopover } from "./notifications/NotificationPopover";
-import { QuickSettingsChanger } from "./ui/QuickSettingsChanger";
-import { useUnreadNotificationCount } from "../lib/notifications/hooks";
+import { useAuthStore } from "../store/authStore";
+import { useShellStore } from "../store/shellStore";
+import { Button } from "./ui/Button";
+import { BrandLogo } from "./ui/BrandLogo";
+import { UnreadBadge } from "./notifications/UnreadBadge";
+import { routeContext } from "./shell/navigation";
 
 export function Header() {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { t } = useTranslation("common");
-  const { data: unreadData } = useUnreadNotificationCount();
-  const unreadCount = unreadData?.unread_count ?? 0;
-
-  return (
-    <header className="border-b border-border bg-cream px-4 py-4 md:px-8 transition-colors duration-150">
-      <div className="flex items-center justify-between gap-4">
-        {/* Search Input */}
-        <div className="relative w-full max-w-120 mx-auto">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="text"
-            placeholder={t("search")}
-            className="w-full rounded-full border border-border bg-card py-2.5 pl-11 pr-4 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
-          />
-        </div>
-
-        {/* Header Right Actions */}
-        <div className="relative flex items-center gap-3">
-          <QuickSettingsChanger />
-
-          <button
-            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-            className="relative rounded-full border border-border bg-card p-2.5 text-muted hover:bg-cream hover:text-ink active:scale-95 transition-[background-color,transform,color,border-color] duration-150 ease-out shadow-xs"
-            title={t("nav.notifications")}
-          >
-            <Bell size={18} />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-maroon text-[10px] font-bold text-white tabular-nums">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
-
-          <NotificationPopover
-            isOpen={isPopoverOpen}
-            onClose={() => setIsPopoverOpen(false)}
-          />
-        </div>
+  const { pathname } = useLocation();
+  const { role, userId } = useAuthStore();
+  const { surface, toggle } = useShellStore();
+  if (!role) return null;
+  const context = routeContext(pathname, role, userId);
+  const reference = context.parent ? pathname.split("/").filter(Boolean).at(-1) : null;
+  return <header className="sticky top-0 z-30 border-b border-border bg-cream [overflow-wrap:anywhere] px-4 pt-[env(safe-area-inset-top)] lg:px-8">
+    <div className="flex min-h-14 items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">{context.parent ? <Link to={context.parent.to} aria-label={t("shell.backTo", { destination: t(context.parent.key) })} className="flex min-h-11 min-w-11 items-center justify-center rounded-[10px] text-maroon focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft size={20}/></Link> : <div className="lg:hidden"><BrandLogo variant="emblem" size="sm"/></div>}<span className="min-w-0 break-words text-sm text-muted">{reference ? t("shell.detail", { destination: t(context.key), reference }) : t(context.key)}</span></div>
+      <div className="flex shrink-0 gap-2">
+        <div className={role === "student" || role === "accountant" ? "hidden lg:block" : ""}><Button type="button" variant="secondary" aria-label={t("nav.notifications")} aria-expanded={surface === "notifications"} aria-controls={surface === "notifications" ? "shell-surface" : undefined} onClick={(event) => toggle("notifications", event.currentTarget)} className="px-2"><Bell size={20} aria-hidden="true"/><UnreadBadge/></Button></div>
+        <Button type="button" variant="secondary" data-shell-settings aria-label={t("theme.settings")} aria-expanded={surface === "settings"} aria-controls={surface === "settings" ? "shell-surface" : undefined} onClick={(event) => toggle("settings", event.currentTarget)} className="px-3"><Settings size={20} aria-hidden="true"/></Button>
       </div>
-    </header>
-  );
+    </div>
+  </header>;
 }

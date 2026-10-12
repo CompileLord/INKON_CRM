@@ -3,6 +3,7 @@ import {
   addMoney,
   compareMoney,
   formatMoney,
+  formatExactMoney,
   isPositiveMoney,
   isValidMoneyString,
   subtractMoney,
@@ -75,5 +76,14 @@ describe("arithmetic helpers", () => {
     expect(isPositiveMoney("0.0001")).toBe(true);
     expect(isPositiveMoney("0")).toBe(false);
     expect(isPositiveMoney("-1")).toBe(false);
+  });
+});
+
+describe("exact payment display", () => {
+  it("retains every supplied fractional digit and huge integer digits", () => {
+    expect(formatExactMoney("12345678901234567890.1234567890123456789")).toBe("12 345 678 901 234 567 890.1234567890123456789");
+    expect(formatExactMoney("0.001")).toBe("0.001");
+    expect(formatExactMoney("0")).toBe("0.00");
+    expect(formatExactMoney("1234.5")).toBe("1 234.50");
   });
 });

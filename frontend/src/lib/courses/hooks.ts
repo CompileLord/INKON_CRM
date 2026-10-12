@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AuthApiError } from "../auth/errors";
 import {
   copyCourse,
   createCourse,
@@ -32,6 +33,18 @@ export function useCourse(id: number | undefined) {
     queryKey: ["courses", "detail", id],
     queryFn: () => getCourse(id!),
     enabled: id !== undefined,
+    retry: (failureCount, error) => {
+      const status =
+        error instanceof AuthApiError
+          ? error.status
+          : typeof error === "object" && error !== null
+            ? (error as { status?: number }).status
+            : undefined;
+      if (status === 401 || status === 403 || status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 }
 

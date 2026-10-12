@@ -1,8 +1,23 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getStudentProfile } from "../users/endpoints";
 import type { StudentProfileResponse, User } from "../users/types";
-import { createEnrollment, listEnrollments, withdrawEnrollment } from "./endpoints";
-import type { EnrollmentCreate, EnrollmentResponse } from "./types";
+import {
+  createEnrollment,
+  getCourseRoster,
+  getEligibleCandidates,
+  listEnrollments,
+  locateRosterStudent,
+  withdrawEnrollment,
+} from "./endpoints";
+import type {
+  CourseRosterParams,
+  CourseRosterResponse,
+  EligibleCandidatesParams,
+  EnrollmentCreate,
+  EnrollmentResponse,
+  PaginatedEligibleCandidates,
+  RosterLocationResponse,
+} from "./types";
 
 const PAGE_SIZE = 100;
 
@@ -57,6 +72,15 @@ export function useEnrollmentsTotal(enabled: boolean = true) {
     queryKey: ["enrollments", "total"],
     queryFn: () => listEnrollments({ page: 1, page_size: 1 }).then((res) => res.total),
     enabled,
+  });
+}
+
+export function useCourseEnrollmentsCount(courseId: number | undefined, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["enrollments", "count-by-course", courseId],
+    queryFn: () =>
+      listEnrollments({ course_id: courseId!, page: 1, page_size: 1 }).then((res) => res.total),
+    enabled: courseId !== undefined && enabled,
   });
 }
 
@@ -147,6 +171,39 @@ export function useCourseRoster(courseId: number | undefined) {
   return { rows, unresolvedCount, isLoading, isError, refetch: enrollments.refetch };
 }
 
+export function useCourseRosterPage(courseId: number | undefined, params?: CourseRosterParams) {
+  return useQuery<CourseRosterResponse>({
+    queryKey: ["enrollments", "courses", courseId, "roster", params],
+    queryFn: () => getCourseRoster(courseId!, params),
+    enabled: courseId !== undefined,
+  });
+}
+
+export function useCourseRosterLocation(
+  courseId: number | undefined,
+  studentId: number | undefined,
+  params?: Omit<CourseRosterParams, "student_id" | "locate_student_id">,
+  enabled: boolean = true
+) {
+  return useQuery<RosterLocationResponse>({
+    queryKey: ["enrollments", "courses", courseId, "roster", "locate", studentId, params],
+    queryFn: () => locateRosterStudent(courseId!, studentId!, params),
+    enabled: courseId !== undefined && studentId !== undefined && enabled,
+  });
+}
+
+export function useEligibleCandidates(
+  courseId: number | undefined,
+  params?: EligibleCandidatesParams,
+  enabled: boolean = true
+) {
+  return useQuery<PaginatedEligibleCandidates>({
+    queryKey: ["enrollments", "courses", courseId, "eligible-candidates", params],
+    queryFn: () => getEligibleCandidates(courseId!, params),
+    enabled: courseId !== undefined && enabled,
+  });
+}
+
 export function useEnrollStudent() {
   const queryClient = useQueryClient();
 
@@ -155,6 +212,7 @@ export function useEnrollStudent() {
     onSuccess: (enrollment) => {
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-course", enrollment.course_id] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-student", enrollment.student_id] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "courses", enrollment.course_id] });
       queryClient.invalidateQueries({
         queryKey: ["users", "students", "profile", enrollment.student_id],
       });
@@ -176,6 +234,7 @@ export function useWithdrawEnrollment() {
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-course", variables.courseId] });
       queryClient.invalidateQueries({ queryKey: ["enrollments", "by-student", variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "courses", variables.courseId] });
       queryClient.invalidateQueries({
         queryKey: ["users", "students", "profile", variables.studentId],
       });

@@ -1,5 +1,5 @@
 {
-  "appName": "IMKON CRM",
+  "appName": "KITOB CRM",
   "search": "Search...",
   "cancel": "Cancel",
   "save": "Save",
@@ -78,10 +78,63 @@
     "audit": "Audit",
     "settings": "Settings",
     "notifications": "Notifications",
-    "logout": "Log out"
+    "logout": "Log out",
+    "home": "Home",
+    "ownProfile": "My profile"
+  },
+  "brand": {
+    "name": "KITOB",
+    "subtitle": "Educational Center",
+    "fullTitle": "KITOB Educational Center",
+    "logoAlt": "KITOB Educational Center logo",
+    "emblemAlt": "KITOB book emblem"
+  },
+  "theme": {
+    "settings": "Theme and language settings",
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System theme",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  },
+  "controls": {
+    "loading": "Loading...",
+    "toggle": "Toggle switch",
+    "unknownPerson": "Person name unavailable"
   },
   "pagination": {
     "previous": "Previous page",
     "next": "Next page"
+  },
+  "shell": {
+    "navigation": "Main navigation",
+    "more": "More",
+    "skip": "Skip to content",
+    "backTo": "Back to {{destination}}",
+    "theme": "Theme",
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "ru": "Русский",
+      "tg": "Тоҷикӣ"
+    },
+    "unread": "Unread notifications: {{count}}",
+    "unreadUnavailable": "Unread count unavailable",
+    "stale": "The latest update failed. Previous information is shown.",
+    "notifications": "Your notifications",
+    "notificationsEmpty": "Results and reminders for your account will appear here.",
+    "notificationsFailed": "Notifications could not be loaded. Try again.",
+    "read": "Read",
+    "unreadState": "Unread",
+    "markRead": "Mark as read",
+    "retryRead": "Retry marking as read",
+    "readFailed": "Could not mark this notification as read. Try again.",
+    "history": "View notification history",
+    "events": {
+      "result": "Exam result",
+      "reminder": "Payment reminder",
+      "generic": "Account notification"
+    },
+    "detail": "{{destination}} · {{reference}}"
   }
 }

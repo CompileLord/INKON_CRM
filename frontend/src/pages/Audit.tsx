@@ -34,7 +34,7 @@ export function Audit() {
   const filteredLogs = logs.filter((log) => {
     const matchesAction = actionFilter === "ALL" || log.action === actionFilter;
     const matchesQuery =
-      (log.user_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (log.user_id ? t("dashboard:userWithId", { id: log.user_id }) : t("dashboard:systemUser")).toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.entity_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (log.field_name || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesAction && matchesQuery;
@@ -119,7 +119,7 @@ export function Audit() {
                     <td className="py-3.5 text-muted whitespace-nowrap tabular-nums">
                       {formatDateTime(log.created_at, i18n.language)}
                     </td>
-                    <td className="py-3.5 font-bold text-ink">{log.user_name || `User #${log.user_id}`}</td>
+                    <td className="py-3.5 font-bold text-ink">{log.user_id ? t("dashboard:userWithId", { id: log.user_id }) : t("dashboard:systemUser")}</td>
                     <td className="py-3.5">{getActionBadge(log.action)}</td>
                     <td className="py-3.5">
                       <span className="font-semibold text-ink">{log.entity_type}</span>
@@ -176,7 +176,7 @@ export function Audit() {
             <div className="mt-4 flex flex-col gap-3 text-xs">
               <div>
                 <span className="font-semibold text-muted">{t("user")}:</span>{" "}
-                <span className="font-bold text-ink">{selectedLog.user_name}</span>
+                <span className="font-bold text-ink">{selectedLog.user_id ? t("dashboard:userWithId", { id: selectedLog.user_id }) : t("dashboard:systemUser")}</span>
               </div>
               <div>
                 <span className="font-semibold text-muted">{t("time")}:</span>{" "}

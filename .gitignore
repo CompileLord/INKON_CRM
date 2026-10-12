@@ -1,10 +1,13 @@
 __pycache__/
-./tasks/
 *.py[cod]
 *$py.class
 *.so
+node_modules/
 .omc/
 **/.omc/
+.impeccable/
+.wrangler/
+.vite/
 backend/scripts/.seed_cache/
 backend/storage/
 .Python
@@ -53,5 +56,16 @@ storage/avatar/*
 storage/student/*
 !storage/student/.gitkeep
 tasks/
-.omc/
-.wrangler/
+
+# Screenshots and visual captures
+**/screenshots/
+screenshots/
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/*.webp
+docs/**/*.html
+
+# Redesign execution - exclude everything except README.md
+docs/redesign-execution/*
+!docs/redesign-execution/README.md

@@ -15,10 +15,10 @@ export function Dashboard() {
   if (role === "student") return <StudentDashboard />;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 @container">
       <GreetingBanner />
       <StatsRow />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 @[840px]:grid-cols-[3fr_2fr] gap-4">
         <AttentionList />
         <ActivityFeed />
       </div>

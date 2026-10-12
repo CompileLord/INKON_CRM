@@ -1771,6 +1771,178 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## GET /api/v1/enrollments/courses/{course_id}/roster
+
+**Summary:** Get Course Roster
+
+**Parameters:**
+- `course_id` [path] *(required)*
+- `page` [query]
+- `page_size` [query]
+- `search` [query]
+- `status` [query]
+- `sort` [query]
+- `student_id` [query]
+- `locate_student_id` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "id": integer,
+        "enrollment_id": integer,
+        "student_id": integer,
+        "course_id": integer,
+        "price_at_enrollment": string,
+        "color_hex": string,
+        "enrolled_at": string,
+        "status": "active" | "withdrawn" | "completed",
+        "student": {
+          "id": any,
+          "first_name": any,
+          "last_name": any,
+          "email": any,
+          "phone?": any,
+          "photo_path?": any,
+          "thumbnail_path?": any,
+        },
+      }
+    ],
+    "total": integer,
+    "page": integer,
+    "page_size": integer,
+    "total_pages": integer,
+    "active_count": integer,
+    "located_page?": integer,
+    "located_index?": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/enrollments/courses/{course_id}/roster/locate
+
+**Summary:** Locate Course Roster Student
+
+**Parameters:**
+- `course_id` [path] *(required)*
+- `student_id` [query] *(required)*
+- `page_size` [query]
+- `search` [query]
+- `status` [query]
+- `sort` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "student_id": integer,
+    "enrollment_id": integer,
+    "page": integer,
+    "index": integer,
+    "total": integer,
+    "item": {
+      "id": integer,
+      "enrollment_id": integer,
+      "student_id": integer,
+      "course_id": integer,
+      "price_at_enrollment": string,
+      "color_hex": string,
+      "enrolled_at": string,
+      "status": "active" | "withdrawn" | "completed",
+      "student": {
+        "id": integer,
+        "first_name": string,
+        "last_name": string,
+        "email": string,
+        "phone?": any,
+        "photo_path?": any,
+        "thumbnail_path?": any,
+      },
+    },
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/enrollments/courses/{course_id}/eligible-candidates
+
+**Summary:** Get Course Eligible Candidates
+
+**Parameters:**
+- `course_id` [path] *(required)*
+- `page` [query]
+- `page_size` [query]
+- `search` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "id": integer,
+        "first_name": string,
+        "last_name": string,
+        "email": string,
+        "phone?": string,
+        "photo_path?": string,
+        "thumbnail_path?": string,
+      }
+    ],
+    "total": integer,
+    "page": integer,
+    "page_size": integer,
+    "total_pages": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/journals/{id}
 
 **Summary:** Get Journal

@@ -7,6 +7,7 @@ import {
   getMentorAnalytics,
   getMentorProfile,
   getMentors,
+  getMyMentorProfile,
   getMyStudentJournals,
   getMyStudentProfile,
   getStudentProfile,
@@ -155,5 +156,12 @@ export function useMentorAnalytics(id: number | undefined) {
     queryKey: ["users", "mentors", "analytics", id],
     queryFn: () => getMentorAnalytics(id!),
     enabled: id !== undefined,
+  });
+}
+
+export function useMyMentorProfile() {
+  return useQuery({
+    queryKey: ["users", "mentors", "profile", "me"],
+    queryFn: () => getMyMentorProfile(),
   });
 }

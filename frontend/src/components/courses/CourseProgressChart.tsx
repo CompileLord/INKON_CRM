@@ -5,21 +5,45 @@ import { AlertCircle, BookOpen, LayoutGrid, Search, Table as TableIcon } from "l
 import type { CourseProgressChartResponse } from "../../lib/courses/types";
 import { PersonAvatar } from "../ui/PersonAvatar";
 
-type SortOption = "avg_desc" | "name_asc" | "latest_desc";
-type ViewMode = "matrix" | "table";
+export type SortOption = "avg_desc" | "name_asc" | "latest_desc";
+export type ViewMode = "matrix" | "table";
 
-interface CourseProgressChartProps {
+export interface CourseProgressChartProps {
   data: CourseProgressChartResponse;
   courseId?: number;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  sortOption?: SortOption;
+  onSortOptionChange?: (sort: SortOption) => void;
+  viewMode?: ViewMode;
+  onViewModeChange?: (view: ViewMode) => void;
 }
 
-export function CourseProgressChart({ data, courseId }: CourseProgressChartProps) {
+export function CourseProgressChart({
+  data,
+  courseId,
+  searchQuery: externalSearchQuery,
+  onSearchQueryChange,
+  sortOption: externalSortOption,
+  onSortOptionChange,
+  viewMode: externalViewMode,
+  onViewModeChange,
+}: CourseProgressChartProps) {
   const { t } = useTranslation(["courses", "common"]);
   const navigate = useNavigate();
 
-  const [sortOption, setSortOption] = useState<SortOption>("avg_desc");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("matrix");
+  const [internalSortOption, setInternalSortOption] = useState<SortOption>("avg_desc");
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("matrix");
+
+  const sortOption = externalSortOption !== undefined ? externalSortOption : internalSortOption;
+  const setSortOption = onSortOptionChange || setInternalSortOption;
+
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
+  const setSearchQuery = onSearchQueryChange || setInternalSearchQuery;
+
+  const viewMode = externalViewMode !== undefined ? externalViewMode : internalViewMode;
+  const setViewMode = onViewModeChange || setInternalViewMode;
 
   const filterId = useId();
 

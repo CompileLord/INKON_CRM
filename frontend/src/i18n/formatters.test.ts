@@ -1,0 +1,201 @@
+import { describe, expect, it } from "vitest";
+import {
+  formatDate,
+  formatDateTime,
+  formatTime,
+  formatSchoolLessonDateTime,
+  formatSchoolLessonDate,
+  formatSchoolLessonTime,
+  formatSchoolLessonWeekday,
+  getActiveLocale,
+  SCHOOL_TIMEZONE,
+  getSchoolCalendarDate,
+  formatNumber,
+  schoolCalendarDateToTimestamp,
+  getSchoolMonthRange,
+} from "./formatters";
+
+describe("formatters with timezone support", () => {
+  const sampleInstant = "2026-10-12T04:00:00Z";
+
+  it("exports SCHOOL_TIMEZONE as Asia/Dushanbe", () => {
+    expect(SCHOOL_TIMEZONE).toBe("Asia/Dushanbe");
+  });
+
+  it("formats school lesson datetime in Dushanbe timezone (UTC+5)", () => {
+    const formattedRu = formatSchoolLessonDateTime(sampleInstant, "ru");
+    expect(formattedRu).toContain("12.10.2026");
+    expect(formattedRu).toContain("09:00");
+
+    const formattedEn = formatSchoolLessonDateTime(sampleInstant, "en");
+    expect(formattedEn).toContain("10/12/2026");
+    expect(formattedEn).toMatch(/09:00|9:00\s*AM/i);
+
+    const formattedTg = formatSchoolLessonDateTime(sampleInstant, "tg");
+    expect(formattedTg).toMatch(/12[./]10[./]2026/);
+    expect(formattedTg).toContain("09:00");
+  });
+
+  it("formats school lesson date in Dushanbe timezone across midnight UTC boundary", () => {
+    const midnightUtcBoundaryInstant = "2026-10-11T20:30:00Z";
+    const formatted = formatSchoolLessonDate(midnightUtcBoundaryInstant, "ru");
+    expect(formatted).toBe("12.10.2026");
+  });
+
+  it("formats school lesson time in Dushanbe timezone", () => {
+    const formatted = formatSchoolLessonTime(sampleInstant, "ru");
+    expect(formatted).toBe("09:00");
+  });
+
+  it("formats school lesson weekday in Dushanbe timezone across midnight UTC boundary", () => {
+    const midnightUtcBoundaryInstant = "2026-10-11T20:30:00Z";
+    const formattedRu = formatSchoolLessonWeekday(midnightUtcBoundaryInstant, "ru");
+    expect(formattedRu.toLowerCase()).toMatch(/пн/);
+    const formattedEn = formatSchoolLessonWeekday(midnightUtcBoundaryInstant, "en");
+    expect(formattedEn.toLowerCase()).toMatch(/mon/);
+  });
+
+  it("preserves backward compatibility for standard date, time, and datetime formatting", () => {
+    expect(formatDate(null)).toBe("");
+    expect(formatDate(undefined)).toBe("");
+    expect(formatDateTime(null)).toBe("");
+    expect(formatTime(null)).toBe("");
+    expect(formatTime("14:30:00")).toBe("14:30");
+    expect(formatTime("09:15")).toBe("09:15");
+  });
+
+  it("formats valid date-only strings and Date objects against Intl using default and explicit locales", () => {
+    const dateStr = "2026-06-15";
+    const parsedDate = new Date(dateStr);
+
+    const expectedDefault = new Intl.DateTimeFormat(getActiveLocale(), {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(parsedDate);
+    expect(formatDate(dateStr)).toBe(expectedDefault);
+
+    const expectedRu = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(parsedDate);
+    expect(formatDate(dateStr, "ru")).toBe(expectedRu);
+
+    const expectedEn = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(parsedDate);
+    expect(formatDate(dateStr, "en")).toBe(expectedEn);
+
+    const dateObj = new Date(2026, 5, 15);
+    const expectedFromObj = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(dateObj);
+    expect(formatDate(dateObj, "ru")).toBe(expectedFromObj);
+  });
+
+  it("formats valid default datetime and time against Intl without explicit timezone", () => {
+    const isoString = "2026-06-15T14:30:00Z";
+    const parsedDt = new Date(isoString);
+
+    const expectedDefaultDt = new Intl.DateTimeFormat(getActiveLocale(), {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(parsedDt);
+    expect(formatDateTime(isoString)).toBe(expectedDefaultDt);
+
+    const expectedRuDt = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(parsedDt);
+    expect(formatDateTime(isoString, "ru")).toBe(expectedRuDt);
+
+    const expectedDefaultTime = new Intl.DateTimeFormat(getActiveLocale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(parsedDt);
+    expect(formatTime(parsedDt)).toBe(expectedDefaultTime);
+
+    const expectedEnTime = new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(parsedDt);
+    expect(formatTime(parsedDt, "en")).toBe(expectedEnTime);
+  });
+
+  it("handles explicit timezone parameter in base formatters", () => {
+    const formattedNewYork = formatDateTime(sampleInstant, "en", "America/New_York");
+    const expectedNewYork = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/New_York",
+    }).format(new Date(sampleInstant));
+    expect(formattedNewYork).toBe(expectedNewYork);
+
+    const formattedDushanbe = formatDateTime(sampleInstant, "ru", "Asia/Dushanbe");
+    const expectedDushanbe = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Dushanbe",
+    }).format(new Date(sampleInstant));
+    expect(formattedDushanbe).toBe(expectedDushanbe);
+
+    const formattedUtc = formatDate(sampleInstant, "ru", "UTC");
+    const expectedUtc = new Intl.DateTimeFormat("ru-RU", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(sampleInstant));
+    expect(formattedUtc).toBe(expectedUtc);
+  });
+
+  it("returns raw string representation when invalid date is provided", () => {
+    expect(formatDate("not-a-valid-date")).toBe("not-a-valid-date");
+    expect(formatDateTime("not-a-valid-date")).toBe("not-a-valid-date");
+    expect(formatTime("not-a-valid-date")).toBe("not-a-valid-date");
+  });
+});
+
+
+describe("school calendar and localized changing numbers", () => {
+  it("uses the school calendar day across the UTC midnight boundary", () => {
+    expect(getSchoolCalendarDate(new Date("2026-05-31T20:30:00Z"))).toBe("2026-06-01");
+    expect(getSchoolCalendarDate(new Date("2026-05-31T18:30:00Z"))).toBe("2026-05-31");
+  });
+  it("retains valid zero and formats percentages for each active locale", () => {
+    expect(formatNumber(0, "en")).toBe("0");
+    expect(formatNumber(1.25, "ru", { style: "percent" })).toContain("125");
+    expect(formatNumber(1234, "tg")).toBe(new Intl.NumberFormat("tg-TJ").format(1234));
+  });
+});
+
+describe("school payment calendar", () => {
+  it("converts a chosen school day without using the device timezone", () => {
+    expect(schoolCalendarDateToTimestamp("2026-10-11")).toBe("2026-10-10T19:00:00.000Z");
+    expect(schoolCalendarDateToTimestamp("2024-02-29")).toBe("2024-02-28T19:00:00.000Z");
+  });
+  it("rejects malformed and nonexistent dates", () => {
+    for (const invalid of ["", "2026-02-29", "2026-13-01", "2026-01-32", "2026-1-01"]) expect(schoolCalendarDateToTimestamp(invalid)).toBeNull();
+  });
+  it("scopes collection to the whole current school month at a UTC month boundary", () => {
+    expect(getSchoolMonthRange(new Date("2026-10-31T20:00:00Z"))).toEqual({ start: "2026-11-01", end: "2026-11-30" });
+    expect(getSchoolMonthRange(new Date("2024-02-15T00:00:00Z"))).toEqual({ start: "2024-02-01", end: "2024-02-29" });
+  });
+});

@@ -1,97 +1,173 @@
 import { useTranslation } from "react-i18next";
-import { BookOpen, CalendarCheck, Percent, Users } from "lucide-react";
-import type { CourseProgressChartResponse } from "../../lib/courses/types";
+import type { CourseJournalMetricsResponse } from "../../lib/courses/types";
+import { Button } from "../ui/Button";
+import { formatNumber } from "../../i18n/formatters";
+import { RotateCcw } from "lucide-react";
 
 interface CourseDetailMetricsStripProps {
-  enrolledCount: number;
-  progressChart?: CourseProgressChartResponse;
+  enrollmentsTotal?: number;
+  isEnrollmentsLoading?: boolean;
+  isEnrollmentsError?: boolean;
+  onRetryEnrollments?: () => void;
+  journalMetrics?: CourseJournalMetricsResponse;
+  isMetricsLoading?: boolean;
+  isMetricsError?: boolean;
+  onRetryMetrics?: () => void;
 }
 
 export function CourseDetailMetricsStrip({
-  enrolledCount,
-  progressChart,
+  enrollmentsTotal,
+  isEnrollmentsLoading = false,
+  isEnrollmentsError = false,
+  onRetryEnrollments,
+  journalMetrics,
+  isMetricsLoading = false,
+  isMetricsError = false,
+  onRetryMetrics,
 }: CourseDetailMetricsStripProps) {
   const { t } = useTranslation(["courses", "common"]);
 
-  const totalPeriods = progressChart?.labels ? Math.max(0, progressChart.labels.length - 1) : 0;
-  
-  let classAveragePct = 0;
-  let attendanceRatePct = 0;
-
-  if (progressChart?.datasets && progressChart.datasets.length > 0) {
-    let totalPcts = 0;
-    let countPcts = 0;
-    let nonZeroPeriods = 0;
-
-    progressChart.datasets.forEach((dataset) => {
-      if (dataset.percentages && dataset.percentages.length > 0) {
-        const avgVal = dataset.percentages[dataset.percentages.length - 1];
-        totalPcts += avgVal ?? 0;
-        countPcts++;
-
-        const periodPcts = dataset.percentages.slice(0, -1);
-        periodPcts.forEach((p) => {
-          if (p > 0) nonZeroPeriods++;
-        });
-      }
-    });
-
-    classAveragePct = countPcts > 0 ? Math.round(totalPcts / countPcts) : 0;
-    
-    const possibleCellCount = progressChart.datasets.length * totalPeriods;
-    attendanceRatePct = possibleCellCount > 0 ? Math.round((nonZeroPeriods / possibleCellCount) * 100) : 0;
-  }
-
-  const labelClass = "flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted";
-  const valueClass = "mt-2 text-2xl font-bold text-ink";
-  const cardClass = "flex flex-col justify-center rounded-2xl border border-border-warm bg-card px-5 py-4 transition-all duration-200";
-
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <div className={cardClass}>
-        <div className={labelClass}>
-          <Users size={15} className="text-maroon dark:text-maroon-dark" />
-          <span>{t("metrics.students", "Студенты")}</span>
+    <div
+      role="region"
+      aria-label={t("metrics.classAverage")}
+      className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 rounded-xl border border-border bg-strip p-3 sm:p-4 divide-y sm:divide-y-0 sm:divide-x divide-border min-w-0 max-w-full"
+    >
+      <div className="flex flex-col justify-center pt-2 sm:pt-0 sm:px-3 first:pt-0 first:px-0 min-w-0">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted break-words leading-tight">
+          {t("metrics.totalEnrollments")}
+        </span>
+        <div className="mt-1 flex flex-wrap items-baseline gap-2 min-w-0">
+          {isEnrollmentsLoading && enrollmentsTotal === undefined ? (
+            <div className="h-6 w-12 rounded bg-border motion-safe:animate-pulse" />
+          ) : isEnrollmentsError && enrollmentsTotal === undefined ? (
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-xs text-destructive leading-tight break-words">
+                {t("metrics.enrollmentsLoadError")}
+              </span>
+              {onRetryEnrollments ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onRetryEnrollments}
+                  className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs gap-1"
+                >
+                  <RotateCcw size={13} />
+                  <span>{t("common:retry")}</span>
+                </Button>
+              ) : null}
+            </div>
+          ) : typeof enrollmentsTotal === "number" ? (
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-base sm:text-xl font-bold tabular-nums text-ink">
+                {formatNumber(enrollmentsTotal)}
+              </span>
+              {isEnrollmentsError && onRetryEnrollments ? (
+                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                  <span className="text-xs text-destructive leading-tight">
+                    {t("metrics.enrollmentsLoadError")}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onRetryEnrollments}
+                    className="min-h-[44px] min-w-[44px] px-2.5 py-1 text-xs gap-1"
+                  >
+                    <RotateCcw size={12} />
+                    <span>{t("common:retry")}</span>
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <span
+              className="text-base sm:text-xl font-bold text-muted tabular-nums"
+              aria-label={t("metrics.unavailable")}
+            >
+              —
+            </span>
+          )}
         </div>
-        <p className={valueClass}>
-          {enrolledCount}{" "}
-          <span className="text-sm font-normal text-muted">
-            {t("metrics.enrolled", "зачислено")}
-          </span>
-        </p>
       </div>
 
-      <div className={cardClass}>
-        <div className={labelClass}>
-          <Percent size={15} className="text-amber-600 dark:text-amber-400" />
-          <span>{t("metrics.classAverage", "Средний балл")}</span>
+      <div className="flex flex-col justify-center pt-3 sm:pt-0 sm:px-3 min-w-0">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted break-words leading-tight">
+          {t("metrics.classAverage")}
+        </span>
+        <div className="mt-1 flex flex-col justify-center min-w-0">
+          {isMetricsLoading && !journalMetrics ? (
+            <div className="h-6 w-16 rounded bg-border motion-safe:animate-pulse" />
+          ) : isMetricsError ? (
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-xs text-destructive leading-tight break-words">
+                {t("metrics.metricsLoadError")}
+              </span>
+              {onRetryMetrics ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onRetryMetrics}
+                  className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs gap-1"
+                >
+                  <RotateCcw size={13} />
+                  <span>{t("common:retry")}</span>
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex flex-col min-w-0">
+              <span
+                className="text-base sm:text-xl font-bold text-muted tabular-nums"
+                aria-label={t("metrics.unavailable")}
+              >
+                —
+              </span>
+              <span className="text-xs text-muted leading-tight mt-0.5 break-words">
+                {t("metrics.gradeAvailabilityNotice")}
+              </span>
+            </div>
+          )}
         </div>
-        <p className={valueClass}>
-          {classAveragePct}%
-        </p>
       </div>
 
-      <div className={cardClass}>
-        <div className={labelClass}>
-          <CalendarCheck size={15} className="text-emerald-600 dark:text-emerald-400" />
-          <span>{t("metrics.attendance", "Посещаемость")}</span>
+      <div className="flex flex-col justify-center pt-3 sm:pt-0 sm:px-3 min-w-0">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted break-words leading-tight">
+          {t("metrics.attendance")}
+        </span>
+        <div className="mt-1 flex flex-col justify-center min-w-0">
+          {isMetricsLoading && !journalMetrics ? (
+            <div className="h-6 w-16 rounded bg-border motion-safe:animate-pulse" />
+          ) : isMetricsError ? (
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-xs text-destructive leading-tight break-words">
+                {t("metrics.metricsLoadError")}
+              </span>
+              {onRetryMetrics ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onRetryMetrics}
+                  className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs gap-1"
+                >
+                  <RotateCcw size={13} />
+                  <span>{t("common:retry")}</span>
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex flex-col min-w-0">
+              <span
+                className="text-base sm:text-xl font-bold text-muted tabular-nums"
+                aria-label={t("metrics.unavailable")}
+              >
+                —
+              </span>
+              <span className="text-xs text-muted leading-tight mt-0.5 break-words">
+                {t("metrics.attendanceAvailabilityNotice")}
+              </span>
+            </div>
+          )}
         </div>
-        <p className={valueClass}>
-          {attendanceRatePct}%
-        </p>
-      </div>
-
-      <div className={cardClass}>
-        <div className={labelClass}>
-          <BookOpen size={15} className="text-indigo-600 dark:text-indigo-400" />
-          <span>{t("metrics.periods", "Периоды")}</span>
-        </div>
-        <p className={valueClass}>
-          {totalPeriods}{" "}
-          <span className="text-sm font-normal text-muted">
-            {t("metrics.journalPeriods", "периодов")}
-          </span>
-        </p>
       </div>
     </div>
   );

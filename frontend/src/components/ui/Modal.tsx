@@ -1,51 +1,82 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ComponentProps, type ReactNode } from "react";
+import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useShellStore } from "../../store/shellStore";
 
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  maxWidthClassName?: string;
+  footer?: ReactNode;
+  fullScreenOnMobile?: boolean;
+  initialFocus?: ComponentProps<typeof Dialog.Popup>["initialFocus"];
+  finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
+  closeDisabled?: boolean;
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  maxWidthClassName = "max-w-md",
+  footer,
+  fullScreenOnMobile = false,
+  initialFocus,
+  finalFocus,
+  closeDisabled = false,
+}: ModalProps) {
   const { t } = useTranslation("common");
+  const closeShell = useShellStore((state) => state.close);
+
   useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
+    if (open) closeShell();
+  }, [open, closeShell]);
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-card shadow-xl motion-safe:animate-[card-scale-in_150ms_ease-out]">
-        <div className="flex items-center justify-between border-b border-border-warm px-5 py-4">
-          <h2 className="text-base font-bold text-ink">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close", "Закрыть")}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+    <Dialog.Root
+      open={open}
+      disablePointerDismissal={closeDisabled}
+      onOpenChange={(next) => {
+        if (!next) {
+          if (!closeDisabled) {
+            onClose();
+          }
+        }
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-60 bg-scrim" />
+        <Dialog.Viewport
+          className={`fixed inset-0 z-70 flex items-center justify-center ${fullScreenOnMobile ? "p-0 sm:p-6" : "p-4"}`}
+        >
+          <Dialog.Popup
+            initialFocus={initialFocus}
+            finalFocus={finalFocus}
+            className={`relative flex w-full ${maxWidthClassName} flex-col overflow-hidden bg-card shadow-xl motion-safe:animate-[card-scale-in_200ms_ease-out] has-focus-visible:animate-none ${fullScreenOnMobile ? "h-dvh max-h-dvh rounded-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl" : "max-h-[calc(100dvh-32px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] rounded-2xl"}`}
           >
-            <X size={18} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
-      </div>
-    </div>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-warm px-5 py-2">
+              <Dialog.Title className="text-lg font-semibold text-ink">{title}</Dialog.Title>
+              <Dialog.Close
+                disabled={closeDisabled}
+                aria-label={t("close")}
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-[10px] text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X size={20} />
+              </Dialog.Close>
+            </div>
+            <div
+              className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${fullScreenOnMobile ? "p-6" : "p-4"}`}
+            >
+              {children}
+            </div>
+            {footer && <div className="shrink-0 border-t border-border-warm p-4 sm:px-6">{footer}</div>}
+          </Dialog.Popup>
+        </Dialog.Viewport>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

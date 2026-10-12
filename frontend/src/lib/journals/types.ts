@@ -141,7 +141,7 @@ export interface GradingQueueItemResponse {
   period_label: string;
   period_start: string;
   period_end: string;
-  state: "upcoming" | "empty" | "partial" | "complete";
+  state: string;
   cells_filled: number;
   cells_expected: number;
   is_current: boolean;

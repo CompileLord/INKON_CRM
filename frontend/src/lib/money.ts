@@ -52,6 +52,12 @@ export function formatSum(value: unknown): string {
   return `${negative ? "-" : ""}${grouped}`;
 }
 
+export function formatExactMoney(value: string): string {
+  if (!isValidMoneyString(value)) return value;
+  const [whole, fraction = ""] = new Big(value).toFixed().split(".");
+  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + "." + fraction.padEnd(2, "0");
+}
+
 export function addMoney(a: string, b: string): string {
   return new Big(a).plus(b).toString();
 }

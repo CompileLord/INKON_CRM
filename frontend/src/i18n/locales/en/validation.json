@@ -3,6 +3,7 @@
   "invalidEmail": "Invalid email address",
   "invalidPhone": "Invalid phone number",
   "passwordMinLength": "Password must be at least {{min}} characters long",
+  "passwordRequiresDigit": "Password must contain at least 1 digit",
   "passwordsDoNotMatch": "Passwords do not match",
   "invalidNumber": "Value must be a number greater than 0"
 }

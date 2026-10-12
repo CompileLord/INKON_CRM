@@ -1,4 +1,5 @@
 import hashlib
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from jose import jwt
@@ -66,7 +67,8 @@ def create_refresh_token(expires_delta: Optional[timedelta] = None) -> str:
 
     to_encode: Dict[str, Any] = {
         "exp": int(expire.timestamp()),
-        "iat": int(now.timestamp())
+        "iat": int(now.timestamp()),
+        "jti": uuid4().hex
     }
 
     return jwt.encode(to_encode, settings.JWT_REFRESH_SECRET_KEY, algorithm="HS256")

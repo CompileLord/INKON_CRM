@@ -1,87 +1,150 @@
-import { ArrowRight, Calendar } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Calendar, BookOpen, User as UserIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { formatMoney } from "../../lib/money";
-import { dateOnlyToDate } from "../../lib/users/dates";
-import { MentorAvatarStack } from "./MentorAvatarStack";
+import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
+import { AdminCourseMenu } from "./AdminCourseMenu";
 import type { CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 interface CourseCardProps {
   course: CourseResponse;
   mentor?: User;
-  justCreated?: boolean;
+  isSuperAdmin: boolean;
+  isMentor: boolean;
+  onNavigate?: () => void;
+  onEdit?: (course: CourseResponse) => void;
+  onDuplicate?: (course: CourseResponse, triggerElement?: HTMLElement | null) => void;
+  onDelete?: (course: CourseResponse, triggerElement?: HTMLElement | null) => void;
 }
 
-const EXAM_TYPE_META: Record<CourseResponse["exam_type"], { label: string; from: string; to: string; textClass: string }> = {
-  weekly: { label: "Еженедельный экзамен", from: "#DBEAFE", to: "#EFF6FF", textClass: "text-blue-600" },
-  monthly: { label: "Ежемесячный экзамен", from: "#EDE9FE", to: "#F5F3FF", textClass: "text-violet-600" },
-};
+export function CourseCard({
+  course,
+  mentor,
+  isSuperAdmin,
+  isMentor,
+  onNavigate,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: CourseCardProps) {
+  const { t, i18n } = useTranslation(["courses", "common"]);
+  const [imageError, setImageError] = useState(false);
 
-function formatDateOnly(dateStr: string): string {
-  const date = dateOnlyToDate(dateStr);
-  if (!date) return dateStr;
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(date);
-}
-
-export function CourseCard({ course, mentor, justCreated = false }: CourseCardProps) {
-  const navigate = useNavigate();
-  const meta = EXAM_TYPE_META[course.exam_type];
   const isActive = course.status === "active";
-  const coursePhotoUrl = resolveMediaUrl(course.photo_path);
+  const coursePhotoUrl =
+    !imageError && course.photo_path ? resolveMediaUrl(course.photo_path) : null;
+  const mentorName = mentor
+    ? `${mentor.first_name} ${mentor.last_name}`.trim()
+    : null;
+
+  const handleLinkClick = () => {
+    onNavigate?.();
+  };
+
+  const handleLinkKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      onNavigate?.();
+    }
+  };
 
   return (
-    <div
-      onClick={() => navigate(`/courses/${course.id}`)}
-      className={[
-        "group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-border-warm bg-card transition-all duration-200",
-        "hover:-translate-y-0.75 hover:border-[#DCC9B4] hover:shadow-[0_8px_24px_rgba(139,46,46,0.08)]",
-        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        justCreated ? "animate-[card-scale-in_300ms_ease-out] motion-reduce:animate-none" : "",
-      ].join(" ")}
-    >
-      <div className="relative h-28 shrink-0 overflow-hidden" style={{ background: `linear-gradient(135deg, ${meta.from}, ${meta.to})` }}>
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-border-warm bg-card">
+      <div className="relative h-28 shrink-0 overflow-hidden bg-strip flex items-center justify-center border-b border-border">
         {coursePhotoUrl ? (
           <img
             src={coursePhotoUrl}
-            alt={course.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            alt=""
+            onError={() => setImageError(true)}
+            className="h-full w-full object-cover"
           />
-        ) : null}
+        ) : (
+          <BookOpen size={28} className="text-muted" aria-hidden="true" />
+        )}
         <span
           className={[
-            "absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium shadow-xs backdrop-blur-xs ring-1 ring-black/5 dark:ring-white/10",
-            isActive ? "bg-green-500/90 text-white" : "bg-gray-800/80 text-white",
+            "absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium border border-border shadow-xs",
+            isActive
+              ? "bg-success-surface text-success"
+              : "bg-beige text-muted",
           ].join(" ")}
         >
-          {isActive ? "Активен" : "Архив"}
+          {isActive ? t("filter.active") : t("filter.archived")}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 px-5 py-4.5">
-        <span className={`text-[11px] font-semibold uppercase tracking-wide ${meta.textClass}`}>{meta.label}</span>
-        <h3 className="truncate text-[17px] font-semibold text-ink">{course.title}</h3>
-        <p className="line-clamp-2 text-[13px] text-muted">{course.description}</p>
+      <div className="flex flex-1 flex-col justify-between gap-3 p-4 sm:p-5">
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+            {t(`examTypeLabel.${course.exam_type}`)}
+          </span>
 
-        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-nav tabular-nums">
-          <Calendar size={14} />
-          {formatDateOnly(course.start_date)} – {formatDateOnly(course.end_date)}
+          <Link
+            to={`/courses/${course.id}`}
+            onClick={handleLinkClick}
+            onKeyDown={handleLinkKeyDown}
+            className="text-base font-semibold text-ink break-words motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded-[10px]"
+          >
+            {course.title}
+          </Link>
+
+          {mentorName ? (
+            <div className="flex items-start gap-1.5 text-xs text-muted min-w-0">
+              <UserIcon size={13} className="mt-0.5 shrink-0" />
+              <span className="break-words min-w-0">{mentorName}</span>
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-1.5 text-xs text-nav tabular-nums">
+            <Calendar size={13} className="shrink-0" />
+            <span>
+              {formatSchoolLessonDate(course.start_date, i18n.language)} –{" "}
+              {formatSchoolLessonDate(course.end_date, i18n.language)}
+            </span>
+          </div>
         </div>
 
-        <MentorAvatarStack mentors={mentor ? [mentor] : []} />
-      </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+          <span className="whitespace-nowrap text-sm font-bold tabular-nums text-ink">
+            {formatMoney(course.price)} {t("currencyPerMonth")}
+          </span>
 
-      <div className="flex items-center justify-between border-t border-beige px-5 py-3">
-        <span className="whitespace-nowrap text-[15px] font-bold tabular-nums text-maroon dark:text-accent">
-          {formatMoney(course.price, { suffix: "TJS/мес" })}
-        </span>
-        <button
-          type="button"
-          aria-label="Подробнее"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-[background-color,color,transform] duration-150 ease-out active:scale-95 hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-        >
-          <ArrowRight size={16} />
-        </button>
+          <div className="flex items-center gap-1">
+            {isMentor ? (
+              <Link
+                to={`/journals/${course.id}`}
+                onClick={handleLinkClick}
+                onKeyDown={handleLinkKeyDown}
+                aria-label={`${t("openJournal")}: ${course.title}`}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-[10px] bg-card border border-control-border text-ink hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
+              >
+                <BookOpen size={14} className="text-maroon shrink-0" />
+                <span>{t("openJournal")}</span>
+              </Link>
+            ) : null}
+
+            {isSuperAdmin && onEdit && onDuplicate && onDelete ? (
+              <AdminCourseMenu
+                course={course}
+                onEdit={onEdit}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            ) : null}
+
+            <Link
+              to={`/courses/${course.id}`}
+              onClick={handleLinkClick}
+              onKeyDown={handleLinkKeyDown}
+              aria-label={`${t("details")}: ${course.title}`}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[10px] text-muted motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out hover:bg-strip hover:text-ink motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2"
+            >
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

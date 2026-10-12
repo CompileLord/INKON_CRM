@@ -1,0 +1,1642 @@
+{
+  "group": "05-finance-audit",
+  "captures": [
+    {
+      "page": "finance",
+      "path": "screenshots/superadmin-finance-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1455,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/superadmin-finance-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1455,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/superadmin-finance-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1369,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/superadmin-finance-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1369,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/superadmin-debtors-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 2058,
+        "horizontalOverflow": false,
+        "pageHeight": 1410,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/superadmin-debtors-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 2058,
+        "horizontalOverflow": false,
+        "pageHeight": 1410,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/superadmin-debtors-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1972,
+        "horizontalOverflow": false,
+        "pageHeight": 2192,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/superadmin-debtors-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1972,
+        "horizontalOverflow": false,
+        "pageHeight": 2192,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/superadmin-payment-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1652,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/superadmin-payment-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1652,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/superadmin-payment-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1566,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/superadmin-payment-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1566,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "audit",
+      "path": "screenshots/superadmin-audit-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/audit",
+      "actualRoute": "/audit",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 2034,
+        "horizontalOverflow": false,
+        "pageHeight": 1501,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "audit",
+      "path": "screenshots/superadmin-audit-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/audit",
+      "actualRoute": "/audit",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 2034,
+        "horizontalOverflow": false,
+        "pageHeight": 1501,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "audit",
+      "path": "screenshots/superadmin-audit-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/audit",
+      "actualRoute": "/audit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1948,
+        "horizontalOverflow": false,
+        "pageHeight": 1801,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "audit",
+      "path": "screenshots/superadmin-audit-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/audit",
+      "actualRoute": "/audit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1948,
+        "horizontalOverflow": false,
+        "pageHeight": 1801,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/accountant-finance-desktop-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1414,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/accountant-finance-desktop-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1414,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/accountant-finance-mobile-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1369,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "finance",
+      "path": "screenshots/accountant-finance-mobile-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1369,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/accountant-debtors-desktop-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 2017,
+        "horizontalOverflow": false,
+        "pageHeight": 1410,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/accountant-debtors-desktop-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 2017,
+        "horizontalOverflow": false,
+        "pageHeight": 1410,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/accountant-debtors-mobile-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1972,
+        "horizontalOverflow": false,
+        "pageHeight": 2192,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "debtors",
+      "path": "screenshots/accountant-debtors-mobile-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1972,
+        "horizontalOverflow": false,
+        "pageHeight": 2192,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/accountant-payment-desktop-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1611,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/accountant-payment-desktop-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1611,
+        "horizontalOverflow": false,
+        "pageHeight": 1681,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/accountant-payment-mobile-light.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1566,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "payment",
+      "path": "screenshots/accountant-payment-mobile-dark.png",
+      "role": "accountant",
+      "requestedRoute": "/finance",
+      "actualRoute": "/finance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1566,
+        "horizontalOverflow": false,
+        "pageHeight": 2585,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    }
+  ],
+  "gaps": [],
+  "requests": [
+    {
+      "path": "/api/v1/auth/login",
+      "status": 401,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/audit-log/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 115
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/audit-log/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 115
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/audit-log/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 115
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/audit-log/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 115
+    },
+    {
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/finance/debts/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 18,
+      "total": 18
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/finance/analytics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/finance/payments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 10,
+      "total": 28
+    }
+  ]
+}

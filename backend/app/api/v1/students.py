@@ -2,12 +2,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user
+from app.core.deps import get_db_session, get_current_user, get_student_profile_service
 from app.models.user import User, UserRole
 from app.models.enrollment import Enrollment
 from app.models.course import Course
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, UserResponse
+from app.services.student_profile_service import StudentProfileService
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -34,15 +35,14 @@ async def get_students(
 @router.get("/me/profile", response_model=StudentProfileResponse)
 async def get_my_profile(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    profile_service: StudentProfileService = Depends(get_student_profile_service)
 ) -> dict:
     if current_user.role != UserRole.STUDENT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current user is not a student"
         )
-    user_repo = SQLAlchemyUserRepository(db)
-    stats = await user_repo.get_student_profile_stats(current_user.id)
+    stats = await profile_service.get_student_profile_payload(current_user.id)
     return {
         "user": current_user,
         "totals": stats["totals"],
@@ -72,7 +72,8 @@ async def get_my_journals(
 async def get_student_profile(
     id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    profile_service: StudentProfileService = Depends(get_student_profile_service)
 ) -> dict:
     if current_user.role == UserRole.STUDENT and current_user.id != id:
         raise HTTPException(
@@ -102,7 +103,7 @@ async def get_student_profile(
             detail="Student not found"
         )
 
-    stats = await user_repo.get_student_profile_stats(id)
+    stats = await profile_service.get_student_profile_payload(id)
     return {
         "user": target_user,
         "totals": stats["totals"],

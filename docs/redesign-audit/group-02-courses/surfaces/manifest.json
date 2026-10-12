@@ -1,0 +1,1572 @@
+{
+  "group": "02-courses",
+  "captures": [
+    {
+      "page": "create-course",
+      "path": "screenshots/superadmin-create-course-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses",
+      "actualRoute": "/courses",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1720,
+        "horizontalOverflow": false,
+        "pageHeight": 1190,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "create-course",
+      "path": "screenshots/superadmin-create-course-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses",
+      "actualRoute": "/courses",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1720,
+        "horizontalOverflow": false,
+        "pageHeight": 1190,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "create-course",
+      "path": "screenshots/superadmin-create-course-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses",
+      "actualRoute": "/courses",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 1634,
+        "horizontalOverflow": false,
+        "pageHeight": 2487,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "create-course",
+      "path": "screenshots/superadmin-create-course-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses",
+      "actualRoute": "/courses",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 1634,
+        "horizontalOverflow": false,
+        "pageHeight": 2487,
+        "visibleCards": 0,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "edit-course",
+      "path": "screenshots/superadmin-edit-course-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 2588,
+        "horizontalOverflow": false,
+        "pageHeight": 2412,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "edit-course",
+      "path": "screenshots/superadmin-edit-course-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 2588,
+        "horizontalOverflow": false,
+        "pageHeight": 2412,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "edit-course",
+      "path": "screenshots/superadmin-edit-course-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 2299,
+        "horizontalOverflow": false,
+        "pageHeight": 3906,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "edit-course",
+      "path": "screenshots/superadmin-edit-course-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 2299,
+        "horizontalOverflow": false,
+        "pageHeight": 3906,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "enroll-student",
+      "path": "screenshots/superadmin-enroll-student-desktop-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 3382,
+        "horizontalOverflow": false,
+        "pageHeight": 2412,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "enroll-student",
+      "path": "screenshots/superadmin-enroll-student-desktop-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 3382,
+        "horizontalOverflow": false,
+        "pageHeight": 2412,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "enroll-student",
+      "path": "screenshots/superadmin-enroll-student-mobile-light.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "light",
+        "textLength": 3093,
+        "horizontalOverflow": false,
+        "pageHeight": 3906,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    },
+    {
+      "page": "enroll-student",
+      "path": "screenshots/superadmin-enroll-student-mobile-dark.png",
+      "role": "superadmin",
+      "requestedRoute": "/courses/3",
+      "actualRoute": "/courses/3",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "state": "rendered; inspect section/API states",
+      "evidence": {
+        "theme": "dark",
+        "textLength": 3093,
+        "horizontalOverflow": false,
+        "pageHeight": 3906,
+        "visibleCards": 11,
+        "errorState": false,
+        "brokenImageCount": 0
+      }
+    }
+  ],
+  "gaps": [],
+  "requests": [
+    {
+      "path": "/api/v1/auth/login",
+      "status": 401,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 34
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 34
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 34
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1,
+      "total": 34
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/courses/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 4,
+      "total": 4
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/auth/refresh",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/v1/notifications/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 0,
+      "total": 0
+    },
+    {
+      "path": "/api/v1/notifications/unread-count",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/courses/3/schedule",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 6
+    },
+    {
+      "path": "/api/v1/courses/3/mentor-history",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 1
+    },
+    {
+      "path": "/api/v1/enrollments/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 9,
+      "total": 9
+    },
+    {
+      "path": "/api/v1/courses/3/progress-chart",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 20,
+      "total": 33
+    },
+    {
+      "path": "/api/v1/mentors/",
+      "status": 200,
+      "method": "GET",
+      "itemCount": 3,
+      "total": 3
+    },
+    {
+      "path": "/api/v1/mentors/3/profile",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/v1/students/23/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/22/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/25/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/27/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/24/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/26/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/28/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/29/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 1
+    },
+    {
+      "path": "/api/v1/students/38/profile",
+      "status": 200,
+      "method": "GET",
+      "courseCount": 2
+    }
+  ]
+}

@@ -53,7 +53,10 @@
   "mentorStats": {
     "myCourses": "Мои активные курсы",
     "myStudents": "Мои студенты",
-    "periodsNeedingGrading": "Требуют оценки"
+    "periodsNeedingGrading": "Требуют оценки",
+    "studentsUnavailable": "Количество студентов сейчас недоступно",
+    "coursesUnavailable": "Количество активных курсов недоступно",
+    "queueUnavailable": "Очередь оценивания недоступна"
   },
   "period": {
     "week": "Неделя {{n}}",
@@ -69,7 +72,8 @@
     "stateUpcoming": "Предстоящий",
     "stateEmpty": "Не начат",
     "statePartial": "В процессе",
-    "stateComplete": "Завершен"
+    "stateComplete": "Завершен",
+    "stateUnavailable": "Недоступно"
   },
   "chart": {
     "title": "Динамика баллов",

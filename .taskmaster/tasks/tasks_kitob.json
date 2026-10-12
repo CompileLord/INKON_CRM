@@ -1,0 +1,692 @@
+[
+  {
+    "id": "KITOB-01-01",
+    "title": "Brand assets, semantic tokens and shared controls",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-02",
+    "title": "Auth identity alignment",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-03",
+    "title": "Shared shell, role navigation, overlays and accessibility",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-02"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-SVG",
+    "title": "Adopt supplied editable SVG artwork and shared activity/authentication animation",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-03"
+    ],
+    "description": "User-authorized bounded shared-asset prerequisite: static full/emblem SVG adoption, coordinated CSS looping full logo capability for desktop login/invitation, reduced-motion static fallback and shared book loading activity. Do not implement the next auth page.",
+    "testStrategy": "Preserve originals/hash; measure SVG geometry and K clear space; real both-theme 1x/2x asset renders at320/390/768/1024/1440; motion observed across two cycles and reduced-motion static; pending lifecycle/no duplicate submit, locale parity and full backend pytest/frontend vitest/tsc gates."
+  },
+  {
+    "id": "KITOB-01-04",
+    "title": "/login",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-SVG"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-05",
+    "title": "/verify-email",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-04"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-06",
+    "title": "/set-password",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-07",
+    "title": "Superadmin dashboard",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-08",
+    "title": "Mentor dashboard",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-07"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-09",
+    "title": "Eligible student next lesson correctness",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-08"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-AUTH-REFRESH",
+    "title": "Refresh-token uniqueness and identity isolation prerequisite",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-02"
+    ],
+    "description": "Prevent same-second refresh-token collisions without changing session authorization or API schemas. Independently audit and commit before accepting the student dashboard.",
+    "testStrategy": "Frozen-clock uniqueness and real two-user refresh/replay regression; backend pytest, frontend vitest and typecheck."
+  },
+  {
+    "id": "KITOB-01-10",
+    "title": "Student dashboard",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-09",
+      "KITOB-01-AUTH-REFRESH"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-PAYMENT-LIFECYCLE",
+    "title": "Shared payment lifecycle prerequisite",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-03",
+      "KITOB-01-AUTH-REFRESH"
+    ],
+    "description": "Repair the existing shared PaymentModal owner: retain success independently from refresh, expose returned record and read-only detail, preserve decimal/date state and guard pending/dirty dismissal. No Finance registry redesign or backend policy changes.",
+    "testStrategy": "Meaningful submission/persistence/refresh-failure/date/decimal/permission regressions; isolated browser mutations and both-theme form/detail renders; full repository gates before acceptance."
+  },
+  {
+    "id": "KITOB-01-11",
+    "title": "Accountant dashboard",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-10",
+      "KITOB-01-PAYMENT-LIFECYCLE"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-01-12",
+    "title": "Group 01 integration audit",
+    "status": "completed",
+    "group": "01",
+    "dependencies": [
+      "KITOB-01-11"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-01",
+    "title": "/courses superadmin and mentor",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-01-12",
+      "KITOB-02-DIALOG-RETURN",
+      "KITOB-02-DIALOG-ERROR"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-02",
+    "title": "/courses/:id identity and Overview",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-03-CONTRACT",
+    "title": "Authorized course roster and eligible student pagination contract",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-02"
+    ],
+    "description": "Implement bounded authorized roster identity/enrollment snapshots and accurate course-scoped candidate pagination before Students tab. Backend controller/service/repository and synchronized schema/TypeScript; no page UI or speculative scoring.",
+    "testStrategy": "Backend role/permission, pagination/exhaustion, snapshot and query-count regressions; generated contract and TypeScript parity; full backend/frontend/type gates. No loaded UI screenshot required for contract-only task."
+  },
+  {
+    "id": "KITOB-02-03",
+    "title": "Students tab and enrollment/withdrawal",
+    "status": "in_progress",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-03-CONTRACT"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-04",
+    "title": "Progress tab",
+    "status": "pending",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-03"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-05",
+    "title": "Course create/edit duplicate/delete",
+    "status": "pending",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-02",
+      "KITOB-02-05-FORM",
+      "KITOB-02-05-LIFECYCLE"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces. User-authorized parallel scheduling: explicit child tasks own forms; this parent completes only after form and Overview/lifecycle integration audits. Progress is not a technical prerequisite for form implementation.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-06",
+    "title": "Group 02 integration audit",
+    "status": "pending",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-02",
+      "KITOB-02-03",
+      "KITOB-02-04",
+      "KITOB-02-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-01",
+    "title": "/students directory and create/edit",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-02-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-02",
+    "title": "/mentors directory and create/edit",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-03",
+    "title": "/students/:id authorized variants",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-02"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-04",
+    "title": "/mentors/:id authorized variants",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-03"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-05",
+    "title": "Authorized document byte delivery prerequisite",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-04"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-06",
+    "title": "Documents panes upload/download/delete",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-03-07",
+    "title": "Group 03 integration audit",
+    "status": "pending",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-01",
+    "title": "Canonical commands draft ownership drain conflicts",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-03-07"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-02",
+    "title": "/journals hub",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-03",
+    "title": "/journals/:id routing and desktop grid",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-02"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-04",
+    "title": "Phone/tablet Lesson view",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-03"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-05",
+    "title": "Summary breakdown paired exam/bonus editor",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-04"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-06",
+    "title": "Period settings",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-07",
+    "title": "Progress",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-04-08",
+    "title": "Group 04 integration audit",
+    "status": "pending",
+    "group": "04",
+    "dependencies": [
+      "KITOB-04-07"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-01",
+    "title": "Finance navigation/state and Overview",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-04-08"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-02",
+    "title": "Debtors registry",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-03",
+    "title": "Payments registry and detail",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-02"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-04",
+    "title": "Payment entry and completion",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-03"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-05",
+    "title": "/audit registry and inspector",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-04"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-06",
+    "title": "Exact attention-to-Finance student/course filtering",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-07",
+    "title": "Global audit investigation filters",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-08",
+    "title": "Joined payment names",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-07"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-09",
+    "title": "Finance precision and money threshold",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-08"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-05-10",
+    "title": "Group 05 integration audit",
+    "status": "pending",
+    "group": "05",
+    "dependencies": [
+      "KITOB-05-09"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-01",
+    "title": "/my/courses Active and Archive",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-05-10"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-02",
+    "title": "/my/courses/:courseId",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-01"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-03",
+    "title": "/my/journal/:journalId",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-02"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-04",
+    "title": "/settings personal account every role",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-03"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-05",
+    "title": "Organization section",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-04"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-06",
+    "title": "Notification rules section",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-05"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-07",
+    "title": "/notifications every role",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-06"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-06-08",
+    "title": "Group 06 integration audit",
+    "status": "pending",
+    "group": "06",
+    "dependencies": [
+      "KITOB-06-07"
+    ],
+    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+  },
+  {
+    "id": "KITOB-02-DIALOG-RETURN",
+    "title": "Shared confirmation return-focus and primary action capability",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-01-03"
+    ],
+    "description": "Bounded prerequisite discovered by real successful-delete focus audit. Expose caller finalFocus, preserve destructive default, support primary duplicate confirmation and prevent pending dismissal. Audit and commit shared changes before wiring directory.",
+    "testStrategy": "Meaningful actual Dialog focus lifecycle and pending-dismissal regressions; backend pytest, fullfrontend vitest, tsc, both-theme existing regression evidence; directory integration audited separately."
+  },
+  {
+    "id": "KITOB-02-DIALOG-ERROR",
+    "title": "Accessible caller-owned confirmation failure message",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-DIALOG-RETURN"
+    ],
+    "description": "Bounded shared prerequisite from actual inaccessible duplicate failure audit. Add optional internal error region preserving accepted dialog focus/pending lifecycle; audit and commit before directory wiring.",
+    "testStrategy": "Actual dialog accessible error replacement/removal and retained target, prior focus/pending regressions, backend/fullfrontend suites, tsc/build; integration browser proof belongs to currentdirectory task."
+  },
+  {
+    "id": "KITOB-02-05-DRAWER",
+    "title": "Course form native drawer prerequisite",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-01-03",
+      "KITOB-02-01",
+      "KITOB-02-DIALOG-RETURN",
+      "KITOB-02-DIALOG-ERROR"
+    ],
+    "description": "Isolated course-forms subgroup: replace legacy SlideOver lifecycle with existing native Dialog ownership and parameterized course/person geometry. Audit this prerequisite before implementing form persistence. Other executor owns Overview.",
+    "testStrategy": "Meaningful native focus/scroll/inertness/dismissal/pending and breakpoint tests; real light/dark desktop/mobile surface evidence; full backend/frontend/type/parity completion gates before root acceptance."
+  },
+  {
+    "id": "KITOB-02-05-FORM",
+    "title": "Course create/edit fields, dirty dismissal and image recovery",
+    "status": "in_progress",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-05-DRAWER"
+    ],
+    "description": "Course-forms subgroup: implement planned immutable edit terms, form validation, dirty/pending/error lifecycle, independent image persistence and partial-success recovery. No Overview ownership or API policy changes.",
+    "testStrategy": "Tests for immutable/untouched PATCH omission, dirty dismissal, pending repeats, retained errors and partial upload retry without duplicate create; all locales/themes, viewport and full completion gates."
+  },
+  {
+    "id": "KITOB-02-05-LIFECYCLE",
+    "title": "Course forms and accepted lifecycle integration",
+    "status": "pending",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-02",
+      "KITOB-02-05-FORM"
+    ],
+    "description": "Reconcile the accepted Overview and form subgroup commits, audit create/edit/duplicate/delete reachable surfaces and safe return/focus without overwriting other executor ownership.",
+    "testStrategy": "Independent cross-subgroup regressions, exact schedule copy and mutation ownership, opened surfaces and required full gates."
+  },
+  {
+    "id": "KITOB-DOCS-01",
+    "title": "Consolidate redesign execution documentation",
+    "status": "completed",
+    "dependencies": [],
+    "description": "Remove superseded retry artifacts and add clear documentation entry points; preserve final accepted evidence and active executor inputs.",
+    "testStrategy": "Validate JSON, local documentation links, final evidence paths and preserved session/task state; inspect docs-only diff."
+  },
+  {
+    "id": "KITOB-DOCS-02",
+    "title": "Enforce bounded agent documentation and recovery workflow",
+    "status": "completed",
+    "dependencies": [
+      "KITOB-DOCS-01"
+    ],
+    "description": "Make documentation ownership, stable evidence paths and retention rules mandatory in AGENTS.md for planners, orchestrators, auditors and executors.",
+    "testStrategy": "Validate policy links, JSON and active session mapping; review docs-only diff."
+  }
+]

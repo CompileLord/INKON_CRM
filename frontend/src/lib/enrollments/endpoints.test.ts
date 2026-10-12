@@ -8,7 +8,14 @@ vi.mock("../auth/tokenStorage", async (importOriginal) => {
 
 const { httpClient } = await import("../auth/httpClient");
 const { tokenStorage } = await import("../auth/tokenStorage");
-const { createEnrollment, listEnrollments, withdrawEnrollment } = await import("./endpoints");
+const {
+  createEnrollment,
+  listEnrollments,
+  withdrawEnrollment,
+  getCourseRoster,
+  locateRosterStudent,
+  getEligibleCandidates,
+} = await import("./endpoints");
 
 const mock = new MockAdapter(httpClient);
 
@@ -82,5 +89,97 @@ describe("422 field mapping", () => {
 
     expect(err).toBeInstanceOf(AuthApiError);
     expect(err.fieldErrors.course_id).toBe("Course not found");
+  });
+});
+
+describe("getCourseRoster", () => {
+  it("requests course roster with query parameters", async () => {
+    mock.onGet("/enrollments/courses/20/roster").reply((config) => {
+      expect(config.params).toEqual({ page: 1, page_size: 20, sort: "name_asc" });
+      return [
+        200,
+        {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 20,
+          total_pages: 0,
+          active_count: 0,
+          located_page: null,
+          located_index: null,
+        },
+      ];
+    });
+
+    const result = await getCourseRoster(20, { page: 1, page_size: 20, sort: "name_asc" });
+    expect(result.total).toBe(0);
+  });
+});
+
+describe("locateRosterStudent", () => {
+  it("requests roster location with student_id and paging params", async () => {
+    mock.onGet("/enrollments/courses/20/roster/locate").reply((config) => {
+      expect(config.params).toEqual({ student_id: 10, page_size: 20 });
+      return [
+        200,
+        {
+          student_id: 10,
+          enrollment_id: 1,
+          page: 1,
+          index: 0,
+          total: 1,
+          item: {
+            id: 1,
+            enrollment_id: 1,
+            student_id: 10,
+            course_id: 20,
+            price_at_enrollment: "150.00",
+            color_hex: "#2A78D6",
+            enrolled_at: "2026-01-05T12:00:00Z",
+            status: "active",
+            student: {
+              id: 10,
+              first_name: "Aziz",
+              last_name: "Rahimov",
+              email: "aziz@example.com",
+            },
+          },
+        },
+      ];
+    });
+
+    const result = await locateRosterStudent(20, 10, { page_size: 20 });
+    expect(result.student_id).toBe(10);
+    expect(result.page).toBe(1);
+    expect(result.item.price_at_enrollment).toBe("150.00");
+  });
+});
+
+describe("getEligibleCandidates", () => {
+  it("requests eligible candidates for a course", async () => {
+    mock.onGet("/enrollments/courses/20/eligible-candidates").reply((config) => {
+      expect(config.params).toEqual({ page: 1, page_size: 20, search: "Aziz" });
+      return [
+        200,
+        {
+          items: [
+            {
+              id: 10,
+              first_name: "Aziz",
+              last_name: "Rahimov",
+              email: "aziz@example.com",
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 20,
+          total_pages: 1,
+        },
+      ];
+    });
+
+    const result = await getEligibleCandidates(20, { page: 1, page_size: 20, search: "Aziz" });
+    expect(result.total).toBe(1);
+    expect(result.items[0].first_name).toBe("Aziz");
   });
 });

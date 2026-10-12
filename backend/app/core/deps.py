@@ -124,3 +124,12 @@ def get_storage_service() -> "StorageService":
     return LocalStorageService()
 
 
+def get_student_profile_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "StudentProfileService":
+    from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+    from app.services.schedule_service import LessonScheduleService
+    from app.services.student_profile_service import StudentProfileService
+    user_repo = SQLAlchemyUserRepository(db)
+    schedule_service = LessonScheduleService()
+    return StudentProfileService(user_repo=user_repo, schedule_service=schedule_service)

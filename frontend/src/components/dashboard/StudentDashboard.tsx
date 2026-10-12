@@ -1,229 +1,368 @@
 import { Link } from "react-router-dom";
-import { BookOpen, Calendar, ChevronRight, Award, CheckCircle2, Clock } from "lucide-react";
+import { BookOpen, Calendar, Clock, RefreshCw, AlertCircle, UserX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMyStudentProfile, useMyStudentJournals, useMentorProfile } from "../../lib/users/hooks";
 import { resolveMediaUrl } from "../../lib/users/media";
-import { formatDate } from "../../i18n/formatters";
 import { PersonAvatar } from "../ui/PersonAvatar";
-import { StudentCourseCard } from "../student/StudentCourseCard";
-import { ScoreBreakdown } from "../student/ScoreBreakdown";
+import {
+  formatSchoolLessonWeekday,
+  formatSchoolLessonDate,
+  formatSchoolLessonTime,
+  getSchoolCalendarDate,
+  formatNumber,
+} from "../../i18n/formatters";
+import type { CourseResponse } from "../../lib/courses/types";
+import { StudentCourseRow } from "../student/StudentCourseRow";
+import { StudentResultCard } from "../student/StudentResultCard";
 import { StudentEmptyState } from "../student/StudentEmptyState";
+import { Button } from "../ui/Button";
+import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 
-function SoonestLessonCard({ course, nextLessonAt }: { course: any; nextLessonAt: string }) {
+interface SoonestLessonCardProps {
+  course?: CourseResponse;
+  nextLessonAt?: string | null;
+}
+
+function SoonestLessonCard({ course, nextLessonAt }: SoonestLessonCardProps) {
   const { t, i18n } = useTranslation(["student", "common"]);
-  const { data: mentorProfile } = useMentorProfile(course.mentor_id);
+  const { data: mentorProfile, isError: isMentorError, isLoading: isMentorLoading } = useMentorProfile(course?.mentor_id);
   const mentorUser = mentorProfile?.user;
 
-  return (
-    <div className="rounded-2xl border border-border-warm bg-card p-4 flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-beige text-maroon dark:text-accent">
-          <Clock size={20} />
+  if (!course || !nextLessonAt) {
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl border border-border-warm bg-card">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-beige text-maroon">
+            <Clock size={20} aria-hidden="true" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-ink">
+              {t("noUpcomingLessonTitle")}
+            </h3>
+            <p className="text-xs text-muted mt-0.5">
+              {t("noUpcomingLessonBody")}
+            </p>
+          </div>
         </div>
-        <div>
-          <span className="text-xs font-medium text-muted uppercase tracking-wide">{t("nextLesson", "Следующее занятие")}</span>
-          <h4 className="text-sm font-semibold text-ink">{course.title}</h4>
+        <Link
+          to="/my/courses"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border-warm bg-strip px-4 py-2 text-xs font-semibold text-ink hover:bg-card motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring self-start sm:self-auto shrink-0"
+        >
+          {t("allCoursesLink")}
+        </Link>
+      </div>
+    );
+  }
+
+  const weekday = formatSchoolLessonWeekday(nextLessonAt, i18n.language);
+  const dateStr = formatSchoolLessonDate(nextLessonAt, i18n.language);
+  const timeStr = formatSchoolLessonTime(nextLessonAt, i18n.language);
+
+  return (
+    <div className="flex flex-col gap-3.5 rounded-2xl border border-border-warm bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+          {t("nextLesson")}
+        </span>
+        <div className="flex items-center gap-1.5 rounded-xl bg-strip px-2.5 py-1 text-base font-semibold text-ink tabular-nums border border-border-warm">
+          <Calendar size={13} className="text-muted shrink-0" aria-hidden="true" />
+          <span>{weekday}</span>
+          <span>·</span>
+          <span>{dateStr}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {mentorUser && (
-          <div className="flex items-center gap-2 rounded-xl bg-strip px-3 py-1.5 border border-border-warm">
-            <PersonAvatar
-              firstName={mentorUser.first_name}
-              lastName={mentorUser.last_name}
-              photoUrl={resolveMediaUrl(mentorUser.thumbnail_path ?? mentorUser.photo_path) ?? undefined}
-              size={24}
-            />
-            <span className="text-xs font-semibold text-ink">
-              {mentorUser.first_name} {mentorUser.last_name}
-            </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+            {timeStr}
           </div>
-        )}
-        <div className="flex items-center gap-2 rounded-xl bg-strip px-3 py-1.5 text-xs font-semibold text-ink tabular-nums">
-          <Calendar size={14} className="text-muted" />
-          {formatDate(nextLessonAt, i18n.language)}
+          <h3 className="text-base sm:text-lg font-bold text-ink mt-0.5 break-words">
+            {course.title}
+          </h3>
+          {mentorUser ? (
+            <div className="flex items-center gap-2 mt-2">
+              <PersonAvatar
+                firstName={mentorUser.first_name}
+                lastName={mentorUser.last_name}
+                photoUrl={resolveMediaUrl(mentorUser.thumbnail_path ?? mentorUser.photo_path) ?? undefined}
+                size={24}
+              />
+              <span className="text-xs font-medium text-ink break-words min-w-0">
+                {mentorUser.first_name} {mentorUser.last_name}
+              </span>
+            </div>
+          ) : isMentorError ? (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted">
+              <UserX size={14} className="text-muted shrink-0" aria-hidden="true" />
+              <span>{t("mentorUnavailable")}</span>
+            </div>
+          ) : isMentorLoading ? <span className="mt-2 block h-6 w-36 rounded bg-strip motion-safe:animate-pulse" /> : <p className="mt-2 text-sm text-muted">{t("mentorUnavailable")}</p>}
         </div>
+
+        <Link
+          to={`/my/courses/${course.id}`}
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-maroon px-4 py-2.5 text-xs font-semibold text-on-primary hover:bg-maroon-dark motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring self-start sm:self-auto shrink-0"
+        >
+          {t("viewCourse")}
+        </Link>
       </div>
     </div>
   );
 }
 
 export function StudentDashboard() {
-  const { t } = useTranslation(["student", "dashboard", "common"]);
-  const { data: profile, isLoading: isProfileLoading, isError: isProfileError, refetch: refetchProfile } = useMyStudentProfile();
-  const { data: journals, isLoading: isJournalsLoading } = useMyStudentJournals();
+  const { t, i18n } = useTranslation(["student", "common"]);
+  const {
+    data: profile,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+    isFetching: isProfileFetching,
+    refetch: refetchProfile,
+  } = useMyStudentProfile();
 
-  if (isProfileLoading) {
-    return (
-      <div className="flex flex-col gap-5 animate-pulse">
-        <div className="h-20 rounded-2xl bg-card border border-border-warm" />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-card border border-border-warm" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const {
+    data: journals,
+    isLoading: isJournalsLoading,
+    isError: isJournalsError,
+    isFetching: isJournalsFetching,
+    refetch: refetchJournals,
+  } = useMyStudentJournals();
 
-  if (isProfileError || !profile) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-        <p className="text-sm text-muted">{t("common:error", "Произошла ошибка при загрузке данных")}</p>
-        <button
-          type="button"
-          onClick={() => refetchProfile()}
-          className="rounded-lg border border-border-warm bg-card px-4 py-2 text-sm font-medium text-ink hover:bg-strip"
-        >
-          {t("common:retry", "Повторить")}
-        </button>
-      </div>
-    );
-  }
+  const user = profile?.user;
+  const totals = profile?.totals;
+  const courses = profile?.courses ?? [];
 
-  const { user, totals, courses } = profile;
   const activeCourses = courses.filter((c) => c.bucket === "active");
-
-  // Find soonest next_lesson_at
   const activeWithLessons = activeCourses
     .filter((c) => c.next_lesson_at !== null)
     .sort((a, b) => new Date(a.next_lesson_at!).getTime() - new Date(b.next_lesson_at!).getTime());
   const soonestLessonCourse = activeWithLessons[0];
 
-  // Latest graded period
-  const gradedJournals = (journals || []).filter((j) => j.state === "graded");
-  const latestGradedPeriod = gradedJournals[0];
+  const schoolToday = getSchoolCalendarDate();
+  const availablePeriods = (journals ?? []).filter(period => period.period_start <= schoolToday);
+  const latestAvailablePeriod = availablePeriods[0];
+  const hasLessonPopulation = Boolean(totals && totals.total_lessons > 0);
+  const profileUnavailable = !profile && !isProfileLoading;
+  const profileRetry = <Button variant="secondary" loading={isProfileFetching} onClick={() => refetchProfile()}>{t("common:retry")}</Button>;
+  const profileFailure = <div role="alert" className="flex min-h-32 flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4"><p className="text-sm text-destructive">{t("profileRefreshError")}</p><p className="text-sm text-muted">{t("profileUnavailableBody")}</p>{profileRetry}</div>;
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* 5.1.1 Identity strip */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border-warm bg-card p-4">
-        <div className="flex items-center gap-3.5">
-          <PersonAvatar
-            firstName={user.first_name}
-            lastName={user.last_name}
-            photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined}
-            size={48}
-          />
-          <div>
-            <h2 className="text-lg font-semibold text-ink">
-              {user.first_name} {user.last_name}
-            </h2>
-            <p className="text-xs text-muted">
-              {t("activeCoursesSummary", "{{count}} активных курсов", { count: totals.active_course_count })}
-            </p>
-          </div>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
-          <CheckCircle2 size={14} /> {t("activeStudent", "Активный студент")}
-        </span>
-      </div>
-
-      {/* 5.1.2 Stat row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-2xl border border-border-warm bg-card p-4">
-          <p className="text-xs uppercase tracking-wide text-muted">{t("average", "Средний балл")}</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums text-ink">{totals.avg_percentage.toFixed(1)}%</p>
-        </div>
-        <div className="rounded-2xl border border-border-warm bg-card p-4">
-          <p className="text-xs uppercase tracking-wide text-muted">{t("attendance", "Посещаемость")}</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums text-ink">{totals.attendance_percentage.toFixed(1)}%</p>
-        </div>
-        <div className="rounded-2xl border border-border-warm bg-card p-4">
-          <p className="text-xs uppercase tracking-wide text-muted">{t("absences", "Пропуски")}</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums text-ink">{totals.absences}</p>
-          <p className="text-xs text-muted">{t("ofLessons", "из {{total}} занятий", { total: totals.total_lessons })}</p>
-        </div>
-        <Link
-          to="/my/courses"
-          className="group rounded-2xl border border-border-warm bg-card p-4 transition-colors hover:bg-row-hover"
+    <div className="@container flex flex-col gap-5 pb-8">
+      {isProfileError && profile && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-warning-surface text-warning border border-warning/30 text-xs"
         >
-          <p className="text-xs uppercase tracking-wide text-muted">{t("activeCoursesCount", "Активные курсы")}</p>
-          <div className="mt-1 flex items-baseline justify-between">
-            <p className="text-[28px] font-bold tabular-nums text-ink">{totals.active_course_count}</p>
-            <ChevronRight size={18} className="text-muted group-hover:text-ink transition-transform group-hover:translate-x-0.5" />
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-warning shrink-0" aria-hidden="true" />
+            <span>{t("profileRefreshError")}</span>
           </div>
-        </Link>
-      </div>
-
-      {/* 5.1.3 Next lesson card */}
-      {soonestLessonCourse && soonestLessonCourse.next_lesson_at && (
-        <SoonestLessonCard course={soonestLessonCourse.course} nextLessonAt={soonestLessonCourse.next_lesson_at} />
+          <button
+            type="button"
+            onClick={() => refetchProfile()}
+            className="inline-flex min-h-[44px] min-w-[44px] items-center gap-1.5 px-3 py-1 rounded-lg border border-warning/40 bg-card hover:bg-strip text-ink motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <RefreshCw size={12} className={isProfileFetching ? "motion-safe:animate-spin" : ""} aria-hidden="true" />
+            <span>{t("common:retry")}</span>
+          </button>
+        </div>
       )}
 
-      {/* 5.1.4 Active courses rail */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <BookOpen size={18} className="text-maroon dark:text-accent" /> {t("myCourses", "Мои курсы")}
-          </h3>
-          <Link to="/my/courses" className="text-xs font-semibold text-maroon hover:underline dark:text-accent">
-            {t("allCoursesLink", "Все →")}
-          </Link>
-        </div>
-
-        {activeCourses.length === 0 ? (
-          <StudentEmptyState
-            title={t("noCoursesTitle", "Вы пока не зачислены ни на один курс")}
-            body={t("noCoursesBody", "Ваш координатор добавит вас после подтверждения записи.")}
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            {activeCourses.slice(0, 3).map((entry) => (
-              <StudentCourseCard key={entry.course.id} entry={entry} variant="active" />
-            ))}
+      <div className="flex flex-col gap-5 @[51.5rem]:grid @[51.5rem]:grid-cols-[minmax(0,1fr)_300px] @[51.5rem]:gap-6 @[51.5rem]:[grid-template-areas:'identity_identity'_'metrics_metrics'_'nextlesson_result'_'courses_result']">
+        <header className="@[51.5rem]:[grid-area:identity] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {isProfileLoading && !profile ? (
+              <div className="flex items-center gap-3 motion-safe:animate-pulse">
+                <div className="h-10 w-10 rounded-full bg-strip border border-border-warm" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-7 w-48 rounded bg-strip" />
+                  <div className="h-3.5 w-24 rounded bg-strip" />
+                </div>
+              </div>
+            ) : (
+              <>
+                <PersonAvatar
+                  firstName={user?.first_name ?? ""}
+                  lastName={user?.last_name ?? ""}
+                  photoUrl={resolveMediaUrl(user?.thumbnail_path ?? user?.photo_path) ?? undefined}
+                  size={40}
+                />
+                <div>
+                  <h1 className="text-[1.5rem] leading-[2rem] sm:text-[1.75rem] sm:leading-[2.25rem] font-semibold text-ink">
+                    {user ? `${user.first_name} ${user.last_name}` : t("studentDashboard")}
+                  </h1>
+                  <p className="text-xs text-muted mt-0.5">
+                    {totals
+                      ? t("activeCoursesSummary", { count: totals.active_course_count })
+                      : activeCourses.length > 0
+                        ? t("activeCoursesSummary", { count: activeCourses.length })
+                        : t("profileUnavailableBody")}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
-        )}
-      </div>
+        </header>
 
-      {/* 5.1.5 Latest graded period */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-ink flex items-center gap-2">
-            <Award size={18} className="text-amber-500" /> {t("latestGradedPeriod", "Последний оцененный период")}
-          </h3>
-          {latestGradedPeriod && (
-            <Link
-              to={`/my/journal/${latestGradedPeriod.journal_id}`}
-              className="text-xs font-semibold text-maroon hover:underline dark:text-accent"
-            >
-              {t("journalDetails", "Подробнее →")}
-            </Link>
-          )}
-        </div>
-
-        {isJournalsLoading ? (
-          <div className="h-36 rounded-2xl bg-card border border-border-warm animate-pulse" />
-        ) : latestGradedPeriod ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between text-xs text-muted px-1">
-              <span className="font-semibold text-ink">{latestGradedPeriod.course_title}</span>
-              <span>{latestGradedPeriod.period_label}</span>
+        <section
+          aria-labelledby="next-lesson-heading"
+          className="@[51.5rem]:[grid-area:nextlesson]"
+        >
+          <h2 id="next-lesson-heading" className="sr-only">
+            {t("nextLesson")}
+          </h2>
+          {isProfileLoading && !profile ? (
+            <div role="status" aria-busy="true" className="h-44 rounded-2xl border border-border-warm bg-card p-4 motion-safe:animate-pulse"><BrandActivityIndicator size={20} aria-hidden="true" /><span className="sr-only">{t("common:loading")}</span></div>
+          ) : profileUnavailable ? (
+            <div className="flex flex-col items-start gap-3 p-4 rounded-2xl border border-danger-surface bg-card text-ink">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle size={18} aria-hidden="true" />
+                <h3 className="text-sm font-semibold">{t("profileRefreshError")}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => refetchProfile()}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl border border-border-warm bg-strip px-4 py-2 text-xs font-semibold text-ink hover:bg-card motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <RefreshCw size={14} className={isProfileFetching ? "motion-safe:animate-spin" : ""} aria-hidden="true" />
+                <span>{t("common:retry")}</span>
+              </button>
             </div>
-            <ScoreBreakdown
-              summary={{
-                id: 0,
-                journal_id: latestGradedPeriod.journal_id,
-                homework_score: latestGradedPeriod.homework_score ?? 0,
-                attendance_score: latestGradedPeriod.attendance_score ?? 0,
-                exam_score: latestGradedPeriod.exam_score ?? 0,
-                bonus_score: latestGradedPeriod.bonus_score ?? 0,
-                sum_score: latestGradedPeriod.sum_score,
-                max_period_score: latestGradedPeriod.max_period_score,
-                percentage: latestGradedPeriod.percentage,
-                attendance_count: latestGradedPeriod.attendance_count,
-                total_lessons: latestGradedPeriod.total_lessons,
-                version: 1,
-              }}
+          ) : (
+            <SoonestLessonCard
+              course={soonestLessonCourse?.course}
+              nextLessonAt={soonestLessonCourse?.next_lesson_at}
             />
+          )}
+        </section>
+
+        <section
+          aria-labelledby="metrics-heading"
+          className="@[51.5rem]:[grid-area:metrics]"
+        >
+          <h2 id="metrics-heading" className="sr-only">
+            {t("average")}
+          </h2>
+          {isProfileLoading && !profile ? (
+            <div className="grid grid-cols-2 gap-3 @[40rem]:grid-cols-4 motion-safe:animate-pulse">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 rounded-2xl border border-border-warm bg-card" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 @[40rem]:grid-cols-4">
+              <div className="rounded-2xl border border-border-warm bg-card p-3 sm:p-4">
+                <span className="text-sm font-medium uppercase tracking-wider text-muted block break-words">
+                  {t("average")}
+                </span>
+                <div title={t("gradingStateUnavailableBody")} aria-label={t("gradingStateUnavailable")} className="mt-1 text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+                  {t("metricUnavailable")}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border-warm bg-card p-3 sm:p-4">
+                <span className="text-sm font-medium uppercase tracking-wider text-muted block break-words">
+                  {t("attendance")}
+                </span>
+                <div className="mt-1 text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+                  {hasLessonPopulation
+                    ? formatNumber(totals!.attendance_percentage / 100, i18n.language, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                    : t("metricUnavailable")}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border-warm bg-card p-3 sm:p-4">
+                <span className="text-sm font-medium uppercase tracking-wider text-muted block break-words">
+                  {t("absences")}
+                </span>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+                    {totals ? formatNumber(totals.absences, i18n.language) : t("metricUnavailable")}
+                  </span>
+                  <span className="text-xs text-muted tabular-nums">
+                    {totals ? t("ofLessons", { total: formatNumber(totals.total_lessons, i18n.language) }) : t("profileUnavailableBody")}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                to="/my/courses"
+                className="group rounded-2xl border border-border-warm bg-card p-3 sm:p-4 hover:bg-row-hover motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex flex-col justify-between min-h-[44px]"
+              >
+                <span className="text-sm font-medium uppercase tracking-wider text-muted block break-words">
+                  {t("activeCoursesCount")}
+                </span>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+                    {totals ? formatNumber(totals.active_course_count, i18n.language) : t("metricUnavailable")}
+                  </span>
+                  <span className="text-xs font-semibold text-maroon hover:underline">
+                    {t("allCoursesLink")}
+                  </span>
+                </div>
+              </Link>
+            </div>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="courses-heading"
+          className="@[51.5rem]:[grid-area:courses] flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between">
+            <h2 id="courses-heading" className="text-base font-bold text-ink flex items-center gap-2">
+              <BookOpen size={18} className="text-maroon" aria-hidden="true" />
+              <span>{t("myCourses")}</span>
+            </h2>
+            <Link
+              to="/my/courses"
+              className="text-xs font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded min-h-[44px] flex items-center"
+            >
+              {t("allCoursesLink")}
+            </Link>
           </div>
-        ) : (
-          <StudentEmptyState
-            title={t("noGradesTitle", "Оценок пока нет")}
-            body={t("noGradesBody", "Ваш первый период появится здесь, как только преподаватель поставит оценки.")}
+
+          {isProfileLoading && !profile ? (
+            <div className="flex flex-col gap-3 motion-safe:animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 rounded-2xl border border-border-warm bg-card" />
+              ))}
+            </div>
+          ) : profileUnavailable ? profileFailure : activeCourses.length === 0 ? (
+            <StudentEmptyState
+              title={t("noCoursesTitle")}
+              body={t("noCoursesBody")}
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {activeCourses.slice(0, 3).map((entry) => (
+                <StudentCourseRow key={entry.course.id} entry={entry} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="result-heading"
+          className="@[51.5rem]:[grid-area:result] flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between">
+            <h2 id="result-heading" className="text-base font-bold text-ink">
+              {t("latestPeriodResult")}
+            </h2>
+          </div>
+
+          <StudentResultCard
+            journal={latestAvailablePeriod}
+            hasLoadedData={journals !== undefined}
+            hasUpcomingPeriods={(journals?.length ?? 0) > 0 && availablePeriods.length === 0}
+            isLoading={isJournalsLoading}
+            isError={isJournalsError}
+            isRefetching={isJournalsFetching}
+            onRetry={() => refetchJournals()}
           />
-        )}
+        </section>
       </div>
     </div>
   );

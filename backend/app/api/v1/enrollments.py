@@ -1,18 +1,39 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
-from app.models.enrollment import Enrollment
-from app.schemas.enrollment import EnrollmentCreate, EnrollmentResponse
+from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.schemas.enrollment import (
+    EnrollmentCreate,
+    EnrollmentResponse,
+    CourseRosterResponse,
+    RosterLocationResponse,
+    EligibleCandidateResponse,
+    RosterSortOrder,
+)
 from app.schemas.common import PaginatedResponse
 from app.services.enrollment_service import EnrollmentService
+from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
+from app.repositories.sqlalchemy.enrollment_repository import SQLAlchemyEnrollmentRepository
+from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 
 router = APIRouter()
 
 
-@router.post("/", response_model=EnrollmentResponse, status_code=status.HTTP_201_CREATED)
+def get_enrollment_service(
+    db: AsyncSession = Depends(get_db_session),
+) -> EnrollmentService:
+    return EnrollmentService(
+        db=db,
+        enrollment_repo=SQLAlchemyEnrollmentRepository(db),
+        course_repo=SQLAlchemyCourseRepository(db),
+        user_repo=SQLAlchemyUserRepository(db),
+    )
+
+
+@router.post("/", response_model=EnrollmentResponse, status_code=http_status.HTTP_201_CREATED)
 async def enroll_student(
     payload: EnrollmentCreate,
     current_user: User = Depends(require_superadmin),
@@ -45,20 +66,20 @@ async def list_enrollments(
     if current_user.role == UserRole.MENTOR:
         if not course_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Mentors must specify course_id to list enrollments"
             )
         course = await db.get(Course, course_id)
         if not course or course.is_deleted or course.mentor_id != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to view enrollments for this course"
             )
         filters["course_id"] = course_id
     elif current_user.role == UserRole.STUDENT:
         if not student_id or student_id != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Students can only view their own enrollments"
             )
         filters["student_id"] = student_id
@@ -70,3 +91,79 @@ async def list_enrollments(
 
     enrollment_service = EnrollmentService(db)
     return await enrollment_service.list_enrollments(filters, page, page_size)
+
+
+@router.get("/courses/{course_id}/roster", response_model=CourseRosterResponse)
+async def get_course_roster(
+    course_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    status: Optional[EnrollmentStatus] = Query(None),
+    sort: RosterSortOrder = Query(RosterSortOrder.NAME_ASC),
+    student_id: Optional[int] = Query(None),
+    locate_student_id: Optional[int] = Query(None),
+    current_user: User = Depends(get_current_user),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
+) -> CourseRosterResponse:
+    if current_user.role not in (UserRole.SUPERADMIN, UserRole.MENTOR):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view course roster"
+        )
+    return await enrollment_service.get_course_roster(
+        course_id=course_id,
+        current_user=current_user,
+        page=page,
+        page_size=page_size,
+        search=search,
+        status_filter=status,
+        sort=sort,
+        student_id=student_id,
+        locate_student_id=locate_student_id,
+    )
+
+
+@router.get("/courses/{course_id}/roster/locate", response_model=RosterLocationResponse)
+async def locate_course_roster_student(
+    course_id: int,
+    student_id: int = Query(..., ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    status: Optional[EnrollmentStatus] = Query(None),
+    sort: RosterSortOrder = Query(RosterSortOrder.NAME_ASC),
+    current_user: User = Depends(get_current_user),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
+) -> RosterLocationResponse:
+    if current_user.role not in (UserRole.SUPERADMIN, UserRole.MENTOR):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view course roster"
+        )
+    return await enrollment_service.get_roster_location(
+        course_id=course_id,
+        student_id=student_id,
+        current_user=current_user,
+        page_size=page_size,
+        search=search,
+        status_filter=status,
+        sort=sort,
+    )
+
+
+@router.get("/courses/{course_id}/eligible-candidates", response_model=PaginatedResponse[EligibleCandidateResponse])
+async def get_course_eligible_candidates(
+    course_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    current_user: User = Depends(require_superadmin),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
+) -> PaginatedResponse[EligibleCandidateResponse]:
+    return await enrollment_service.get_eligible_candidates(
+        course_id=course_id,
+        current_user=current_user,
+        page=page,
+        page_size=page_size,
+        search=search,
+    )

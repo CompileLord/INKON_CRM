@@ -2,69 +2,155 @@ import { AlertTriangle, ChevronRight, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDebts } from "../../lib/finance/hooks";
-import { formatSum } from "../../lib/money";
-import { CardSkeleton } from "../ui/CardSkeleton";
+import { formatMoney } from "../../lib/money";
 
 export function AttentionList() {
-  const { t } = useTranslation("dashboard");
+  const { t } = useTranslation(["dashboard", "common"]);
   const { data, isLoading, isError, refetch } = useDebts(1, 5);
   const debts = data?.items ?? [];
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-border-warm bg-card shadow-xs transition-[box-shadow,border-color] duration-200">
-      <div className="flex items-center gap-2 rounded-t-xl border-b border-border-warm bg-strip px-5 py-3.5">
-        <AlertTriangle size={16} className="text-amber-600" />
-        <h3 className="text-[15px] font-semibold text-ink">{t("attentionToday")}</h3>
+    <div className="flex h-full flex-col rounded-xl border border-border-warm bg-card overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-warm bg-strip px-5 py-3.5">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={18} className="text-warning shrink-0" aria-hidden="true" />
+          <h2 className="text-lg font-semibold leading-[26px] text-ink">
+            {t("attentionToday")}
+          </h2>
+        </div>
       </div>
 
       <div className="flex-1 p-4">
-        {isLoading ? (
-          <CardSkeleton rows={3} />
-        ) : isError ? (
-          <div className="py-6 text-center text-xs">
-            <p className="text-rose-600 font-semibold">{t("errorLoading", "Ошибка загрузки должников")}</p>
+        {data === undefined && isLoading ? (
+          <div className="flex flex-col divide-y divide-border-warm motion-safe:animate-pulse">
+            {[0, 1, 2, 3, 4].map((index) => (
+              <div key={index} className="py-3 px-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 max-w-full">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                  <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-strip" />
+                  <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <div className="h-4 w-32 rounded bg-strip max-w-full" />
+                    <div className="h-3 w-20 rounded bg-strip max-w-full" />
+                    <div className="h-3 w-40 rounded bg-strip max-w-full" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end pl-4.5 sm:pl-0 shrink-0">
+                  <div className="h-[44px] w-full sm:w-24 rounded-lg bg-strip" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : data === undefined && isError ? (
+          <div className="py-8 text-center flex flex-col items-center justify-center gap-2">
+            <p className="text-xs font-semibold text-destructive">
+              {t("errorLoadingDebts")}
+            </p>
             <button
+              type="button"
               onClick={() => refetch()}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-xs font-medium text-ink hover:bg-cream active:scale-95 transition-[background-color,transform] duration-150 ease-out"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
             >
-              <RefreshCw size={12} /> {t("common:retry", "Повторить")}
+              <RefreshCw size={13} aria-hidden="true" />
+              <span>{t("common:retry")}</span>
             </button>
           </div>
         ) : debts.length === 0 ? (
-          <p className="px-1 text-xs text-muted">{t("allPaymentsOnTime")}</p>
+          <div className="py-8 text-center flex flex-col items-center justify-center gap-3">
+            {isError && (
+              <div className="w-full mb-2 flex flex-col gap-2 rounded-lg border border-border-warm bg-strip p-2.5 text-left">
+                <span className="text-xs font-medium text-warning">
+                  {t("staleFailedNotice")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                >
+                  <RefreshCw size={13} aria-hidden="true" />
+                  <span>{t("common:retry")}</span>
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-muted">
+              {t("allPaymentsOnTime")}
+            </p>
+          </div>
         ) : (
-          <ul className="divide-y divide-beige">
-            {debts.map((item) => (
-              <li key={`${item.student.id}-${item.course.id}`} className="flex gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-strip">
-                <span
-                  className={[
-                    "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                    item.overdue_days > 15 ? "bg-red-600" : "bg-amber-500",
-                  ].join(" ")}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-ink">
-                      {item.student.first_name} {item.student.last_name}
-                    </p>
-                    <span className="text-xs font-bold text-rose-600 tabular-nums">{formatSum(item.debt)} TJS</span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted">
-                    {item.course.title} • <span className="tabular-nums">{t("overdueDays", { days: item.overdue_days })}</span>
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div>
+            {isError && (
+              <div className="mb-3 flex flex-col gap-2 rounded-lg border border-border-warm bg-strip p-2.5">
+                <span className="text-xs font-medium text-warning">
+                  {t("staleFailedNotice")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                >
+                  <RefreshCw size={13} aria-hidden="true" />
+                  <span>{t("common:retry")}</span>
+                </button>
+              </div>
+            )}
+            <ul className="divide-y divide-border-warm">
+              {debts.map((item) => {
+                const isOverdue = item.overdue_days > 0;
+                const isCritical = item.overdue_days > 15;
+                const dotColor = isCritical
+                  ? "bg-destructive"
+                  : isOverdue
+                  ? "bg-warning"
+                  : "bg-muted";
+
+                return (
+                  <li key={`${item.student.id}-${item.course.id}`} className="py-3 px-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColor}`} aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm font-medium text-ink break-words">
+                              {item.student.first_name} {item.student.last_name}
+                            </p>
+                            <span
+                              className={`text-xs tabular-nums whitespace-nowrap ${
+                                isOverdue ? "font-bold text-destructive" : "font-semibold text-ink"
+                              }`}
+                            >
+                              {formatMoney(item.debt, { suffix: "TJS" })}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs text-muted break-words">
+                            {item.course.title} •{" "}
+                            <span className="tabular-nums">
+                              {isOverdue ? t("overdueDays", { days: item.overdue_days }) : t("dueToday")}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end pl-4.5 sm:pl-0 shrink-0">
+                        <Link
+                          to="/finance"
+                          className="inline-flex min-h-[44px] min-w-[44px] w-full sm:w-auto items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                        >
+                          <span>{t("openFinance")}</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
 
-      <div className="border-t border-beige px-5 py-3.5">
+      <div className="border-t border-border-warm bg-card px-5 py-2">
         <Link
           to="/finance"
-          className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 no-underline hover:underline active:scale-95 transition-transform duration-150"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
         >
-          {t("viewAllDebts")} <ChevronRight size={14} />
+          <span>{t("openFinanceViewDebts")}</span>
+          <ChevronRight size={14} aria-hidden="true" />
         </Link>
       </div>
     </div>

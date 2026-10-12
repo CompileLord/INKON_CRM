@@ -1,65 +1,110 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ComponentProps, type ReactNode } from "react";
+import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useShellStore } from "../../store/shellStore";
 
-interface SlideOverProps {
+export type SlideOverVariant = "person" | "course";
+
+export interface SlideOverProps {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  variant?: SlideOverVariant;
+  closeDisabled?: boolean;
+  pending?: boolean;
+  initialFocus?: ComponentProps<typeof Dialog.Popup>["initialFocus"];
+  finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
 }
 
-export function SlideOver({ open, onClose, title, children, footer }: SlideOverProps) {
+export function SlideOver({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  variant = "person",
+  closeDisabled = false,
+  pending = false,
+  initialFocus,
+  finalFocus,
+}: SlideOverProps) {
   const { t } = useTranslation("common");
+  const closeShell = useShellStore((state) => state.close);
+  const isDismissBlocked = closeDisabled || pending;
+  const isCourseVariant = variant === "course";
+
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      closeShell();
+    }
+  }, [open, closeShell]);
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+  const desktopDrawerClasses = isCourseVariant
+    ? "md:inset-y-0 md:left-auto md:right-0 md:w-[560px] md:max-w-[560px] md:rounded-l-2xl md:border-l md:border-border-warm origin-bottom md:origin-right"
+    : "sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[480px] sm:max-w-[480px] sm:rounded-l-2xl sm:border-l sm:border-border-warm origin-bottom sm:origin-right";
 
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  const headerDesktopPadding = isCourseVariant ? "md:pt-4" : "sm:pt-4";
+  const bodyDesktopPadding = isCourseVariant ? "md:pb-5" : "sm:pb-5";
+  const footerDesktopPadding = isCourseVariant ? "md:pb-4" : "sm:pb-4";
 
   return (
-    <div
-      className={[
-        "fixed inset-0 z-50 transition-opacity duration-200",
-        open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
-      ].join(" ")}
-      aria-hidden={!open}
+    <Dialog.Root
+      open={open}
+      disablePointerDismissal={isDismissBlocked}
+      onOpenChange={(next) => {
+        if (!next && !isDismissBlocked) {
+          onClose();
+        }
+      }}
     >
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-
-      <div
-        className={[
-          "absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col rounded-l-2xl bg-card shadow-xl transition-transform duration-200",
-          open ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-      >
-        <div className="flex items-center justify-between border-b border-border-warm px-6 py-5">
-          <h2 className="text-lg font-bold text-ink">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close", "Закрыть")}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-strip"
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-60 bg-scrim" />
+        <Dialog.Popup
+          initialFocus={initialFocus}
+          finalFocus={finalFocus}
+          className={`fixed inset-0 z-70 grid w-full h-dvh max-h-dvh ${
+            footer
+              ? "grid-rows-[auto_minmax(0,1fr)_auto]"
+              : "grid-rows-[auto_minmax(0,1fr)]"
+          } overflow-hidden bg-card shadow-2xl motion-safe:animate-[card-scale-in_200ms_ease-out] has-focus-visible:animate-none ${desktopDrawerClasses}`}
+        >
+          <div
+            className={`flex shrink-0 items-center justify-between gap-3 border-b border-border-warm px-6 py-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] ${headerDesktopPadding}`}
           >
-            <X size={18} />
-          </button>
-        </div>
+            <Dialog.Title className="text-lg font-bold text-ink">
+              {title}
+            </Dialog.Title>
+            <Dialog.Close
+              disabled={isDismissBlocked}
+              aria-label={t("close")}
+              className="flex h-11 w-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[10px] text-muted hover:text-ink hover:bg-strip transition-[color,background-color,transform] duration-150 ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100"
+            >
+              <X size={20} />
+            </Dialog.Close>
+          </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div
+            className={`min-h-0 overflow-y-auto overscroll-contain px-6 py-5 ${
+              !footer
+                ? `pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] ${bodyDesktopPadding}`
+                : ""
+            }`}
+          >
+            {children}
+          </div>
 
-        {footer && <div className="border-t border-border-warm px-6 py-4">{footer}</div>}
-      </div>
-    </div>
+          {footer && (
+            <div
+              className={`shrink-0 border-t border-border-warm px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] ${footerDesktopPadding}`}
+            >
+              {footer}
+            </div>
+          )}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

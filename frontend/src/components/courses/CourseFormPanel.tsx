@@ -46,6 +46,7 @@ export function CourseFormPanel({ open, course, onClose, onSaved }: CourseFormPa
     <SlideOver
       open={open}
       onClose={onClose}
+      variant="course"
       title={isEditing ? t("form.editCourseTitle", "Редактировать курс") : t("form.newCourseTitle", "Новый курс")}
       footer={
         <div className="flex justify-end gap-3">

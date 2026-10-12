@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useFinanceAnalytics, usePayments } from "../../lib/finance/hooks";
 import { formatSum } from "../../lib/money";
 import { formatDate } from "../../i18n/formatters";
+import { PaymentCompletion } from "./PaymentCompletion";
+import type { PaymentItem } from "../../lib/finance/types";
 import { PaymentModal } from "./PaymentModal";
 import { Pagination } from "../ui/Pagination";
 import { CardSkeleton } from "../ui/CardSkeleton";
@@ -12,6 +14,7 @@ import { TableErrorState } from "../ui/TableErrorState";
 
 export function FinanceAnalyticsTab() {
   const { t, i18n } = useTranslation(["finance", "common"]);
+  const [recordedPayment, setRecordedPayment] = useState<PaymentItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const { data: analytics, isLoading: analyticsLoading, isError: analyticsError, refetch: refetchAnalytics } = useFinanceAnalytics();
@@ -178,7 +181,8 @@ export function FinanceAnalyticsTab() {
         )}
       </div>
 
-      <PaymentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadData} />
+      <PaymentCompletion payment={recordedPayment} />
+      <PaymentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={payment => { setRecordedPayment(payment); loadData(); }} />
     </div>
   );
 }

@@ -185,6 +185,7 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
       });
       setAggregateStatus("saving");
 
+      try {
         if (journalId) {
           const cached = queryClient.getQueryData<JournalDetailResponse>(["journals", "detail", journalId]);
           if (cached) {

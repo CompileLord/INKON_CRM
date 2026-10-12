@@ -1,12 +1,12 @@
 import { create } from "zustand";
-import { onLogout } from "../lib/auth/session";
+import { onLogout, onSessionRefresh } from "../lib/auth/session";
 import { tokenStorage } from "../lib/auth/tokenStorage";
 import { decodeAccessToken } from "../lib/auth/jwt";
 import type { Role } from "../lib/users/types";
 
 export type AuthStatus = "initializing" | "authenticated" | "unauthenticated";
 
-interface AuthState {
+export interface AuthState {
   status: AuthStatus;
   mustSetPassword: boolean;
   role: Role | null;
@@ -17,7 +17,6 @@ interface AuthState {
     mustSetPassword: boolean,
   ) => void;
   setUnauthenticated: () => void;
-  completePasswordSetup: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -26,23 +25,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   role: null,
   userId: null,
   setAuthenticated: (accessToken, refreshToken, mustSetPassword) => {
-    tokenStorage.setTokens({ accessToken, refreshToken });
     const payload = decodeAccessToken(accessToken);
+    if (!payload) {
+      tokenStorage.clear();
+      set({ status: "unauthenticated", mustSetPassword: false, role: null, userId: null });
+      throw new Error("Invalid authentication identity");
+    }
+    tokenStorage.setTokens({ accessToken, refreshToken });
     set({
       status: "authenticated",
-      mustSetPassword,
-      role: payload?.role ?? null,
-      userId: payload?.user_id ?? null,
+      mustSetPassword: mustSetPassword || payload.mustSetPassword,
+      role: payload.role,
+      userId: payload.userId,
     });
   },
   setUnauthenticated: () => {
     tokenStorage.clear();
     set({ status: "unauthenticated", mustSetPassword: false, role: null, userId: null });
   },
-  completePasswordSetup: () => set({ mustSetPassword: false }),
 }));
 
-// The axios refresh interceptor emits this when a 401 can't be recovered
-// (refresh token missing/expired) so the session ends even for requests that
-// aren't driven by a user action.
 onLogout(() => useAuthStore.getState().setUnauthenticated());
+onSessionRefresh((tokens) => useAuthStore.getState().setAuthenticated(tokens.access_token, tokens.refresh_token, tokens.must_set_password));
