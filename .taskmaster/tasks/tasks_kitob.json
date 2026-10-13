@@ -271,7 +271,8 @@
     "status": "in_progress",
     "group": "03",
     "dependencies": [
-      "KITOB-03-01"
+      "KITOB-03-01",
+      "KITOB-03-02-NULL-PATCH"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -279,12 +280,13 @@
   {
     "id": "KITOB-03-03",
     "title": "/students/:id authorized variants",
-    "status": "pending",
+    "status": "in_progress",
     "group": "03",
     "dependencies": [
       "KITOB-03-01",
       "KITOB-01-02",
-      "KITOB-03-03-CONTRACT"
+      "KITOB-03-03-CONTRACT",
+      "KITOB-03-02-NULL-PATCH"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -796,5 +798,27 @@
     "dependencies": [],
     "description": "User-requested AGENTS.md rules: preserve timed-out executor work/session, resume instead of auditing incomplete work, and wait for a complete result. Preserve parallel subgroup dependencies and ownership.",
     "testStrategy": "Inspect exact AGENTS/SUBGROUPS wording, task dependency integrity and git diff whitespace; application source unchanged, reuse verified main backend/frontend/type/build gates."
+  },
+  {
+    "id": "KITOB-03-02-NULL-PATCH",
+    "title": "Persist explicit clearing of nullable account fields",
+    "status": "completed",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-01"
+    ],
+    "description": "User-authorized Codex correction: explicit null clears optional profile fields, omitted fields remain unchanged, required identity and role/payment guards remain authoritative. Separately audited shared prerequisite for account forms.",
+    "testStrategy": "Persisted API tests for admin edit/self edit, nullable clears, omitted preservation, required identity unchanged and denied-role/student-only payment boundaries; full backend/frontend/type/build gates."
+  },
+  {
+    "id": "KITOB-02-FOCUS-ASSERTIONS",
+    "title": "Verify duplicate-dialog focus after asynchronous cleanup",
+    "status": "in_progress",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-06"
+    ],
+    "description": "Root integration gate caught a race between dialog unmount and queued focus restoration. Preserve exact focus/no-write/no-navigation assertions and await actual focus with unchanged default timeout. No application behavior change.",
+    "testStrategy": "Targeted course lifecycle suite and full frontend, type/build gates; reuse unchanged verified backend suite. Assertion must fail if focus restoration is removed."
   }
 ]
