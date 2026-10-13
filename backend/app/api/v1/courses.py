@@ -4,7 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
-from app.core.deps import get_db_session, get_current_user, require_superadmin
+from app.core.deps import (
+    get_db_session,
+    get_current_user,
+    require_superadmin,
+    get_course_progress_repository,
+    get_course_progress_service,
+)
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.course_schedule import CourseSchedule
@@ -12,11 +18,16 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
-from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseScheduleResponse, CourseMentorHistoryResponse
+from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
 from app.services.journal_service import JournalService
+from app.services.course_progress_service import CourseProgressService
+from app.repositories.interfaces.course_progress_repository import (
+    CourseProgressRepositoryInterface,
+    CourseAccessRecord,
+)
 from app.core.scoring import score_percentage
 
 router = APIRouter()
@@ -61,6 +72,35 @@ async def check_course_access(course_id: int, current_user: User, db: AsyncSessi
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
+
+
+async def check_course_staff_access(
+    course_id: int,
+    current_user: User,
+    repo: CourseProgressRepositoryInterface
+) -> CourseAccessRecord:
+    record = await repo.get_course_access_record(course_id)
+    if not record or record.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+    if current_user.role == UserRole.SUPERADMIN:
+        return record
+    elif current_user.role == UserRole.MENTOR:
+        if record.mentor_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+        return record
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+
+
 
 
 @router.post("/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
@@ -181,6 +221,18 @@ async def get_course_journal_metrics(
     await check_course_access(id, current_user, db)
     journal_service = JournalService(db)
     return await journal_service.get_course_journal_metrics(id)
+
+
+@router.get("/{id}/staff-progress", response_model=CourseStaffProgressResponse)
+async def get_staff_progress(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    progress_repo: CourseProgressRepositoryInterface = Depends(get_course_progress_repository),
+    progress_service: CourseProgressService = Depends(get_course_progress_service)
+) -> CourseStaffProgressResponse:
+    await check_course_staff_access(id, current_user, progress_repo)
+    return await progress_service.get_staff_progress(id)
+
 
 
 @router.get("/{id}/progress-chart")
@@ -313,5 +365,3 @@ async def get_progress_chart(
         "periods": periods,
         "datasets": datasets
     }
-
-

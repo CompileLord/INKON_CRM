@@ -728,7 +728,7 @@
     "id": "KITOB-02-04-RESULT-CONTRACT",
     "group": "02",
     "title": "Expose authorized course Progress result missingness and stored-value scope",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": [
       "KITOB-02-04-SEMANTICS"
     ],

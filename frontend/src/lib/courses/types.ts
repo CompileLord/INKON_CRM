@@ -109,6 +109,39 @@ export interface CourseProgressChartResponse {
   datasets: CourseProgressChartDataset[];
 }
 
+export type StaffGradingState = "missing" | "unknown";
+export type StaffGradingProvenance = "unknown";
+
+export interface StaffProgressPeriod {
+  id: number;
+  period_label: string;
+  period_start: string;
+  period_end: string;
+}
+
+export interface StaffProgressPeriodResult {
+  period_id: number;
+  grading_state: StaffGradingState;
+  score: number | null;
+  max_score: number | null;
+  percentage: number | null;
+}
+
+export interface StaffProgressStudent {
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  period_results: StaffProgressPeriodResult[];
+  grading_provenance: StaffGradingProvenance;
+}
+
+export interface CourseStaffProgressResponse {
+  course_id: number;
+  periods: StaffProgressPeriod[];
+  students: StaffProgressStudent[];
+}
+
+
 export interface StudentCourseProgressChartResponse {
   periods: CourseProgressPeriod[];
   my_series: number[];

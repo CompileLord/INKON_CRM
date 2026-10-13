@@ -19,6 +19,7 @@ const {
   getCourseMentorHistory,
   getCourseProgressChart,
   getCourseJournals,
+  getCourseStaffProgress,
 } = await import("./endpoints");
 
 const mock = new MockAdapter(httpClient);
@@ -185,6 +186,63 @@ describe("getCourseJournals", () => {
     ];
     mock.onGet("/courses/1/journals").reply(200, journals);
     await expect(getCourseJournals(1)).resolves.toEqual(journals);
+  });
+});
+
+describe("getCourseStaffProgress", () => {
+  it("fetches course staff progress with stable periods, factual scores and nullable percentages", async () => {
+    const sampleStaffProgress = {
+      course_id: 1,
+      periods: [
+        {
+          id: 10,
+          period_label: "Week 1",
+          period_start: "2026-08-01",
+          period_end: "2026-08-07",
+        },
+      ],
+      students: [
+        {
+          student_id: 101,
+          first_name: "Ali",
+          last_name: "Valiyev",
+          period_results: [
+            {
+              period_id: 10,
+              grading_state: "unknown",
+              score: 85,
+              max_score: 80,
+              percentage: 106.25,
+            },
+          ],
+          grading_provenance: "unknown",
+        },
+        {
+          student_id: 102,
+          first_name: "Zara",
+          last_name: "Karimova",
+          period_results: [
+            {
+              period_id: 10,
+              grading_state: "missing",
+              score: null,
+              max_score: null,
+              percentage: null,
+            },
+          ],
+          grading_provenance: "unknown",
+        },
+      ],
+    };
+
+    mock.onGet("/courses/1/staff-progress").reply(200, sampleStaffProgress);
+
+    const result = await getCourseStaffProgress(1);
+    expect(result).toEqual(sampleStaffProgress);
+    expect(result.students[0].period_results[0].grading_state).toBe("unknown");
+    expect(result.students[0].period_results[0].percentage).toBe(106.25);
+    expect(result.students[1].period_results[0].grading_state).toBe("missing");
+    expect(result.students[1].period_results[0].score).toBeNull();
   });
 });
 

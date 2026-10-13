@@ -6,6 +6,7 @@ import type {
   CourseProgressChartResponse,
   CourseResponse,
   CourseScheduleResponse,
+  CourseStaffProgressResponse,
   CourseUpdate,
   JournalPeriod,
   ListCoursesParams,
@@ -71,4 +72,10 @@ export function getCourseJournals(id: number): Promise<JournalPeriod[]> {
 
 export function getCourseJournalMetrics(id: number): Promise<CourseJournalMetricsResponse> {
   return httpClient.get<CourseJournalMetricsResponse>(`/courses/${id}/journal-metrics`).then((res) => res.data);
+}
+
+export function getCourseStaffProgress(id: number): Promise<CourseStaffProgressResponse> {
+  return httpClient
+    .get<CourseStaffProgressResponse>(`/courses/${id}/staff-progress`)
+    .then((res) => res.data);
 }

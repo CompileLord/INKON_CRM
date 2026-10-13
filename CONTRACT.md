@@ -1612,6 +1612,54 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## GET /api/v1/courses/{id}/staff-progress
+
+**Summary:** Get Staff Progress
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "course_id": integer,
+    "periods": [
+      {
+        "id": integer,
+        "period_label": string,
+        "period_start": string,
+        "period_end": string,
+      }
+    ],
+    "students": [
+      {
+        "student_id": integer,
+        "first_name": string,
+        "last_name": string,
+        "period_results": array[],
+        "grading_provenance?": string,
+      }
+    ],
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/courses/{id}/progress-chart
 
 **Summary:** Get Progress Chart

@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, field_validator
 from app.models.course import CourseExamType, CourseStatus
 
@@ -97,3 +97,36 @@ class CourseMentorHistoryResponse(BaseModel):
     assigned_from: datetime
     assigned_to: Optional[datetime] = None
     mentor: MentorMiniResponse
+
+
+StaffGradingState = Literal["missing", "unknown"]
+StaffGradingProvenance = Literal["unknown"]
+
+
+class StaffProgressPeriod(BaseModel):
+    id: int
+    period_label: str
+    period_start: date
+    period_end: date
+
+
+class StaffProgressPeriodResult(BaseModel):
+    period_id: int
+    grading_state: StaffGradingState
+    score: Optional[int] = Field(None, description="Stored sum_score when unknown; null when missing")
+    max_score: Optional[int] = Field(None, description="Stored max_period_score when unknown; null when missing")
+    percentage: Optional[float] = Field(None, description="score_percentage when max_score > 0; null when missing or nonpositive denominator")
+
+
+class StaffProgressStudent(BaseModel):
+    student_id: int
+    first_name: str
+    last_name: str
+    period_results: List[StaffProgressPeriodResult]
+    grading_provenance: StaffGradingProvenance = "unknown"
+
+
+class CourseStaffProgressResponse(BaseModel):
+    course_id: int
+    periods: List[StaffProgressPeriod]
+    students: List[StaffProgressStudent]
