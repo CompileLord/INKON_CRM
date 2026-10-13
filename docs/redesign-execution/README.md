@@ -1,6 +1,6 @@
 # KITOB implementation
 
-Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has accepted the independent avatar prerequisite and Students directory/create/edit workflow; Mentors corrections and Student profiles are active in isolated Luna worktrees. Profile performance provenance and nullable account-field persistence prerequisites are accepted. The user-requested journal conflict hotfix is accepted separately from the future Group 04 redesign. Groups 04–06 redesign work remains.
+Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has accepted both Students and Mentors directories with create/edit workflows and the shared avatar/pagination prerequisites. Student profile corrections and the Mentor API prerequisite remain active in isolated worktrees. Profile performance provenance and nullable account-field persistence prerequisites are accepted. The user-requested journal conflict hotfix is accepted separately from the future Group 04 redesign. Groups 04–06 redesign work remains.
 
 [Current task/session record](ledger.json) is the recovery entry point. [Subgroup boundaries](SUBGROUPS.md) define session reuse, dependencies and parallel ownership. Taskmaster remains the source of task definitions and completion status. Do not infer completion from an agent report or screenshot count.
 
@@ -31,6 +31,8 @@ Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has acc
 | Course Progress | [Audit](group-02/progress/ui/audit.md) | [Evidence](group-02/progress/ui/evidence/manifest.json) |
 | Group 02 integration | [Audit](group-02/integration/audit.md) | Final integration and regression checks |
 | Students directory and forms | [Audit](group-03/students/directory/audit.md) | [Screenshots](group-03/students/directory/evidence/screenshots/), [manifest](group-03/students/directory/evidence/manifest.json), [probes](group-03/students/directory/evidence/probes.json) |
+| Mentors directory and forms | [Audit](group-03/mentors/directory/audit.md) | [Screenshots](group-03/mentors/directory/evidence/screenshots/), [manifest](group-03/mentors/directory/evidence/manifest.json), [probes](group-03/mentors/directory/evidence/probes.json) |
+| Shared pagination | [Audit](group-03/pagination/audit.md) | Real pagination captures in the Mentors evidence above |
 | Profile performance contract | [Audit](group-03/student-profile/contract/audit.md) | Contract-only prerequisite; no page screenshot claim |
 | Nullable profile field persistence | [Audit](group-03/nullable-profile-patch/audit.md) | [API regression evidence](group-03/nullable-profile-patch/evidence/probes.json) |
 | Journal conflict hotfix | [Audit](hotfix-journal-conflicts/audit.md) | [Screenshots](hotfix-journal-conflicts/evidence/screenshots/), [manifest](hotfix-journal-conflicts/evidence/manifest.json), [probes](hotfix-journal-conflicts/evidence/probes.json) |
