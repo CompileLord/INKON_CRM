@@ -56,6 +56,34 @@ export function buildUserFormValues(user?: ExistingUserFields): UserFormValues {
   };
 }
 
+export interface MentorFormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  birthDate: string;
+}
+
+export const mentorFormDefaults: MentorFormValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+};
+
+export function buildMentorFormValues(user?: ExistingUserFields): MentorFormValues {
+  if (!user) return mentorFormDefaults;
+
+  return {
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    phone: user.phone ?? "",
+    birthDate: user.date_of_birth ?? "",
+  };
+}
+
 type UserApiFields = Omit<UserCreate, "role">;
 
 function toApiFields(values: UserFormValues): UserApiFields {
@@ -75,6 +103,16 @@ function toApiFields(values: UserFormValues): UserApiFields {
 
 export function buildCreatePayload(values: UserFormValues): UserApiFields {
   return toApiFields(values);
+}
+
+export function buildMentorCreatePayload(values: MentorFormValues): UserApiFields {
+  return {
+    email: values.email.trim(),
+    first_name: values.firstName.trim(),
+    last_name: values.lastName.trim(),
+    date_of_birth: values.birthDate || null,
+    phone: values.phone.trim() || null,
+  };
 }
 
 const FIELD_TO_API_KEY: Record<keyof UserFormValues, keyof UserApiFields> = {
@@ -100,6 +138,38 @@ export function buildUpdatePayload(
     if (!dirtyFields[field]) continue;
     const apiKey = FIELD_TO_API_KEY[field];
     (update as Record<string, unknown>)[apiKey] = full[apiKey];
+  }
+
+  return update;
+}
+
+export const MENTOR_FIELD_TO_API_KEY: Record<keyof MentorFormValues, keyof UserApiFields> = {
+  firstName: "first_name",
+  lastName: "last_name",
+  email: "email",
+  phone: "phone",
+  birthDate: "date_of_birth",
+};
+
+export function buildMentorUpdatePayload(
+  values: MentorFormValues,
+  dirtyFields: Partial<Record<keyof MentorFormValues, boolean>>,
+): UserUpdate {
+  const update: UserUpdate = {};
+
+  for (const field of Object.keys(dirtyFields) as (keyof MentorFormValues)[]) {
+    if (!dirtyFields[field]) continue;
+    if (field === "birthDate") {
+      update.date_of_birth = values.birthDate || null;
+    } else if (field === "phone") {
+      update.phone = values.phone.trim() || null;
+    } else if (field === "email") {
+      update.email = values.email.trim();
+    } else if (field === "firstName") {
+      update.first_name = values.firstName.trim();
+    } else if (field === "lastName") {
+      update.last_name = values.lastName.trim();
+    }
   }
 
   return update;
