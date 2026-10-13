@@ -64,6 +64,48 @@ export interface ListUsersParams {
   page_size?: number;
 }
 
+export type StudentGradingState = "missing" | "unknown";
+export type StudentGradingProvenance = "unknown";
+
+export type StudentPerformanceTotalsScope = "all_recorded_student_period_summaries";
+export type StudentPerformanceTotalsMeasuredPopulation = "all_recorded_student_period_summaries";
+export type StudentPerformanceDenominatorBasis = "stored_period_total_lessons";
+
+export type StudentCoursePerformanceScope = "single_course";
+export type StudentCoursePerformanceMeasuredPopulation = "single_course_recorded_period_summaries";
+
+export interface StudentPerformanceTotals {
+  scope: StudentPerformanceTotalsScope;
+  measured_population: StudentPerformanceTotalsMeasuredPopulation;
+  denominator_basis: StudentPerformanceDenominatorBasis;
+  grading_state: StudentGradingState;
+  grading_provenance: StudentGradingProvenance;
+  raw_avg_percentage: number | null;
+  attendance_percentage: number | null;
+  attendance_denominator: number;
+  attended_lessons: number;
+  absences: number;
+  total_lessons: number;
+  period_summaries_count: number;
+  periods_with_max_score_count: number;
+}
+
+export interface StudentCoursePerformance {
+  scope: StudentCoursePerformanceScope;
+  measured_population: StudentCoursePerformanceMeasuredPopulation;
+  denominator_basis: StudentPerformanceDenominatorBasis;
+  grading_state: StudentGradingState;
+  grading_provenance: StudentGradingProvenance;
+  raw_avg_percentage: number | null;
+  attendance_percentage: number | null;
+  attendance_denominator: number;
+  attended_lessons: number;
+  absences: number;
+  total_lessons: number;
+  period_summaries_count: number;
+  periods_with_max_score_count: number;
+}
+
 export interface StudentTotals {
   avg_percentage: number;
   attendance_percentage: number;
@@ -86,6 +128,7 @@ export interface StudentCourseProfile {
   class_size: number;
   class_avg_percentage: number;
   next_lesson_at: string | null;
+  performance?: StudentCoursePerformance | null;
 }
 
 export interface StudentProfileResponse {
@@ -95,6 +138,7 @@ export interface StudentProfileResponse {
   avg_score: number;
   absences: number;
   total_lessons: number;
+  performance?: StudentPerformanceTotals | null;
 }
 
 export interface StudentJournalPeriod {

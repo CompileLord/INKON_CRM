@@ -49,7 +49,8 @@ async def get_my_profile(
         "courses": stats["courses"],
         "avg_score": stats["avg_score"],
         "absences": stats["absences"],
-        "total_lessons": stats["total_lessons"]
+        "total_lessons": stats["total_lessons"],
+        "performance": stats["performance"],
     }
 
 
@@ -110,5 +111,6 @@ async def get_student_profile(
         "courses": stats["courses"],
         "avg_score": stats["avg_score"],
         "absences": stats["absences"],
-        "total_lessons": stats["total_lessons"]
+        "total_lessons": stats["total_lessons"],
+        "performance": stats["performance"],
     }

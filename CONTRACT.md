@@ -726,11 +726,27 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "class_size": integer,
         "class_avg_percentage": number,
         "next_lesson_at?": string,
+        "performance?": any,
       }
     ],
     "avg_score?": number,
     "absences?": integer,
     "total_lessons?": integer,
+    "performance?": {
+      "scope?": string,
+      "measured_population?": string,
+      "denominator_basis?": string,
+      "grading_state": "missing" | "unknown",
+      "grading_provenance?": string,
+      "raw_avg_percentage?": number,
+      "attendance_percentage?": number,
+      "attendance_denominator?": integer,
+      "attended_lessons?": integer,
+      "absences?": integer,
+      "total_lessons?": integer,
+      "period_summaries_count?": integer,
+      "periods_with_max_score_count?": integer,
+    },
   }
   ```
 
@@ -849,11 +865,27 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "class_size": integer,
         "class_avg_percentage": number,
         "next_lesson_at?": string,
+        "performance?": any,
       }
     ],
     "avg_score?": number,
     "absences?": integer,
     "total_lessons?": integer,
+    "performance?": {
+      "scope?": string,
+      "measured_population?": string,
+      "denominator_basis?": string,
+      "grading_state": "missing" | "unknown",
+      "grading_provenance?": string,
+      "raw_avg_percentage?": number,
+      "attendance_percentage?": number,
+      "attendance_denominator?": integer,
+      "attended_lessons?": integer,
+      "absences?": integer,
+      "total_lessons?": integer,
+      "period_summaries_count?": integer,
+      "periods_with_max_score_count?": integer,
+    },
   }
   ```
 - **422**: Validation Error

@@ -1,7 +1,26 @@
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from typing_extensions import Protocol
 from app.models.user import User
 from app.repositories.interfaces.base_repository import BaseRepository
+
+
+@dataclass(frozen=True)
+class StudentTotalsRawRecord:
+    avg_score_raw: Optional[float]
+    attendance_count: int
+    total_lessons: int
+    summaries_count: int
+    periods_with_max_score_count: int
+
+
+@dataclass(frozen=True)
+class StudentCourseRawRecord:
+    avg_score_raw: Optional[float]
+    attendance_count: int
+    total_lessons: int
+    summaries_count: int
+    periods_with_max_score_count: int
 
 
 class UserRepository(BaseRepository[User], Protocol):
