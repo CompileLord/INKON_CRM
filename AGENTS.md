@@ -193,6 +193,7 @@ A task is not complete until all of the following are true:
   Scope is the feature area (`journals`, `student`, `courses`, `finance`, `i18n`, `auth`).
 - The commit body states what changed and why; do not claim test results that were not actually run.
 - Do not commit secrets, `.env` files, seed credentials, `storage/` uploads, or `.omc/` state.
+- After each task passes independent audit and all required gates, integrate its logical commit into `main` and rerun the necessary integration checks before advancing dependent tasks. Keep failed or unfinished work isolated; preserve unrelated user changes.
 - Do not `push` or open a PR unless explicitly asked.
 
 ### 7.3. Report Honestly
