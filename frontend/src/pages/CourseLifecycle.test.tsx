@@ -320,6 +320,7 @@ describe("CourseLifecycle integration suite", () => {
 
     const dupMenuItem = screen.getByRole("menuitem", { name: /Duplicate/i });
     fireEvent.click(dupMenuItem);
+    await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
 
     const cancelBtn = screen.getByRole("button", { name: "Cancel" });
     fireEvent.click(cancelBtn);
@@ -503,6 +504,7 @@ describe("CourseLifecycle integration suite", () => {
 
     const dupMenuItem = screen.getByRole("menuitem", { name: /Duplicate/i });
     fireEvent.click(dupMenuItem);
+    await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
 
     const confirmBtn = screen.getByRole("button", { name: "Duplicate" });
     fireEvent.click(confirmBtn);
@@ -538,6 +540,7 @@ describe("CourseLifecycle integration suite", () => {
 
     const deleteMenuItem = screen.getByRole("menuitem", { name: /Delete/i });
     fireEvent.click(deleteMenuItem);
+    await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
 
     const confirmDeleteBtn = screen.getByRole("button", { name: "Delete" });
     fireEvent.click(confirmDeleteBtn);

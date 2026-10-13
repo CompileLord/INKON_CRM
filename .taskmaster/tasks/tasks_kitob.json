@@ -839,7 +839,7 @@
   {
     "id": "KITOB-02-ERROR-FOCUS-ASSERTIONS",
     "title": "Verify failed delete-dialog cancellation focus after queued cleanup",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-FOCUS-ASSERTIONS"
