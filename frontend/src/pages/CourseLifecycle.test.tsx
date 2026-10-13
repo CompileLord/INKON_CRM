@@ -498,6 +498,7 @@ describe("CourseLifecycle integration suite", () => {
 
     renderPage("superadmin");
     const actionsBtn = screen.getByLabelText("Course actions: Python Fundamentals");
+    actionsBtn.focus();
     fireEvent.click(actionsBtn);
 
     const dupMenuItem = screen.getByRole("menuitem", { name: /Duplicate/i });
@@ -532,6 +533,7 @@ describe("CourseLifecycle integration suite", () => {
 
     renderPage("superadmin");
     const actionsBtn = screen.getByLabelText("Course actions: Python Fundamentals");
+    actionsBtn.focus();
     fireEvent.click(actionsBtn);
 
     const deleteMenuItem = screen.getByRole("menuitem", { name: /Delete/i });
@@ -552,7 +554,7 @@ describe("CourseLifecycle integration suite", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
-    expect(document.activeElement).toBe(actionsBtn);
+    await waitFor(() => expect(document.activeElement).toBe(actionsBtn));
   });
 
   it("ignores stale resolution from an earlier duplicate operation if cancelled before dispatch", async () => {

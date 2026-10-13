@@ -832,5 +832,16 @@
     ],
     "description": "Bounded profile endpoint guard prerequisite: reject accountant before profile lookup while preserving superadmin, assigned mentor and student-self boundaries; keep directory accountant access unchanged.",
     "testStrategy": "Actual persisted API regressions for accountant denied, anonymous denied, self versus other student, assigned versus unassigned mentor and superadmin. Full backend/frontend/type/build gates. No schema changes or screenshots for this API-only prerequisite."
+  },
+  {
+    "id": "KITOB-02-ERROR-FOCUS-ASSERTIONS",
+    "title": "Verify failed delete-dialog cancellation focus after queued cleanup",
+    "status": "completed",
+    "group": "02",
+    "dependencies": [
+      "KITOB-02-FOCUS-ASSERTIONS"
+    ],
+    "description": "Cancellation regressions now establish a focused course action trigger before click-only events and await exact queued restoration. Duplicate/delete failure and no-navigation behavior remain asserted; no application change.",
+    "testStrategy": "Targeted course lifecycle and full frontend/type/build gates, full unchanged backend. Preserve exact focus assertion and do not enlarge timeouts."
   }
 ]
