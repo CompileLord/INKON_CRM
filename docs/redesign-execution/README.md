@@ -1,6 +1,6 @@
 # KITOB implementation
 
-Group 01 is accepted with recorded hardware gaps. Group 02 has accepted directory, identity/Overview, Students/enrollment/withdrawal, course forms and lifecycle surfaces, with their shared prerequisites. Progress and the whole-group audit remain. Groups 03–06 have not started.
+Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has accepted the independent avatar prerequisite and Students directory/create/edit workflow; Mentors corrections and Student profiles are active in isolated Luna worktrees. Profile performance provenance and nullable account-field persistence prerequisites are accepted. The user-requested journal conflict hotfix is accepted separately from the future Group 04 redesign. Groups 04–06 redesign work remains.
 
 [Current task/session record](ledger.json) is the recovery entry point. [Subgroup boundaries](SUBGROUPS.md) define session reuse, dependencies and parallel ownership. Taskmaster remains the source of task definitions and completion status. Do not infer completion from an agent report or screenshot count.
 
@@ -28,6 +28,12 @@ Group 01 is accepted with recorded hardware gaps. Group 02 has accepted director
 | Course create/edit | [Audit](group-02/course-forms/form/audit.md) | [Manifest](group-02/course-forms/form-attempt1/manifest.json), [probes](group-02/course-forms/form-attempt1/probes.json) |
 | Course lifecycle integration | [Audit](group-02/course-forms/lifecycle/audit.md) | [Manifest](group-02/course-forms/lifecycle/evidence/manifest.json), [probes](group-02/course-forms/lifecycle/evidence/probes.json) |
 | Students, enrollment and withdrawal | [Audit](group-02/students-enrollment/students/audit.md) | [Manifest](group-02/students-enrollment/students-attempt1/manifest.json), [probes](group-02/students-enrollment/students-attempt1/probes.json) |
+| Course Progress | [Audit](group-02/progress/ui/audit.md) | [Evidence](group-02/progress/ui/evidence/manifest.json) |
+| Group 02 integration | [Audit](group-02/integration/audit.md) | Final integration and regression checks |
+| Students directory and forms | [Audit](group-03/students/directory/audit.md) | [Screenshots](group-03/students/directory/evidence/screenshots/), [manifest](group-03/students/directory/evidence/manifest.json), [probes](group-03/students/directory/evidence/probes.json) |
+| Profile performance contract | [Audit](group-03/student-profile/contract/audit.md) | Contract-only prerequisite; no page screenshot claim |
+| Nullable profile field persistence | [Audit](group-03/nullable-profile-patch/audit.md) | [API regression evidence](group-03/nullable-profile-patch/evidence/probes.json) |
+| Journal conflict hotfix | [Audit](hotfix-journal-conflicts/audit.md) | [Screenshots](hotfix-journal-conflicts/evidence/screenshots/), [manifest](hotfix-journal-conflicts/evidence/manifest.json), [probes](hotfix-journal-conflicts/evidence/probes.json) |
 
 Final capture directories retain their original names so existing links and screenshot manifests remain valid. Images may show labeled simulations for loading or error states. Only the final audit establishes accepted scope; legacy content visible inside a screenshot may still belong to a pending task.
 
