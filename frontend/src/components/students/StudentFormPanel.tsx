@@ -53,6 +53,7 @@ interface StudentFormPanelProps {
   student?: User;
   onClose: () => void;
   onSaved: (action: "created" | "updated", user?: User) => void;
+  onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }
 
@@ -62,6 +63,7 @@ export function StudentFormPanel({
   student,
   onClose,
   onSaved,
+  onAvatarSaved,
   finalFocus,
 }: StudentFormPanelProps) {
   if (!open) {
@@ -78,6 +80,7 @@ export function StudentFormPanel({
       student={student}
       onClose={onClose}
       onSaved={onSaved}
+      onAvatarSaved={onAvatarSaved}
       finalFocus={finalFocus}
     />
   );
@@ -89,6 +92,7 @@ interface StudentFormPanelInnerProps {
   student?: User;
   onClose: () => void;
   onSaved: (action: "created" | "updated", user?: User) => void;
+  onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }
 
@@ -103,6 +107,7 @@ function StudentFormPanelInner({
   student,
   onClose,
   onSaved,
+  onAvatarSaved,
   finalFocus,
 }: StudentFormPanelInnerProps) {
   const { t } = useTranslation(["students", "common"]);
@@ -395,7 +400,7 @@ function StudentFormPanelInner({
                 onUploaded={(updatedUser) => {
                   setHasSavedAvatar(true);
                   savedUserRef.current = updatedUser;
-                  onSaved("updated", updatedUser);
+                  onAvatarSaved?.(updatedUser);
                 }}
                 onBusyChange={(busy) => setIsAvatarBusy(busy)}
               />
