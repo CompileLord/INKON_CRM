@@ -216,6 +216,8 @@ const SUPPORTED_DETAIL_SORTS = new Set([
   "name_desc",
   "price_asc",
   "price_desc",
+  "score_desc",
+  "score_asc",
 ]);
 
 export function recordCourseDetailNavigation(

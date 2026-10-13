@@ -25,6 +25,7 @@ vi.mock("../lib/courses/hooks", async (importOriginal) => {
     useCourseJournalMetrics: vi.fn(),
     useCourseMentorHistory: vi.fn(),
     useCourseProgressChart: vi.fn(),
+    useCourseStaffProgress: vi.fn(),
     useCopyCourse: vi.fn(),
     useDeleteCourse: vi.fn(),
     useCourseJournals: vi.fn(),
@@ -268,6 +269,25 @@ describe("CourseProfile Component", () => {
     vi.mocked(enrollmentHooks.useCourseEnrollmentsCount).mockReturnValue(mockSuccessResult(15));
     vi.mocked(courseHooks.useCourseMentorHistory).mockReturnValue(mockSuccessResult([]));
     vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult({ labels: [], datasets: [] }));
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+      mockSuccessResult({
+        course_id: 42,
+        periods: [
+          { id: 5, period_label: "Week 1", period_start: "2026-01-01", period_end: "2026-01-07" },
+        ],
+        students: [
+          {
+            student_id: 1,
+            first_name: "Alice",
+            last_name: "Smith",
+            period_results: [
+              { period_id: 5, grading_state: "unknown", score: 85, max_score: 100, percentage: 85 },
+            ],
+            grading_provenance: "unknown",
+          },
+        ],
+      }),
+    );
     vi.mocked(enrollmentHooks.useCourseRoster).mockReturnValue({
       rows: [],
       unresolvedCount: 0,
@@ -384,6 +404,7 @@ describe("CourseProfile Component", () => {
 
       expect(enrollmentHooks.useCourseRosterPage).not.toHaveBeenCalled();
       expect(courseHooks.useCourseProgressChart).not.toHaveBeenCalled();
+      expect(courseHooks.useCourseStaffProgress).not.toHaveBeenCalled();
     });
 
     it("mounts students pane when switching tabs", async () => {
@@ -980,6 +1001,25 @@ describe("CourseProfile Component", () => {
           ],
         }),
       );
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({
+          course_id: 42,
+          periods: [
+            { id: 1, period_label: "Period 1", period_start: "2026-09-01", period_end: "2026-09-07" },
+          ],
+          students: [
+            {
+              student_id: 1,
+              first_name: "Alice",
+              last_name: "Wonderland",
+              period_results: [
+                { period_id: 1, grading_state: "unknown", score: 85, max_score: 100, percentage: 85 },
+              ],
+              grading_provenance: "unknown",
+            },
+          ],
+        }),
+      );
 
       renderCourseProfile(["/courses/42?tab=progress"]);
 
@@ -1076,6 +1116,25 @@ describe("CourseProfile Component", () => {
           ],
         }),
       );
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({
+          course_id: 42,
+          periods: [
+            { id: 5, period_label: "Period 5", period_start: "2026-09-01", period_end: "2026-09-07" },
+          ],
+          students: [
+            {
+              student_id: 1,
+              first_name: "Zalina",
+              last_name: "Student",
+              period_results: [
+                { period_id: 5, grading_state: "unknown", score: 90, max_score: 100, percentage: 90 },
+              ],
+              grading_provenance: "unknown",
+            },
+          ],
+        }),
+      );
 
       const { getLocation: getReturnLocation } = renderCourseProfile([
         { pathname: "/courses/42", state: { fromInternalReturn: true } },
@@ -1085,6 +1144,46 @@ describe("CourseProfile Component", () => {
         expect(getReturnLocation().search).toContain("tab=progress");
         expect(getReturnLocation().search).toContain("period=5");
         expect(screen.getByDisplayValue("Zalina")).toBeDefined();
+      });
+    });
+
+    it("restores progress return context with score_asc and normalizes legacy avg_desc to score_desc", async () => {
+      returnContext.recordCourseDetailNavigation(42, {
+        tab: "progress",
+        periodId: 5,
+        search: "Alice",
+        sort: "score_asc",
+        scrollY: 100,
+      });
+
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({
+          course_id: 42,
+          periods: [
+            { id: 5, period_label: "Period 5", period_start: "2026-09-01", period_end: "2026-09-07" },
+          ],
+          students: [
+            {
+              student_id: 1,
+              first_name: "Alice",
+              last_name: "Wonderland",
+              period_results: [
+                { period_id: 5, grading_state: "unknown", score: 90, max_score: 100, percentage: 90 },
+              ],
+              grading_provenance: "unknown",
+            },
+          ],
+        }),
+      );
+
+      renderCourseProfile([
+        { pathname: "/courses/42", state: { fromInternalReturn: true } },
+      ]);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("Alice")).toBeDefined();
+        const sortSelect = screen.getByLabelText(i18n.t("courses:progress.sortLabel")) as HTMLSelectElement;
+        expect(sortSelect.value).toBe("score_asc");
       });
     });
 
@@ -1230,6 +1329,25 @@ describe("CourseProfile Component", () => {
         ],
       };
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult(mockChartData));
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({
+          course_id: 42,
+          periods: [
+            { id: 5, period_label: "Week 1", period_start: "2026-01-01", period_end: "2026-01-07" },
+          ],
+          students: [
+            {
+              student_id: 1,
+              first_name: "Alice",
+              last_name: "Smith",
+              period_results: [
+                { period_id: 5, grading_state: "unknown", score: 85, max_score: 100, percentage: 85 },
+              ],
+              grading_provenance: "unknown",
+            },
+          ],
+        }),
+      );
 
       const { getLocation } = renderCourseProfile(["/courses/42?tab=progress&period=5"]);
 
@@ -1268,6 +1386,13 @@ describe("CourseProfile Component", () => {
         error: null,
         refetch: vi.fn(),
       } as unknown as ReturnType<typeof courseHooks.useCourseProgressChart>);
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
 
       renderCourseProfile([
         { pathname: "/courses/42", state: { fromInternalReturn: true } },
@@ -1277,6 +1402,9 @@ describe("CourseProfile Component", () => {
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({ labels: ["Week 1"], datasets: [] }),
+      );
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({ course_id: 42, periods: [], students: [] }),
       );
 
       await waitFor(() => {
@@ -1300,6 +1428,13 @@ describe("CourseProfile Component", () => {
         error: null,
         refetch: vi.fn(),
       } as unknown as ReturnType<typeof courseHooks.useCourseProgressChart>);
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
 
       renderCourseProfile([
         { pathname: "/courses/42", state: { fromInternalReturn: true } },
@@ -1309,6 +1444,9 @@ describe("CourseProfile Component", () => {
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({ labels: ["Week 1"], datasets: [] }),
+      );
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({ course_id: 42, periods: [], students: [] }),
       );
 
       await waitFor(() => {
@@ -1327,6 +1465,9 @@ describe("CourseProfile Component", () => {
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({ labels: ["Week 1"], datasets: [] }),
+      );
+      vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
+        mockSuccessResult({ course_id: 42, periods: [], students: [] }),
       );
 
       const queryClient = new QueryClient({

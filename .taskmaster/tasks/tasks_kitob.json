@@ -215,7 +215,7 @@
   {
     "id": "KITOB-02-04",
     "title": "Progress tab",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-03",
@@ -241,7 +241,7 @@
   {
     "id": "KITOB-02-06",
     "title": "Group 02 integration audit",
-    "status": "pending",
+    "status": "in_progress",
     "group": "02",
     "dependencies": [
       "KITOB-02-02",

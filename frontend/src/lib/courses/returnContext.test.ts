@@ -309,6 +309,20 @@ describe("course detail return context and journal URL building", () => {
     expect(consumeSavedCourseDetailContext(42)).toBeNull();
   });
 
+  it("accepts score_desc and score_asc sorts in course detail navigation", () => {
+    recordCourseDetailNavigation(42, {
+      tab: "progress",
+      sort: "score_desc",
+    });
+    expect(getSavedCourseDetailContext(42)?.sort).toBe("score_desc");
+
+    recordCourseDetailNavigation(42, {
+      tab: "progress",
+      sort: "score_asc",
+    });
+    expect(getSavedCourseDetailContext(42)?.sort).toBe("score_asc");
+  });
+
   it("isInternalReturnSignal differentiates internal return signals from direct entry", () => {
     expect(isInternalReturnSignal({ fromInternalReturn: true })).toBe(true);
     expect(isInternalReturnSignal(null, new URLSearchParams("return=1"))).toBe(true);
