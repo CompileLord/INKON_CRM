@@ -309,12 +309,14 @@
   {
     "id": "KITOB-03-05",
     "title": "Authorized document byte delivery prerequisite",
-    "status": "pending",
+    "status": "in_progress",
     "group": "03",
     "dependencies": [
-      "KITOB-03-04"
+      "KITOB-01-02",
+      "KITOB-03-03-AUTHORIZATION",
+      "KITOB-03-04-CONTRACT"
     ],
-    "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
+    "description": "Separately implement and audit authorized document byte delivery using accepted identity/role contracts. This backend/storage prerequisite does not consume unfinished Mentor profile UI; shared schemas/contracts have one writer. Preserve current document role policy and existing files; dependent document workflow remains blocked until acceptance.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
   },
   {
@@ -323,7 +325,8 @@
     "status": "pending",
     "group": "03",
     "dependencies": [
-      "KITOB-03-05"
+      "KITOB-03-05",
+      "KITOB-03-04"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
