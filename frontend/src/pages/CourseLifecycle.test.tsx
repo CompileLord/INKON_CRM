@@ -329,7 +329,7 @@ describe("CourseLifecycle integration suite", () => {
     });
     expect(copyMutate).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
-    expect(document.activeElement).toBe(actionsBtn);
+    await waitFor(() => expect(document.activeElement).toBe(actionsBtn));
   });
 
   it("confirming duplicate on course with schedule dispatches creation and navigates to created course", async () => {

@@ -813,7 +813,7 @@
   {
     "id": "KITOB-02-FOCUS-ASSERTIONS",
     "title": "Verify duplicate-dialog focus after asynchronous cleanup",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-06"
