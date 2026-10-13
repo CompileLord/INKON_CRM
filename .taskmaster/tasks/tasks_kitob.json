@@ -762,5 +762,16 @@
     ],
     "description": "Bounded shared AvatarUploadField operation state, pending/saved notification and owner-safe persistence; audit before dependent people forms. No directory/profile implementation.",
     "testStrategy": "Owner replacement/unmount, duplicate blocking, measured versus indeterminate progress, previous persisted photo on failure, translated persistent feedback; unit/parity/type/full gates and real seeded edit-surface evidence."
+  },
+  {
+    "id": "KITOB-HOTFIX-JOURNAL-409",
+    "title": "Stop blind journal conflict retries and preserve latest draft",
+    "status": "completed",
+    "group": "hotfix",
+    "dependencies": [
+      "KITOB-02-06"
+    ],
+    "description": "Explicit user-reported runtime bug, separate from future Group04 redesign. Recognize actual AuthApiError409, retain newest local edits and stop automatic conflict retry. Preserve transient/network backoff and user-authorized manual recovery.",
+    "testStrategy": "Real isolated stale-version and missing-cell409, no automated retry after backoff deadlines, latest edits retained, successful server reload/recovery; meaningful hooks tests, full frontend/backend/type/project-build and actual browser capture."
   }
 ]

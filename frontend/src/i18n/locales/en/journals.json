@@ -34,8 +34,13 @@
   "conflict": {
     "title": "Version conflict detected",
     "body": "Another user updated this cell while you were editing.",
+    "unavailable": "Entry is not available on the server. Please reload the journal.",
+    "unrefreshed": "Server state needs refresh. Please retry to view latest changes.",
     "keepMine": "Keep mine",
-    "keepTheirs": "Keep theirs"
+    "keepTheirs": "Keep theirs",
+    "discard": "Discard",
+    "pairedSummary": "Bonus and exam scores",
+    "studentFallback": "Student #{{id}}"
   },
   "hubTitle": "Journals",
   "hubSubtitle": "Each course has its own journal — attendance, scores, exam, and bonuses",
