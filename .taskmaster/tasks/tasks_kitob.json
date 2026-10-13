@@ -268,7 +268,7 @@
   {
     "id": "KITOB-03-02",
     "title": "/mentors directory and create/edit",
-    "status": "pending",
+    "status": "in_progress",
     "group": "03",
     "dependencies": [
       "KITOB-03-01"
@@ -282,7 +282,9 @@
     "status": "pending",
     "group": "03",
     "dependencies": [
-      "KITOB-03-02"
+      "KITOB-03-01",
+      "KITOB-01-02",
+      "KITOB-03-03-CONTRACT"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -773,5 +775,26 @@
     ],
     "description": "Explicit user-reported runtime bug, separate from future Group04 redesign. Recognize actual AuthApiError409, retain newest local edits and stop automatic conflict retry. Preserve transient/network backoff and user-authorized manual recovery.",
     "testStrategy": "Real isolated stale-version and missing-cell409, no automated retry after backoff deadlines, latest edits retained, successful server reload/recovery; meaningful hooks tests, full frontend/backend/type/project-build and actual browser capture."
+  },
+  {
+    "id": "KITOB-03-03-CONTRACT",
+    "title": "Truthful student profile grading and denominator contract",
+    "status": "in_progress",
+    "group": "03",
+    "dependencies": [
+      "KITOB-02-06",
+      "KITOB-01-02"
+    ],
+    "description": "Separate prerequisite required by Group03 Student profile section: provide explicit missing/unknown grading provenance and truthful absent denominator/scope without inferring graded from score, max score or summary existence. Preserve existing policy and authoritative profile guards; synchronize API/schema/types.",
+    "testStrategy": "Actual missing/zero/positive/max-zero persisted rows retain truthful grading provenance; no-lessons attendance unavailable; scope and denied-role/cross-user regression tests; backend/frontend/build/type/contract synchronization gates. No dependent profile implementation before audit PASS."
+  },
+  {
+    "id": "KITOB-WORKFLOW-TIMEOUT",
+    "title": "Persist executor timeout and completion-audit rules",
+    "status": "completed",
+    "group": "workflow",
+    "dependencies": [],
+    "description": "User-requested AGENTS.md rules: preserve timed-out executor work/session, resume instead of auditing incomplete work, and wait for a complete result. Preserve parallel subgroup dependencies and ownership.",
+    "testStrategy": "Inspect exact AGENTS/SUBGROUPS wording, task dependency integrity and git diff whitespace; application source unchanged, reuse verified main backend/frontend/type/build gates."
   }
 ]
