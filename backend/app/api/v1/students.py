@@ -76,6 +76,12 @@ async def get_student_profile(
     db: AsyncSession = Depends(get_db_session),
     profile_service: StudentProfileService = Depends(get_student_profile_service)
 ) -> dict:
+    if current_user.role not in [UserRole.SUPERADMIN, UserRole.MENTOR, UserRole.STUDENT]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+
     if current_user.role == UserRole.STUDENT and current_user.id != id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

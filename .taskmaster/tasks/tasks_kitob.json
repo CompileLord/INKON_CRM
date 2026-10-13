@@ -286,7 +286,8 @@
       "KITOB-03-01",
       "KITOB-01-02",
       "KITOB-03-03-CONTRACT",
-      "KITOB-03-02-NULL-PATCH"
+      "KITOB-03-02-NULL-PATCH",
+      "KITOB-03-03-AUTHORIZATION"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -820,5 +821,16 @@
     ],
     "description": "Root integration gate caught a race between dialog unmount and queued focus restoration. Preserve exact focus/no-write/no-navigation assertions and await actual focus with unchanged default timeout. No application behavior change.",
     "testStrategy": "Targeted course lifecycle suite and full frontend, type/build gates; reuse unchanged verified backend suite. Assertion must fail if focus restoration is removed."
+  },
+  {
+    "id": "KITOB-03-03-AUTHORIZATION",
+    "title": "Enforce authorized Student profile role boundary",
+    "status": "completed",
+    "group": "03",
+    "dependencies": [
+      "KITOB-03-03-CONTRACT"
+    ],
+    "description": "Bounded profile endpoint guard prerequisite: reject accountant before profile lookup while preserving superadmin, assigned mentor and student-self boundaries; keep directory accountant access unchanged.",
+    "testStrategy": "Actual persisted API regressions for accountant denied, anonymous denied, self versus other student, assigned versus unassigned mentor and superadmin. Full backend/frontend/type/build gates. No schema changes or screenshots for this API-only prerequisite."
   }
 ]
