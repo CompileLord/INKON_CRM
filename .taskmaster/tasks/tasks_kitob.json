@@ -256,10 +256,11 @@
   {
     "id": "KITOB-03-01",
     "title": "/students directory and create/edit",
-    "status": "pending",
+    "status": "in_progress",
     "group": "03",
     "dependencies": [
-      "KITOB-02-06"
+      "KITOB-02-06",
+      "KITOB-03-01-AVATAR"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -750,5 +751,16 @@
     ],
     "description": "Read-only cross-page regression preparation on accepted directory, Overview, Students and forms/lifecycle while independent Progress UI is implemented. Does not accept pending Progress or whole group.",
     "testStrategy": "Review actual role/navigation/query/focus contracts and existing meaningful regressions; isolated browser reproduction only if needed; root audits findings before final group acceptance."
+  },
+  {
+    "id": "KITOB-03-01-AVATAR",
+    "title": "Independent avatar operation and owner lifecycle prerequisite",
+    "status": "completed",
+    "group": "03",
+    "dependencies": [
+      "KITOB-02-06"
+    ],
+    "description": "Bounded shared AvatarUploadField operation state, pending/saved notification and owner-safe persistence; audit before dependent people forms. No directory/profile implementation.",
+    "testStrategy": "Owner replacement/unmount, duplicate blocking, measured versus indeterminate progress, previous persisted photo on failure, translated persistent feedback; unit/parity/type/full gates and real seeded edit-surface evidence."
   }
 ]

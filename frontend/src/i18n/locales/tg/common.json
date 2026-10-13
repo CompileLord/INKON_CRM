@@ -34,6 +34,19 @@
   "uploadPhoto": "Бор кардани расм",
   "cancelUpload": "Бекор кардани боркунӣ",
   "uploadError": "Боркунии расм ноком шуд",
+  "avatar": {
+    "label": "Акс",
+    "uploadPhoto": "Бор кардани акс",
+    "changePhoto": "Иваз кардани акс",
+    "uploading": "Боргирӣ...",
+    "saved": "Акс сабт шуд",
+    "uploadError": "Боркунии акс ноком шуд",
+    "retry": "Такрор кардан",
+    "reselect": "Интихоби дигар файл",
+    "invalidType": "Танҳо тасвирҳои JPEG ва PNG дастгирӣ мешаванд",
+    "invalidContent": "Файли тасвир вайроншуда ё нодуруст аст",
+    "fileTooLarge": "Файл хеле калон аст (ҳадди аксар 5 МБ)"
+  },
   "enums": {
     "userRole": {
       "superadmin": "Суперадмин",
