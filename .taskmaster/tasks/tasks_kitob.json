@@ -256,7 +256,7 @@
   {
     "id": "KITOB-03-01",
     "title": "/students directory and create/edit",
-    "status": "in_progress",
+    "status": "completed",
     "group": "03",
     "dependencies": [
       "KITOB-02-06",

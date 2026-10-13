@@ -140,14 +140,18 @@ export function applyFieldErrors(
  * server's own `detail`, matching the convention already established by
  * describeAuthError for the login screens.
  */
-export function describeUserApiError(err: unknown): string {
+export function describeUserApiError(
+  err: unknown,
+  translator?: (key: string) => string,
+): string {
+  const t = translator ?? ((k: string) => k);
   if (err instanceof AuthApiError) {
-    if (err.status === 403) return "Недостаточно прав для этого действия";
-    if (err.status >= 500) return "Сервер недоступен, попробуйте позже";
+    if (err.status === 403) return translator ? t("common:error") : "Недостаточно прав для этого действия";
+    if (err.status >= 500) return translator ? t("students:table.error") : "Сервер недоступен, попробуйте позже";
     return err.message;
   }
-  if (err instanceof NetworkError) return "Не удалось подключиться к серверу";
-  return "Что-то пошло не так. Попробуйте ещё раз.";
+  if (err instanceof NetworkError) return translator ? t("students:table.error") : "Не удалось подключиться к серверу";
+  return translator ? t("common:error") : "Что-то пошло не так. Попробуйте ещё раз.";
 }
 
 export const EMAIL_TAKEN_MESSAGE = "Этот email уже используется";
