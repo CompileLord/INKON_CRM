@@ -242,49 +242,74 @@ export function CourseProgressPane({
     );
   }
 
+  const retainedErrorBanner =
+    isError && staffProgress ? (
+      <div
+        role="alert"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+      >
+        <span>{t("courses:progress.loadError")}</span>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => refetch()}
+          className="min-h-[44px] min-w-[44px] gap-1.5"
+        >
+          <RotateCcw size={14} />
+          <span>{t("common:retry")}</span>
+        </Button>
+      </div>
+    ) : null;
+
   if (!staffProgress || periods.length === 0) {
     const isStaff = role !== "student";
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border-warm bg-card p-8 text-center shadow-xs">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-strip text-muted">
-          <BookOpen size={22} />
+      <div className="flex flex-col gap-4">
+        {retainedErrorBanner}
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border-warm bg-card p-8 text-center shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-strip text-muted">
+            <BookOpen size={22} />
+          </div>
+          <div className="max-w-md">
+            <h3 className="text-base font-semibold text-ink">
+              {t("courses:progress.emptyPeriods")}
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              {isStaff
+                ? t("courses:progress.emptyPeriodsHelpStaff")
+                : t("courses:progress.emptyPeriodsHelp")}
+            </p>
+          </div>
+          {courseId && isStaff ? (
+            <Link
+              to={buildCourseJournalUrl(courseId)}
+              className="mt-2 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-maroon px-4 py-2.5 text-sm font-semibold text-on-primary shadow-xs hover:bg-maroon-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+            >
+              <BookOpen size={16} />
+              <span>{t("courses:openJournal")}</span>
+            </Link>
+          ) : null}
         </div>
-        <div className="max-w-md">
-          <h3 className="text-base font-semibold text-ink">
-            {t("courses:progress.emptyPeriods")}
-          </h3>
-          <p className="mt-1 text-sm text-muted">
-            {isStaff
-              ? t("courses:progress.emptyPeriodsHelpStaff")
-              : t("courses:progress.emptyPeriodsHelp")}
-          </p>
-        </div>
-        {courseId && isStaff ? (
-          <Link
-            to={buildCourseJournalUrl(courseId)}
-            className="mt-2 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-maroon px-4 py-2.5 text-sm font-semibold text-on-primary shadow-xs hover:bg-maroon-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
-          >
-            <BookOpen size={16} />
-            <span>{t("courses:openJournal")}</span>
-          </Link>
-        ) : null}
       </div>
     );
   }
 
   if (allStudents.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border-warm bg-card p-8 text-center shadow-xs">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-strip text-muted">
-          <BookOpen size={22} />
-        </div>
-        <div className="max-w-md">
-          <h3 className="text-base font-semibold text-ink">
-            {t("courses:progress.emptyStudents")}
-          </h3>
-          <p className="mt-1 text-sm text-muted">
-            {t("courses:progress.emptyStudentsHelp")}
-          </p>
+      <div className="flex flex-col gap-4">
+        {retainedErrorBanner}
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border-warm bg-card p-8 text-center shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-strip text-muted">
+            <BookOpen size={22} />
+          </div>
+          <div className="max-w-md">
+            <h3 className="text-base font-semibold text-ink">
+              {t("courses:progress.emptyStudents")}
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              {t("courses:progress.emptyStudentsHelp")}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -292,23 +317,7 @@ export function CourseProgressPane({
 
   return (
     <div className="flex flex-col gap-4">
-      {isError && staffProgress ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          <span>{t("courses:progress.loadError")}</span>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => refetch()}
-            className="min-h-[44px] min-w-[44px] gap-1.5"
-          >
-            <RotateCcw size={14} />
-            <span>{t("common:retry")}</span>
-          </Button>
-        </div>
-      ) : null}
+      {retainedErrorBanner}
 
       <div className="rounded-2xl border border-border-warm bg-card p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col gap-2 md:hidden">

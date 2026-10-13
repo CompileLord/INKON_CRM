@@ -241,7 +241,7 @@
   {
     "id": "KITOB-02-06",
     "title": "Group 02 integration audit",
-    "status": "in_progress",
+    "status": "completed",
     "group": "02",
     "dependencies": [
       "KITOB-02-02",

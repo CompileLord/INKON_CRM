@@ -184,6 +184,147 @@ describe("CourseProgressPane Component", () => {
     expect(screen.getByText(i18n.t("courses:progress.emptyStudentsHelp"))).toBeDefined();
   });
 
+  it("retains empty periods guidance and displays error banner with working retry button on refetch failure", () => {
+    const refetchSpy = vi.fn();
+    const emptyPeriodsData: CourseStaffProgressResponse = {
+      course_id: 10,
+      periods: [],
+      students: [],
+    };
+
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: emptyPeriodsData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
+
+    expect(screen.getByText(i18n.t("courses:progress.emptyPeriods"))).toBeDefined();
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: emptyPeriodsData,
+      isLoading: false,
+      isError: true,
+      error: new Error("Refetch error"),
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    rerender(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <CourseProgressPane courseId={10} />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeDefined();
+    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
+    expect(screen.getByText(i18n.t("courses:progress.emptyPeriods"))).toBeDefined();
+
+    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
+    expect(retryBtn.className).toContain("min-h-[44px]");
+    expect(retryBtn.className).toContain("min-w-[44px]");
+    fireEvent.click(retryBtn);
+    expect(refetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains empty cohort guidance and displays error banner with working retry button on refetch failure", () => {
+    const refetchSpy = vi.fn();
+    const emptyStudentsData: CourseStaffProgressResponse = {
+      course_id: 10,
+      periods: [{ id: 1, period_label: "Week 1", period_start: "2026-09-01", period_end: "2026-09-07" }],
+      students: [],
+    };
+
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: emptyStudentsData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
+
+    expect(screen.getByText(i18n.t("courses:progress.emptyStudents"))).toBeDefined();
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: emptyStudentsData,
+      isLoading: false,
+      isError: true,
+      error: new Error("Refetch error"),
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    rerender(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <CourseProgressPane courseId={10} />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeDefined();
+    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
+    expect(screen.getByText(i18n.t("courses:progress.emptyStudents"))).toBeDefined();
+
+    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
+    expect(retryBtn.className).toContain("min-h-[44px]");
+    expect(retryBtn.className).toContain("min-w-[44px]");
+    fireEvent.click(retryBtn);
+    expect(refetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains loaded table and displays error banner with working retry button on refetch failure", () => {
+    const refetchSpy = vi.fn();
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: mockStaffData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
+
+    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+      data: mockStaffData,
+      isLoading: false,
+      isError: true,
+      error: new Error("Refetch error"),
+      refetch: refetchSpy,
+    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+
+    rerender(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <CourseProgressPane courseId={10} />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeDefined();
+    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
+    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
+
+    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
+    expect(retryBtn.className).toContain("min-h-[44px]");
+    expect(retryBtn.className).toContain("min-w-[44px]");
+    fireEvent.click(retryBtn);
+    expect(refetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("renders empty search state with working reset button when search yields no matches", () => {
     vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
       data: mockStaffData,

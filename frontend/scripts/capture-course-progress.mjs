@@ -448,8 +448,10 @@ try {
   await dataStatesPage.waitForTimeout(400);
 
   const refetchAlert = dataStatesPage.locator('[role="alert"]').first();
-  const alertCount = await refetchAlert.count();
-  const hasRefetchAlert = alertCount > 0;
+  try {
+    await refetchAlert.waitFor({ timeout: 15000 });
+  } catch {}
+  const hasRefetchAlert = (await refetchAlert.count()) > 0;
   const rowsRetainedOnRefetchError = (await dataStatesPage.locator("tbody tr").count()) > 0;
 
   await recordScreenshot(dataStatesPage, "21-desktop-progress-refetch-error-retaining-rows.png", {
@@ -466,19 +468,93 @@ try {
     const inlineRetryBtn = refetchAlert.locator("button").first();
     if ((await inlineRetryBtn.count()) > 0) {
       await inlineRetryBtn.click();
-      await dataStatesPage.waitForTimeout(600);
+      try {
+        await refetchAlert.waitFor({ state: "hidden", timeout: 15000 });
+      } catch {}
     }
   }
 
+  await dataStatesPage.goto(`${previewOrigin}/courses/4?tab=progress`);
+  await dataStatesPage.waitForLoadState("domcontentloaded");
+  await dataStatesPage.waitForFunction(
+    () => !document.querySelector('main [data-testid="brand-activity-indicator"], main [class*="animate-pulse"]'),
+    { timeout: 15000 }
+  );
+  await dataStatesPage.waitForFunction(
+    () => /No students enrolled|Нет зачисленных|Ҳеҷ донишҷӯ сабти ном/i.test(document.body.innerText),
+    { timeout: 15000 }
+  );
+
+  let simulateEmptyRefetchError = true;
+  await dataStatesContext.route("**/api/v1/courses/4/staff-progress", async (route) => {
+    if (simulateEmptyRefetchError) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Simulated background refetch failure on empty course" }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
+  const emptyOverviewTab = dataStatesPage.locator('button[role="tab"]').filter({ hasText: /Overview|Обзор|Шарҳи умумӣ/i }).first();
+  const emptyProgressTab = dataStatesPage.locator('button[role="tab"]').filter({ hasText: /Progress|Успеваемость|Пешрафт/i }).first();
+  await emptyOverviewTab.click();
+  await dataStatesPage.waitForTimeout(200);
+  await emptyProgressTab.click();
+
+  const emptyRefetchAlert = dataStatesPage.locator('[role="alert"]').first();
+  try {
+    await emptyRefetchAlert.waitFor({ timeout: 15000 });
+  } catch {}
+  const hasEmptyRefetchAlert = (await emptyRefetchAlert.count()) > 0;
+  const emptyCohortRetainedOnRefetchError = /No students enrolled|Нет зачисленных|Ҳеҷ донишҷӯ сабти ном/i.test(
+    await dataStatesPage.locator("body").innerText()
+  );
+
+  await recordScreenshot(dataStatesPage, "25-desktop-progress-refetch-error-retaining-empty.png", {
+    viewport: "1440x1000",
+    theme: "light",
+    role: "superadmin",
+    state: "refetch_error_empty",
+    simulation: true,
+    description: "Simulated background refetch failure retaining empty cohort guidance with inline retry banner",
+  });
+
+  simulateEmptyRefetchError = false;
+  if (hasEmptyRefetchAlert) {
+    const emptyInlineRetryBtn = emptyRefetchAlert.locator("button").first();
+    if ((await emptyInlineRetryBtn.count()) > 0) {
+      await emptyInlineRetryBtn.click();
+      try {
+        await emptyRefetchAlert.waitFor({ state: "hidden", timeout: 15000 });
+      } catch {}
+    }
+  }
+  const emptyCohortRetainedAfterRetry = /No students enrolled|Нет зачисленных|Ҳеҷ донишҷӯ сабти ном/i.test(
+    await dataStatesPage.locator("body").innerText()
+  );
+
   registerProbe({
     probe: "four_states_loading_error_and_refetch_retention",
-    passed: initialRetryRecovered && hasInitialRetryBtn && rowsRetainedOnRefetchError,
+    passed:
+      initialRetryRecovered &&
+      hasInitialRetryBtn &&
+      rowsRetainedOnRefetchError &&
+      hasRefetchAlert &&
+      hasEmptyRefetchAlert &&
+      emptyCohortRetainedOnRefetchError &&
+      emptyCohortRetainedAfterRetry,
     details: {
       initialRetryRecovered,
       hasInitialRetryBtn,
       rowsRetainedOnRefetchError,
       recoveredRowCount,
       hasRefetchAlert,
+      hasEmptyRefetchAlert,
+      emptyCohortRetainedOnRefetchError,
+      emptyCohortRetainedAfterRetry,
     },
   });
 

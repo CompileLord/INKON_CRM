@@ -519,7 +519,9 @@ describe("CourseLifecycle integration suite", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
-    expect(document.activeElement).toBe(actionsBtn);
+    await waitFor(() => {
+      expect(document.activeElement).toBe(actionsBtn);
+    });
   });
 
   it("retains delete dialog and allows retry or cancellation after delete failure", async () => {
