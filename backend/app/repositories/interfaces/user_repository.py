@@ -48,3 +48,6 @@ class UserRepository(BaseRepository[User], Protocol):
 
     async def get_mentor_profile_stats(self, mentor_id: int) -> Dict[str, Any]:
         ...
+
+    async def get_mentor_analytics(self, mentor_id: int) -> Dict[str, Any]:
+        ...

@@ -192,7 +192,29 @@ const mockMentorUser: User = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
-const mockMentorProfile: MentorProfileResponse = {
+function mentorProfileContractMetadata(avgScore: number): Pick<
+  MentorProfileResponse,
+  | "active_students_population"
+  | "avg_score_grading_state"
+  | "avg_score_provenance"
+  | "avg_score_basis"
+  | "avg_score_summary_count"
+  | "avg_score_defined_ratio_count"
+  | "avg_score_undefined_ratio_count"
+  | "avg_score_defined_ratios_mean"
+> {
+  return {
+    active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+    avg_score_grading_state: "unknown",
+    avg_score_provenance: "unknown",
+    avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived",
+    avg_score_summary_count: 1,
+    avg_score_defined_ratio_count: 1,
+    avg_score_undefined_ratio_count: 0,
+    avg_score_defined_ratios_mean: avgScore,
+  };
+}const mockMentorProfile: MentorProfileResponse = {
+  ...mentorProfileContractMetadata(85),
   user: mockMentorUser,
   active_courses: [],
   active_students_count: 24,

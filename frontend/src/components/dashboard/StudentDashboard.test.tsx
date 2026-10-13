@@ -59,7 +59,28 @@ const mockMentorUser: User = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
-function createCourseEntry(
+function mentorProfileContractMetadata(avgScore: number): Pick<
+  MentorProfileResponse,
+  | "active_students_population"
+  | "avg_score_grading_state"
+  | "avg_score_provenance"
+  | "avg_score_basis"
+  | "avg_score_summary_count"
+  | "avg_score_defined_ratio_count"
+  | "avg_score_undefined_ratio_count"
+  | "avg_score_defined_ratios_mean"
+> {
+  return {
+    active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+    avg_score_grading_state: "unknown",
+    avg_score_provenance: "unknown",
+    avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived",
+    avg_score_summary_count: 1,
+    avg_score_defined_ratio_count: 1,
+    avg_score_undefined_ratio_count: 0,
+    avg_score_defined_ratios_mean: avgScore,
+  };
+}function createCourseEntry(
   id: number,
   title: string,
   nextLessonAt: string | null = null,
@@ -226,6 +247,7 @@ describe("StudentDashboard", () => {
     vi.mocked(journalHooks.useJournal).mockReturnValue(mockSuccessResult<JournalDetailResponse>({ journal_id: 1, course_id: 1, period_label: "Period", period_start: "2026-01-01", period_end: "2026-01-31", period_type: "month", exam_max_score: 10, lesson_dates: [], students: [] }));
     vi.mocked(userHooks.useMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(90.0),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 5,

@@ -1006,6 +1006,14 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     ],
     "active_students_count": integer,
     "avg_score": number,
+    "active_students_population": string,
+    "avg_score_grading_state": "missing" | "unknown",
+    "avg_score_provenance": string,
+    "avg_score_basis": string,
+    "avg_score_summary_count": integer,
+    "avg_score_defined_ratio_count": integer,
+    "avg_score_undefined_ratio_count": integer,
+    "avg_score_defined_ratios_mean": number,
   }
   ```
 
@@ -1084,6 +1092,14 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     ],
     "active_students_count": integer,
     "avg_score": number,
+    "active_students_population": string,
+    "avg_score_grading_state": "missing" | "unknown",
+    "avg_score_provenance": string,
+    "avg_score_basis": string,
+    "avg_score_summary_count": integer,
+    "avg_score_defined_ratio_count": integer,
+    "avg_score_undefined_ratio_count": integer,
+    "avg_score_defined_ratios_mean": number,
   }
   ```
 - **422**: Validation Error
@@ -1113,7 +1129,17 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Responses:**
 - **200**: Successful Response
   ```json
-  object
+  {
+    "active_courses_count": integer,
+    "active_courses_population": string,
+    "total_students_count": integer,
+    "total_students_population": string,
+    "average_student_score": number,
+    "average_student_score_grading_state": "missing" | "unknown",
+    "average_student_score_provenance": string,
+    "average_student_score_basis": string,
+    "average_student_score_summary_count": integer,
+  }
   ```
 - **422**: Validation Error
   ```json

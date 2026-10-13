@@ -35,7 +35,28 @@ const mockMentorUser: User = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
-function mockCourse(id: number, title: string, exam_type: "weekly" | "monthly" = "monthly"): CourseResponse {
+function mentorProfileContractMetadata(avgScore: number): Pick<
+  MentorProfileResponse,
+  | "active_students_population"
+  | "avg_score_grading_state"
+  | "avg_score_provenance"
+  | "avg_score_basis"
+  | "avg_score_summary_count"
+  | "avg_score_defined_ratio_count"
+  | "avg_score_undefined_ratio_count"
+  | "avg_score_defined_ratios_mean"
+> {
+  return {
+    active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+    avg_score_grading_state: "unknown",
+    avg_score_provenance: "unknown",
+    avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived",
+    avg_score_summary_count: 1,
+    avg_score_defined_ratio_count: 1,
+    avg_score_undefined_ratio_count: 0,
+    avg_score_defined_ratios_mean: avgScore,
+  };
+}function mockCourse(id: number, title: string, exam_type: "weekly" | "monthly" = "monthly"): CourseResponse {
   return {
     id,
     title,
@@ -204,6 +225,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(0),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 0,
@@ -251,6 +273,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(85),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 5,
@@ -286,6 +309,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(91),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 12,
@@ -340,6 +364,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(90),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 10,
@@ -379,6 +404,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(75),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 8,
@@ -408,6 +434,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(80),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 5,
@@ -454,6 +481,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(80),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 5,
@@ -516,6 +544,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(80),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 5,
@@ -544,6 +573,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(0),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 0,
@@ -566,6 +596,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(0),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 0,
@@ -594,6 +625,7 @@ describe("MentorDashboard Invariant Suite", () => {
     );
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(
       mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(88),
         user: mockMentorUser,
         active_courses: [],
         active_students_count: 3,
@@ -613,6 +645,7 @@ describe("independent retained-empty pane audit", () => {
     vi.clearAllMocks();
     await i18n.changeLanguage("en");
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(mockSuccessResult<MentorProfileResponse>({
+        ...mentorProfileContractMetadata(0),
       user: mockMentorUser, active_courses: [], active_students_count: 0, avg_score: 0,
     }));
   });

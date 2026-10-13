@@ -165,10 +165,24 @@ export interface MentorProfileResponse {
   active_courses: CourseResponse[];
   active_students_count: number;
   avg_score: number;
+  active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses";
+  avg_score_grading_state: "missing" | "unknown";
+  avg_score_provenance: "unknown";
+  avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived";
+  avg_score_summary_count: number;
+  avg_score_defined_ratio_count: number;
+  avg_score_undefined_ratio_count: number;
+  avg_score_defined_ratios_mean: number | null;
 }
 
 export interface MentorAnalyticsResponse {
   active_courses_count: number;
+  active_courses_population: "active_non_deleted_courses";
   total_students_count: number;
+  total_students_population: "non_deleted_enrollments_on_assigned_courses_all_statuses_including_soft_deleted_courses";
   average_student_score: number;
+  average_student_score_grading_state: "missing" | "unknown";
+  average_student_score_provenance: "unknown";
+  average_student_score_basis: "all_summaries_on_non_deleted_courses_including_archived_raw_points";
+  average_student_score_summary_count: number;
 }

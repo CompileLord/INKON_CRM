@@ -138,6 +138,13 @@ def get_student_profile_service(
     return StudentProfileService(user_repo=user_repo, schedule_service=schedule_service)
 
 
+def get_mentor_analytics_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "MentorAnalyticsService":
+    from app.services.mentor_analytics_service import MentorAnalyticsService
+    return MentorAnalyticsService(SQLAlchemyUserRepository(db))
+
+
 def get_course_progress_repository(
     db: AsyncSession = Depends(get_db_session)
 ) -> CourseProgressRepositoryInterface:

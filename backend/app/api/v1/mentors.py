@@ -2,13 +2,14 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, require_superadmin
+from app.core.deps import get_db_session, get_current_user, get_mentor_analytics_service, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.user import MentorProfileResponse, UserResponse
+from app.schemas.user import MentorAnalyticsResponse, MentorProfileResponse, UserResponse
 from app.services.user_service import UserService
+from app.services.mentor_analytics_service import MentorAnalyticsService
 
 router = APIRouter()
 
@@ -42,7 +43,15 @@ async def get_my_profile(
         "user": current_user,
         "active_courses": stats["active_courses"],
         "active_students_count": stats["active_students_count"],
-        "avg_score": stats["avg_score"]
+        "avg_score": stats["avg_score"],
+        "active_students_population": "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+        "avg_score_grading_state": stats["avg_score_grading_state"],
+        "avg_score_provenance": stats["avg_score_provenance"],
+        "avg_score_basis": stats["avg_score_basis"],
+        "avg_score_summary_count": stats["avg_score_summary_count"],
+        "avg_score_defined_ratio_count": stats["avg_score_defined_ratio_count"],
+        "avg_score_undefined_ratio_count": stats["avg_score_undefined_ratio_count"],
+        "avg_score_defined_ratios_mean": stats["avg_score_defined_ratios_mean"]
     }
 
 
@@ -105,16 +114,25 @@ async def get_mentor_profile(
         "user": target_user,
         "active_courses": stats["active_courses"],
         "active_students_count": stats["active_students_count"],
-        "avg_score": stats["avg_score"]
+        "avg_score": stats["avg_score"],
+        "active_students_population": "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+        "avg_score_grading_state": stats["avg_score_grading_state"],
+        "avg_score_provenance": stats["avg_score_provenance"],
+        "avg_score_basis": stats["avg_score_basis"],
+        "avg_score_summary_count": stats["avg_score_summary_count"],
+        "avg_score_defined_ratio_count": stats["avg_score_defined_ratio_count"],
+        "avg_score_undefined_ratio_count": stats["avg_score_undefined_ratio_count"],
+        "avg_score_defined_ratios_mean": stats["avg_score_defined_ratios_mean"]
     }
 
 
-@router.get("/{id}/analytics")
+@router.get("/{id}/analytics", response_model=MentorAnalyticsResponse)
 async def get_mentor_analytics(
     id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> dict:
+    db: AsyncSession = Depends(get_db_session),
+    analytics_service: MentorAnalyticsService = Depends(get_mentor_analytics_service)
+) -> MentorAnalyticsResponse:
     if current_user.role == UserRole.MENTOR and current_user.id != id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -134,40 +152,5 @@ async def get_mentor_analytics(
             detail="Mentor not found"
         )
 
-    from app.models.course import Course, CourseStatus
-    from app.models.enrollment import Enrollment
-    from app.models.journal import Journal
-    from app.models.journal_student_summary import JournalStudentSummary
-    from sqlalchemy import select, func
-
-    active_courses_stmt = select(func.count(Course.id)).filter(
-        Course.mentor_id == id,
-        Course.status == CourseStatus.ACTIVE,
-        Course.is_deleted == False
-    )
-    active_courses_res = await db.execute(active_courses_stmt)
-    active_courses_count = active_courses_res.scalar() or 0
-
-    students_stmt = select(func.count(func.distinct(Enrollment.student_id))).join(Course).filter(
-        Course.mentor_id == id,
-        Enrollment.is_deleted == False
-    )
-    students_res = await db.execute(students_stmt)
-    total_students_count = students_res.scalar() or 0
-
-    score_stmt = select(func.avg(JournalStudentSummary.sum_score)).join(
-        Journal, JournalStudentSummary.journal_id == Journal.id
-    ).join(Course, Journal.course_id == Course.id).filter(
-        Course.mentor_id == id,
-        Course.is_deleted == False
-    )
-    score_res = await db.execute(score_stmt)
-    avg_score = score_res.scalar()
-    average_student_score = float(avg_score) if avg_score is not None else 0.0
-
-    return {
-        "active_courses_count": active_courses_count,
-        "total_students_count": total_students_count,
-        "average_student_score": average_student_score
-    }
+    return await analytics_service.get_mentor_analytics(id)
 
