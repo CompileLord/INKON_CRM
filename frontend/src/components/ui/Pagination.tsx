@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "../../i18n/formatters";
 
 interface PaginationProps {
   page: number;
@@ -26,17 +27,17 @@ function getPageNumbers(page: number, totalPages: number): (number | "ellipsis")
 }
 
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const pages = getPageNumbers(page, totalPages);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex min-w-0 flex-wrap items-center gap-1">
       <button
         type="button"
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
         aria-label={t("pagination.previous")}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-ink motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
       >
         <ChevronLeft size={16} />
       </button>
@@ -51,14 +52,15 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
             key={p}
             type="button"
             onClick={() => onPageChange(p)}
+            aria-current={p === page ? "page" : undefined}
             className={[
-              "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-[background-color,color,transform,box-shadow] duration-150 ease-out active:scale-95",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-sm font-medium tabular-nums motion-safe:transition-[background-color,color,transform,box-shadow] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               p === page
-                ? "bg-maroon text-white dark:bg-accent dark:text-white font-bold shadow-xs"
+                ? "bg-maroon text-on-primary font-bold shadow-xs"
                 : "text-ink hover:bg-strip",
             ].join(" ")}
           >
-            {p}
+            {formatNumber(p, i18n.language)}
           </button>
         ),
       )}
@@ -68,7 +70,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
         aria-label={t("pagination.next")}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-ink transition-[background-color,transform] duration-150 ease-out active:scale-95 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-ink motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-strip disabled:pointer-events-none disabled:opacity-40"
       >
         <ChevronRight size={16} />
       </button>

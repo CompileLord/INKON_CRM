@@ -272,7 +272,8 @@
     "group": "03",
     "dependencies": [
       "KITOB-03-01",
-      "KITOB-03-02-NULL-PATCH"
+      "KITOB-03-02-NULL-PATCH",
+      "KITOB-03-PAGINATION"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -298,7 +299,9 @@
     "status": "pending",
     "group": "03",
     "dependencies": [
-      "KITOB-03-03"
+      "KITOB-03-03",
+      "KITOB-03-02",
+      "KITOB-03-04-CONTRACT"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -836,12 +839,36 @@
   {
     "id": "KITOB-02-ERROR-FOCUS-ASSERTIONS",
     "title": "Verify failed delete-dialog cancellation focus after queued cleanup",
-    "status": "completed",
+    "status": "in_progress",
     "group": "02",
     "dependencies": [
       "KITOB-02-FOCUS-ASSERTIONS"
     ],
     "description": "Cancellation regressions now establish a focused course action trigger before click-only events and await exact queued restoration. Duplicate/delete failure and no-navigation behavior remain asserted; no application change.",
     "testStrategy": "Targeted course lifecycle and full frontend/type/build gates, full unchanged backend. Preserve exact focus assertion and do not enlarge timeouts."
+  },
+  {
+    "id": "KITOB-03-04-CONTRACT",
+    "title": "Expose truthful Mentor aggregate provenance and typed analytics",
+    "status": "in_progress",
+    "group": "03",
+    "dependencies": [
+      "KITOB-01-02",
+      "KITOB-03-03-CONTRACT",
+      "KITOB-03-02-NULL-PATCH"
+    ],
+    "description": "Independent backend prerequisite before Mentor profile: preserve legacy averages/populations while exposing explicit missing/unknown grading, mathematically defined raw metrics and population metadata; typed analytics through service/repository separation with unchanged guards.",
+    "testStrategy": "Persisted aggregate boundary/missing/zero/invalid denominator/history/enrollment/role regressions; full backend/frontend/type/build, schema generator and TypeScript synchronization. API-only evidence, no page screenshot claim."
+  },
+  {
+    "id": "KITOB-03-PAGINATION",
+    "title": "Align reused pagination control targets and themes",
+    "status": "completed",
+    "group": "03",
+    "dependencies": [
+      "KITOB-01-01"
+    ],
+    "description": "Bounded shared prerequisite discovered in Mentors audit: reused Pagination still has32px controls, unguarded motion and incorrect dark foreground. Preserve page commands; enforce44px semantic themed controls, reduced motion, locale numbers and narrow-width wrapping.",
+    "testStrategy": "Full backend/frontend/type/build plus real light/dark desktop/mobile/narrow pagination target/focus/commands/reduced-motion probes; existing namespace keys only."
   }
 ]
