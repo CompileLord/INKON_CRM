@@ -1,14 +1,35 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, require_superadmin
-from app.models.user import User
+from app.core.deps import get_db_session, get_current_user, get_document_delivery_service, require_superadmin
+from fastapi.responses import FileResponse
+from app.models.user import User, UserRole
 from app.models.document import Document
 from app.schemas.document import DocumentResponse
 from app.schemas.common import PaginatedResponse
 from app.services.document_service import DocumentService
+from app.services.document_delivery_service import DocumentDeliveryService
 
 router = APIRouter()
+
+
+@router.get("/{id}/download", response_class=FileResponse, responses={
+    200: {"content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}}
+})
+async def download_document(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    document_delivery: DocumentDeliveryService = Depends(get_document_delivery_service)
+) -> FileResponse:
+    if current_user.role not in (UserRole.SUPERADMIN, UserRole.MENTOR, UserRole.STUDENT):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not enough permissions")
+    download = await document_delivery.prepare_download(id, current_user)
+    return FileResponse(
+        path=download.path,
+        filename=download.filename,
+        media_type=download.media_type,
+        headers={"Cache-Control": "no-store, max-age=0, must-revalidate"}
+    )
 
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)

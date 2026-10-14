@@ -65,9 +65,10 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 import os
-from fastapi.staticfiles import StaticFiles
+from app.services.public_media_files import PublicMediaFiles
 os.makedirs(settings.STORAGE_PATH, exist_ok=True)
-app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+app.mount("/storage/avatar", PublicMediaFiles(settings.STORAGE_PATH, "avatar"), name="avatars")
+app.mount("/storage/course", PublicMediaFiles(settings.STORAGE_PATH, "course"), name="course-media")
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])

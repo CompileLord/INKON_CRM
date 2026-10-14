@@ -3093,6 +3093,32 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## GET /api/v1/documents/{id}/download
+
+**Summary:** Download Document
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/documents/
 
 **Summary:** List Documents

@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, Upload, Trash2, Download, AlertCircle, File, Image as ImageIcon, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteDocument, useDocuments, useUploadDocument } from "../../lib/documents/hooks";
-import { resolveMediaUrl } from "../../lib/users/media";
+import { downloadDocument } from "../../lib/documents/download";
 import type { DocumentItem } from "../../lib/documents/types";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Toast } from "../ui/Toast";
@@ -40,6 +40,22 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
   const role = useAuthStore((s) => s.role);
   const allowManage = canManage ?? (role === "superadmin");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const downloadControllerRef = useRef<AbortController | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  useEffect(() => {
+    setDownloadingId(null);
+    const unsubscribe = useAuthStore.subscribe((current, previous) => {
+      if (current.role !== previous.role || current.userId !== previous.userId) {
+        downloadControllerRef.current?.abort();
+        setDownloadingId(null);
+      }
+    });
+    return () => {
+      unsubscribe();
+      downloadControllerRef.current?.abort();
+      downloadControllerRef.current = null;
+    };
+  }, [ownerType, ownerId]);
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean; variant: "success" | "error" }>({
@@ -100,6 +116,23 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
   };
 
   const docs = data?.items ?? [];
+
+  const handleDownload = async (document: DocumentItem) => {
+    if (downloadControllerRef.current && !downloadControllerRef.current.signal.aborted) return;
+    const controller = new AbortController();
+    downloadControllerRef.current = controller;
+    setDownloadingId(document.id);
+    try {
+      await downloadDocument(document.id, document.file_name, controller.signal);
+    } catch {
+      if (!controller.signal.aborted) showToast(t("downloadError"), "error");
+    } finally {
+      if (downloadControllerRef.current === controller) {
+        downloadControllerRef.current = null;
+        setDownloadingId(null);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -167,7 +200,6 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {docs.map((doc) => {
-              const fileUrl = resolveMediaUrl(doc.file_path);
               return (
                 <div
                   key={doc.id}
@@ -186,17 +218,17 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {fileUrl && (
-                      <a
-                        href={fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip hover:text-ink transition-colors"
-                        title={t("common:download", "Скачать / открыть")}
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingId !== null}
+                        aria-busy={downloadingId === doc.id}
+                        aria-label={t("downloadNamed", { filename: doc.file_name })}
+                        className="flex h-11 w-11 items-center justify-center rounded-[10px] text-muted hover:bg-strip hover:text-ink motion-safe:transition-[background-color,color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                        title={downloadingId === doc.id ? t("downloading") : t("common:download")}
                       >
                         <Download size={15} />
-                      </a>
-                    )}
+                      </button>
 
                     {allowManage && (
                       <button

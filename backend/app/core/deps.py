@@ -138,6 +138,15 @@ def get_student_profile_service(
     return StudentProfileService(user_repo=user_repo, schedule_service=schedule_service)
 
 
+def get_document_delivery_service(
+    db: AsyncSession = Depends(get_db_session)
+) -> "DocumentDeliveryService":
+    from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
+    from app.services.document_delivery_service import DocumentDeliveryService
+    from app.services.document_file_storage import LocalDocumentFileStorage
+    return DocumentDeliveryService(SQLAlchemyDocumentRepository(db), LocalDocumentFileStorage())
+
+
 def get_mentor_analytics_service(
     db: AsyncSession = Depends(get_db_session)
 ) -> "MentorAnalyticsService":

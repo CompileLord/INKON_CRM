@@ -7,7 +7,7 @@ from app.models.document import Document, DocumentOwnerType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
-from app.services.storage_service import LocalStorageService
+from app.services.document_file_storage import LocalDocumentFileStorage
 
 
 def verify_magic_bytes(content: bytes, filename: str) -> bool:
@@ -35,7 +35,7 @@ class DocumentService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.document_repo = SQLAlchemyDocumentRepository(db)
-        self.storage_service = LocalStorageService()
+        self.storage_service = LocalDocumentFileStorage()
 
     async def upload_document(
         self,
@@ -72,7 +72,10 @@ class DocumentService:
                 detail="Invalid file contents for specified file type"
             )
 
-        filepath = await self.storage_service.save(content, owner_type, owner_id, file.filename)
+        try:
+            filepath = await self.storage_service.save(content, owner_type, owner_id, file.filename)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid document storage path")
 
         document = Document(
             owner_type=DocumentOwnerType(owner_type),

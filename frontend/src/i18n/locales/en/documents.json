@@ -13,5 +13,8 @@
   "deleteTitle": "Delete Document",
   "deleteMsg": "Delete \"{{fileName}}\"? This action cannot be undone.",
   "deleteSuccess": "Document deleted",
-  "deleteError": "Failed to delete document"
+  "deleteError": "Failed to delete document",
+  "downloadError": "Could not download this document. Try again.",
+  "downloadNamed": "Download {{filename}}",
+  "downloading": "Downloading…"
 }
