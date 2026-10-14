@@ -5,3 +5,4 @@ Allowed statuses: todo, in_progress, blocked, done. A failing or unrun required 
 | WP | Status | Branch / PR | Date (UTC) | Tests run and result | Notes |
 |---|---|---|---|---|---|
 | WP-01 | done | remediation/wp-01-baseline / no PR | 2026-10-14 | Backend integration 100 passed (58.04s); full backend 100 passed (55.47s); Vitest 115 passed; root tsc exit 0 | Conda base resolved in disposable Podman runtime. Extra app typecheck failed; npm audit 7 high/11 moderate. Frontend exceptions assigned to other agent by user; see results/WP-01.md. |
+| WP-02 | done | remediation/wp-02-critical-reproductions / no PR | 2026-10-14 | Default backend 100 passed (56.51s); explicit module 4 expected assertion failures in four runs (final 3.74s) | Expected-failing test-only acceptance exception; no defects closed. Independent review approved; see results/WP-02.md. Frontend owned separately by user instruction. |
