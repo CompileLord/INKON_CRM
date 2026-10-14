@@ -648,4 +648,28 @@ describe("MentorFormPanel", () => {
     expect(updateSpy).not.toHaveBeenCalled();
     expect(props.onClose).toHaveBeenCalled();
   });
+
+  it("routes a successful photo upload to onAvatarSaved without onSaved or closing when the callback is supplied", async () => {
+    const uploaded: User = { ...existingMentor, photo_path: "/uploads/new-photo.jpg" };
+    vi.spyOn(userEndpoints, "uploadAvatar").mockResolvedValue(uploaded);
+    const onAvatarSaved = vi.fn();
+    const { props } = renderPanel({ mode: "edit", mentor: existingMentor, onAvatarSaved });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", { type: "image/jpeg" })] } });
+    await waitFor(() => expect(onAvatarSaved).toHaveBeenCalledWith(expect.objectContaining({ photo_path: "/uploads/new-photo.jpg" })));
+    expect(onAvatarSaved).toHaveBeenCalledTimes(1);
+    expect(props.onSaved).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Email/i)).toBeDefined();
+  });
+
+  it("keeps the directory onSaved updated contract when no onAvatarSaved is supplied", async () => {
+    const uploaded: User = { ...existingMentor, photo_path: "/uploads/directory-photo.jpg" };
+    vi.spyOn(userEndpoints, "uploadAvatar").mockResolvedValue(uploaded);
+    const { props } = renderPanel({ mode: "edit", mentor: existingMentor });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File([new Uint8Array([0xff, 0xd8, 0xff])], "avatar.jpg", { type: "image/jpeg" })] } });
+    await waitFor(() => expect(props.onSaved).toHaveBeenCalledWith("updated", expect.objectContaining({ photo_path: "/uploads/directory-photo.jpg" })));
+    expect(props.onSaved).toHaveBeenCalledTimes(1);
+  });
 });

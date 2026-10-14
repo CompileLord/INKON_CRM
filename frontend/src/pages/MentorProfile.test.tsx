@@ -255,4 +255,87 @@ describe("Mentor profile authorization and state", () => {
     expect(screen.queryByText("fixture-only-secret")).toBeNull();
     expect(screen.queryByText("Teacher updated successfully")).toBeNull();
   });
+
+  it("admin Back link restores directory query, page and page size and carries the originating row", async () => {
+    setup({ fromDirectory: { search: "nav", page: 3, pageSize: 50, mentorId: 10 } });
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    expect(screen.getByRole("link", { name: "Back to Teachers" }).getAttribute("href")).toBe("/mentors?q=nav&page=3&pageSize=50");
+    await userEvent.click(screen.getByRole("link", { name: "Back to Teachers" }));
+    await screen.findByRole("heading", { name: "Teacher directory" });
+    expect(screen.getByTestId("location").textContent).toBe("/mentors?q=nav&page=3&pageSize=50");
+  });
+
+  it("masks credentials again when the disclosure closes", async () => {
+    vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, user: { ...mentor, raw_password: "fixture-only-secret" } });
+    setup();
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    expect(screen.queryByText("fixture-only-secret")).toBeNull();
+    const summary = screen.getByText("Account access");
+    const disclosure = summary.closest("details");
+    if (!disclosure) throw new Error("Account access disclosure must exist");
+    await userEvent.click(summary);
+    expect(screen.getByText("••••••••")).toBeDefined();
+    await userEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(screen.getByText("fixture-only-secret")).toBeDefined();
+    await userEvent.click(summary);
+    await waitFor(() => expect(disclosure.open).toBe(false));
+    await userEvent.click(summary);
+    expect(screen.queryByText("fixture-only-secret")).toBeNull();
+    expect(screen.getByText("••••••••")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Show password" })).toBeDefined();
+  });
+
+  it("masks credentials when the profile owner changes to another person", async () => {
+    vi.mocked(endpoints.getMentorProfile).mockImplementation(async id => ({ ...profile, user: { ...mentor, id, raw_password: `secret-${id}` } }));
+    setup();
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    await userEvent.click(screen.getByText("Account access"));
+    await userEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(screen.getByText("secret-10")).toBeDefined();
+    await userEvent.click(screen.getByRole("button", { name: "Next person" }));
+    await waitFor(() => expect(endpoints.getMentorProfile).toHaveBeenCalledWith(11));
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    await userEvent.click(screen.getByText("Account access"));
+    expect(screen.getByText("••••••••")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Show password" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Hide password" })).toBeNull();
+    expect(screen.queryByText("secret-10")).toBeNull();
+    expect(screen.queryByText("secret-11")).toBeNull();
+  });
+
+  it("moves focus with arrow, End and Home keys and activates the focused tab with Enter", async () => {
+    setup();
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    screen.getByRole("tab", { name: "Courses" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Performance" }));
+    expect(screen.getByRole("tab", { name: "Courses" }).getAttribute("aria-selected")).toBe("true");
+    await userEvent.keyboard("{End}");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Documents" }));
+    await userEvent.keyboard("{Home}");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Documents" }));
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("tab", { name: "Documents" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("shows raw analytics points above 100 unchanged and never with a percent unit", async () => {
+    vi.mocked(endpoints.getMentorAnalytics).mockResolvedValue({ ...analytics, average_student_score: 123.4 });
+    setup({ profileTab: "performance" });
+    await screen.findByText("123.4");
+    const rawPoints = screen.getByText("Recorded points · unverified").closest("div");
+    expect(rawPoints?.textContent).not.toContain("%");
+    expect(rawPoints?.textContent).toContain("not a percentage");
+  });
+
+  it("shows a genuine zero profile ratio mean as exactly 0 in the stored-average cell", async () => {
+    vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, active_students_count: 7, avg_score_defined_ratios_mean: 0 });
+    setup({ profileTab: "performance" });
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    const cell = screen.getByText("Stored average /100 · unverified").parentElement;
+    expect(cell?.querySelector("p:last-child")?.textContent).toBe("0");
+    expect(cell?.textContent).not.toContain("Score unavailable");
+  });
+
 });

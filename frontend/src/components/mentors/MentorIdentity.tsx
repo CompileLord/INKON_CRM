@@ -24,22 +24,24 @@ export function MentorIdentity({ user, administrator, onEdit, onDelete }: {
       <Phone size={14} className="shrink-0" /><span className="sr-only">{t("form.phoneLabel")}: </span><span className="[overflow-wrap:anywhere]">{user.phone}</span>
     </a>}
   </>;
+  const photoUrl = resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined;
+  const columns = administrator ? "grid-cols-[48px_minmax(0,1fr)_auto] md:grid-cols-[64px_minmax(0,1fr)_auto]" : "grid-cols-[48px_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)]";
+  const nameColumn = administrator ? "col-span-2 md:col-span-1" : "";
+  const contactColumn = administrator ? "col-span-2" : "col-span-full";
   return <div className="min-w-0 rounded-2xl border border-border-warm bg-card p-4 md:p-5">
-    <div className="flex min-w-0 items-start justify-between gap-3 md:gap-4">
-      <div className="flex min-w-0 items-start gap-3 md:gap-4">
-        <div className="shrink-0 md:hidden"><PersonAvatar firstName={user.first_name} lastName={user.last_name} photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined} size={48} /></div>
-        <div className="hidden shrink-0 md:block"><PersonAvatar firstName={user.first_name} lastName={user.last_name} photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined} size={64} /></div>
-        <div className="min-w-0">
-          <h1 className="break-words text-2xl font-bold leading-8 text-ink md:text-[28px] md:leading-9">{user.first_name} {user.last_name}</h1>
-          <div className="mt-1 hidden min-w-0 flex-wrap gap-x-4 gap-y-1 text-sm md:flex">{contacts}</div>
-        </div>
+    <div className={`grid min-w-0 items-start gap-x-3 md:gap-x-4 ${columns}`}>
+      <div className="col-start-1 row-start-1 md:hidden"><PersonAvatar firstName={user.first_name} lastName={user.last_name} photoUrl={photoUrl} size={48} /></div>
+      <div className="col-start-1 row-start-1 hidden md:block"><PersonAvatar firstName={user.first_name} lastName={user.last_name} photoUrl={photoUrl} size={64} /></div>
+      <div className={`col-start-2 row-start-1 min-w-0 ${nameColumn}`}>
+        <h1 className="break-words text-2xl font-bold leading-8 text-ink md:text-[28px] md:leading-9">{user.first_name} {user.last_name}</h1>
+        <div className="mt-1 hidden min-w-0 flex-wrap gap-x-4 gap-y-1 text-sm md:flex">{contacts}</div>
       </div>
-      {administrator && <div className="flex shrink-0 gap-2">
+      {administrator && <div className="col-start-3 row-start-2 flex gap-2 md:row-start-1">
         <div className="hidden md:block"><Button variant="secondary" onClick={event => onEdit(event.currentTarget)}><Pencil size={15} />{t("editMentor")}</Button></div>
         <MentorRowMenu mentor={user} onEdit={(_user, trigger) => onEdit(trigger)} onDelete={(_user, trigger) => onDelete(trigger)} />
       </div>}
+      <div className={`col-start-1 row-start-2 mt-2 flex min-w-0 flex-col gap-1 text-sm md:hidden ${contactColumn}`}>{contacts}</div>
     </div>
-    <div className="mt-2 flex min-w-0 flex-col gap-1 text-sm md:hidden">{contacts}</div>
     {user.date_of_birth && <details className="mt-1">
       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-nav"><Cake size={13} />{t("profile.personalDetails")}</summary>
       <p className="pl-5 text-xs text-muted">{t("form.dobLabel")}: {formatDate(user.date_of_birth, i18n.language)}</p>

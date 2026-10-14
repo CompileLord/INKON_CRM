@@ -10,7 +10,7 @@ const administrator = fixture.identities.find(item => item.role === "superadmin"
 const mentor = fixture.identities.find(item => item.role === "mentor" && !item.forced);
 assert.ok(administrator && mentor);
 const api = `${fixture.api_origin}/api/v1`;
-const origin = process.env.KITOB_PREVIEW_ORIGIN || "http://127.0.0.1:5205";
+const origin = process.env.KITOB_PREVIEW_ORIGIN || "http://127.0.0.1:5206";
 const evidence = resolve("../docs/redesign-execution/group-03/mentor-profile/page/evidence");
 await mkdir(resolve(evidence, "screenshots"), { recursive: true });
 const manifest = [];
@@ -24,10 +24,10 @@ async function open(account, options = {}) {
   await context.addInitScript(({ theme, locale, enlarged }) => {
     localStorage.setItem("imkon_theme", theme);
     localStorage.setItem("i18nextLng", locale);
-    if (enlarged) document.documentElement.style.fontSize = "32px";
+    if (enlarged) new MutationObserver((_records, observer) => { if (document.documentElement) { document.documentElement.style.fontSize = "32px"; observer.disconnect(); } }).observe(document, { childList: true });
   }, { theme, locale, enlarged });
   const page = await context.newPage();
-  page.on("pageerror", error => errors.push(error.message));
+  page.on("pageerror", error => errors.push(`${JSON.stringify(options)} ${error.message} ${(error.stack || "").split("\n").slice(0, 3).join(" | ")}`));
   return { context, page, options: { width, height, theme, locale, enlarged, role: account.role } };
 }
 
@@ -40,9 +40,16 @@ async function enter(page, account) {
 }
 
 async function capture(page, name, metadata = {}) {
+  await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => undefined))));
+  await page.waitForFunction(() => [...document.querySelectorAll('[role="dialog"], [role="alertdialog"], [role="menu"]')].every(element => {
+    let node = element;
+    while (node) { if (Number(getComputedStyle(node).opacity) < 1) return false; node = node.parentElement; }
+    return true;
+  }));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const geometry = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   assert.ok(geometry.scroll <= geometry.client + 1, `${name}: horizontal overflow ${JSON.stringify(geometry)}`);
-  await page.screenshot({ path: resolve(evidence, "screenshots", `${name}.png`) });
+  await page.screenshot({ path: resolve(evidence, "screenshots", `${name}.png`), fullPage: Boolean(metadata.fullPage) });
   manifest.push({ file: `${name}.png`, ...metadata });
   probes.push({ probe: `${name}-horizontal-fit`, passed: true, ...geometry });
 }
@@ -57,6 +64,17 @@ try {
         await page.getByRole("heading", { level: 1 }).waitFor();
         const prefix = `${account.role}-${width}-${theme}`;
         await capture(page, `${prefix}-courses`, { ...session.options, seeded: true });
+        if (width === 390) {
+          const geometry = await page.evaluate(() => {
+            const title = document.querySelector('a[href^="/courses/"]');
+            const navigation = [...document.querySelectorAll("nav")].find(element => getComputedStyle(element).position === "fixed" && element.getBoundingClientRect().top > window.innerHeight / 2);
+            return { titleBottom: title ? title.getBoundingClientRect().bottom : null, navigationTop: navigation ? navigation.getBoundingClientRect().top : null };
+          });
+          assert.ok(geometry.titleBottom !== null && geometry.navigationTop !== null, `${prefix}: course title or bottom navigation missing`);
+          assert.ok(geometry.titleBottom <= geometry.navigationTop, `${prefix}: first course title is below bottom navigation ${JSON.stringify(geometry)}`);
+          assert.equal(await page.getByRole("tab", { name: "Courses", exact: true }).getAttribute("aria-selected"), "true");
+          probes.push({ probe: `${prefix}-first-course-title-above-bottom-navigation`, passed: true, ...geometry });
+        }
         const avatar = await page.locator("h1").locator("../..").locator("[data-loading-avatar]").count();
         assert.equal(avatar, 0);
         const summary = page.locator("[data-profile-summary]");
@@ -93,6 +111,14 @@ try {
           await capture(page, `${prefix}-account-access`, { ...session.options, seeded: true });
           const menu = page.getByRole("button", { name: /^Teacher actions:/ });
           await menu.click();
+          await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+          await page.getByRole("dialog").waitFor();
+          await capture(page, `${prefix}-delete-confirmation`, { ...session.options, seeded: true, description: "confirmation only; deletion is not confirmed" });
+          await page.getByRole("button", { name: "Cancel", exact: true }).click();
+          await page.getByRole("dialog").waitFor({ state: "hidden" });
+          await page.waitForFunction(() => document.activeElement?.getAttribute("aria-label")?.startsWith("Teacher actions:"));
+          probes.push({ probe: `${prefix}-delete-cancel-restores-menu-focus`, passed: true });
+          await menu.click();
           await page.getByRole("menuitem", { name: "Edit", exact: true }).waitFor();
           await capture(page, `${prefix}-menu`, { ...session.options, seeded: true });
           await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
@@ -117,25 +143,35 @@ try {
     const session = await open(administrator, options);
     await enter(session.page, administrator);
     await session.page.getByRole("heading", { level: 1 }).waitFor();
-    await capture(session.page, `stress-${JSON.stringify(options).replace(/[^a-zA-Z0-9]/g, "")}`, { ...session.options, seeded: true });
+    await capture(session.page, `stress-${options.width}${options.locale ? `-${options.locale}` : ""}${options.theme ? `-${options.theme}` : ""}${options.enlarged ? "-text200" : ""}${options.reducedMotion ? "-reduced-motion" : ""}`, { ...session.options, seeded: true, fullPage: Boolean(options.enlarged) });
     if (options.reducedMotion === "reduce") {
       assert.equal(await session.page.evaluate(() => document.getAnimations().length), 0);
       probes.push({ probe: "reduced-motion-has-no-nonessential-animation", passed: true });
     }
     await session.context.close();
   }
-  for (const state of ["loading", "error", "empty", "analytics-error", "long-missing-media"]) {
+  for (const state of ["loading", "error", "empty", "analytics-error", "analytics-loading", "analytics-empty", "details-open", "long-missing-media"]) {
     const session = await open(administrator, { width: 390, theme: "dark" });
     let release;
     const pending = new Promise(resolve => { release = resolve; });
     let fail = state === "error" || state === "analytics-error";
-    const pattern = state === "analytics-error" ? `**/api/v1/mentors/${mentor.id}/analytics` : `**/api/v1/mentors/${mentor.id}/profile`;
+    const pattern = state.startsWith("analytics") ? `**/api/v1/mentors/${mentor.id}/analytics` : `**/api/v1/mentors/${mentor.id}/profile`;
     await session.page.route(pattern, async route => {
-      if (state === "loading") await pending;
+      if (state === "loading" || state === "analytics-loading") await pending;
+      if (state === "analytics-empty") {
+        const response = await route.fetch();
+        const body = await response.json();
+        body.average_student_score = 0;
+        body.average_student_score_summary_count = 0;
+        body.average_student_score_grading_state = "missing";
+        return route.fulfill({ response, json: body });
+      }
+      if (state === "analytics-loading") return route.fulfill({ status: 503, json: { detail: "Released after capture" } });
       if (fail) return route.fulfill({ status: 503, json: { detail: "Labeled isolated unavailable simulation" } });
       const response = await route.fetch();
       const body = await response.json();
       if (state === "empty") body.active_courses = [];
+      if (state === "details-open") body.user.date_of_birth = "1984-03-12";
       if (state === "long-missing-media") {
         body.user.first_name = "Муҳаммадалишоҳ-Муҳаммадалишоҳ-Муҳаммадалишоҳ";
         body.user.last_name = "Абдураҳмонзода-Абдураҳмонзода";
@@ -154,18 +190,34 @@ try {
     } else if (state === "error") await session.page.getByRole("button", { name: "Retry", exact: true }).waitFor();
     else {
       await session.page.getByRole("heading", { level: 1 }).waitFor();
-      if (state === "analytics-error") {
+      if (state.startsWith("analytics")) {
         await session.page.getByRole("tab", { name: "Performance", exact: true }).click();
-        await session.page.getByRole("button", { name: "Retry", exact: true }).waitFor();
+        if (state === "analytics-error") await session.page.getByRole("button", { name: "Retry", exact: true }).waitFor();
+        if (state === "analytics-loading") await session.page.getByText("Loading course and student totals…", { exact: true }).waitFor();
+        if (state === "analytics-empty") await session.page.getByText("No period summaries have been recorded.", { exact: true }).first().waitFor();
+      }
+      if (state === "details-open") {
+        await session.page.getByText("Personal details", { exact: true }).click();
+        await session.page.getByText("Date of Birth", { exact: false }).first().waitFor();
       }
       if (state === "empty") await session.page.getByText("No active courses", { exact: true }).waitFor();
     }
     await capture(session.page, `simulated-${state}`, { ...session.options, simulation: true, description: state });
     release();
+    if (state === "loading") {
+      await session.page.getByRole("heading", { level: 1 }).waitFor();
+      probes.push({ probe: "loading-resolves-to-identity", passed: true });
+    }
+    if (state === "analytics-loading") {
+      await session.page.getByRole("button", { name: "Retry", exact: true }).waitFor();
+      probes.push({ probe: "analytics-loading-resolves-to-independent-error-with-retry", passed: true });
+    }
     if (fail) {
       fail = false;
       await session.page.getByRole("button", { name: "Retry", exact: true }).click();
       await session.page.getByRole("button", { name: "Retry", exact: true }).waitFor({ state: "hidden" });
+      if (state === "error") await session.page.getByRole("heading", { level: 1 }).waitFor();
+      if (state === "analytics-error") await session.page.getByText("Recorded points · unverified", { exact: true }).waitFor();
       probes.push({ probe: `${state}-working-retry`, passed: true });
     }
     await session.context.close();
