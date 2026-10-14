@@ -872,6 +872,7 @@ export function StudentProfile() {
             ownerType="student"
             ownerId={user.id}
             canManage={role === "superadmin"}
+            ownerName={`${user.first_name} ${user.last_name}`}
           />
         )}
       </div>

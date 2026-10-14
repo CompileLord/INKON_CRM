@@ -158,7 +158,7 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
       {activeTab === "performance" && <MentorPerformance profile={profile} analytics={analyticsQuery.data} loading={analyticsQuery.isLoading} failed={analyticsQuery.isError} onRetry={() => analyticsQuery.refetch()} />}
     </div>
     <div role="tabpanel" id="profile-tabpanel-documents" aria-labelledby="profile-tab-documents" hidden={activeTab !== "documents"}>
-      {activeTab === "documents" && <DocumentsTab key={`${id}:${role}:${userId}:${ownerGeneration}`} ownerType="mentor" ownerId={profile.user.id} canManage={role === "superadmin"} />}
+      {activeTab === "documents" && <DocumentsTab key={`${id}:${role}:${userId}:${ownerGeneration}`} ownerType="mentor" ownerId={profile.user.id} canManage={role === "superadmin"} ownerName={`${profile.user.first_name} ${profile.user.last_name}`} />}
     </div>
     <MentorFormPanel open={editUser !== null && role === "superadmin"} mode="edit" mentor={editUser ?? undefined} onClose={() => { if (!isLive(ownerGeneration)) return; setEditUser(null); restoreFocus(ownerGeneration); }} onSaved={saved} onAvatarSaved={photoSaved} finalFocus={triggerRef} />
     <ConfirmDialog open={deleteTarget !== null && role === "superadmin"} title={t("deleteConfirmTitle")} message={deleteTarget ? t("deleteConfirmMessage", { name: `${deleteTarget.first_name} ${deleteTarget.last_name}` }) : ""} pending={pendingDelete} errorMessage={deleteError} confirmVariant="destructive" onConfirm={confirmDelete} onCancel={() => { if (!isLive(ownerGeneration)) return; setDeleteTarget(null); setDeleteError(undefined); restoreFocus(ownerGeneration); }} finalFocus={triggerRef} />

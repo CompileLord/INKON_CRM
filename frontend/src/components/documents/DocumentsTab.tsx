@@ -1,270 +1,223 @@
-import { useEffect, useRef, useState } from "react";
-import { FileText, Upload, Trash2, Download, AlertCircle, File, Image as ImageIcon, Archive } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { AlertCircle, CheckCircle2, FileText, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteDocument, useDocuments, useUploadDocument } from "../../lib/documents/hooks";
 import { downloadDocument } from "../../lib/documents/download";
 import type { DocumentItem } from "../../lib/documents/types";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
-import { Toast } from "../ui/Toast";
-import { Pagination } from "../ui/Pagination";
-
 import { useAuthStore } from "../../store/authStore";
+import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
+import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { Pagination } from "../ui/Pagination";
+import { DocumentUploadPolicy } from "./documentRules";
+import { DocumentListHeader, DocumentRow, DocumentSkeletonRows } from "./DocumentRow";
+import { DocumentUploadStatus, type DocumentUploadState } from "./DocumentUploadStatus";
 
 interface DocumentsTabProps {
   ownerType: "student" | "mentor";
   ownerId: number;
   canManage?: boolean;
+  ownerName?: string;
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+const documentsPageSize: number = 20;
+
+export function DocumentsTab({ ownerType, ownerId, canManage, ownerName }: DocumentsTabProps) {
+  const role = useAuthStore(state => state.role);
+  const userId = useAuthStore(state => state.userId);
+  return <DocumentsWorkspace key={`${role}:${userId}:${ownerType}:${ownerId}`} ownerType={ownerType} ownerId={ownerId} canManage={canManage ?? role === "superadmin"} ownerName={ownerName} />;
 }
 
-function getFileIcon(fileType: string) {
-  if (fileType.includes("pdf") || fileType.includes("document") || fileType.includes("text")) {
-    return <FileText className="text-blue-600" size={20} />;
-  }
-  if (fileType.includes("image")) {
-    return <ImageIcon className="text-emerald-600" size={20} />;
-  }
-  if (fileType.includes("zip") || fileType.includes("rar") || fileType.includes("tar") || fileType.includes("compressed")) {
-    return <Archive className="text-amber-600" size={20} />;
-  }
-  return <File className="text-slate-500" size={20} />;
-}
-
-export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProps) {
-  const { t, i18n } = useTranslation(["documents", "common"]);
-  const role = useAuthStore((s) => s.role);
-  const allowManage = canManage ?? (role === "superadmin");
+function DocumentsWorkspace({ ownerType, ownerId, canManage, ownerName }: { ownerType: "student" | "mentor"; ownerId: number; canManage: boolean; ownerName?: string }) {
+  const { t } = useTranslation(["documents", "common"]);
+  const resolvedOwnerName: string | undefined = ownerName;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef<boolean>(true);
+  const uploadLockRef = useRef<boolean>(false);
+  const pendingFileRef = useRef<File | null>(null);
   const downloadControllerRef = useRef<AbortController | null>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  const deleteLockRef = useRef<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [uploadState, setUploadState] = useState<DocumentUploadState>({ phase: "idle" });
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [failedDownload, setFailedDownload] = useState<DocumentItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
+  const [deleteNotice, setDeleteNotice] = useState<boolean>(false);
+
+  const { data, isLoading, isError, refetch } = useDocuments({ owner_type: ownerType, owner_id: ownerId, page, page_size: documentsPageSize });
+  const uploadDocument = useUploadDocument();
+  const deleteDocument = useDeleteDocument();
+
   useEffect(() => {
-    setDownloadingId(null);
+    mountedRef.current = true;
     const unsubscribe = useAuthStore.subscribe((current, previous) => {
-      if (current.role !== previous.role || current.userId !== previous.userId) {
-        downloadControllerRef.current?.abort();
-        setDownloadingId(null);
-      }
+      if (current.role !== previous.role || current.userId !== previous.userId) downloadControllerRef.current?.abort();
     });
     return () => {
+      mountedRef.current = false;
       unsubscribe();
       downloadControllerRef.current?.abort();
       downloadControllerRef.current = null;
     };
-  }, [ownerType, ownerId]);
-  const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
-  const [toast, setToast] = useState<{ message: string; visible: boolean; variant: "success" | "error" }>({
-    message: "",
-    visible: false,
-    variant: "success",
-  });
+  }, []);
 
-  const { data, isLoading, isError, refetch } = useDocuments({
-    owner_type: ownerType,
-    owner_id: ownerId,
-    page,
-    page_size: 20,
-  });
+  useEffect(() => {
+    if (data && data.total_pages >= 1 && page > data.total_pages) setPage(data.total_pages);
+  }, [data, page]);
 
-  const uploadDoc = useUploadDocument();
-  const deleteDoc = useDeleteDocument();
-
-  const showToast = (message: string, variant: "success" | "error" = "success") => {
-    setToast({ message, visible: true, variant });
-    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
+  const sendFile = async (file: File) => {
+    if (uploadLockRef.current) return;
+    uploadLockRef.current = true;
+    pendingFileRef.current = file;
+    setUploadState({ phase: "uploading", fileName: file.name });
+    try {
+      await uploadDocument.mutateAsync({ file, owner_type: ownerType, owner_id: ownerId });
+      if (!mountedRef.current) return;
+      pendingFileRef.current = null;
+      setPage(1);
+      setUploadState({ phase: "saved", fileName: file.name });
+    } catch (error) {
+      if (!mountedRef.current) return;
+      const failure = DocumentUploadPolicy.failureFor(error);
+      if (failure === "network" || failure === "generic") await refetch().catch(() => undefined);
+      if (!mountedRef.current) return;
+      setUploadState({ phase: "error", fileName: file.name, reason: failure, retryable: failure === "network" || failure === "generic" });
+    } finally {
+      uploadLockRef.current = false;
+    }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 20 * 1024 * 1024) {
-      showToast(t("maxSizeError"), "error");
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file: File | undefined = input.files?.[0];
+    input.value = "";
+    if (!file || uploadLockRef.current) return;
+    const rejection = DocumentUploadPolicy.rejectionFor(file);
+    if (rejection) {
+      pendingFileRef.current = null;
+      setUploadState({ phase: "error", fileName: file.name, reason: rejection, retryable: false });
       return;
     }
-
-    try {
-      await uploadDoc.mutateAsync({
-        file,
-        owner_type: ownerType,
-        owner_id: ownerId,
-      });
-      showToast(t("uploadSuccess"));
-    } catch {
-      showToast(t("uploadError"), "error");
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
+    void sendFile(file);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteDoc.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-      showToast(t("deleteSuccess"));
-    } catch {
-      showToast(t("deleteError"), "error");
-    }
+  const retryUpload = () => {
+    const file: File | null = pendingFileRef.current;
+    if (file) void sendFile(file);
   };
 
-  const docs = data?.items ?? [];
+  const reselectFile = () => fileInputRef.current?.click();
 
-  const handleDownload = async (document: DocumentItem) => {
+  const startDownload = async (document: DocumentItem) => {
     if (downloadControllerRef.current && !downloadControllerRef.current.signal.aborted) return;
     const controller = new AbortController();
     downloadControllerRef.current = controller;
     setDownloadingId(document.id);
+    setFailedDownload(null);
     try {
       await downloadDocument(document.id, document.file_name, controller.signal);
     } catch {
-      if (!controller.signal.aborted) showToast(t("downloadError"), "error");
+      if (!controller.signal.aborted && mountedRef.current) setFailedDownload(document);
     } finally {
       if (downloadControllerRef.current === controller) {
         downloadControllerRef.current = null;
-        setDownloadingId(null);
+        if (mountedRef.current) setDownloadingId(null);
       }
     }
   };
 
-  return (
-    <div className="flex flex-col gap-5">
-      {/* Header & Upload Button */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-bold text-ink flex items-center gap-2">
-            <FileText size={20} className="text-maroon" /> {t("title")}
-          </h3>
-          <p className="text-xs text-muted">{t("subtitle")}</p>
-        </div>
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleteLockRef.current) return;
+    deleteLockRef.current = true;
+    setDeleteError(undefined);
+    const target: DocumentItem = deleteTarget;
+    const wasLastOnPage: boolean = (data?.items.length ?? 0) === 1 && page > 1;
+    try {
+      await deleteDocument.mutateAsync(target.id);
+      if (!mountedRef.current) return;
+      if (wasLastOnPage) setPage(page - 1);
+      setDeleteTarget(null);
+      setDeleteNotice(true);
+    } catch {
+      if (mountedRef.current) setDeleteError(t("deleteError"));
+    } finally {
+      deleteLockRef.current = false;
+    }
+  };
 
-        {allowManage && (
-          <div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
-            />
-            <button
-              type="button"
-              disabled={uploadDoc.isPending}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-full bg-maroon px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-maroon/90 disabled:opacity-50"
-            >
-              <Upload size={14} />
-              {uploadDoc.isPending ? t("uploading") : t("uploadDoc")}
-            </button>
-          </div>
-        )}
+  const documents: DocumentItem[] = data?.items ?? [];
+  const showList: boolean = !isLoading && !isError && documents.length > 0;
+  const showEmpty: boolean = !isLoading && !isError && documents.length === 0;
+
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-ink"><FileText size={20} className="shrink-0 text-nav" />{t("title")}</h2>
+          <p className="mt-1 text-xs text-muted [overflow-wrap:anywhere]">{resolvedOwnerName ? t("subtitleNamed", { owner: resolvedOwnerName }) : t("subtitle")}</p>
+        </div>
+        {canManage && <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept={DocumentUploadPolicy.pickerAccept} tabIndex={-1} aria-hidden="true" />
+          <Button type="button" disabled={uploadState.phase === "uploading"} onClick={reselectFile}><Upload size={16} />{t("uploadDoc")}</Button>
+          <p id="documents-upload-help" className="max-w-xs text-xs text-muted sm:text-right">{t("uploadHelp")}</p>
+        </div>}
       </div>
 
-      {/* Content Area */}
-      {isLoading && (
-        <div className="rounded-xl border border-border-warm bg-card p-6 text-center text-sm text-muted">
-          {t("loadingDocs")}
+      {canManage && <DocumentUploadStatus state={uploadState} ownerName={resolvedOwnerName} onRetry={retryUpload} onReselect={reselectFile} onDismiss={() => setUploadState({ phase: "idle" })} />}
+
+      {deleteNotice && <div role="status" className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-ink">
+        <span className="flex min-w-0 items-center gap-2"><CheckCircle2 size={16} className="shrink-0 text-success" />{t("deleteSuccess")}</span>
+        <Button variant="secondary" onClick={() => setDeleteNotice(false)}>{t("common:close")}</Button>
+      </div>}
+
+      {failedDownload && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-3 text-sm text-destructive">
+        <p className="min-w-0 flex-1 [overflow-wrap:anywhere]">{t("downloadErrorNamed", { filename: failedDownload.file_name })}</p>
+        <div className="flex gap-2">
+          <Button variant="primary" disabled={downloadingId !== null} onClick={() => void startDownload(failedDownload)}>{t("common:retry")}</Button>
+          <Button variant="secondary" onClick={() => setFailedDownload(null)}>{t("common:close")}</Button>
         </div>
-      )}
+      </div>}
 
-      {!isLoading && isError && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-border-warm bg-card p-6 text-center">
-          <AlertCircle className="text-rose-500" size={24} />
-          <p className="text-sm text-muted">{t("loadError")}</p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="rounded-lg border border-border-warm bg-card px-3 py-1.5 text-xs font-semibold text-ink hover:bg-strip"
-          >
-            {t("common:retry")}
-          </button>
+      {isLoading && <div role="status" aria-busy="true" className="rounded-2xl border border-border-warm bg-card">
+        <div className="flex items-center gap-2 px-4 pt-4 text-sm text-muted"><BrandActivityIndicator size={20} />{t("loadingDocs")}</div>
+        <DocumentListHeader />
+        <ul className="divide-y divide-border"><DocumentSkeletonRows /></ul>
+      </div>}
+
+      {!isLoading && isError && <div role="alert" className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-6 text-center">
+        <AlertCircle className="text-destructive" size={24} />
+        <p className="text-sm text-muted">{t("loadError")}</p>
+        <Button variant="secondary" onClick={() => void refetch()}>{t("common:retry")}</Button>
+      </div>}
+
+      {showEmpty && <div className="flex flex-col items-center gap-2 rounded-2xl border border-border-warm bg-card p-8 text-center">
+        <FileText className="text-muted" size={32} />
+        <p className="text-sm font-semibold text-ink">{t("noDocs")}</p>
+        <p className="max-w-md text-xs text-muted">{canManage ? t("emptyHelpManage") : t("emptyHelpReadOnly")}</p>
+      </div>}
+
+      {showList && <div className="flex min-w-0 flex-col gap-4">
+        <div className="rounded-2xl border border-border-warm bg-card">
+          <DocumentListHeader />
+          <ul className="divide-y divide-border">
+            {documents.map(document => <DocumentRow key={document.id} document={document} canManage={canManage} downloading={downloadingId === document.id} downloadLocked={downloadingId !== null} onDownload={item => void startDownload(item)} onDelete={(item, trigger) => { deleteTriggerRef.current = trigger; setDeleteError(undefined); setDeleteTarget(item); }} />)}
+          </ul>
         </div>
-      )}
+        {data && data.total_pages > 1 && <div className="flex justify-end"><Pagination page={page} totalPages={data.total_pages} onPageChange={setPage} /></div>}
+      </div>}
 
-      {!isLoading && !isError && docs.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border-warm bg-card p-8 text-center">
-          <FileText className="text-muted/50" size={36} />
-          <p className="text-sm font-semibold text-ink">{t("noDocs")}</p>
-          <p className="text-xs text-muted">{t("emptyHelp")}</p>
-        </div>
-      )}
-
-      {!isLoading && !isError && docs.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {docs.map((doc) => {
-              return (
-                <div
-                  key={doc.id}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-border-warm bg-card p-4 transition-colors hover:bg-row-hover"
-                >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 rounded-lg bg-beige/60 p-2 shrink-0">{getFileIcon(doc.file_type)}</div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-ink" title={doc.file_name}>
-                        {doc.file_name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted font-mono">
-                        {formatFileSize(doc.file_size)} • {new Date(doc.uploaded_at).toLocaleDateString(i18n.language)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(doc)}
-                        disabled={downloadingId !== null}
-                        aria-busy={downloadingId === doc.id}
-                        aria-label={t("downloadNamed", { filename: doc.file_name })}
-                        className="flex h-11 w-11 items-center justify-center rounded-[10px] text-muted hover:bg-strip hover:text-ink motion-safe:transition-[background-color,color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                        title={downloadingId === doc.id ? t("downloading") : t("common:download")}
-                      >
-                        <Download size={15} />
-                      </button>
-
-                    {allowManage && (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(doc)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
-                        title={t("common:delete", "Удалить")}
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {data && data.total_pages > 1 && (
-            <div className="flex justify-end pt-2">
-              <Pagination page={page} totalPages={data.total_pages} onPageChange={setPage} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Confirm Delete */}
       <ConfirmDialog
-        open={deleteTarget !== null}
-        title={t("deleteTitle", "Удалить документ")}
-        message={t("deleteMsg", { fileName: deleteTarget?.file_name, defaultValue: `Удалить документ "${deleteTarget?.file_name}"? Это действие нельзя отменить.` })}
-        pending={deleteDoc.isPending}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        open={deleteTarget !== null && canManage}
+        title={t("deleteTitle")}
+        message={deleteTarget ? t("deleteMsg", { fileName: deleteTarget.file_name }) : ""}
+        pending={deleteDocument.isPending}
+        errorMessage={deleteError}
+        finalFocus={deleteTriggerRef}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => { setDeleteTarget(null); setDeleteError(undefined); }}
       />
-
-      <Toast message={toast.message} show={toast.visible} variant={toast.variant} />
     </div>
   );
 }

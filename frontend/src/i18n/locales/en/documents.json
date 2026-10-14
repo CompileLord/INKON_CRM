@@ -1,20 +1,43 @@
 {
   "title": "Documents",
   "subtitle": "Files attached to this profile",
+  "subtitleNamed": "Files attached to {{owner}}",
   "uploadDoc": "Upload Document",
-  "uploading": "Uploading...",
-  "loadingDocs": "Loading documents...",
+  "uploadHelp": "Photos, audio, PDF, Word (.docx) and plain-text files up to 50 MB.",
+  "loadingDocs": "Loading documents…",
   "loadError": "Failed to load documents",
   "noDocs": "No attached documents",
-  "emptyHelp": "Upload the first document using the button above",
-  "maxSizeError": "The file exceeds the maximum size of 20MB",
-  "uploadSuccess": "Document uploaded",
-  "uploadError": "Failed to upload document",
+  "emptyHelpManage": "Upload the first file with the Upload Document button above. Photos, audio, PDF, Word (.docx) and plain-text files up to 50 MB are accepted.",
+  "emptyHelpReadOnly": "Files added by the administration will appear here.",
   "deleteTitle": "Delete Document",
   "deleteMsg": "Delete \"{{fileName}}\"? This action cannot be undone.",
   "deleteSuccess": "Document deleted",
-  "deleteError": "Failed to delete document",
-  "downloadError": "Could not download this document. Try again.",
+  "deleteError": "Failed to delete the document. It was not deleted.",
+  "downloadErrorNamed": "Could not download {{filename}}. Try again.",
   "downloadNamed": "Download {{filename}}",
-  "downloading": "Downloading…"
+  "downloading": "Downloading…",
+  "rowActions": "Actions for {{filename}}",
+  "columns": {
+    "name": "File",
+    "size": "Size",
+    "uploaded": "Uploaded"
+  },
+  "size": {
+    "bytes": "{{value}} B",
+    "kilobytes": "{{value}} KB",
+    "megabytes": "{{value}} MB"
+  },
+  "upload": {
+    "context": "{{owner}}: {{filename}}",
+    "uploading": "Uploading. The file is saved when this finishes.",
+    "saved": "Saved. The list refreshes to include this file.",
+    "reselect": "Choose another file",
+    "errors": {
+      "tooLarge": "This file is larger than 50 MB. Choose a smaller file.",
+      "unsupportedType": "This file type is not accepted. Use photos, audio, PDF, Word (.docx) or plain text.",
+      "invalidContent": "The file contents do not match its type. Check the file or choose another one.",
+      "network": "The connection was interrupted, so the upload may not have completed. Check the list below before trying again.",
+      "generic": "The upload may not have completed. Check the list below before trying again."
+    }
+  }
 }
