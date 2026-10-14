@@ -1,5 +1,6 @@
 import hashlib
 from datetime import datetime, timedelta, timezone
+import secrets
 from typing import Any, Dict, Optional
 from jose import jwt
 import bcrypt
@@ -57,7 +58,7 @@ def create_access_token(
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
 
 
-def create_refresh_token(expires_delta: Optional[timedelta] = None) -> str:
+def create_refresh_token(user_id: int, expires_delta: Optional[timedelta] = None) -> str:
     now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
@@ -65,6 +66,9 @@ def create_refresh_token(expires_delta: Optional[timedelta] = None) -> str:
         expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
     to_encode: Dict[str, Any] = {
+        "sub": str(user_id),
+        "type": "refresh",
+        "jti": secrets.token_urlsafe(32),
         "exp": int(expire.timestamp()),
         "iat": int(now.timestamp())
     }

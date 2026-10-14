@@ -1,7 +1,7 @@
 import json
 import secrets
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, hash_token, hash_password, verify_password
 from app.core.redis import redis_client
 from app.models.refresh_token import RefreshToken
+from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.auth import TokenPair
@@ -38,17 +39,7 @@ class AuthService:
 
         scope = "must_set_password" if user.must_set_password else None
         access_token = create_access_token(user.id, user.role, scope=scope)
-        refresh_token = create_refresh_token()
-
-        token_hash = hash_token(refresh_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-        db_token = RefreshToken(
-            user_id=user.id,
-            token_hash=token_hash,
-            expires_at=expires_at
-        )
-        await self.token_repo.create(db_token)
+        refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,
@@ -57,40 +48,20 @@ class AuthService:
         )
 
     async def refresh(self, refresh_token: str) -> TokenPair:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+        user_id = self._decode_refresh_subject(refresh_token)
+        consumed = await self.token_repo.consume_valid_token(
+            hash_token(refresh_token), user_id, datetime.now(timezone.utc)
         )
-        try:
-            payload = jwt.decode(refresh_token, settings.JWT_REFRESH_SECRET_KEY, algorithms=["HS256"])
-        except JWTError:
-            raise credentials_exception
+        if not consumed:
+            raise self._invalid_refresh_token()
 
-        token_hash = hash_token(refresh_token)
-        db_token = await self.token_repo.get_valid_token(token_hash)
-        if not db_token:
-            raise credentials_exception
-
-        db_token.revoked_at = datetime.now(timezone.utc)
-        await self.token_repo.update(db_token)
-
-        user = await self.user_repo.get_by_id(db_token.user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user or user.is_deleted:
-            raise credentials_exception
+            raise self._invalid_refresh_token()
 
         scope = "must_set_password" if user.must_set_password else None
         new_access_token = create_access_token(user.id, user.role, scope=scope)
-        new_refresh_token = create_refresh_token()
-
-        new_token_hash = hash_token(new_refresh_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-        new_db_token = RefreshToken(
-            user_id=user.id,
-            token_hash=new_token_hash,
-            expires_at=expires_at
-        )
-        await self.token_repo.create(new_db_token)
+        new_refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=new_access_token,
@@ -99,11 +70,65 @@ class AuthService:
         )
 
     async def logout(self, refresh_token: str) -> None:
-        token_hash = hash_token(refresh_token)
-        db_token = await self.token_repo.get_valid_token(token_hash)
-        if db_token:
-            db_token.revoked_at = datetime.now(timezone.utc)
-            await self.token_repo.update(db_token)
+        try:
+            user_id = self._decode_refresh_subject(refresh_token)
+        except HTTPException:
+            return
+        await self.token_repo.consume_valid_token(
+            hash_token(refresh_token), user_id, datetime.now(timezone.utc)
+        )
+
+    @staticmethod
+    def _invalid_refresh_token() -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    @classmethod
+    def _decode_refresh_subject(cls, refresh_token: str) -> int:
+        try:
+            payload: dict[str, Any] = jwt.decode(
+                refresh_token,
+                settings.JWT_REFRESH_SECRET_KEY,
+                algorithms=["HS256"],
+            )
+        except JWTError as exception:
+            raise cls._invalid_refresh_token() from exception
+
+        subject: Any = payload.get("sub")
+        token_type: Any = payload.get("type")
+        token_id: Any = payload.get("jti")
+        expiration: Any = payload.get("exp")
+        issued_at: Any = payload.get("iat")
+        if (
+            token_type != "refresh"
+            or not isinstance(token_id, str)
+            or not token_id
+            or not isinstance(subject, str)
+            or not subject.isdecimal()
+            or not isinstance(expiration, int)
+            or isinstance(expiration, bool)
+            or not isinstance(issued_at, int)
+            or isinstance(issued_at, bool)
+        ):
+            raise cls._invalid_refresh_token()
+
+        user_id = int(subject)
+        if user_id <= 0 or str(user_id) != subject:
+            raise cls._invalid_refresh_token()
+        return user_id
+
+    async def _issue_refresh_token(self, user: User) -> str:
+        refresh_token = create_refresh_token(user.id)
+        stored_token = RefreshToken(
+            user_id=user.id,
+            token_hash=hash_token(refresh_token),
+            expires_at=datetime.now(timezone.utc)
+            + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+        await self.token_repo.create(stored_token)
+        return refresh_token
 
     async def revoke_all_user_tokens(self, user_id: int) -> None:
         await self.token_repo.revoke_all_for_user(user_id)
@@ -198,17 +223,7 @@ class AuthService:
         await self.revoke_all_user_tokens(user.id)
 
         access_token = create_access_token(user.id, user.role)
-        refresh_token = create_refresh_token()
-
-        token_hash = hash_token(refresh_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-        db_token = RefreshToken(
-            user_id=user.id,
-            token_hash=token_hash,
-            expires_at=expires_at
-        )
-        await self.token_repo.create(db_token)
+        refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,
@@ -305,17 +320,7 @@ class AuthService:
         await self.revoke_all_user_tokens(user.id)
 
         access_token = create_access_token(user.id, user.role)
-        refresh_token = create_refresh_token()
-
-        token_hash = hash_token(refresh_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-
-        db_token = RefreshToken(
-            user_id=user.id,
-            token_hash=token_hash,
-            expires_at=expires_at
-        )
-        await self.token_repo.create(db_token)
+        refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,
