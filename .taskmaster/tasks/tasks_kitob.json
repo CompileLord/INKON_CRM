@@ -334,7 +334,7 @@
   {
     "id": "KITOB-03-07",
     "title": "Group 03 integration audit",
-    "status": "in_progress",
+    "status": "completed",
     "group": "03",
     "dependencies": [
       "KITOB-03-06"
@@ -345,7 +345,7 @@
   {
     "id": "KITOB-04-01",
     "title": "Canonical commands draft ownership drain conflicts",
-    "status": "pending",
+    "status": "in_progress",
     "group": "04",
     "dependencies": [
       "KITOB-03-07"
