@@ -1,0 +1,33 @@
+# Backend remediation plan
+
+This folder turns the existing quality, security and performance audits into implementation-sized work. The planning snapshot is commit `32d7a07`, verified against current source on 2026-10-14. **75 findings, 64 work packages: 74 findings assigned once, 1 policy deferral, 0 rejected.** This planning pass changed documentation only, used no subagents and did not execute integration/load tests or implement fixes.
+
+## Folder map
+
+- `00-README.md`: execution rules for every implementation agent.
+- `01-master-backlog.md`: closure owners, exact files, dependencies and all 75 source-ID dispositions.
+- `02-roadmap.md`: phase order, conservative sequential boundaries and disjoint parallel waves.
+- `STATUS.md`: initially empty progress ledger; never infer completion from this plan.
+- `tasks/WP-NN-*.md`: self-contained branch/PR scopes, evidence, test-first actions, acceptance and rollback.
+- `_work/findings-table.md`: every source finding, original labels, exact locations and source verification.
+- `_work/findings.json`, `work-packages.json`, `source-evidence.md`: saved extraction/planning checkpoints, including qualified source evidence. `_work/baseline.json` and `verification.md` support write-boundary and coverage checks. Build/render scripts reproduce these planning documents; implementation agents must not run them.
+- `results/`: future per-WP test/measurement records; absence means evidence has not yet been recorded.
+
+## Strict execution rules
+
+1. **Among remediation planning documents, read only this README and your own WP file.** Each task includes its own evidence, dependencies and interfaces; audit links are provenance, not required extra reading. Read source, tests and applicable repository policy as necessary. WP-62 explicitly authorizes read-only full re-audit context.
+2. **Change only files explicitly listed in your WP.** NEW files are exact planned paths, not existing citations. Read-only context is not an edit permission. Do not edit audit reports, other task plans, unrelated source or `.taskmaster`; this scoped instruction overrides broad tracker-update defaults. Stop and report missing paths/incorrect assumptions before broadening scope.
+3. **Critical items require tests first.** Reproduce the defect with desired secure assertions before implementation and demonstrate the same tests pass after. Use independent PostgreSQL sessions and barriers for races. No skip/xfail or weakened assertions. WP-02 is a deliberate test-only baseline package with explicit known-red results, outside default collection; subsequent fix PRs and final re-audit invoke those tests explicitly.
+4. **Run the test suite before and after.** Use Conda base, dedicated disposable PostgreSQL/Redis/storage and synthetic settings established before imports. Original fixtures drop a schema and FLUSHDB; never point them at ordinary services. Required repository gates are backend `python -m pytest app/tests -q`, frontend `npx vitest run`, and `npx tsc --noEmit`; targeted/migration/security/performance checks are listed per WP. Record actual commands, exit codes and existing failures. An unrun or failing required gate is a blocker, not a pass.
+5. **One WP per branch and PR.** Start from merged prerequisites, preserve their fixes and keep the PR’s problem/behavior/test evidence focused. Do not treat this plan as authorization to implement, deploy, push, publish a PR, rotate production secrets or delete operational data now. Future implementation follows the authorization then in effect.
+6. **Update STATUS.md when work starts, blocks or completes.** Write the WP’s result file with evidence, then update only its status row with branch/PR, date, tests and notes. Status updates from parallel branches must be integrated serially. Mark done only when acceptance and required checks pass; a documentation plan is not completion.
+7. **Respect dependencies and shared-file order.** Single-head Alembic migrations and contract generation are serialized. Do not let separate agents edit the same source file in parallel; use separate disposable test targets. A broad finding has one closure owner plus explicitly named contributors; the owner cannot close it while a contribution remains unfinished.
+8. **Stop and report if assumptions are wrong.** Re-check named functions after earlier WPs shift line numbers. Do not blindly apply proposed audit snippets, edit applied migrations, infer production reachability, invent benchmark wins or silently choose an unapproved data-erasure policy. Preserve existing authorization, Decimal money, audit history and transaction ownership.
+9. **Keep repository conventions.** Use typed Pydantic inputs/results, feature services/repositories and FastAPI Depends; avoid unneeded pass-through abstractions. No ordinary code comments except the repository’s math/cron exceptions. New user-facing strings require existing i18n keys or an explicit file-scope revision for all three locales. If an API contract changes, regenerate CONTRACT.md and update the listed client types in the same PR; frontend/src/lib is broadly gitignored, so read/diff it explicitly. Never stage secrets, uploads or environment files.
+10. **Size discipline.** S is localized; M is one bounded cross-layer root cause/extraction. No WP authorizes a broad subsystem rewrite. If implementation exceeds one session or requires new files outside its allowlist, stop with a concrete split proposal. Tests and small supporting refactors belong to the fix; unrelated architecture work waits for its own WP.
+
+## Scope and evidence limits
+
+All 12 input audit Markdown files were read in full and each of the 75 numbered findings was checked against cited current code and relevant callers/configuration. The prior reports’ historical tests and in-memory experiments are not newly executed results. Conditional Redis/artifact/SMTP threats remain conditional, and query/index/latency claims retain measurement gates. SEC-DATA-04 (PII retention) is deferred until the data/product owner supplies retention periods, financial exceptions and backup policy; WP-62 revisits it. No source finding was rejected as obsolete. Minor citation corrections and operational limitations are recorded in the master table.
+
+The first five packages are WP-01 baseline, WP-02 Critical reproductions, WP-03 refresh identity, WP-04 private downloads and WP-05 fail-closed cron. Phase counts: baseline 2; Critical 9; High/prerequisite work 12; Medium/Low/structure 40; re-audit 1.
