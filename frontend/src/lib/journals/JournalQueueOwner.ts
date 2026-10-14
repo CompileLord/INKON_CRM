@@ -99,6 +99,10 @@ class JournalRequestErrors {
     return status !== undefined && (status >= 500 || status === 0);
   }
 
+  static isForbidden(error: unknown): boolean {
+    return JournalRequestErrors.statusOf(error) === 403;
+  }
+
   private static statusOf(error: unknown): number | undefined {
     if (error instanceof AuthApiError) return error.status;
     if (typeof error === "object" && error !== null && "status" in error) {
@@ -148,6 +152,7 @@ export class JournalQueueOwner {
   private lastOutcome: CycleOutcome = "ok";
   private acknowledgedInRun: boolean = false;
   private halted: boolean = false;
+  private forbidden: boolean = false;
   private uncertain: boolean = false;
   private recentlySaved: boolean = false;
   private draining: boolean = false;
@@ -260,6 +265,7 @@ export class JournalQueueOwner {
 
   retryManual = async (): Promise<void> => {
     this.halted = false;
+    this.forbidden = false;
     this.retryCount = 0;
     this.clearRetryTimer();
     if (this.activeFlush) await this.activeFlush;
@@ -446,6 +452,7 @@ export class JournalQueueOwner {
   }
 
   private hasSendableWork(): boolean {
+    if (this.forbidden) return false;
     for (const [key, record] of this.entries) {
       if (record.draft && !this.conflicts.has(key)) return true;
     }
@@ -654,6 +661,7 @@ export class JournalQueueOwner {
       return;
     }
     tally.terminal = true;
+    if (JournalRequestErrors.isForbidden(error)) this.forbidden = true;
     tally.affectedEntryKeys.forEach((key) => {
       const record: EntryRecord | undefined = this.entries.get(key);
       if (record?.draft) record.failed = true;
@@ -707,6 +715,7 @@ export class JournalQueueOwner {
           tally.transient = true;
         } else {
           tally.terminal = true;
+          if (JournalRequestErrors.isForbidden(error)) this.forbidden = true;
           if (record.draft) record.failed = true;
         }
       }
@@ -1210,6 +1219,7 @@ export class JournalQueueOwner {
       hasPending: this.hasPending(),
       draining: this.draining,
       refetching: this.refetching,
+      forbidden: this.forbidden,
     };
   }
 

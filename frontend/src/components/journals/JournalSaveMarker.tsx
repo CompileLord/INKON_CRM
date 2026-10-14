@@ -12,9 +12,9 @@ const MARKER_ICONS: Record<CellSaveStatus, LucideIcon> = {
 };
 
 const MARKER_TONES: Record<CellSaveStatus, string> = {
-  dirty: "text-amber-500",
-  saving: "text-amber-500",
-  saved: "text-emerald-500",
+  dirty: "text-warning",
+  saving: "text-warning",
+  saved: "text-success",
   error: "text-destructive",
   conflict: "text-destructive",
 };

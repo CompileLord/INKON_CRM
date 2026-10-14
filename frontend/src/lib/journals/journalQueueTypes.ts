@@ -50,6 +50,7 @@ export interface JournalQueueSnapshot {
   hasPending: boolean;
   draining: boolean;
   refetching: boolean;
+  forbidden: boolean;
 }
 
 export type JournalDrainResult =

@@ -23,6 +23,7 @@ export interface JournalRegistrySnapshot {
   hasPending: boolean;
   draining: boolean;
   refetching: boolean;
+  forbidden: boolean;
   conflicts: JournalRegistryConflict[];
 }
 
@@ -35,6 +36,7 @@ export const IDLE_REGISTRY_SNAPSHOT: JournalRegistrySnapshot = {
   hasPending: false,
   draining: false,
   refetching: false,
+  forbidden: false,
   conflicts: [],
 };
 
@@ -166,6 +168,7 @@ export class JournalQueueRegistry {
     const conflicts: JournalRegistryConflict[] = [];
     const phases: Set<JournalSavePhase> = new Set();
     let refetching: boolean = false;
+    let forbidden: boolean = false;
     let hasPending: boolean = false;
 
     this.owners.forEach((owner, journalId) => {
@@ -176,11 +179,12 @@ export class JournalQueueRegistry {
       counts.unsaved += ownerSnapshot.counts.unsaved;
       phases.add(ownerSnapshot.phase);
       refetching = refetching || ownerSnapshot.refetching;
+      forbidden = forbidden || ownerSnapshot.forbidden;
       hasPending = hasPending || ownerSnapshot.hasPending;
       ownerSnapshot.conflicts.forEach((conflict) => conflicts.push({ journalId, conflict }));
     });
 
     const phase: JournalSavePhase = PHASE_PRIORITY.find((candidate) => phases.has(candidate)) ?? "idle";
-    return { revision: this.revision, phase, counts, hasPending, draining: this.draining, refetching, conflicts };
+    return { revision: this.revision, phase, counts, hasPending, draining: this.draining, refetching, forbidden, conflicts };
   }
 }

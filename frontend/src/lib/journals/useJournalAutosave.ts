@@ -31,6 +31,7 @@ const IDLE_SNAPSHOT: JournalQueueSnapshot = {
   hasPending: false,
   draining: false,
   refetching: false,
+  forbidden: false,
 };
 
 const SUBSCRIBE_NOTHING = (): (() => void) => () => undefined;
@@ -91,6 +92,7 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
     phase: snapshot.phase,
     counts: snapshot.counts,
     refetching: snapshot.refetching,
+    forbidden: snapshot.forbidden,
     hasPendingEdits: snapshot.hasPending,
     ...actions,
   };

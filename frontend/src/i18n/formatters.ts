@@ -94,6 +94,17 @@ export function formatSchoolLessonTime(
   return formatTime(date, lng, SCHOOL_TIMEZONE);
 }
 
+function isTajikRequestedWithoutIntlSupport(lng?: string): boolean {
+  const current = lng || i18n.language || "ru";
+  return (localeMap[current] || "ru-RU") === "tg-TJ" && !isLocaleSupportedByIntl("tg-TJ");
+}
+
+function getSchoolWeekdayIndexMondayFirst(date: Date): number {
+  const [year, month, day] = getSchoolCalendarDate(date).split("-").map(Number);
+  const sundayFirstIndex = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return (sundayFirstIndex + 6) % 7;
+}
+
 export function formatSchoolLessonWeekday(
   date: string | Date | null | undefined,
   lng?: string
@@ -101,6 +112,9 @@ export function formatSchoolLessonWeekday(
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "";
+  if (isTajikRequestedWithoutIntlSupport(lng)) {
+    return i18n.t(`student:weekdays.${getSchoolWeekdayIndexMondayFirst(d)}`, { lng: "tg" });
+  }
   return new Intl.DateTimeFormat(getActiveLocale(lng), {
     weekday: "short",
     timeZone: SCHOOL_TIMEZONE,

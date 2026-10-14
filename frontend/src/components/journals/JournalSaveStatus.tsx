@@ -8,9 +8,10 @@ interface JournalSaveStatusProps {
   status: JournalRegistrySnapshot;
   onRetry: () => void;
   onReview: () => void;
+  retryable?: boolean;
 }
 
-export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({ status, onRetry, onReview }) => {
+export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({ status, onRetry, onReview, retryable = true }) => {
   const { t } = useTranslation("journals");
   const { phase, counts } = status;
 
@@ -32,22 +33,22 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({ status, on
   } else if (phase === "saving") {
     icon = <Loader2 className="h-4 w-4 shrink-0 motion-safe:animate-spin" aria-hidden="true" />;
     message = t("status.saving");
-    tone = "text-amber-600 dark:text-amber-400";
+    tone = "text-warning";
     total = counts.saving;
   } else if (phase === "unsaved") {
     icon = <Pencil className="h-4 w-4 shrink-0" aria-hidden="true" />;
     message = t("status.unsaved");
-    tone = "text-amber-600 dark:text-amber-400";
+    tone = "text-warning";
     total = counts.unsaved;
   } else if (phase === "saved") {
     icon = <Check className="h-4 w-4 shrink-0" aria-hidden="true" />;
     message = t("status.saved");
-    tone = "text-emerald-600 dark:text-emerald-400";
+    tone = "text-success";
   }
 
   return (
     <div className="flex min-h-11 items-center gap-2" data-testid="journal-save-status" data-phase={phase}>
-      <div role="status" aria-live="polite" aria-atomic="true" className={`flex items-center gap-1.5 text-xs font-medium ${tone}`}>
+      <div role="status" aria-live="polite" aria-atomic="true" className={`flex items-center gap-1.5 text-sm font-medium ${tone}`}>
         {icon}
         {message && <span>{message}</span>}
         {total > 0 && <span className="tabular-nums">({total})</span>}
@@ -57,7 +58,7 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({ status, on
           {t("status.review")}
         </Button>
       )}
-      {phase === "failed" && (
+      {phase === "failed" && retryable && (
         <Button type="button" variant="secondary" className="text-xs" onClick={onRetry}>
           {t("status.retry")}
         </Button>

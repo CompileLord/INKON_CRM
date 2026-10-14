@@ -1,27 +1,43 @@
-import { useMemo, useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Users, TrendingUp, CalendarCheck, AlertTriangle, Target } from "lucide-react";
-import { useCourse, useCourseJournals, useCourseJournalMetrics, useCourseProgressChart } from "../lib/courses/hooks";
+import { useId, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { ArrowLeft, Settings, Users } from "lucide-react";
+import { useCourse, useCourseJournals, useCourseProgressChart } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
-import { useCourseRoster } from "../lib/enrollments/hooks";
+import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
+import { useAuthStore } from "../store/authStore";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { Button } from "../components/ui/Button";
 import { JournalScoreChart } from "../components/journals/JournalScoreChart";
-import { JournalPeriodSection } from "../components/journals/JournalPeriodSection";
+import { JournalGrid } from "../components/journals/JournalGrid";
+import { JournalSummaryList } from "../components/journals/JournalSummaryList";
+import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker";
+import { JournalWorkspaceTabs } from "../components/journals/JournalWorkspaceTabs";
+import { JournalViewSwitch } from "../components/journals/JournalViewSwitch";
+import { JournalLessonNavigator } from "../components/journals/JournalLessonNavigator";
+import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp";
 import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
 import { JournalConflictReview } from "../components/journals/JournalConflictReview";
 import { JournalDrainDialog } from "../components/journals/JournalDrainDialog";
+import { ExamWeightModal } from "../components/journals/ExamWeightModal";
+import type { JournalRowEditing } from "../components/journals/JournalStudentRow";
+import {
+  JournalContextSkeleton,
+  JournalGridSkeleton,
+  JournalNotice,
+  JournalPanelMessage,
+  JournalPeriodBarSkeleton,
+} from "../components/journals/JournalWorkspaceStates";
 import { JournalQueueProvider } from "../lib/journals/JournalQueueProvider";
 import { useJournalQueueRegistry } from "../lib/journals/journalQueueContext";
 import { useJournalQueueStatus } from "../lib/journals/useJournalQueueStatus";
 import { useJournalNavigationGuard } from "../lib/journals/useJournalNavigationGuard";
-import { useTranslation } from "react-i18next";
-
-function todayDateOnly(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
+import { useJournalAutosave } from "../lib/journals/useJournalAutosave";
+import { useUpdateJournalExamMaxScore } from "../lib/journals/hooks";
+import { JournalWorkspaceSelection } from "../lib/journals/JournalWorkspaceSelection";
+import { useJournalWorkspaceRoute } from "../lib/journals/useJournalWorkspaceRoute";
+import { formatSchoolLessonDate, getSchoolCalendarDate } from "../i18n/formatters";
 
 export function JournalDetail() {
   return (
@@ -35,72 +51,61 @@ function JournalDetailContent() {
   const { t } = useTranslation(["journals", "common"]);
   const registry = useJournalQueueRegistry();
   const queueStatus = useJournalQueueStatus();
-  const navigationGuard = useJournalNavigationGuard();
+  const navigationGuard = useJournalNavigationGuard(JournalWorkspaceSelection.changesJournalContext);
+  const role = useAuthStore((state) => state.role);
+  const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
+  const [examModalOpen, setExamModalOpen] = useState<boolean>(false);
 
   if (reviewOpen && queueStatus.conflicts.length === 0) setReviewOpen(false);
 
-  const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const numericId = id ? Number(id) : undefined;
-  const courseId = Number.isFinite(numericId) ? numericId : undefined;
+  const { id: rawCourseId } = useParams<{ id: string }>();
+  const courseId: number | undefined = JournalWorkspaceSelection.parseCourseId(rawCourseId);
+  const today: string = getSchoolCalendarDate();
 
   const { data: course, isLoading: courseLoading, isError: courseError, refetch: refetchCourse } = useCourse(courseId);
-  const { data: mentorProfile } = useMentorProfile(course?.mentor_id);
-  const { rows: roster } = useCourseRoster(courseId);
+  const mentorQuery = useMentorProfile(course?.mentor_id);
+  const { data: rosterCount } = useCourseEnrollmentsCount(courseId);
   const {
     data: periods,
     isLoading: periodsLoading,
     isError: periodsError,
     refetch: refetchPeriods,
   } = useCourseJournals(courseId);
-  const { data: progressChart, isLoading: chartLoading } = useCourseProgressChart(courseId);
-  const { data: metrics } = useCourseJournalMetrics(courseId);
+  const progressChartQuery = useCourseProgressChart(courseId);
 
-  const orderedPeriods = useMemo(
-    () => [...(periods ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start)),
-    [periods]
+  const route = useJournalWorkspaceRoute({ periods, today });
+  const selectedPeriod = route.periodResolution.period;
+  const journalId: number | undefined = selectedPeriod?.id;
+  const { journalQuery } = route;
+  const journal = journalQuery.data;
+
+  const isArchivedForMentor: boolean = role === "mentor" && course?.status === "archived";
+  const canEditByRole: boolean = role === "superadmin" || role === "mentor";
+  const autosave = useJournalAutosave(canEditByRole && !isArchivedForMentor ? journalId : undefined, courseId);
+  const updateExamMaxScore = useUpdateJournalExamMaxScore(journalId, courseId);
+
+  const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden;
+  const { applyEntryCommand, editSummaryField } = autosave;
+  const editing: JournalRowEditing | null = useMemo(
+    () => (editorsMounted ? { onEntryCommand: applyEntryCommand, onSummaryField: editSummaryField } : null),
+    [editorsMounted, applyEntryCommand, editSummaryField],
   );
-
-  const defaultExpandedId = useMemo(() => {
-    if (orderedPeriods.length === 0) return undefined;
-    const today = todayDateOnly();
-    const current = orderedPeriods.find((p) => p.period_end >= today);
-    return (current ?? orderedPeriods[orderedPeriods.length - 1]).id;
-  }, [orderedPeriods]);
-
-  const periodQueryParam = searchParams.get("period");
-  const activePeriodId = periodQueryParam ? Number(periodQueryParam) : defaultExpandedId;
-
-  const periodRefs = useRef<Record<number, HTMLDivElement | null>>({});
-
-  useEffect(() => {
-    if (periodQueryParam && periodRefs.current[Number(periodQueryParam)]) {
-      periodRefs.current[Number(periodQueryParam)]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [periodQueryParam]);
-
-  const handleJumpToCurrent = () => {
-    if (defaultExpandedId) {
-      setSearchParams({ period: String(defaultExpandedId) });
-      periodRefs.current[defaultExpandedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  };
 
   const backLink = (
     <Link
       to="/journals"
-      className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-maroon dark:text-accent hover:underline transition-colors"
+      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[10px] text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <ArrowLeft size={14} /> {t("backToJournals")}
+      <ArrowLeft size={16} aria-hidden="true" /> {t("backToJournals")}
     </Link>
   );
 
-  if (!courseId) {
+  if (courseId === undefined) {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("notFound")}</div>
+        <JournalPanelMessage tone="empty" title={t("notFound")} />
       </div>
     );
   }
@@ -109,7 +114,7 @@ function JournalDetailContent() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading")}</div>
+        <JournalContextSkeleton />
       </div>
     );
   }
@@ -118,15 +123,94 @@ function JournalDetailContent() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted">{t("loadFailedCourse")}</p>
-          <Button type="button" variant="secondary" onClick={() => refetchCourse()}>
-            {t("common:retry")}
-          </Button>
-        </div>
+        <JournalPanelMessage
+          tone="error"
+          title={t("loadFailedCourse")}
+          retryLabel={t("common:retry")}
+          onRetry={() => void refetchCourse()}
+        />
       </div>
     );
   }
+
+  const mentorProfile = mentorQuery.data;
+  const mentorLine = mentorProfile ? (
+    <span className="flex items-center gap-2">
+      <PersonAvatar
+        firstName={mentorProfile.user.first_name}
+        lastName={mentorProfile.user.last_name}
+        photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
+        size={24}
+      />
+      <span className="font-medium text-ink">
+        {mentorProfile.user.first_name} {mentorProfile.user.last_name}
+      </span>
+    </span>
+  ) : mentorQuery.isError ? (
+    <span>{t("hub.mentorUnavailable")}</span>
+  ) : null;
+
+  const periodLabel: string = selectedPeriod?.period_label ?? "";
+  const lessonSelection = route.lessonResolution;
+  const gradebookStatusVisible: boolean = route.tab === "gradebook" || queueStatus.phase !== "idle";
+
+  const renderGradebookBody = () => {
+    if (journalQuery.isLoading) return <JournalGridSkeleton />;
+    if (journalQuery.isError && !journal) {
+      return (
+        <JournalPanelMessage
+          tone="error"
+          title={t("loadFailed")}
+          body={queueStatus.hasPending ? t("workspace.draftsKept") : undefined}
+          retryLabel={t("common:retry")}
+          onRetry={() => void journalQuery.refetch()}
+        />
+      );
+    }
+    if (!journal || journalId === undefined) return null;
+    const refreshFailedNotice = journalQuery.isError ? (
+      <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void journalQuery.refetch() }}>
+        {t("grid.refreshFailed")}
+      </JournalNotice>
+    ) : null;
+
+    let body: React.ReactNode;
+    if (journal.students.length === 0) {
+      body = (
+        <JournalPanelMessage
+          tone="empty"
+          title={t("table.noStudentsInCourse")}
+          body={t("table.noStudentsBody")}
+        />
+      );
+    } else if (route.view === "summary") {
+      body = <JournalSummaryList students={journal.students} periodLabel={periodLabel} />;
+    } else if (journal.lesson_dates.length === 0) {
+      body = <JournalPanelMessage tone="empty" title={t("grid.noLessonsTitle")} body={t("grid.noLessonsBody")} />;
+    } else {
+      body = (
+        <JournalGrid
+          key={journalId}
+          journalId={journalId}
+          periodLabel={periodLabel}
+          students={journal.students}
+          lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
+          selectedLesson={lessonSelection.lesson}
+          examMaxScore={journal.exam_max_score}
+          cellStatus={autosave.cellStatus}
+          summaryStatus={autosave.summaryStatus}
+          editing={editing}
+          onSelectLesson={route.selectLesson}
+        />
+      );
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        {refreshFailedNotice}
+        {body}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,135 +220,157 @@ function JournalDetailContent() {
         conflicts={queueStatus.conflicts}
         refetching={queueStatus.refetching}
         onClose={() => setReviewOpen(false)}
-        onResolve={(journalId, conflict, choice) => registry.ownerFor(journalId).resolveConflict(conflict, choice)}
-        onRefetch={(journalId) => void registry.ownerFor(journalId).retryManual()}
+        onResolve={(conflictJournalId, conflict, choice) =>
+          registry.ownerFor(conflictJournalId).resolveConflict(conflict, choice)
+        }
+        onRefetch={(conflictJournalId) => void registry.ownerFor(conflictJournalId).retryManual()}
       />
-      <div className="sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 bg-cream/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
-        <div className="flex items-center gap-4">
-          {backLink}
-          <div className="h-4 w-px bg-border" />
-          <h1 className="text-lg font-bold text-ink">{course.title}</h1>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
-          <JournalSaveStatus
-            status={queueStatus}
-            onRetry={() => void registry.retryAll()}
-            onReview={() => setReviewOpen(true)}
-          />
-          {defaultExpandedId && (
-            <button
-              type="button"
-              data-testid="jump-to-current"
-              disabled={queueStatus.draining}
-              onClick={handleJumpToCurrent}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-warm bg-card px-2.5 py-1 text-xs font-semibold text-ink hover:bg-strip transition-colors shadow-xs disabled:opacity-50 disabled:pointer-events-none"
-            >
-              <Target size={14} className="text-maroon dark:text-accent" />
-              {t("jumpToCurrent")}
-            </button>
-          )}
-          {mentorProfile && (
-            <span className="flex items-center gap-2">
-              <PersonAvatar
-                firstName={mentorProfile.user.first_name}
-                lastName={mentorProfile.user.last_name}
-                photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
-                size={22}
-              />
-              <span className="font-medium text-ink">
-                {mentorProfile.user.first_name} {mentorProfile.user.last_name}
-              </span>
+      <header className="flex flex-col gap-2">
+        {backLink}
+        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
+          {course.title}
+        </h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          {mentorLine}
+          {rosterCount !== undefined && (
+            <span className="flex items-center gap-1 tabular-nums">
+              <Users className="h-4 w-4" aria-hidden="true" />
+              {t("studentsCount", { count: rosterCount })}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" />
-            {t("studentsCount", { count: roster.length })}
-          </span>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-maroon/10 text-maroon dark:bg-accent/10 dark:text-accent">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] text-muted font-medium">{t("metrics.classAverage")}</div>
-            <div className="text-base font-bold text-ink tabular-nums">
-              {metrics && metrics.class_avg_percentage > 0 ? `${metrics.class_avg_percentage.toFixed(1)}%` : "—"}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CalendarCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] text-muted font-medium">{t("metrics.attendanceRate")}</div>
-            <div className="text-base font-bold text-ink tabular-nums">
-              {metrics && metrics.attendance_rate > 0 ? `${metrics.attendance_rate.toFixed(1)}%` : "—"}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] text-muted font-medium">{t("metrics.periodsDone")}</div>
-            <div className="text-base font-bold text-ink tabular-nums">
-              {metrics ? metrics.periods_complete : 0} / {metrics ? metrics.periods_total : orderedPeriods.length}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] text-muted font-medium">{t("metrics.atRisk")}</div>
-            <div className="text-base font-bold text-ink tabular-nums">
-              {metrics ? metrics.at_risk_count : 0}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <JournalScoreChart data={progressChart} isLoading={chartLoading} />
+      </header>
 
       {periodsLoading ? (
-        <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted">
-          {t("common:loading")}
-        </div>
+        <JournalPeriodBarSkeleton />
       ) : periodsError ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted">{t("loadFailed")}</p>
-          <Button type="button" variant="secondary" onClick={() => refetchPeriods()}>
-            {t("common:retry")}
-          </Button>
-        </div>
-      ) : orderedPeriods.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted">
-          {t("noPeriodsYet")}
-        </div>
+        <JournalPanelMessage
+          tone="error"
+          title={t("workspace.periodsLoadFailed")}
+          retryLabel={t("common:retry")}
+          onRetry={() => void refetchPeriods()}
+        />
+      ) : !periods || periods.length === 0 || !selectedPeriod ? (
+        <JournalPanelMessage tone="empty" title={t("workspace.noPeriodsTitle")} body={t("workspace.noPeriodsBody")} />
       ) : (
-        <div className="flex flex-col gap-3">
-          {[...orderedPeriods].reverse().map((period) => (
-            <div key={period.id} ref={(el) => { periodRefs.current[period.id] = el; }}>
-              <JournalPeriodSection
-                courseId={courseId}
-                period={period}
-                isCurrentPeriod={defaultExpandedId === period.id}
-                defaultExpanded={activePeriodId === period.id}
-                locked={queueStatus.draining}
-              />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
+            <JournalPeriodPicker
+              periods={periods}
+              selectedPeriodId={selectedPeriod.id}
+              today={today}
+              onSelect={route.selectPeriod}
+              disabled={queueStatus.draining}
+            />
+            {editing && journal && (
+              <Button type="button" variant="secondary" onClick={() => setExamModalOpen(true)} className="w-full lg:w-auto">
+                <Settings className="h-4 w-4" aria-hidden="true" />
+                {t("workspace.periodSettings")}
+              </Button>
+            )}
+          </div>
+
+          {route.notices.includes("period") && (
+            <JournalNotice
+              tone="info"
+              testId="journal-route-notice-period"
+              action={{ label: t("workspace.notice.dismiss"), onClick: route.dismissNotices }}
+            >
+              {t("workspace.notice.period", { period: periodLabel })}
+            </JournalNotice>
+          )}
+          {route.notices.includes("lesson") && lessonSelection.lesson && (
+            <JournalNotice
+              tone="info"
+              testId="journal-route-notice-lesson"
+              action={{ label: t("workspace.notice.dismiss"), onClick: route.dismissNotices }}
+            >
+              {t("workspace.notice.lesson", { date: formatSchoolLessonDate(lessonSelection.lesson) })}
+            </JournalNotice>
+          )}
+          {isArchivedForMentor && (
+            <JournalNotice tone="info" testId="journal-archived-notice">
+              {t("workspace.readOnlyArchived")}
+            </JournalNotice>
+          )}
+          {queueStatus.forbidden && (
+            <JournalNotice tone="warning" testId="journal-forbidden-notice">
+              {t("workspace.forbidden")}
+            </JournalNotice>
+          )}
+
+          <JournalWorkspaceTabs selected={route.tab} onSelect={route.selectTab} idPrefix={panelIdPrefix} />
+
+          {route.tab === "gradebook" ? (
+            <section
+              role="tabpanel"
+              id={`${panelIdPrefix}-panel-gradebook`}
+              aria-labelledby={`${panelIdPrefix}-tab-gradebook`}
+              className="flex min-w-0 flex-col gap-4"
+            >
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <JournalViewSwitch selected={route.view} onSelect={route.selectView} />
+                {route.view === "grid" && journal && (
+                  <JournalLessonNavigator
+                    lessonDates={journal.lesson_dates}
+                    selectedLesson={lessonSelection.lesson}
+                    today={today}
+                    onSelect={route.selectLesson}
+                  />
+                )}
+                <div data-testid="journal-search-slot" className="hidden min-h-11 min-w-0 flex-1 basis-40 lg:block" />
+                {editing && route.view === "grid" && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
+                <div className="min-w-[14rem]">
+                  <JournalSaveStatus
+                    status={queueStatus}
+                    retryable={!queueStatus.forbidden}
+                    onRetry={() => void registry.retryAll()}
+                    onReview={() => setReviewOpen(true)}
+                  />
+                </div>
+              </div>
+              {renderGradebookBody()}
+            </section>
+          ) : (
+            <section
+              role="tabpanel"
+              id={`${panelIdPrefix}-panel-progress`}
+              aria-labelledby={`${panelIdPrefix}-tab-progress`}
+              className="flex min-w-0 flex-col gap-4"
+            >
+              {gradebookStatusVisible && queueStatus.phase !== "idle" && (
+                <JournalSaveStatus
+                  status={queueStatus}
+                  retryable={!queueStatus.forbidden}
+                  onRetry={() => void registry.retryAll()}
+                  onReview={() => setReviewOpen(true)}
+                />
+              )}
+              {progressChartQuery.isError ? (
+                <JournalPanelMessage
+                  tone="error"
+                  title={t("workspace.progressLoadFailed")}
+                  retryLabel={t("common:retry")}
+                  onRetry={() => void progressChartQuery.refetch()}
+                />
+              ) : (
+                <JournalScoreChart data={progressChartQuery.data} isLoading={progressChartQuery.isLoading} />
+              )}
+            </section>
+          )}
+        </>
+      )}
+
+      {examModalOpen && journal && (
+        <ExamWeightModal
+          isOpen={examModalOpen}
+          currentWeight={journal.exam_max_score}
+          onClose={() => setExamModalOpen(false)}
+          onSave={async (newWeight: number) => {
+            await updateExamMaxScore.mutateAsync({ exam_max_score: newWeight });
+          }}
+        />
       )}
     </div>
   );

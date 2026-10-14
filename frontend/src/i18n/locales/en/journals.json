@@ -1,6 +1,5 @@
 {
   "backToJournals": "Journals",
-  "jumpToCurrent": "Jump to current period",
   "title": "Electronic Gradebook",
   "openJournal": "Open journal",
   "notFound": "Journal not found",
@@ -10,7 +9,6 @@
   "studentsCount_one": "{{count}} student",
   "studentsCount_other": "{{count}} students",
   "studentsCount": "{{count}} students",
-  "noPeriodsYet": "No journal periods have been created yet",
   "entriesSaved": "Attendance saved",
   "entriesSaveFailed": "Failed to save attendance",
   "summarySaved": "Scores saved",
@@ -85,7 +83,10 @@
     "stateEmpty": "Not started",
     "statePartial": "In progress",
     "stateComplete": "Complete",
-    "stateUnavailable": "Unavailable"
+    "stateUnavailable": "Unavailable",
+    "latest": "Latest",
+    "upcoming": "Upcoming",
+    "past": "Past"
   },
   "chart": {
     "title": "Score progress",
@@ -122,7 +123,6 @@
     "comment": "Comment",
     "noStudentsInCourse": "There are no students in this course",
     "examMax": "Exam Max",
-    "editExamWeight": "Edit Exam Weight",
     "examWeightTitle": "Edit Exam Weight Limit",
     "examWeightWarning": "Changing the exam weight limit recalculates period max scores.",
     "examWeightLabel": "Maximum score",
@@ -132,7 +132,6 @@
     "scoreCellLabel": "Score for {{name}} on {{date}}",
     "attendanceCellLabel": "Attendance for {{name}} on {{date}}",
     "commentCellLabel": "Comment for {{name}} on {{date}}",
-    "gridHelp": "Use arrow keys to navigate cells. Press 0–5 to grade, Space for attendance, C for comments.",
     "addComment": "Add comment",
     "addCommentCellLabel": "Add comment for {{name}} on {{date}}",
     "commentPlaceholder": "Note for this lesson…",
@@ -141,13 +140,13 @@
     "summaryInvalid": {
       "wholeNumber": "Enter a whole number",
       "aboveMaximum": "Max {{n}}"
-    }
-  },
-  "metrics": {
-    "classAverage": "Class Average",
-    "attendanceRate": "Attendance Rate",
-    "periodsDone": "Periods Completed",
-    "atRisk": "At Risk (<60%)"
+    },
+    "noStudentsBody": "Students appear here once they are enrolled in this course.",
+    "summaryFieldLabel": "{{field}} for {{name}}",
+    "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
+    "present": "Present",
+    "absent": "Absent",
+    "hasComment": "Has a comment"
   },
   "cellStatus": {
     "dirty": "Unsaved change",
@@ -200,5 +199,69 @@
       "body": "Nothing on this page matches your search or status filter. Clear them to see every journal loaded for this page.",
       "clear": "Clear search and filters"
     }
+  },
+  "workspace": {
+    "periodPickerLabel": "Period",
+    "periodSettings": "Period settings",
+    "tabsLabel": "Journal sections",
+    "tabs": {
+      "gradebook": "Gradebook",
+      "progress": "Progress"
+    },
+    "viewLabel": "Gradebook view",
+    "view": {
+      "grid": "Grid",
+      "summary": "Summary"
+    },
+    "lessonNav": {
+      "label": "Lesson navigation",
+      "previous": "Previous lesson",
+      "next": "Next lesson",
+      "today": "Today",
+      "none": "No lessons"
+    },
+    "notice": {
+      "period": "That period is not part of this course. Showing {{period}} instead.",
+      "lesson": "That lesson date is not in this period. Showing {{date}} instead.",
+      "dismiss": "Dismiss"
+    },
+    "readOnlyArchived": "This course is archived, so its journal is read-only.",
+    "forbidden": "You no longer have permission to edit this journal. Your unsaved changes are kept here for review and are not being sent.",
+    "draftsKept": "Your unsaved changes are kept on this page.",
+    "periodsLoadFailed": "Could not load the journal periods",
+    "progressLoadFailed": "Could not load progress",
+    "noPeriodsTitle": "No journal periods yet",
+    "noPeriodsBody": "Periods are created for each week or month of the course. This course has none yet, so there is nothing to grade."
+  },
+  "grid": {
+    "regionLabel": "Gradebook grid, {{period}}",
+    "scrollHint": "Scroll sideways to see more lessons",
+    "refreshFailed": "Could not refresh the journal. Showing the last loaded data.",
+    "noLessonsTitle": "No lessons in this period",
+    "noLessonsBody": "Lessons appear here when the course schedule has lessons in this period. Summary is still available."
+  },
+  "help": {
+    "button": "Keyboard help",
+    "title": "Keyboard shortcuts",
+    "arrows": "Move between cells",
+    "grade": "Set the score and move down",
+    "attendance": "Toggle attendance and move down",
+    "comment": "Open the comment",
+    "clear": "Clear the score",
+    "close": "Close this help",
+    "scope": "Shortcuts work when a cell is focused, not while typing in a field.",
+    "keycap": {
+      "arrows": "← ↑ → ↓",
+      "grade": "0–5",
+      "attendance": "Space",
+      "comment": "C",
+      "clear": "Backspace",
+      "close": "Esc"
+    }
+  },
+  "summary": {
+    "listLabel": "Student totals, {{period}}",
+    "total": "{{sum}} of {{max}}",
+    "unavailable": "Unavailable"
   }
 }

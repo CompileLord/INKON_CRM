@@ -3,12 +3,15 @@ import enJournals from "./locales/en/journals.json";
 import ruJournals from "./locales/ru/journals.json";
 import tgJournals from "./locales/tg/journals.json";
 
-function getKeys(obj: Record<string, any>, prefix = ""): string[] {
+type JsonObject = { [key: string]: string | JsonObject };
+
+function getKeys(obj: JsonObject, prefix = ""): string[] {
   let keys: string[] = [];
   for (const key of Object.keys(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (typeof obj[key] === "object" && obj[key] !== null) {
-      keys = keys.concat(getKeys(obj[key], fullPath));
+    const child = obj[key];
+    if (typeof child === "object" && child !== null) {
+      keys = keys.concat(getKeys(child, fullPath));
     } else {
       keys.push(fullPath);
     }
@@ -49,8 +52,8 @@ describe("journals i18n key parity", () => {
   it("translates the reliability copy instead of leaving English text in ru and tg", () => {
     const reliabilityPaths = ["cellStatus", "status", "drain", "table.summaryInvalid"];
     const conflictKeys = ["yourValue", "serverValue", "useServer", "discardMine", "refetch", "entryUnavailable", "noComment"];
-    const readPath = (source: Record<string, any>, path: string): Record<string, string> =>
-      path.split(".").reduce((node, part) => node[part], source) as Record<string, string>;
+    const readPath = (source: JsonObject, path: string): Record<string, string> =>
+      path.split(".").reduce<JsonObject>((node, part) => node[part] as JsonObject, source) as Record<string, string>;
 
     for (const path of reliabilityPaths) {
       const english = readPath(enJournals, path);
@@ -67,12 +70,12 @@ describe("journals i18n key parity", () => {
     }
   });
   it("translates every hub key instead of leaving English text in ru and tg", () => {
-    const readHub = (source: Record<string, any>): Record<string, any> => source.hub;
-    const compareLeaves = (english: Record<string, any>, translated: Record<string, any>, path: string): void => {
+    const readHub = (source: JsonObject): JsonObject => source.hub as JsonObject;
+    const compareLeaves = (english: JsonObject, translated: JsonObject, path: string): void => {
       for (const key of Object.keys(english)) {
         const leafPath = `${path}.${key}`;
         if (typeof english[key] === "object") {
-          compareLeaves(english[key], translated[key], leafPath);
+          compareLeaves(english[key] as JsonObject, translated[key] as JsonObject, leafPath);
           continue;
         }
         expect(translated[key], `${leafPath} must exist`).toBeTruthy();
@@ -81,5 +84,39 @@ describe("journals i18n key parity", () => {
     };
     compareLeaves(readHub(enJournals), readHub(ruJournals), "ru.hub");
     compareLeaves(readHub(enJournals), readHub(tgJournals), "tg.hub");
+  });
+
+  it("translates the workspace copy instead of leaving English text in ru and tg", () => {
+    const sharedAcrossLocales = new Set(["help.keycap.arrows", "help.keycap.grade", "help.keycap.comment", "help.keycap.clear", "help.keycap.close"]);
+    const workspaceSections = ["workspace", "grid", "help", "summary", "period.latest", "period.upcoming", "period.past"];
+    const tableKeys = ["noStudentsBody", "summaryFieldLabel", "readOnlyCellLabel", "present", "absent", "hasComment"];
+    type JsonNode = string | { [key: string]: JsonNode };
+    const readPath = (source: JsonNode, path: string): JsonNode =>
+      path.split(".").reduce<JsonNode>((node, part) => (typeof node === "string" ? node : node[part]), source);
+    const leavesOf = (value: JsonNode, path: string): Array<[string, string]> =>
+      typeof value === "object" ? Object.entries(value).flatMap(([key, child]) => leavesOf(child, `${path}.${key}`)) : [[path, value]];
+
+    const sections = [
+      ...workspaceSections.map((path) => [path, readPath(enJournals, path)] as const),
+      ...tableKeys.map((key) => [`table.${key}`, readPath(enJournals, `table.${key}`)] as const),
+    ];
+    for (const [path, english] of sections) {
+      for (const [leafPath, englishText] of leavesOf(english, path)) {
+        if (sharedAcrossLocales.has(leafPath)) continue;
+        for (const [locale, source] of [["ru", ruJournals], ["tg", tgJournals]] as const) {
+          const translated = readPath(source, leafPath);
+          expect(translated, `${locale}.${leafPath} must exist`).toBeTruthy();
+          expect(translated, `${locale}.${leafPath} must not be English`).not.toBe(englishText);
+        }
+      }
+    }
+  });
+
+  it("drops the retired chart-above-grid, metric card and permanent shortcut copy", () => {
+    for (const source of [enJournals, ruJournals, tgJournals]) {
+      expect("metrics" in source).toBe(false);
+      expect("gridHelp" in source.table).toBe(false);
+      expect("jumpToCurrent" in source).toBe(false);
+    }
   });
 });

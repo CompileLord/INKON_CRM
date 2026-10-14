@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, X } from "lucide-react";
+import { AuthApiError } from "../../lib/auth/errors";
 
 interface ExamWeightModalProps {
   isOpen: boolean;
@@ -29,40 +30,41 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
     try {
       await onSave(val);
       onClose();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || t("table.examMaxUpdateFailed"));
+    } catch (err: unknown) {
+      setError(err instanceof AuthApiError && typeof err.detail === "string" ? err.detail : t("table.examMaxUpdateFailed"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card text-card-foreground border border-border rounded-xl shadow-lg w-full max-w-md p-6 relative animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4">
+      <div className="bg-card text-ink border border-border rounded-2xl shadow-lg w-full max-w-md p-6 relative motion-safe:animate-[card-scale-in_200ms_ease-out]">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-muted hover:text-ink transition-colors"
+          aria-label={t("common:close")}
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-[10px] text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="w-5 h-5" />
         </button>
 
         <h3 className="text-lg font-semibold mb-2">{t("table.examWeightTitle")}</h3>
 
-        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs mb-4">
+        <div className="flex items-start gap-2 p-3 bg-warning-surface border border-warning/40 text-warning rounded-[10px] text-sm mb-4">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <p>{t("table.examWeightWarning")}</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs rounded-lg">
+          <div className="mb-4 p-3 bg-danger-surface border border-destructive/40 text-destructive text-sm rounded-[10px]">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-muted mb-1">
+            <label className="block text-sm font-medium text-ink mb-1">
               {t("table.examWeightLabel")}
             </label>
             <input
@@ -71,7 +73,7 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
               max={100}
               value={val}
               onChange={(e) => setVal(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              className="h-12 w-full px-3 border border-control-border rounded-[10px] bg-card text-ink text-base focus:outline-none focus:ring-2 focus:ring-ring"
               required
             />
           </div>
@@ -80,17 +82,17 @@ export const ExamWeightModal: React.FC<ExamWeightModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium border border-border rounded-lg text-muted hover:bg-beige hover:text-ink transition-colors"
+              className="min-h-11 px-4 text-sm font-medium border border-control-border rounded-[10px] text-ink hover:bg-beige focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               disabled={loading}
             >
-              {t("common:cancel", "Cancel")}
+              {t("common:cancel")}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold bg-accent text-white rounded-lg hover:bg-accent-dark disabled:opacity-50 transition-colors"
+              className="min-h-11 px-4 text-sm font-semibold bg-maroon text-on-primary rounded-[10px] hover:bg-maroon-dark disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {loading ? t("loading") : t("common:save", "Save")}
+              {loading ? t("loading") : t("common:save")}
             </button>
           </div>
         </form>

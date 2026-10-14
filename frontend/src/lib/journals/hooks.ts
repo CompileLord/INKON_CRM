@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { batchUpdateJournalEntries, getJournal, getMentorGradingQueue, updateJournalExamMaxScore, updateJournalStudentSummary } from "./endpoints";
-import type { JournalEntryUpdate, JournalExamMaxScoreUpdate, JournalStudentSummaryUpdate } from "./types";
+import type {
+  JournalDetailResponse,
+  JournalEntryUpdate,
+  JournalExamMaxScoreUpdate,
+  JournalStudentSummaryResponse,
+  JournalStudentSummaryUpdate,
+} from "./types";
 
 export function useJournal(journalId: number | undefined) {
   return useQuery({
@@ -54,14 +60,17 @@ export function useUpdateJournalExamMaxScore(journalId: number | undefined, cour
       updateJournalExamMaxScore(journalId!, payload),
     onSuccess: (data) => {
       if (journalId) {
-        queryClient.setQueryData<any>(["journals", "detail", journalId], (old: any) => {
+        queryClient.setQueryData<JournalDetailResponse>(["journals", "detail", journalId], (old) => {
           if (!old) return old;
           return {
             ...old,
             exam_max_score: data.journal.exam_max_score,
-            students: old.students.map((student: any) => {
-              const summaryMatch = data.summaries.find((s: any) => s.student_id === student.student_id);
-              return summaryMatch ? { ...student, summary: { ...student.summary, ...summaryMatch } } : student;
+            students: old.students.map((student) => {
+              const summaryMatch: JournalStudentSummaryResponse | undefined = data.summaries.find(
+                (summary) => summary.student_id === student.student_id,
+              );
+              if (!summaryMatch) return student;
+              return { ...student, summary: { ...student.summary, ...summaryMatch } };
             }),
           };
         });

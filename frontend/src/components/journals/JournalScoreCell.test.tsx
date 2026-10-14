@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import "../../i18n";
+import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalScoreCell } from "./JournalScoreCell";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 
@@ -23,7 +24,7 @@ function renderCell(overrides: { attendance?: boolean; score?: number; comment?:
       onCommand={onCommand}
     />,
   );
-  return { onCommand, onNavigate, cell: screen.getByLabelText("Score for Aziza Rahimova on 2026-08-01") };
+  return { onCommand, onNavigate, cell: screen.getByLabelText(`Score for Aziza Rahimova on ${formatSchoolLessonDate("2026-08-01")}`) };
 }
 
 describe("JournalScoreCell commands", () => {
@@ -63,7 +64,7 @@ describe("JournalScoreCell commands", () => {
 
   it("emits the raw comment draft so the command layer trims and clears it", () => {
     const { onCommand } = renderCell();
-    fireEvent.click(screen.getByLabelText("Comment for Aziza Rahimova on 2026-08-01"));
+    fireEvent.click(screen.getByLabelText(`Comment for Aziza Rahimova on ${formatSchoolLessonDate("2026-08-01")}`));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onCommand).toHaveBeenCalledWith({ kind: "comment", comment: "   " });
@@ -82,4 +83,42 @@ describe("JournalScoreCell commands", () => {
     expect(marker.querySelector("svg")).not.toBeNull();
     expect(marker.textContent).toBe(text);
   });
+
+describe("JournalScoreCell overlays", () => {
+  it("moves focus into the comment textarea when C opens the editor so typed keys never reach the cell", () => {
+    const { cell, onCommand, onNavigate } = renderCell();
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "c" });
+    const textarea = screen.getByRole("textbox");
+    expect(document.activeElement).toBe(textarea);
+    fireEvent.keyDown(textarea, { key: "5" });
+    fireEvent.keyDown(textarea, { key: " ", code: "Space" });
+    expect(onCommand).not.toHaveBeenCalled();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("moves focus to the selected option when the score picker opens and returns it to the cell on Escape", () => {
+    const { cell } = renderCell({ score: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    expect(document.activeElement).toBe(screen.getByRole("menuitemradio", { name: "3" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(cell);
+  });
+
+  it("makes the inner controls tab stops only while the cell is the focused cell", () => {
+    renderCell();
+    expect(screen.getByRole("checkbox").getAttribute("tabindex")).toBe("0");
+  });
+
+  it("ignores the shortcut keys while the attendance checkbox itself has focus", () => {
+    const { onCommand } = renderCell();
+    const checkbox = screen.getByRole("checkbox");
+    checkbox.focus();
+    fireEvent.keyDown(checkbox, { key: "4" });
+    fireEvent.keyDown(checkbox, { key: "c" });
+    expect(onCommand).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
 });

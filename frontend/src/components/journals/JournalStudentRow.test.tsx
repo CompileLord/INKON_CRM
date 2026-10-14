@@ -8,9 +8,12 @@ const student: JournalStudentResponse = {
   student_id: 1, first_name: "Student", last_name: "One", email: "student@example.com", color_hex: "", entries: [],
   summary: { id: 1, bonus_score: 2, exam_score: 3, version: 1, homework_score: 0, attendance_score: 0, sum_score: 5, max_period_score: 100, percentage: 5, attendance_count: 0, total_lessons: 1 },
 };
+const onEntryCommand = vi.fn();
+const onSummaryField = vi.fn();
 const props = {
-  lessonDates: [], periodType: "week" as const, examMaxScore: 100, cellStatus: new Map(), focusedCellKey: null,
-  focusFromKeyboard: false, animationIndex: 0, onCellFocus: vi.fn(), onCellNavigate: vi.fn(), onEntryCommand: vi.fn(), onSummaryField: vi.fn(),
+  lessonDates: [], selectedLesson: undefined, examMaxScore: 100, cellStatus: new Map(), focusedCellKey: null,
+  focusFromKeyboard: false, onCellFocus: vi.fn(), onCellNavigate: vi.fn(),
+  editing: { onEntryCommand, onSummaryField },
 };
 
 describe("JournalStudentRow recovery", () => {
@@ -32,7 +35,7 @@ describe("JournalStudentRow recovery", () => {
 
   describe("strict summary input", () => {
     beforeEach(() => {
-      props.onSummaryField.mockClear();
+      onSummaryField.mockClear();
     });
     afterEach(() => cleanup());
 
@@ -47,7 +50,7 @@ describe("JournalStudentRow recovery", () => {
       fireEvent.focus(bonus);
       fireEvent.change(bonus, { target: { value: raw } });
       fireEvent.blur(bonus);
-      expect(props.onSummaryField).not.toHaveBeenCalled();
+      expect(onSummaryField).not.toHaveBeenCalled();
       expect(bonus.getAttribute("aria-invalid")).toBe("true");
       expect(screen.getByRole("alert").textContent).toBe("Enter a whole number");
       expect(bonus.value).toBe(raw);
@@ -57,7 +60,7 @@ describe("JournalStudentRow recovery", () => {
       const { exam } = mountRow();
       fireEvent.change(exam, { target: { value: "101" } });
       fireEvent.blur(exam);
-      expect(props.onSummaryField).not.toHaveBeenCalled();
+      expect(onSummaryField).not.toHaveBeenCalled();
       expect(screen.getByRole("alert").textContent).toBe("Max 100");
     });
 
@@ -65,19 +68,19 @@ describe("JournalStudentRow recovery", () => {
       const { bonus, exam } = mountRow();
       fireEvent.change(bonus, { target: { value: "7" } });
       fireEvent.blur(bonus);
-      expect(props.onSummaryField).toHaveBeenCalledTimes(1);
-      expect(props.onSummaryField).toHaveBeenCalledWith(1, "bonus_score", 7);
+      expect(onSummaryField).toHaveBeenCalledTimes(1);
+      expect(onSummaryField).toHaveBeenCalledWith(1, "bonus_score", 7);
 
       fireEvent.change(exam, { target: { value: "3" } });
       fireEvent.blur(exam);
-      expect(props.onSummaryField).toHaveBeenCalledTimes(1);
+      expect(onSummaryField).toHaveBeenCalledTimes(1);
     });
 
     it("sends the field on Enter", () => {
       const { exam } = mountRow();
       fireEvent.change(exam, { target: { value: "55" } });
       fireEvent.keyDown(exam, { key: "Enter" });
-      expect(props.onSummaryField).toHaveBeenCalledWith(1, "exam_score", 55);
+      expect(onSummaryField).toHaveBeenCalledWith(1, "exam_score", 55);
     });
 
     it("sends nothing and restores the stored value when Escape cancels the edit", () => {
@@ -85,7 +88,7 @@ describe("JournalStudentRow recovery", () => {
       fireEvent.change(bonus, { target: { value: "9" } });
       fireEvent.keyDown(bonus, { key: "Escape" });
       fireEvent.blur(bonus);
-      expect(props.onSummaryField).not.toHaveBeenCalled();
+      expect(onSummaryField).not.toHaveBeenCalled();
       expect(bonus.value).toBe("2");
     });
   });

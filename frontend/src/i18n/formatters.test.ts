@@ -236,6 +236,25 @@ describe("Tajik locale resolution", () => {
     expect(formatNumber(37.5, "tg", { minimumFractionDigits: 1, maximumFractionDigits: 1 })).toBe("37,5");
   });
 
+  it("shows Tajik weekday abbreviations, never Russian ones, when tg-TJ is unsupported", () => {
+    simulateIntlWithoutTajikData();
+    const mondayThroughSunday = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18"];
+    const tajikAbbreviations = ["Дш", "Сш", "Чш", "Ҷш", "Ҷм", "Шн", "Як"];
+    expect(mondayThroughSunday.map(date => formatSchoolLessonWeekday(date, "tg"))).toEqual(tajikAbbreviations);
+    expect(formatSchoolLessonWeekday("2026-10-12", "tg")).not.toBe(formatSchoolLessonWeekday("2026-10-12", "ru"));
+  });
+
+  it("resolves the Tajik weekday on the Dushanbe calendar day across the UTC boundary", () => {
+    simulateIntlWithoutTajikData();
+    expect(formatSchoolLessonWeekday("2026-10-11T20:30:00Z", "tg")).toBe("Дш");
+  });
+
+  it("keeps Intl weekdays for Russian and English when Tajik data is missing", () => {
+    simulateIntlWithoutTajikData();
+    expect(formatSchoolLessonWeekday("2026-10-12", "ru").toLowerCase()).toMatch(/пн/);
+    expect(formatSchoolLessonWeekday("2026-10-12", "en").toLowerCase()).toMatch(/mon/);
+  });
+
   it("does not change English or Russian resolution when Tajik data is missing", () => {
     simulateIntlWithoutTajikData();
     expect(getActiveLocale("en")).toBe("en-US");

@@ -637,4 +637,56 @@ describe("JournalQueueOwner", () => {
       expect(cachedEntry(101)?.score).toBe(4);
     });
   });
+
+  describe("403 after a permission change", () => {
+    it("keeps the unacknowledged draft, reports failed and flags the snapshot as forbidden", async () => {
+      api.batchUpdate.mockRejectedValue(new AuthApiError(403, "Cannot update archived course"));
+      owner.applyEntryCommand(101, FIRST_DATE, { kind: "score", score: 4 });
+
+      const drained = await owner.drain();
+
+      expect(drained).toEqual({ kind: "failed", unsettledCount: 1 });
+      expect(owner.hasPending()).toBe(true);
+      expect(cachedEntry(101)?.score).toBe(4);
+      expect(owner.getSnapshot().forbidden).toBe(true);
+      expect(owner.getSnapshot().phase).toBe("failed");
+      expect(owner.getSnapshot().cellStatus.get(`101:${FIRST_DATE}`)).toBe("error");
+    });
+
+    it("sends no further write after the 403, including a later edit, drain and flush", async () => {
+      api.batchUpdate.mockRejectedValue(new AuthApiError(403, "Not enough permissions"));
+      owner.applyEntryCommand(101, FIRST_DATE, { kind: "score", score: 4 });
+      await owner.drain();
+      expect(api.batchUpdate).toHaveBeenCalledTimes(1);
+
+      owner.applyEntryCommand(101, SECOND_DATE, { kind: "score", score: 2 });
+      await vi.advanceTimersByTimeAsync(5000);
+      await owner.flush();
+      const secondDrain = await owner.drain();
+
+      expect(api.batchUpdate).toHaveBeenCalledTimes(1);
+      expect(secondDrain.kind).toBe("failed");
+      expect(cachedEntry(101, SECOND_DATE)?.score).toBe(2);
+    });
+
+    it("keeps a rejected summary draft and forbids further writes on a 403", async () => {
+      api.updateSummary.mockRejectedValue(new AuthApiError(403, "Not enough permissions"));
+      owner.editSummaryField(101, "bonus_score", 3);
+      const drained = await owner.drain();
+
+      expect(drained.kind).toBe("failed");
+      expect(cachedSummary(101)?.bonus_score).toBe(3);
+      expect(owner.getSnapshot().forbidden).toBe(true);
+      owner.editSummaryField(101, "bonus_score", 4);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(api.updateSummary).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not flag a server error as forbidden and still retries it", async () => {
+      api.batchUpdate.mockRejectedValue(new AuthApiError(500, "boom"));
+      owner.applyEntryCommand(101, FIRST_DATE, { kind: "score", score: 4 });
+      await owner.drain();
+      expect(owner.getSnapshot().forbidden).toBe(false);
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, type Blocker } from "react-router-dom";
+import { useBlocker, type Blocker, type Location } from "react-router-dom";
 import { useJournalQueueRegistry } from "./journalQueueContext";
 import type { JournalDrainResult } from "./journalQueueTypes";
 
@@ -18,9 +18,20 @@ export interface NavigationGuard {
 
 type FailedDrain = Exclude<JournalDrainResult, { kind: "acknowledged" }>;
 
-export function useJournalNavigationGuard(): NavigationGuard {
+export interface JournalNavigationChange {
+  currentLocation: Location;
+  nextLocation: Location;
+}
+
+export function useJournalNavigationGuard(
+  crossesBoundary?: (change: JournalNavigationChange) => boolean,
+): NavigationGuard {
   const registry = useJournalQueueRegistry();
-  const shouldBlock = useCallback((): boolean => registry.hasPending(), [registry]);
+  const shouldBlock = useCallback(
+    (change: JournalNavigationChange): boolean =>
+      registry.hasPending() && (crossesBoundary ? crossesBoundary(change) : true),
+    [registry, crossesBoundary],
+  );
   const blocker: Blocker = useBlocker(shouldBlock);
   const blockerRef = useRef<Blocker>(blocker);
   useEffect(() => {

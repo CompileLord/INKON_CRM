@@ -1,217 +1,225 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings } from "lucide-react";
-import { JournalStudentRow } from "./JournalStudentRow";
-import type { CellNavDirection } from "./JournalScoreCell";
+import { ChevronsRight } from "lucide-react";
+import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
+import { useJournalGridViewport } from "./useJournalGridViewport";
+import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
+import { formatSchoolLessonDate, formatSchoolLessonWeekday } from "../../i18n/formatters";
+import { useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
-import type { JournalEntryCommand, JournalSummaryField } from "../../lib/journals/journalCommands";
 import type { JournalStudentResponse } from "../../lib/journals/types";
 
 interface JournalGridProps {
+  journalId: number;
+  periodLabel: string;
   students: JournalStudentResponse[];
   lessonDates: string[];
-  periodType: "week" | "month";
+  selectedLesson: string | undefined;
   examMaxScore: number;
   cellStatus: Map<string, CellSaveStatus>;
   summaryStatus: Map<number, CellSaveStatus>;
-  onEntryCommand: (studentId: number, lessonDate: string, command: JournalEntryCommand) => void;
-  onSummaryField: (studentId: number, field: JournalSummaryField, value: number) => void;
-  onOpenExamWeightModal: () => void;
+  editing: JournalRowEditing | null;
+  onSelectLesson: (lessonDate: string) => void;
+}
+
+interface GridFocus {
+  journalId: number;
+  studentId: number;
+  lessonDate: string;
+  control: JournalCellControl;
+  fromKeyboard: boolean;
+}
+
+const STICKY_STUDENT_COLUMN_PX = 200;
+const VISIBLE_EDGE_PADDING_PX = 8;
+
+function cellKeyOf(studentId: number, lessonDate: string): string {
+  return `${studentId}:${lessonDate}`;
+}
+
+function splitCellKey(key: string): { studentId: number; lessonDate: string } {
+  const separatorIndex: number = key.indexOf(":");
+  return { studentId: Number(key.slice(0, separatorIndex)), lessonDate: key.slice(separatorIndex + 1) };
 }
 
 export const JournalGrid: React.FC<JournalGridProps> = ({
-  students,
+  journalId,
+  periodLabel,
+  students: serverOrderedStudents,
   lessonDates,
-  periodType,
+  selectedLesson,
   examMaxScore,
   cellStatus,
   summaryStatus,
-  onEntryCommand,
-  onSummaryField,
-  onOpenExamWeightModal,
+  editing,
+  onSelectLesson,
 }) => {
   const { t } = useTranslation("journals");
-  const [focusedCellKey, setFocusedCellKey] = useState<string | null>(
-    students.length > 0 && lessonDates.length > 0
-      ? `${students[0].student_id}:${lessonDates[0]}`
-      : null
+  const students: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
+  const [focus, setFocus] = useState<GridFocus | null>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const headerRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
+  const viewport = useJournalGridViewport(regionRef);
+
+  const defaultLesson: string | undefined =
+    selectedLesson && lessonDates.includes(selectedLesson) ? selectedLesson : lessonDates[0];
+  const defaultKey: string | null =
+    students.length > 0 && defaultLesson !== undefined ? cellKeyOf(students[0].student_id, defaultLesson) : null;
+  const focusIsValid: boolean =
+    focus !== null &&
+    focus.journalId === journalId &&
+    students.some((student) => student.student_id === focus.studentId) &&
+    lessonDates.includes(focus.lessonDate);
+  const focusedCellKey: string | null =
+    focus !== null && focusIsValid ? cellKeyOf(focus.studentId, focus.lessonDate) : defaultKey;
+  const focusFromKeyboard: boolean = focusIsValid && focus !== null && focus.fromKeyboard;
+
+  useEffect(() => {
+    const region: HTMLDivElement | null = regionRef.current;
+    const header: HTMLTableCellElement | undefined = selectedLesson ? headerRefs.current.get(selectedLesson) : undefined;
+    if (!region || !header) return;
+    const regionBounds: DOMRect = region.getBoundingClientRect();
+    const headerBounds: DOMRect = header.getBoundingClientRect();
+    const leftEdge: number = regionBounds.left + STICKY_STUDENT_COLUMN_PX + VISIBLE_EDGE_PADDING_PX;
+    const isOutsideVisibleBand: boolean =
+      headerBounds.left < leftEdge || headerBounds.right > regionBounds.right - VISIBLE_EDGE_PADDING_PX;
+    if (isOutsideVisibleBand) region.scrollLeft += headerBounds.left - leftEdge;
+  }, [selectedLesson]);
+
+  const handleCellFocus = useCallback(
+    (key: string, control: JournalCellControl) => {
+      const { studentId, lessonDate } = splitCellKey(key);
+      setFocus({ journalId, studentId, lessonDate, control, fromKeyboard: false });
+    },
+    [journalId],
   );
-  const [activeColDate, setActiveColDate] = useState<string | null>(
-    lessonDates.length > 0 ? lessonDates[0] : null
-  );
-  const [focusFromKeyboard, setFocusFromKeyboard] = useState(false);
-  const tableWrapperRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const el = tableWrapperRef.current;
-    if (!el) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      const maxScrollLeft = el.scrollWidth - el.clientWidth;
-      if (maxScrollLeft <= 0) return;
-
-      const deltaY = e.deltaY;
-      const deltaX = e.deltaX;
-
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        return;
-      }
-
-      if (deltaY !== 0) {
-        if (deltaY > 0 && el.scrollLeft < maxScrollLeft - 1) {
-          e.preventDefault();
-          el.scrollLeft += deltaY;
-        } else if (deltaY < 0 && el.scrollLeft > 1) {
-          e.preventDefault();
-          el.scrollLeft += deltaY;
-        }
-      }
-    };
-
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", handleWheel);
-    };
-  }, []);
-
-  const handleCellFocus = useCallback((key: string) => {
-    setFocusedCellKey(key);
-    setFocusFromKeyboard(false);
-    const date = key.split(":")[1];
-    if (date) setActiveColDate(date);
-  }, []);
 
   const handleCellNavigate = useCallback(
     (key: string, direction: CellNavDirection) => {
-      const [studentIdRaw, ...dateParts] = key.split(":");
-      const studentId = Number(studentIdRaw);
-      const date = dateParts.join(":");
+      const { studentId, lessonDate } = splitCellKey(key);
+      const rowIndex: number = students.findIndex((student) => student.student_id === studentId);
+      const columnIndex: number = lessonDates.indexOf(lessonDate);
+      if (rowIndex === -1 || columnIndex === -1) return;
 
-      const rowIndex = students.findIndex((s) => s.student_id === studentId);
-      const colIndex = lessonDates.indexOf(date);
-      if (rowIndex === -1 || colIndex === -1) return;
+      const rowOffset: number = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+      const columnOffset: number = direction === "left" ? -1 : direction === "right" ? 1 : 0;
+      const nextRow: number = Math.min(Math.max(rowIndex + rowOffset, 0), students.length - 1);
+      const nextColumn: number = Math.min(Math.max(columnIndex + columnOffset, 0), lessonDates.length - 1);
 
-      let nextRow = rowIndex;
-      let nextCol = colIndex;
-
-      if (direction === "up") nextRow -= 1;
-      else if (direction === "down") nextRow += 1;
-      else if (direction === "left") nextCol -= 1;
-      else nextCol += 1;
-
-      if (nextCol < 0) {
-        if (nextRow === 0) return;
-        nextRow -= 1;
-        nextCol = lessonDates.length - 1;
-      } else if (nextCol > lessonDates.length - 1) {
-        if (nextRow === students.length - 1) return;
-        nextRow += 1;
-        nextCol = 0;
-      }
-
-      if (nextRow < 0 || nextRow > students.length - 1) return;
-
-      const nextDate = lessonDates[nextCol];
-      setFocusedCellKey(`${students[nextRow].student_id}:${nextDate}`);
-      setActiveColDate(nextDate);
-      setFocusFromKeyboard(true);
+      setFocus({
+        journalId,
+        studentId: students[nextRow].student_id,
+        lessonDate: lessonDates[nextColumn],
+        control: "cell",
+        fromKeyboard: true,
+      });
     },
-    [students, lessonDates]
+    [students, lessonDates, journalId],
   );
 
-  return (
-    <div className="space-y-3">
-      <div ref={tableWrapperRef} className="w-full overflow-x-auto border border-border rounded-xl bg-card shadow-sm">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="bg-beige border-b border-border text-muted font-semibold">
-              <th scope="col" className="sticky left-0 z-20 bg-beige px-4 py-3 text-left border-r border-border min-w-[160px]">
-                {t("table.students")}
-              </th>
+  const showScrollCue: boolean = viewport.canScrollLeft || viewport.canScrollRight;
 
-              {lessonDates.map((date) => {
-                const dateObj = new Date(date);
-                const dateFormatted = `${dateObj.getDate().toString().padStart(2, "0")}.${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`;
-                return (
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex min-h-6 items-center justify-end">
+        {showScrollCue && (
+          <p className="flex items-center gap-1.5 text-sm text-muted" data-testid="journal-scroll-cue">
+            <ChevronsRight className="h-4 w-4" aria-hidden="true" />
+            {t("grid.scrollHint")}
+          </p>
+        )}
+      </div>
+
+      <div className="relative">
+        <div
+          ref={regionRef}
+          role="region"
+          tabIndex={0}
+          aria-label={t("grid.regionLabel", { period: periodLabel })}
+          data-testid="journal-grid-region"
+          style={{ maxHeight: viewport.maxHeightPx ?? "max(24rem, calc(100dvh - 22rem))" }}
+          className="w-full overflow-auto overscroll-x-contain rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky left-0 top-0 z-30 w-[200px] min-w-[200px] border-b border-r border-border bg-beige px-4 py-3 text-left text-sm font-semibold text-ink"
+                >
+                  {t("table.students")}
+                </th>
+
+                {lessonDates.map((date) => (
                   <th
                     key={date}
+                    ref={(element) => {
+                      if (element) headerRefs.current.set(date, element);
+                      else headerRefs.current.delete(date);
+                    }}
                     scope="col"
-                    onMouseEnter={() => setActiveColDate(date)}
-                    className={`px-2 py-3 text-center min-w-[70px] transition-colors cursor-pointer ${
-                      activeColDate === date ? "bg-maroon/10 dark:bg-accent/10 text-ink" : ""
+                    aria-current={date === selectedLesson ? "date" : undefined}
+                    className={`sticky top-0 z-20 min-w-[160px] border-b border-border p-0 text-center ${
+                      date === selectedLesson ? "bg-info-surface text-ink" : "bg-beige text-ink"
                     }`}
                   >
-                    {dateFormatted}
+                    <button
+                      type="button"
+                      onClick={() => onSelectLesson(date)}
+                      className="flex min-h-14 w-full flex-col items-center justify-center px-2 py-1 hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    >
+                      <span className="text-xs text-muted">{formatSchoolLessonWeekday(date)}</span>
+                      <span className="text-sm font-semibold tabular-nums">{formatSchoolLessonDate(date)}</span>
+                    </button>
                   </th>
-                );
-              })}
+                ))}
 
-              <th scope="col" className="px-2 py-3 text-center min-w-[60px]">
-                {t("table.bonus")}
-              </th>
+                <th scope="col" className="sticky top-0 z-20 min-w-[88px] border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  {t("table.bonus")}
+                </th>
 
-              <th scope="col" className="px-2 py-3 text-center min-w-[75px]">
-                <div className="flex items-center justify-center gap-1">
-                  <span>{t("table.exam")}</span>
-                  <button
-                    type="button"
-                    onClick={onOpenExamWeightModal}
-                    className="text-muted hover:text-ink p-0.5 rounded transition-colors"
-                    title={t("table.editExamWeight")}
-                  >
-                    <Settings className="w-3 h-3" />
-                  </button>
-                </div>
-                <span className="block text-[10px] font-normal text-muted">
-                  {t("table.maxN", { n: examMaxScore })}
-                </span>
-              </th>
+                <th scope="col" className="sticky top-0 z-20 min-w-[88px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  <span className="block">{t("table.exam")}</span>
+                  <span className="block text-xs font-normal text-muted tabular-nums">{t("table.maxN", { n: examMaxScore })}</span>
+                </th>
 
-              <th scope="col" className="sticky right-16 z-20 w-16 min-w-16 bg-beige border-l border-border px-3 py-3 text-center">
-                {t("table.sum")}
-              </th>
+                <th scope="col" className="sticky top-0 z-20 min-w-[80px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  {t("table.sum")}
+                </th>
 
-              <th scope="col" className="sticky right-0 z-20 w-16 min-w-16 bg-beige px-3 py-3 text-center">
-                %
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {students.length === 0 ? (
-              <tr>
-                <td colSpan={lessonDates.length + 5} className="px-4 py-8 text-center text-muted">
-                  {t("table.noStudentsInCourse")}
-                </td>
+                <th scope="col" className="sticky top-0 z-20 min-w-[80px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  %
+                </th>
               </tr>
-            ) : (
-              students.map((student, index) => (
+            </thead>
+
+            <tbody>
+              {students.map((student) => (
                 <JournalStudentRow
                   key={student.student_id}
                   student={student}
                   lessonDates={lessonDates}
-                  periodType={periodType}
+                  selectedLesson={selectedLesson}
                   examMaxScore={examMaxScore}
                   cellStatus={cellStatus}
                   summaryStatus={summaryStatus.get(student.student_id)}
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}
-                  activeColDate={activeColDate}
-                  animationIndex={index}
+                  editing={editing}
                   onCellFocus={handleCellFocus}
                   onCellNavigate={handleCellNavigate}
-                  onEntryCommand={onEntryCommand}
-                  onSummaryField={onSummaryField}
                 />
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {viewport.canScrollRight && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-px right-px w-10 rounded-r-2xl bg-gradient-to-l from-card to-transparent"
+          />
+        )}
       </div>
-
-      <p className="text-[11px] text-muted italic px-1">
-        {t("table.gridHelp")}
-      </p>
     </div>
   );
 };
