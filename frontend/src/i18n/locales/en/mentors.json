@@ -89,5 +89,42 @@
     "required": "This field is required",
     "invalidField": "Invalid value entered",
     "generalValidationError": "Please correct errors in the form before saving"
+  },
+  "profile": {
+    "backToTeachers": "Back to Teachers",
+    "backToDashboard": "Back to Dashboard",
+    "personalDetails": "Personal details",
+    "accountAccess": "Account access",
+    "hidePassword": "Hide password",
+    "showPassword": "Show password",
+    "credentialsUnavailable": "Credentials are unavailable in this profile",
+    "noCoursesHelp": "Active assigned courses will appear here. Archived courses remain in the course directory.",
+    "courseStatus": {
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "currencyTjs": "TJS",
+    "performanceTitle": "Recorded performance",
+    "normalizedBasis": "Mean of recorded percentages on currently assigned courses, including archived and deleted courses. A percentage is available only when the period’s maximum score is positive.",
+    "ratioEligibility": "{{included}} percentages available · {{excluded}} unavailable · {{total}} recorded summaries",
+    "unknownProvenance": "Recorded summaries have no explicit grading provenance; these values are unverified.",
+    "scoreUnavailable": "Score unavailable",
+    "activeStudentsBasis": "Distinct students with active enrollments on assigned courses, including archived and deleted courses.",
+    "analyticsTitle": "Course and student totals",
+    "analyticsLoading": "Loading course and student totals…",
+    "analyticsError": "These totals are unavailable. Try again.",
+    "totalStudents": "Total students",
+    "totalStudentsBasis": "Distinct students with non-deleted enrollments in all statuses on assigned courses, including deleted courses.",
+    "rawPoints": "Recorded points · unverified",
+    "rawPointsBasis": "Mean of stored points on non-deleted assigned courses, including archived courses; this is not a percentage.",
+    "noRecordedSummaries": "No period summaries have been recorded.",
+    "activeCourses": "Active courses",
+    "activeCoursesBasis": "Currently assigned, active, non-deleted courses.",
+    "activeStudents": "Active students",
+    "rawNormalized": "Stored average /100 · unverified",
+    "missingValue": "—",
+    "tabsLabel": "Teacher profile sections",
+    "refreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",
+    "courseContext": "Active course context"
   }
 }

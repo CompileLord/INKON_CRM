@@ -54,6 +54,7 @@ interface MentorFormPanelProps {
   mentor?: User;
   onClose: () => void;
   onSaved: (action: "created" | "updated", user?: User) => void;
+  onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }
 
@@ -63,6 +64,7 @@ export function MentorFormPanel({
   mentor,
   onClose,
   onSaved,
+  onAvatarSaved,
   finalFocus,
 }: MentorFormPanelProps) {
   if (!open) {
@@ -79,6 +81,7 @@ export function MentorFormPanel({
       mentor={mentor}
       onClose={onClose}
       onSaved={onSaved}
+      onAvatarSaved={onAvatarSaved}
       finalFocus={finalFocus}
     />
   );
@@ -90,6 +93,7 @@ interface MentorFormPanelInnerProps {
   mentor?: User;
   onClose: () => void;
   onSaved: (action: "created" | "updated", user?: User) => void;
+  onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }
 
@@ -104,6 +108,7 @@ function MentorFormPanelInner({
   mentor,
   onClose,
   onSaved,
+  onAvatarSaved,
   finalFocus,
 }: MentorFormPanelInnerProps) {
   const { t } = useTranslation(["mentors", "common"]);
@@ -460,7 +465,8 @@ function MentorFormPanelInner({
                   if (currentOwnerIdentity !== panelOwnerRef.current) return;
                   setHasSavedAvatar(true);
                   savedUserRef.current = updatedUser;
-                  onSaved("updated", updatedUser);
+                  if (onAvatarSaved) onAvatarSaved(updatedUser);
+                  else onSaved("updated", updatedUser);
                 }}
                 onBusyChange={(busy) => setIsAvatarBusy(busy)}
               />
