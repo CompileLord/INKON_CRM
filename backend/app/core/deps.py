@@ -1,9 +1,9 @@
 from typing import AsyncGenerator, Callable, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import settings
+from app.core.security import AccessTokenPrincipal
 from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
@@ -21,34 +21,67 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             raise
 
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db_session),
-    token_auth: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
-) -> User:
-    credentials_exception = HTTPException(
+def _credentials_exception() -> HTTPException:
+    return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        token = token_auth.credentials
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
-        user_id_str: str = payload.get("sub")
-        if user_id_str is None:
-            raise credentials_exception
-        user_id = int(user_id_str)
-    except (JWTError, ValueError):
-        raise credentials_exception
 
+
+def _forbidden_setup_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Must set password first",
+    )
+
+
+async def _get_user_for_principal(
+    principal: AccessTokenPrincipal,
+    db: AsyncSession,
+) -> User:
     user_repo = SQLAlchemyUserRepository(db)
-    user = await user_repo.get_by_id(user_id)
+    user = await user_repo.get_by_id(principal.subject_id)
     if user is None:
-        raise credentials_exception
+        raise _credentials_exception()
     if user.is_deleted:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Account deactivated"
         )
+    return user
+
+
+def _decode_principal(token_auth: HTTPAuthorizationCredentials) -> AccessTokenPrincipal:
+    try:
+        return AccessTokenPrincipal.from_token(token_auth.credentials)
+    except (JWTError, ValueError) as exception:
+        raise _credentials_exception() from exception
+
+
+async def get_current_user(
+    db: AsyncSession = Depends(get_db_session),
+    token_auth: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
+) -> User:
+    principal = _decode_principal(token_auth)
+    if principal.scope is not None:
+        raise _forbidden_setup_exception()
+    user = await _get_user_for_principal(principal, db)
+    if user.must_set_password:
+        raise _forbidden_setup_exception()
+    return user
+
+
+async def get_setup_user(
+    db: AsyncSession = Depends(get_db_session),
+    token_auth: HTTPAuthorizationCredentials = Depends(oauth2_scheme)
+) -> User:
+    principal = _decode_principal(token_auth)
+    if principal.scope != "must_set_password":
+        raise _forbidden_setup_exception()
+    user = await _get_user_for_principal(principal, db)
+    if not user.must_set_password:
+        raise _forbidden_setup_exception()
     return user
 
 

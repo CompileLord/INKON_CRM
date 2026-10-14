@@ -1,10 +1,72 @@
 import hashlib
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import secrets
-from typing import Any, Dict, Optional
-from jose import jwt
+from typing import Any, ClassVar, Dict, Optional
+from jose import JWTError, jwt
 import bcrypt
 from app.core.config import settings
+
+
+@dataclass(frozen=True)
+class AccessTokenPrincipal:
+    MAX_SUBJECT_ID: ClassVar[int] = (1 << 31) - 1
+
+    subject_id: int
+    purpose: str
+    scope: Optional[str]
+
+    @classmethod
+    def from_token(cls, token: str) -> "AccessTokenPrincipal":
+        try:
+            payload: Dict[str, Any] = jwt.decode(
+                token,
+                settings.JWT_SECRET_KEY,
+                algorithms=["HS256"],
+            )
+        except (TypeError, OverflowError) as exception:
+            raise JWTError("Invalid access token claim types") from exception
+        subject: Any = payload.get("sub")
+        purpose: Any = payload.get("type", "access")
+        scope: Any = payload.get("scope")
+        expiration: Any = payload.get("exp")
+        issued_at: Any = payload.get("iat")
+        if (
+            not isinstance(subject, str)
+            or not subject.isascii()
+            or not subject.isdecimal()
+            or purpose != "access"
+            or (scope is not None and scope != "must_set_password")
+            or not isinstance(expiration, int)
+            or isinstance(expiration, bool)
+            or not isinstance(issued_at, int)
+            or isinstance(issued_at, bool)
+        ):
+            raise JWTError("Invalid access token claims")
+        try:
+            subject_id = int(subject)
+        except ValueError as exception:
+            raise JWTError("Invalid access token subject") from exception
+        if (
+            subject_id <= 0
+            or subject_id > cls.MAX_SUBJECT_ID
+            or str(subject_id) != subject
+        ):
+            raise JWTError("Invalid access token subject")
+        current_timestamp: int = int(datetime.now(timezone.utc).timestamp())
+        maximum_lifetime: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        if (
+            issued_at > current_timestamp
+            or expiration <= current_timestamp
+            or expiration <= issued_at
+            or expiration - issued_at > maximum_lifetime
+        ):
+            raise JWTError("Invalid access token time claims")
+        return cls(
+            subject_id=subject_id,
+            purpose=purpose,
+            scope=scope,
+        )
 
 
 def hash_password(password: str) -> str:
@@ -49,6 +111,7 @@ def create_access_token(
     to_encode: Dict[str, Any] = {
         "sub": str(user_id),
         "role": role_str,
+        "type": "access",
         "exp": int(expire.timestamp()),
         "iat": int(now.timestamp())
     }
