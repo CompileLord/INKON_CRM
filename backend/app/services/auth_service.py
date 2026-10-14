@@ -319,7 +319,8 @@ class AuthService:
 
         await self.revoke_all_user_tokens(user.id)
 
-        access_token = create_access_token(user.id, user.role)
+        scope = "must_set_password" if user.must_set_password else None
+        access_token = create_access_token(user.id, user.role, scope=scope)
         refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
