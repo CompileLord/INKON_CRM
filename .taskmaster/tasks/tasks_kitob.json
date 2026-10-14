@@ -367,7 +367,7 @@
   {
     "id": "KITOB-04-03",
     "title": "/journals/:id routing and desktop grid",
-    "status": "in_progress",
+    "status": "completed",
     "group": "04",
     "dependencies": [
       "KITOB-04-02"
@@ -378,7 +378,7 @@
   {
     "id": "KITOB-04-04",
     "title": "Phone/tablet Lesson view",
-    "status": "pending",
+    "status": "in_progress",
     "group": "04",
     "dependencies": [
       "KITOB-04-03"
