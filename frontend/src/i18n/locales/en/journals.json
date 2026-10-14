@@ -3,10 +3,6 @@
   "jumpToCurrent": "Jump to current period",
   "title": "Electronic Gradebook",
   "openJournal": "Open journal",
-  "totalJournals": "Total Journals",
-  "activeCourses": "Active Courses",
-  "noJournals": "No journals found",
-  "tryFilterChange": "Try changing the filter",
   "notFound": "Journal not found",
   "loadFailedCourse": "Failed to load course",
   "loadFailed": "Failed to load journal data",
@@ -182,5 +178,27 @@
     "discard": "Discard unsaved changes",
     "discarding": "Discarding…",
     "discardFailed": "Could not discard right now. Check your connection and try again."
+  },
+  "hub": {
+    "resultsTotal_one": "{{count}} journal",
+    "resultsTotal_other": "{{count}} journals",
+    "searchPageScope": "Found on this page: {{count}} of {{total}}",
+    "searchScopeNotice": "Search covers only the journals loaded on this page, not the whole catalog.",
+    "searchLabel": "Search journals on this page",
+    "statusFilterLabel": "Filter journals by status",
+    "listLabel": "Journals",
+    "clearSearch": "Clear search",
+    "mentorUnavailable": "Mentor not available",
+    "refreshing": "Updating…",
+    "refreshFailed": "Could not refresh journals. Showing the last loaded list.",
+    "emptyCatalog": {
+      "title": "No journals yet",
+      "body": "A journal appears here for every course you are permitted to open. When a course is added or assigned to you, its journal will be listed."
+    },
+    "noMatch": {
+      "title": "No journals match",
+      "body": "Nothing on this page matches your search or status filter. Clear them to see every journal loaded for this page.",
+      "clear": "Clear search and filters"
+    }
   }
 }

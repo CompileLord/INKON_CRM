@@ -66,4 +66,20 @@ describe("journals i18n key parity", () => {
       expect(tgJournals.conflict[key as keyof typeof tgJournals.conflict]).not.toBe(enJournals.conflict[key as keyof typeof enJournals.conflict]);
     }
   });
+  it("translates every hub key instead of leaving English text in ru and tg", () => {
+    const readHub = (source: Record<string, any>): Record<string, any> => source.hub;
+    const compareLeaves = (english: Record<string, any>, translated: Record<string, any>, path: string): void => {
+      for (const key of Object.keys(english)) {
+        const leafPath = `${path}.${key}`;
+        if (typeof english[key] === "object") {
+          compareLeaves(english[key], translated[key], leafPath);
+          continue;
+        }
+        expect(translated[key], `${leafPath} must exist`).toBeTruthy();
+        expect(translated[key], `${leafPath} must not be English`).not.toBe(english[key]);
+      }
+    };
+    compareLeaves(readHub(enJournals), readHub(ruJournals), "ru.hub");
+    compareLeaves(readHub(enJournals), readHub(tgJournals), "tg.hub");
+  });
 });

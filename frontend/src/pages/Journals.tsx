@@ -1,124 +1,263 @@
-import { useMemo, useState } from "react";
-import { AlertCircle, Search } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { AlertCircle, AlertTriangle, ClipboardList, SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCourses } from "../lib/courses/hooks";
 import { useMentors } from "../lib/users/hooks";
+import { parseSafePageParam } from "../lib/courses/returnContext";
 import { useAuthStore } from "../store/authStore";
-import { JournalCard } from "../components/journals/JournalCard";
-import { JournalsStatsStrip } from "../components/journals/JournalsStatsStrip";
-import { MentorStatsStrip } from "../components/mentor/MentorStatsStrip";
-import { EmptyState } from "../components/journals/EmptyState";
 import { Button } from "../components/ui/Button";
+import { CoursePagination } from "../components/courses/CoursePagination";
+import { JournalListRow, JournalListRowSkeleton } from "../components/journals/JournalListRow";
+import type { JournalRowMentorState } from "../components/journals/JournalListRow";
+import { JournalsToolbar } from "../components/journals/JournalsToolbar";
+import type { JournalStatusFilter } from "../components/journals/JournalsToolbar";
+import { journalsHubReturnStore, JournalsHubReturnStore } from "../components/journals/JournalsHubReturnStore";
+import type { User } from "../lib/users/types";
 
-type StatusFilter = "all" | "active" | "archived";
-
-const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 dark:focus-visible:ring-accent";
+const PAGE_SIZE = 20;
+const SKELETON_ROW_COUNT = 6;
 
 export function Journals() {
-  const { t } = useTranslation(["journals", "common"]);
-  const role = useAuthStore((s) => s.role);
-  const isSuperAdmin = role === "superadmin";
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const location = useLocation();
+  const pendingReturn = location.search === "" ? journalsHubReturnStore.peekPending() : null;
+  if (pendingReturn && pendingReturn.search !== "") {
+    return <Navigate to={`/journals${pendingReturn.search}`} replace />;
+  }
+  return <JournalsHub />;
+}
 
-  const statusFilters: { label: string; value: StatusFilter }[] = [
-    { label: t("filter.all"), value: "all" },
-    { label: t("filter.active"), value: "active" },
-    { label: t("filter.archived"), value: "archived" },
-  ];
+function JournalsHub() {
+  const { t } = useTranslation(["journals", "common"]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const role = useAuthStore((state) => state.role);
+  const isSuperAdmin = role === "superadmin";
+
+  const rawStatus = searchParams.get("status");
+  const status: JournalStatusFilter = rawStatus === "active" || rawStatus === "archived" ? rawStatus : "all";
+  const page = parseSafePageParam(searchParams.get("page"));
+  const search = searchParams.get("q") ?? "";
+  const normalizedQuery = search.trim().toLowerCase();
 
   const {
     data: coursesPage,
     isLoading,
+    isPlaceholderData,
     isError,
+    isFetching,
     refetch,
-  } = useCourses({ status: status === "all" ? undefined : status, page_size: 100 });
-  const { data: mentorsPage } = useMentors({ page_size: 100 }, isSuperAdmin);
+  } = useCourses({ status: status === "all" ? undefined : status, page, page_size: PAGE_SIZE });
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const items = coursesPage?.items ?? [];
-    return query ? items.filter((c) => c.title.toLowerCase().includes(query)) : items;
-  }, [coursesPage, search]);
+  const mentorsQuery = useMentors({ page_size: 100 }, isSuperAdmin);
 
-  const resetFilters = () => {
-    setSearch("");
-    setStatus("all");
+  const isSettled = !isLoading && !isPlaceholderData && Boolean(coursesPage);
+  const showSkeleton = isLoading || isPlaceholderData;
+  const isHardError = isError && !coursesPage;
+  const isRefreshFailed = isError && Boolean(coursesPage) && !isPlaceholderData;
+  const isRefreshing = isFetching && isSettled && !isError;
+
+  const currentSearchKey = useMemo(
+    () => JournalsHubReturnStore.sanitizeSearch(searchParams.toString()),
+    [searchParams],
+  );
+
+  const hasConsumedReturnRef = useRef(false);
+  useEffect(() => {
+    if (!isSettled || hasConsumedReturnRef.current) return;
+    hasConsumedReturnRef.current = true;
+    const pending = journalsHubReturnStore.peekPending();
+    journalsHubReturnStore.clear();
+    if (!pending || pending.search !== currentSearchKey || pending.scrollY <= 0) return;
+    const frameId = requestAnimationFrame(() => window.scrollTo({ top: pending.scrollY, behavior: "auto" }));
+    return () => cancelAnimationFrame(frameId);
+  }, [isSettled, currentSearchKey]);
+
+  useEffect(() => {
+    if (!isSettled || !coursesPage) return;
+    const lastValidPage = Math.max(1, coursesPage.total_pages);
+    if (page > lastValidPage) {
+      updateParams((next) => {
+        if (lastValidPage <= 1) next.delete("page");
+        else next.set("page", String(lastValidPage));
+      }, true);
+    }
+  }, [isSettled, coursesPage, page]);
+
+  function updateParams(mutate: (next: URLSearchParams) => void, replace: boolean): void {
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        mutate(next);
+        return next;
+      },
+      { replace },
+    );
+  }
+
+  const handleSearchChange = (value: string) => {
+    updateParams((next) => {
+      if (value.trim()) next.set("q", value);
+      else next.delete("q");
+    }, true);
   };
+
+  const handleStatusChange = (value: JournalStatusFilter) => {
+    updateParams((next) => {
+      if (value === "all") next.delete("status");
+      else next.set("status", value);
+      next.delete("page");
+    }, false);
+  };
+
+  const handlePageChange = (value: number) => {
+    updateParams((next) => {
+      if (value <= 1) next.delete("page");
+      else next.set("page", String(value));
+    }, false);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const clearSearchAndFilters = () => {
+    updateParams((next) => {
+      next.delete("q");
+      next.delete("status");
+      next.delete("page");
+    }, false);
+  };
+
+  const recordNavigationOut = () => {
+    journalsHubReturnStore.recordNavigationOut(searchParams.toString(), window.scrollY);
+  };
+
+  const visibleCourses = useMemo(() => {
+    if (!isSettled || !coursesPage) return [];
+    return normalizedQuery
+      ? coursesPage.items.filter((course) => course.title.toLowerCase().includes(normalizedQuery))
+      : coursesPage.items;
+  }, [isSettled, coursesPage, normalizedQuery]);
+
+  const mentorsById = useMemo(() => {
+    const index = new Map<number, User>();
+    for (const mentor of mentorsQuery.data?.items ?? []) index.set(mentor.id, mentor);
+    return index;
+  }, [mentorsQuery.data]);
+
+  const resolveMentorState = (mentorId: number): JournalRowMentorState => {
+    if (!isSuperAdmin) return { kind: "hidden" };
+    const mentor = mentorsById.get(mentorId);
+    if (mentor) return { kind: "ready", mentor };
+    if (mentorsQuery.isLoading) return { kind: "loading" };
+    return { kind: "unavailable" };
+  };
+
+  const isEmptyCatalog = isSettled && coursesPage !== undefined && coursesPage.total === 0 && status === "all";
+  const isNoMatch = isSettled && !isEmptyCatalog && visibleCourses.length === 0;
+  const isTrulyEmptyCatalog = isEmptyCatalog && normalizedQuery === "";
+  const hasRows = isSettled && visibleCourses.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-[22px] font-bold text-ink">{t("hubTitle")}</h1>
-        <p className="mt-0.5 text-[13px] text-muted">
-          {t("hubSubtitle")}
-        </p>
+        <h1 className="text-[24px] font-semibold leading-8 text-ink md:text-[28px] md:leading-9">{t("hubTitle")}</h1>
+        <p className="mt-0.5 text-sm text-muted">{t("hubSubtitle")}</p>
       </div>
 
-      {role === "mentor" ? <MentorStatsStrip /> : <JournalsStatsStrip />}
+      {isTrulyEmptyCatalog ? null : (
+        <JournalsToolbar
+          search={search}
+          onSearchChange={handleSearchChange}
+          status={status}
+          onStatusChange={handleStatusChange}
+        />
+      )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t("searchCoursePlaceholder")}
-            className={`w-72 rounded-full border border-border-warm bg-card py-2 pl-9 pr-4 text-sm text-ink placeholder:text-muted ${FOCUS_RING}`}
-          />
+      {isSettled && coursesPage && !isTrulyEmptyCatalog ? (
+        <div role="status" className="flex flex-col gap-0.5 text-xs text-muted">
+          <span className="tabular-nums">
+            {normalizedQuery
+              ? t("hub.searchPageScope", { count: visibleCourses.length, total: coursesPage.items.length })
+              : t("hub.resultsTotal", { count: coursesPage.total })}
+            {isRefreshing ? <span> · {t("hub.refreshing")}</span> : null}
+          </span>
+          {normalizedQuery ? <span>{t("hub.searchScopeNotice")}</span> : null}
         </div>
+      ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          {statusFilters.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              onClick={() => setStatus(f.value)}
-              className={[
-                "rounded-full border px-4 py-2 text-sm font-medium active:scale-95 transition-[background-color,border-color,color,transform] duration-150 ease-out",
-                FOCUS_RING,
-                status === f.value
-                  ? "border-maroon bg-maroon/10 text-maroon dark:border-accent dark:bg-accent/10 dark:text-accent font-semibold"
-                  : "border-border-warm bg-card text-nav hover:bg-strip",
-              ].join(" ")}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {showSkeleton ? <div aria-hidden="true" className="h-4 w-24 rounded-[10px] bg-strip motion-safe:animate-pulse" /> : null}
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl border border-border-warm bg-beige/40" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-10 text-center">
-          <AlertCircle size={22} className="text-red-600 dark:text-red-400" />
-          <p className="text-sm text-muted">{t("loadFailedHub")}</p>
-          <Button type="button" variant="secondary" onClick={() => refetch()}>
+      {isRefreshFailed ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning-surface bg-warning-surface/40 px-4 py-3 text-sm text-ink"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} className="shrink-0 text-warning" aria-hidden="true" />
+            <span>{t("hub.refreshFailed")}</span>
+          </div>
+          <Button type="button" variant="secondary" onClick={() => refetch()} className="min-h-[44px] min-w-[44px]">
             {t("common:retry")}
           </Button>
         </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState onReset={resetFilters} />
-      ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((course) => (
-            <JournalCard
+      ) : null}
+
+      {showSkeleton ? (
+        <ul
+          aria-busy="true"
+          aria-label={t("hub.listLabel")}
+          className="divide-y divide-border overflow-hidden rounded-2xl border border-border-warm bg-card"
+        >
+          {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+            <JournalListRowSkeleton key={index} showMentor={isSuperAdmin} />
+          ))}
+        </ul>
+      ) : isHardError ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-10 text-center">
+          <AlertCircle size={28} className="text-destructive" aria-hidden="true" />
+          <p className="text-sm font-semibold text-ink">{t("loadFailedHub")}</p>
+          <Button type="button" variant="secondary" onClick={() => refetch()} className="mt-2 min-h-[44px] min-w-[44px]">
+            {t("common:retry")}
+          </Button>
+        </div>
+      ) : isEmptyCatalog ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
+            <ClipboardList size={26} className="text-maroon dark:text-accent" aria-hidden="true" />
+          </div>
+          <h2 className="text-base font-semibold text-ink">{t("hub.emptyCatalog.title")}</h2>
+          <p className="max-w-md text-sm text-muted">{t("hub.emptyCatalog.body")}</p>
+        </div>
+      ) : isNoMatch ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
+            <SearchX size={26} className="text-maroon dark:text-accent" aria-hidden="true" />
+          </div>
+          <h2 className="text-base font-semibold text-ink">{t("hub.noMatch.title")}</h2>
+          <p className="max-w-md text-sm text-muted">{t("hub.noMatch.body")}</p>
+          <Button type="button" variant="secondary" onClick={clearSearchAndFilters} className="mt-2 min-h-[44px] min-w-[44px]">
+            {t("hub.noMatch.clear")}
+          </Button>
+        </div>
+      ) : hasRows ? (
+        <ul
+          aria-label={t("hub.listLabel")}
+          className="divide-y divide-border overflow-hidden rounded-2xl border border-border-warm bg-card"
+        >
+          {visibleCourses.map((course) => (
+            <JournalListRow
               key={course.id}
               course={course}
-              mentor={mentorsPage?.items.find((m) => m.id === course.mentor_id)}
+              mentorState={resolveMentorState(course.mentor_id)}
+              onNavigateOut={recordNavigationOut}
             />
           ))}
+        </ul>
+      ) : null}
+
+      {isSettled && coursesPage && coursesPage.total_pages > 1 ? (
+        <div className="flex justify-center pt-2">
+          <CoursePagination page={page} totalPages={coursesPage.total_pages} onPageChange={handlePageChange} />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
