@@ -16,6 +16,7 @@ import {
   updateUser,
   uploadAvatar,
 } from "./endpoints";
+import { AuthApiError } from "../auth/errors";
 import type { ListUsersParams, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
 
 /**
@@ -122,11 +123,30 @@ export function useUploadAvatar(role: ListableRole) {
   });
 }
 
+const DEFAULT_QUERY_MAX_RETRIES = 3;
+
+type QueryRetryDefault = boolean | number | ((failureCount: number, error: Error) => boolean) | undefined;
+
+export function shouldRetryProfileRequest(clientRetryDefault: QueryRetryDefault, failureCount: number, error: Error): boolean {
+  if (error instanceof AuthApiError && error.status >= 400 && error.status <= 499) return false;
+  if (clientRetryDefault === undefined) return failureCount < DEFAULT_QUERY_MAX_RETRIES;
+  if (typeof clientRetryDefault === "boolean") return clientRetryDefault;
+  if (typeof clientRetryDefault === "number") return failureCount < clientRetryDefault;
+  return clientRetryDefault(failureCount, error);
+}
+
+function useProfileRetryPolicy(): (failureCount: number, error: Error) => boolean {
+  const clientRetryDefault: QueryRetryDefault = useQueryClient().getDefaultOptions().queries?.retry;
+  return (failureCount, error) => shouldRetryProfileRequest(clientRetryDefault, failureCount, error);
+}
+
 export function useStudentProfile(id: number | undefined) {
+  const retry = useProfileRetryPolicy();
   return useQuery({
     queryKey: ["users", "students", "profile", id],
     queryFn: () => getStudentProfile(id!),
     enabled: id !== undefined,
+    retry,
   });
 }
 
@@ -146,18 +166,22 @@ export function useMyStudentJournals(courseId?: number) {
 }
 
 export function useMentorProfile(id: number | undefined) {
+  const retry = useProfileRetryPolicy();
   return useQuery({
     queryKey: ["users", "mentors", "profile", id],
     queryFn: () => getMentorProfile(id!),
     enabled: id !== undefined,
+    retry,
   });
 }
 
 export function useMentorAnalytics(id: number | undefined) {
+  const retry = useProfileRetryPolicy();
   return useQuery({
     queryKey: ["users", "mentors", "analytics", id],
     queryFn: () => getMentorAnalytics(id!),
     enabled: id !== undefined,
+    retry,
   });
 }
 

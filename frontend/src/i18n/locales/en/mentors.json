@@ -126,5 +126,13 @@
     "tabsLabel": "Teacher profile sections",
     "refreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",
     "courseContext": "Active course context"
+  },
+  "profileState": {
+    "forbiddenTitle": "No access to this profile",
+    "forbiddenBody": "Your account is not allowed to view this profile.",
+    "notFoundTitle": "Profile not found",
+    "notFoundBody": "This profile does not exist or has been removed.",
+    "failedTitle": "Could not load the profile",
+    "failedBody": "Check your connection and try again."
   }
 }

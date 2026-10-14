@@ -21,6 +21,7 @@ import { AuthApiError, NetworkError } from "../lib/auth/errors";
 import { useAuthStore } from "../store/authStore";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { BrandActivityIndicator } from "../components/ui/BrandActivityIndicator";
+import { ProfileUnavailable, classifyProfileFailure, type ProfileUnavailableKind } from "../components/profile/ProfileUnavailable";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Toast } from "../components/ui/Toast";
@@ -350,21 +351,29 @@ export function StudentProfile() {
     });
   };
 
+  const returnLink = (
+    <Link
+      to={returnTarget.to}
+      state={returnTarget.state}
+      className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
+    >
+      <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
+    </Link>
+  );
+
+  const renderUnavailableProfile = (kind: ProfileUnavailableKind) => (
+    <ProfileUnavailable
+      kind={kind}
+      title={t(`profileState.${kind}Title`)}
+      description={t(`profileState.${kind}Body`)}
+      returnLink={returnLink}
+      retryLabel={t("common:retry")}
+      onRetry={() => refetch()}
+    />
+  );
+
   if (!numericId || Number.isNaN(numericId)) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Link
-          to={returnTarget.to}
-          state={returnTarget.state}
-          className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-        >
-          <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
-        </Link>
-        <div className="rounded-2xl border border-border bg-card p-6 text-muted">
-          {t("common:noData")}
-        </div>
-      </div>
-    );
+    return renderUnavailableProfile("notFound");
   }
 
   if (isLoading) {
@@ -408,23 +417,8 @@ export function StudentProfile() {
   }
 
   if (!profile || !canRetainProfile) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Link
-          to={returnTarget.to}
-          state={returnTarget.state}
-          className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-        >
-          <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
-        </Link>
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted">{t("common:error")}</p>
-          <Button variant="secondary" onClick={() => refetch()} className="min-h-11">
-            {t("common:retry")}
-          </Button>
-        </div>
-      </div>
-    );
+    const unauthorizedProfileLoaded = queriedProfile?.user.id === numericId && !profileOwnerIsAuthorized;
+    return renderUnavailableProfile(unauthorizedProfileLoaded ? "forbidden" : classifyProfileFailure(isError ? error : undefined));
   }
 
   const { user, courses, performance } = profile;

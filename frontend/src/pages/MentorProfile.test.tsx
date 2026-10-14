@@ -204,9 +204,41 @@ describe("Mentor profile authorization and state", () => {
     await act(async () => { await queryClient.invalidateQueries({ queryKey: ["users", "mentors", "profile", 10] }); });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.queryByRole("heading", { name: "Alisher Navoiy" })).toBeNull();
+    expect(screen.getByRole("heading", { name: i18n.t("mentors:profileState.forbiddenTitle") })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it.each([
+    [403, "forbidden"],
+    [401, "forbidden"],
+    [404, "notFound"],
+    [422, "notFound"],
+  ])("shows a distinct %s state with the return link and no Retry or identity", async (status, kind) => {
+    vi.mocked(endpoints.getMentorProfile).mockRejectedValue(new AuthApiError(status, "Denied"));
+    setup();
+    expect(await screen.findByRole("heading", { name: i18n.t(`mentors:profileState.${kind}Title`) })).toBeDefined();
+    expect(screen.getByText(i18n.t(`mentors:profileState.${kind}Body`))).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.queryByText("Alisher Navoiy")).toBeNull();
+    expect(screen.getByRole("link", { name: /Back to Teachers/ })).toBeDefined();
+  });
+
+  it("shows the not-found state for an invalid identifier and no data request", () => {
+    setup(undefined, "/mentors/abc");
+    expect(screen.getByRole("heading", { name: i18n.t("mentors:profileState.notFoundTitle") })).toBeDefined();
+    expect(endpoints.getMentorProfile).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("shows the could-not-load state with Retry and the return link for a 503, and Retry refetches", async () => {
+    vi.mocked(endpoints.getMentorProfile).mockRejectedValueOnce(new AuthApiError(503, "Unavailable")).mockResolvedValue(profile);
+    setup();
+    expect(await screen.findByRole("heading", { name: i18n.t("mentors:profileState.failedTitle") })).toBeDefined();
+    expect(screen.getByRole("link", { name: /Back to Teachers/ })).toBeDefined();
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(endpoints.getMentorProfile).toHaveBeenCalledTimes(2);
   });
 
   it("independent photo completion preserves dirty identity through a failed refresh and Cancel sends no identity write", async () => {

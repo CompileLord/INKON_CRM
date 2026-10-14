@@ -14,6 +14,7 @@ import { MentorCourses } from "../components/mentors/MentorCourses";
 import { MentorPerformance } from "../components/mentors/MentorPerformance";
 import { MentorFormPanel } from "../components/mentors/MentorFormPanel";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
+import { ProfileUnavailable, classifyProfileFailure, type ProfileUnavailableKind } from "../components/profile/ProfileUnavailable";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { BrandActivityIndicator } from "../components/ui/BrandActivityIndicator";
@@ -127,7 +128,9 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
     }
   };
   const backLink = <Link to={back.to} state={back.state} className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"><ArrowLeft size={16} />{t(back.label)}</Link>;
-  if (!authorized) return <div className="flex flex-col gap-4">{backLink}<p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted">{t("notFound")}</p></div>;
+  const renderUnavailableProfile = (kind: ProfileUnavailableKind) => <ProfileUnavailable kind={kind} title={t(`profileState.${kind}Title`)} description={t(`profileState.${kind}Body`)} returnLink={backLink} retryLabel={t("common:retry")} onRetry={() => profileQuery.refetch()} />;
+  if (id === undefined) return renderUnavailableProfile("notFound");
+  if (!authorized) return renderUnavailableProfile("forbidden");
   if (profileQuery.isLoading) return <div role="status" aria-busy="true" className="flex min-w-0 flex-col gap-4">
     {backLink}<div className="flex items-center gap-2 text-sm text-muted"><BrandActivityIndicator size={20} />{t("common:loading")}</div>
     <div className="rounded-2xl border border-border-warm bg-card p-4 md:p-5 motion-safe:animate-pulse">
@@ -140,7 +143,7 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
     <div className="flex gap-2 motion-safe:animate-pulse">{[0, 1, 2].map(item => <div key={item} className="h-11 min-w-0 flex-1 rounded-[10px] bg-beige" />)}</div>
     <div className="h-32 rounded-2xl border border-border bg-card motion-safe:animate-pulse" />
   </div>;
-  if (!profile) return <div className="flex flex-col gap-4">{backLink}<div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="text-sm text-muted">{t("loadError")}</p><Button variant="secondary" className="mt-3" onClick={() => profileQuery.refetch()}>{t("common:retry")}</Button></div></div>;
+  if (!profile) return renderUnavailableProfile(classifyProfileFailure(profileQuery.isError ? profileQuery.error : undefined));
   const score = profile.avg_score_defined_ratios_mean;
   const number = (value: number) => formatNumber(value, i18n.language, { maximumFractionDigits: 1 });
   const summary = [{ label: "profile.activeCourses", value: number(profile.active_courses.length) }, { label: "profile.activeStudents", value: number(profile.active_students_count) }, { label: "profile.rawNormalized", value: score === null || score === undefined ? t("profile.missingValue") : number(score), unavailable: score === null || score === undefined }];

@@ -1036,11 +1036,30 @@ describe("StudentProfile Component", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.queryByText(i18n.t("students:profileRefreshError"))).toBeNull();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeDefined();
+    const expectedKind = status === 404 ? "notFound" : "forbidden";
+    expect(screen.getByRole("heading", { name: i18n.t(`students:profileState.${expectedKind}Title`) })).toBeDefined();
+    expect(screen.getByText(i18n.t(`students:profileState.${expectedKind}Body`))).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.queryByText("Rustam Karimov")).toBeNull();
+    expect(screen.getAllByRole("link").length).toBeGreaterThan(0);
+  });
+
+  it("shows a distinct not-found state without Retry for an invalid profile id", () => {
+    renderStudentProfile(["/students/abc"]);
+    expect(screen.getByRole("heading", { name: i18n.t("students:profileState.notFoundTitle") })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("shows the could-not-load state with Retry and the return link for a 503, and Retry refetches", async () => {
+    vi.mocked(userHooks.useStudentProfile).mockRestore();
+    const getProfile = vi.spyOn(userEndpoints, "getStudentProfile").mockRejectedValueOnce(new AuthApiError(503, "Unavailable")).mockResolvedValue(mockProfileResponse);
+    const user = userEvent.setup();
+    renderStudentProfile();
+    expect(await screen.findByRole("heading", { name: i18n.t("students:profileState.failedTitle") })).toBeDefined();
+    expect(screen.getAllByRole("link").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByRole("heading", { name: "Rustam Karimov" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("tab", { name: "Courses" }).getAttribute("aria-selected")).toBe("true");
+    expect(getProfile).toHaveBeenCalledTimes(2);
   });
 
   it("hides loaded data when the auth owner loses profile ownership", async () => {
