@@ -42,6 +42,9 @@ class EnrollmentService:
         self.user_repo = SQLAlchemyUserRepository(db)
 
     async def enroll_student(self, student_id: int, course_id: int, current_user: User) -> Enrollment:
+        from app.services.finance_service import FinanceService
+
+        await FinanceService(self.db).lock_student_accounts([student_id])
         course = await self.course_repo.get_by_id(course_id)
         if not course or course.is_deleted or course.status != CourseStatus.ACTIVE:
             raise HTTPException(
@@ -129,7 +132,6 @@ class EnrollmentService:
         await self.db.flush()
 
         # Generate financial charge schedule for enrollment
-        from app.services.finance_service import FinanceService
         finance_service = FinanceService(self.db)
         await finance_service.generate_schedule_for_enrollment(enrollment.id)
 
@@ -143,6 +145,9 @@ class EnrollmentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Enrollment not found"
             )
+        from app.services.finance_service import FinanceService
+
+        await FinanceService(self.db).lock_student_accounts([enrollment.student_id])
         enrollment.status = EnrollmentStatus.WITHDRAWN
         await self.enrollment_repo.update(enrollment)
 
