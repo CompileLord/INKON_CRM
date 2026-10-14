@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   formatDate,
   formatDateTime,
@@ -197,5 +197,48 @@ describe("school payment calendar", () => {
   it("scopes collection to the whole current school month at a UTC month boundary", () => {
     expect(getSchoolMonthRange(new Date("2026-10-31T20:00:00Z"))).toEqual({ start: "2026-11-01", end: "2026-11-30" });
     expect(getSchoolMonthRange(new Date("2024-02-15T00:00:00Z"))).toEqual({ start: "2024-02-01", end: "2024-02-29" });
+  });
+});
+
+describe("Tajik locale resolution", () => {
+  const sampleInstant = "2026-10-15T07:00:00Z";
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function simulateIntlWithoutTajikData(): void {
+    const originalNumberSupport = Intl.NumberFormat.supportedLocalesOf.bind(Intl.NumberFormat);
+    const originalDateSupport = Intl.DateTimeFormat.supportedLocalesOf.bind(Intl.DateTimeFormat);
+    const withoutTajik = (locales: Intl.LocalesArgument): string[] => {
+      const requested: string[] = typeof locales === "string" ? [locales] : Array.isArray(locales) ? locales.map(String) : [];
+      return requested.filter(locale => !locale.startsWith("tg"));
+    };
+    vi.spyOn(Intl.NumberFormat, "supportedLocalesOf").mockImplementation(locales => originalNumberSupport(withoutTajik(locales)));
+    vi.spyOn(Intl.DateTimeFormat, "supportedLocalesOf").mockImplementation(locales => originalDateSupport(withoutTajik(locales)));
+  }
+
+  it("uses tg-TJ when Intl supports it", () => {
+    vi.spyOn(Intl.NumberFormat, "supportedLocalesOf").mockReturnValue(["tg-TJ"]);
+    vi.spyOn(Intl.DateTimeFormat, "supportedLocalesOf").mockReturnValue(["tg-TJ"]);
+    expect(getActiveLocale("tg")).toBe("tg-TJ");
+  });
+
+  it("falls back to day-first numeric dates, never en-US, when tg-TJ is unsupported", () => {
+    simulateIntlWithoutTajikData();
+    expect(getActiveLocale("tg")).toBe("ru-RU");
+    expect(formatDate(sampleInstant, "tg", SCHOOL_TIMEZONE)).toBe("15.10.2026");
+    expect(formatDate(sampleInstant, "tg", SCHOOL_TIMEZONE)).not.toContain("/");
+  });
+
+  it("falls back to a decimal comma when tg-TJ is unsupported", () => {
+    simulateIntlWithoutTajikData();
+    expect(formatNumber(37.5, "tg", { minimumFractionDigits: 1, maximumFractionDigits: 1 })).toBe("37,5");
+  });
+
+  it("does not change English or Russian resolution when Tajik data is missing", () => {
+    simulateIntlWithoutTajikData();
+    expect(getActiveLocale("en")).toBe("en-US");
+    expect(getActiveLocale("ru")).toBe("ru-RU");
   });
 });

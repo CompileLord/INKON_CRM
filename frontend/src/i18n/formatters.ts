@@ -8,9 +8,17 @@ const localeMap: Record<string, string> = {
   tg: "tg-TJ",
 };
 
+const TAJIK_FALLBACK_LOCALE = "ru-RU";
+
+function isLocaleSupportedByIntl(locale: string): boolean {
+  return Intl.NumberFormat.supportedLocalesOf([locale]).length > 0
+    && Intl.DateTimeFormat.supportedLocalesOf([locale]).length > 0;
+}
+
 export function getActiveLocale(lng?: string): string {
   const current = lng || i18n.language || "ru";
-  return localeMap[current] || "ru-RU";
+  const mapped = localeMap[current] || "ru-RU";
+  return mapped === "tg-TJ" && !isLocaleSupportedByIntl(mapped) ? TAJIK_FALLBACK_LOCALE : mapped;
 }
 
 export function formatDate(
