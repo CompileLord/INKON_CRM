@@ -1,6 +1,6 @@
 # KITOB implementation
 
-Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has accepted both Students and Mentors directories with create/edit workflows and the shared avatar/pagination prerequisites. Student profile corrections and the Mentor API prerequisite remain active in isolated worktrees. Profile performance provenance and nullable account-field persistence prerequisites are accepted. The user-requested journal conflict hotfix is accepted separately from the future Group 04 redesign. Groups 04–06 redesign work remains.
+Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has accepted both Students and Mentors directories with create/edit workflows and the shared avatar/pagination prerequisites. Student profiles and the Mentor API prerequisite are accepted. Authorized document byte delivery is accepted. The orchestrator is implementing the Mentor profile directly in main after a native executor usage limit. Profile performance provenance and nullable account-field persistence prerequisites are accepted. The user-requested journal conflict hotfix is accepted separately from the future Group 04 redesign. Groups 04–06 redesign work remains.
 
 [Current task/session record](ledger.json) is the recovery entry point. [Subgroup boundaries](SUBGROUPS.md) define session reuse, dependencies and parallel ownership. Taskmaster remains the source of task definitions and completion status. Do not infer completion from an agent report or screenshot count.
 
@@ -35,6 +35,9 @@ Group 01 and Group 02 are accepted with recorded hardware gaps. Group 03 has acc
 | Shared pagination | [Audit](group-03/pagination/audit.md) | Real pagination captures in the Mentors evidence above |
 | Profile performance contract | [Audit](group-03/student-profile/contract/audit.md) | Contract-only prerequisite; no page screenshot claim |
 | Nullable profile field persistence | [Audit](group-03/nullable-profile-patch/audit.md) | [API regression evidence](group-03/nullable-profile-patch/evidence/probes.json) |
+| Student profiles | [Audit](group-03/student-profile/page/audit.md) | [Screenshots](group-03/student-profile/page/evidence/screenshots/), [manifest](group-03/student-profile/page/evidence/manifest.json), [probes](group-03/student-profile/page/evidence/probes.json) |
+| Mentor aggregate contract | [Audit](group-03/mentor-profile/contract/audit.md) | API-only prerequisite; recorded SQL/HTTPX evidence |
+| Authorized document byte delivery | [Audit](group-03/documents/contract/audit.md) | [Guarded-download captures](group-03/documents/contract/evidence/manifest.json), [byte-delivery probes](group-03/documents/contract/evidence/probes.json); full pane redesign pending |
 | Journal conflict hotfix | [Audit](hotfix-journal-conflicts/audit.md) | [Screenshots](hotfix-journal-conflicts/evidence/screenshots/), [manifest](hotfix-journal-conflicts/evidence/manifest.json), [probes](hotfix-journal-conflicts/evidence/probes.json) |
 
 Final capture directories retain their original names so existing links and screenshot manifests remain valid. Images may show labeled simulations for loading or error states. Only the final audit establishes accepted scope; legacy content visible inside a screenshot may still belong to a pending task.
