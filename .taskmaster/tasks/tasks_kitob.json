@@ -356,7 +356,7 @@
   {
     "id": "KITOB-04-02",
     "title": "/journals hub",
-    "status": "in_progress",
+    "status": "completed",
     "group": "04",
     "dependencies": [
       "KITOB-04-01"
@@ -367,7 +367,7 @@
   {
     "id": "KITOB-04-03",
     "title": "/journals/:id routing and desktop grid",
-    "status": "pending",
+    "status": "in_progress",
     "group": "04",
     "dependencies": [
       "KITOB-04-02"
