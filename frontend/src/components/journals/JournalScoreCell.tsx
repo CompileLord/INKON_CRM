@@ -2,24 +2,24 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { MessageSquare } from "lucide-react";
-import type { CellSaveStatus } from "../../lib/journals/useJournalAutosave";
+import { JournalSaveMarker } from "./JournalSaveMarker";
+import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
+import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 
 export type CellNavDirection = "up" | "down" | "left" | "right";
 
 interface JournalScoreCellProps {
-  studentId: number;
   studentName: string;
   lessonDate: string;
   attendance: boolean;
   score: number;
   comment: string | null;
-  version: number;
   status?: CellSaveStatus;
   isFocused: boolean;
   autoFocus?: boolean;
   onFocus: () => void;
   onNavigate?: (direction: CellNavDirection) => void;
-  onChange: (patch: { attendance: boolean; score: number; comment?: string | null }) => void;
+  onCommand: (command: JournalEntryCommand) => void;
 }
 
 function useAnchoredOverlay(
@@ -95,7 +95,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
   autoFocus = false,
   onFocus,
   onNavigate,
-  onChange,
+  onCommand,
 }) => {
   const { t } = useTranslation("journals");
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -133,8 +133,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
   }, [commentOpen]);
 
   const saveComment = () => {
-    const next = commentDraft.trim();
-    onChange({ attendance, score, comment: next.length > 0 ? next : null });
+    onCommand({ kind: "comment", comment: commentDraft });
     setCommentOpen(false);
     cellRef.current?.focus();
   };
@@ -155,15 +154,14 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       onNavigate?.(navKeys[e.key]);
     } else if (e.key >= "0" && e.key <= "5") {
       e.preventDefault();
-      const val = parseInt(e.key, 10);
-      onChange({ attendance: val > 0 ? true : attendance, score: val });
+      onCommand({ kind: "score", score: parseInt(e.key, 10) });
       onNavigate?.("down");
     } else if (e.key === "Backspace" || e.key === "Delete") {
       e.preventDefault();
-      onChange({ attendance, score: 0 });
+      onCommand({ kind: "score", score: 0 });
     } else if (e.key === " " || e.code === "Space") {
       e.preventDefault();
-      onChange({ attendance: !attendance, score });
+      onCommand({ kind: "attendance", attended: !attendance });
       onNavigate?.("down");
     } else if (e.key === "c" || e.key === "C") {
       e.preventDefault();
@@ -173,8 +171,9 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
 
   let ringStyle = "";
   if (status === "dirty") ringStyle = "ring-1 ring-amber-400/70";
-  else if (status === "saving") ringStyle = "ring-1 ring-amber-400/70 opacity-70";
-  else if (status === "saved") ringStyle = "ring-1 ring-emerald-500/70 transition-all duration-500";
+  else if (status === "saving") ringStyle = "ring-1 ring-amber-400/70";
+  else if (status === "saved") ringStyle = "ring-1 ring-emerald-500/70";
+  else if (status === "error") ringStyle = "ring-2 ring-destructive";
   else if (status === "conflict") ringStyle = "ring-2 ring-destructive";
 
   return (
@@ -186,10 +185,12 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       className={`relative group/cell flex items-center justify-center gap-1 p-1 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent ${ringStyle}`}
       aria-label={t("table.scoreCellLabel", { name: studentName, date: lessonDate })}
     >
+      {status && <JournalSaveMarker status={status} className="absolute -top-1.5 -right-1.5" />}
+
       <input
         type="checkbox"
         checked={attendance}
-        onChange={(e) => onChange({ attendance: e.target.checked, score: e.target.checked ? score : 0 })}
+        onChange={(e) => onCommand({ kind: "attendance", attended: e.target.checked })}
         className="w-3.5 h-3.5 rounded border-border accent-accent cursor-pointer"
         aria-label={t("table.attendanceCellLabel", { name: studentName, date: lessonDate })}
       />
@@ -252,7 +253,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
                 role="menuitemradio"
                 aria-checked={score === num}
                 onClick={() => {
-                  onChange({ attendance: num > 0 ? true : attendance, score: num });
+                  onCommand({ kind: "score", score: num });
                   setPopoverOpen(false);
                   cellRef.current?.focus();
                 }}

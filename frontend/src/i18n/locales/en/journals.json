@@ -37,10 +37,27 @@
     "unavailable": "Entry is not available on the server. Please reload the journal.",
     "unrefreshed": "Server state needs refresh. Please retry to view latest changes.",
     "keepMine": "Keep mine",
-    "keepTheirs": "Keep theirs",
-    "discard": "Discard",
     "pairedSummary": "Bonus and exam scores",
-    "studentFallback": "Student #{{id}}"
+    "studentFallback": "Student #{{id}}",
+    "yourValue": "Your value",
+    "serverValue": "Server value",
+    "useServer": "Use server value",
+    "discardMine": "Discard my change",
+    "refetch": "Refetch",
+    "refetching": "Refetching…",
+    "entryUnavailable": "Entry unavailable",
+    "entryUnavailableBody": "This lesson entry no longer exists on the server. Refetch to check again, or discard your change.",
+    "serverNotLoaded": "Server value not loaded yet",
+    "attendancePresent": "Present",
+    "attendanceAbsent": "Absent",
+    "attendanceLabel": "Attendance",
+    "scoreLabel": "Score",
+    "commentLabel": "Comment",
+    "noComment": "No comment",
+    "lessonContext": "Lesson {{date}}",
+    "listTitle": "Version conflicts",
+    "bonusLabel": "Bonus",
+    "examLabel": "Exam"
   },
   "hubTitle": "Journals",
   "hubSubtitle": "Each course has its own journal — attendance, scores, exam, and bonuses",
@@ -124,12 +141,46 @@
     "addCommentCellLabel": "Add comment for {{name}} on {{date}}",
     "commentPlaceholder": "Note for this lesson…",
     "commentCancel": "Cancel",
-    "commentSave": "Save"
+    "commentSave": "Save",
+    "summaryInvalid": {
+      "wholeNumber": "Enter a whole number",
+      "aboveMaximum": "Max {{n}}"
+    }
   },
   "metrics": {
     "classAverage": "Class Average",
     "attendanceRate": "Attendance Rate",
     "periodsDone": "Periods Completed",
     "atRisk": "At Risk (<60%)"
+  },
+  "cellStatus": {
+    "dirty": "Unsaved change",
+    "saving": "Saving",
+    "saved": "Saved",
+    "error": "Not saved",
+    "conflict": "Conflict"
+  },
+  "status": {
+    "unsaved": "Unsaved changes",
+    "saving": "Saving…",
+    "saved": "All changes saved",
+    "failed": "Changes not saved",
+    "conflict": "Version conflict, review needed",
+    "review": "Review",
+    "retry": "Retry"
+  },
+  "drain": {
+    "title": "Leaving this page",
+    "savingBody": "Saving your changes before you leave…",
+    "failedTitle": "Changes could not be saved",
+    "failedBody": "Your changes are still on this page. Retry saving, review them, or stay.",
+    "conflictBody": "Some changes conflict with newer data on the server. Review them before leaving.",
+    "unavailableBody": "Saving is not possible right now. Check your connection and try again.",
+    "retry": "Retry",
+    "review": "Review",
+    "stay": "Stay",
+    "discard": "Discard unsaved changes",
+    "discarding": "Discarding…",
+    "discardFailed": "Could not discard right now. Check your connection and try again."
   }
 }

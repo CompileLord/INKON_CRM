@@ -45,4 +45,25 @@ describe("journals i18n key parity", () => {
     expect(ruJournals.table.sum).toBe("Итог");
     expect(tgJournals.table.sum).toBe("Ҷамъ");
   });
+
+  it("translates the reliability copy instead of leaving English text in ru and tg", () => {
+    const reliabilityPaths = ["cellStatus", "status", "drain", "table.summaryInvalid"];
+    const conflictKeys = ["yourValue", "serverValue", "useServer", "discardMine", "refetch", "entryUnavailable", "noComment"];
+    const readPath = (source: Record<string, any>, path: string): Record<string, string> =>
+      path.split(".").reduce((node, part) => node[part], source) as Record<string, string>;
+
+    for (const path of reliabilityPaths) {
+      const english = readPath(enJournals, path);
+      for (const [locale, translated] of [["ru", readPath(ruJournals, path)], ["tg", readPath(tgJournals, path)]] as const) {
+        for (const key of Object.keys(english)) {
+          expect(translated[key], `${locale}.${path}.${key}`).toBeTruthy();
+          expect(translated[key], `${locale}.${path}.${key} must not be English`).not.toBe(english[key]);
+        }
+      }
+    }
+    for (const key of conflictKeys) {
+      expect(ruJournals.conflict[key as keyof typeof ruJournals.conflict]).not.toBe(enJournals.conflict[key as keyof typeof enJournals.conflict]);
+      expect(tgJournals.conflict[key as keyof typeof tgJournals.conflict]).not.toBe(enJournals.conflict[key as keyof typeof enJournals.conflict]);
+    }
+  });
 });

@@ -4,7 +4,6 @@ import { ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { useJournal, useUpdateJournalExamMaxScore } from "../../lib/journals/hooks";
 import { useJournalAutosave } from "../../lib/journals/useJournalAutosave";
 import { JournalGrid } from "./JournalGrid";
-import { JournalSaveStatus } from "./JournalSaveStatus";
 import { ExamWeightModal } from "./ExamWeightModal";
 import { PeriodStateBadge, type PeriodState } from "./PeriodStateBadge";
 
@@ -26,6 +25,7 @@ interface JournalPeriodSectionProps {
   courseId: number;
   isCurrentPeriod?: boolean;
   defaultExpanded?: boolean;
+  locked?: boolean;
 }
 
 export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
@@ -33,6 +33,7 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
   courseId,
   isCurrentPeriod = false,
   defaultExpanded = false,
+  locked = false,
 }) => {
   const { t } = useTranslation("journals");
   const [expanded, setExpanded] = useState<boolean>(defaultExpanded);
@@ -43,10 +44,8 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
 
   const autosave = useJournalAutosave(expanded ? period.id : undefined, courseId);
 
-  const handleToggleExpand = async () => {
-    if (expanded && autosave.hasPendingEdits) {
-      await autosave.flush();
-    }
+  const handleToggleExpand = () => {
+    if (locked) return;
     setExpanded((prev) => !prev);
   };
 
@@ -72,6 +71,7 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
         onClick={handleToggleExpand}
         className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-row-hover transition-colors select-none"
         role="button"
+        aria-disabled={locked}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -98,17 +98,6 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
         </div>
 
         <div className="flex items-center gap-4">
-          {expanded && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <JournalSaveStatus
-                status={autosave.aggregateStatus}
-                hasPendingEdits={autosave.hasPendingEdits}
-                onSaveNow={autosave.flush}
-                onRetry={autosave.retryManual}
-              />
-            </div>
-          )}
-
           {!expanded && (
             <div className="flex items-center gap-3 text-xs">
               {period.state && <PeriodStateBadge state={period.state} />}
@@ -147,10 +136,9 @@ export const JournalPeriodSection: React.FC<JournalPeriodSectionProps> = ({
               periodType={period.period_type}
               examMaxScore={detail.exam_max_score}
               cellStatus={autosave.cellStatus}
-              conflicts={autosave.conflicts}
-              onResolveConflict={autosave.resolveConflict}
-              onEntryChange={autosave.editEntry}
-              onSummaryChange={autosave.editSummary}
+              summaryStatus={autosave.summaryStatus}
+              onEntryCommand={autosave.applyEntryCommand}
+              onSummaryField={autosave.editSummaryField}
               onOpenExamWeightModal={() => setIsExamModalOpen(true)}
             />
           )}

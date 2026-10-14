@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Users, TrendingUp, CalendarCheck, AlertTriangle, Target } from "lucide-react";
 import { useCourse, useCourseJournals, useCourseJournalMetrics, useCourseProgressChart } from "../lib/courses/hooks";
@@ -9,6 +9,13 @@ import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { Button } from "../components/ui/Button";
 import { JournalScoreChart } from "../components/journals/JournalScoreChart";
 import { JournalPeriodSection } from "../components/journals/JournalPeriodSection";
+import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
+import { JournalConflictReview } from "../components/journals/JournalConflictReview";
+import { JournalDrainDialog } from "../components/journals/JournalDrainDialog";
+import { JournalQueueProvider } from "../lib/journals/JournalQueueProvider";
+import { useJournalQueueRegistry } from "../lib/journals/journalQueueContext";
+import { useJournalQueueStatus } from "../lib/journals/useJournalQueueStatus";
+import { useJournalNavigationGuard } from "../lib/journals/useJournalNavigationGuard";
 import { useTranslation } from "react-i18next";
 
 function todayDateOnly(): string {
@@ -17,7 +24,22 @@ function todayDateOnly(): string {
 }
 
 export function JournalDetail() {
+  return (
+    <JournalQueueProvider>
+      <JournalDetailContent />
+    </JournalQueueProvider>
+  );
+}
+
+function JournalDetailContent() {
   const { t } = useTranslation(["journals", "common"]);
+  const registry = useJournalQueueRegistry();
+  const queueStatus = useJournalQueueStatus();
+  const navigationGuard = useJournalNavigationGuard();
+  const [reviewOpen, setReviewOpen] = useState<boolean>(false);
+
+  if (reviewOpen && queueStatus.conflicts.length === 0) setReviewOpen(false);
+
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const numericId = id ? Number(id) : undefined;
@@ -108,19 +130,35 @@ export function JournalDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="sticky top-0 z-20 bg-cream/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
+      <JournalDrainDialog guard={navigationGuard} onReview={() => setReviewOpen(true)} />
+      <JournalConflictReview
+        open={reviewOpen}
+        conflicts={queueStatus.conflicts}
+        refetching={queueStatus.refetching}
+        onClose={() => setReviewOpen(false)}
+        onResolve={(journalId, conflict, choice) => registry.ownerFor(journalId).resolveConflict(conflict, choice)}
+        onRefetch={(journalId) => void registry.ownerFor(journalId).retryManual()}
+      />
+      <div className="sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 bg-cream/95 backdrop-blur border-b border-border py-3 px-1 -mx-1 flex flex-wrap items-center justify-between gap-4 transition-all">
         <div className="flex items-center gap-4">
           {backLink}
           <div className="h-4 w-px bg-border" />
           <h1 className="text-lg font-bold text-ink">{course.title}</h1>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
+          <JournalSaveStatus
+            status={queueStatus}
+            onRetry={() => void registry.retryAll()}
+            onReview={() => setReviewOpen(true)}
+          />
           {defaultExpandedId && (
             <button
               type="button"
+              data-testid="jump-to-current"
+              disabled={queueStatus.draining}
               onClick={handleJumpToCurrent}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-warm bg-card px-2.5 py-1 text-xs font-semibold text-ink hover:bg-strip transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-warm bg-card px-2.5 py-1 text-xs font-semibold text-ink hover:bg-strip transition-colors shadow-xs disabled:opacity-50 disabled:pointer-events-none"
             >
               <Target size={14} className="text-maroon dark:text-accent" />
               {t("jumpToCurrent")}
@@ -222,6 +260,7 @@ export function JournalDetail() {
                 period={period}
                 isCurrentPeriod={defaultExpandedId === period.id}
                 defaultExpanded={activePeriodId === period.id}
+                locked={queueStatus.draining}
               />
             </div>
           ))}
