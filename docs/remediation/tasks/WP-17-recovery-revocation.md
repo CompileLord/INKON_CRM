@@ -69,6 +69,8 @@ This merges two defects under one credential-epoch root cause without introducin
 
 Audit correction: the first completed candidate accepted grants without expiry and selected the reset account by mutable email. A disposable database probe issued a real student grant, reassigned that email to a superadmin, and the old grant changed the superadmin password. Tests must reject absent/malformed/expired/future or overlong time claims and prevent a grant from following a reassigned email to another account. Cover successful recovery/revocation for privileged and student accounts and issuance at nonzero epochs. Preserve every existing acceptance criterion.
 
+Audit correction 2: a real disposable PostgreSQL interleaving committed auth_version=1 after the downgrade safety count but before DROP COLUMN; downgrade then succeeded and deleted the revocation. Serialize downgrade safety inspection with credential writers before checking epochs. Add a regression using independent database sessions and explicit synchronization, proving a concurrent committed revocation cannot be discarded. Retain safe zero-epoch downgrade/re-upgrade and unsafe nonzero-epoch refusal checks. This is the second independent failed audit; the existing Sol-low executor takes over correction after its WP-13 work completes, preserving the current candidate and all acceptance gates.
+
 ## Tests to write BEFORE the fix
 
 - Before fixing, replay a valid reset grant and use a pre-recovery access token. Test concurrent confirmations, rollback, privileged/student accounts and successful new access/refresh pairs.
