@@ -13,6 +13,12 @@ This folder turns the existing quality, security and performance audits into imp
 - `_work/findings.json`, `work-packages.json`, `source-evidence.md`: saved extraction/planning checkpoints, including qualified source evidence. `_work/baseline.json` and `verification.md` support write-boundary and coverage checks. Build/render scripts reproduce these planning documents; implementation agents must not run them.
 - `results/`: future per-WP test/measurement records; absence means evidence has not yet been recorded.
 
+## Current execution authorization
+
+The user authorized backend remediation execution and, on 2026-10-15, explicitly authorized correcting missing plan paths and architectural gaps before implementation. The orchestrator may revise the active package's exact file scope and instructions first, including necessary new files or bounded extraction into separate logic files. Keep each package focused, preserve its acceptance criteria and verification, and record the reason for a scope correction. Missing plan paths no longer require another permission request under this authorization.
+
+The orchestrator reviews and audits; implementation corrections return to the same executor. Frontend work belongs to the user's separate Claude agent: do not edit frontend files or treat its checks as backend gates. Where a backend contract changes, regenerate the authorized contract and record the precise client synchronization needed. No push, PR publication, deployment or operational data modification is authorized. Preserve the original main checkout's unrelated changes and existing executor identities/worktrees.
+
 ## Strict execution rules
 
 1. **Among remediation planning documents, read only this README and your own WP file.** Each task includes its own evidence, dependencies and interfaces; audit links are provenance, not required extra reading. Read source, tests and applicable repository policy as necessary. WP-62 explicitly authorizes read-only full re-audit context.
