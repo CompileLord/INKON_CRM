@@ -15,7 +15,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 ## Authorized scope correction
 
-The accepted WP-14 safe-deployment controls use a fake gcloud harness with no migration configuration. Once this package correctly refuses missing migration credentials, those safe-context controls need synthetic migration configuration and a harmless fake Alembic command. Authorize only that harness adaptation, preserving every upload-exclusion and guard assertion. No real deployment is authorized.
+The accepted WP-14 safe-deployment controls use a fake gcloud harness with no migration configuration. Once this package correctly refuses missing migration credentials, those safe-context controls need synthetic migration configuration and a harmless fake Alembic command. Authorize only that harness adaptation, preserving every upload-exclusion and guard assertion. No real deployment is authorized. A disposable empty-to-head schema comparison also confirmed that the historical migration `e8f9a0b1c2d3` creates `ix_notification_logs_user_id` and `ix_notification_logs_read_at`, while the ORM omits both. Declare those existing indexes in the model; do not drop deployed indexes or weaken comparison. Import OrgSettings explicitly in the new migration test because Alembic already includes it; no unrelated export changes are needed.
 
 ## Exact files and lines
 
@@ -27,6 +27,7 @@ The accepted WP-14 safe-deployment controls use a fake gcloud harness with no mi
 | [backend/scripts/gcp_deploy.sh:42](../../../backend/scripts/gcp_deploy.sh) | Existing file, anchor line 42; only this WP’s stated behavior may change. |
 | [backend/app/tests/migrations/test_migration_chain.py](../../../backend/app/tests/migrations/test_migration_chain.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp14.py](../../../backend/app/tests/integration/test_remediation_wp14.py) | Adapt only the fake deployment harness for required synthetic migration configuration and a harmless fake Alembic command; retain all private-context and large-list assertions. |
+| [backend/app/models/notification_log.py](../../../backend/app/models/notification_log.py) | Declare only the existing migrated indexes on user_id and read_at so model metadata matches the deployable schema. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [backend/app/tests/integration/test_remediation_wp42.py](../../../backend/app/tests/integration/test_remediation_wp42.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 

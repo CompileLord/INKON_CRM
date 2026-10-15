@@ -1973,7 +1973,8 @@
       "backend/app/tests/migrations/test_migration_chain.py",
       "docs/remediation/STATUS.md",
       "backend/app/tests/integration/test_remediation_wp42.py",
-      "backend/app/tests/integration/test_remediation_wp14.py"
+      "backend/app/tests/integration/test_remediation_wp14.py",
+      "backend/app/models/notification_log.py"
     ],
     "steps": [
       "Add a separate disposable migration job for empty-to-head and prior-revision-to-head with representative data/constraints; keep it independent from metadata.create_all tests.",
