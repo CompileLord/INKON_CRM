@@ -455,7 +455,7 @@
   {
     "id": "KITOB-05-03",
     "title": "Payments registry and detail",
-    "status": "in_progress",
+    "status": "completed",
     "group": "05",
     "dependencies": [
       "KITOB-05-02",
@@ -467,7 +467,7 @@
   {
     "id": "KITOB-05-04",
     "title": "Payment entry and completion",
-    "status": "pending",
+    "status": "completed",
     "group": "05",
     "dependencies": [
       "KITOB-05-03"
@@ -478,7 +478,7 @@
   {
     "id": "KITOB-05-05",
     "title": "/audit registry and inspector",
-    "status": "pending",
+    "status": "in_progress",
     "group": "05",
     "dependencies": [
       "KITOB-05-04"
