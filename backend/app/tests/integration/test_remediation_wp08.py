@@ -74,6 +74,65 @@ async def seed_reversal_scenario(
     return payment.id, charge.id, enrollment.id
 
 
+async def insert_zero_id_reversal(
+    session: AsyncSession,
+    payment_id: int,
+    student: User,
+    administrator: User,
+    reversal_type: LedgerEntryType,
+    amount: Decimal,
+    is_cash_out: bool | None,
+) -> LedgerEntry:
+    payment: LedgerEntry | None = await session.get(LedgerEntry, payment_id)
+    assert payment is not None
+    reversal = LedgerEntry(
+        id=0,
+        student_id=student.id,
+        type=reversal_type,
+        amount=amount,
+        method=payment.method if is_cash_out else None,
+        is_cash_out=is_cash_out,
+        occurred_at=datetime.now(timezone.utc),
+        recorded_by_id=administrator.id,
+        reverses_entry_id=payment_id,
+        reason_code="WP08-ZERO-ID",
+    )
+    session.add(reversal)
+    await session.flush()
+    assert reversal.id == 0
+
+    amount_to_unapply: Decimal = amount
+    allocations: list[Allocation] = list(
+        (
+            await session.execute(
+                select(Allocation)
+                .where(
+                    Allocation.ledger_entry_id == payment_id,
+                    Allocation.reversed_by_entry_id.is_(None),
+                )
+                .order_by(Allocation.id.desc())
+            )
+        ).scalars()
+    )
+    for allocation in allocations:
+        if amount_to_unapply <= Decimal("0.00"):
+            break
+        allocation.reversed_by_entry_id = reversal.id
+        if allocation.amount > amount_to_unapply:
+            session.add(
+                Allocation(
+                    ledger_entry_id=payment_id,
+                    charge_id=allocation.charge_id,
+                    amount=allocation.amount - amount_to_unapply,
+                )
+            )
+            amount_to_unapply = Decimal("0.00")
+        else:
+            amount_to_unapply -= allocation.amount
+    await session.commit()
+    return reversal
+
+
 async def reversal_snapshot(
     session: AsyncSession,
     payment_id: int,
@@ -327,6 +386,173 @@ async def test_void_after_refund_is_rejected_without_financial_or_audit_changes(
     ] = await reversal_snapshot(
         db_session, payment_id, charge_id
     )
+    assert during_rejection == before
+    await db_session.rollback()
+    after_rollback: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+    assert after_rollback == before
+
+
+@pytest.mark.parametrize("to_wallet", [False, True], ids=["cash", "wallet"])
+@pytest.mark.parametrize("refund_amount", [Decimal("25.00"), Decimal("100.00")], ids=["partial", "full"])
+@pytest.mark.asyncio
+async def test_zero_id_void_rejects_refund_without_financial_or_audit_changes(
+    to_wallet: bool,
+    refund_amount: Decimal,
+    db_session: AsyncSession,
+    test_student: User,
+    test_mentor: User,
+    test_admin: User,
+) -> None:
+    payment_id, charge_id, _ = await seed_reversal_scenario(
+        db_session, test_student, test_mentor, test_admin
+    )
+    await insert_zero_id_reversal(
+        db_session,
+        payment_id,
+        test_student,
+        test_admin,
+        LedgerEntryType.VOID,
+        Decimal("100.00"),
+        None,
+    )
+    before: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+
+    with pytest.raises(HTTPException) as rejection:
+        await FinanceService(db_session).refund_payment(
+            payment_id,
+            RefundPaymentPayload(
+                amount=refund_amount,
+                reason_code="WP08-ZERO-ID-REJECTED",
+                to_wallet=to_wallet,
+            ),
+            test_admin,
+        )
+    assert rejection.value.status_code == 400
+    during_rejection: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+    assert during_rejection == before
+    await db_session.rollback()
+    after_rollback: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+    assert after_rollback == before
+
+
+@pytest.mark.asyncio
+async def test_zero_id_void_rejects_a_second_void_without_financial_or_audit_changes(
+    db_session: AsyncSession,
+    test_student: User,
+    test_mentor: User,
+    test_admin: User,
+) -> None:
+    payment_id, charge_id, _ = await seed_reversal_scenario(
+        db_session, test_student, test_mentor, test_admin
+    )
+    await insert_zero_id_reversal(
+        db_session,
+        payment_id,
+        test_student,
+        test_admin,
+        LedgerEntryType.VOID,
+        Decimal("100.00"),
+        None,
+    )
+    before: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+
+    with pytest.raises(HTTPException) as rejection:
+        await FinanceService(db_session).void_payment(
+            payment_id, VoidPaymentPayload(reason_code="WP08-ZERO-ID-REJECTED"), test_admin
+        )
+    assert rejection.value.status_code == 400
+    during_rejection: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+    assert during_rejection == before
+    await db_session.rollback()
+    after_rollback: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+    assert after_rollback == before
+
+
+@pytest.mark.parametrize("is_cash_out", [False, True], ids=["wallet-refund", "cash-refund"])
+@pytest.mark.parametrize("refund_amount", [Decimal("25.00"), Decimal("100.00")], ids=["partial", "full"])
+@pytest.mark.asyncio
+async def test_zero_id_refund_rejects_void_without_financial_or_audit_changes(
+    is_cash_out: bool,
+    refund_amount: Decimal,
+    db_session: AsyncSession,
+    test_student: User,
+    test_mentor: User,
+    test_admin: User,
+) -> None:
+    payment_id, charge_id, _ = await seed_reversal_scenario(
+        db_session, test_student, test_mentor, test_admin
+    )
+    await insert_zero_id_reversal(
+        db_session,
+        payment_id,
+        test_student,
+        test_admin,
+        LedgerEntryType.REFUND,
+        refund_amount,
+        is_cash_out,
+    )
+    before: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
+
+    with pytest.raises(HTTPException) as rejection:
+        await FinanceService(db_session).void_payment(
+            payment_id, VoidPaymentPayload(reason_code="WP08-ZERO-ID-REJECTED"), test_admin
+        )
+    assert rejection.value.status_code == 400
+    during_rejection: tuple[
+        list[tuple[object, ...]],
+        list[tuple[object, ...]],
+        ChargeStatus,
+        Decimal,
+        list[tuple[object, ...]],
+    ] = await reversal_snapshot(db_session, payment_id, charge_id)
     assert during_rejection == before
     await db_session.rollback()
     after_rollback: tuple[

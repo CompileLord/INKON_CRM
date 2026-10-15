@@ -1,7 +1,6 @@
 import asyncio
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,13 +20,9 @@ WORKFLOW_PATH: Path = BACKEND_ROOT.parent / ".github/workflows/deploy-backend.ym
 
 
 class ConfigurationProbe:
-    def __init__(self) -> None:
+    def __init__(self, clean_directory: Path) -> None:
         self.backend_root: Path = BACKEND_ROOT
-        self.clean_directory: Path = Path("/scratch") / f"wp11-clean-{uuid4().hex}"
-        self.clean_directory.mkdir(parents=True)
-
-    def close(self) -> None:
-        shutil.rmtree(self.clean_directory, ignore_errors=True)
+        self.clean_directory: Path = clean_directory
 
     def environment(self, values: Mapping[str, str]) -> dict[str, str]:
         return {
@@ -168,12 +163,17 @@ class MigrationDatabaseProbe:
 
 
 @pytest.fixture
-def configuration_probe() -> ConfigurationProbe:
-    probe: ConfigurationProbe = ConfigurationProbe()
-    try:
-        yield probe
-    finally:
-        probe.close()
+def configuration_probe(tmp_path: Path) -> ConfigurationProbe:
+    return ConfigurationProbe(tmp_path)
+
+
+def test_configuration_probe_uses_pytest_managed_temporary_directory(
+    configuration_probe: ConfigurationProbe,
+    tmp_path: Path,
+) -> None:
+    assert configuration_probe.clean_directory == tmp_path
+    assert configuration_probe.clean_directory.is_dir()
+    assert os.access(configuration_probe.clean_directory, os.W_OK)
 
 
 def workflow_environment_names() -> set[str]:

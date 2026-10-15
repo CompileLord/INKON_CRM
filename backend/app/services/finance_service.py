@@ -159,34 +159,30 @@ class FinanceService:
         payment_entry: LedgerEntry,
         reversal_type: LedgerEntryType,
     ) -> None:
-        void_exists: bool = bool(
-            await self.db.scalar(
-                select(LedgerEntry.id)
-                .where(
-                    LedgerEntry.reverses_entry_id == payment_entry.id,
-                    LedgerEntry.type == LedgerEntryType.VOID,
-                )
-                .limit(1)
+        void_id: int | None = await self.db.scalar(
+            select(LedgerEntry.id)
+            .where(
+                LedgerEntry.reverses_entry_id == payment_entry.id,
+                LedgerEntry.type == LedgerEntryType.VOID,
             )
+            .limit(1)
         )
-        if void_exists:
+        if void_id is not None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Payment has already been voided",
             )
 
         if reversal_type == LedgerEntryType.VOID:
-            refund_exists: bool = bool(
-                await self.db.scalar(
-                    select(LedgerEntry.id)
-                    .where(
-                        LedgerEntry.reverses_entry_id == payment_entry.id,
-                        LedgerEntry.type == LedgerEntryType.REFUND,
-                    )
-                    .limit(1)
+            refund_id: int | None = await self.db.scalar(
+                select(LedgerEntry.id)
+                .where(
+                    LedgerEntry.reverses_entry_id == payment_entry.id,
+                    LedgerEntry.type == LedgerEntryType.REFUND,
                 )
+                .limit(1)
             )
-            if refund_exists:
+            if refund_id is not None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Payment has been refunded and can no longer be voided",
