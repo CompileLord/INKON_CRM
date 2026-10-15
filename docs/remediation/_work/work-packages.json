@@ -955,6 +955,7 @@
       "backend/app/core/config.py",
       "backend/.env.example",
       "backend/app/tests/conftest.py",
+      "backend/app/tests/integration/test_remediation_wp09.py",
       "backend/app/tests/integration/test_remediation_wp22.py",
       "docs/remediation/STATUS.md"
     ],
