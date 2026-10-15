@@ -337,18 +337,15 @@ async def populate_demo_data(
             }
         ]
 
-        created_courses: List[Course] = []
+        created_course_ids: Dict[int, int] = {}
         enrollment_service: EnrollmentService = EnrollmentService(session)
 
         for cdef in course_definitions:
             img_bytes: bytes = staged_assets[f"course:{cdef['id']}"]
-            photo_path: str = save_course_photo(cdef["id"], img_bytes, storage_root)
 
             course: Course = Course(
-                id=cdef["id"],
                 title=cdef["title"],
                 description=cdef["description"],
-                photo_path=photo_path,
                 start_date=cdef["start_date"],
                 end_date=cdef["end_date"],
                 exam_type=cdef["exam_type"],
@@ -358,6 +355,8 @@ async def populate_demo_data(
             )
             session.add(course)
             await session.flush()
+            course.photo_path = save_course_photo(course.id, img_bytes, storage_root)
+            created_course_ids[cdef["id"]] = course.id
 
             for sched_data in cdef["schedules"]:
                 sched: CourseSchedule = CourseSchedule(
@@ -389,7 +388,6 @@ async def populate_demo_data(
                     current_user=admin_user
                 )
 
-            created_courses.append(course)
             logger.info(f"Course '{course.title}' created with real photo and {len(assigned_students)} enrolled students.")
 
         await session.commit()
@@ -466,7 +464,7 @@ async def populate_demo_data(
         admin_user = admin_res.scalars().first()
 
         for cdef in course_definitions:
-            course_id: int = cdef["id"]
+            course_id: int = created_course_ids[cdef["id"]]
             assigned_students: List[User] = student_users[cdef["student_slice"]]
             
             for idx, student in enumerate(assigned_students):
