@@ -17,6 +17,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 On 2026-10-15 the user authorized correcting missing plan paths before implementation. Source inspection found two additional active ARQ producers in the email and document services that still construct host/port-only connections. Their bounded connection changes are included below so all producers can satisfy the existing shared-endpoint acceptance criterion. No deployment or operational service changes are authorized by this package execution.
 
+Compatibility follow-up: an actual deployment-image Python 3.12.15 import fails with NameError at the class’s self-referential return annotation, while the Conda Python 3.14 suite passed. Correct only the Redis module’s supported-runtime typing/import compatibility and verify the actual Python 3.12 image as well as Conda base. Preserve all TLS, authentication, pool-ownership and shared-DSN invariants. Actual Python 3.12 collection also exposed eager self-reference annotations in RedisNamespacePipeline in conftest and FakeSummaryResult in the allowed WP-13 test; correct their typing compatibility without changing test behavior. Two earlier independent Luna audit failures (portable TLS fixtures and pool ownership) require Sol-low correction under AGENTS.md §4.7. Preserve original owner /root/wp05_executor and accepted 8e54808 history; follow-up owner /root/wp14_sol_correction.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -31,6 +33,8 @@ On 2026-10-15 the user authorized correcting missing plan paths before implement
 | [backend/.env.example:1](../../../backend/.env.example) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/config/redis.conf.example](../../../backend/config/redis.conf.example) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp13.py](../../../backend/app/tests/integration/test_remediation_wp13.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/conftest.py](../../../backend/app/tests/conftest.py) | Quote only self-referential type annotations that prevent collection under deployment Python 3.12; preserve isolation, fixture and namespace behavior. |
+| [backend/app/tests/integration/test_remediation_wp12.py](../../../backend/app/tests/integration/test_remediation_wp12.py) | Quote only LocalStartTLSServer self-return annotation required for deployment Python 3.12 collection; preserve SMTP behavior and coverage. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
