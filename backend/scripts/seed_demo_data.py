@@ -497,6 +497,28 @@ async def seed_demo_data() -> None:
         await session.commit()
         logger.info("Financial payments seeded successfully.")
 
+        sequence_rows = await session.execute(text("""
+            SELECT
+                t.relname AS table_name,
+                c.attname AS column_name,
+                s.relname AS sequence_name
+            FROM pg_class s
+            JOIN pg_depend d ON d.objid = s.oid
+            JOIN pg_class t ON d.refobjid = t.oid
+            JOIN pg_attribute c ON (d.refobjid, d.refobjsubid) = (c.attrelid, c.attnum)
+            WHERE s.relkind = 'S'
+            ORDER BY t.relname;
+        """))
+        for table_name, column_name, sequence_name in sequence_rows.fetchall():
+            max_res = await session.execute(text(f'SELECT MAX("{column_name}") FROM "{table_name}"'))
+            max_val = max_res.scalar()
+            if max_val is not None and max_val > 0:
+                await session.execute(text(f"SELECT setval('{sequence_name}', {max_val}, true)"))
+            else:
+                await session.execute(text(f"SELECT setval('{sequence_name}', 1, false)"))
+        await session.commit()
+        logger.info("Database sequences synchronized successfully.")
+
 if __name__ == "__main__":
     try:
         asyncio.run(seed_demo_data())
