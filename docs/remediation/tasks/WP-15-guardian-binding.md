@@ -25,6 +25,8 @@ The user assigned this remediation session backend-only ownership while a separa
 |---|---|
 | [backend/app/schemas/user.py:32](../../../backend/app/schemas/user.py) | Existing file, anchor line 32; only this WP’s stated behavior may change. |
 | [backend/app/services/user_service.py:10](../../../backend/app/services/user_service.py) | Existing file, anchor line 10; only this WP’s stated behavior may change. |
+| [backend/app/repositories/interfaces/user_repository.py](../../../backend/app/repositories/interfaces/user_repository.py) | Add the narrow typed guardian-candidate lookup/locking contract used by the binding workflow. |
+| [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement configured parent-phone lookup with deterministic row locking; retain SQL in the repository layer. |
 | [backend/app/telegram_bot/handlers/start.py:25](../../../backend/app/telegram_bot/handlers/start.py) | Existing file, anchor line 25; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp15.py](../../../backend/app/tests/integration/test_remediation_wp15.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
@@ -57,7 +59,7 @@ Snapshot excerpt from `backend/app/schemas/user.py`:
 
 1. Remove guardian chat/phone from ordinary self-update schema and assignments while preserving authorized administrator provisioning.
 2. Match bot contact to the configured parent_phone, verify sender ownership and private chat, and refuse replacement of an existing binding unless an administrator explicitly resets it.
-3. Normalize lookup consistently; document safe initial-binding/rebinding behavior. A new invitation product is not required for this bounded fix.
+3. Normalize lookup consistently; document safe initial-binding/rebinding behavior. Put the guardian candidate query and deterministic row locks in the user repository behind its typed interface, with policy and binding mutation coordinated by the service. Test concurrent attempts against independent PostgreSQL sessions so existing bindings cannot be replaced by a losing request. A new invitation product is not required for this bounded fix.
 
 ## Tests to write BEFORE the fix
 
