@@ -28,7 +28,13 @@ async def get_students(
             detail="Not enough permissions"
         )
     user_service = UserService(db)
-    return await user_service.get_students(page=pagination.page, page_size=pagination.page_size, search=search)
+    mentor_id: int | None = current_user.id if current_user.role == UserRole.MENTOR else None
+    return await user_service.get_students(
+        page=pagination.page,
+        page_size=pagination.page_size,
+        search=search,
+        mentor_id=mentor_id,
+    )
 
 
 @router.get("/me/profile", response_model=StudentProfileResponse)

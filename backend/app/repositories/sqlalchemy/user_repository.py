@@ -1,7 +1,9 @@
 from datetime import date
-from typing import Any, Dict, List, Optional
-from sqlalchemy import case, func, or_, select
+from typing import Any, Dict, List, Optional, Sequence
+from sqlalchemy import Select, case, func, or_, select
+from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.selectable import Exists
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -27,16 +29,63 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def get_guardian_binding_candidates(
+        self,
+        normalized_phone_values: Sequence[str],
+    ) -> list[User]:
+        if not normalized_phone_values:
+            return []
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(
+                User.role == UserRole.STUDENT,
+                User.parent_phone.in_(normalized_phone_values),
+                User.is_deleted.is_(False),
+            )
+            .order_by(User.id)
+            .with_for_update()
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
+        students: list[User] = list(result.scalars().all())
+        return students
+
+    async def update_guardian_bindings(
+        self,
+        students: Sequence[User],
+        telegram_chat_id: int,
+    ) -> None:
+        for student in students:
+            student.parent_telegram_chat_id = telegram_chat_id
+        await self.session.flush()
+
     async def get_students_list(
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        mentor_id: int | None = None,
     ) -> dict:
-        query = select(User).filter(User.role == UserRole.STUDENT, User.is_deleted == False)
+        query: Select[tuple[User]] = select(User).where(
+            User.role == UserRole.STUDENT,
+            User.is_deleted.is_(False),
+        ).order_by(User.id)
+        if mentor_id is not None:
+            owned_course_enrollment: Exists = (
+                select(Enrollment.id)
+                .join(Course, Enrollment.course_id == Course.id)
+                .where(
+                    Enrollment.student_id == User.id,
+                    Enrollment.is_deleted.is_(False),
+                    Course.is_deleted.is_(False),
+                    Course.mentor_id == mentor_id,
+                )
+                .correlate(User)
+                .exists()
+            )
+            query = query.where(owned_course_enrollment)
         if search:
             search_pattern = f"%{search}%"
-            query = query.filter(
+            query = query.where(
                 or_(
                     User.first_name.ilike(search_pattern),
                     User.last_name.ilike(search_pattern),

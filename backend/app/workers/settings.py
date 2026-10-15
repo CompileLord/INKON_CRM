@@ -1,6 +1,7 @@
-from arq.connections import RedisSettings
 from arq import cron
 from app.core.config import settings
+from app.core.redis import RedisConnectionConfiguration
+from arq.connections import RedisSettings
 from app.workers.tasks import (
     send_verification_email_task,
     send_telegram_message,
@@ -13,10 +14,9 @@ from app.workers.tasks import (
 
 
 class WorkerSettings:
-    redis_settings = RedisSettings(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT
-    )
+    redis_settings: RedisSettings = RedisConnectionConfiguration.from_url(
+        settings.REDIS_URL
+    ).create_arq_settings()
     functions = [
         send_verification_email_task,
         send_telegram_message,
