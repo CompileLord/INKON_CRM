@@ -12,6 +12,7 @@ import { StudentProfile } from "./StudentProfile";
 import { formatNumber } from "../i18n/formatters";
 import * as userHooks from "../lib/users/hooks";
 import * as userEndpoints from "../lib/users/endpoints";
+import * as documentEndpoints from "../lib/documents/endpoints";
 import * as enrollmentEndpoints from "../lib/enrollments/endpoints";
 import * as enrollmentHooks from "../lib/enrollments/hooks";
 import type { StudentProfileResponse, User } from "../lib/users/types";
@@ -200,6 +201,7 @@ function CourseReturnPage() {
 beforeEach(async () => {
   await i18n.changeLanguage("en");
   useAuthStore.setState({ role: "superadmin", userId: 1 });
+  vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
   vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
     return {
       data: mockProfileResponse,

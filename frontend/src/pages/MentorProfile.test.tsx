@@ -8,6 +8,7 @@ import i18n from "../i18n";
 import { MentorProfile } from "./MentorProfile";
 import { useAuthStore } from "../store/authStore";
 import * as endpoints from "../lib/users/endpoints";
+import * as documentEndpoints from "../lib/documents/endpoints";
 import { AuthApiError } from "../lib/auth/errors";
 import type { MentorProfileResponse, MentorAnalyticsResponse, User } from "../lib/users/types";
 import { clearSavedMentorsReturnContext } from "../lib/users/returnContext";
@@ -38,6 +39,7 @@ beforeEach(async () => {
   clearSavedMentorsReturnContext();
   vi.spyOn(endpoints, "getMentorProfile").mockImplementation(async id => ({ ...profile, user: { ...mentor, id } }));
   vi.spyOn(endpoints, "getMentorAnalytics").mockResolvedValue(analytics);
+  vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
 });
 afterEach(async () => {
   cleanup();
