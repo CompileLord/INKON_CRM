@@ -12,6 +12,10 @@ Deliver verification mail after its business transaction commits. One bounded im
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+The outbox service must depend on a narrow repository protocol; SQL claiming, lease updates and settlement belong in its SQLAlchemy implementation. Add the two exact repository files below before implementation, keeping transaction ownership in the worker/request boundary and SMTP outside every database checkout. Preserve the accepted recovery epochs, immutable reset identity, SMTP TLS/deadline and Redis connection contract. No additional settings, dependencies, schemas or existing tests may be changed without a further bounded scope revision.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -23,6 +27,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/services/user_service.py:41](../../../backend/app/services/user_service.py) | Existing file, anchor line 41; only this WP’s stated behavior may change. |
 | [backend/app/models/outbox_event.py](../../../backend/app/models/outbox_event.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/models/__init__.py:1](../../../backend/app/models/__init__.py) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
+| [backend/app/repositories/interfaces/outbox_repository.py](../../../backend/app/repositories/interfaces/outbox_repository.py) | NEW narrow protocol for durable intents, bounded claims and settlement. |
+| [backend/app/repositories/sqlalchemy/outbox_repository.py](../../../backend/app/repositories/sqlalchemy/outbox_repository.py) | NEW SQL implementation; atomic claims, leases and payload cleanup belong here. |
 | [backend/app/services/outbox_service.py](../../../backend/app/services/outbox_service.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/workers/outbox.py](../../../backend/app/workers/outbox.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/workers/settings.py:15](../../../backend/app/workers/settings.py) | Existing file, anchor line 15; only this WP’s stated behavior may change. |

@@ -740,6 +740,8 @@
       "backend/app/services/user_service.py",
       "backend/app/models/outbox_event.py",
       "backend/app/models/__init__.py",
+      "backend/app/repositories/interfaces/outbox_repository.py",
+      "backend/app/repositories/sqlalchemy/outbox_repository.py",
       "backend/app/services/outbox_service.py",
       "backend/app/workers/outbox.py",
       "backend/app/workers/settings.py",
