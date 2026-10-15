@@ -400,7 +400,7 @@
   {
     "id": "KITOB-04-06",
     "title": "Period settings",
-    "status": "in_progress",
+    "status": "completed",
     "group": "04",
     "dependencies": [
       "KITOB-04-05"
@@ -411,7 +411,7 @@
   {
     "id": "KITOB-04-07",
     "title": "Progress",
-    "status": "pending",
+    "status": "in_progress",
     "group": "04",
     "dependencies": [
       "KITOB-04-06"
