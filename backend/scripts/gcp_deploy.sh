@@ -19,6 +19,21 @@ if ! command -v gcloud &>/dev/null; then
     exit 1
 fi
 
+if [ ! -f ".gcloudignore" ]; then
+    echo "Error: .gcloudignore is required before building or deploying."
+    exit 1
+fi
+
+if ! UPLOAD_FILE_LIST=$(gcloud meta list-files-for-upload .); then
+    echo "Error: Could not verify the Google Cloud Build upload context."
+    exit 1
+fi
+
+if grep -Eq '(^|/)(storage|\.seed_cache)(/|$)' <<< "$UPLOAD_FILE_LIST"; then
+    echo "Error: Storage uploads or seed caches are present in the Cloud Build upload context."
+    exit 1
+fi
+
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "(unset)" ]; then
     echo "Error: No GCP Project configured in gcloud."

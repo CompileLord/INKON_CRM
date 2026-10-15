@@ -13,3 +13,5 @@ htmlcov
 .env.*
 tests
 *.log
+storage/**
+**/.seed_cache/**
