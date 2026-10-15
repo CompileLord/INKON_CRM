@@ -216,7 +216,7 @@ class FakeDocumentDatabase:
 
 
 class FakeSummaryResult:
-    def scalars(self) -> FakeSummaryResult:
+    def scalars(self) -> "FakeSummaryResult":
         return self
 
     def first(self) -> SimpleNamespace:

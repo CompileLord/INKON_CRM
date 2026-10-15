@@ -13,6 +13,12 @@ Make password recovery single-use and invalidate old access. One bounded impleme
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+Source inspection on 2026-10-15 found that atomic user locking belongs in the repository contract and implementation. These paths are added before implementation to keep SQL out of authentication workflows and serialize reset with login/refresh issuance. Preserve existing token rotation and guardian/directory behavior. The legacy WP-06 full-access test manually signs a token; add its current auth_version claim so it still tests valid full access rather than weakening epoch validation.
+
+The new head exposes two existing test assumptions. The WP-03 valid reset fixture needs its current epoch. WP-11’s database-configuration offline probe must retain its previously working boundary `c9e3f0a1b2c4` before the database-dependent WP-07 preflight, rather than moving with each new head. Its online test must still upgrade to the actual current head. Never modify the applied WP-07 migration or claim full-chain offline support. WP-27 has released this test file; its completed lifecycle changes remain frozen for independent audit.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -23,8 +29,13 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/core/deps.py:14](../../../backend/app/core/deps.py) | Existing file, anchor line 14; only this WP’s stated behavior may change. |
 | [backend/app/services/auth_service.py:194](../../../backend/app/services/auth_service.py) | Existing file, anchor line 194; only this WP’s stated behavior may change. |
 | [backend/app/models/user.py:9](../../../backend/app/models/user.py) | Existing file, anchor line 9; only this WP’s stated behavior may change. |
+| [backend/app/repositories/interfaces/user_repository.py](../../../backend/app/repositories/interfaces/user_repository.py) | Add narrowly typed user-locking operations for credential workflows. |
+| [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement user locking and fresh epoch reads; preserve existing guardian and directory queries. |
 | [backend/alembic/versions/rwp17_auth_version.py](../../../backend/alembic/versions/rwp17_auth_version.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp17.py](../../../backend/app/tests/integration/test_remediation_wp17.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_remediation_wp06.py](../../../backend/app/tests/integration/test_remediation_wp06.py) | Keep valid full-access and reset fixtures aligned with the current epoch and immutable reset subject; preserve their successful access, identity and setup-scope assertions. |
+| [backend/app/tests/integration/test_remediation_wp03.py](../../../backend/app/tests/integration/test_remediation_wp03.py) | Bind the manually signed valid reset fixture to the persisted user ID and current epoch; preserve identity-bound refresh assertions. |
+| [backend/app/tests/integration/test_remediation_wp11.py](../../../backend/app/tests/integration/test_remediation_wp11.py) | Keep its database-only offline initialization probe at the historical offline-renderable boundary before WP-07, independent of later heads; preserve full current-head online migration checks and all other tests. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -52,9 +63,13 @@ Snapshot excerpt from `backend/app/services/auth_service.py`:
 ## Step-by-step change
 
 1. Add persisted auth_version and require it in newly issued access and reset grants. Lock/version the user during reset confirmation and increment the epoch atomically with password change and refresh revocation.
-2. Bind reset grant to subject, purpose, expiry and current epoch; only one concurrent reset may match and advance that epoch. Update all token issuance paths and reject legacy/missing epochs after the coordinated cutover.
+2. Bind reset grant to immutable persisted user ID, purpose, strict integer issue/expiry times within the five-minute grant lifetime, and current epoch; only one concurrent reset may match and advance that epoch. Update all token issuance paths and reject legacy/missing epochs after the coordinated cutover.
 
 This merges two defects under one credential-epoch root cause without introducing a second reset storage system. Expect reauthentication during rollout; do not roll back by accepting old epochs. Existing test helpers call create_access_token with two arguments. A generator default epoch of zero may preserve new-user fixtures, but every runtime issuance must explicitly pass the loaded user epoch and validation must reject missing epochs; never add a permissive validation fallback to satisfy tests.
+
+Audit correction: the first completed candidate accepted grants without expiry and selected the reset account by mutable email. A disposable database probe issued a real student grant, reassigned that email to a superadmin, and the old grant changed the superadmin password. Tests must reject absent/malformed/expired/future or overlong time claims and prevent a grant from following a reassigned email to another account. Cover successful recovery/revocation for privileged and student accounts and issuance at nonzero epochs. Preserve every existing acceptance criterion.
+
+Audit correction 2: a real disposable PostgreSQL interleaving committed auth_version=1 after the downgrade safety count but before DROP COLUMN; downgrade then succeeded and deleted the revocation. Serialize downgrade safety inspection with credential writers before checking epochs. Add a regression using independent database sessions and explicit synchronization, proving a concurrent committed revocation cannot be discarded. Retain safe zero-epoch downgrade/re-upgrade and unsafe nonzero-epoch refusal checks. This is the second independent failed audit; the existing Sol-low executor takes over correction after its WP-13 work completes, preserving the current candidate and all acceptance gates.
 
 ## Tests to write BEFORE the fix
 
@@ -72,12 +87,7 @@ One reset grant cannot change the password twice; all prior access and refresh c
 
 ## How to verify
 
-Activate the repository Conda **base** environment (never create a venv):
-
-```bash
-source /workspace/miniconda3/etc/profile.d/conda.sh
-conda activate base
-```
+Use the available system environment, as permitted by current AGENTS.md. Backend verification must use the Python version declared by `backend/Dockerfile` (currently Python 3.12); Conda is optional. A passing suite under another Python version does not establish deployment compatibility.
 
 Before and after the change, using the dedicated disposable runtime from WP-01/WP-09:
 

@@ -57,27 +57,27 @@ class RedisNamespacePipeline:
         self._pipeline: Pipeline = pipeline
         self._prefix: str = prefix
 
-    def delete(self, *keys: str) -> RedisNamespacePipeline:
+    def delete(self, *keys: str) -> "RedisNamespacePipeline":
         self._pipeline.delete(*(f"{self._prefix}{key}" for key in keys))
         return self
 
-    def expire(self, key: str, seconds: int) -> RedisNamespacePipeline:
+    def expire(self, key: str, seconds: int) -> "RedisNamespacePipeline":
         self._pipeline.expire(f"{self._prefix}{key}", seconds)
         return self
 
-    def get(self, key: str) -> RedisNamespacePipeline:
+    def get(self, key: str) -> "RedisNamespacePipeline":
         self._pipeline.get(f"{self._prefix}{key}")
         return self
 
-    def incr(self, key: str, amount: int = 1) -> RedisNamespacePipeline:
+    def incr(self, key: str, amount: int = 1) -> "RedisNamespacePipeline":
         self._pipeline.incr(f"{self._prefix}{key}", amount)
         return self
 
-    def set(self, key: str, value: Any, **kwargs: Any) -> RedisNamespacePipeline:
+    def set(self, key: str, value: Any, **kwargs: Any) -> "RedisNamespacePipeline":
         self._pipeline.set(f"{self._prefix}{key}", value, **kwargs)
         return self
 
-    def setex(self, key: str, seconds: int, value: Any) -> RedisNamespacePipeline:
+    def setex(self, key: str, seconds: int, value: Any) -> "RedisNamespacePipeline":
         self._pipeline.setex(f"{self._prefix}{key}", seconds, value)
         return self
 
@@ -129,7 +129,7 @@ class RedisNamespaceCleanup:
         if keys:
             await self.client.delete(*keys)
 
-    async def __aenter__(self) -> RedisNamespaceCleanup:
+    async def __aenter__(self) -> "RedisNamespaceCleanup":
         await self.clean()
         return self
 

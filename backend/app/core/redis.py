@@ -21,7 +21,7 @@ class RedisConnectionConfiguration:
     connection_options: Mapping[str, Any] = field(repr=False)
 
     @classmethod
-    def from_url(cls, redis_url: str) -> RedisConnectionConfiguration:
+    def from_url(cls, redis_url: str) -> "RedisConnectionConfiguration":
         parsed_url = urlsplit(redis_url)
         if parsed_url.scheme not in {"redis", "rediss"}:
             raise ValueError("Redis URL must use redis or rediss")
