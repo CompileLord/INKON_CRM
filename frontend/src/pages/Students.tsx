@@ -362,67 +362,57 @@ export function Students() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-ink sm:text-[28px]">{t("title")}</h1>
+          {isLoading && !isCurrentParamsMatchingLastGood ? (
+            <div className="h-6 w-10 animate-pulse rounded-full bg-beige" />
+          ) : typeof effectiveData?.total === "number" ? (
+            <span
+              title={t("table.total")}
+              aria-label={`${t("table.total")}: ${formatNumber(effectiveData.total, i18n.language)}`}
+              className="inline-flex min-h-6 items-center rounded-full bg-strip px-2.5 text-sm font-medium text-muted tabular-nums"
+            >
+              {formatNumber(effectiveData.total, i18n.language)}
+            </span>
+          ) : null}
           {isFetching && !isLoading && (
             <div className="flex items-center">
               <BrandActivityIndicator size={18} />
             </div>
           )}
         </div>
-        {isLoading && !isCurrentParamsMatchingLastGood ? (
-          <div className="h-5 w-24 animate-pulse rounded-md bg-beige" />
-        ) : typeof effectiveData?.total === "number" ? (
-          <span className="text-sm text-muted tabular-nums">
-            {t("common:total")}: {formatNumber(effectiveData.total, i18n.language)}
-          </span>
-        ) : null}
-      </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full sm:w-auto sm:min-w-[320px] sm:max-w-[480px] sm:flex-1">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            ref={searchInputRef}
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t("searchPlaceholder")}
-            aria-label={t("searchPlaceholder")}
-            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card py-2.5 pl-10 pr-4 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
-          />
-        </div>
-
-        <div className="flex w-full sm:w-auto items-center justify-between gap-3 sm:ml-auto">
-          <select
-            value={pageSize}
-            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
-            aria-label={t("common:page")}
-            className="min-h-[48px] rounded-xl border border-control-border bg-card px-3 py-2 text-base text-ink tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size} / {t("common:page")}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          <div className="relative min-w-0 flex-1 sm:max-w-[480px]">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="w-full min-h-[48px] rounded-xl border border-control-border bg-card py-2.5 pl-10 pr-4 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
+            />
+          </div>
 
           <Button
             ref={addStudentTriggerRef}
             type="button"
             variant="primary"
+            aria-label={t("addStudent")}
             onClick={() => {
               activeTriggerRef.current = addStudentTriggerRef.current;
               setPanel({ mode: "create" });
             }}
-            className="min-h-[48px] whitespace-nowrap"
+            className="min-h-[48px] shrink-0 whitespace-nowrap sm:ml-auto"
           >
-            <Plus size={16} className="mr-1.5" />
-            {t("addStudent")}
+            <Plus size={16} className="sm:mr-1.5" />
+            <span className="hidden sm:inline">{t("addStudent")}</span>
           </Button>
         </div>
       </div>
@@ -439,6 +429,8 @@ export function Students() {
         hasLoadedOnce={hasLoadedOnce}
         onRetry={() => refetch()}
         onPageChange={handlePageChange}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={handlePageSizeChange}
         onEdit={(student, trigger) => {
           activeTriggerRef.current = trigger ?? null;
           handleStudentNavigate(student);

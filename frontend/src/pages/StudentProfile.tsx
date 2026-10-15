@@ -1,21 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  Cake,
-  Mail,
-  Phone,
-  Key,
-  Eye,
-  EyeOff,
-  Pencil,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowLeft, Pencil, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDeleteUser, useStudentProfile } from "../lib/users/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
-import { formatDate, formatNumber } from "../i18n/formatters";
+import { formatDate } from "../i18n/formatters";
 import { formatMoney } from "../lib/money";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
 import { useAuthStore } from "../store/authStore";
@@ -27,6 +17,12 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Toast } from "../components/ui/Toast";
 import { StudentFormPanel } from "../components/students/StudentFormPanel";
 import { StudentRowMenu } from "../components/students/StudentRowMenu";
+import { StudentStatusPill } from "../components/students/StudentStatusPill";
+import { StudentProfileMeta } from "../components/student/StudentProfileMeta";
+import { StudentAccountAccessPopover } from "../components/student/StudentAccountAccessPopover";
+import { StudentStatTiles } from "../components/student/StudentStatTiles";
+import { StudentProgressPanel } from "../components/student/StudentProgressPanel";
+import { StudentCourseStagePill } from "../components/student/StudentCourseStagePill";
 import { ProfileTabs, type ProfileTabItem } from "../components/profile/ProfileTabs";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
 import {
@@ -38,31 +34,6 @@ import {
 import { fetchFilteredEnrollments } from "../lib/enrollments/hooks";
 import { withdrawEnrollment } from "../lib/enrollments/endpoints";
 import type { StudentCourseProfile, User } from "../lib/users/types";
-
-function CourseStatusBadge({ status }: { status: "active" | "archived" }) {
-  const { t } = useTranslation("students");
-  return (
-    <span
-      className={[
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        status === "active"
-          ? "bg-success-surface text-success"
-          : "bg-beige text-muted",
-      ].join(" ")}
-    >
-      {status === "active" ? t("courseStatus.active") : t("courseStatus.archived")}
-    </span>
-  );
-}
-
-function CourseEnrollmentBadge({ status }: { status: "active" | "withdrawn" | "completed" }) {
-  const { t } = useTranslation("students");
-  return (
-    <span className="inline-flex items-center rounded-full bg-strip px-2.5 py-0.5 text-xs font-medium text-ink">
-      {t(`courseStatus.${status}`)}
-    </span>
-  );
-}
 
 export function StudentProfile() {
   const { id } = useParams<{ id: string }>();
@@ -104,8 +75,6 @@ export function StudentProfile() {
         activeTriggerRef.current = null;
         window.clearTimeout(toastTimeoutRef.current);
         setToast({ message: "", visible: false, variant: "success" });
-        setShowPassword(false);
-        setAccountDisclosureOpen(false);
       }
     });
     return () => {
@@ -119,8 +88,6 @@ export function StudentProfile() {
   const [activeTab, setActiveTab] = useState<"courses" | "performance" | "documents">(
     initialProfileTab,
   );
-  const [showPassword, setShowPassword] = useState(false);
-  const [accountDisclosureOpen, setAccountDisclosureOpen] = useState(false);
 
   const [panel, setPanel] = useState<{ mode: "edit"; student: User } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -151,8 +118,6 @@ export function StudentProfile() {
     setDeleteError(null);
     setIsDeleting(false);
     setActiveTab(ownerChanged ? "courses" : initialProfileTab);
-    setShowPassword(false);
-    setAccountDisclosureOpen(false);
     deleteLockRef.current = false;
     activeTriggerRef.current = null;
     window.clearTimeout(toastTimeoutRef.current);
@@ -215,8 +180,6 @@ export function StudentProfile() {
     setDeleteError(null);
     setIsDeleting(false);
     setActiveTab("courses");
-    setShowPassword(false);
-    setAccountDisclosureOpen(false);
     activeTriggerRef.current = null;
     window.clearTimeout(toastTimeoutRef.current);
     setToast({ message: "", visible: false, variant: "success" });
@@ -390,21 +353,18 @@ export function StudentProfile() {
         >
           <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
         </Link>
-        <div className="min-w-0 rounded-xl border border-border-warm bg-card p-4 md:p-5 motion-safe:animate-pulse">
-          <div className="flex min-w-0 items-start gap-3 md:gap-4">
-            <div data-loading-avatar className="h-12 w-12 shrink-0 rounded-full bg-border-warm/70 md:h-16 md:w-16" />
+        <div className="min-w-0 rounded-xl border border-border-warm bg-card p-4 motion-safe:animate-pulse">
+          <div className="flex min-w-0 items-start gap-3">
+            <div data-loading-avatar className="h-12 w-12 shrink-0 rounded-full bg-border-warm/70" />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="h-8 w-full max-w-48 rounded bg-border-warm/70 md:h-9" />
-              <div className="hidden h-11 w-full max-w-64 rounded bg-border-warm/40 md:block" />
+              <div className="h-8 w-full max-w-48 rounded bg-border-warm/70" />
+              <div className="h-5 w-full max-w-72 rounded bg-border-warm/40" />
             </div>
-            {role === "superadmin" && <div className="flex shrink-0 gap-2"><div className="hidden h-11 w-20 rounded-[10px] bg-border-warm/40 md:block" /><div className="h-11 w-11 rounded-[10px] bg-border-warm/40" /></div>}
+            {role === "superadmin" && <div className="flex shrink-0 gap-2"><div className="h-11 w-11 rounded-[10px] bg-border-warm/40" /><div className="hidden h-11 w-20 rounded-[10px] bg-border-warm/40 md:block" /><div className="h-11 w-11 rounded-[10px] bg-border-warm/40" /></div>}
           </div>
-          <div className="mt-2 h-11 w-full max-w-64 rounded bg-border-warm/40 md:hidden" />
-          <div className="mt-1 h-11 w-full max-w-40 rounded bg-border-warm/40" />
-          {role === "superadmin" && <div className="mt-1 h-11 w-full max-w-40 rounded bg-border-warm/40" />}
         </div>
-        <div className="grid min-w-0 grid-cols-3 gap-2 rounded-xl bg-strip p-3 motion-safe:animate-pulse">
-          {[0, 1, 2].map((metricIndex) => <div key={metricIndex} className="flex min-w-0 flex-col gap-1"><div className="h-9 rounded bg-border-warm/40" /><div className="h-8 rounded bg-border-warm/40" /></div>)}
+        <div className="grid min-w-0 grid-cols-3 gap-2 motion-safe:animate-pulse">
+          {[0, 1, 2].map((metricIndex) => <div key={metricIndex} className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-strip p-3"><div className="h-4 w-16 rounded bg-border-warm/40" /><div className="h-7 w-14 rounded bg-border-warm/40" /></div>)}
         </div>
         <div data-loading-tabs className="flex min-w-0 gap-1.5 overflow-x-auto border-b border-border-warm pb-3 motion-safe:animate-pulse">
           {[0, 1, 2].map((tabIndex) => <div key={tabIndex} className="h-11 min-w-0 flex-1 rounded-[10px] bg-border-warm/40" />)}
@@ -422,15 +382,6 @@ export function StudentProfile() {
   }
 
   const { user, courses, performance } = profile;
-
-  const storedScore = performance?.raw_avg_percentage;
-  const storedScoreIsMissing = storedScore === null || storedScore === undefined;
-  const scoreDisplay = storedScore === null || storedScore === undefined
-    ? t("missingScoreValue")
-    : formatNumber(storedScore, i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-  const absencesDisplay = performance ? formatNumber(performance.absences, i18n.language) : t("attendanceUnavailable");
-  const lessonsDisplay = performance ? formatNumber(performance.total_lessons, i18n.language) : t("attendanceUnavailable");
 
   return (
     <div className="flex flex-col gap-4">
@@ -470,184 +421,58 @@ export function StudentProfile() {
         </div>
       )}
 
-      <div className="rounded-xl border border-border-warm bg-card p-4 md:p-5">
-        <div className="flex items-start justify-between gap-3 md:gap-4">
-          <div className="flex items-start gap-3 md:gap-4 min-w-0">
-            <div className="hidden md:block shrink-0">
-              <PersonAvatar
-                firstName={user.first_name}
-                lastName={user.last_name}
-                photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined}
-                size={64}
-              />
-            </div>
-            <div className="md:hidden shrink-0">
-              <PersonAvatar
-                firstName={user.first_name}
-                lastName={user.last_name}
-                photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined}
-                size={48}
-              />
-            </div>
+      <div className="rounded-xl border border-border-warm bg-card px-4 pt-4 pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <PersonAvatar
+              firstName={user.first_name}
+              lastName={user.last_name}
+              photoUrl={resolveMediaUrl(user.thumbnail_path ?? user.photo_path) ?? undefined}
+              size={48}
+            />
             <div className="min-w-0">
-              <h1 className="text-2xl leading-8 md:text-[28px] md:leading-9 font-bold text-ink break-words">
-                {user.first_name} {user.last_name}
-              </h1>
-              <div className="hidden md:flex mt-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-                <a
-                  href={`mailto:${user.email}`}
-                  className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-                >
-                  <Mail size={14} /> <span className="sr-only">{t("emailLabel")}: </span><span className="min-w-0 break-all">{user.email}</span>
-                </a>
-                {user.phone && (
-                  <a
-                    href={`tel:${user.phone}`}
-                    className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 tabular-nums text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-                  >
-                  <Phone size={14} /> <span className="sr-only">{t("phoneLabel")}: </span><span className="break-words">{user.phone}</span>
-                  </a>
-                )}
-                {user.parent_phone && (
-                  <a
-                    href={`tel:${user.parent_phone}`}
-                    className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 tabular-nums text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-                  >
-                  <Phone size={14} /> <span>{t("parentPhoneLabel")}:</span> {user.parent_phone}
-                  </a>
-                )}
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <h1 className="text-2xl font-bold leading-8 text-ink break-words md:text-[28px] md:leading-9">
+                  {user.first_name} {user.last_name}
+                </h1>
+                <StudentStatusPill isDeleted={user.is_deleted} />
               </div>
             </div>
           </div>
 
           {role === "superadmin" && (
-            <>
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="hidden md:block">
-                  <Button
-                    ref={activeTriggerRef}
-                    variant="secondary"
-                    onClick={() => setPanel({ mode: "edit", student: user })}
-                    className="min-h-11 shrink-0"
-                  >
-                    <Pencil size={15} /> {t("edit")}
-                  </Button>
-                </div>
-                <StudentRowMenu
-                  student={user}
-                  onEdit={(student, trigger) => {
-                    if (trigger instanceof HTMLButtonElement) activeTriggerRef.current = trigger;
-                    setPanel({ mode: "edit", student });
-                  }}
-                  onDelete={(student, trigger) => {
-                    if (trigger instanceof HTMLButtonElement) activeTriggerRef.current = trigger;
-                    setDeleteTarget(student);
-                  }}
-                />
+            <div className="flex shrink-0 items-center gap-1">
+              <StudentAccountAccessPopover key={ownerKey} rawPassword={user.raw_password} />
+              <div className="hidden md:block">
+                <Button
+                  ref={activeTriggerRef}
+                  variant="secondary"
+                  onClick={() => setPanel({ mode: "edit", student: user })}
+                  className="min-h-11 shrink-0"
+                >
+                  <Pencil size={15} /> {t("edit")}
+                </Button>
               </div>
-            </>
+              <StudentRowMenu
+                student={user}
+                onEdit={(student, trigger) => {
+                  if (trigger instanceof HTMLButtonElement) activeTriggerRef.current = trigger;
+                  setPanel({ mode: "edit", student });
+                }}
+                onDelete={(student, trigger) => {
+                  if (trigger instanceof HTMLButtonElement) activeTriggerRef.current = trigger;
+                  setDeleteTarget(student);
+                }}
+              />
+            </div>
           )}
         </div>
-
-        <div className="md:hidden mt-2 flex flex-col gap-1 text-sm text-muted">
-          <a
-            href={`mailto:${user.email}`}
-            className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-          >
-            <Mail size={14} /> <span className="sr-only">{t("emailLabel")}: </span><span className="min-w-0 break-all">{user.email}</span>
-          </a>
-          {user.phone && (
-            <a
-              href={`tel:${user.phone}`}
-              className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 tabular-nums text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-            >
-            <Phone size={14} /> <span className="sr-only">{t("phoneLabel")}: </span><span className="break-words">{user.phone}</span>
-            </a>
-          )}
-          {user.parent_phone && (
-            <a
-              href={`tel:${user.parent_phone}`}
-              className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 tabular-nums text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-            >
-            <Phone size={14} /> <span>{t("parentPhoneLabel")}:</span> {user.parent_phone}
-            </a>
-          )}
-        </div>
-
-        <div className="mt-1 flex flex-col gap-1">
-          {user.date_of_birth && (
-            <details className="group">
-              <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-xs font-medium text-nav hover:text-ink select-none list-none">
-                <Cake size={13} /> {t("personalDetails")}
-              </summary>
-              <div className="mt-1 pl-5 text-xs text-muted">
-                <span className="font-medium text-ink">{t("dateOfBirth")}:</span>{" "}
-                {formatDate(user.date_of_birth, i18n.language)}
-              </div>
-            </details>
-          )}
-
-          {role === "superadmin" && (
-            <details
-              className="group"
-              open={accountDisclosureOpen}
-              onToggle={(e) => {
-                const isOpen = e.currentTarget.open;
-                setAccountDisclosureOpen(isOpen);
-                if (!isOpen) {
-                  setShowPassword(false);
-                }
-              }}
-            >
-              <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-xs font-medium text-nav hover:text-ink select-none list-none">
-                <Key size={13} /> {t("accountAccess")}
-              </summary>
-              <div className="mt-1 pl-5 flex items-center gap-2 text-xs">
-                {user.raw_password ? (
-                  <>
-                    <span className="text-muted">{t("passwordLabel")}:</span>
-                    <span className="font-mono font-bold tracking-wider text-ink">
-                      {showPassword ? user.raw_password : "••••••••"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-                      aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-muted">{t("credentialsUnavailable")}</span>
-                )}
-              </div>
-            </details>
-          )}
+        <div className="pl-[60px]">
+          <StudentProfileMeta user={user} />
         </div>
       </div>
 
-      <div data-profile-summary className="grid grid-cols-3 gap-2 rounded-xl bg-strip p-3">
-        <div className="flex min-w-0 flex-col [overflow-wrap:anywhere]">
-          <p className="text-xs leading-[1.5] font-medium text-muted">{t("rawScoreUnverified")}</p>
-          <p className="mt-1 text-2xl leading-[1.333333] font-semibold text-ink tabular-nums">
-            {storedScoreIsMissing ? (
-              <>
-                <span aria-hidden="true">{scoreDisplay}</span>
-                <span className="sr-only">{t("scoreUnavailable")}</span>
-              </>
-            ) : scoreDisplay}
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-col [overflow-wrap:anywhere]">
-          <p className="text-xs leading-[1.5] font-medium text-muted">{t("absences")}</p>
-          <p className="mt-1 text-2xl leading-[1.333333] font-semibold text-ink tabular-nums">{absencesDisplay}</p>
-        </div>
-        <div className="flex min-w-0 flex-col [overflow-wrap:anywhere]">
-          <p className="text-xs leading-[1.5] font-medium text-muted">{t("totalLessons")}</p>
-          <p className="mt-1 text-2xl leading-[1.333333] font-semibold text-ink tabular-nums">{lessonsDisplay}</p>
-        </div>
-      </div>
+      <StudentStatTiles performance={performance} />
 
       <ProfileTabs
         tabs={tabs}
@@ -696,7 +521,7 @@ export function StudentProfile() {
                         {item.course.title}
                       </span>
                     )}
-                    <CourseStatusBadge status={item.course.status} />
+                    <StudentCourseStagePill course={item} />
                   </div>
                   <div className="flex flex-col gap-1 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                     <span>
@@ -706,10 +531,6 @@ export function StudentProfile() {
                     <span className="font-semibold text-ink tabular-nums">
                       {formatMoney(item.course.price, { suffix: t("currencyTjs") })}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted">
-                    <span>{t("enrollmentStatusLabel")}:</span>
-                    <CourseEnrollmentBadge status={item.enrollment_status} />
                   </div>
                 </div>
               );
@@ -722,136 +543,17 @@ export function StudentProfile() {
         id="profile-tabpanel-performance"
         aria-labelledby="profile-tab-performance"
         hidden={activeTab !== "performance"}
-        className="flex flex-col gap-5"
       >
-        <div className="rounded-xl border border-border-warm bg-card p-4 md:p-5">
-          {performance ? (
-            <>
-              <h2 className="text-base font-bold text-ink">{t("performance.overallTitle")}</h2>
-
-            <div className="mt-3 flex flex-col gap-1.5 border-b border-border-warm pb-3 text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted">{t("performance.scopeLabel")}:</span>
-                <span className="font-medium text-ink">
-                  {t("performance.scopeAllRecordedSummaries")}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted">{t("performance.denominatorBasisLabel")}:</span>
-                <span className="font-medium text-ink">
-                  {t("performance.basisStoredPeriodTotalLessons")}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted">{t("performance.gradingProvenanceLabel")}:</span>
-                <span className="font-medium text-ink">
-                  {t("performance.gradingProvenanceUnknown")}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted">{t("performance.gradingStateLabel")}:</span>
-                <span className="font-medium text-ink">
-                  {performance?.grading_state === "missing"
-                    ? t("performance.gradingStateMissing")
-                    : t("performance.gradingStateUnknown")}
-                </span>
-              </div>
-            </div>
-            {performance.attendance_denominator === 0 && (
-              <p className="mt-3 text-xs text-muted">
-                {t("attendance")}: {t("attendanceUnavailable")}
-              </p>
-            )}
-            </>
-          ) : (
-            <p className="text-sm text-muted">{t("performance.unavailable")}</p>
-          )}
-          </div>
-
-          <div className="rounded-xl border border-border-warm bg-card p-4 md:p-5">
-            <h2 className="text-base font-bold text-ink">{t("performance.courseBreakdownTitle")}</h2>
-            {courses.length === 0 ? (
-              <p className="mt-3 text-xs text-muted">{t("noCourses")}</p>
-            ) : (
-              <div className="mt-3 flex flex-col gap-3">
-                {courses.map((item: StudentCourseProfile) => {
-                  const linkInfo = getStudentCourseLink(
-                    item.course.id,
-                    item.course.mentor_id,
-                    role,
-                    currentUserId,
-                  );
-                  return (
-                    <div
-                      key={item.course.id}
-                      className="rounded-lg border border-border-warm p-3.5 flex flex-col gap-2"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        {linkInfo.isNavigable ? (
-                          <Link
-                            to={linkInfo.to}
-                            className="min-w-0 break-words text-sm font-semibold text-ink hover:underline [overflow-wrap:anywhere]"
-                          >
-                            {item.course.title}
-                          </Link>
-                        ) : (
-                          <span className="min-w-0 break-words text-sm font-semibold text-ink [overflow-wrap:anywhere]">
-                            {item.course.title}
-                          </span>
-                        )}
-                        <CourseStatusBadge status={item.course.status} />
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted">
-                        <span>{t("enrollmentStatusLabel")}:</span>
-                        <CourseEnrollmentBadge status={item.enrollment_status} />
-                      </div>
-
-                      <div className="flex flex-wrap gap-x-1 text-xs text-muted">
-                        <span>{t("performance.scopeSingleCourse")}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{t("performance.gradingProvenanceUnknown")}</span>
-                      </div>
-
-                      {item.performance ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1 text-xs">
-                          <div>
-                            <span className="text-muted">{t("avgScore")}: </span>
-                            <span className="font-semibold text-ink tabular-nums">
-                              {item.performance.raw_avg_percentage !== null
-                                ? `${formatNumber(item.performance.raw_avg_percentage, i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / ${formatNumber(100, i18n.language)}`
-                                : t("scoreUnavailable")}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted">{t("attendance")}: </span>
-                            <span className="font-semibold text-ink tabular-nums">
-                              {item.performance.attendance_percentage !== null
-                                ? `${formatNumber(item.performance.attendance_percentage, i18n.language, { maximumFractionDigits: 0 })}%`
-                                : t("attendanceUnavailable")}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted">{t("absences")}: </span>
-                            <span className="font-semibold text-ink tabular-nums">
-                              {formatNumber(item.performance.absences, i18n.language)} / {formatNumber(item.performance.total_lessons, i18n.language)}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted">{t("performance.summariesCount")}: </span>
-                            <span className="font-semibold text-ink tabular-nums">
-                              {formatNumber(item.performance.period_summaries_count, i18n.language)}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted">{t("performance.noCoursePerformance")}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        {activeTab === "performance" && (
+          <StudentProgressPanel
+            key={`${role ?? "anonymous"}:${currentUserId ?? "unknown"}:${user.id}`}
+            studentId={user.id}
+            courses={courses}
+            performance={performance}
+            role={role}
+            currentUserId={currentUserId}
+          />
+        )}
       </div>
 
       <div

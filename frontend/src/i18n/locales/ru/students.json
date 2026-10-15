@@ -21,7 +21,7 @@
   "emptyNoResultsDescription": "Нет студентов, соответствующих поисковому запросу",
   "clearSearch": "Очистить поиск",
   "coursesTab": "Курсы",
-  "performanceTab": "Успеваемость",
+  "performanceTab": "Прогресс",
   "documentsTab": "Документы",
   "backToStudents": "Назад к студентам",
   "backToDashboard": "Назад на панель управления",
@@ -49,7 +49,6 @@
   "attendance": "Посещаемость",
   "avgScore": "Средний балл",
   "absences": "Пропуски",
-  "totalLessons": "Всего занятий",
   "passwordLabel": "Пароль",
   "showPassword": "Показать пароль",
   "hidePassword": "Скрыть пароль",
@@ -62,11 +61,8 @@
     "completed": "Завершен"
   },
   "performance": {
-    "overallTitle": "Общая успеваемость",
-    "unavailable": "Сводка успеваемости недоступна",
     "scopeLabel": "Измеряемая выборка",
     "scopeAllRecordedSummaries": "Все сохраненные сводки периодов студента по всем курсам",
-    "scopeSingleCourse": "Сохраненные сводки периодов по данному курсу",
     "denominatorBasisLabel": "Основа расчета посещаемости",
     "basisStoredPeriodTotalLessons": "Сумма запланированных занятий по периодам",
     "gradingProvenanceLabel": "Происхождение оценивания",
@@ -74,27 +70,27 @@
     "gradingStateLabel": "Статус оценивания",
     "gradingStateMissing": "Нет сохраненных сводок с оценками",
     "gradingStateUnknown": "Сводки периодов сохранены (статус неизвестен)",
-    "summariesCount": "Сохраненных сводок за периоды",
     "periodsWithMaxScore": "Периодов с максимальным баллом",
-    "courseBreakdownTitle": "Успеваемость по курсам",
-    "noCoursePerformance": "Нет данных об успеваемости по этому курсу",
     "attendedLessons": "Посещенные занятия"
   },
   "table": {
     "student": "Студент",
     "phone": "Телефон",
-    "studentPhone": "Телефон студента",
-    "parentPhone": "Телефон родителя",
-    "parentPhonePrefix": "Родитель: {{phone}}",
     "paymentDay": "День оплаты",
-    "paymentDayShort": "День оплаты: {{day}}",
     "created": "Зарегистрирован",
     "empty": "Студенты не найдены",
     "error": "Не удалось загрузить данные",
     "errorDescription": "Не удалось загрузить список студентов. Пожалуйста, повторите попытку.",
     "errorBanner": "Не удалось обновить список. Отображаются последние сохранённые данные.",
     "range": "{{from}}–{{to}} из {{total}}",
-    "rangeEmpty": "0 из 0"
+    "rangeEmpty": "0 из 0",
+    "guardianPhone": "Телефон родителя",
+    "paymentDayInfo": "День каждого месяца, когда студент должен вносить оплату.",
+    "paymentDayChip": "{{day}}-е число",
+    "paymentDayNone": "День оплаты не указан",
+    "perPage": "{{size}} на странице",
+    "rowsPerPage": "Строк на странице",
+    "total": "Всего студентов"
   },
   "form": {
     "newStudentTitle": "Новый студент",
@@ -137,9 +133,7 @@
     "invalidPaymentDay": "Число от 1 до 28",
     "emailTaken": "Этот адрес электронной почты уже занят"
   },
-  "rawScoreUnverified": "Сохранённый средний балл /100 · не проверен",
   "currencyTjs": "сомони",
-  "enrollmentStatusLabel": "Запись на курс",
   "profileRefreshError": "Не удалось обновить профиль. Показаны последние загруженные данные. Попробуйте ещё раз.",
   "missingScoreValue": "—",
   "profileState": {
@@ -149,5 +143,27 @@
     "notFoundBody": "Этот профиль не существует или был удалён.",
     "failedTitle": "Не удалось загрузить профиль",
     "failedBody": "Проверьте соединение и повторите попытку."
+  },
+  "stats": {
+    "average": "Средний балл",
+    "attendance": "Посещаемость",
+    "absences": "Пропуски",
+    "absencesOf": "{{absences}} из {{total}}",
+    "averageInfo": "Сохранённый средний балл по периодам из 100. Источник оценок не записан, поэтому значение не проверено."
+  },
+  "progress": {
+    "title": "Прогресс",
+    "methodInfoLabel": "Как считается прогресс",
+    "chartLabel": "Прогресс по периодам",
+    "chartHint": "Используйте стрелки влево и вправо, чтобы просмотреть периоды.",
+    "chartEntry": "{{name}}: {{value}}",
+    "chartNoValues": "Нет оценок за этот период",
+    "emptyTitle": "Недостаточно оцененных периодов",
+    "emptyBody": "График появится, когда у курса будет минимум два оцененных периода.",
+    "errorTitle": "Не удалось загрузить график прогресса",
+    "errorBody": "Не удалось загрузить результаты по периодам. Повторите попытку.",
+    "rowNoData": "Оценок пока нет",
+    "coursesLabel": "Прогресс по курсам",
+    "unavailable": "Сводка прогресса недоступна"
   }
 }

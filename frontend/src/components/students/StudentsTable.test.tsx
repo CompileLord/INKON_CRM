@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { I18nextProvider } from "react-i18next";
 import i18n from "../../i18n";
 import { StudentsTable } from "./StudentsTable";
@@ -48,6 +48,11 @@ const mockStudents: User[] = [
   },
 ];
 
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
+
 function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
   const defaultProps = {
     students: mockStudents,
@@ -60,6 +65,8 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
     isError: false,
     onRetry: vi.fn(),
     onPageChange: vi.fn(),
+    pageSizeOptions: [10, 20, 50, 100],
+    onPageSizeChange: vi.fn(),
     onEdit: vi.fn(),
     onDeleteRequest: vi.fn(),
     onAddStudent: vi.fn(),
@@ -70,8 +77,12 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
   return {
     ...render(
       <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <StudentsTable {...defaultProps} />
+        <MemoryRouter initialEntries={["/students"]}>
+          <LocationProbe />
+          <Routes>
+            <Route path="/students" element={<StudentsTable {...defaultProps} />} />
+            <Route path="/students/:id" element={<div>profile</div>} />
+          </Routes>
         </MemoryRouter>
       </I18nextProvider>,
     ),
@@ -104,18 +115,110 @@ describe("StudentsTable", () => {
     expect(props.onEdit).toHaveBeenCalledWith(mockStudents[0], expect.anything());
   });
 
-  it("renders email fallback when student has no phone in phone card view", () => {
+  it("shows a single student phone per row with no phone labels and the guardian phone only inside the popover", async () => {
     renderTable();
 
-    const fallbackEmailLinks = screen.getAllByRole("link", { name: "john.reese@example.com" });
-    expect(fallbackEmailLinks.length).toBeGreaterThan(0);
-    expect(fallbackEmailLinks[0].getAttribute("href")).toBe("mailto:john.reese@example.com");
+    expect(screen.queryByText("Student phone")).toBeNull();
+    expect(screen.queryByText("Guardian phone")).toBeNull();
+    expect(screen.queryByText("+992900000002")).toBeNull();
+
+    const user = userEvent.setup();
+    const triggers = screen.getAllByRole("button", { name: "Guardian phone" });
+    expect(triggers.length).toBeGreaterThan(0);
+    await user.click(triggers[0]);
+
+    const guardianLink = await screen.findByRole("link", { name: "+992900000002" });
+    expect(guardianLink.getAttribute("href")).toBe("tel:+992900000002");
+    expect(guardianLink.className).toContain("tabular-nums");
+  });
+
+  it("renders no guardian trigger for a student without a guardian phone", () => {
+    renderTable({ students: [mockStudents[1]], total: 1 });
+    expect(screen.queryAllByRole("button", { name: "Guardian phone" })).toHaveLength(0);
+  });
+
+  it("renders the payment day as a chip and shows no status pill for active students", () => {
+    renderTable();
+
+    expect(screen.getAllByText("Day 12").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Day 25").length).toBeGreaterThan(0);
+
+    const activeRow = document.getElementById("student-row-101") as HTMLElement;
+    expect(within(activeRow).queryByText("Active")).toBeNull();
+    expect(within(activeRow).queryByText("Archived")).toBeNull();
+
+    const archivedRow = document.getElementById("student-row-102") as HTMLElement;
+    expect(within(archivedRow).getByText("Archived")).toBeDefined();
+    expect(screen.queryAllByText("Active")).toHaveLength(0);
+  });
+
+  it("explains the payment day in the column header tooltip", async () => {
+    renderTable();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Payment day" }));
+    expect(await screen.findByRole("tooltip")).toHaveProperty(
+      "textContent",
+      "The day of each month when this student's payment is due.",
+    );
+  });
+
+  it("truncates the email on one line with a title", () => {
+    renderTable();
+    const email = document.getElementById("student-row-101")?.querySelector('[title="sarah.connor@example.com"]');
+    expect(email).not.toBeNull();
+    expect(email?.className).toContain("truncate");
+  });
+
+  it("opens the profile when the row is clicked but not when the phone link or menu is used", async () => {
+    const onStudentNavigate = vi.fn();
+    renderTable({ onStudentNavigate });
+    const user = userEvent.setup();
+    const row = document.getElementById("student-row-101") as HTMLElement;
+
+    await user.click(within(row).getByRole("link", { name: "+992900000001" }));
+    await user.click(within(row).getByRole("button", { name: "Student actions: Sarah Connor" }));
+    expect(onStudentNavigate).not.toHaveBeenCalled();
+    expect(screen.getByTestId("location").textContent).toBe("/students");
+    await user.keyboard("{Escape}");
+
+    await user.click(within(row).getByText("sarah.connor@example.com"));
+    expect(onStudentNavigate).toHaveBeenCalledWith(mockStudents[0]);
+    expect(screen.getByTestId("location").textContent).toBe("/students/101");
+  });
+
+  it("changes page size through the custom listbox instead of a native select", async () => {
+    const { props, container } = renderTable({ pageSize: 20 });
+    expect(container.querySelector("select")).toBeNull();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Rows per page: 20 per page" }));
+    const listbox = await screen.findByRole("listbox", { name: "Rows per page" });
+    const options = within(listbox).getAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual(["10 per page", "20 per page", "50 per page", "100 per page"]);
+    expect(options[1].getAttribute("aria-selected")).toBe("true");
+
+    await user.click(options[2]);
+    expect(props.onPageSizeChange).toHaveBeenCalledWith(50);
+  });
+
+  it("renders mobile cards with name, email, phone and payment chip and no nested vertical scroll", () => {
+    renderTable();
+    const card = document.getElementById("student-card-101") as HTMLElement;
+    expect(within(card).getByRole("link", { name: "Sarah Connor" })).toBeDefined();
+    expect(within(card).getByText("sarah.connor@example.com")).toBeDefined();
+    expect(within(card).getByRole("link", { name: "+992900000001" })).toBeDefined();
+    expect(within(card).getByText("Day 12")).toBeDefined();
+    expect(card.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    expect(document.querySelector("table")?.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
   });
 
   it("renders loading skeleton in table and mobile layouts", () => {
     const { container } = renderTable({ isLoading: true, students: [], total: 0 });
 
-    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+    const desktopSkeletonRows = container.querySelectorAll("tbody tr.h-\\[60px\\]");
+    expect(desktopSkeletonRows).toHaveLength(5);
+    expect(container.querySelectorAll('.lg\\:hidden [aria-hidden="true"]')).toHaveLength(4);
+    expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
   });
 
   it("renders error state with working retry button", async () => {

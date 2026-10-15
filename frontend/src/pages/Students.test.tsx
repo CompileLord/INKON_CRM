@@ -129,9 +129,31 @@ describe("Students page", () => {
     renderStudentsPage();
 
     expect(screen.getByRole("heading", { name: "Students" })).toBeDefined();
-    expect(screen.getByText(/Total: 2/i)).toBeDefined();
+    expect(screen.getByLabelText("Total students: 2").textContent).toBe("2");
     expect(screen.getByPlaceholderText(/Search by name, email, or phone/i)).toBeDefined();
     expect(screen.getAllByRole("link", { name: "Farrukh Saidov" }).length).toBeGreaterThan(0);
+  });
+
+  it("writes the chosen page size from the footer listbox to the URL and resets to page 1", async () => {
+    vi.spyOn(userHooks, "useStudents").mockReturnValue({
+      data: mockPaginatedData,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof userHooks.useStudents>);
+
+    const { getLocation, container } = renderStudentsPage(["/students?page=2"]);
+    expect(container.querySelector("select")).toBeNull();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Rows per page: 20 per page" }));
+    await user.click(await screen.findByRole("option", { name: "50 per page" }));
+
+    await waitFor(() => {
+      expect(getLocation()?.search).toContain("pageSize=50");
+      expect(getLocation()?.search).toContain("page=1");
+    });
   });
 
   it("opens create panel when Add Student button is clicked", async () => {

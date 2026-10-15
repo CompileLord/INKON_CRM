@@ -21,7 +21,7 @@
   "emptyNoResultsDescription": "No students match your search query",
   "clearSearch": "Clear search",
   "coursesTab": "Courses",
-  "performanceTab": "Performance",
+  "performanceTab": "Progress",
   "documentsTab": "Documents",
   "backToStudents": "Back to Students",
   "backToDashboard": "Back to Dashboard",
@@ -49,7 +49,6 @@
   "attendance": "Attendance",
   "avgScore": "Average score",
   "absences": "Absences",
-  "totalLessons": "Total lessons",
   "passwordLabel": "Password",
   "showPassword": "Show password",
   "hidePassword": "Hide password",
@@ -62,11 +61,8 @@
     "completed": "Completed"
   },
   "performance": {
-    "overallTitle": "Overall Performance",
-    "unavailable": "Performance summary is unavailable",
     "scopeLabel": "Measured population",
     "scopeAllRecordedSummaries": "All recorded student period summaries across all courses",
-    "scopeSingleCourse": "Recorded period summaries for this course",
     "denominatorBasisLabel": "Attendance denominator basis",
     "basisStoredPeriodTotalLessons": "Stored period total lessons",
     "gradingProvenanceLabel": "Grading provenance",
@@ -74,27 +70,27 @@
     "gradingStateLabel": "Grading state",
     "gradingStateMissing": "No graded period summaries recorded",
     "gradingStateUnknown": "Period summaries recorded (status unknown)",
-    "summariesCount": "Period summaries recorded",
     "periodsWithMaxScore": "Periods with maximum score",
-    "courseBreakdownTitle": "Course Performance Breakdown",
-    "noCoursePerformance": "No performance summaries recorded for this course",
     "attendedLessons": "Attended lessons"
   },
   "table": {
     "student": "Student",
     "phone": "Phone",
-    "studentPhone": "Student phone",
-    "parentPhone": "Parent phone",
-    "parentPhonePrefix": "Parent: {{phone}}",
     "paymentDay": "Payment day",
-    "paymentDayShort": "Payment day: {{day}}",
     "created": "Registered",
     "empty": "No students found",
     "error": "Failed to load data",
     "errorDescription": "Could not refresh students list. Please try again.",
     "errorBanner": "Failed to update list. Showing last loaded data.",
     "range": "{{from}}–{{to}} of {{total}}",
-    "rangeEmpty": "0 of 0"
+    "rangeEmpty": "0 of 0",
+    "guardianPhone": "Guardian phone",
+    "paymentDayInfo": "The day of each month when this student's payment is due.",
+    "paymentDayChip": "Day {{day}}",
+    "paymentDayNone": "No payment day set",
+    "perPage": "{{size}} per page",
+    "rowsPerPage": "Rows per page",
+    "total": "Total students"
   },
   "form": {
     "newStudentTitle": "New Student",
@@ -137,9 +133,7 @@
     "invalidPaymentDay": "Must be a number from 1 to 28",
     "emailTaken": "This email is already in use"
   },
-  "rawScoreUnverified": "Stored average /100 · unverified",
   "currencyTjs": "TJS",
-  "enrollmentStatusLabel": "Enrollment",
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",
   "missingScoreValue": "—",
   "profileState": {
@@ -149,5 +143,27 @@
     "notFoundBody": "This profile does not exist or has been removed.",
     "failedTitle": "Could not load the profile",
     "failedBody": "Check your connection and try again."
+  },
+  "stats": {
+    "average": "Average",
+    "attendance": "Attendance",
+    "absences": "Absences",
+    "absencesOf": "{{absences}} of {{total}}",
+    "averageInfo": "Stored period average out of 100. The grading source is not recorded, so this value is unverified."
+  },
+  "progress": {
+    "title": "Progress",
+    "methodInfoLabel": "How progress is measured",
+    "chartLabel": "Progress by period",
+    "chartHint": "Use the left and right arrow keys to inspect periods.",
+    "chartEntry": "{{name}}: {{value}}",
+    "chartNoValues": "No graded results for this period",
+    "emptyTitle": "Not enough graded periods",
+    "emptyBody": "The chart appears once a course has at least two graded periods.",
+    "errorTitle": "Could not load the progress chart",
+    "errorBody": "Period results could not be loaded. Please try again.",
+    "rowNoData": "No grades recorded yet",
+    "coursesLabel": "Progress by course",
+    "unavailable": "Progress summary is unavailable"
   }
 }
