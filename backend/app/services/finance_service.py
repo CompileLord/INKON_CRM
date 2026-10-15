@@ -154,6 +154,44 @@ class FinanceService:
             LedgerEntry.reverses_entry_id.isnot(None),
         )
 
+    async def _ensure_payment_reversal_eligible(
+        self,
+        payment_entry: LedgerEntry,
+        reversal_type: LedgerEntryType,
+    ) -> None:
+        void_exists: bool = bool(
+            await self.db.scalar(
+                select(LedgerEntry.id)
+                .where(
+                    LedgerEntry.reverses_entry_id == payment_entry.id,
+                    LedgerEntry.type == LedgerEntryType.VOID,
+                )
+                .limit(1)
+            )
+        )
+        if void_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment has already been voided",
+            )
+
+        if reversal_type == LedgerEntryType.VOID:
+            refund_exists: bool = bool(
+                await self.db.scalar(
+                    select(LedgerEntry.id)
+                    .where(
+                        LedgerEntry.reverses_entry_id == payment_entry.id,
+                        LedgerEntry.type == LedgerEntryType.REFUND,
+                    )
+                    .limit(1)
+                )
+            )
+            if refund_exists:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Payment has been refunded and can no longer be voided",
+                )
+
     async def _active_allocated(self, entry_ids: Sequence[int]) -> Decimal:
         if not entry_ids:
             return ZERO
@@ -670,30 +708,7 @@ class FinanceService:
         """Reverse a payment in full, reopening whatever it had settled."""
         target = await self._get_payment_entry(payment_id)
         await self.lock_student_accounts([target.student_id])
-
-        void_check = await self.db.execute(
-            select(LedgerEntry).filter(
-                LedgerEntry.reverses_entry_id == target.id,
-                LedgerEntry.type == LedgerEntryType.VOID,
-            )
-        )
-        if void_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has already been voided",
-            )
-
-        refund_check = await self.db.execute(
-            select(LedgerEntry).filter(
-                LedgerEntry.reverses_entry_id == target.id,
-                LedgerEntry.type == LedgerEntryType.REFUND,
-            )
-        )
-        if refund_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has been refunded and can no longer be voided",
-            )
+        await self._ensure_payment_reversal_eligible(target, LedgerEntryType.VOID)
 
         # Both the original period and the current one must be open: voiding
         # mutates allocations, which would silently restate a closed month.
@@ -746,6 +761,7 @@ class FinanceService:
 
         target = await self._get_payment_entry(payment_id)
         await self.lock_student_accounts([target.student_id])
+        await self._ensure_payment_reversal_eligible(target, LedgerEntryType.REFUND)
 
         await self._check_period_open(target.occurred_at, "a refund of an entry in that period")
         now = datetime.now(timezone.utc)

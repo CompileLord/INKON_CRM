@@ -1,5 +1,8 @@
-from typing import List, Optional, Union
-from pydantic import AnyHttpUrl, BeforeValidator
+import ipaddress
+import re
+from typing import Any, List, Optional, Union
+from urllib.parse import urlsplit
+from pydantic import BeforeValidator, Field, ValidationError, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 
@@ -26,6 +29,18 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    def __init__(self, **values: Any) -> None:
+        try:
+            super().__init__(**values)
+        except ValidationError as validation_error:
+            webhook_error: bool = any(
+                error["loc"] == ("TELEGRAM_WEBHOOK_URL",)
+                for error in validation_error.errors()
+            )
+            if webhook_error:
+                raise ValueError("TELEGRAM_WEBHOOK_URL configuration is invalid") from None
+            raise
+
     ENVIRONMENT: str = "development"
     TESTING: bool = False
     API_V1_STR: str = "/api/v1"
@@ -35,11 +50,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    POSTGRES_PORT: int = 5432
     DATABASE_URL: str
 
     REDIS_HOST: str = "localhost"
@@ -59,7 +69,60 @@ class Settings(BaseSettings):
     CRON_SECRET: Optional[str] = None
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_BOT_SECRET_TOKEN: str
-    TELEGRAM_WEBHOOK_URL: str = "http://localhost:8000/api/v1/telegram/webhook"
+    TELEGRAM_WEBHOOK_URL: str = Field(
+        default="http://localhost:8000/api/v1/telegram/webhook",
+        validate_default=True,
+    )
+
+    @field_validator("TELEGRAM_WEBHOOK_URL")
+    @classmethod
+    def validate_telegram_webhook_url(cls, value: str, info: ValidationInfo) -> str:
+        if info.data.get("TESTING", False):
+            return value
+
+        try:
+            parsed_url = urlsplit(value)
+            port: int | None = parsed_url.port
+        except ValueError as error:
+            raise ValueError("Telegram webhook must use public HTTPS when enabled") from error
+
+        hostname = (parsed_url.hostname or "").lower()
+        if hostname.endswith("..") or port == 0:
+            raise ValueError("Telegram webhook must use public HTTPS when enabled")
+        if hostname.endswith("."):
+            hostname = hostname[:-1]
+        if (
+            parsed_url.scheme != "https"
+            or not hostname
+            or parsed_url.username
+            or parsed_url.password
+            or parsed_url.query
+            or parsed_url.fragment
+        ):
+            raise ValueError("Telegram webhook must use public HTTPS when enabled")
+        if hostname in {"localhost", "localhost.localdomain"} or hostname.endswith(
+            (".localhost", ".local", ".localdomain", ".internal", ".lan", ".intranet")
+        ):
+            raise ValueError("Telegram webhook must use public HTTPS when enabled")
+        try:
+            address = ipaddress.ip_address(hostname)
+        except ValueError:
+            ascii_hostname: str = hostname.encode("idna").decode("ascii")
+            hostname_labels: list[str] = ascii_hostname.split(".")
+            valid_hostname: bool = (
+                len(ascii_hostname) <= 253
+                and len(hostname_labels) > 1
+                and all(
+                    re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label)
+                    for label in hostname_labels
+                )
+            )
+            if not valid_hostname:
+                raise ValueError("Telegram webhook must use public HTTPS when enabled")
+            return value
+        if not address.is_global:
+            raise ValueError("Telegram webhook must use public HTTPS when enabled")
+        return value
 
     BACKEND_CORS_ORIGINS: Annotated[
         List[str],

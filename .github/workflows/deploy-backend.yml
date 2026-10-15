@@ -165,6 +165,7 @@ jobs:
             SMTP_FROM_EMAIL=${{ secrets.SMTP_FROM_EMAIL }}
             TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             TELEGRAM_BOT_SECRET_TOKEN=${{ secrets.TELEGRAM_BOT_SECRET_TOKEN }}
+            TELEGRAM_WEBHOOK_URL=${{ secrets.TELEGRAM_WEBHOOK_URL }}
             GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }}
             CRON_SECRET=${{ secrets.CRON_SECRET }}
             BACKEND_CORS_ORIGINS=["*"]

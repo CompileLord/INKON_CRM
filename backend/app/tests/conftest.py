@@ -1,31 +1,167 @@
 import asyncio
+import os
+import uuid
 from datetime import date, datetime, timezone
-from typing import AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Generator
+from types import TracebackType
+from urllib.parse import urlsplit
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from redis.asyncio import Redis
+from redis.asyncio.client import Pipeline
 
-TEST_DATABASE_URL = "postgresql+asyncpg://linguist_user:linguist_pass_2024@localhost:5432/imkon_test_db"
 
+class TestTargetConfiguration:
+    @classmethod
+    def validate(cls) -> tuple[str, str]:
+        database_url: str | None = os.environ.get("TEST_DATABASE_URL")
+        redis_url: str | None = os.environ.get("TEST_REDIS_URL")
+        if not database_url or not redis_url:
+            raise RuntimeError("Dedicated test database and Redis URLs are required")
+        if os.environ.get("TESTING", "").lower() != "true" or os.environ.get("ENVIRONMENT") != "testing":
+            raise RuntimeError("Test execution requires explicit testing environment settings")
+
+        database = urlsplit(database_url)
+        redis = urlsplit(redis_url)
+        permitted_hosts: set[str] = {"localhost", "127.0.0.1", "::1"}
+        database_is_dedicated = (
+            database.scheme == "postgresql+asyncpg"
+            and database.hostname in permitted_hosts
+            and database.path == "/imkon_test_db"
+            and database.port == 5432
+        )
+        redis_is_dedicated = (
+            redis.scheme == "redis"
+            and redis.hostname in permitted_hosts
+            and redis.port == 6379
+            and redis.path == "/15"
+        )
+        if (
+            not database_is_dedicated
+            or not redis_is_dedicated
+            or database.query
+            or database.fragment
+            or redis.query
+            or redis.fragment
+        ):
+            raise RuntimeError("Test targets must be dedicated loopback services and databases")
+        return database_url, redis_url
+
+
+class RedisNamespacePipeline:
+    def __init__(self, pipeline: Pipeline, prefix: str) -> None:
+        self._pipeline: Pipeline = pipeline
+        self._prefix: str = prefix
+
+    def delete(self, *keys: str) -> RedisNamespacePipeline:
+        self._pipeline.delete(*(f"{self._prefix}{key}" for key in keys))
+        return self
+
+    def expire(self, key: str, seconds: int) -> RedisNamespacePipeline:
+        self._pipeline.expire(f"{self._prefix}{key}", seconds)
+        return self
+
+    def get(self, key: str) -> RedisNamespacePipeline:
+        self._pipeline.get(f"{self._prefix}{key}")
+        return self
+
+    def incr(self, key: str, amount: int = 1) -> RedisNamespacePipeline:
+        self._pipeline.incr(f"{self._prefix}{key}", amount)
+        return self
+
+    def set(self, key: str, value: Any, **kwargs: Any) -> RedisNamespacePipeline:
+        self._pipeline.set(f"{self._prefix}{key}", value, **kwargs)
+        return self
+
+    def setex(self, key: str, seconds: int, value: Any) -> RedisNamespacePipeline:
+        self._pipeline.setex(f"{self._prefix}{key}", seconds, value)
+        return self
+
+    async def execute(self) -> list[Any]:
+        return await self._pipeline.execute()
+
+
+class RedisNamespaceClient:
+    def __init__(self, client: Redis, prefix: str) -> None:
+        self._client: Redis = client
+        self._prefix: str = prefix
+
+    async def delete(self, *keys: str) -> int:
+        return await self._client.delete(*(f"{self._prefix}{key}" for key in keys))
+
+    async def get(self, key: str) -> str | None:
+        return await self._client.get(f"{self._prefix}{key}")
+
+    async def ping(self) -> bool:
+        return await self._client.ping()
+
+    async def set(self, key: str, value: Any, **kwargs: Any) -> bool | None:
+        return await self._client.set(f"{self._prefix}{key}", value, **kwargs)
+
+    async def ttl(self, key: str) -> int:
+        return await self._client.ttl(f"{self._prefix}{key}")
+
+    async def scan(
+        self,
+        cursor: int = 0,
+        match: str | None = None,
+        count: int | None = None,
+    ) -> tuple[int, list[str]]:
+        namespaced_match = f"{self._prefix}{match or '*'}"
+        next_cursor, keys = await self._client.scan(cursor=cursor, match=namespaced_match, count=count)
+        return next_cursor, [key[len(self._prefix):] for key in keys]
+
+    def pipeline(self, transaction: bool = True) -> RedisNamespacePipeline:
+        return RedisNamespacePipeline(self._client.pipeline(transaction=transaction), self._prefix)
+
+
+class RedisNamespaceCleanup:
+    def __init__(self, client: Redis, prefix: str) -> None:
+        self.client: Redis = client
+        self.prefix: str = prefix
+
+    async def clean(self) -> None:
+        keys = [key async for key in self.client.scan_iter(match=f"{self.prefix}*")]
+        if keys:
+            await self.client.delete(*keys)
+
+    async def __aenter__(self) -> RedisNamespaceCleanup:
+        await self.clean()
+        return self
+
+    async def __aexit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await self.clean()
+
+
+TEST_DATABASE_URL: str
+TEST_REDIS_URL: str
+TEST_DATABASE_URL, TEST_REDIS_URL = TestTargetConfiguration.validate()
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["REDIS_URL"] = TEST_REDIS_URL
+
+TEST_REDIS_PREFIX: str = f"wp09:{os.getpid()}:{uuid.uuid4().hex}:"
 test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool, future=True)
 TestingSessionLocal = async_sessionmaker(
     bind=test_engine,
     class_=AsyncSession,
     expire_on_commit=False,
     autocommit=False,
-    autoflush=False
+    autoflush=False,
 )
 
-import app.db.session as db_session_module
-db_session_module.AsyncSessionLocal = TestingSessionLocal
-
-from app.main import app
 from app.core.config import settings
+import app.core.redis as redis_module
 from app.core.deps import get_db_session
 from app.core.security import hash_password, create_access_token
-from app.core.redis import redis_client
 from app.db.base import Base
 from app.models.user import User, UserRole
 from app.models.refresh_token import RefreshToken
@@ -45,8 +181,21 @@ from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatu
 from app.models.notification_log import NotificationLog
 from app.models.audit_log import AuditLog
 
+raw_test_redis: Redis = redis_module.redis_client
+test_redis_cleanup: RedisNamespaceCleanup = RedisNamespaceCleanup(raw_test_redis, TEST_REDIS_PREFIX)
+redis_module.redis_client = RedisNamespaceClient(raw_test_redis, TEST_REDIS_PREFIX)
+settings.REDIS_URL = TEST_REDIS_URL
+settings.DATABASE_URL = TEST_DATABASE_URL
 
+from app.main import app
+from app.core.redis import redis_client
+import app.db.session as db_session_module
+import app.core.deps as deps_module
+import app.workers.tasks as worker_tasks_module
 
+db_session_module.AsyncSessionLocal = TestingSessionLocal
+deps_module.AsyncSessionLocal = TestingSessionLocal
+worker_tasks_module.AsyncSessionLocal = TestingSessionLocal
 
 
 @pytest.fixture(scope="session")
@@ -73,12 +222,32 @@ async def clean_database():
         for table in reversed(Base.metadata.sorted_tables):
             await session.execute(table.delete())
         await session.commit()
-        
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def clean_owned_redis_keys() -> AsyncGenerator[None, None]:
+    await test_redis_cleanup.clean()
+    try:
+        yield
+    finally:
+        await test_redis_cleanup.clean()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def redis_namespace_scope() -> AsyncGenerator[RedisNamespaceCleanup, None]:
+    try:
+        yield test_redis_cleanup
+    finally:
+        await test_redis_cleanup.clean()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_redis_connection() -> AsyncGenerator[Redis, None]:
+    yield raw_test_redis
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    # Clear Redis rate limits
-    await redis_client.flushdb()
-
     async with TestingSessionLocal() as session:
         try:
             yield session
@@ -174,4 +343,3 @@ def mock_email_service(monkeypatch):
     async def mock_send_email(*args, **kwargs):
         pass
     monkeypatch.setattr(EmailService, "send_email", mock_send_email)
-
