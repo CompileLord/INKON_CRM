@@ -1,16 +1,17 @@
 import asyncio
+import argparse
 import io
-import os
-import shutil
 import sys
 import logging
 import urllib.request
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
-from typing import List, Dict, Any, Tuple
+from pathlib import Path
+from typing import List, Dict, Any, Tuple, Sequence
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import text, select
-from app.db.session import engine, AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from app.db.session import engine
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.course_schedule import CourseSchedule
@@ -27,6 +28,7 @@ from app.services.course_service import CourseService
 from app.services.enrollment_service import EnrollmentService
 from app.services.finance_service import FinanceService
 from app.services.sum_calculation_service import SumCalculationService
+from scripts.reset_guard import CredentialProvisioner, ResetGuardError, ResetTarget, ResetTargetGuard, StorageReplacement
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,8 +90,6 @@ TAJIK_STUDENTS: List[Tuple[str, str, str, str]] = [
     ("Zarrina", "Boboyeva", "zarrina.boboyeva@gmail.com", "+992904440008"),
 ]
 
-SEED_CACHE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), ".seed_cache"))
-
 COURSE_PHOTO_URLS: Dict[int, List[str]] = {
     1: ["https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80", "https://picsum.photos/id/1025/800/400"],
     2: ["https://images.unsplash.com/photo-1527866959252-deab85ef7d1b?w=800&q=80", "https://picsum.photos/id/24/800/400"],
@@ -104,22 +104,12 @@ MENTOR_PHOTO_URLS: Dict[str, List[str]] = {
 }
 
 
-def get_or_download_real_photo(cache_filename: str, remote_urls: List[str]) -> bytes:
-    os.makedirs(SEED_CACHE_DIR, exist_ok=True)
-    cache_filepath: str = os.path.join(SEED_CACHE_DIR, cache_filename)
-
-    if os.path.exists(cache_filepath) and os.path.getsize(cache_filepath) > 0:
-        with open(cache_filepath, "rb") as file_handle:
-            return file_handle.read()
-
+def get_or_download_real_photo(remote_urls: List[str]) -> bytes:
     for url in remote_urls:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=15) as response:
-                image_bytes: bytes = response.read()
-                with open(cache_filepath, "wb") as file_handle:
-                    file_handle.write(image_bytes)
-                return image_bytes
+                return response.read()
         except Exception as exc:
             logger.warning(f"Failed to download image from {url}: {exc}")
             continue
@@ -127,17 +117,14 @@ def get_or_download_real_photo(cache_filename: str, remote_urls: List[str]) -> b
     img = Image.new("RGB", (600, 400), color=(50, 80, 120))
     out = io.BytesIO()
     img.save(out, format="JPEG")
-    bytes_data = out.getvalue()
-    with open(cache_filepath, "wb") as file_handle:
-        file_handle.write(bytes_data)
-    return bytes_data
+    return out.getvalue()
 
 
-def save_course_photo(course_id: int, image_bytes: bytes) -> str:
-    target_dir: str = os.path.abspath(os.path.join(settings.STORAGE_PATH, "course", str(course_id)))
-    os.makedirs(target_dir, exist_ok=True)
+def save_course_photo(course_id: int, image_bytes: bytes, storage_root: Path) -> str:
+    target_dir: Path = storage_root / "course" / str(course_id)
+    target_dir.mkdir(parents=True, exist_ok=True)
     filename: str = "course_image.jpg"
-    file_path: str = os.path.join(target_dir, filename)
+    file_path: Path = target_dir / filename
 
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode != "RGB":
@@ -146,53 +133,68 @@ def save_course_photo(course_id: int, image_bytes: bytes) -> str:
     return f"/storage/course/{course_id}/{filename}"
 
 
-def save_mentor_avatar(user_id: int, image_bytes: bytes) -> Tuple[str, str]:
-    target_dir: str = os.path.abspath(os.path.join(settings.STORAGE_PATH, "avatar", str(user_id)))
-    os.makedirs(target_dir, exist_ok=True)
+def save_mentor_avatar(user_id: int, image_bytes: bytes, storage_root: Path) -> Tuple[str, str]:
+    target_dir: Path = storage_root / "avatar" / str(user_id)
+    target_dir.mkdir(parents=True, exist_ok=True)
 
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode != "RGB":
         img = img.convert("RGB")
 
     avatar_filename: str = "avatar.jpg"
-    avatar_path: str = os.path.join(target_dir, avatar_filename)
+    avatar_path: Path = target_dir / avatar_filename
     img.save(avatar_path, format="JPEG", quality=92)
 
     thumb_img = img.copy()
     thumb_img.thumbnail((200, 200))
     thumb_filename: str = "avatar_thumb.jpg"
-    thumb_path: str = os.path.join(target_dir, thumb_filename)
+    thumb_path: Path = target_dir / thumb_filename
     thumb_img.save(thumb_path, format="JPEG", quality=90)
 
     return f"/storage/avatar/{user_id}/{avatar_filename}", f"/storage/avatar/{user_id}/{thumb_filename}"
 
 
-async def clean_database_and_storage() -> None:
-    logger.info("Cleaning database tables...")
-    async with engine.begin() as conn:
-        for tbl in TABLES_TO_TRUNCATE:
-            await conn.execute(text(f"TRUNCATE TABLE {tbl} RESTART IDENTITY CASCADE;"))
-    
-    if os.path.exists(settings.STORAGE_PATH):
-        shutil.rmtree(settings.STORAGE_PATH, ignore_errors=True)
-    os.makedirs(settings.STORAGE_PATH, exist_ok=True)
-    logger.info("Database and storage cleaned successfully.")
+def create_reset_guard() -> ResetTargetGuard:
+    backend_root: Path = Path(__file__).resolve().parents[1]
+    return ResetTargetGuard(
+        environment=settings.ENVIRONMENT,
+        database_url=settings.DATABASE_URL,
+        storage_path=settings.STORAGE_PATH,
+        backend_root=backend_root,
+    )
 
 
-async def seed_demo_data() -> None:
-    await clean_database_and_storage()
+def stage_downloadable_assets() -> Dict[str, bytes]:
+    staged_assets: Dict[str, bytes] = {
+        f"mentor:{mentor_email}": get_or_download_real_photo(remote_urls)
+        for mentor_email, remote_urls in MENTOR_PHOTO_URLS.items()
+    }
+    staged_assets.update({
+        f"course:{course_id}": get_or_download_real_photo(remote_urls)
+        for course_id, remote_urls in COURSE_PHOTO_URLS.items()
+    })
+    return staged_assets
 
-    async with AsyncSessionLocal() as session:
-        password_hash_default: str = hash_password("password123")
+
+async def populate_demo_data(
+    session_factory: async_sessionmaker[AsyncSession],
+    storage_root: Path,
+    staged_assets: Dict[str, bytes],
+    administrator_password: str,
+    demo_password: str,
+) -> None:
+    password_hash_default: str = hash_password(demo_password)
+
+    async with session_factory() as session:
 
         admin_user: User = User(
             email="superadmin@mail.com",
-            password_hash=hash_password("12341234"),
+            password_hash=hash_password(administrator_password),
             first_name="SuperAdmin",
             last_name="System",
             role=UserRole.SUPERADMIN,
             phone="+992900000000",
-            must_set_password=False
+            must_set_password=True
         )
         session.add(admin_user)
 
@@ -203,7 +205,7 @@ async def seed_demo_data() -> None:
             last_name="Karimova",
             role=UserRole.ACCOUNTANT,
             phone="+992900000099",
-            must_set_password=False
+            must_set_password=True
         )
         session.add(accountant_user)
 
@@ -214,7 +216,7 @@ async def seed_demo_data() -> None:
             last_name="Hakimov",
             role=UserRole.MENTOR,
             phone="+992900000001",
-            must_set_password=False
+            must_set_password=True
         )
         mentor_gulnora: User = User(
             email="gulnora.saidova@imkon.tj",
@@ -223,7 +225,7 @@ async def seed_demo_data() -> None:
             last_name="Saidova",
             role=UserRole.MENTOR,
             phone="+992900000002",
-            must_set_password=False
+            must_set_password=True
         )
         mentor_farhod: User = User(
             email="farhod.ziyoyev@imkon.tj",
@@ -232,16 +234,14 @@ async def seed_demo_data() -> None:
             last_name="Ziyoyev",
             role=UserRole.MENTOR,
             phone="+992900000003",
-            must_set_password=False
+            must_set_password=True
         )
         session.add_all([mentor_sukhrob, mentor_gulnora, mentor_farhod])
         await session.flush()
 
         for mentor in [mentor_sukhrob, mentor_gulnora, mentor_farhod]:
-            url: str = MENTOR_PHOTO_URLS[mentor.email]
-            cache_name: str = f"mentor_{mentor.id}.jpg"
-            img_bytes: bytes = get_or_download_real_photo(cache_name, url)
-            photo_url, thumb_url = save_mentor_avatar(mentor.id, img_bytes)
+            img_bytes: bytes = staged_assets[f"mentor:{mentor.email}"]
+            photo_url, thumb_url = save_mentor_avatar(mentor.id, img_bytes, storage_root)
             mentor.photo_path = photo_url
             mentor.thumbnail_path = thumb_url
 
@@ -256,7 +256,7 @@ async def seed_demo_data() -> None:
                 phone=phone,
                 payment_day_of_month=(idx % 20) + 1,
                 parent_phone=f"+99290888{idx:04d}",
-                must_set_password=False
+                must_set_password=True
             )
             session.add(student)
             student_users.append(student)
@@ -341,10 +341,8 @@ async def seed_demo_data() -> None:
         enrollment_service: EnrollmentService = EnrollmentService(session)
 
         for cdef in course_definitions:
-            url: str = COURSE_PHOTO_URLS[cdef["id"]]
-            cache_name: str = f"course_{cdef['id']}.jpg"
-            img_bytes: bytes = get_or_download_real_photo(cache_name, url)
-            photo_path: str = save_course_photo(cdef["id"], img_bytes)
+            img_bytes: bytes = staged_assets[f"course:{cdef['id']}"]
+            photo_path: str = save_course_photo(cdef["id"], img_bytes, storage_root)
 
             course: Course = Course(
                 id=cdef["id"],
@@ -396,7 +394,7 @@ async def seed_demo_data() -> None:
 
         await session.commit()
 
-    async with AsyncSessionLocal() as session:
+    async with session_factory() as session:
         logger.info("Populating gradebook entries and journal summaries...")
         sum_service: SumCalculationService = SumCalculationService(session)
         
@@ -460,7 +458,7 @@ async def seed_demo_data() -> None:
         await session.commit()
         logger.info("Gradebook entries and summaries updated successfully following 100-point period target rules.")
 
-    async with AsyncSessionLocal() as session:
+    async with session_factory() as session:
         logger.info("Seeding financial payments...")
         finance_service: FinanceService = FinanceService(session)
         
@@ -497,10 +495,74 @@ async def seed_demo_data() -> None:
         await session.commit()
         logger.info("Financial payments seeded successfully.")
 
-if __name__ == "__main__":
+
+async def seed_demo_data(target: ResetTarget, administrator_password: str, demo_password: str) -> None:
+    target = create_reset_guard().authorize_target(target)
+    if target.dry_run:
+        raise ResetGuardError("Dry-run targets cannot modify the database or storage.")
+    staged_assets: Dict[str, bytes] = stage_downloadable_assets()
+    storage_replacement: StorageReplacement = StorageReplacement(target)
+    staged_storage_root: Path = storage_replacement.prepare()
+
     try:
-        asyncio.run(seed_demo_data())
-        print("DEMO DATA SEEDED SUCCESSFULLY!")
-    except Exception as e:
-        logger.error(f"Error seeding demo data: {e}")
-        sys.exit(1)
+        async with engine.begin() as connection:
+            for table_name in TABLES_TO_TRUNCATE:
+                await connection.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;"))
+
+            session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
+                bind=connection,
+                expire_on_commit=False,
+                join_transaction_mode="rollback_only",
+            )
+            await populate_demo_data(
+                session_factory=session_factory,
+                storage_root=staged_storage_root,
+                staged_assets=staged_assets,
+                administrator_password=administrator_password,
+                demo_password=demo_password,
+            )
+            storage_replacement.install()
+    except BaseException:
+        try:
+            storage_replacement.rollback()
+        except Exception:
+            logger.error("Storage rollback failed; the disposable backup was retained for recovery.")
+            raise
+        raise
+
+    try:
+        storage_replacement.finalize()
+    except Exception:
+        logger.error("The previous disposable storage backup could not be removed.")
+
+
+
+def main(arguments: Sequence[str] | None = None) -> None:
+    argument_parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    try:
+        target: ResetTarget = create_reset_guard().parse_and_validate(
+            arguments if arguments is not None else sys.argv[1:]
+        )
+    except SystemExit:
+        raise
+    except ResetGuardError as error:
+        argument_parser.exit(2, f"Reset refused: {error}\n")
+
+    if target.dry_run:
+        print(f"Dry run: database={target.database_identity} storage={target.storage_root}")
+        return
+
+    try:
+        credentials = CredentialProvisioner().provision(["administrator", "demo users"])
+        asyncio.run(seed_demo_data(target, credentials["administrator"], credentials["demo users"]))
+    except ResetGuardError as error:
+        argument_parser.exit(2, f"Reset refused: {error}\n")
+    except Exception:
+        logger.error("Demo reset failed; database changes were rolled back.")
+        raise SystemExit(1) from None
+
+    print("Demo database reset completed.")
+
+
+if __name__ == "__main__":
+    main()
