@@ -389,7 +389,7 @@
   {
     "id": "KITOB-04-05",
     "title": "Summary breakdown paired exam/bonus editor",
-    "status": "in_progress",
+    "status": "completed",
     "group": "04",
     "dependencies": [
       "KITOB-04-04"
@@ -400,7 +400,7 @@
   {
     "id": "KITOB-04-06",
     "title": "Period settings",
-    "status": "pending",
+    "status": "in_progress",
     "group": "04",
     "dependencies": [
       "KITOB-04-05"
