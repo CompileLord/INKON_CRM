@@ -196,3 +196,16 @@ After reviewing the running Finance page, the user directed these changes. They 
 4. **Compact range control.** The collection range uses one compact range button showing the current period (for example "Oct 2026") that opens a small popover with From/To and Apply plus quick presets (This month, Last month, This year). No permanently visible pair of large date fields in the summary.
 5. **Charts are welcome** where they make values easier to read, following honest-data rules: missing is a gap, not zero. A small monthly net-cash bar chart may sit in the collection cell or the payments panel if it uses existing endpoints without per-month fan-out requests.
 6. Page scroll only; no nested vertical scroll regions. Frequent pickers are small inline popovers, not large dialogs.
+
+## UX overrides from the screenshot review (2026-10-16)
+
+These apply to KITOB-05-05 and KITOB-05-07, the audit registry, and take precedence over earlier wording where they conflict. They were found in `superadmin-audit-contact.png`.
+
+- **Rows read as sentences, not database dumps.** Each row reads "<Actor name> <verb> <entity label> · <relative time>". For example: "Aziz Karimov recorded a payment of 150.00 TJS for Malika Rahimova · 5 min ago". Never show "User #1", raw entity names like `journal_entry #123`, or the row ID as a column. IDs move to the inspector.
+- **Changed fields stay in the inspector.** Raw field diffs (`amount: 100 → 150`) belong only in the inspector. The row may show a one-line summary of at most two changed fields, using human labels.
+- **Actions are icon chips.** Create, update and delete use muted icon chips (plus, pencil, trash) in token colours, replacing the bright purple pills.
+- **Group by day.** Sticky day headers read Today, Yesterday, then a formatted date. Absolute timestamps appear in a tooltip.
+- **Filters are inline chips.** Actor, action, entity type and date range use the custom listbox popover, not a native select. Active filters show as removable chips. Search sits in the same row.
+- **Inspector.** On desktop it is a right-side drawer. On phone it is a full-screen sheet. It shows the field diff as a two-column before/after list, and links to the affected student, payment or course.
+- **Phone layout.** One card per event with a two-line sentence and time. Never use a squeezed table; the old ID, TIME, USER and ACTION headers overlap.
+- **Short copy.** Drop the subtitle "History of all changes…" and put that explanation in an InfoTooltip next to the title. "Refresh" becomes an icon button.

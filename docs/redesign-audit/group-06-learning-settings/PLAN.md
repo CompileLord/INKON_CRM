@@ -216,3 +216,60 @@ Run `cd backend && python -m pytest app/tests -q`, `cd frontend && npx vitest ru
 ## User-authorized shared SVG loading indicator (2026-10-10)
 
 Apply the bounded editable-SVG artwork and animated-book loading contract in [MOTION.md](../MOTION.md), section “User-authorized SVG artwork and brand motion (2026-10-10)”. Use the supplied shared book indicator alongside matching loading geometry/status when activity needs feedback; preserve readable loaded data during refetch and use a static reduced-motion fallback. No full-logo loops on these operational pages, no invented progress percentages or motion library. This explicit authorization does not change permissions, persistence, metric semantics, dependencies or deferred feature scope.
+
+## UX overrides from the screenshot review (2026-10-16)
+
+These were found in the Group 06 baseline contact sheets. They apply on top of this plan and follow the user's standing preferences:
+- short copy, with explanations behind an (i) InfoTooltip
+- icons on metrics and actions
+- names, never IDs
+- custom listbox popovers
+- page-level scroll only
+- smooth 150/200ms motion-safe transitions
+- charts in the Journal progress chart style
+
+### KITOB-06-01 /my/courses
+- Cards use a compact landscape layout on desktop: a three-column grid, an image at a 16:9 ratio with a soft gradient, and a fallback with the course initials on a token tint when no image exists.
+- The score uses a tabular-nums number plus a slim progress bar coloured by band (good, ok, risk tokens), never always red. The text "3 of 3 periods" becomes a small stepper of dots.
+- The teacher shows as an avatar plus name on one line, with no pill-on-image look.
+- Active/Archive is a segmented control with counts. The empty archive says why it is empty in one short sentence.
+
+### KITOB-06-02 /my/courses/:id
+- Header: a breadcrumb, the course name, then muted dates and the schedule summary ("Mon · Wed · Fri 09:00–11:00") in one line, plus the teacher avatar. The separate "Weekly schedule" card goes, and the next lesson appears as a highlighted chip ("Next: Fri 09:00").
+- Stats: four compact tiles with icons (score, attendance, absences, rank "1 of 9"), with short labels and an InfoTooltip for the class-average definition.
+- Trend chart: use the Journal progress chart style, with a smooth line, a dashed class average, a crosshair tooltip and the y-axis from 0 to 100. The current chart is a flat red line with no affordance.
+- Study periods: compact clickable rows (period, dates muted, score, chevron) that navigate to /my/journal/:id. Replace the green dots with a score band chip.
+- "About course" is collapsed to two lines with a "More" toggle.
+- On phone the bottom nav must not overlay content. Add a bottom padding equal to the nav height plus the safe area; the baseline shows the nav covering the chart.
+
+### KITOB-06-03 /my/journal/:id
+- Score summary: the large total with a breakdown bar is good. Label the segments with icons and keep the values in a legend row. Rank appears as a small chip, not a boxed card.
+- Lesson list: group by week, with each row showing the date (weekday short plus date through formatters), an attendance icon only (a check, or a red x for absent; drop the repeated "Attended" text) and the score as a 28px pill. Add an optional comment indicator.
+- Add a small period switcher (the custom listbox, reusing JournalPeriodPicker styling) so the student can move between months without going back.
+- Phone: the same bottom-padding fix.
+
+### KITOB-06-04 /settings personal
+- Use a two-column settings layout on desktop: a left section nav (Profile, Appearance, Notifications, plus Organization for superadmin) and the content on the right. Do not use tabs that wrap onto two lines on phone (the baseline has "User / Profile" wrapping). On phone, use a list of sections that drill in.
+- Sections use the row pattern "label + description muted | control", not stacked form cards.
+- Theme and language become two labelled segmented controls with icons (Light, Dark, System and RU, TG, EN). All copy is translated; the baseline has Russian "Тема и язык" inside the English UI.
+- Save is contextual: a sticky bottom bar appears only when the form is dirty, showing "Unsaved changes · Discard · Save". There is no permanently floating red Save button.
+- Remove the visible version string, or move it into an About row.
+
+### KITOB-06-05 Organization
+- Rows: organization name (inline edit), currency (read-only, with an InfoTooltip saying why), and Telegram bot status as a row with the status dot, the bot name and a "Test" action.
+- Use the same dirty-save bar.
+
+### KITOB-06-06 Notification rules
+- Use toggle switches, not checkboxes. Each rule row shows an icon, a name, a one-line description and channel chips (Telegram), with the switch on the right. Changes autosave with a "Saved" toast, so no Save button is needed.
+
+### KITOB-06-07 /notifications
+- A role-appropriate inbox, not a dispatch log table, for students, mentors and accountants. Each item has an icon by type, a title, a one-line body, a relative time and an unread dot. Items are grouped by day, with "Mark all read". The empty state uses an illustration icon and one sentence.
+- Superadmin additionally gets a "Delivery log" tab with status chips (sent, failed or queued) and a failed-only filter chip. That tab uses phone cards instead of the squeezed seven-column table.
+- The title is "Notifications", not "System Notifications Log". The explanation moves into an InfoTooltip.
+
+### User decision (2026-10-16): students see the real class journal and chart
+This supersedes the KITOB-06-03 lesson list and the KITOB-06-02 single-line trend above. On the user's explicit instruction, a student enrolled in a course sees the same journal grid and Progress chart that the mentor sees, with classmates' names and scores, but read-only.
+- **Read-only.** No picker, no attendance or comment editing, no keyboard edit mode, and no save marker. The student's own row is highlighted and pinned first.
+- **Progress chart.** Same component and style as the mentor's: per-student lines, the class average, the crosshair and the "+N more" legend. The student's own line is selected by default along with the top classmates.
+- **Backend.** Needs a student-authorized, read-only class journal endpoint, restricted to courses the student is actively enrolled in or archived from. It returns the same shape the mentor grid consumes, without private fields (comments by others, contact data). This is a privacy-boundary change that needs explicit tests: a non-enrolled student is denied, and no other students' contacts or private comments appear. Coordinate with the backend owner; the Codex backend agent works in parallel.
+- **Reuse.** Reuse JournalGrid, JournalLessonView and JournalProgressView with a `readOnly` mode instead of building a separate student view.
