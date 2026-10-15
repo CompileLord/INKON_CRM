@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from typing_extensions import Protocol
 from app.models.user import User
 from app.repositories.interfaces.base_repository import BaseRepository
@@ -6,6 +6,19 @@ from app.repositories.interfaces.base_repository import BaseRepository
 
 class UserRepository(BaseRepository[User], Protocol):
     async def get_by_email(self, email: str) -> Optional[User]:
+        ...
+
+    async def get_guardian_binding_candidates(
+        self,
+        normalized_phone_values: Sequence[str],
+    ) -> list[User]:
+        ...
+
+    async def update_guardian_bindings(
+        self,
+        students: Sequence[User],
+        telegram_chat_id: int,
+    ) -> None:
         ...
 
     async def get_students_list(
