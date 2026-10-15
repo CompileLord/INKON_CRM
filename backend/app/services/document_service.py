@@ -1,6 +1,8 @@
 import os
 from typing import List, Optional
 from fastapi import HTTPException, status, UploadFile
+from app.core.config import settings
+from app.core.redis import enqueue_job
 from sqlalchemy import and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
@@ -97,14 +99,13 @@ class DocumentService:
             summary_res = await self.db.execute(summary_query)
             summary = summary_res.scalars().first()
             if summary and summary.exam_score > 0:
-                from arq import create_pool
-                from arq.connections import RedisSettings
-                from app.core.config import settings
                 if not settings.TESTING:
                     try:
-                        redis_settings = RedisSettings(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
-                        pool = await create_pool(redis_settings)
-                        await pool.enqueue_job("send_student_document_notification_task", owner_id, journal_id)
+                        await enqueue_job(
+                            "send_student_document_notification_task",
+                            owner_id,
+                            journal_id,
+                        )
                     except Exception:
                         pass
 
