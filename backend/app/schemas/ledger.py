@@ -100,6 +100,8 @@ class PaymentEntryResponse(BaseModel):
 
     id: int
     student_id: int
+    student_first_name: Optional[str] = None
+    student_last_name: Optional[str] = None
     amount: Decimal
     paid_at: datetime
     method: Optional[PaymentMethod] = None

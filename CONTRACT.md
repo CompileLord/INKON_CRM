@@ -2301,6 +2301,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       {
         "id": integer,
         "student_id": integer,
+        "student_first_name?": string,
+        "student_last_name?": string,
         "amount": string,
         "paid_at": string,
         "method?": any,
@@ -2361,6 +2363,8 @@ Record cash received. Discounts are separate — see POST /finance/discounts/.
   {
     "id": integer,
     "student_id": integer,
+    "student_first_name?": string,
+    "student_last_name?": string,
     "amount": string,
     "paid_at": string,
     "method?": "cash" | "transfer",

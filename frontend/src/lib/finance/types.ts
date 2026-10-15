@@ -127,6 +127,9 @@ export interface PaymentAllocationItem {
 export interface PaymentItem {
   id: number;
   student_id: number;
+  /** Null when the student record does not exist. */
+  student_first_name?: string | null;
+  student_last_name?: string | null;
   /** Cash received. */
   amount: string;
   paid_at: string;

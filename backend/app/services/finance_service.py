@@ -930,13 +930,25 @@ class FinanceService:
                     refunded_by_entry.get(reversal.reverses_entry_id, ZERO) + reversal.amount
                 )
 
+        student_res = await self.db.execute(
+            select(User.id, User.first_name, User.last_name).filter(
+                User.id.in_({entry.student_id for entry in entries})
+            )
+        )
+        student_names_by_id: Dict[int, Tuple[str, str]] = {
+            row.id: (row.first_name, row.last_name) for row in student_res.all()
+        }
+
         items = []
         for entry in entries:
             allocated = allocated_by_entry.get(entry.id, ZERO)
+            student_first_name, student_last_name = student_names_by_id.get(entry.student_id, (None, None))
             items.append(
                 {
                     "id": entry.id,
                     "student_id": entry.student_id,
+                    "student_first_name": student_first_name,
+                    "student_last_name": student_last_name,
                     "amount": entry.amount,
                     "paid_at": entry.occurred_at,
                     "method": entry.method,
