@@ -49,6 +49,8 @@ Snapshot excerpt from `backend/scripts/setup_free_tier_vm.sh`:
 1. Replace printed password/DSN values with status metadata; use restricted secret files and POSTGRES_PASSWORD_FILE.
 2. Accept admin password via stdin/file descriptor for automation and getpass interactively; avoid value-bearing command arguments and preserve validation.
 
+Audit correction: the initial implementation put the default password file inside PostgreSQL PGDATA, so a real fresh PostgreSQL16 container failed initdb because its data directory was not empty. Keep secret files outside PGDATA and cover default fresh provisioning as well as an explicitly supplied file. The initial interactive tests also stayed green when both getpass calls were replaced with input; add a real pseudo-terminal regression that detects password echo without mocking password input. Preserve the existing permission, initialized-database, protected-input and no-secret-log criteria.
+
 ## Tests to write BEFORE the fix
 
 - Capture dummy-credential stdout/stderr/argv and assert the value is absent; invalid protected-file permissions fail safely; interactive and stdin provisioning validate inputs.
