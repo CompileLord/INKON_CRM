@@ -30,6 +30,7 @@ The user assigned this remediation session backend-only ownership while a separa
 | [backend/app/telegram_bot/handlers/start.py:25](../../../backend/app/telegram_bot/handlers/start.py) | Existing file, anchor line 25; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp15.py](../../../backend/app/tests/integration/test_remediation_wp15.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_integrations_and_polish.py](../../../backend/app/tests/integration/test_integrations_and_polish.py) | Update only the legacy Telegram webhook/parent-binding fixture and assertions to use distinct student and configured parent phones; retain end-to-end webhook coverage. |
 | [docs/remediation/results/WP-15.md](../results/WP-15.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md:1](../STATUS.md) | Shared administrative progress ledger; integrate row updates serially, never overwrite another WP’s row. |
 
