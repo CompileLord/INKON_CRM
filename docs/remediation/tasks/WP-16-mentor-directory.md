@@ -52,6 +52,8 @@ Snapshot excerpt from `backend/app/api/v1/students.py`:
 1. Derive mentor_id from the authenticated principal, never the request; pass it through service/protocol to the repository.
 2. Apply the same nondeleted-course/enrollment ownership predicate to count, search and page queries. Preserve administrator/accountant directory access and explicitly state withdrawn-enrollment policy.
 
+Execution policy clarified before implementation (2026-10-15): nondeleted withdrawn and completed enrollments retain directory visibility to their course's mentor, as do active enrollments. Enrollment status alone does not revoke this historical course relationship. Deleted enrollment or course records do not grant access. Apply the predicate with a correlated existence check so several matching enrollments cannot duplicate directory rows or inflate totals. Tests must exercise the status policy, both soft-deletion boundaries, search, pagination and authenticated-principal ownership; a request-supplied mentor ID must not broaden access. This package does not change the separately specified profile endpoint or guardian delivery policy.
+
 ## Tests to write BEFORE the fix
 
 - Seed two mentors, unrelated students and parent contacts. Test own-course results, unrelated search/total exclusion and a mentor with zero courses.
