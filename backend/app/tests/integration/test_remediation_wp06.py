@@ -125,10 +125,11 @@ async def test_password_reset_keeps_setup_required_access_token_restricted(
     await db_session.commit()
     reset_token: str = jwt.encode(
         {
-            "sub": test_student.email,
+            "sub": str(test_student.id),
             "type": "password_reset",
             "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
             "iat": int(datetime.now(timezone.utc).timestamp()),
+            "auth_version": test_student.auth_version,
         },
         settings.JWT_SECRET_KEY,
         algorithm="HS256",
@@ -208,6 +209,7 @@ async def test_valid_full_access_token_remains_valid(
             "role": test_student.role.value,
             "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
             "iat": int(datetime.now(timezone.utc).timestamp()),
+            "auth_version": test_student.auth_version,
         },
         settings.JWT_SECRET_KEY,
         algorithm="HS256",
