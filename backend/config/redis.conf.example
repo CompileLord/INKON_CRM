@@ -1,0 +1,8 @@
+port 0
+tls-port 6379
+tls-cert-file /tls/server.crt
+tls-key-file /tls/server.key
+tls-ca-cert-file /tls/ca.crt
+tls-auth-clients no
+aclfile /data/users.acl
+protected-mode yes
