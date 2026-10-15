@@ -13,6 +13,10 @@ Close guardian property bypasses and bind the correct parent contact. One bounde
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized backend ownership correction
+
+The user assigned this remediation session backend-only ownership while a separate Claude agent owns the frontend. On 2026-10-15 the user authorized correcting plan/documentation conflicts before implementation. Client files below are therefore read-only contract context for this executor; report the exact self-update contract delta in WP-15 results for the frontend owner. Do not edit frontend files or treat their separately owned checks as backend gates. Backend schema/contract generation, security tests and all backend acceptance criteria remain mandatory.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -22,8 +26,6 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/schemas/user.py:32](../../../backend/app/schemas/user.py) | Existing file, anchor line 32; only this WP’s stated behavior may change. |
 | [backend/app/services/user_service.py:10](../../../backend/app/services/user_service.py) | Existing file, anchor line 10; only this WP’s stated behavior may change. |
 | [backend/app/telegram_bot/handlers/start.py:25](../../../backend/app/telegram_bot/handlers/start.py) | Existing file, anchor line 25; only this WP’s stated behavior may change. |
-| [frontend/src/lib/users/types.ts:1](../../../frontend/src/lib/users/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
-| [frontend/src/lib/users/formMapping.ts:1](../../../frontend/src/lib/users/formMapping.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp15.py](../../../backend/app/tests/integration/test_remediation_wp15.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/results/WP-15.md](../results/WP-15.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
@@ -95,7 +97,7 @@ Also run the targeted tests described here. Configure test storage/temp output a
 
 Verification focuses on the exact behavioral/security tests above. No speculative performance benchmark is required.
 
-Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment; synchronize only the listed client types/callers and verify them by reading their contents (frontend/src/lib is broadly gitignored). New visible text must use existing translations or stop to add exact locale paths to the plan.
+Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment. Read `frontend/src/lib/users/types.ts` and `frontend/src/lib/users/formMapping.ts` only as client context and record required consumer synchronization for the separate frontend owner; do not write them in this backend task. New visible text must use existing translations or stop to add exact locale paths to the plan.
 
 ## Risks and rollback
 
