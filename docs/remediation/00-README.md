@@ -18,6 +18,8 @@ The user authorized backend remediation execution and, on 2026-10-15, explicitly
 
 The orchestrator reviews and audits; implementation corrections return to the same executor unless the applicable two-FAIL escalation rule requires the authorized Sol-low owner. Frontend work belongs to the user's separate Claude agent: do not edit frontend files or treat its checks as backend gates. Where a backend contract changes, regenerate the authorized contract and record the precise client synchronization needed. No push, PR publication, deployment or operational data modification is authorized. Preserve the original main checkout's unrelated changes and existing executor identities/worktrees.
 
+Delegation update (user instruction, 2026-10-15): retain existing native executors through their current packages and independent audit. Use the explicitly requested `delegate-to-agy` skill for subsequent delegation, with a bounded task scope, exact available model, saved conversation ID and same-conversation corrections. Codex remains the orchestrator and independent auditor. This overrides the native-executor default for future assignments; preserve unfinished work and existing identities. Keep handoffs in executor input and recovery/evidence in STATUS.md and external logs, without creating additional Markdown reports.
+
 ## Strict execution rules
 
 1. **Among remediation planning documents, read only this README and your own WP file.** Each task includes its own evidence, dependencies and interfaces; audit links are provenance, not required extra reading. Read source, tests and applicable repository policy as necessary. WP-62 explicitly authorizes read-only full re-audit context.
