@@ -30,7 +30,8 @@ export interface PaymentFilters {
 
 export interface DebtFilters {
   courseId?: number;
-  minDebt?: number;
+  /** Exact decimal string, for example "100.50". */
+  minDebt?: string;
   overdueDays?: number;
   enrollmentStatus?: string;
 }

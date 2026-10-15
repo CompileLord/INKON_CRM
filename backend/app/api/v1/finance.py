@@ -1,3 +1,4 @@
+from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, Path, status
@@ -231,7 +232,7 @@ async def reopen_period(
 @router.get("/debts/", response_model=PaginatedResponse[DebtResponse])
 async def get_debts(
     course_id: Optional[int] = Query(None),
-    min_debt: Optional[float] = Query(None),
+    min_debt: Optional[Decimal] = Query(None, ge=0, max_digits=12, decimal_places=2),
     overdue_days: Optional[int] = Query(None),
     enrollment_status: Optional[EnrollmentStatus] = Query(
         None, description="Defaults to all statuses; use 'active' to exclude withdrawn students"

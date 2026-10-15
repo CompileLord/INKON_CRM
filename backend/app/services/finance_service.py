@@ -51,6 +51,7 @@ from app.core.redis import redis_client
 # The centre operates on Asia/Dushanbe (UTC+5, no DST).
 DUSHANBE_TZ_OFFSET = timedelta(hours=5)
 
+ANALYTICS_CACHE_KEY_PREFIX: str = "finance:analytics:v2:"
 ZERO = Decimal("0.00")
 
 # Entry types that put credit on a student's account.
@@ -1178,7 +1179,7 @@ class FinanceService:
 
         min_debt = filters.get("min_debt")
         if min_debt is not None:
-            query = query.filter(debt_expr >= Decimal(str(min_debt)))
+            query = query.filter(debt_expr >= min_debt)
         else:
             query = query.filter(debt_expr > ZERO)
 
@@ -1233,7 +1234,7 @@ class FinanceService:
         }
 
     async def get_analytics(self, date_from: date, date_to: date) -> dict:
-        cache_key = f"finance:analytics:{date_from.isoformat()}:{date_to.isoformat()}"
+        cache_key = f"{ANALYTICS_CACHE_KEY_PREFIX}{date_from.isoformat()}:{date_to.isoformat()}"
         cached = await redis_client.get(cache_key)
         if cached:
             return json.loads(cached)
@@ -1330,29 +1331,29 @@ class FinanceService:
                 "first_name": item["student"]["first_name"],
                 "last_name": item["student"]["last_name"],
                 "email": item["student"]["email"],
-                "debt": float(item["debt"]),
+                "debt": self._money_string(item["debt"]),
             }
             for item in top_debtors["items"]
         ]
 
         collection_rate = (
-            float((collected_in_period / billed_in_period).quantize(Decimal("0.0001")))
+            str((collected_in_period / billed_in_period).quantize(Decimal("0.0001")))
             if billed_in_period > 0
-            else 0.0
+            else "0.0000"
         )
 
         analytics = {
-            "gross_contract_value": float(gross_contract_value),
-            "billed_to_date": float(billed_to_date),
-            "billed_in_period": float(billed_in_period),
-            "net_receivable": float(net_receivable),
-            "collected_in_period": float(collected_in_period),
-            "outstanding_credit": float(outstanding_credit),
+            "gross_contract_value": self._money_string(gross_contract_value),
+            "billed_to_date": self._money_string(billed_to_date),
+            "billed_in_period": self._money_string(billed_in_period),
+            "net_receivable": self._money_string(net_receivable),
+            "collected_in_period": self._money_string(collected_in_period),
+            "outstanding_credit": self._money_string(outstanding_credit),
             "aging": {
-                "d0_30": float(aging[0]),
-                "d31_60": float(aging[1]),
-                "d61_90": float(aging[2]),
-                "d90_plus": float(aging[3]),
+                "d0_30": self._money_string(aging[0]),
+                "d31_60": self._money_string(aging[1]),
+                "d61_90": self._money_string(aging[2]),
+                "d90_plus": self._money_string(aging[3]),
             },
             "unpaid_students_count": int(unpaid_students_count),
             "collection_rate": collection_rate,
@@ -1361,6 +1362,10 @@ class FinanceService:
 
         await redis_client.set(cache_key, json.dumps(analytics), ex=600)
         return analytics
+
+    @staticmethod
+    def _money_string(amount: Decimal) -> str:
+        return str(Decimal(amount).quantize(Decimal("0.01")))
 
     async def _total_outstanding_credit(self) -> Decimal:
         """Sum of every student's wallet, computed in three set-based queries."""
