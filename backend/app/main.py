@@ -23,22 +23,14 @@ from app.api.v1.cron import router as cron_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.telegram_bot.bot import bot
-    if not settings.TESTING:
+    try:
+        yield
+    finally:
         try:
-            await bot.set_webhook(
-                url=settings.TELEGRAM_WEBHOOK_URL,
-                secret_token=settings.TELEGRAM_BOT_SECRET_TOKEN
-            )
-        except Exception:
-            pass
-    yield
-    if not settings.TESTING:
-        try:
-            await bot.delete_webhook()
-        except Exception:
-            pass
-    from app.core.redis import close_arq_pool
-    await close_arq_pool()
+            await bot.session.close()
+        finally:
+            from app.core.redis import close_arq_pool
+            await close_arq_pool()
 
 
 is_prod = settings.ENVIRONMENT == "production"

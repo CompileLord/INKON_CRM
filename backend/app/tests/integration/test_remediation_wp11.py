@@ -438,31 +438,35 @@ print('LOADED')
         assert not secret_leaked, "invalid webhook errors must redact embedded secrets"
 
 
-def test_production_lifespan_registers_and_removes_webhook_with_workflow_settings(
+def test_production_lifespan_closes_local_resources_with_workflow_settings(
     configuration_probe: ConfigurationProbe,
 ) -> None:
     script: str = """
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 import app.telegram_bot.bot as telegram_bot
+import app.core.redis as redis_module
 from app.core.config import settings
 from app.main import app
 
 set_webhook = AsyncMock()
 delete_webhook = AsyncMock()
+close_bot_session = AsyncMock()
+close_arq_pool = AsyncMock()
 telegram_bot.bot.set_webhook = set_webhook
 telegram_bot.bot.delete_webhook = delete_webhook
+telegram_bot.bot.session.close = close_bot_session
+redis_module.close_arq_pool = close_arq_pool
 with TestClient(app):
     pass
 
-set_call = set_webhook.await_args
-delete_call = delete_webhook.await_count
-if set_call is None or set_call.kwargs != {
-    'url': settings.TELEGRAM_WEBHOOK_URL,
-    'secret_token': settings.TELEGRAM_BOT_SECRET_TOKEN,
-} or delete_call != 1:
+if set_webhook.await_count != 0 or delete_webhook.await_count != 0:
+    raise SystemExit('LIFESPAN_WEBHOOK_OWNERSHIP_MISMATCH')
+if close_bot_session.await_count != 1 or close_arq_pool.await_count != 1:
+    raise SystemExit('LIFESPAN_LOCAL_CLEANUP_MISMATCH')
+if settings.ENVIRONMENT != 'production' or settings.TELEGRAM_WEBHOOK_URL != 'https://hooks.example.com/api/v1/telegram/webhook' or not settings.TELEGRAM_BOT_SECRET_TOKEN:
     raise SystemExit('LIFESPAN_MISMATCH')
-print('LIFESPAN_MATCHED')
+print('LIFESPAN_LOCAL_CLEANUP_MATCHED')
 """
     result: subprocess.CompletedProcess[str] = configuration_probe.run_python(
         script,
@@ -470,6 +474,6 @@ print('LIFESPAN_MATCHED')
     )
 
     assert result.returncode == 0
-    assert result.stdout.strip() == "LIFESPAN_MATCHED"
+    assert result.stdout.strip() == "LIFESPAN_LOCAL_CLEANUP_MATCHED"
     assert "synthetic" not in result.stdout
     assert "synthetic" not in result.stderr

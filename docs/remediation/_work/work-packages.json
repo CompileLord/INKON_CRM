@@ -1211,7 +1211,8 @@
       "backend/app/main.py",
       "backend/scripts/register_telegram_webhook.py",
       "backend/app/tests/integration/test_remediation_wp27.py",
-      "docs/remediation/STATUS.md"
+      "docs/remediation/STATUS.md",
+      "backend/app/tests/integration/test_remediation_wp11.py"
     ],
     "steps": [
       "Remove unconditional global webhook deletion from instance shutdown and close only the local bot session in finally.",
