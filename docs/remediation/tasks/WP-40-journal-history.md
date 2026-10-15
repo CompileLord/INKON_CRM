@@ -81,12 +81,7 @@ No supported history path materializes a student’s full lifetime; navigation a
 
 ## How to verify
 
-Activate the repository Conda **base** environment (never create a venv):
-
-```bash
-source /workspace/miniconda3/etc/profile.d/conda.sh
-conda activate base
-```
+Use the available system environment, as permitted by current AGENTS.md. Backend verification must use the Python version declared by `backend/Dockerfile` (currently Python 3.12); Conda is optional. A passing suite under another Python version does not establish deployment compatibility.
 
 Before and after the change, using the dedicated disposable runtime from WP-01/WP-09:
 
