@@ -504,7 +504,8 @@
       "backend/config/redis.conf.example",
       "backend/app/tests/integration/test_remediation_wp13.py",
       "docs/remediation/STATUS.md",
-      "backend/app/tests/conftest.py"
+      "backend/app/tests/conftest.py",
+      "backend/app/tests/integration/test_remediation_wp12.py"
     ],
     "steps": [
       "Publish only loopback for colocated clients or an explicit private interface with authorized VPC ingress for remote clients; never leave all-interface unauthenticated publication.",
