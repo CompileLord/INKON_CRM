@@ -25,7 +25,8 @@ class UserRepository(BaseRepository[User], Protocol):
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        mentor_id: int | None = None,
     ) -> dict:
         ...
 

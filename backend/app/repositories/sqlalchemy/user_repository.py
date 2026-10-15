@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.selectable import Exists
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -61,12 +62,30 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        mentor_id: int | None = None,
     ) -> dict:
-        query = select(User).filter(User.role == UserRole.STUDENT, User.is_deleted == False)
+        query: Select[tuple[User]] = select(User).where(
+            User.role == UserRole.STUDENT,
+            User.is_deleted.is_(False),
+        ).order_by(User.id)
+        if mentor_id is not None:
+            owned_course_enrollment: Exists = (
+                select(Enrollment.id)
+                .join(Course, Enrollment.course_id == Course.id)
+                .where(
+                    Enrollment.student_id == User.id,
+                    Enrollment.is_deleted.is_(False),
+                    Course.is_deleted.is_(False),
+                    Course.mentor_id == mentor_id,
+                )
+                .correlate(User)
+                .exists()
+            )
+            query = query.where(owned_course_enrollment)
         if search:
             search_pattern = f"%{search}%"
-            query = query.filter(
+            query = query.where(
                 or_(
                     User.first_name.ilike(search_pattern),
                     User.last_name.ilike(search_pattern),

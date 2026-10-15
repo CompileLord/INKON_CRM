@@ -181,9 +181,15 @@ class UserService:
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        mentor_id: int | None = None,
     ) -> dict:
-        return await self.user_repo.get_students_list(page=page, page_size=page_size, search=search)
+        return await self.user_repo.get_students_list(
+            page=page,
+            page_size=page_size,
+            search=search,
+            mentor_id=mentor_id,
+        )
 
     async def get_mentors(
         self,
