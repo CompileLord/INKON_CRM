@@ -13,6 +13,10 @@ Secure the Redis boundary and unify ARQ DSN handling. One bounded implementation
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+On 2026-10-15 the user authorized correcting missing plan paths before implementation. Source inspection found two additional active ARQ producers in the email and document services that still construct host/port-only connections. Their bounded connection changes are included below so all producers can satisfy the existing shared-endpoint acceptance criterion. No deployment or operational service changes are authorized by this package execution.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -22,6 +26,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/scripts/setup_free_tier_vm.sh:44](../../../backend/scripts/setup_free_tier_vm.sh) | Existing file, anchor line 44; only this WP’s stated behavior may change. |
 | [backend/app/core/redis.py:17](../../../backend/app/core/redis.py) | Existing file, anchor line 17; only this WP’s stated behavior may change. |
 | [backend/app/workers/settings.py:15](../../../backend/app/workers/settings.py) | Existing file, anchor line 15; only this WP’s stated behavior may change. |
+| [backend/app/services/email_service.py](../../../backend/app/services/email_service.py) | Existing verification-email producer: use the shared secure Redis connection configuration; preserve accepted SMTP TLS/timeout behavior. |
+| [backend/app/services/document_service.py](../../../backend/app/services/document_service.py) | Existing document-notification producer: use the shared secure Redis connection configuration; preserve authorization, privacy and transaction behavior. |
 | [backend/.env.example:1](../../../backend/.env.example) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/config/redis.conf.example](../../../backend/config/redis.conf.example) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp13.py](../../../backend/app/tests/integration/test_remediation_wp13.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
@@ -53,7 +59,7 @@ Snapshot excerpt from `backend/scripts/setup_free_tier_vm.sh`:
 ## Step-by-step change
 
 1. Publish only loopback for colocated clients or an explicit private interface with authorized VPC ingress for remote clients; never leave all-interface unauthenticated publication.
-2. Document/provision Redis ACL and TLS consistently without printing credentials. Parse REDIS_URL once for app, producer and worker, preserving database/password/TLS.
+2. Document/provision Redis ACL and TLS consistently without printing credentials. Parse REDIS_URL once for app, every producer (including verification-email and document notifications) and worker, preserving database/password/TLS. Preserve the accepted email transport and document privacy fixes. Typed connection configuration belongs in the existing core Redis module; avoid unrelated service refactoring.
 3. Treat Redis writers as trusted job submitters. If switching from pickle to a data-only codec, drain/version the queue and test all payload types; network/ACL isolation is the required first control, serializer change is defense in depth only.
 
 ## Tests to write BEFORE the fix
