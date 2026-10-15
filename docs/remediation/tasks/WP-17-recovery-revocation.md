@@ -15,7 +15,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 ## Authorized scope correction
 
-Source inspection on 2026-10-15 found that atomic user locking belongs in the repository contract and implementation. These paths are added before implementation to keep SQL out of authentication workflows and serialize reset with login/refresh issuance. Preserve existing token rotation and guardian/directory behavior.
+Source inspection on 2026-10-15 found that atomic user locking belongs in the repository contract and implementation. These paths are added before implementation to keep SQL out of authentication workflows and serialize reset with login/refresh issuance. Preserve existing token rotation and guardian/directory behavior. The legacy WP-06 full-access test manually signs a token; add its current auth_version claim so it still tests valid full access rather than weakening epoch validation.
 
 ## Exact files and lines
 
@@ -31,6 +31,7 @@ Source inspection on 2026-10-15 found that atomic user locking belongs in the re
 | [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement user locking and fresh epoch reads; preserve existing guardian and directory queries. |
 | [backend/alembic/versions/rwp17_auth_version.py](../../../backend/alembic/versions/rwp17_auth_version.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp17.py](../../../backend/app/tests/integration/test_remediation_wp17.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_remediation_wp06.py](../../../backend/app/tests/integration/test_remediation_wp06.py) | Update only the manually signed valid full-access fixture to include the required current epoch; preserve its successful full-access assertion. Missing-epoch rejection gets a WP-17 regression. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
