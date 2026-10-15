@@ -238,7 +238,12 @@ for (const [width, height] of [[1440, 1000], [390, 844]]) {
         return { chips: row.querySelectorAll("button").length, rowHeight: Math.round(row.getBoundingClientRect().height), more: node.querySelector('[data-testid="legend-more"]')?.textContent, rowScrolls: getComputedStyle(row).overflowX };
       });
       registerProbe({ probe: `legend_${tag}_plotted_chips_plus_average_then_one_plus_n_more_chip_in_one_row`, passed: legendInfo.chips === 7 && legendInfo.more === `+${staffProgress.students.length - 6} more` && legendInfo.rowHeight <= (width >= 1024 ? 100 : 60) && (width >= 1024 || legendInfo.rowScrolls === "auto"), ...legendInfo });
-      registerProbe({ probe: `chart_${tag}_no_page_overflow`, passed: (await overflowOf(page)) <= 0 });
+      const overflowNow = await overflowOf(page);
+      const offenders = overflowNow > 0 ? await page.evaluate(() => {
+        const clipped = (node) => { for (let parent = node.parentElement; parent; parent = parent.parentElement) { if (["auto", "scroll", "hidden"].includes(getComputedStyle(parent).overflowX)) return true; } return false; };
+        return Array.from(document.querySelectorAll("body *")).filter((node) => node.getBoundingClientRect().right > document.documentElement.clientWidth + 1 && !clipped(node)).slice(0, 10).map((node) => `${node.tagName}.${String(node.className).slice(0, 70)}|${node.getAttribute("data-testid")}|r${Math.round(node.getBoundingClientRect().right)}`);
+      }) : [];
+      registerProbe({ probe: `chart_${tag}_no_page_overflow`, passed: overflowNow <= 0, overflowNow, offenders });
       await shot(page, `progress-class-${tag}.png`, meta("Progress chart: top five students by latest value plus a dashed class average, dotted gridlines, no border, dot legend chips"));
 
       await hoverPeriod(page, 0.5);
@@ -277,6 +282,48 @@ for (const [width, height] of [[1440, 1000], [390, 844]]) {
       await page.keyboard.press("Escape");
       await hoverPeriod(page, 0.5);
       await shot(page, `progress-all-students-${tag}.png`, meta("Show all: every student's line, with the card listing all visible values"));
+      await context.close();
+    }
+
+    {
+      const { context, page } = await newSession(superadmin, { viewport: { width, height }, theme });
+      await openProgress(page);
+      const tableInfo = await page.getByTestId("progress-table").evaluate((table) => {
+        const rows = Array.from(table.querySelectorAll('[data-testid="student-row"]'));
+        const header = table.querySelector("thead th");
+        const scroll = table.parentElement;
+        const nameCell = rows[0].querySelector("th");
+        return {
+          rows: rows.length,
+          headers: Array.from(table.querySelectorAll("thead th")).map((th) => th.textContent.replace(/[↑↓]/g, "").trim()),
+          rowHeight: Math.round(rows[0].getBoundingClientRect().height),
+          transform: getComputedStyle(header).textTransform,
+          nameSticky: getComputedStyle(nameCell).position,
+          scrollsInside: scroll.scrollWidth > scroll.clientWidth,
+          pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          classRowFirst: table.querySelector("tbody tr").getAttribute("data-testid"),
+          dashes: table.querySelectorAll("tbody td span[aria-hidden]").length,
+          trendTokens: Array.from(table.querySelectorAll("[data-trend]")).map((node) => node.getAttribute("data-trend")),
+        };
+      });
+      registerProbe({ probe: `table_${tag}_every_student_row_short_period_headers_compact_rows_sentence_case_and_pinned_class_row`, passed: tableInfo.rows === staffProgress.students.length && tableInfo.headers[0] === "Student" && tableInfo.headers.slice(1, 1 + startedCount).every((label, index) => label === staffProgress.periods[index].period_label) && tableInfo.headers.slice(-2).join() === "Average,Trend" && tableInfo.rowHeight >= 44 && tableInfo.rowHeight <= 48 && tableInfo.transform === "none" && tableInfo.nameSticky === "sticky" && tableInfo.pageOverflow <= 0 && tableInfo.classRowFirst === "class-row", ...tableInfo });
+      if (width < 1024) {
+        const scroll = page.getByTestId("progress-table-scroll");
+        await scroll.evaluate((node) => { node.scrollLeft = node.scrollWidth; });
+        await sleep(200);
+        const sticky = await page.locator('[data-testid="student-row"] th').first().evaluate((node) => ({ left: Math.round(node.getBoundingClientRect().left), scrollLeft: node.closest('[data-testid="progress-table-scroll"]').scrollLeft }));
+        registerProbe({ probe: `table_${tag}_name_column_stays_pinned_while_the_table_scrolls_sideways`, passed: sticky.left <= 20, ...sticky });
+        await scroll.evaluate((node) => { node.scrollLeft = 0; });
+      }
+      const rowCount = await page.locator('[data-testid="chart-series-student"][data-visible="true"]').count();
+      await page.locator('[data-testid="student-row"][data-visible="false"]').first().click();
+      await sleep(300);
+      registerProbe({ probe: `table_${tag}_clicking_a_hidden_students_row_adds_the_line_to_the_chart`, passed: (await page.locator('[data-testid="chart-series-student"][data-visible="true"]').count()) === rowCount + 1 });
+      await page.locator('[data-testid="student-row"][data-visible="true"]').last().click();
+      await page.getByTestId("progress-table").scrollIntoViewIfNeeded();
+      await page.evaluate(() => { const t = document.querySelector('[data-testid="progress-table"]'); window.scrollTo(0, window.scrollY + t.getBoundingClientRect().top - 130); });
+      await sleep(300);
+      await shot(page, `progress-table-${tag}.png`, meta("transposed results table: every student as a row with a swatch, short period headers, bare percentages, muted dashes for missing, average and trend columns, pinned class average row"));
       await context.close();
     }
 

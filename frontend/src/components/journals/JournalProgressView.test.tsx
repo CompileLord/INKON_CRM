@@ -408,20 +408,12 @@ describe("Progress line chart", () => {
     expect(pointClasses).not.toContain("transition-transform");
   });
 
-  it("keeps the table as the accessible alternative with a column per visible student", () => {
-    render(<JournalProgressView courseId={1} />);
-    const table = screen.getByRole("table", { name: "Class results by period" });
-    expect(within(table).getByRole("columnheader", { name: "Bahor Tester" })).toBeDefined();
-    fireEvent.click(within(screen.getByRole("list", { name: "Chart series" })).getByRole("button", { name: "Bahor Tester" }));
-    expect(within(table).queryByRole("columnheader", { name: "Bahor Tester" })).toBeNull();
-    expect(within(table).getByText("Not started")).toBeDefined();
-  });
-
-  it("does not render the chart when nothing has started", () => {
+  it("does not render the chart or table when no period has started and explains why", () => {
     mockProgress({ ...data, periods: [PERIODS[3]], students: data.students.map((entry) => ({ ...entry, period_results: [result(4, 0, 24, 0)] })) });
     render(<JournalProgressView courseId={1} />);
     expect(screen.queryByTestId("progress-chart")).toBeNull();
-    expect(screen.getByRole("table", { name: "Class results by period" })).toBeDefined();
+    expect(screen.queryByTestId("progress-table")).toBeNull();
+    expect(screen.getByText("No period has started yet")).toBeDefined();
   });
 
   it("puts the explanation behind an info tooltip instead of a permanent line", async () => {
@@ -432,5 +424,170 @@ describe("Progress line chart", () => {
       fireEvent.click(screen.getByRole("button", { name: "About these results" }));
     });
     expect(screen.getByText(/Average of stored totals for every period/)).toBeDefined();
+  });
+});
+
+function studentRows(): HTMLElement[] {
+  return screen.getAllByTestId("student-row");
+}
+
+function rowNames(): string[] {
+  return studentRows().map((row) => row.querySelector("span.truncate")?.textContent ?? "");
+}
+
+describe("Progress table", () => {
+  it("is transposed: students down the side, started periods across with short labels and the range only in a title", () => {
+    render(<JournalProgressView courseId={1} />);
+    const table = screen.getByRole("table", { name: "Class results by period" });
+    const headers = within(table).getAllByRole("columnheader").map((header) => header.textContent?.replace(/[↑↓]/g, "").trim());
+    expect(headers).toEqual(["Student", "Month 8", "Month 9", "Month 10", "Average", "Trend"]);
+    const monthButton = within(table).getByRole("button", { name: "Sort by Month 8" });
+    expect(monthButton.getAttribute("title")).toMatch(/08\/01\/2026|01\.08\.2026|2026/);
+    expect(table.textContent).not.toMatch(/Month 11|Upcoming|Not started/);
+    for (const header of within(table).getAllByRole("columnheader")) {
+      expect(header.className).not.toContain("uppercase");
+      expect(header.className).not.toContain("tracking");
+    }
+  });
+
+  it("lists every student, including those hidden from the chart, with no counts or totals sub-line", () => {
+    mockProgress(manyStudents);
+    render(<JournalProgressView courseId={1} />);
+    expect(studentRows()).toHaveLength(8);
+    expect(studentRows().filter((row) => row.getAttribute("data-visible") === "false")).toHaveLength(2);
+    const text = screen.getByTestId("progress-table").textContent ?? "";
+    expect(text).not.toMatch(/ of \d/);
+    expect(text).not.toContain("Stored results");
+    expect(screen.queryByText(/students$/)).toBeNull();
+  });
+
+  it("shows each cell as a bare percentage and a missing value as a muted dash, never zero", () => {
+    render(<JournalProgressView courseId={1} />);
+    const anvar = studentRows().find((row) => row.textContent?.includes("Anvar")) as HTMLElement;
+    const cells = within(anvar).getAllByRole("cell");
+    expect(cells.map((cell) => cell.textContent)).toEqual(["75%", "—Unavailable", "114%", "95%", "↑ 39up"]);
+    expect(cells[1].querySelector("span.text-muted")).not.toBeNull();
+    expect(cells[0].querySelector("span.tabular-nums")).not.toBeNull();
+    const cyrus = studentRows().find((row) => row.textContent?.includes("Cyrus")) as HTMLElement;
+    expect(within(cyrus).getAllByRole("cell")[0].textContent).toBe("0%");
+  });
+
+  it("adds a trend from the first to the last stored period with muted green, red or neutral tokens", () => {
+    render(<JournalProgressView courseId={1} />);
+    const trendOf = (name: string): HTMLElement => {
+      const row = studentRows().find((candidate) => candidate.textContent?.includes(name)) as HTMLElement;
+      return row.querySelector("[data-trend]") as HTMLElement;
+    };
+    expect(trendOf("Anvar").getAttribute("data-trend")).toBe("up");
+    expect(trendOf("Anvar").className).toContain("text-success");
+    expect(trendOf("Anvar").textContent).toContain("39");
+    expect(trendOf("Bahor").getAttribute("data-trend")).toBe("flat");
+    expect(trendOf("Bahor").className).toContain("text-muted");
+    mockProgress({ ...data, students: [student(11, "Dara", [result(1, 18, 24, 80), result(2, 12, 24, 50), result(3, 12, 24, 59), result(4, 0, 24, 0)])] });
+    cleanup();
+    render(<JournalProgressView courseId={1} />);
+    expect(trendOf("Dara").getAttribute("data-trend")).toBe("down");
+    expect(trendOf("Dara").className).toContain("text-destructive");
+    expect(trendOf("Dara").textContent).toContain("21");
+  });
+
+  it("shows a single stored value's trend as a dash", () => {
+    mockProgress({ ...data, students: [student(11, "Eli", [result(1, 18, 24, 80), result(2, null, null, null), result(3, null, null, null), result(4, 0, 24, 0)])] });
+    render(<JournalProgressView courseId={1} />);
+    expect(screen.getByTestId("student-row").querySelector("[data-trend]")).toBeNull();
+  });
+
+  it("pins a muted Class average row with the dashed swatch above the students", () => {
+    render(<JournalProgressView courseId={1} />);
+    const classRow = screen.getByTestId("class-row");
+    expect(classRow.className).toContain("text-muted");
+    expect(classRow.textContent).toContain("Class average");
+    expect(classRow.querySelector("span.border-dashed")).not.toBeNull();
+    expect(classRow.compareDocumentPosition(studentRows()[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const cells = within(classRow).getAllByRole("cell").map((cell) => cell.textContent);
+    expect(cells[0]).toBe("42%");
+    expect(classRow.querySelector("td span.tabular-nums")?.getAttribute("title")).toBe("41.67%");
+  });
+
+  it("starts each row with the chart's swatch, hollow for a hidden student, and a row click toggles the chart line", () => {
+    mockProgress(manyStudents);
+    render(<JournalProgressView courseId={1} />);
+    const hiddenRow = studentRows().find((row) => row.getAttribute("data-visible") === "false") as HTMLElement;
+    expect(hiddenRow.querySelector("span.border-muted")).not.toBeNull();
+    const shown = visibleSeries().length;
+    const button = within(hiddenRow).getByRole("button");
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(hiddenRow);
+    expect(visibleSeries()).toHaveLength(shown + 1);
+    expect(hiddenRow.getAttribute("data-visible")).toBe("true");
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(button);
+    expect(visibleSeries()).toHaveLength(shown);
+    expect(screen.getByTestId("legend-more")).toBeDefined();
+  });
+
+  it("sorts by the latest period high to low by default, nulls last", () => {
+    render(<JournalProgressView courseId={1} />);
+    expect(rowNames()).toEqual(["Anvar Tester", "Bahor Tester", "Cyrus Tester"]);
+    expect(within(screen.getByTestId("progress-table")).getByRole("columnheader", { name: /Month 10/ }).getAttribute("aria-sort")).toBe("descending");
+  });
+
+  it("sorts by any period, the average or the trend from the column headers and toggles the direction", () => {
+    render(<JournalProgressView courseId={1} />);
+    const table = screen.getByTestId("progress-table");
+    fireEvent.click(within(table).getByRole("button", { name: "Sort by Month 9" }));
+    expect(rowNames()).toEqual(["Bahor Tester", "Cyrus Tester", "Anvar Tester"]);
+    fireEvent.click(within(table).getByRole("button", { name: "Sort by Month 9" }));
+    expect(rowNames()).toEqual(["Cyrus Tester", "Bahor Tester", "Anvar Tester"]);
+    expect(within(table).getByRole("columnheader", { name: /Month 9/ }).getAttribute("aria-sort")).toBe("ascending");
+    fireEvent.click(within(table).getByRole("button", { name: "Sort by Average" }));
+    expect(rowNames()[0]).toBe("Anvar Tester");
+    fireEvent.click(within(table).getByRole("button", { name: "Sort by Trend" }));
+    expect(rowNames()[0]).toBe("Anvar Tester");
+    expect(within(table).getByRole("columnheader", { name: /Trend/ }).getAttribute("aria-sort")).toBe("descending");
+  });
+
+  it("keeps horizontal scrolling inside the table with a sticky name column and compact 44px rows", () => {
+    render(<JournalProgressView courseId={1} />);
+    expect(screen.getByTestId("progress-table-scroll").className).toContain("overflow-x-auto");
+    const nameCell = studentRows()[0].querySelector("th") as HTMLElement;
+    expect(nameCell.className).toContain("sticky");
+    expect(nameCell.className).toContain("left-0");
+    expect(studentRows()[0].className).toContain("h-11");
+    expect(studentRows()[0].className).toContain("border-border/60");
+  });
+});
+
+describe("Progress table number format", () => {
+  it("rounds every table percentage to a whole number and keeps the exact value in the cell title", () => {
+    mockProgress({
+      ...data,
+      students: [student(11, "Fay", [result(1, 13, 24, 55.8), result(2, 9, 24, 36.96), result(3, 6, 24, 26.18), result(4, 0, 24, 0)])],
+    });
+    render(<JournalProgressView courseId={1} />);
+    const row = screen.getByTestId("student-row");
+    const cells = within(row).getAllByRole("cell");
+    expect(cells.slice(0, 4).map((cell) => cell.textContent)).toEqual(["56%", "37%", "26%", "40%"]);
+    expect(cells[0].querySelector("span.tabular-nums")?.getAttribute("title")).toBe("55.8%");
+    expect(cells[1].querySelector("span.tabular-nums")?.getAttribute("title")).toBe("36.96%");
+    expect(screen.getByTestId("progress-table").textContent).not.toMatch(/\d[.,]\d+%/);
+  });
+
+  it("draws a dashed swatch as a 14 by 2 line segment and a solid one as a dot", () => {
+    const wide: CourseStaffProgressResponse = {
+      ...data,
+      students: Array.from({ length: 10 }, (_, index) =>
+        student(300 + index, `Wide${index}`, [result(1, index, 24, index * 5), result(2, index, 24, index * 5 + 1), result(3, index, 24, index * 5 + 2), result(4, 0, 24, 0)]),
+      ),
+    };
+    mockProgress(wide);
+    render(<JournalProgressView courseId={1} />);
+    const dashed = screen.getAllByTestId("swatch-dashed");
+    expect(dashed.length).toBeGreaterThan(0);
+    expect(dashed[0].getAttribute("width")).toBe("14");
+    expect(dashed[0].getAttribute("height")).toBe("2");
+    expect(dashed[0].querySelector("circle")).toBeNull();
+    expect(dashed[0].querySelector("line")?.getAttribute("stroke-dasharray")).toBeTruthy();
+    expect(studentRows()[0].querySelector("span.rounded-full")).not.toBeNull();
   });
 });

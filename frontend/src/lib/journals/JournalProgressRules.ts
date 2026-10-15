@@ -38,6 +38,20 @@ export interface ChartCoordinate {
   y: number;
 }
 
+export type ProgressSortKey = { kind: "period"; index: number } | { kind: "average" } | { kind: "trend" };
+
+export interface ProgressSort {
+  key: ProgressSortKey;
+  direction: "desc" | "asc";
+}
+
+export type TrendDirection = "up" | "down" | "flat";
+
+export interface ProgressTrend {
+  direction: TrendDirection;
+  magnitude: number;
+}
+
 export class JournalProgressRules {
   static readonly REFERENCE_PERCENTAGE: number = 100;
   static readonly SERIES_SLOT_COUNT: number = 8;
@@ -163,5 +177,41 @@ export class JournalProgressRules {
       path += `C${from.x + third},${from.y + tangents[index] * third},${to.x - third},${to.y - tangents[index + 1] * third},${to.x},${to.y}`;
     }
     return path;
+  }
+
+  static averageOf(values: (number | null)[]): number | null {
+    const present: number[] = values.filter((value): value is number => value !== null);
+    return present.length === 0 ? null : present.reduce((total, value) => total + value, 0) / present.length;
+  }
+
+  static trendOf(values: (number | null)[]): ProgressTrend | null {
+    const present: number[] = values.filter((value): value is number => value !== null);
+    if (present.length < 2) return null;
+    const change: number = Math.round(present[present.length - 1] - present[0]);
+    return { direction: change > 0 ? "up" : change < 0 ? "down" : "flat", magnitude: Math.abs(change) };
+  }
+
+  static signedTrend(trend: ProgressTrend | null): number | null {
+    if (trend === null) return null;
+    return trend.direction === "down" ? -trend.magnitude : trend.magnitude;
+  }
+
+  static sortValue(student: ProgressChartStudent, key: ProgressSortKey): number | null {
+    const values: (number | null)[] = student.results.map((result) => (result ? result.percentage : null));
+    if (key.kind === "period") return values[key.index] ?? null;
+    if (key.kind === "average") return JournalProgressRules.averageOf(values);
+    return JournalProgressRules.signedTrend(JournalProgressRules.trendOf(values));
+  }
+
+  static sortStudents(students: ProgressChartStudent[], sort: ProgressSort): ProgressChartStudent[] {
+    const factor: number = sort.direction === "desc" ? -1 : 1;
+    return [...students].sort((first, second) => {
+      const firstValue: number | null = JournalProgressRules.sortValue(first, sort.key);
+      const secondValue: number | null = JournalProgressRules.sortValue(second, sort.key);
+      if (firstValue === null && secondValue === null) return first.name.localeCompare(second.name);
+      if (firstValue === null) return 1;
+      if (secondValue === null) return -1;
+      return (firstValue - secondValue) * factor || first.name.localeCompare(second.name);
+    });
   }
 }

@@ -319,13 +319,12 @@
     "scopeNote": "Average of stored totals for every period of this course. Missing results show as Unavailable.",
     "tableLabel": "Class results by period",
     "columns": {
-      "period": "Period",
-      "stored": "Stored results",
-      "average": "Class average of stored totals"
+      "student": "Student",
+      "average": "Average",
+      "trend": "Trend",
+      "sortBy": "Sort by {{column}}"
     },
-    "storedOf": "{{stored}} of {{roster}} students",
     "unavailable": "Unavailable",
-    "totalOfMax": "{{score}} of {{max}}",
     "classAverage": "Class average",
     "legendLabel": "Chart series",
     "loadFailedBody": "Your gradebook and unsaved changes are not affected.",
@@ -334,7 +333,6 @@
     "noPeriodsBody": "Results appear here once the course has journal periods.",
     "noStudentsTitle": "No students in this course",
     "noStudentsBody": "Once students are enrolled, each period shows how many have a stored result and their class average.",
-    "unavailableCount": "Unavailable: {{count}}",
     "chart": {
       "label": "Percentage by period",
       "hint": "Use the left and right arrow keys to move between periods.",
@@ -346,6 +344,13 @@
     "hideAll": "Hide all",
     "moreCount": "+{{count}} more",
     "moreList": "More students",
-    "moreListLabel": "Choose students to plot"
+    "moreListLabel": "Choose students to plot",
+    "trendWord": {
+      "up": "up",
+      "down": "down",
+      "flat": "unchanged"
+    },
+    "noStartedTitle": "No period has started yet",
+    "noStartedBody": "Results appear here once the first period starts."
   }
 }

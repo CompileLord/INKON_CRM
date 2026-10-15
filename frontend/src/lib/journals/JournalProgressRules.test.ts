@@ -111,4 +111,27 @@ describe("JournalProgressRules", () => {
     expect(JournalProgressRules.monotonePath([{ x: 5, y: 7 }])).toBe("M5,7");
     expect(JournalProgressRules.monotonePath([])).toBe("");
   });
+
+  it("computes a trend from the first to the last stored value and ignores a single value", () => {
+    expect(JournalProgressRules.trendOf([75, null, 114])).toEqual({ direction: "up", magnitude: 39 });
+    expect(JournalProgressRules.trendOf([80, 50, 59])).toEqual({ direction: "down", magnitude: 21 });
+    expect(JournalProgressRules.trendOf([50, 70, 50.4])).toEqual({ direction: "flat", magnitude: 0 });
+    expect(JournalProgressRules.trendOf([null, 40, null])).toBeNull();
+    expect(JournalProgressRules.signedTrend({ direction: "down", magnitude: 21 })).toBe(-21);
+  });
+
+  it("averages only present values", () => {
+    expect(JournalProgressRules.averageOf([10, null, 20])).toBe(15);
+    expect(JournalProgressRules.averageOf([null])).toBeNull();
+  });
+
+  it("sorts students by a period, the average or the trend with missing values last in both directions", () => {
+    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(data, "2026-12-31"));
+    const students = JournalProgressRules.chartStudents(data, rows);
+    const names = (sort: Parameters<typeof JournalProgressRules.sortStudents>[1]) => JournalProgressRules.sortStudents(students, sort).map((student) => student.name);
+    expect(names({ key: { kind: "period", index: 0 }, direction: "desc" })).toEqual(["Bob Y", "Ann X", "Cy Z"]);
+    expect(names({ key: { kind: "period", index: 0 }, direction: "asc" })).toEqual(["Ann X", "Bob Y", "Cy Z"]);
+    expect(names({ key: { kind: "average" }, direction: "desc" })).toEqual(["Bob Y", "Ann X", "Cy Z"]);
+    expect(names({ key: { kind: "trend" }, direction: "desc" })[2]).toBe("Cy Z");
+  });
 });

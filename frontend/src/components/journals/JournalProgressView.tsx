@@ -7,10 +7,11 @@ import {
   JournalProgressRules,
   type ProgressChartStudent,
   type ProgressPeriodRow,
+  type ProgressSort,
+  type ProgressTrend,
   type StoredPeriodResult,
 } from "../../lib/journals/JournalProgressRules";
 import { formatNumber, formatPercentage, formatSchoolLessonDate, getSchoolCalendarDate } from "../../i18n/formatters";
-import { useDesktop } from "../shell/useDesktop";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { JournalNotice, JournalPanelMessage } from "./JournalWorkspaceStates";
@@ -49,9 +50,8 @@ const StudentSwatch: React.FC<StudentSwatchProps> = ({ student, muted = false })
     return <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${muted ? "border border-muted" : SERIES_BACKGROUND[student.slot]}`} />;
   }
   return (
-    <svg aria-hidden="true" width="18" height="10" className="shrink-0" data-testid="swatch-dashed">
-      <line x1="1" x2="17" y1="5" y2="5" strokeWidth={2} strokeDasharray={dash} className={muted ? "stroke-muted" : SERIES_STROKE[student.slot]} />
-      <circle cx="9" cy="5" r="2.5" className={muted ? "fill-muted" : SERIES_FILL[student.slot]} />
+    <svg aria-hidden="true" width="14" height="2" viewBox="0 0 14 2" className="shrink-0" data-testid="swatch-dashed">
+      <line x1="0" x2="14" y1="1" y2="1" strokeWidth={2} strokeDasharray={dash} className={muted ? "stroke-muted" : SERIES_STROKE[student.slot]} />
     </svg>
   );
 };
@@ -502,10 +502,10 @@ const SkeletonBar: React.FC<{ className: string }> = ({ className }) => (
 
 export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId }) => {
   const { t } = useTranslation("journals");
-  const isDesktop: boolean = useDesktop();
   const query = useCourseStaffProgress(courseId);
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
+  const [sortOverride, setSortOverride] = useState<ProgressSort | null>(null);
 
   const data: CourseStaffProgressResponse | undefined = query.data;
   const rows: ProgressPeriodRow[] = useMemo(
@@ -561,7 +561,6 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     return <JournalPanelMessage tone="empty" title={t("progress.noStudentsTitle")} body={t("progress.noStudentsBody")} />;
   }
 
-  const visibleStudents: ProgressChartStudent[] = students.filter((student) => visibleIds.has(student.studentId));
   const manyStudents: boolean = students.length > JournalProgressRules.TOGGLE_ALL_THRESHOLD;
   const toggleStudent = (studentId: number): void => {
     const next: Set<number> = new Set(visibleIds);
@@ -570,22 +569,35 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     setVisibleOverride(next);
   };
 
-  const percentageText = (percentage: number | null): string =>
-    percentage === null ? t("progress.unavailable") : formatPercentage(percentage);
-  const totalText = (result: StoredPeriodResult | null): string =>
-    result ? t("progress.totalOfMax", { score: formatNumber(result.score), max: formatNumber(result.maxScore) }) : t("progress.unavailable");
+  const percentageText = (percentage: number | null): string => (percentage === null ? "" : `${formatNumber(Math.round(percentage))}%`);
   const rangeText = (row: ProgressPeriodRow): string =>
     `${formatSchoolLessonDate(row.period.period_start)} – ${formatSchoolLessonDate(row.period.period_end)}`;
-  const storedText = (row: ProgressPeriodRow): string =>
-    t("progress.storedOf", { stored: row.storedCount, roster: row.rosterCount });
-  const startedIndex = (row: ProgressPeriodRow): number => started.findIndex((candidate) => candidate.period.id === row.period.id);
-  const upcomingTag = (row: ProgressPeriodRow) =>
-    row.upcoming ? (
-      <span className="ml-2 inline-block rounded-full border border-info/30 bg-info-surface px-2 py-0.5 align-middle text-xs font-semibold text-info">
-        {t("period.upcoming")}
+  const missingCell = (
+    <span className="text-muted">
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{t("progress.unavailable")}</span>
+    </span>
+  );
+  const valueCell = (value: number | null) =>
+    value === null ? (
+      missingCell
+    ) : (
+      <span className="tabular-nums" title={formatPercentage(value)}>
+        {percentageText(value)}
       </span>
-    ) : null;
-  const notStarted = <span className="text-muted">{t("period.stateEmpty")}</span>;
+    );
+  const trendCell = (trend: ProgressTrend | null) => {
+    if (trend === null) return missingCell;
+    const symbol: string = trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "→";
+    const tone: string = trend.direction === "up" ? "text-success" : trend.direction === "down" ? "text-destructive" : "text-muted";
+    return (
+      <span className={`whitespace-nowrap tabular-nums ${tone}`} data-trend={trend.direction}>
+        <span aria-hidden="true">{symbol} </span>
+        {formatNumber(trend.magnitude)}
+        <span className="sr-only">{t(`progress.trendWord.${trend.direction}`)}</span>
+      </span>
+    );
+  };
 
   const chipClass = (pressed: boolean): string =>
     `inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-9 motion-safe:transition-colors motion-safe:duration-150 ${
@@ -628,103 +640,95 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     </div>
   );
 
-  const studentCell = (student: ProgressChartStudent, row: ProgressPeriodRow) => {
-    const result: StoredPeriodResult | null = student.results[startedIndex(row)] ?? null;
-    return (
-      <>
-        <div className="font-semibold tabular-nums text-ink">{percentageText(result ? result.percentage : null)}</div>
-        <div className="text-xs tabular-nums text-muted">{totalText(result)}</div>
-      </>
-    );
-  };
+  const latestIndex: number = Math.max(started.length - 1, 0);
+  const sort: ProgressSort = sortOverride ?? { key: { kind: "period", index: latestIndex }, direction: "desc" };
+  const sortedStudents: ProgressChartStudent[] = JournalProgressRules.sortStudents(students, sort);
+  const isSortedBy = (key: ProgressSort["key"]): boolean =>
+    sort.key.kind === key.kind && (key.kind !== "period" || (sort.key.kind === "period" && sort.key.index === key.index));
+  const requestSort = (key: ProgressSort["key"]): void =>
+    setSortOverride(isSortedBy(key) ? { key, direction: sort.direction === "desc" ? "asc" : "desc" } : { key, direction: "desc" });
+  const ariaSortOf = (key: ProgressSort["key"]): "descending" | "ascending" | "none" =>
+    isSortedBy(key) ? (sort.direction === "desc" ? "descending" : "ascending") : "none";
+
+  const headerCell = (key: ProgressSort["key"], label: string, title?: string, align: "left" | "right" = "right") => (
+    <th scope="col" aria-sort={ariaSortOf(key)} className={`px-3 py-2 font-medium ${align === "right" ? "text-right" : "text-left"}`}>
+      <button
+        type="button"
+        title={title}
+        aria-label={t("progress.columns.sortBy", { column: label })}
+        onClick={() => requestSort(key)}
+        className={`inline-flex min-h-11 items-center gap-1 rounded-[8px] px-1 text-xs font-medium hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isSortedBy(key) ? "text-ink" : "text-muted"}`}
+      >
+        {label}
+        <span aria-hidden="true" className="w-2.5">{isSortedBy(key) ? (sort.direction === "desc" ? "↓" : "↑") : ""}</span>
+      </button>
+    </th>
+  );
+
+  const classValues: (number | null)[] = started.map((row) => row.averagePercentage);
+  const rowDivider: string = "border-b border-border/60";
+  const stickyName: string = "sticky left-0 z-[1] bg-cream group-hover:bg-row-hover";
 
   const table = (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-      <table className="w-full border-collapse text-left text-sm" aria-label={t("progress.tableLabel")}>
+    <div className="relative w-full max-w-full overflow-x-auto overscroll-x-contain [contain:inline-size]" data-testid="progress-table-scroll">
+      <table className="w-full min-w-max border-collapse text-sm" aria-label={t("progress.tableLabel")} data-testid="progress-table">
         <thead>
-          <tr className="border-b border-border bg-beige text-xs font-semibold uppercase tracking-wide text-muted">
-            <th scope="col" className="px-4 py-3">{t("progress.columns.period")}</th>
-            <th scope="col" className="px-4 py-3">{t("progress.columns.stored")}</th>
-            <th scope="col" className="px-4 py-3">{t("progress.columns.average")}</th>
-            {visibleStudents.map((student) => (
-              <th key={student.studentId} scope="col" className="px-4 py-3">{student.name}</th>
+          <tr className={rowDivider}>
+            <th scope="col" className={`${stickyName} px-3 py-2 text-left text-xs font-medium text-muted`}>{t("progress.columns.student")}</th>
+            {started.map((row, index) => (
+              <React.Fragment key={row.period.id}>{headerCell({ kind: "period", index }, row.period.period_label, rangeText(row))}</React.Fragment>
             ))}
+            {headerCell({ kind: "average" }, t("progress.columns.average"))}
+            {headerCell({ kind: "trend" }, t("progress.columns.trend"))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.period.id} data-upcoming={row.upcoming} className="border-b border-border last:border-b-0">
-              <th scope="row" className="min-w-0 px-4 py-3 align-top font-semibold text-ink">
-                <span className="block break-words">
-                  {row.period.period_label}
-                  {upcomingTag(row)}
-                </span>
-                <span className="block text-xs font-normal tabular-nums text-muted">{rangeText(row)}</span>
-              </th>
-              {row.upcoming ? (
-                <td colSpan={2 + visibleStudents.length} className="px-4 py-3 align-top">{notStarted}</td>
-              ) : (
-                <>
-                  <td className="px-4 py-3 align-top tabular-nums text-ink">
-                    {storedText(row)}
-                    {row.unavailableCount > 0 && (
-                      <span className="block text-xs text-muted">{t("progress.unavailableCount", { count: row.unavailableCount })}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 align-top font-semibold tabular-nums text-ink">{percentageText(row.averagePercentage)}</td>
-                  {visibleStudents.map((student) => (
-                    <td key={student.studentId} className="px-4 py-3 align-top">{studentCell(student, row)}</td>
-                  ))}
-                </>
-              )}
-            </tr>
-          ))}
+          <tr className={`h-11 text-muted ${rowDivider}`} data-testid="class-row">
+            <th scope="row" className={`${stickyName} px-3 text-left font-normal`}>
+              <span className="flex items-center gap-2 whitespace-nowrap">
+                <span aria-hidden="true" className="h-0 w-4 shrink-0 border-t-2 border-dashed border-muted" />
+                {t("progress.classAverage")}
+              </span>
+            </th>
+            {classValues.map((value, index) => (
+              <td key={started[index].period.id} className="px-3 text-right">{valueCell(value)}</td>
+            ))}
+            <td className="px-3 text-right">{valueCell(JournalProgressRules.averageOf(classValues))}</td>
+            <td className="px-3 text-right">{trendCell(JournalProgressRules.trendOf(classValues))}</td>
+          </tr>
+          {sortedStudents.map((student) => {
+            const plotted: boolean = visibleIds.has(student.studentId);
+            const values: (number | null)[] = student.results.map((result) => (result ? result.percentage : null));
+            return (
+              <tr
+                key={student.studentId}
+                data-testid="student-row"
+                data-student-id={student.studentId}
+                data-visible={plotted}
+                onClick={() => toggleStudent(student.studentId)}
+                className={`group h-11 cursor-pointer hover:bg-row-hover ${rowDivider} ${plotted ? "text-ink" : "text-muted"}`}
+              >
+                <th scope="row" className={`${stickyName} max-w-[11rem] px-3 text-left font-normal`}>
+                  <button
+                    type="button"
+                    aria-pressed={plotted}
+                    className="flex min-h-11 w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <StudentSwatch student={student} muted={!plotted} />
+                    <span className="min-w-0 truncate" title={student.name}>{student.name}</span>
+                  </button>
+                </th>
+                {values.map((value, index) => (
+                  <td key={started[index].period.id} className="px-3 text-right">{valueCell(value)}</td>
+                ))}
+                <td className="px-3 text-right">{valueCell(JournalProgressRules.averageOf(values))}</td>
+                <td className="px-3 text-right">{trendCell(JournalProgressRules.trendOf(values))}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
-  );
-
-  const list = (
-    <ul data-testid="progress-results" className="divide-y divide-border border-y border-border" aria-label={t("progress.tableLabel")}>
-      {rows.map((row) => (
-        <li key={row.period.id} data-upcoming={row.upcoming} className="flex flex-col gap-1.5 py-3">
-          <div className="min-w-0">
-            <div className="break-words text-sm font-semibold text-ink">
-              {row.period.period_label}
-              {upcomingTag(row)}
-            </div>
-            <div className="text-xs tabular-nums text-muted">{rangeText(row)}</div>
-          </div>
-          {row.upcoming ? (
-            <div className="text-sm">{notStarted}</div>
-          ) : (
-            <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-sm">
-              <dt className="text-muted">{t("progress.columns.stored")}</dt>
-              <dd className="text-right tabular-nums text-ink">
-                {storedText(row)}
-                {row.unavailableCount > 0 && (
-                  <span className="block text-xs text-muted">{t("progress.unavailableCount", { count: row.unavailableCount })}</span>
-                )}
-              </dd>
-              <dt className="text-muted">{t("progress.classAverage")}</dt>
-              <dd className="text-right font-semibold tabular-nums text-ink">{percentageText(row.averagePercentage)}</dd>
-              {visibleStudents.map((student) => {
-                const result: StoredPeriodResult | null = student.results[startedIndex(row)] ?? null;
-                return (
-                  <React.Fragment key={student.studentId}>
-                    <dt className="flex min-w-0 items-center gap-2 text-muted">
-                      <StudentSwatch student={student} />
-                      <span className="min-w-0 break-words">{student.name}</span>
-                    </dt>
-                    <dd className="text-right font-semibold tabular-nums text-ink">{percentageText(result ? result.percentage : null)}</dd>
-                  </React.Fragment>
-                );
-              })}
-            </dl>
-          )}
-        </li>
-      ))}
-    </ul>
   );
 
   return (
@@ -746,7 +750,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
           {legend}
         </>
       )}
-      {isDesktop ? table : list}
+      {started.length > 0 ? table : <JournalPanelMessage tone="empty" title={t("progress.noStartedTitle")} body={t("progress.noStartedBody")} />}
     </div>
   );
 };

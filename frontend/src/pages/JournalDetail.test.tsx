@@ -1438,25 +1438,22 @@ describe("Progress tab", () => {
     return screen.findByRole("table", { name: "Class results by period" });
   }
 
-  function periodRow(table: HTMLElement, label: string): HTMLElement {
-    return within(table).getByRole("rowheader", { name: new RegExp(label) }).closest("tr") as HTMLElement;
-  }
-
-  it("scopes the view to the whole course with each period's range and a stored-totals note", async () => {
+  it("scopes the view to the whole course with every roster student and period columns", async () => {
     const table = await openProgress();
     expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
     expect(screen.getByRole("button", { name: "About these results" })).toBeDefined();
-    expect(periodRow(table, "Month 8").textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
+    expect(within(table).getAllByRole("columnheader").map((header) => header.textContent?.replace(/[↑↓]/g, "").trim())).toEqual(["Student", "Month 8", "Month 9", "Month 10", "Average", "Trend"]);
+    expect(within(table).getByText("Anvar Tester")).toBeDefined();
+    expect(within(table).getByText("Bahor Tester")).toBeDefined();
     expect(getStaffProgressMock).toHaveBeenCalledWith(COURSE_ID);
   });
 
-  it("counts stored results out of the roster, excludes missing results from the average and calls them Unavailable", async () => {
+  it("shows a missing result as a muted dash and a stored zero as 0%", async () => {
     const table = await openProgress();
-    const august = periodRow(table, "Month 8");
-    expect(august.textContent).toContain("1 of 2 students");
-    expect(august.textContent).toContain("Unavailable: 1");
-    expect(within(august).getAllByText("75%").length).toBeGreaterThan(0);
-    expect(periodRow(table, "Month 9").textContent).toContain("2 of 2 students");
+    const bahor = within(table).getAllByTestId("student-row").find((row) => row.textContent?.includes("Bahor")) as HTMLElement;
+    expect(within(bahor).getAllByRole("cell")[0].textContent).toContain("—");
+    const anvar = within(table).getAllByTestId("student-row").find((row) => row.textContent?.includes("Anvar")) as HTMLElement;
+    expect(within(anvar).getAllByRole("cell")[1].textContent).toBe("0%");
   });
 
   it("keeps the same course-wide scope and one request when the Gradebook period changes", async () => {
@@ -1467,25 +1464,18 @@ describe("Progress tab", () => {
     expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
   });
 
-  it("labels periods that start after school-calendar today Upcoming and Not started, by date only", async () => {
+  it("leaves periods that start after school-calendar today out of the table, by date only", async () => {
     const data = buildStaffProgress();
     data.periods.push({ id: 104, period_label: "Month 11", period_start: "2026-11-01", period_end: "2026-11-30" });
     data.students.forEach((student) => student.period_results.push(staffResult(104, 0, 24, 0)));
     getStaffProgressMock.mockResolvedValue(data);
     const table = await openProgress();
-    const november = periodRow(table, "Month 11");
-    expect(november.textContent).toContain("Upcoming");
-    expect(november.textContent).toContain("Not started");
-    expect(november.textContent).not.toContain("0%");
-    expect(november.textContent).not.toContain("of 2 students");
-    expect(within(november).queryAllByTestId("progress-bar")).toHaveLength(0);
-    expect(periodRow(table, "Month 10").textContent).not.toContain("Upcoming");
+    expect(within(table).queryByText("Month 11")).toBeNull();
     schoolToday.value = "2026-11-01";
     cleanup();
     renderWorkspace([PROGRESS_URL]);
     const later = await screen.findByRole("table", { name: "Class results by period" });
-    expect(periodRow(later, "Month 11").textContent).not.toContain("Not started");
-    expect(periodRow(later, "Month 11").textContent).toContain("2 of 2 students");
+    expect(within(later).getByText("Month 11")).toBeDefined();
   });
 
   it("renders no completion, grading-status or needs-grading claim and no chart", async () => {
@@ -1495,14 +1485,13 @@ describe("Progress tab", () => {
     expect(document.querySelector("svg[role='img']")).toBeNull();
   });
 
-  it("shows the divided period list with the same numbers on a narrow viewport", async () => {
+  it("keeps the same table on a narrow viewport with a sticky name column and sideways scroll inside it", async () => {
     viewportState.setDesktop(false);
     renderWorkspace([PROGRESS_URL]);
-    const list = await screen.findByRole("list", { name: "Class results by period" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(3);
-    expect(list.textContent).toContain("1 of 2 students");
-    expect(list.textContent).toContain("75%");
-    expect(screen.queryByRole("table")).toBeNull();
+    const table = await screen.findByRole("table", { name: "Class results by period" });
+    expect(screen.getByTestId("progress-table-scroll").className).toContain("overflow-x-auto");
+    expect(within(table).getAllByTestId("student-row")[0].querySelector("th")?.className).toContain("sticky");
+    expect(screen.queryByRole("list", { name: "Class results by period" })).toBeNull();
     viewportState.setDesktop(true);
   });
 
