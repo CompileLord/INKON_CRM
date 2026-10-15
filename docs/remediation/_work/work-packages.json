@@ -7,8 +7,6 @@
     "title": "Record an isolated integration-test baseline",
     "findings": [],
     "files": [
-      "docs/remediation/results/baseline-environment.md",
-      "docs/remediation/results/WP-01.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -26,7 +24,7 @@
     "severity": "Baseline",
     "effort": "S",
     "extra": "No runtime/source edits in this WP. The future test runner may create isolated disposable services; this planning session does not execute it. Safety isolation is required even before WP-09 permanently fixes fixtures.",
-    "record": "docs/remediation/results/WP-01.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [],
     "shared_order": {},
     "contributes": []
@@ -40,7 +38,6 @@
     "findings": [],
     "files": [
       "backend/app/tests/regression/critical_reproductions.py",
-      "docs/remediation/results/WP-02.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -61,7 +58,7 @@
     "severity": "Baseline",
     "effort": "M",
     "extra": "References for test design: BUS-01/SEC-BUS-01, API-01 and BUS-02. Finding ownership remains exclusively with WP-03, WP-04 and WP-07. A baseline test PR can be reviewed/merged with explicit expected failing evidence because normal suite collection is unchanged; no claim of a fully green security regression suite is allowed.",
-    "record": "docs/remediation/results/WP-02.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-01"
     ],
@@ -92,7 +89,6 @@
       "backend/app/repositories/sqlalchemy/refresh_token_repository.py",
       "backend/alembic/versions/rwp03_refresh_identity.py",
       "backend/app/tests/integration/test_remediation_wp03.py",
-      "docs/remediation/results/WP-03.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -112,7 +108,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "Legacy sessions must sign in again. Rollback must not restore identity-free tokens; roll forward or keep refresh disabled. Keep access-token format work limited to what refresh needs.",
-    "record": "docs/remediation/results/WP-03.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-02"
     ],
@@ -139,7 +135,6 @@
       "frontend/src/components/documents/DocumentsTab.tsx",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp04.py",
-      "docs/remediation/results/WP-04.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -159,7 +154,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "Current listing permits mentors to see student documents broadly (document_service.py:138-145). Do not silently infer a new mentor-document policy from directory scope; stop for a specific policy decision if changing that behavior is necessary. Keep private files unavailable during rollback; cached external copies cannot be revoked by an application code revert.",
-    "record": "docs/remediation/results/WP-04.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-02"
     ],
@@ -178,7 +173,6 @@
     "files": [
       "backend/app/api/v1/cron.py",
       "backend/app/tests/integration/test_remediation_wp05.py",
-      "docs/remediation/results/WP-05.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -196,7 +190,7 @@
     "severity": "Critical",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-05.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-02"
     ],
@@ -218,7 +212,6 @@
       "backend/app/api/v1/auth.py",
       "backend/app/services/auth_service.py",
       "backend/app/tests/integration/test_remediation_wp06.py",
-      "docs/remediation/results/WP-06.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -236,7 +229,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-06.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-03"
     ],
@@ -263,7 +256,6 @@
       "backend/app/models/ledger.py",
       "backend/alembic/versions/rwp07_ledger_serialization.py",
       "backend/app/tests/integration/test_remediation_wp07.py",
-      "docs/remediation/results/WP-07.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -285,7 +277,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "Do not infer safety from sequential tests or SQLite. Keep financial mutations disabled rather than revert to unlocked writers if rollout fails. SEC-BUS-04 month closure gets its distinct lock protocol in WP-36.",
-    "record": "docs/remediation/results/WP-07.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-03",
       "WP-04",
@@ -310,7 +302,6 @@
     "files": [
       "backend/app/services/finance_service.py",
       "backend/app/tests/integration/test_remediation_wp08.py",
-      "docs/remediation/results/WP-08.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -328,7 +319,7 @@
     "severity": "Critical",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-08.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-07"
     ],
@@ -351,7 +342,6 @@
     "files": [
       "backend/app/tests/conftest.py",
       "backend/app/tests/integration/test_remediation_wp09.py",
-      "docs/remediation/results/WP-09.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -370,7 +360,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "Run the WP-01 suite baseline in isolation before changing fixtures, then rerun after. Keep infrastructure safety tests independent of destructive fixture setup where necessary by launching controlled subprocesses.",
-    "record": "docs/remediation/results/WP-09.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-01"
     ],
@@ -391,7 +381,6 @@
       "backend/scripts/seed_demo_data.py",
       "backend/scripts/reset_guard.py",
       "backend/app/tests/integration/test_remediation_wp10.py",
-      "docs/remediation/results/WP-10.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -410,7 +399,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-10.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-02"
     ],
@@ -432,7 +421,6 @@
       "backend/.env.example",
       ".github/workflows/deploy-backend.yml",
       "backend/app/tests/integration/test_remediation_wp11.py",
-      "docs/remediation/results/WP-11.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -451,7 +439,7 @@
     "severity": "Critical",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-11.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-02"
     ],
@@ -470,7 +458,6 @@
     "files": [
       "backend/app/services/email_service.py",
       "backend/app/tests/integration/test_remediation_wp12.py",
-      "docs/remediation/results/WP-12.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -488,7 +475,7 @@
     "severity": "High",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-12.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-09"
     ],
@@ -511,10 +498,11 @@
       "backend/scripts/setup_free_tier_vm.sh",
       "backend/app/core/redis.py",
       "backend/app/workers/settings.py",
+      "backend/app/services/email_service.py",
+      "backend/app/services/document_service.py",
       "backend/.env.example",
       "backend/config/redis.conf.example",
       "backend/app/tests/integration/test_remediation_wp13.py",
-      "docs/remediation/results/WP-13.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -533,7 +521,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-13.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-11"
     ],
@@ -559,7 +547,6 @@
       "backend/.gcloudignore",
       "backend/scripts/gcp_deploy.sh",
       "backend/app/tests/integration/test_remediation_wp14.py",
-      "docs/remediation/results/WP-14.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -577,7 +564,7 @@
     "severity": "High",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-14.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-04"
     ],
@@ -597,12 +584,12 @@
     "files": [
       "backend/app/schemas/user.py",
       "backend/app/services/user_service.py",
+      "backend/app/repositories/interfaces/user_repository.py",
+      "backend/app/repositories/sqlalchemy/user_repository.py",
       "backend/app/telegram_bot/handlers/start.py",
-      "frontend/src/lib/users/types.ts",
-      "frontend/src/lib/users/formMapping.ts",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp15.py",
-      "docs/remediation/results/WP-15.md",
+      "backend/app/tests/integration/test_integrations_and_polish.py",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -623,7 +610,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-15.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-06",
       "WP-09"
@@ -650,7 +637,6 @@
       "backend/app/repositories/sqlalchemy/user_repository.py",
       "backend/app/repositories/interfaces/user_repository.py",
       "backend/app/tests/integration/test_remediation_wp16.py",
-      "docs/remediation/results/WP-16.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -668,7 +654,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-16.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-15"
     ],
@@ -696,7 +682,6 @@
       "backend/app/models/user.py",
       "backend/alembic/versions/rwp17_auth_version.py",
       "backend/app/tests/integration/test_remediation_wp17.py",
-      "docs/remediation/results/WP-17.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -716,7 +701,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "This merges two defects under one credential-epoch root cause without introducing a second reset storage system. Expect reauthentication during rollout; do not roll back by accepting old epochs. Existing test helpers call create_access_token with two arguments. A generator default epoch of zero may preserve new-user fixtures, but every runtime issuance must explicitly pass the loaded user epoch and validation must reject missing epochs; never add a permissive validation fallback to satisfy tests.",
-    "record": "docs/remediation/results/WP-17.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-03",
       "WP-06"
@@ -753,7 +738,6 @@
       "backend/app/workers/settings.py",
       "backend/alembic/versions/rwp18_outbox.py",
       "backend/app/tests/integration/test_remediation_wp18.py",
-      "docs/remediation/results/WP-18.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -775,7 +759,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "Additive migration; a worker rollback leaves durable intents pending, never falls back to synchronous sends inside transactions. Keep this a mail-only vertical slice; notification producers join in WP-29.",
-    "record": "docs/remediation/results/WP-18.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-12",
       "WP-13",
@@ -814,7 +798,6 @@
       "backend/app/models/__init__.py",
       "backend/alembic/versions/rwp19_cache_generation.py",
       "backend/app/tests/integration/test_remediation_wp19.py",
-      "docs/remediation/results/WP-19.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -835,7 +818,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "Contribution to BUS-11 closure, uniquely owned by WP-29. A global generation row may serialize writes; if measured contention exceeds the budget, stop and propose a partitioned or outbox design rather than silently broadening this WP.",
-    "record": "docs/remediation/results/WP-19.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-07",
       "WP-08"
@@ -869,7 +852,6 @@
       "backend/app/services/finance_service.py",
       "backend/app/services/analytics_cache_service.py",
       "backend/app/tests/integration/test_remediation_wp20.py",
-      "docs/remediation/results/WP-20.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -888,7 +870,7 @@
     "severity": "High",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-20.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-19",
       "WP-13"
@@ -916,7 +898,6 @@
       "backend/app/services/sum_calculation_service.py",
       "backend/app/core/deps.py",
       "backend/app/tests/integration/test_remediation_wp21.py",
-      "docs/remediation/results/WP-21.md",
       "docs/remediation/STATUS.md",
       "backend/app/api/v1/journals.py"
     ],
@@ -936,8 +917,8 @@
     ],
     "severity": "Medium (promoted to Phase 2)",
     "effort": "M",
-    "extra": "Scheduled early at the user\u2019s explicit request despite source performance impact Medium. Avoid catching arbitrary DB errors as version conflicts.",
-    "record": "docs/remediation/results/WP-21.md",
+    "extra": "Scheduled early at the user’s explicit request despite source performance impact Medium. Avoid catching arbitrary DB errors as version conflicts.",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-17"
     ],
@@ -965,7 +946,6 @@
       "backend/app/core/rate_limiter.py",
       "backend/app/api/v1/auth.py",
       "backend/app/tests/integration/test_remediation_wp22.py",
-      "docs/remediation/results/WP-22.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -986,7 +966,7 @@
     "severity": "High (remediation priority)",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-22.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-13",
       "WP-17"
@@ -1011,7 +991,6 @@
       "backend/app/services/auth_service.py",
       "backend/app/core/verification_codes.py",
       "backend/app/tests/integration/test_remediation_wp23.py",
-      "docs/remediation/results/WP-23.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1030,7 +1009,7 @@
     "severity": "High (remediation priority)",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-23.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-18",
       "WP-22"
@@ -1062,7 +1041,6 @@
       "frontend/src/lib/finance/types.ts",
       "frontend/src/lib/courses/types.ts",
       "backend/app/tests/integration/test_remediation_wp24.py",
-      "docs/remediation/results/WP-24.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1082,7 +1060,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-24.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-08"
     ],
@@ -1111,7 +1089,6 @@
       "backend/app/services/user_service.py",
       "backend/app/services/course_service.py",
       "backend/app/tests/integration/test_remediation_wp25.py",
-      "docs/remediation/results/WP-25.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1130,7 +1107,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-25.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-04",
       "WP-18"
@@ -1167,7 +1144,6 @@
       "backend/app/workers/tasks.py",
       "backend/app/workers/settings.py",
       "backend/app/tests/integration/test_remediation_wp26.py",
-      "docs/remediation/results/WP-26.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1190,7 +1166,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-26.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-25",
       "WP-13"
@@ -1230,8 +1206,8 @@
       "backend/app/main.py",
       "backend/scripts/register_telegram_webhook.py",
       "backend/app/tests/integration/test_remediation_wp27.py",
-      "docs/remediation/results/WP-27.md",
-      "docs/remediation/STATUS.md"
+      "docs/remediation/STATUS.md",
+      "backend/app/tests/integration/test_remediation_wp11.py"
     ],
     "steps": [
       "Remove unconditional global webhook deletion from instance shutdown and close only the local bot session in finally.",
@@ -1240,7 +1216,7 @@
     "tests": [
       "Two overlapping lifespans: closing either must not remove webhook for the survivor; cancellation/startup failure closes local resources; registration failure is observable."
     ],
-    "accept": "Rolling deploy/scale-down cannot unregister another instance\u2019s shared webhook.",
+    "accept": "Rolling deploy/scale-down cannot unregister another instance’s shared webhook.",
     "measure": "",
     "deps": [
       "WP-04",
@@ -1249,7 +1225,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-27.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-04",
       "WP-11"
@@ -1273,7 +1249,6 @@
     "files": [
       "backend/app/api/v1/telegram.py",
       "backend/app/tests/integration/test_remediation_wp28.py",
-      "docs/remediation/results/WP-28.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1291,7 +1266,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-28.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-15"
     ],
@@ -1315,7 +1290,6 @@
       "backend/app/workers/outbox.py",
       "backend/app/workers/tasks.py",
       "backend/app/tests/integration/test_remediation_wp29.py",
-      "docs/remediation/results/WP-29.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1337,7 +1311,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-29.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-18",
       "WP-19",
@@ -1378,7 +1352,6 @@
       "CONTRACT.md",
       "frontend/src/lib/notifications/types.ts",
       "backend/app/tests/integration/test_remediation_wp30.py",
-      "docs/remediation/results/WP-30.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1399,7 +1372,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-30.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-29"
     ],
@@ -1431,7 +1404,6 @@
       "backend/app/models/notification_log.py",
       "backend/alembic/versions/rwp31_exam_revision.py",
       "backend/app/tests/integration/test_remediation_wp31.py",
-      "docs/remediation/results/WP-31.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1449,7 +1421,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-31.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-30"
     ],
@@ -1479,7 +1451,6 @@
       "backend/app/repositories/sqlalchemy/payment_repository.py",
       "backend/app/repositories/interfaces/payment_repository.py",
       "backend/app/tests/integration/test_remediation_wp32.py",
-      "docs/remediation/results/WP-32.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1499,7 +1470,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-32.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-31",
       "WP-08"
@@ -1532,7 +1503,6 @@
       "backend/app/repositories/sqlalchemy/user_repository.py",
       "backend/alembic/versions/rwp33_grading_state.py",
       "backend/app/tests/integration/test_remediation_wp33.py",
-      "docs/remediation/results/WP-33.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1556,7 +1526,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "One grading-state root cause spans models and consumers. Do not change API shapes in this package; existing state strings remain. If legacy evidence cannot recover a zero-grade distinction, report that limitation and preserve an explicit unknown state internally.",
-    "record": "docs/remediation/results/WP-33.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-21",
       "WP-29",
@@ -1599,7 +1569,6 @@
       "CONTRACT.md",
       "frontend/src/lib/courses/types.ts",
       "backend/app/tests/integration/test_remediation_wp34.py",
-      "docs/remediation/results/WP-34.md",
       "docs/remediation/STATUS.md",
       "frontend/src/components/student/StudentTrendChart.tsx"
     ],
@@ -1612,7 +1581,7 @@
     "tests": [
       "Use missing/zero-max/untouched-positive-max/graded-zero periods and withdrawn students. Assert identical policy for staff/student means, valid ranks, and no peer identities in student response. Instrument summary-ID reads."
     ],
-    "accept": "Exact cohort/mean/rank tests pass; repeated J\u00d7S scans are removed without broadening data visibility.",
+    "accept": "Exact cohort/mean/rank tests pass; repeated J×S scans are removed without broadening data visibility.",
     "measure": "At 30/300 students and 52/104 periods measure summary inspections, response bytes, query count, loop lag/RSS/p95 under equal conditions. No timing gain is assumed.",
     "deps": [
       "WP-33",
@@ -1623,7 +1592,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-34.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-33"
     ],
@@ -1661,7 +1630,6 @@
       "frontend/src/lib/journals/useJournalAutosave.ts",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp35.py",
-      "docs/remediation/results/WP-35.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1681,7 +1649,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-35.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-21",
       "WP-27"
@@ -1711,7 +1679,6 @@
     "files": [
       "backend/app/services/finance_service.py",
       "backend/app/tests/integration/test_remediation_wp36.py",
-      "docs/remediation/results/WP-36.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1730,7 +1697,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-36.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-07",
       "WP-24"
@@ -1756,7 +1723,6 @@
       "backend/app/services/finance_service.py",
       "backend/alembic/versions/rwp37_installment_identity.py",
       "backend/app/tests/integration/test_remediation_wp37.py",
-      "docs/remediation/results/WP-37.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1775,7 +1741,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-37.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-36"
     ],
@@ -1801,7 +1767,6 @@
     "files": [
       "backend/scripts/seed_demo_data.py",
       "backend/app/tests/integration/test_remediation_wp38.py",
-      "docs/remediation/results/WP-38.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1819,7 +1784,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-38.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-10"
     ],
@@ -1842,7 +1807,6 @@
     "files": [
       "backend/app/repositories/sqlalchemy/user_repository.py",
       "backend/app/tests/integration/test_remediation_wp39.py",
-      "docs/remediation/results/WP-39.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -1861,7 +1825,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-39.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-33",
       "WP-16"
@@ -1892,7 +1856,6 @@
       "frontend/src/lib/users/hooks.ts",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp40.py",
-      "docs/remediation/results/WP-40.md",
       "docs/remediation/STATUS.md",
       "frontend/src/pages/student/MyCourseDetail.tsx",
       "frontend/src/components/dashboard/StudentDashboard.tsx",
@@ -1905,7 +1868,7 @@
     "tests": [
       "Tied dates across pages have no duplicates/skips; unauthorized course filters fail; history size never increases one-page result/IN-list size beyond cap."
     ],
-    "accept": "No supported history path materializes a student\u2019s full lifetime; navigation and response types are synchronized.",
+    "accept": "No supported history path materializes a student’s full lifetime; navigation and response types are synchronized.",
     "measure": "Measure fetched rows, SQL parameters, response bytes and RSS at 100/10k periods with a fixed page cap.",
     "deps": [
       "WP-39",
@@ -1916,7 +1879,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "If a legacy consumer outside the repository prevents retirement, stop and obtain an explicit compatibility schedule; do not leave the finding falsely closed.",
-    "record": "docs/remediation/results/WP-40.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-39"
     ],
@@ -1956,7 +1919,6 @@
       "frontend/src/pages/MentorProfile.tsx",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp41.py",
-      "docs/remediation/results/WP-41.md",
       "docs/remediation/STATUS.md",
       "frontend/src/lib/users/hooks.ts",
       "frontend/src/lib/users/endpoints.ts",
@@ -1978,7 +1940,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-41.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-40"
     ],
@@ -2009,10 +1971,8 @@
       ".github/workflows/deploy-backend.yml",
       "backend/scripts/gcp_deploy.sh",
       "backend/app/tests/migrations/test_migration_chain.py",
-      "docs/remediation/results/migration-runbook.md",
-      "backend/app/tests/integration/test_remediation_wp42.py",
-      "docs/remediation/results/WP-42.md",
-      "docs/remediation/STATUS.md"
+      "docs/remediation/STATUS.md",
+      "backend/app/tests/integration/test_remediation_wp42.py"
     ],
     "steps": [
       "Add a separate disposable migration job for empty-to-head and prior-revision-to-head with representative data/constraints; keep it independent from metadata.create_all tests.",
@@ -2031,7 +1991,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-42.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-11",
       "WP-14"
@@ -2066,7 +2026,6 @@
       "backend/scripts/gcp_deploy.sh",
       "backend/.env.example",
       "backend/app/tests/integration/test_remediation_wp43.py",
-      "docs/remediation/results/WP-43.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2091,7 +2050,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-43.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-13",
       "WP-18",
@@ -2133,7 +2092,6 @@
       "backend/app/repositories/sqlalchemy/base_repository.py",
       "backend/app/repositories/sqlalchemy/user_repository.py",
       "backend/app/tests/integration/test_remediation_wp44.py",
-      "docs/remediation/results/WP-44.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2153,7 +2111,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "The source finding includes a performance hypothesis. Closure requires measured acceptance at actual expected scale or a separately tracked residual; an empty-page shortcut alone is not evidence that deep pagination is fast.",
-    "record": "docs/remediation/results/WP-44.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-39",
       "WP-16"
@@ -2182,7 +2140,6 @@
       "backend/app/workers/settings.py",
       "backend/alembic/versions/rwp45_refresh_retention.py",
       "backend/app/tests/integration/test_remediation_wp45.py",
-      "docs/remediation/results/WP-45.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2202,7 +2159,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-45.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-03",
       "WP-43"
@@ -2240,7 +2197,6 @@
       "backend/app/core/deps.py",
       "backend/app/api/v1/courses.py",
       "backend/app/tests/integration/test_remediation_wp46.py",
-      "docs/remediation/results/WP-46.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2263,7 +2219,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-46.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-26",
       "WP-33",
@@ -2301,7 +2257,6 @@
       "backend/scripts/setup_free_tier_vm.sh",
       "backend/scripts/seed_admin.py",
       "backend/app/tests/integration/test_remediation_wp47.py",
-      "docs/remediation/results/WP-47.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2320,7 +2275,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-47.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-10",
       "WP-13"
@@ -2350,7 +2305,6 @@
       ".github/workflows/deploy-frontend.yml",
       "backend/scripts/setup_free_tier_vm.sh",
       "backend/app/tests/integration/test_remediation_wp48.py",
-      "docs/remediation/results/WP-48.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2372,7 +2326,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "If IAM/WIF resources require an external owner, record the concrete required configuration and keep rollout blocked until verified; repository edits cannot prove external IAM. No deployment is authorized by this planning task.",
-    "record": "docs/remediation/results/WP-48.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-42",
       "WP-43",
@@ -2408,7 +2362,6 @@
       "frontend/src/lib/settings/types.ts",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp49.py",
-      "docs/remediation/results/WP-49.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2428,7 +2381,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-49.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-15",
       "WP-41"
@@ -2459,7 +2412,6 @@
       "backend/app/tests/integration/test_coverage_gaps.py",
       "backend/app/tests/integration/test_documents.py",
       "backend/app/tests/integration/test_remediation_wp50.py",
-      "docs/remediation/results/WP-50.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2481,7 +2433,7 @@
     "severity": "Medium",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-50.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-03",
       "WP-04",
@@ -2518,7 +2470,6 @@
       "backend/app/core/deps.py",
       "backend/app/schemas/common.py",
       "backend/app/tests/integration/test_remediation_wp51.py",
-      "docs/remediation/results/WP-51.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2543,7 +2494,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-51.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-29",
       "WP-40",
@@ -2601,12 +2552,11 @@
       "frontend/src/lib/finance/types.ts",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp52.py",
-      "docs/remediation/results/WP-52.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
       "Move mentor analytics SQL to a typed repository-backed service and inject it via Depends; retain role-specific profile policies.",
-      "Replace remaining generic journal-detail/ledger/analytics response boundaries with explicit DTOs matching the actual payload. Call the public payment decoration fa\u00e7ade from WP-53 and consolidate duplicated access helpers with behavior tests.",
+      "Replace remaining generic journal-detail/ledger/analytics response boundaries with explicit DTOs matching the actual payload. Call the public payment decoration façade from WP-53 and consolidate duplicated access helpers with behavior tests.",
       "Verify chart extraction (WP-34), configured storage injection (WP-26) and repository contracts (WP-51) satisfy the other API-10 subclaims before marking the owner complete."
     ],
     "tests": [
@@ -2628,7 +2578,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-52.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-34",
       "WP-26",
@@ -2668,7 +2618,7 @@
     "number": 53,
     "phase": 3,
     "slug": "finance-boundary",
-    "title": "Separate finance reporting from commands behind a stable fa\u00e7ade",
+    "title": "Separate finance reporting from commands behind a stable façade",
     "findings": [
       "BUS-19"
     ],
@@ -2678,12 +2628,11 @@
       "backend/app/repositories/interfaces/finance_reporting_repository.py",
       "backend/app/repositories/sqlalchemy/finance_reporting_repository.py",
       "backend/app/tests/integration/test_remediation_wp53.py",
-      "docs/remediation/results/WP-53.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
       "Move read-only analytics/debt/receipt query construction into a typed reporting collaborator; keep ledger/account/month locking and the single transaction owner unchanged.",
-      "Expose public decorated-payment operation for router consumers; use typed optional results instead of incorrect nonoptional annotations. Preserve existing public fa\u00e7ade during this mechanical extraction.",
+      "Expose public decorated-payment operation for router consumers; use typed optional results instead of incorrect nonoptional annotations. Preserve existing public façade during this mechanical extraction.",
       "BUS-19 also needs completed auth dependency injection (WP-63), course injection/date reuse (WP-46), journal policy/date consolidation (WP-55) and storage injection (WP-26); this owner cannot close before those contributors."
     ],
     "tests": [
@@ -2701,7 +2650,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "One focused finance extraction PR, not a rewrite of every service. Stop and rescope if the extraction cannot preserve transaction ownership in one session.",
-    "record": "docs/remediation/results/WP-53.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-20",
       "WP-54",
@@ -2730,7 +2679,6 @@
     "files": [
       "backend/app/services/finance_service.py",
       "backend/app/tests/integration/test_remediation_wp54.py",
-      "docs/remediation/results/WP-54.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2752,7 +2700,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-54.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-21",
       "WP-32",
@@ -2778,7 +2726,6 @@
       "backend/app/services/enrollment_service.py",
       "backend/app/core/schedule_utils.py",
       "backend/app/tests/integration/test_remediation_wp55.py",
-      "docs/remediation/results/WP-55.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2798,7 +2745,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-55.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-33",
       "WP-46"
@@ -2838,7 +2785,6 @@
       "frontend/src/pages/Finance.tsx",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp56.py",
-      "docs/remediation/results/WP-56.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2861,7 +2807,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-56.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-37",
       "WP-40",
@@ -2898,7 +2844,6 @@
       "backend/app/schemas/maintenance.py",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp57.py",
-      "docs/remediation/results/WP-57.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -2920,7 +2865,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-57.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-05",
       "WP-32",
@@ -2963,7 +2908,6 @@
       "frontend/src/pages/student/MyCourseDetail.tsx",
       "CONTRACT.md",
       "backend/app/tests/integration/test_remediation_wp58.py",
-      "docs/remediation/results/WP-58.md",
       "docs/remediation/STATUS.md",
       "frontend/src/components/student/StudentTrendChart.tsx"
     ],
@@ -2985,7 +2929,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-58.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-34"
     ],
@@ -3023,7 +2967,6 @@
     "files": [
       "backend/app/models/course_mentor_history.py",
       "backend/app/tests/integration/test_remediation_wp59.py",
-      "docs/remediation/results/WP-59.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3040,7 +2983,7 @@
     "severity": "Low (Nit)",
     "effort": "S",
     "extra": "",
-    "record": "docs/remediation/results/WP-59.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-09"
     ],
@@ -3061,7 +3004,6 @@
       "backend/app/services/auth_service.py",
       "backend/app/services/user_service.py",
       "backend/app/tests/integration/test_remediation_wp60.py",
-      "docs/remediation/results/WP-60.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3083,7 +3025,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-60.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-23",
       "WP-22",
@@ -3112,7 +3054,6 @@
     "files": [
       "backend/app/services/user_service.py",
       "backend/app/tests/integration/test_remediation_wp61.py",
-      "docs/remediation/results/WP-61.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3130,7 +3071,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-61.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-26"
     ],
@@ -3159,7 +3100,6 @@
       "backend/app/repositories/interfaces/refresh_token_repository.py",
       "backend/app/services/email_service.py",
       "backend/app/tests/integration/test_remediation_wp63.py",
-      "docs/remediation/results/WP-63.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3181,7 +3121,7 @@
     "severity": "Medium",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-63.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-60",
       "WP-51"
@@ -3217,10 +3157,6 @@
     "title": "Re-audit every finding and record residual risks",
     "findings": [],
     "files": [
-      "docs/remediation/results/final-reaudit.md",
-      "docs/remediation/results/coverage-after-fixes.md",
-      "docs/remediation/results/retention-policy-decision.md",
-      "docs/remediation/results/WP-62.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3301,7 +3237,7 @@
     "severity": "Verification",
     "effort": "M",
     "extra": "This future re-audit may read all source and audit reports as explicitly listed read-only context, but writes only the listed remediation results and STATUS. Existing audits are immutable. The current planning session uses no subagents; later delegation is optional according to the roadmap.",
-    "record": "docs/remediation/results/WP-62.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-01",
       "WP-02",
@@ -3383,7 +3319,6 @@
       "backend/app/models/enrollment.py",
       "backend/alembic/versions/rwp64_roster_index.py",
       "backend/app/tests/integration/test_remediation_wp64.py",
-      "docs/remediation/results/WP-64.md",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
@@ -3404,7 +3339,7 @@
     "severity": "Medium (hypothesis)",
     "effort": "M",
     "extra": "",
-    "record": "docs/remediation/results/WP-64.md",
+    "record": "docs/remediation/STATUS.md",
     "semantic_deps": [
       "WP-42",
       "WP-39"

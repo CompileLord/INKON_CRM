@@ -35,8 +35,6 @@ class UserSelfUpdate(BaseModel):
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
     phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
-    parent_telegram_chat_id: Optional[int] = None
-    parent_phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
 
 
 class UserResponse(BaseModel):

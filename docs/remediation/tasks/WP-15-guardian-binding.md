@@ -13,6 +13,10 @@ Close guardian property bypasses and bind the correct parent contact. One bounde
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized backend ownership correction
+
+The user assigned this remediation session backend-only ownership while a separate Claude agent owns the frontend. On 2026-10-15 the user authorized correcting plan/documentation conflicts before implementation. Client files below are therefore read-only contract context for this executor; report the exact self-update contract delta in WP-15 results for the frontend owner. Do not edit frontend files or treat their separately owned checks as backend gates. Backend schema/contract generation, security tests and all backend acceptance criteria remain mandatory.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -21,13 +25,13 @@ Reports are provenance links, not required reading for execution; the relevant p
 |---|---|
 | [backend/app/schemas/user.py:32](../../../backend/app/schemas/user.py) | Existing file, anchor line 32; only this WP’s stated behavior may change. |
 | [backend/app/services/user_service.py:10](../../../backend/app/services/user_service.py) | Existing file, anchor line 10; only this WP’s stated behavior may change. |
+| [backend/app/repositories/interfaces/user_repository.py](../../../backend/app/repositories/interfaces/user_repository.py) | Add the narrow typed guardian-candidate lookup/locking contract used by the binding workflow. |
+| [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement configured parent-phone lookup with deterministic row locking; retain SQL in the repository layer. |
 | [backend/app/telegram_bot/handlers/start.py:25](../../../backend/app/telegram_bot/handlers/start.py) | Existing file, anchor line 25; only this WP’s stated behavior may change. |
-| [frontend/src/lib/users/types.ts:1](../../../frontend/src/lib/users/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
-| [frontend/src/lib/users/formMapping.ts:1](../../../frontend/src/lib/users/formMapping.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp15.py](../../../backend/app/tests/integration/test_remediation_wp15.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/results/WP-15.md](../results/WP-15.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/STATUS.md:1](../STATUS.md) | Shared administrative progress ledger; integrate row updates serially, never overwrite another WP’s row. |
+| [backend/app/tests/integration/test_integrations_and_polish.py](../../../backend/app/tests/integration/test_integrations_and_polish.py) | Update only the legacy Telegram webhook/parent-binding fixture and assertions to use distinct student and configured parent phones; retain end-to-end webhook coverage. |
+| [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
 
@@ -55,7 +59,7 @@ Snapshot excerpt from `backend/app/schemas/user.py`:
 
 1. Remove guardian chat/phone from ordinary self-update schema and assignments while preserving authorized administrator provisioning.
 2. Match bot contact to the configured parent_phone, verify sender ownership and private chat, and refuse replacement of an existing binding unless an administrator explicitly resets it.
-3. Normalize lookup consistently; document safe initial-binding/rebinding behavior. A new invitation product is not required for this bounded fix.
+3. Normalize lookup consistently; document safe initial-binding/rebinding behavior. Put the guardian candidate query and deterministic row locks in the user repository behind its typed interface, with policy and binding mutation coordinated by the service. Test concurrent attempts against independent PostgreSQL sessions so existing bindings cannot be replaced by a losing request. A new invitation product is not required for this bounded fix.
 
 ## Tests to write BEFORE the fix
 
@@ -90,12 +94,12 @@ npx vitest run
 npx tsc --noEmit
 ```
 
-Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s result file. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
+Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s concise STATUS.md row. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
 
 
 Verification focuses on the exact behavioral/security tests above. No speculative performance benchmark is required.
 
-Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment; synchronize only the listed client types/callers and verify them by reading their contents (frontend/src/lib is broadly gitignored). New visible text must use existing translations or stop to add exact locale paths to the plan.
+Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment. Read `frontend/src/lib/users/types.ts` and `frontend/src/lib/users/formMapping.ts` only as client context and record required consumer synchronization for the separate frontend owner; do not write them in this backend task. New visible text must use existing translations or stop to add exact locale paths to the plan.
 
 ## Risks and rollback
 
@@ -114,4 +118,4 @@ Complete prerequisites first and start from their merged result. Do not require 
 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
-Use branch `remediation/wp-15-guardian-binding` and one PR for this WP. Save actual evidence in `docs/remediation/results/WP-15.md` and update only its row in `docs/remediation/STATUS.md` with branch/PR, date, tests/results and residual risks. No push/PR publication occurs in this planning task.
+Use branch `remediation/wp-15-guardian-binding` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.

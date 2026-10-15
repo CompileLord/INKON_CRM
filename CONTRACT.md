@@ -425,8 +425,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
   "last_name?": string,
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
-  "parent_phone?": string,
 }
 ```
 

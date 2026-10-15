@@ -73,10 +73,15 @@ class UserService:
             user.date_of_birth = user_update.date_of_birth
         if user_update.phone is not None:
             user.phone = user_update.phone
-        if user_update.parent_telegram_chat_id is not None:
-            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
-        if user_update.parent_phone is not None:
+        if "parent_phone" in user_update.model_fields_set:
+            if (
+                user_update.parent_phone != user.parent_phone
+                and "parent_telegram_chat_id" not in user_update.model_fields_set
+            ):
+                user.parent_telegram_chat_id = None
             user.parent_phone = user_update.parent_phone
+        if "parent_telegram_chat_id" in user_update.model_fields_set:
+            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
         if user_update.payment_day_of_month is not None:
             if user.role != UserRole.STUDENT:
                 raise HTTPException(
@@ -88,6 +93,49 @@ class UserService:
         updated_user = await self.user_repo.update(user)
         await self.db.refresh(updated_user)
         return updated_user
+
+    @staticmethod
+    def _normalize_guardian_phone(phone_number: str) -> str | None:
+        trimmed_phone: str = phone_number.strip()
+        if not trimmed_phone or trimmed_phone.count("+") > 1:
+            return None
+        if "+" in trimmed_phone and not trimmed_phone.startswith("+"):
+            return None
+        allowed_formatting: frozenset[str] = frozenset({"+", "-", "(", ")", ".", " "})
+        if any(
+            not ("0" <= character <= "9") and character not in allowed_formatting
+            for character in trimmed_phone
+        ):
+            return None
+        digits: str = "".join(character for character in trimmed_phone if "0" <= character <= "9")
+        if len(digits) < 2 or len(digits) > 15 or digits.startswith("0"):
+            return None
+        return f"+{digits}"
+
+    async def bind_parent_telegram_contact(
+        self,
+        phone_number: str,
+        telegram_chat_id: int,
+    ) -> list[str]:
+        normalized_phone: str | None = self._normalize_guardian_phone(phone_number)
+        if normalized_phone is None:
+            return []
+
+        phone_values: tuple[str, str] = (
+            normalized_phone,
+            normalized_phone.removeprefix("+"),
+        )
+        students: list[User] = await self.user_repo.get_guardian_binding_candidates(phone_values)
+        if not students or any(
+            student.parent_telegram_chat_id is not None
+            and student.parent_telegram_chat_id != telegram_chat_id
+            for student in students
+        ):
+            return []
+
+        await self.user_repo.update_guardian_bindings(students, telegram_chat_id)
+
+        return [f"{student.first_name} {student.last_name}" for student in students]
 
     async def update_own_profile(self, user_id: int, user_update: UserSelfUpdate) -> User:
         user = await self.user_repo.get_by_id(user_id)
@@ -105,11 +153,6 @@ class UserService:
             user.date_of_birth = user_update.date_of_birth
         if user_update.phone is not None:
             user.phone = user_update.phone
-        if user_update.parent_telegram_chat_id is not None:
-            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
-        if user_update.parent_phone is not None:
-            user.parent_phone = user_update.parent_phone
-
         updated_user = await self.user_repo.update(user)
         await self.db.refresh(updated_user)
         return updated_user
@@ -138,9 +181,15 @@ class UserService:
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        mentor_id: int | None = None,
     ) -> dict:
-        return await self.user_repo.get_students_list(page=page, page_size=page_size, search=search)
+        return await self.user_repo.get_students_list(
+            page=page,
+            page_size=page_size,
+            search=search,
+            mentor_id=mentor_id,
+        )
 
     async def get_mentors(
         self,
