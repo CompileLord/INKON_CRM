@@ -685,7 +685,9 @@
       "docs/remediation/STATUS.md",
       "backend/app/repositories/interfaces/user_repository.py",
       "backend/app/repositories/sqlalchemy/user_repository.py",
-      "backend/app/tests/integration/test_remediation_wp06.py"
+      "backend/app/tests/integration/test_remediation_wp06.py",
+      "backend/app/tests/integration/test_remediation_wp03.py",
+      "backend/app/tests/integration/test_remediation_wp11.py"
     ],
     "steps": [
       "Add persisted auth_version and require it in newly issued access and reset grants. Lock/version the user during reset confirmation and increment the epoch atomically with password change and refresh revocation.",

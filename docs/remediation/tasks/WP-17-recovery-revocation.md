@@ -17,6 +17,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 Source inspection on 2026-10-15 found that atomic user locking belongs in the repository contract and implementation. These paths are added before implementation to keep SQL out of authentication workflows and serialize reset with login/refresh issuance. Preserve existing token rotation and guardian/directory behavior. The legacy WP-06 full-access test manually signs a token; add its current auth_version claim so it still tests valid full access rather than weakening epoch validation.
 
+The new head exposes two existing test assumptions. The WP-03 valid reset fixture needs its current epoch. WP-11’s database-configuration offline probe must retain its previously working boundary `c9e3f0a1b2c4` before the database-dependent WP-07 preflight, rather than moving with each new head. Its online test must still upgrade to the actual current head. Never modify the applied WP-07 migration or claim full-chain offline support. WP-27 has released this test file; its completed lifecycle changes remain frozen for independent audit.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -32,6 +34,8 @@ Source inspection on 2026-10-15 found that atomic user locking belongs in the re
 | [backend/alembic/versions/rwp17_auth_version.py](../../../backend/alembic/versions/rwp17_auth_version.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp17.py](../../../backend/app/tests/integration/test_remediation_wp17.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp06.py](../../../backend/app/tests/integration/test_remediation_wp06.py) | Update only the manually signed valid full-access fixture to include the required current epoch; preserve its successful full-access assertion. Missing-epoch rejection gets a WP-17 regression. |
+| [backend/app/tests/integration/test_remediation_wp03.py](../../../backend/app/tests/integration/test_remediation_wp03.py) | Add the current epoch only to the manually signed valid password-reset fixture; preserve identity-bound refresh assertions. |
+| [backend/app/tests/integration/test_remediation_wp11.py](../../../backend/app/tests/integration/test_remediation_wp11.py) | Keep its database-only offline initialization probe at the historical offline-renderable boundary before WP-07, independent of later heads; preserve full current-head online migration checks and all other tests. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
