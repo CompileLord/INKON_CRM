@@ -1,10 +1,17 @@
 import asyncio
+import ssl
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from arq import create_pool
 from arq.connections import RedisSettings
 from app.core.config import settings
+
+SMTP_SOCKET_TIMEOUT_SECONDS = 10.0
+
+
+class EmailDeliveryError(RuntimeError):
+    pass
 
 
 class EmailService:
@@ -21,12 +28,33 @@ class EmailService:
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
 
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(message)
+        try:
+            with smtplib.SMTP(
+                settings.SMTP_HOST,
+                settings.SMTP_PORT,
+                timeout=SMTP_SOCKET_TIMEOUT_SECONDS,
+            ) as server:
+                server.ehlo()
+                try:
+                    server.starttls(context=ssl.create_default_context())
+                except ssl.SSLCertVerificationError:
+                    raise EmailDeliveryError(
+                        "SMTP TLS certificate verification failed"
+                    ) from None
+                except ssl.SSLError:
+                    raise EmailDeliveryError("SMTP TLS negotiation failed") from None
+                server.ehlo()
+                try:
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                except smtplib.SMTPAuthenticationError:
+                    raise EmailDeliveryError("SMTP authentication failed") from None
+                server.send_message(message)
+        except EmailDeliveryError:
+            raise
+        except (OSError, smtplib.SMTPException) as exception:
+            raise EmailDeliveryError(
+                f"SMTP delivery failed ({type(exception).__name__})"
+            ) from None
 
     async def send_email(self, to_email: str, subject: str, body: str) -> None:
         if settings.TESTING:
