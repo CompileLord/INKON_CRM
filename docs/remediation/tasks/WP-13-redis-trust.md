@@ -17,6 +17,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 On 2026-10-15 the user authorized correcting missing plan paths before implementation. Source inspection found two additional active ARQ producers in the email and document services that still construct host/port-only connections. Their bounded connection changes are included below so all producers can satisfy the existing shared-endpoint acceptance criterion. No deployment or operational service changes are authorized by this package execution.
 
+Compatibility follow-up: an actual deployment-image Python 3.12.15 import fails with NameError at the class’s self-referential return annotation, while the Conda Python 3.14 suite passed. Correct only the Redis module’s supported-runtime typing/import compatibility and verify the actual Python 3.12 image as well as Conda base. Preserve all TLS, authentication, pool-ownership and shared-DSN invariants. Two earlier independent Luna audit failures (portable TLS fixtures and pool ownership) require Sol-low correction under AGENTS.md §4.7. Preserve original owner /root/wp05_executor and accepted 8e54808 history; follow-up owner /root/wp14_sol_correction.
+
 ## Exact files and lines
 
 ### Allowed writes
