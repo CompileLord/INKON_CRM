@@ -13,7 +13,7 @@ import * as enrollmentEndpoints from "../lib/enrollments/endpoints";
 import { createDeferred } from "../lib/journals/journalQueueTestSupport";
 import { formatSchoolLessonDate } from "../i18n/formatters";
 import type { CourseResponse, JournalPeriod } from "../lib/courses/types";
-import type { JournalBatchUpdateResponse, JournalDetailResponse } from "../lib/journals/types";
+import type { JournalBatchUpdateResponse, JournalDetailResponse, JournalExamMaxScoreUpdateResponse } from "../lib/journals/types";
 
 const viewportState = vi.hoisted(() => {
   const listeners = new Set<() => void>();
@@ -155,6 +155,7 @@ const getProgressChartMock = vi.mocked(courseEndpoints.getCourseProgressChart);
 const getJournalMock = vi.mocked(journalEndpoints.getJournal);
 const batchUpdateMock = vi.mocked(journalEndpoints.batchUpdateJournalEntries);
 const updateSummaryMock = vi.mocked(journalEndpoints.updateJournalStudentSummary);
+const updateExamMaxMock = vi.mocked(journalEndpoints.updateJournalExamMaxScore);
 const getMentorProfileMock = vi.mocked(userEndpoints.getMentorProfile);
 const listEnrollmentsMock = vi.mocked(enrollmentEndpoints.listEnrollments);
 
@@ -637,7 +638,7 @@ describe("workspace anatomy", () => {
     renderWorkspace();
     await waitForGrid();
     fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
-    expect(await screen.findByText("Edit Exam Weight Limit")).toBeDefined();
+    expect(await screen.findByRole("dialog", { name: "Period settings" })).toBeDefined();
   });
 
   it("shows the existing progress chart as the Progress tab content until the new Progress view ships", async () => {
@@ -1036,5 +1037,351 @@ describe("Summary, breakdown and the paired editor", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     expect(within(table).queryByText("Anvar Tester")).toBeNull();
+  });
+});
+
+describe("Period settings: exam maximum", () => {
+  function settingsButton(): HTMLElement {
+    return screen.getByRole("button", { name: "Period settings" });
+  }
+
+  async function openSettings(): Promise<HTMLElement> {
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(settingsButton());
+    return screen.findByRole("dialog", { name: "Period settings" });
+  }
+
+  function maximumInput(): HTMLInputElement {
+    return screen.getByLabelText("Exam maximum") as HTMLInputElement;
+  }
+
+  function saveButton(): HTMLButtonElement {
+    return screen.getByRole("button", { name: /^(Save|Saving…|Saving pending grades first…)$/ }) as HTMLButtonElement;
+  }
+
+  function typeMaximum(value: string): void {
+    fireEvent.change(maximumInput(), { target: { value } });
+  }
+
+  function examResponse(examMaximum: number): JournalExamMaxScoreUpdateResponse {
+    const detail = buildJournal(OCTOBER);
+    return {
+      journal: {
+        id: OCTOBER,
+        course_id: COURSE_ID,
+        period_label: detail.period_label,
+        period_start: detail.period_start,
+        period_end: detail.period_end,
+        period_type: "month",
+        exam_max_score: examMaximum,
+      },
+      summaries: detail.students.map((student) => ({
+        ...(student.summary as NonNullable<typeof student.summary>),
+        journal_id: OCTOBER,
+        student_id: student.student_id,
+        max_period_score: 24 + examMaximum,
+        version: 2,
+      })),
+    };
+  }
+
+  function gradeAnvar(): void {
+    const cell = gradeCell("Anvar", "2026-10-13");
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "4" });
+  }
+
+  beforeEach(() => {
+    updateExamMaxMock.mockImplementation(async (_journalId, payload) => examResponse(payload.exam_max_score));
+  });
+
+  it("shows course, period name and range, current maximum, allowed range and the recalculation explanation", async () => {
+    const dialog = await openSettings();
+    expect(within(dialog).getByText("Algebra Intensive")).toBeDefined();
+    expect(within(dialog).getByText("Month 10")).toBeDefined();
+    expect(dialog.textContent).toContain(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
+    expect(within(dialog).getByText("Current exam maximum").nextElementSibling?.textContent).toBe("100");
+    expect(within(dialog).getByText("Whole number from 0 to 100")).toBeDefined();
+    expect(dialog.textContent).toContain("recalculates the grading denominator of this period");
+    expect(maximumInput().value).toBe("100");
+    expect(saveButton().disabled).toBe(true);
+  });
+
+  it("drains pending grades before the maximum request and sends the maximum only after the drain is acknowledged", async () => {
+    const slow = createDeferred<JournalBatchUpdateResponse>();
+    batchUpdateMock.mockReturnValueOnce(slow.promise);
+    renderWorkspace();
+    await waitForGrid();
+    gradeAnvar();
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    typeMaximum("80");
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+    await screen.findAllByText("Saving pending grades first…");
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      slow.resolve({
+        applied: [{ student_id: 11, lesson_date: "2026-10-13", attendance: true, score: 4, comment: null, version: 2 }],
+        conflicts: [],
+        summaries: [],
+      });
+    });
+    await waitFor(() => expect(updateExamMaxMock).toHaveBeenCalledTimes(1));
+    expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 80 });
+    expect(batchUpdateMock.mock.invocationCallOrder[0]).toBeLessThan(updateExamMaxMock.mock.invocationCallOrder[0]);
+  });
+
+  it("sends nothing and keeps the draft with Retry when the drain fails", async () => {
+    batchUpdateMock.mockRejectedValue(new AuthApiError(400, "Bad request"));
+    renderWorkspace();
+    await waitForGrid();
+    gradeAnvar();
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    typeMaximum("80");
+    fireEvent.click(saveButton());
+
+    const alert = await screen.findByTestId("period-settings-alert");
+    expect(alert.textContent).toContain("exam maximum was not changed");
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+    expect(maximumInput().value).toBe("80");
+    expect(screen.getByRole("dialog", { name: "Period settings" }).textContent).toContain("Month 10");
+    const dialog = screen.getByRole("dialog", { name: "Period settings" });
+    expect(within(dialog).getByRole("button", { name: "Retry" })).toBeDefined();
+    expect(within(dialog).queryByRole("button", { name: "Review" })).toBeNull();
+  });
+
+  it("offers Review for a conflicted drain, keeps the draft, sends nothing and returns to the dialog after review", async () => {
+    batchUpdateMock.mockResolvedValue({
+      applied: [],
+      conflicts: [
+        {
+          student_id: 11,
+          lesson_date: "2026-10-13",
+          submitted_version: 1,
+          current: { student_id: 11, lesson_date: "2026-10-13", attendance: true, score: 2, comment: null, version: 5 },
+        },
+      ],
+      summaries: [],
+    });
+    renderWorkspace();
+    await waitForGrid();
+    gradeAnvar();
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    typeMaximum("80");
+    fireEvent.click(saveButton());
+
+    const alert = await screen.findByTestId("period-settings-alert");
+    expect(alert.textContent).toContain("conflict with newer data");
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Period settings" })).getByRole("button", { name: "Review" }));
+    expect(await screen.findByTestId("conflict-review-list")).toBeDefined();
+    expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull();
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+  });
+
+  it("makes the journal editors inert while the maximum request is in flight and restores them afterwards", async () => {
+    const pending = createDeferred<JournalExamMaxScoreUpdateResponse>();
+    updateExamMaxMock.mockReturnValueOnce(pending.promise);
+    renderWorkspace();
+    await waitForGrid();
+    const editableCells = () => screen.queryAllByLabelText(`Score for Anvar Tester on ${formatSchoolLessonDate("2026-10-13")}`).length;
+    expect(editableCells()).toBe(1);
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    typeMaximum("90");
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(updateExamMaxMock).toHaveBeenCalledTimes(1));
+    expect(editableCells()).toBe(0);
+    expect(document.querySelectorAll('input[type="checkbox"]:not([disabled])')).toHaveLength(0);
+
+    await act(async () => {
+      pending.resolve(examResponse(90));
+    });
+    await waitFor(() => expect(editableCells()).toBe(1));
+  });
+
+  it.each([
+    ["", "Enter a whole number from 0 to 100."],
+    ["7.5", "Use digits only, without decimals or signs."],
+    ["-1", "Use digits only, without decimals or signs."],
+    ["abc", "Use digits only, without decimals or signs."],
+    ["101", "The exam maximum must be between 0 and 100."],
+  ])("rejects %j without clamping, keeps the text and disables Save", async (value, message) => {
+    await openSettings();
+    typeMaximum(value);
+    expect(maximumInput().value).toBe(value);
+    expect(screen.getByRole("alert").textContent).toBe(message);
+    expect(saveButton().disabled).toBe(true);
+    fireEvent.submit(maximumInput().closest("form") as HTMLFormElement);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+    expect(batchUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it("disables Save for an unchanged value, including after retyping the current one", async () => {
+    await openSettings();
+    expect(saveButton().disabled).toBe(true);
+    typeMaximum("90");
+    expect(saveButton().disabled).toBe(false);
+    typeMaximum("100");
+    expect(saveButton().disabled).toBe(true);
+  });
+
+  it("sends exactly one request when Save is triggered repeatedly and labels the pending state", async () => {
+    const pending = createDeferred<JournalExamMaxScoreUpdateResponse>();
+    updateExamMaxMock.mockReturnValueOnce(pending.promise);
+    await openSettings();
+    typeMaximum("90");
+    const form = maximumInput().closest("form") as HTMLFormElement;
+    fireEvent.click(saveButton());
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    await waitFor(() => expect(updateExamMaxMock).toHaveBeenCalledTimes(1));
+    expect(saveButton().textContent).toContain("Saving…");
+    expect(saveButton().disabled).toBe(true);
+    fireEvent.submit(form);
+    await act(async () => {
+      pending.resolve(examResponse(90));
+    });
+    expect(updateExamMaxMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("cannot be dismissed while the request is in flight", async () => {
+    const pending = createDeferred<JournalExamMaxScoreUpdateResponse>();
+    updateExamMaxMock.mockReturnValueOnce(pending.promise);
+    await openSettings();
+    typeMaximum("90");
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(updateExamMaxMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Period settings" }), { key: "Escape" });
+    expect((screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Close" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("dialog", { name: "Period settings" })).toBeDefined();
+    expect(screen.queryByText("Continue editing")).toBeNull();
+
+    await act(async () => {
+      pending.resolve(examResponse(90));
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+  });
+
+  it("closes a pristine dialog with Escape or Cancel and writes nothing", async () => {
+    await openSettings();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Period settings" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+    expect(batchUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it("asks Continue editing or Discard changes for a dirty unsent value", async () => {
+    await openSettings();
+    typeMaximum("90");
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Period settings" }), { key: "Escape" });
+    expect(await screen.findByText("You have an unsaved exam maximum.")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Continue editing" }));
+    expect(maximumInput().value).toBe("90");
+    expect(screen.queryByText("You have an unsaved exam maximum.")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    expect(maximumInput().value).toBe("100");
+  });
+
+  it("applies the returned maximum and summaries, closes and returns focus to Period settings", async () => {
+    await openSettings();
+    typeMaximum("80");
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 80 });
+    await waitFor(() => expect(document.activeElement).toBe(settingsButton()));
+
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
+    expect(maximumInput().value).toBe("80");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
+    await waitFor(() => expect(getProgressChartMock.mock.calls.length).toBeGreaterThan(1));
+  });
+
+  it("names the highest existing exam score when the server rejects a lower maximum and keeps the input", async () => {
+    getJournalMock.mockImplementation(async (journalId: number) => {
+      const detail = buildJournal(journalId);
+      detail.students[0].summary = { ...(detail.students[0].summary as NonNullable<typeof detail.students[0]["summary"]>), exam_score: 60 };
+      return detail;
+    });
+    updateExamMaxMock.mockRejectedValue(new AuthApiError(400, "Cannot lower exam max score to 40: student(s) Anvar Tester already have higher exam scores"));
+    const dialog = await openSettings();
+    expect(dialog.textContent).toContain("Highest existing exam score: 60");
+    typeMaximum("40");
+    fireEvent.click(saveButton());
+
+    const alert = await screen.findByTestId("period-settings-alert");
+    expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 40 });
+    expect(alert.textContent).toBe("Cannot lower the exam maximum to 40: the highest existing exam score is 60. Choose 60 or more.");
+    expect(maximumInput().value).toBe("40");
+    expect(screen.getByRole("dialog", { name: "Period settings" })).toBeDefined();
+    expect(saveButton().disabled).toBe(false);
+  });
+
+  it.each([
+    [new AuthApiError(403, "Not enough permissions"), "You no longer have permission to change this period."],
+    [new AuthApiError(404, "Journal not found"), "This period no longer exists. Reload the journal."],
+    [new AuthApiError(500, "boom"), "The exam maximum could not be changed. Try again."],
+  ])("maps %o to a translated message instead of the raw server text", async (error, message) => {
+    updateExamMaxMock.mockRejectedValue(error);
+    await openSettings();
+    typeMaximum("90");
+    fireEvent.click(saveButton());
+    expect((await screen.findByTestId("period-settings-alert")).textContent).toBe(message);
+    expect(maximumInput().value).toBe("90");
+  });
+
+  it("is translated in Russian and Tajik", async () => {
+    await i18n.changeLanguage("ru");
+    renderWorkspace();
+    await screen.findByRole("region", { name: /./ });
+    fireEvent.click(screen.getByRole("button", { name: "Настройки периода" }));
+    expect(await screen.findByRole("dialog", { name: "Настройки периода" })).toBeDefined();
+    cleanup();
+    await i18n.changeLanguage("tg");
+    renderWorkspace();
+    await screen.findByRole("region", { name: /./ });
+    fireEvent.click(screen.getByRole("button", { name: "Танзимоти давра" }));
+    expect(await screen.findByRole("dialog", { name: "Танзимоти давра" })).toBeDefined();
+  });
+
+  it("offers no Period settings to an assigned mentor on an archived course", async () => {
+    useAuthStore.setState({ role: "mentor" });
+    getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
+    renderWorkspace();
+    await waitForGrid();
+    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull();
+  });
+
+  it("keeps Period settings for an assigned mentor on an active course", async () => {
+    useAuthStore.setState({ role: "mentor" });
+    renderWorkspace();
+    await waitForGrid();
+    expect(settingsButton()).toBeDefined();
   });
 });

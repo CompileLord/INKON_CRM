@@ -24,7 +24,7 @@ import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp"
 import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
 import { JournalConflictReview } from "../components/journals/JournalConflictReview";
 import { JournalDrainDialog } from "../components/journals/JournalDrainDialog";
-import { ExamWeightModal } from "../components/journals/ExamWeightModal";
+import { JournalPeriodSettingsDialog } from "../components/journals/JournalPeriodSettingsDialog";
 import type { JournalRowEditing } from "../components/journals/JournalStudentRow";
 import {
   JournalContextSkeleton,
@@ -41,6 +41,7 @@ import { useJournalNavigationGuard } from "../lib/journals/useJournalNavigationG
 import { useJournalAutosave } from "../lib/journals/useJournalAutosave";
 import { useUpdateJournalExamMaxScore } from "../lib/journals/hooks";
 import { JournalWorkspaceSelection } from "../lib/journals/JournalWorkspaceSelection";
+import { JournalPeriodSettingsRules } from "../lib/journals/JournalPeriodSettingsRules";
 import { JournalRosterFilter } from "../lib/journals/JournalRosterFilter";
 import { useStableStudentOrder } from "../lib/journals/JournalStudentOrdering";
 import { useJournalWorkspaceRoute } from "../lib/journals/useJournalWorkspaceRoute";
@@ -63,7 +64,8 @@ function JournalDetailContent() {
   const userId = useAuthStore((state) => state.userId);
   const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
-  const [examModalOpen, setExamModalOpen] = useState<boolean>(false);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [settingsBusy, setSettingsBusy] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const isDesktop: boolean = useDesktop();
   const anchorRef = useRef<{ studentId: number; control: string } | null>(null);
@@ -124,8 +126,8 @@ function JournalDetailContent() {
   const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden;
   const { applyEntryCommand, editSummary } = autosave;
   const editing: JournalRowEditing | null = useMemo(
-    () => (editorsMounted ? { onEntryCommand: applyEntryCommand, onSummaryPair: editSummary } : null),
-    [editorsMounted, applyEntryCommand, editSummary],
+    () => (editorsMounted && !settingsBusy ? { onEntryCommand: applyEntryCommand, onSummaryPair: editSummary } : null),
+    [editorsMounted, settingsBusy, applyEntryCommand, editSummary],
   );
 
   const backLink = (
@@ -345,8 +347,14 @@ function JournalDetailContent() {
               onSelect={route.selectPeriod}
               disabled={queueStatus.draining}
             />
-            {editing && journal && (
-              <Button type="button" variant="secondary" onClick={() => setExamModalOpen(true)} className="w-full lg:w-auto">
+            {editorsMounted && journal && (
+              <Button
+                type="button"
+                variant="secondary"
+                data-period-settings=""
+                onClick={() => setSettingsOpen(true)}
+                className="w-full lg:w-auto"
+              >
                 <Settings className="h-4 w-4" aria-hidden="true" />
                 {t("workspace.periodSettings")}
               </Button>
@@ -484,14 +492,24 @@ function JournalDetailContent() {
         </>
       )}
 
-      {examModalOpen && journal && (
-        <ExamWeightModal
-          isOpen={examModalOpen}
-          currentWeight={journal.exam_max_score}
-          onClose={() => setExamModalOpen(false)}
-          onSave={async (newWeight: number) => {
-            await updateExamMaxScore.mutateAsync({ exam_max_score: newWeight });
+      {editorsMounted && journal && (
+        <JournalPeriodSettingsDialog
+          open={settingsOpen}
+          suspended={reviewOpen}
+          courseTitle={course.title}
+          periodLabel={journal.period_label}
+          periodStart={journal.period_start}
+          periodEnd={journal.period_end}
+          currentMaximum={journal.exam_max_score}
+          highestExamScore={JournalPeriodSettingsRules.highestExamScore(journal.students)}
+          drain={() => registry.drainAll()}
+          submit={async (examMaximum: number) => {
+            await updateExamMaxScore.mutateAsync({ exam_max_score: examMaximum });
           }}
+          onBusyChange={setSettingsBusy}
+          onReview={() => setReviewOpen(true)}
+          onClose={() => setSettingsOpen(false)}
+          returnFocusSelector="[data-period-settings]"
         />
       )}
     </div>

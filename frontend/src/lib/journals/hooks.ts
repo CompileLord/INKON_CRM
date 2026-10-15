@@ -77,6 +77,8 @@ export function useUpdateJournalExamMaxScore(journalId: number | undefined, cour
       }
       if (courseId !== undefined) {
         queryClient.invalidateQueries({ queryKey: ["courses", "progress-chart", courseId] });
+        queryClient.invalidateQueries({ queryKey: ["courses", "journal-metrics", courseId] });
+        queryClient.invalidateQueries({ queryKey: ["courses", "staff-progress", courseId] });
       }
     },
   });
