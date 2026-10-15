@@ -52,7 +52,7 @@ class LocalStartTLSServer:
         self.stopping = threading.Event()
         self.thread = threading.Thread(target=self._serve, daemon=True)
 
-    def __enter__(self) -> LocalStartTLSServer:
+    def __enter__(self) -> "LocalStartTLSServer":
         self.thread.start()
         return self
 
