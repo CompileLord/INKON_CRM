@@ -13,12 +13,12 @@ def expand(x):
 def add(n,phase,slug,title,ids,files,steps,tests,accept,measure='',deps='',severity='Medium',effort='M',extra=''):
  w=dict(id=f'WP-{n:02}',number=n,phase=phase,slug=slug,title=title,findings=ids.split(),files=[expand(p) for p in files.split()],steps=steps.split(' || '),tests=tests.split(' || '),accept=accept,measure=measure,deps=[f'WP-{int(x):02}' for x in deps.split()],severity=severity,effort=effort,extra=extra)
  if phase not in (0,4):w['files'].append(f'backend/app/tests/integration/test_remediation_wp{n:02}.py')
- w['record']=f'docs/remediation/results/WP-{n:02}.md'
- w['files']+= [w['record'],'docs/remediation/STATUS.md']
+ w['record']='docs/remediation/STATUS.md'
+ w['files']=list(dict.fromkeys(w['files']+['docs/remediation/STATUS.md']))
  W.append(w)
 
 add(1,0,'baseline','Record an isolated integration-test baseline','',
-'docs/remediation/results/baseline-environment.md',
+'docs/remediation/STATUS.md',
 'Inspect test targets before importing the app: conftest hardcodes localhost:5432/imkon_test_db and imports Redis from app settings. Use an isolated disposable runtime/network where that PostgreSQL target belongs solely to this run; never repoint or stop an existing service to make room. || Set process-only TESTING=true, isolated REDIS_URL and a temporary STORAGE_PATH, plus synthetic required settings before collection; disable bytecode and direct pytest/cache/temp outputs to a disposable test workspace. Run the existing suite unchanged. || Record commit, versions, target identities without credentials, exact commands, exit codes and every failing test. Historical 100-pass onboarding is not this baseline.',
 'Preflight must demonstrate that PostgreSQL schema deletion and Redis FLUSHDB can touch only this disposable runtime. || Run the existing backend integration suite and full backend suite; run frontend tests and typecheck as repository gates, recording existing failures without fixing them.',
 'Baseline commands and actual results are recorded, or an explicit environment blocker is recorded. No original service data is modified.',
@@ -242,7 +242,7 @@ add(41,3,'student-mentor-card','Return only authorized mentor information to stu
 'Student enrolled only in A cannot learn B via mentor profile; forbidden contact fields absent even when populated; authorized mentor/admin profile still works.',
 'Student profile responses cannot bypass direct-course authorization or leak unneeded personal properties.',deps='40',effort='S')
 add(42,3,'migration-gates','Test the migration chain and fail deployment on migration errors','DATA-13 PERF-DATA-03',
-'.github/workflows/deploy-backend.yml script:gcp_deploy backend/app/tests/migrations/test_migration_chain.py docs/remediation/results/migration-runbook.md',
+'.github/workflows/deploy-backend.yml script:gcp_deploy backend/app/tests/migrations/test_migration_chain.py docs/remediation/STATUS.md',
 'Add a separate disposable migration job for empty-to-head and prior-revision-to-head with representative data/constraints; keep it independent from metadata.create_all tests. || Make missing migration credentials, migration failure and unavailable runner access block deployment; remove warning-only fallthrough and document a reachable job runner. || Rehearse the historical scoring upgrade with a bounded maintenance window. Do not edit an already-applied revision; if an unupgraded large database exceeds the window, stop rollout and create an approved expand/backfill plan.',
 'Forced Alembic failure must prevent deploy. Upgrade fixtures assert exact pre-clamp-derived scores and constraints; compare head schema with models. Exercise rollback/recovery rehearsal on disposable data.',
 'Deployment cannot serve a new image after skipped/failed migrations; migration-chain correctness and size-dependent rollout evidence are recorded.',
@@ -359,7 +359,7 @@ add(63,3,'auth-injection','Inject narrow authentication collaborators','',
 'Run auth behavior/recovery/scope/replay tests with SQL implementations and narrow doubles; no hidden service commit or optional insecure fallback appears.',
 'Auth workflows can substitute declared collaborators without changing route logic or security behavior.',deps='60 51')
 add(62,4,'reaudit','Re-audit every finding and record residual risks','',
-'docs/remediation/results/final-reaudit.md docs/remediation/results/coverage-after-fixes.md docs/remediation/results/retention-policy-decision.md',
+'docs/remediation/STATUS.md docs/remediation/STATUS.md docs/remediation/STATUS.md',
 'Reopen every original cited source location or its successor after all implementation packages merge; preserve original audit reports unchanged. || Re-run the full backend/frontend gates, explicit Critical reproduction module, migration smoke suite and representative performance/security checks; compare measurements with their recorded baselines. || Mark each of the 75 IDs fixed, still open, measurement-accepted or deferred with current evidence. Revisit SEC-DATA-04 with the data owner for retention/backup/financial exceptions; draft a separate future erasure WP only after that policy exists.',
 'All Critical reproductions must pass with desired secure outcomes; audit all acceptance evidence and actual branch/PR completion before declaring closure. Check source ownership exceptions, migrations and compatibility debt.',
 'Independent fresh source review and actual checks substantiate each disposition; unresolved policy/performance/runtime assumptions remain explicit, not hidden behind an overall score.',
