@@ -12,6 +12,10 @@ Give Telegram webhook registration one deployment owner. One bounded implementat
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+The existing WP-11 production-lifespan test explicitly requires instance registration/deletion, which conflicts with this package’s single deployment-owner contract. Before changing that test, authorize only its replacement assertions: instance startup/shutdown never mutate the shared webhook and close local resources. Preserve the test’s secret-redaction and production configuration coverage; explicit registration behavior is tested by WP-27.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -21,6 +25,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/main.py:23](../../../backend/app/main.py) | Existing file, anchor line 23; only this WP’s stated behavior may change. |
 | [backend/scripts/register_telegram_webhook.py](../../../backend/scripts/register_telegram_webhook.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp27.py](../../../backend/app/tests/integration/test_remediation_wp27.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_remediation_wp11.py](../../../backend/app/tests/integration/test_remediation_wp11.py) | Update only the obsolete production-lifespan registration/deletion test to the single deployment-owner contract. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
