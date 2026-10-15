@@ -45,17 +45,17 @@ const STUDENTS: JournalStudentResponse[] = [student(1, "Anvar"), student(2, "Bah
 
 interface GridHarness {
   onEntryCommand: ReturnType<typeof vi.fn>;
-  onSummaryField: ReturnType<typeof vi.fn>;
+  onSummaryPair: ReturnType<typeof vi.fn>;
   onSelectLesson: ReturnType<typeof vi.fn>;
   rerender: (students: JournalStudentResponse[], journalId?: number) => void;
 }
 
 function mountGrid(options: { editing?: boolean; students?: JournalStudentResponse[]; selectedLesson?: string } = {}): GridHarness {
   const onEntryCommand = vi.fn();
-  const onSummaryField = vi.fn();
+  const onSummaryPair = vi.fn();
   const onSelectLesson = vi.fn();
   const editing: JournalRowEditing | null =
-    options.editing === false ? null : { onEntryCommand, onSummaryField };
+    options.editing === false ? null : { onEntryCommand, onSummaryPair };
   const element = (students: JournalStudentResponse[], journalId: number) => (
     <JournalGrid
       journalId={journalId}
@@ -63,7 +63,6 @@ function mountGrid(options: { editing?: boolean; students?: JournalStudentRespon
       students={students}
       lessonDates={DATES}
       selectedLesson={options.selectedLesson ?? DATES[0]}
-      examMaxScore={100}
       cellStatus={new Map()}
       summaryStatus={new Map()}
       editing={editing}
@@ -73,7 +72,7 @@ function mountGrid(options: { editing?: boolean; students?: JournalStudentRespon
   const view = render(element(options.students ?? STUDENTS, 7));
   return {
     onEntryCommand,
-    onSummaryField,
+    onSummaryPair,
     onSelectLesson,
     rerender: (students, journalId = 7) => view.rerender(element(students, journalId)),
   };
@@ -193,16 +192,6 @@ describe("JournalGrid keyboard", () => {
     expect(grid.onEntryCommand).not.toHaveBeenCalled();
   });
 
-  it("ignores shortcut keys typed into a bonus or exam field", () => {
-    const grid = mountGrid();
-    const [bonus] = screen.getAllByRole("textbox", { name: /Bonus for Anvar/ });
-    fireEvent.keyDown(bonus, { key: "4" });
-    fireEvent.keyDown(bonus, { key: " ", code: "Space" });
-    fireEvent.keyDown(bonus, { key: "c" });
-    expect(grid.onEntryCommand).not.toHaveBeenCalled();
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
   it("ignores shortcut keys while a native control inside the cell has focus", () => {
     const grid = mountGrid();
     const cell = cellOf("Anvar", DATES[0]);
@@ -226,12 +215,11 @@ describe("JournalGrid keyboard", () => {
     search.remove();
   });
 
-  it("makes the summary fields of only the focused row tabbable", () => {
+  it("has no inline bonus or exam inputs so the paired editor is the only summary edit path", () => {
     mountGrid();
-    const anvarBonus = screen.getByRole("textbox", { name: "Bonus for Anvar Tester" });
-    const bahorBonus = screen.getByRole("textbox", { name: "Bonus for Bahor Tester" });
-    expect(anvarBonus.getAttribute("tabindex")).toBe("0");
-    expect(bahorBonus.getAttribute("tabindex")).toBe("-1");
+    expect(screen.queryByRole("textbox", { name: /Bonus|Exam/ })).toBeNull();
+    expect(screen.queryByRole("columnheader", { name: /Bonus|Exam/ })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "Total" })).toBeDefined();
   });
 });
 

@@ -15,7 +15,6 @@ interface JournalGridProps {
   students: JournalStudentResponse[];
   lessonDates: string[];
   selectedLesson: string | undefined;
-  examMaxScore: number;
   cellStatus: Map<string, CellSaveStatus>;
   summaryStatus: Map<number, CellSaveStatus>;
   editing: JournalRowEditing | null;
@@ -50,7 +49,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   students: serverOrderedStudents,
   lessonDates,
   selectedLesson,
-  examMaxScore,
   cellStatus,
   summaryStatus,
   editing,
@@ -182,16 +180,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   </th>
                 ))}
 
-                <th scope="col" className="sticky top-0 z-20 min-w-[88px] border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  {t("table.bonus")}
-                </th>
-
-                <th scope="col" className="sticky top-0 z-20 min-w-[88px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  <span className="block">{t("table.exam")}</span>
-                  <span className="block text-xs font-normal text-muted tabular-nums">{t("table.maxN", { n: examMaxScore })}</span>
-                </th>
-
-                <th scope="col" className="sticky top-0 z-20 min-w-[80px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                <th scope="col" className="sticky top-0 z-20 min-w-[96px] border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
                   {t("table.sum")}
                 </th>
 
@@ -208,7 +197,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   student={student}
                   lessonDates={lessonDates}
                   selectedLesson={selectedLesson}
-                  examMaxScore={examMaxScore}
                   cellStatus={cellStatus}
                   summaryStatus={summaryStatus.get(student.student_id)}
                   focusedCellKey={focusedCellKey}

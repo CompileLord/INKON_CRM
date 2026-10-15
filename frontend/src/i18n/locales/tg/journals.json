@@ -263,7 +263,18 @@
   "summary": {
     "listLabel": "Натиҷаҳои хонандагон, {{period}}",
     "total": "{{sum}} аз {{max}}",
-    "unavailable": "Дастрас нест"
+    "unavailable": "Дастрас нест",
+    "homework": "Вазифаи хонагӣ",
+    "attendance": "Ҳозирӣ",
+    "attendanceOf": "{{count}} аз {{total}}",
+    "outOf": "{{value}} аз {{max}}",
+    "ofMax": "аз {{max}}",
+    "totalMax": "Ҷамъ / ҳадди аксар",
+    "actions": "Амалҳо",
+    "editExamBonus": "Таҳрири имтиҳон ва бонус",
+    "editExamBonusFor": "Таҳрири имтиҳон ва бонус: {{name}}",
+    "openBreakdown": "Кушодани тафсил: {{name}}",
+    "edit": "Таҳрир"
   },
   "lesson": {
     "heading": "Рӯйхати хонандагон, {{period}}",
@@ -302,5 +313,33 @@
     "count": "{{matched}} аз {{total}} хонанда",
     "noMatchTitle": "Хонанда ёфт нашуд",
     "noMatchBody": "Дар рӯйхати ин давра касе бо «{{query}}» мувофиқат намекунад. Барои дидани ҳама ҷустуҷӯро тоза кунед."
+  },
+  "breakdown": {
+    "back": "Бозгашт ба натиҷаҳо",
+    "viewProfile": "Дидани профил",
+    "period": "Давра: {{period}}",
+    "lessons": "Дарсҳо",
+    "noLessons": "Дар ин давра дарс нест."
+  },
+  "calculation": {
+    "toggle": "Ин ҷамъ чӣ тавр ҳисоб мешавад",
+    "sum": "Вазифаи хонагӣ {{homework}} + ҳозирӣ {{attendance}} + имтиҳон {{exam}} + бонус {{bonus}} = {{total}}",
+    "denominator": "Ҳадди аксар {{max}} = {{lessons}} дарс × {{perLesson}} хол + ҳадди аксари имтиҳон {{examMax}}",
+    "denominatorServer": "Ҳадди аксар {{max}}, ки сервер ҳисоб кардааст",
+    "percentage": "Фоиз = {{total}} ÷ {{max}} = {{percentage}}",
+    "ruleHomework": "Вазифаи хонагӣ: то {{max}} хол барои як дарс.",
+    "ruleAttendance": "Ҳозирӣ: {{points}} хол барои ҳар дарси иштирокшуда.",
+    "ruleBonus": "Бонус: то {{max}} хол.",
+    "ruleOver100": "Бонус метавонад фоизро аз 100% боло барад."
+  },
+  "summaryEditor": {
+    "title": "Имтиҳон ва бонус: {{name}}",
+    "range": "Адади бутун аз 0 то {{max}}",
+    "currentTotal": "Ҷамъи ҷорӣ: {{sum}} аз {{max}}",
+    "pairNote": "Ҳарду қиммат якҷоя захира мешаванд.",
+    "apply": "Татбиқ кардан",
+    "discardPrompt": "Тағйироти захиранашудаи имтиҳон ва бонус ҳаст.",
+    "continueEditing": "Идомаи таҳрир",
+    "discard": "Нест кардани тағйирот"
   }
 }

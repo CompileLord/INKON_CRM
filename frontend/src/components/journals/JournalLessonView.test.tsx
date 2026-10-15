@@ -42,7 +42,7 @@ const ROSTER = [student(1, "Anvar", { attendance: true, score: 4 }), student(2, 
 function mount(options: { editing?: boolean; visible?: Set<number> | null; status?: Map<string, CellSaveStatus>; query?: string } = {}) {
   const onEntryCommand = vi.fn();
   const onClearSearch = vi.fn();
-  const editing: JournalRowEditing | null = options.editing === false ? null : { onEntryCommand, onSummaryField: vi.fn() };
+  const editing: JournalRowEditing | null = options.editing === false ? null : { onEntryCommand, onSummaryPair: vi.fn() };
   const element = (visible: Set<number> | null, status: Map<string, CellSaveStatus>) => (
     <JournalLessonView
       students={ROSTER}

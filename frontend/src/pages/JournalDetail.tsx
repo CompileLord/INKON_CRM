@@ -7,11 +7,12 @@ import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
 import { useAuthStore } from "../store/authStore";
+import { isPathAllowed } from "../lib/auth/roleAccess";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { Button } from "../components/ui/Button";
 import { JournalScoreChart } from "../components/journals/JournalScoreChart";
 import { JournalGrid } from "../components/journals/JournalGrid";
-import { JournalSummaryList } from "../components/journals/JournalSummaryList";
+import { JournalSummaryView } from "../components/journals/JournalSummaryView";
 import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker";
 import { JournalWorkspaceTabs } from "../components/journals/JournalWorkspaceTabs";
 import { JournalViewSwitch } from "../components/journals/JournalViewSwitch";
@@ -59,6 +60,7 @@ function JournalDetailContent() {
   const queueStatus = useJournalQueueStatus();
   const navigationGuard = useJournalNavigationGuard(JournalWorkspaceSelection.changesJournalContext);
   const role = useAuthStore((state) => state.role);
+  const userId = useAuthStore((state) => state.userId);
   const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
   const [examModalOpen, setExamModalOpen] = useState<boolean>(false);
@@ -120,10 +122,10 @@ function JournalDetailContent() {
   }, [isDesktop, selectedLessonForAnchor]);
 
   const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden;
-  const { applyEntryCommand, editSummaryField } = autosave;
+  const { applyEntryCommand, editSummary } = autosave;
   const editing: JournalRowEditing | null = useMemo(
-    () => (editorsMounted ? { onEntryCommand: applyEntryCommand, onSummaryField: editSummaryField } : null),
-    [editorsMounted, applyEntryCommand, editSummaryField],
+    () => (editorsMounted ? { onEntryCommand: applyEntryCommand, onSummaryPair: editSummary } : null),
+    [editorsMounted, applyEntryCommand, editSummary],
   );
 
   const backLink = (
@@ -192,6 +194,9 @@ function JournalDetailContent() {
     anchorRef.current = { studentId, control };
   };
 
+  const profileHrefFor = (studentId: number): string | null =>
+    role !== null && isPathAllowed(role, `/students/${studentId}`, userId) ? `/students/${studentId}` : null;
+
   const renderGradebookBody = () => {
     if (journalQuery.isLoading) return isDesktop ? <JournalGridSkeleton /> : <JournalLessonSkeleton />;
     if (journalQuery.isError && !journal) {
@@ -233,9 +238,17 @@ function JournalDetailContent() {
       );
     } else if (route.view === "summary") {
       body = (
-        <JournalSummaryList
+        <JournalSummaryView
           students={visibleStudentIds ? orderedStudents.filter((student) => visibleStudentIds.has(student.student_id)) : orderedStudents}
+          allStudents={orderedStudents}
+          lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
+          examMaximum={journal.exam_max_score}
           periodLabel={periodLabel}
+          summaryStatus={autosave.summaryStatus}
+          onApplyPair={editing ? editing.onSummaryPair : null}
+          profileHrefFor={profileHrefFor}
+          openStudentId={route.studentId}
+          onOpenStudent={route.selectStudent}
         />
       );
     } else if (journal.lesson_dates.length === 0) {
@@ -266,7 +279,6 @@ function JournalDetailContent() {
           onAnchor={handleAnchor}
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
           selectedLesson={lessonSelection.lesson}
-          examMaxScore={journal.exam_max_score}
           cellStatus={autosave.cellStatus}
           summaryStatus={autosave.summaryStatus}
           editing={editing}
@@ -275,7 +287,7 @@ function JournalDetailContent() {
       );
     }
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-3">
         {refreshFailedNotice}
         {body}
       </div>
@@ -410,6 +422,7 @@ function JournalDetailContent() {
               ) : (
                 <>
                   <JournalViewSwitch selected={route.view} onSelect={route.selectView} gridLabelKey="workspace.view.lesson" />
+                  {(route.view === "grid" || queueStatus.phase !== "idle") && (
                   <div
                     data-testid="journal-lesson-band"
                     className="sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 -mx-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border bg-cream px-4 py-1 [@media(max-height:500px)]:static"
@@ -429,6 +442,7 @@ function JournalDetailContent() {
                       onReview={() => setReviewOpen(true)}
                     />
                   </div>
+                  )}
                   <JournalRosterSearch
                     query={searchQuery}
                     onChange={setSearchQuery}

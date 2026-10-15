@@ -263,7 +263,18 @@
   "summary": {
     "listLabel": "Student totals, {{period}}",
     "total": "{{sum}} of {{max}}",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "homework": "Homework",
+    "attendance": "Attendance",
+    "attendanceOf": "{{count}} of {{total}}",
+    "outOf": "{{value}} of {{max}}",
+    "ofMax": "of {{max}}",
+    "totalMax": "Total / max",
+    "actions": "Actions",
+    "editExamBonus": "Edit exam and bonus",
+    "editExamBonusFor": "Edit exam and bonus for {{name}}",
+    "openBreakdown": "Open breakdown for {{name}}",
+    "edit": "Edit"
   },
   "lesson": {
     "heading": "Lesson roster, {{period}}",
@@ -302,5 +313,33 @@
     "count": "{{matched}} of {{total}} students",
     "noMatchTitle": "No students match",
     "noMatchBody": "Nobody in this period's roster matches “{{query}}”. Clear the search to see everyone."
+  },
+  "breakdown": {
+    "back": "Back to summary",
+    "viewProfile": "View profile",
+    "period": "Period: {{period}}",
+    "lessons": "Lessons",
+    "noLessons": "There are no lessons in this period."
+  },
+  "calculation": {
+    "toggle": "How this total is calculated",
+    "sum": "Homework {{homework}} + attendance {{attendance}} + exam {{exam}} + bonus {{bonus}} = {{total}}",
+    "denominator": "Maximum {{max}} = {{lessons}} lessons × {{perLesson}} points + exam maximum {{examMax}}",
+    "denominatorServer": "Maximum {{max}}, as calculated by the server",
+    "percentage": "Percentage = {{total}} ÷ {{max}} = {{percentage}}",
+    "ruleHomework": "Homework: up to {{max}} points per lesson.",
+    "ruleAttendance": "Attendance: {{points}} point for each lesson attended.",
+    "ruleBonus": "Bonus: up to {{max}} points.",
+    "ruleOver100": "Bonus can push the percentage above 100%."
+  },
+  "summaryEditor": {
+    "title": "Edit exam and bonus: {{name}}",
+    "range": "Whole number from 0 to {{max}}",
+    "currentTotal": "Current total: {{sum}} of {{max}}",
+    "pairNote": "Both values are saved together.",
+    "apply": "Apply",
+    "discardPrompt": "You have unsaved changes to exam and bonus.",
+    "continueEditing": "Continue editing",
+    "discard": "Discard changes"
   }
 }

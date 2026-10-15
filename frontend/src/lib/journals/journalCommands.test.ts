@@ -73,8 +73,20 @@ describe("JournalSummaryCommands.judgeInput", () => {
     expect(JournalSummaryCommands.judgeInput("1.5", "bonus_score", 100)).toEqual({ valid: false, reason: "notWholeNumber" });
   });
 
+  it("rejects a bonus above the verified server limit of 20 rather than clamping it", () => {
+    expect(JournalSummaryCommands.judgeInput("21", "bonus_score", 100)).toEqual({ valid: false, reason: "aboveMaximum", maximum: 20 });
+    expect(JournalSummaryCommands.judgeInput("20", "bonus_score", 100)).toEqual({ valid: true, value: 20 });
+  });
+
+  it("judges the paired draft as valid only when both fields are valid and never zeroes either", () => {
+    expect(JournalSummaryCommands.judgePair("5", "40", 100).isValid).toBe(true);
+    expect(JournalSummaryCommands.judgePair("", "40", 100)).toMatchObject({ isValid: false, bonus: { valid: false, reason: "empty" } });
+    expect(JournalSummaryCommands.judgePair("5", "4.5", 100)).toMatchObject({ isValid: false, exam: { valid: false, reason: "notWholeNumber" } });
+    expect(JournalSummaryCommands.judgePair("5", "101", 100).isValid).toBe(false);
+  });
+
   it("rejects an exam score above the exam maximum rather than clamping it", () => {
-    expect(JournalSummaryCommands.judgeInput("101", "exam_score", 100)).toEqual({ valid: false, reason: "aboveMaximum" });
+    expect(JournalSummaryCommands.judgeInput("101", "exam_score", 100)).toEqual({ valid: false, reason: "aboveMaximum", maximum: 100 });
     expect(JournalSummaryCommands.judgeInput("100", "exam_score", 100)).toEqual({ valid: true, value: 100 });
   });
 

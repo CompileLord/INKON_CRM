@@ -1,3 +1,5 @@
+import { JournalScoringRules } from "./JournalScoringRules";
+
 export interface JournalEntryValue {
   attendance: boolean;
   score: number;
@@ -18,7 +20,13 @@ export type JournalSummaryField = "bonus_score" | "exam_score";
 
 export type SummaryInputVerdict =
   | { valid: true; value: number }
-  | { valid: false; reason: "empty" | "notWholeNumber" | "aboveMaximum" };
+  | { valid: false; reason: "empty" | "notWholeNumber" | "aboveMaximum"; maximum?: number };
+
+export interface SummaryPairVerdict {
+  bonus: SummaryInputVerdict;
+  exam: SummaryInputVerdict;
+  isValid: boolean;
+}
 
 export class JournalEntryCommands {
   static readonly MINIMUM_SCORE: number = 0;
@@ -82,13 +90,22 @@ export class JournalEntryCommands {
 }
 
 export class JournalSummaryCommands {
+  static readonly MAXIMUM_BONUS_SCORE: number = JournalScoringRules.MAXIMUM_BONUS_SCORE;
+
   static judgeInput(rawInput: string, field: JournalSummaryField, examMaximum: number): SummaryInputVerdict {
     const trimmedInput: string = rawInput.trim();
     if (trimmedInput.length === 0) return { valid: false, reason: "empty" };
     if (!/^\d{1,9}$/.test(trimmedInput)) return { valid: false, reason: "notWholeNumber" };
     const parsedValue: number = Number(trimmedInput);
-    if (field === "exam_score" && parsedValue > examMaximum) return { valid: false, reason: "aboveMaximum" };
+    const maximum: number = field === "exam_score" ? examMaximum : JournalSummaryCommands.MAXIMUM_BONUS_SCORE;
+    if (parsedValue > maximum) return { valid: false, reason: "aboveMaximum", maximum };
     return { valid: true, value: parsedValue };
+  }
+
+  static judgePair(bonusText: string, examText: string, examMaximum: number): SummaryPairVerdict {
+    const bonus: SummaryInputVerdict = JournalSummaryCommands.judgeInput(bonusText, "bonus_score", examMaximum);
+    const exam: SummaryInputVerdict = JournalSummaryCommands.judgeInput(examText, "exam_score", examMaximum);
+    return { bonus, exam, isValid: bonus.valid && exam.valid };
   }
 
   static withField(current: JournalSummaryValue, field: JournalSummaryField, value: number): JournalSummaryValue {

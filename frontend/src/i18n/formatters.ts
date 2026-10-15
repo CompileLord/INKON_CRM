@@ -141,6 +141,10 @@ export function getSchoolMonthRange(date: Date = new Date()): { start: string; e
   return { start: prefix + "-01", end: prefix + "-" + String(lastDay).padStart(2, "0") };
 }
 
+export function formatPercentage(value: number, lng?: string): string {
+  return `${formatNumber(value, lng, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
+}
+
 export function formatNumber(value: number, lng?: string, options: Intl.NumberFormatOptions = {}): string {
   return new Intl.NumberFormat(getActiveLocale(lng), options).format(value);
 }

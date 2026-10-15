@@ -23,6 +23,7 @@ export const PERIOD_QUERY_KEY = "period";
 export const LESSON_QUERY_KEY = "lesson";
 export const TAB_QUERY_KEY = "tab";
 export const VIEW_QUERY_KEY = "view";
+export const STUDENT_QUERY_KEY = "student";
 
 const POSITIVE_INTEGER_PATTERN: RegExp = /^[1-9]\d*$/;
 
@@ -101,6 +102,12 @@ export class JournalWorkspaceSelection {
     const index: number = ordered.indexOf(current);
     if (index === -1) return undefined;
     return ordered[index + offset];
+  }
+
+  static parseStudentId(rawStudent: string | null): number | null {
+    if (rawStudent === null || !POSITIVE_INTEGER_PATTERN.test(rawStudent)) return null;
+    const parsed: number = Number(rawStudent);
+    return Number.isSafeInteger(parsed) ? parsed : null;
   }
 
   static parseTab(rawTab: string | null): { tab: WorkspaceTab; queryInvalid: boolean } {

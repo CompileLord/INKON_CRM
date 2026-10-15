@@ -271,7 +271,18 @@
   "summary": {
     "listLabel": "Итоги учеников, {{period}}",
     "total": "{{sum}} из {{max}}",
-    "unavailable": "Недоступно"
+    "unavailable": "Недоступно",
+    "homework": "Домашние задания",
+    "attendance": "Посещаемость",
+    "attendanceOf": "{{count}} из {{total}}",
+    "outOf": "{{value}} из {{max}}",
+    "ofMax": "из {{max}}",
+    "totalMax": "Итого / максимум",
+    "actions": "Действия",
+    "editExamBonus": "Изменить экзамен и бонус",
+    "editExamBonusFor": "Изменить экзамен и бонус: {{name}}",
+    "openBreakdown": "Открыть разбор: {{name}}",
+    "edit": "Изменить"
   },
   "lesson": {
     "heading": "Список учеников, {{period}}",
@@ -310,5 +321,33 @@
     "count": "{{matched}} из {{total}} учеников",
     "noMatchTitle": "Ученики не найдены",
     "noMatchBody": "В списке этого периода никого нет по запросу «{{query}}». Очистите поиск, чтобы увидеть всех."
+  },
+  "breakdown": {
+    "back": "Назад к итогам",
+    "viewProfile": "Открыть профиль",
+    "period": "Период: {{period}}",
+    "lessons": "Занятия",
+    "noLessons": "В этом периоде нет занятий."
+  },
+  "calculation": {
+    "toggle": "Как считается этот итог",
+    "sum": "Домашние задания {{homework}} + посещаемость {{attendance}} + экзамен {{exam}} + бонус {{bonus}} = {{total}}",
+    "denominator": "Максимум {{max}} = {{lessons}} занятий × {{perLesson}} баллов + максимум за экзамен {{examMax}}",
+    "denominatorServer": "Максимум {{max}}, рассчитанный сервером",
+    "percentage": "Процент = {{total}} ÷ {{max}} = {{percentage}}",
+    "ruleHomework": "Домашние задания: до {{max}} баллов за занятие.",
+    "ruleAttendance": "Посещаемость: {{points}} балл за каждое посещённое занятие.",
+    "ruleBonus": "Бонус: до {{max}} баллов.",
+    "ruleOver100": "Бонус может поднять процент выше 100%."
+  },
+  "summaryEditor": {
+    "title": "Экзамен и бонус: {{name}}",
+    "range": "Целое число от 0 до {{max}}",
+    "currentTotal": "Текущий итог: {{sum}} из {{max}}",
+    "pairNote": "Оба значения сохраняются вместе.",
+    "apply": "Применить",
+    "discardPrompt": "Есть несохранённые изменения экзамена и бонуса.",
+    "continueEditing": "Продолжить редактирование",
+    "discard": "Сбросить изменения"
   }
 }

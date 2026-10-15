@@ -7,6 +7,7 @@ import {
   formatSchoolLessonDate,
   formatSchoolLessonTime,
   formatSchoolLessonWeekday,
+  formatPercentage,
   getActiveLocale,
   SCHOOL_TIMEZONE,
   getSchoolCalendarDate,
@@ -259,5 +260,21 @@ describe("Tajik locale resolution", () => {
     simulateIntlWithoutTajikData();
     expect(getActiveLocale("en")).toBe("en-US");
     expect(getActiveLocale("ru")).toBe("ru-RU");
+  });
+});
+
+describe("formatPercentage", () => {
+  it("uses up to two fraction digits and no trailing zeros", () => {
+    expect(formatPercentage(0, "en")).toBe("0%");
+    expect(formatPercentage(41.3, "en")).toBe("41.3%");
+    expect(formatPercentage(114.49, "en")).toBe("114.49%");
+    expect(formatPercentage(100, "en")).toBe("100%");
+    expect(formatPercentage(43.4800001, "en")).toBe("43.48%");
+  });
+
+  it("uses the decimal comma in Russian and Tajik", () => {
+    expect(formatPercentage(41.3, "ru")).toBe("41,3%");
+    expect(formatPercentage(114.49, "ru")).toBe("114,49%");
+    expect(formatPercentage(41.3, "tg")).toBe("41,3%");
   });
 });

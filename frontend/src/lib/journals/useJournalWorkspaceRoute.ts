@@ -8,6 +8,7 @@ import {
   JournalWorkspaceSelection,
   LESSON_QUERY_KEY,
   PERIOD_QUERY_KEY,
+  STUDENT_QUERY_KEY,
   TAB_QUERY_KEY,
   VIEW_QUERY_KEY,
   type GradebookView,
@@ -33,11 +34,13 @@ export interface JournalWorkspaceRoute {
   lessonResolution: LessonResolution;
   tab: WorkspaceTab;
   view: GradebookView;
+  studentId: number | null;
   notices: JournalRouteNoticeKind[];
   selectPeriod: (periodId: number) => void;
   selectLesson: (lessonDate: string) => void;
   selectTab: (tab: WorkspaceTab) => void;
   selectView: (view: GradebookView) => void;
+  selectStudent: (studentId: number | null) => void;
   dismissNotices: () => void;
 }
 
@@ -123,6 +126,7 @@ export function useJournalWorkspaceRoute({
       update((next) => {
         next.set(PERIOD_QUERY_KEY, String(periodId));
         next.delete(LESSON_QUERY_KEY);
+        next.delete(STUDENT_QUERY_KEY);
       }, false),
     [update],
   );
@@ -144,8 +148,19 @@ export function useJournalWorkspaceRoute({
   const selectView = useCallback(
     (view: GradebookView): void =>
       update((next) => {
-        if (view === "grid") next.delete(VIEW_QUERY_KEY);
-        else next.set(VIEW_QUERY_KEY, view);
+        if (view === "grid") {
+          next.delete(VIEW_QUERY_KEY);
+          next.delete(STUDENT_QUERY_KEY);
+        } else next.set(VIEW_QUERY_KEY, view);
+      }, true),
+    [update],
+  );
+
+  const selectStudent = useCallback(
+    (studentId: number | null): void =>
+      update((next) => {
+        if (studentId === null) next.delete(STUDENT_QUERY_KEY);
+        else next.set(STUDENT_QUERY_KEY, String(studentId));
       }, true),
     [update],
   );
@@ -160,11 +175,13 @@ export function useJournalWorkspaceRoute({
     lessonResolution,
     tab: tabParse.tab,
     view: viewParse.view,
+    studentId: JournalWorkspaceSelection.parseStudentId(searchParams.get(STUDENT_QUERY_KEY)),
     notices: currentNotices,
     selectPeriod,
     selectLesson,
     selectTab,
     selectView,
+    selectStudent,
     dismissNotices,
   };
 }

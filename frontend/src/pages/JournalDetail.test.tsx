@@ -154,6 +154,7 @@ const getCourseJournalsMock = vi.mocked(courseEndpoints.getCourseJournals);
 const getProgressChartMock = vi.mocked(courseEndpoints.getCourseProgressChart);
 const getJournalMock = vi.mocked(journalEndpoints.getJournal);
 const batchUpdateMock = vi.mocked(journalEndpoints.batchUpdateJournalEntries);
+const updateSummaryMock = vi.mocked(journalEndpoints.updateJournalStudentSummary);
 const getMentorProfileMock = vi.mocked(userEndpoints.getMentorProfile);
 const listEnrollmentsMock = vi.mocked(enrollmentEndpoints.listEnrollments);
 
@@ -164,6 +165,7 @@ function renderWorkspace(entries: string[] = [`/journals/${COURSE_ID}`], index: 
   router = createMemoryRouter(
     [
       { path: "/journals", element: <div>hub page</div> },
+      { path: "/students/:id", element: <div>student profile page</div> },
       { path: "/journals/:id", element: <JournalDetail /> },
     ],
     { initialEntries: entries, initialIndex: index },
@@ -596,7 +598,7 @@ describe("four states", () => {
     renderWorkspace();
     expect(await screen.findByText("No lessons in this period")).toBeDefined();
     fireEvent.click(screen.getByRole("button", { name: "Summary" }));
-    expect(await screen.findByRole("list", { name: /Student totals/ })).toBeDefined();
+    expect(await screen.findByRole("table", { name: /Student totals/ })).toBeDefined();
   });
 
   it("explains an empty roster", async () => {
@@ -676,8 +678,8 @@ describe("workspace anatomy", () => {
     detail.students[1] = { ...detail.students[1], summary: null };
     getJournalMock.mockResolvedValue(detail);
     renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
-    const list = await screen.findByRole("list", { name: /Student totals/ });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+    const list = await screen.findByRole("table", { name: /Student totals/ });
+    expect(within(list).getAllByRole("row")).toHaveLength(3);
     expect(within(list).getByText("Unavailable")).toBeDefined();
     expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
   });
@@ -717,12 +719,27 @@ describe("phone and tablet Lesson view", () => {
     expect(within(band).getByTestId("journal-save-status")).toBeDefined();
   });
 
-  it("hides the lesson controls but keeps the status band in Summary", async () => {
+  it("collapses the lesson band in Summary while nothing is unsettled", async () => {
     renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
     await screen.findByRole("list", { name: /Student totals/ });
-    const band = screen.getByTestId("journal-lesson-band");
-    expect(within(band).queryByRole("button", { name: "Previous lesson" })).toBeNull();
+    expect(screen.queryByTestId("journal-lesson-band")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Previous lesson" })).toBeNull();
+  });
+
+  it("keeps the status line visible in Summary while there is unsettled work", async () => {
+    const slow = createDeferred<Record<string, number>>();
+    updateSummaryMock.mockReturnValueOnce(slow.promise as never);
+    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
+    await screen.findByRole("list", { name: /Student totals/ });
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
+    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "6" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    const band = await screen.findByTestId("journal-lesson-band");
     expect(within(band).getByTestId("journal-save-status")).toBeDefined();
+    expect(within(band).queryByRole("button", { name: "Previous lesson" })).toBeNull();
+    await act(async () => {
+      slow.resolve({ id: 1101, journal_id: OCTOBER, student_id: 11, homework_score: 0, attendance_score: 0, exam_score: 0, bonus_score: 6, sum_score: 6, max_period_score: 100, percentage: 6, attendance_count: 0, total_lessons: 4, version: 2 });
+    });
   });
 
   it("queues a phone score through the same owner and journal id as the grid", async () => {
@@ -875,5 +892,149 @@ describe("phone and tablet Lesson view", () => {
       pending.resolve(buildJournal(OCTOBER));
     });
     await waitForLesson();
+  });
+});
+
+describe("Summary, breakdown and the paired editor", () => {
+  const SUMMARY_URL = `/journals/${COURSE_ID}?view=summary`;
+
+  async function openBreakdown(name = "Anvar"): Promise<void> {
+    fireEvent.click(await screen.findByRole("button", { name: `Open breakdown for ${name} Tester` }));
+    await screen.findByRole("button", { name: "Back to summary" });
+  }
+
+  it("replaces the interim list with a readable table and hides the lesson controls while keeping search and status", async () => {
+    renderWorkspace([SUMMARY_URL]);
+    const table = await screen.findByRole("table", { name: /Student totals/ });
+    ["Students", "Homework", "Attendance", "Exam", "Bonus", "Total / max", "%"].forEach((heading) =>
+      expect(within(table).getByRole("columnheader", { name: heading })).toBeDefined(),
+    );
+    expect(screen.queryByRole("button", { name: "Previous lesson" })).toBeNull();
+    expect(screen.getByRole("searchbox", { name: "Search students in this period" })).toBeDefined();
+    expect(screen.getByTestId("journal-save-status")).toBeDefined();
+  });
+
+  it("keeps the selected lesson in the URL while Summary is shown so Grid returns to it", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?lesson=2026-10-06`]);
+    await waitForGrid();
+    fireEvent.click(screen.getByRole("button", { name: "Summary" }));
+    await screen.findByRole("table", { name: /Student totals/ });
+    expect(router.state.location.search).toContain("lesson=2026-10-06");
+    fireEvent.click(screen.getByRole("button", { name: "Grid" }));
+    await waitForGrid();
+    const selected = screen.getAllByRole("columnheader").find((header) => header.getAttribute("aria-current") === "date");
+    expect(selected?.textContent).toContain(formatSchoolLessonDate("2026-10-06"));
+  });
+
+  it("opens the breakdown in place without any further request and Back restores the row focus", async () => {
+    renderWorkspace([SUMMARY_URL]);
+    await screen.findByRole("table", { name: /Student totals/ });
+    const journalCalls = getJournalMock.mock.calls.length;
+    const enrollmentCalls = listEnrollmentsMock.mock.calls.length;
+    await openBreakdown();
+    expect(router.state.location.search).toContain("student=11");
+    expect(getJournalMock.mock.calls.length).toBe(journalCalls);
+    expect(listEnrollmentsMock.mock.calls.length).toBe(enrollmentCalls);
+    expect(screen.getByRole("heading", { name: "Anvar Tester" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Back to summary" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Open breakdown for Anvar Tester" })));
+    expect(router.state.location.search).not.toContain("student=");
+  });
+
+  it("restores an open breakdown from the URL", async () => {
+    renderWorkspace([`${SUMMARY_URL}&student=12`]);
+    expect(await screen.findByRole("heading", { name: "Bahor Tester" })).toBeDefined();
+  });
+
+  it("shows View profile for a superadmin and sends navigation through the drain", async () => {
+    const slow = createDeferred<{ id: number; journal_id: number; student_id: number }>();
+    updateSummaryMock.mockReturnValueOnce(slow.promise as never);
+    renderWorkspace([SUMMARY_URL]);
+    await openBreakdown();
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
+    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "7" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(updateSummaryMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("link", { name: "View profile" }));
+    await screen.findByText("Saving your changes before you leave…");
+    expect(router.state.location.pathname).toBe(`/journals/${COURSE_ID}`);
+
+    await act(async () => {
+      slow.resolve({ id: 1101, journal_id: OCTOBER, student_id: 11, homework_score: 0, attendance_score: 0, exam_score: 0, bonus_score: 7, sum_score: 7, max_period_score: 100, percentage: 7, attendance_count: 0, total_lessons: 4, version: 2 } as never);
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe("/students/11"));
+  });
+
+  it("queues bonus and exam together with the current version as one summary write", async () => {
+    updateSummaryMock.mockImplementation(async (_journalId, studentId, payload) => ({
+      id: 1, journal_id: OCTOBER, student_id: studentId, homework_score: 0, attendance_score: 0, exam_score: payload.exam_score,
+      bonus_score: payload.bonus_score, sum_score: payload.exam_score + payload.bonus_score, max_period_score: 100,
+      percentage: payload.exam_score + payload.bonus_score, attendance_count: 0, total_lessons: 4, version: payload.version + 1,
+    }));
+    renderWorkspace([SUMMARY_URL]);
+    await openBreakdown();
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
+    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "8" } });
+    fireEvent.change(screen.getByLabelText("Exam"), { target: { value: "45" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(updateSummaryMock).toHaveBeenCalledTimes(1));
+    expect(updateSummaryMock).toHaveBeenCalledWith(OCTOBER, 11, { bonus_score: 8, exam_score: 45, version: 1 });
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit exam and bonus" })));
+  });
+
+  it("keeps both local values and enters review when the summary version is stale", async () => {
+    updateSummaryMock.mockRejectedValue(new AuthApiError(409, "Conflict"));
+    renderWorkspace([SUMMARY_URL]);
+    await openBreakdown();
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
+    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "8" } });
+    fireEvent.change(screen.getByLabelText("Exam"), { target: { value: "45" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("conflict"));
+    expect(screen.getByRole("button", { name: "Review" })).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
+    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("8");
+    expect((screen.getByLabelText("Exam") as HTMLInputElement).value).toBe("45");
+  });
+
+  it("shows no edit action and no editor to a mentor on an archived journal but still opens the breakdown", async () => {
+    useAuthStore.setState({ role: "mentor", userId: 77 });
+    getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
+    renderWorkspace([SUMMARY_URL]);
+    await screen.findByRole("table", { name: /Student totals/ });
+    expect(screen.queryByRole("button", { name: /Edit exam and bonus/ })).toBeNull();
+    await openBreakdown();
+    expect(screen.queryByRole("button", { name: "Edit exam and bonus" })).toBeNull();
+    expect(screen.getByRole("link", { name: "View profile" }).getAttribute("href")).toBe("/students/11");
+  });
+
+  it("reads Unavailable for a missing summary and a percentage above 100 as supplied", async () => {
+    const detail = buildJournal(OCTOBER);
+    detail.students[0].summary = { ...detail.students[0].summary!, sum_score: 130, max_period_score: 124, percentage: 104.84 };
+    detail.students[1] = { ...detail.students[1], summary: null };
+    getJournalMock.mockResolvedValue(detail);
+    renderWorkspace([SUMMARY_URL]);
+    const table = await screen.findByRole("table", { name: /Student totals/ });
+    expect(within(table).getByText("104.84%")).toBeDefined();
+    expect(within(table).getByText("130 / 124")).toBeDefined();
+    expect(within(table).getByText("Unavailable")).toBeDefined();
+  });
+
+  it("shows divided rows with labeled component pairs on narrow viewports", async () => {
+    viewportState.desktop = false;
+    renderWorkspace([SUMMARY_URL]);
+    const list = await screen.findByRole("list", { name: /Student totals/ });
+    const first = within(list).getAllByRole("listitem")[0];
+    ["Homework", "Attendance", "Exam", "Bonus"].forEach((label) => expect(within(first).getByText(label)).toBeDefined());
+    expect(within(first).getByRole("button", { name: /Edit exam and bonus for Anvar Tester/ })).toBeDefined();
+  });
+
+  it("filters Summary rows with the roster search", async () => {
+    renderWorkspace([SUMMARY_URL]);
+    const table = await screen.findByRole("table", { name: /Student totals/ });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(within(table).queryByText("Anvar Tester")).toBeNull();
   });
 });
