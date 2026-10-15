@@ -1,13 +1,14 @@
 import os
 from typing import List, Optional
 from fastapi import HTTPException, status, UploadFile
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.document import Document, DocumentOwnerType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
-from app.services.storage_service import LocalStorageService
+from app.services.storage_service import LocalStorageService, StorageService, get_storage_service
 
 
 def verify_magic_bytes(content: bytes, filename: str) -> bool:
@@ -35,7 +36,8 @@ class DocumentService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.document_repo = SQLAlchemyDocumentRepository(db)
-        self.storage_service = LocalStorageService()
+        self.storage_service: StorageService = get_storage_service()
+        self.upload_storage_service: StorageService = LocalStorageService()
 
     async def upload_document(
         self,
@@ -72,7 +74,7 @@ class DocumentService:
                 detail="Invalid file contents for specified file type"
             )
 
-        filepath = await self.storage_service.save(content, owner_type, owner_id, file.filename)
+        filepath = await self.upload_storage_service.save(content, owner_type, owner_id, file.filename)
 
         document = Document(
             owner_type=DocumentOwnerType(owner_type),
@@ -128,28 +130,10 @@ class DocumentService:
         page_size: int,
         current_user: User
     ) -> dict:
-        query = select(Document).filter(Document.is_deleted == False)
-
-        if current_user.role == UserRole.STUDENT:
-            query = query.filter(
-                Document.owner_type == DocumentOwnerType.STUDENT,
-                Document.owner_id == current_user.id
-            )
-        elif current_user.role == UserRole.MENTOR:
-            from sqlalchemy import or_
-            query = query.filter(
-                or_(
-                    Document.owner_type == DocumentOwnerType.STUDENT,
-                    (Document.owner_type == DocumentOwnerType.MENTOR) & (Document.owner_id == current_user.id)
-                )
-            )
-        elif current_user.role == UserRole.SUPERADMIN:
-            pass
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
-            )
+        query = select(Document).where(
+            Document.is_deleted.is_(False),
+            self._document_visibility_filter(current_user),
+        )
 
         owner_type = filters.get("owner_type")
         if owner_type:
@@ -165,3 +149,45 @@ class DocumentService:
 
         query = query.order_by(Document.id.desc())
         return await self.document_repo.get_paginated(query, page, page_size)
+
+    async def read_document(self, document_id: int, current_user: User) -> tuple[Document, bytes]:
+        query = select(Document).where(
+            Document.id == document_id,
+            Document.is_deleted.is_(False),
+            self._document_visibility_filter(current_user),
+        )
+        document: Optional[Document] = (await self.db.execute(query)).scalars().first()
+        if document is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        try:
+            file_content: bytes = await self.storage_service.read(document.file_path)
+        except PermissionError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Private document storage is unavailable",
+            )
+        except (FileNotFoundError, ValueError):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        return document, file_content
+
+    @staticmethod
+    def _document_visibility_filter(current_user: User) -> ColumnElement[bool]:
+        if current_user.role == UserRole.STUDENT:
+            return and_(
+                Document.owner_type == DocumentOwnerType.STUDENT,
+                Document.owner_id == current_user.id,
+            )
+        if current_user.role == UserRole.MENTOR:
+            return or_(
+                Document.owner_type == DocumentOwnerType.STUDENT,
+                and_(
+                    Document.owner_type == DocumentOwnerType.MENTOR,
+                    Document.owner_id == current_user.id,
+                ),
+            )
+        if current_user.role == UserRole.SUPERADMIN:
+            return true()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )

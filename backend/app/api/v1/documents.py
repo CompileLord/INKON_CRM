@@ -1,5 +1,7 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, status
+import re
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User
@@ -65,3 +67,28 @@ async def list_documents(
     if journal_id is not None:
         filters["journal_id"] = journal_id
     return await document_service.list_documents(filters, page, page_size, current_user)
+
+
+@router.get("/{document_id}/download", response_class=Response)
+async def download_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> Response:
+    document_service = DocumentService(db)
+    document, file_content = await document_service.read_document(document_id, current_user)
+    filename = quote(document.file_name, safe="")
+    media_type: str = (
+        document.file_type
+        if document.file_type and re.fullmatch(r"[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+", document.file_type)
+        else "application/octet-stream"
+    )
+    return Response(
+        content=file_content,
+        media_type=media_type,
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": f"attachment; filename*=UTF-8''{filename}",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

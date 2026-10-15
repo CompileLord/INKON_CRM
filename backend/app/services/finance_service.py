@@ -76,6 +76,17 @@ class FinanceService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
+    async def lock_student_accounts(self, student_ids: Sequence[int]) -> None:
+        ordered_student_ids: list[int] = sorted(set(student_ids))
+        if not ordered_student_ids:
+            return
+        await self.db.execute(
+            select(User.id)
+            .where(User.id.in_(ordered_student_ids))
+            .order_by(User.id)
+            .with_for_update()
+        )
+
     # ------------------------------------------------------------------
     # Infrastructure helpers
     # ------------------------------------------------------------------
@@ -142,6 +153,44 @@ class FinanceService:
             LedgerEntry.type == LedgerEntryType.VOID,
             LedgerEntry.reverses_entry_id.isnot(None),
         )
+
+    async def _ensure_payment_reversal_eligible(
+        self,
+        payment_entry: LedgerEntry,
+        reversal_type: LedgerEntryType,
+    ) -> None:
+        void_exists: bool = bool(
+            await self.db.scalar(
+                select(LedgerEntry.id)
+                .where(
+                    LedgerEntry.reverses_entry_id == payment_entry.id,
+                    LedgerEntry.type == LedgerEntryType.VOID,
+                )
+                .limit(1)
+            )
+        )
+        if void_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment has already been voided",
+            )
+
+        if reversal_type == LedgerEntryType.VOID:
+            refund_exists: bool = bool(
+                await self.db.scalar(
+                    select(LedgerEntry.id)
+                    .where(
+                        LedgerEntry.reverses_entry_id == payment_entry.id,
+                        LedgerEntry.type == LedgerEntryType.REFUND,
+                    )
+                    .limit(1)
+                )
+            )
+            if refund_exists:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Payment has been refunded and can no longer be voided",
+                )
 
     async def _active_allocated(self, entry_ids: Sequence[int]) -> Decimal:
         if not entry_ids:
@@ -331,6 +380,7 @@ class FinanceService:
         surplus spilling to the student's other open charges rather than
         sitting idle.
         """
+        await self.lock_student_accounts([student_id])
         voided = self._voided_ids_subquery()
         entries_res = await self.db.execute(
             select(LedgerEntry)
@@ -415,6 +465,7 @@ class FinanceService:
         if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
         enrollment, student, course = row
+        await self.lock_student_accounts([student.id])
 
         existing_res = await self.db.execute(
             select(Charge).filter(
@@ -498,6 +549,7 @@ class FinanceService:
                 detail="Payment amount must be greater than 0",
             )
 
+        await self.lock_student_accounts([student_id])
         await self._check_period_open(paid_at, "payment")
 
         enrollment_res = await self.db.execute(
@@ -545,6 +597,7 @@ class FinanceService:
 
     async def create_discount(self, payload: DiscountCreatePayload, current_user: User) -> LedgerEntry:
         """Record a concession that reduces the receivable without any cash."""
+        await self.lock_student_accounts([payload.student_id])
         occurred_at = payload.occurred_at or datetime.now(timezone.utc)
         await self._check_period_open(occurred_at, "discount")
 
@@ -618,6 +671,7 @@ class FinanceService:
                 detail="Only SuperAdmin can post adjustments",
             )
 
+        await self.lock_student_accounts([payload.student_id])
         occurred_at = payload.occurred_at or datetime.now(timezone.utc)
         await self._check_period_open(occurred_at, "adjustment")
 
@@ -653,30 +707,8 @@ class FinanceService:
     ) -> LedgerEntry:
         """Reverse a payment in full, reopening whatever it had settled."""
         target = await self._get_payment_entry(payment_id)
-
-        void_check = await self.db.execute(
-            select(LedgerEntry).filter(
-                LedgerEntry.reverses_entry_id == target.id,
-                LedgerEntry.type == LedgerEntryType.VOID,
-            )
-        )
-        if void_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has already been voided",
-            )
-
-        refund_check = await self.db.execute(
-            select(LedgerEntry).filter(
-                LedgerEntry.reverses_entry_id == target.id,
-                LedgerEntry.type == LedgerEntryType.REFUND,
-            )
-        )
-        if refund_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has been refunded and can no longer be voided",
-            )
+        await self.lock_student_accounts([target.student_id])
+        await self._ensure_payment_reversal_eligible(target, LedgerEntryType.VOID)
 
         # Both the original period and the current one must be open: voiding
         # mutates allocations, which would silently restate a closed month.
@@ -728,6 +760,8 @@ class FinanceService:
             )
 
         target = await self._get_payment_entry(payment_id)
+        await self.lock_student_accounts([target.student_id])
+        await self._ensure_payment_reversal_eligible(target, LedgerEntryType.REFUND)
 
         await self._check_period_open(target.occurred_at, "a refund of an entry in that period")
         now = datetime.now(timezone.utc)
@@ -785,6 +819,7 @@ class FinanceService:
 
     async def allocate_credit(self, payload: AllocationCreatePayload, current_user: User) -> LedgerEntry:
         """Manually apply wallet credit to a specific charge."""
+        await self.lock_student_accounts([payload.student_id])
         charge_res = await self.db.execute(
             select(Charge).filter(
                 Charge.id == payload.charge_id,

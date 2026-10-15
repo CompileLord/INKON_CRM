@@ -66,8 +66,20 @@ if settings.BACKEND_CORS_ORIGINS:
 
 import os
 from fastapi.staticfiles import StaticFiles
-os.makedirs(settings.STORAGE_PATH, exist_ok=True)
-app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+
+for public_asset_directory in ("avatar", "course"):
+    os.makedirs(os.path.join(settings.STORAGE_PATH, public_asset_directory), exist_ok=True)
+
+app.mount(
+    "/storage/avatar",
+    StaticFiles(directory=os.path.join(settings.STORAGE_PATH, "avatar"), follow_symlink=False),
+    name="public_avatars",
+)
+app.mount(
+    "/storage/course",
+    StaticFiles(directory=os.path.join(settings.STORAGE_PATH, "course"), follow_symlink=False),
+    name="public_course_assets",
+)
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
@@ -94,7 +106,7 @@ async def add_security_headers(request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-XSS-Protection"] = "0"
     path = request.url.path
-    if path.startswith("/storage"):
+    if path.startswith(("/storage/avatar/", "/storage/course/")):
         response.headers["Cache-Control"] = "public, max-age=86400"
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
