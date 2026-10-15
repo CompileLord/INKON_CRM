@@ -211,7 +211,8 @@
     "viewLabel": "Gradebook view",
     "view": {
       "grid": "Grid",
-      "summary": "Summary"
+      "summary": "Summary",
+      "lesson": "Lesson"
     },
     "lessonNav": {
       "label": "Lesson navigation",
@@ -263,5 +264,43 @@
     "listLabel": "Student totals, {{period}}",
     "total": "{{sum}} of {{max}}",
     "unavailable": "Unavailable"
+  },
+  "lesson": {
+    "heading": "Lesson roster, {{period}}",
+    "listLabel": "Students for the selected lesson",
+    "present": "Present",
+    "scoreValue": "Score {{value}}",
+    "scoreAria": "Score for {{name}}: {{value}}. Choose a score",
+    "attendanceAria": "Present: {{name}}",
+    "addComment": "Add comment",
+    "editComment": "Edit comment",
+    "addCommentAria": "Add comment for {{name}}",
+    "editCommentAria": "Read or edit comment for {{name}}",
+    "errorLine": "This change was not saved. Use Retry in the status line.",
+    "conflictLine": "This change conflicts with newer data. Use Review in the status line."
+  },
+  "picker": {
+    "title": "Score for {{name}}, {{date}}",
+    "current": "Current score: {{value}}",
+    "none": "none",
+    "present": "Present",
+    "absent": "Absent",
+    "choices": "Score choices",
+    "hint": "Scores 1–5 mark the student present. Marking absent resets the lesson score."
+  },
+  "comment": {
+    "title": "Comment for {{name}}, {{date}}",
+    "cancelConsequence": "Cancel discards your unsaved comment changes.",
+    "discardPrompt": "You have unsaved comment changes.",
+    "continueEditing": "Continue editing",
+    "discard": "Discard comment changes"
+  },
+  "search": {
+    "label": "Search students in this period",
+    "placeholder": "Search students",
+    "clear": "Clear search",
+    "count": "{{matched}} of {{total}} students",
+    "noMatchTitle": "No students match",
+    "noMatchBody": "Nobody in this period's roster matches “{{query}}”. Clear the search to see everyone."
   }
 }

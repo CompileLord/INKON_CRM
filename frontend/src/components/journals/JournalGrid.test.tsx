@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import "../../i18n";
 import i18n from "../../i18n";
@@ -82,6 +82,14 @@ function mountGrid(options: { editing?: boolean; students?: JournalStudentRespon
 function cellOf(name: string, date: string): HTMLElement {
   return screen.getByLabelText(`Score for ${name} Tester on ${formatSchoolLessonDate(date)}`);
 }
+
+beforeAll(() => {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }),
+  });
+});
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
@@ -170,7 +178,7 @@ describe("JournalGrid keyboard", () => {
     const cell = cellOf("Anvar", DATES[0]);
     cell.focus();
     fireEvent.keyDown(cell, { key: "c" });
-    expect(screen.getByRole("dialog", { name: "Comment" })).toBeDefined();
+    expect(screen.getByRole("dialog", { name: /Comment for/ })).toBeDefined();
   });
 
   it("ignores shortcut keys typed into the comment textarea", () => {
@@ -178,7 +186,7 @@ describe("JournalGrid keyboard", () => {
     const cell = cellOf("Anvar", DATES[0]);
     cell.focus();
     fireEvent.keyDown(cell, { key: "c" });
-    const textarea = within(screen.getByRole("dialog", { name: "Comment" })).getByRole("textbox");
+    const textarea = within(screen.getByRole("dialog", { name: /Comment for/ })).getByRole("textbox");
     fireEvent.keyDown(textarea, { key: "3" });
     fireEvent.keyDown(textarea, { key: " ", code: "Space" });
     fireEvent.keyDown(textarea, { key: "ArrowDown" });

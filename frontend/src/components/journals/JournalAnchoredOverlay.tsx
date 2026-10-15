@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 interface JournalAnchoredOverlayProps {
   anchorRef: React.RefObject<HTMLElement | null>;
   width: number;
-  role: "menu" | "dialog";
+  role: "menu" | "dialog" | "none";
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   ariaLabel?: string;
   className?: string;

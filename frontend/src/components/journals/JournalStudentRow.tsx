@@ -181,6 +181,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
           >
             {editing ? (
               <JournalScoreCell
+                studentId={student.student_id}
                 studentName={studentName}
                 lessonDate={date}
                 attendance={currentAttendance}

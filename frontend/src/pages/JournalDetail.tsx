@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Settings, Users } from "lucide-react";
@@ -16,6 +16,9 @@ import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker"
 import { JournalWorkspaceTabs } from "../components/journals/JournalWorkspaceTabs";
 import { JournalViewSwitch } from "../components/journals/JournalViewSwitch";
 import { JournalLessonNavigator } from "../components/journals/JournalLessonNavigator";
+import { JournalLessonView } from "../components/journals/JournalLessonView";
+import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
+import { useDesktop } from "../components/shell/useDesktop";
 import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp";
 import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
 import { JournalConflictReview } from "../components/journals/JournalConflictReview";
@@ -25,6 +28,7 @@ import type { JournalRowEditing } from "../components/journals/JournalStudentRow
 import {
   JournalContextSkeleton,
   JournalGridSkeleton,
+  JournalLessonSkeleton,
   JournalNotice,
   JournalPanelMessage,
   JournalPeriodBarSkeleton,
@@ -36,6 +40,8 @@ import { useJournalNavigationGuard } from "../lib/journals/useJournalNavigationG
 import { useJournalAutosave } from "../lib/journals/useJournalAutosave";
 import { useUpdateJournalExamMaxScore } from "../lib/journals/hooks";
 import { JournalWorkspaceSelection } from "../lib/journals/JournalWorkspaceSelection";
+import { JournalRosterFilter } from "../lib/journals/JournalRosterFilter";
+import { useStableStudentOrder } from "../lib/journals/JournalStudentOrdering";
 import { useJournalWorkspaceRoute } from "../lib/journals/useJournalWorkspaceRoute";
 import { formatSchoolLessonDate, getSchoolCalendarDate } from "../i18n/formatters";
 
@@ -56,6 +62,11 @@ function JournalDetailContent() {
   const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
   const [examModalOpen, setExamModalOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const isDesktop: boolean = useDesktop();
+  const anchorRef = useRef<{ studentId: number; control: string } | null>(null);
+  const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousDesktopRef = useRef<boolean>(isDesktop);
 
   if (reviewOpen && queueStatus.conflicts.length === 0) setReviewOpen(false);
 
@@ -84,6 +95,29 @@ function JournalDetailContent() {
   const canEditByRole: boolean = role === "superadmin" || role === "mentor";
   const autosave = useJournalAutosave(canEditByRole && !isArchivedForMentor ? journalId : undefined, courseId);
   const updateExamMaxScore = useUpdateJournalExamMaxScore(journalId, courseId);
+
+  const orderedStudents = useStableStudentOrder(journalId ?? 0, journal?.students ?? []);
+  const visibleStudentIds: Set<number> | null = JournalRosterFilter.visibleIds(orderedStudents, searchQuery);
+  const isFiltering: boolean = visibleStudentIds !== null;
+  const matchedCount: number = visibleStudentIds ? visibleStudentIds.size : orderedStudents.length;
+  const selectedLessonForAnchor: string | undefined = route.lessonResolution.lesson;
+
+  useEffect(() => {
+    if (previousDesktopRef.current === isDesktop) return undefined;
+    previousDesktopRef.current = isDesktop;
+    const anchor = anchorRef.current;
+    if (!anchor || document.activeElement !== document.body) return undefined;
+    const frameId: number = requestAnimationFrame(() => {
+      const rowControl: string = anchor.control === "cell" ? "score" : anchor.control;
+      const gridScope: string = `[data-anchor="${anchor.studentId}:${selectedLessonForAnchor}"]`;
+      const target: HTMLElement | null = isDesktop
+        ? (document.querySelector<HTMLElement>(`${gridScope} [data-control="${rowControl}"]`) ??
+          document.querySelector<HTMLElement>(gridScope))
+        : document.querySelector<HTMLElement>(`[data-lesson-row="${anchor.studentId}"] [data-control="${rowControl}"]`);
+      (target ?? lessonHeadingRef.current ?? document.querySelector<HTMLElement>("h1"))?.focus();
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [isDesktop, selectedLessonForAnchor]);
 
   const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden;
   const { applyEntryCommand, editSummaryField } = autosave;
@@ -154,8 +188,12 @@ function JournalDetailContent() {
   const lessonSelection = route.lessonResolution;
   const gradebookStatusVisible: boolean = route.tab === "gradebook" || queueStatus.phase !== "idle";
 
+  const handleAnchor = (studentId: number, control: string): void => {
+    anchorRef.current = { studentId, control };
+  };
+
   const renderGradebookBody = () => {
-    if (journalQuery.isLoading) return <JournalGridSkeleton />;
+    if (journalQuery.isLoading) return isDesktop ? <JournalGridSkeleton /> : <JournalLessonSkeleton />;
     if (journalQuery.isError && !journal) {
       return (
         <JournalPanelMessage
@@ -183,17 +221,49 @@ function JournalDetailContent() {
           body={t("table.noStudentsBody")}
         />
       );
+    } else if (isFiltering && matchedCount === 0) {
+      body = (
+        <JournalPanelMessage
+          tone="empty"
+          title={t("search.noMatchTitle")}
+          body={t("search.noMatchBody", { query: searchQuery.trim() })}
+          retryLabel={t("search.clear")}
+          onRetry={() => setSearchQuery("")}
+        />
+      );
     } else if (route.view === "summary") {
-      body = <JournalSummaryList students={journal.students} periodLabel={periodLabel} />;
+      body = (
+        <JournalSummaryList
+          students={visibleStudentIds ? orderedStudents.filter((student) => visibleStudentIds.has(student.student_id)) : orderedStudents}
+          periodLabel={periodLabel}
+        />
+      );
     } else if (journal.lesson_dates.length === 0) {
       body = <JournalPanelMessage tone="empty" title={t("grid.noLessonsTitle")} body={t("grid.noLessonsBody")} />;
+    } else if (!isDesktop && lessonSelection.lesson) {
+      body = (
+        <JournalLessonView
+          students={orderedStudents}
+          visibleStudentIds={visibleStudentIds}
+          lessonDate={lessonSelection.lesson}
+          periodLabel={periodLabel}
+          cellStatus={autosave.cellStatus}
+          editing={editing}
+          searchQuery={searchQuery}
+          onClearSearch={() => setSearchQuery("")}
+          onAnchor={handleAnchor}
+          headingRef={lessonHeadingRef}
+        />
+      );
     } else {
       body = (
         <JournalGrid
           key={journalId}
           journalId={journalId}
           periodLabel={periodLabel}
-          students={journal.students}
+          students={orderedStudents}
+          visibleStudentIds={visibleStudentIds}
+          onAnchor={handleAnchor}
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
           selectedLesson={lessonSelection.lesson}
           examMaxScore={journal.exam_max_score}
@@ -213,7 +283,7 @@ function JournalDetailContent() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2 lg:gap-6">
       <JournalDrainDialog guard={navigationGuard} onReview={() => setReviewOpen(true)} />
       <JournalConflictReview
         open={reviewOpen}
@@ -226,7 +296,7 @@ function JournalDetailContent() {
         onRefetch={(conflictJournalId) => void registry.ownerFor(conflictJournalId).retryManual()}
       />
 
-      <header className="flex flex-col gap-2">
+      <header className="flex flex-col gap-1 lg:gap-2">
         {backLink}
         <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
           {course.title}
@@ -255,7 +325,7 @@ function JournalDetailContent() {
         <JournalPanelMessage tone="empty" title={t("workspace.noPeriodsTitle")} body={t("workspace.noPeriodsBody")} />
       ) : (
         <>
-          <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
+          <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-start lg:gap-3">
             <JournalPeriodPicker
               periods={periods}
               selectedPeriodId={selectedPeriod.id}
@@ -307,29 +377,67 @@ function JournalDetailContent() {
               role="tabpanel"
               id={`${panelIdPrefix}-panel-gradebook`}
               aria-labelledby={`${panelIdPrefix}-tab-gradebook`}
-              className="flex min-w-0 flex-col gap-4"
+              className="flex min-w-0 flex-col gap-2 lg:gap-4"
             >
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-                <JournalViewSwitch selected={route.view} onSelect={route.selectView} />
-                {route.view === "grid" && journal && (
-                  <JournalLessonNavigator
-                    lessonDates={journal.lesson_dates}
-                    selectedLesson={lessonSelection.lesson}
-                    today={today}
-                    onSelect={route.selectLesson}
+              {isDesktop ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                  <JournalViewSwitch selected={route.view} onSelect={route.selectView} gridLabelKey="workspace.view.grid" />
+                  {route.view === "grid" && journal && (
+                    <JournalLessonNavigator
+                      lessonDates={journal.lesson_dates}
+                      selectedLesson={lessonSelection.lesson}
+                      today={today}
+                      onSelect={route.selectLesson}
+                    />
+                  )}
+                  <JournalRosterSearch
+                    query={searchQuery}
+                    onChange={setSearchQuery}
+                    matched={matchedCount}
+                    total={orderedStudents.length}
+                    filtering={isFiltering}
                   />
-                )}
-                <div data-testid="journal-search-slot" className="hidden min-h-11 min-w-0 flex-1 basis-40 lg:block" />
-                {editing && route.view === "grid" && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
-                <div className="min-w-[14rem]">
-                  <JournalSaveStatus
-                    status={queueStatus}
-                    retryable={!queueStatus.forbidden}
-                    onRetry={() => void registry.retryAll()}
-                    onReview={() => setReviewOpen(true)}
-                  />
+                  {editing && route.view === "grid" && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
+                  <div className="min-w-[14rem]">
+                    <JournalSaveStatus
+                      status={queueStatus}
+                      retryable={!queueStatus.forbidden}
+                      onRetry={() => void registry.retryAll()}
+                      onReview={() => setReviewOpen(true)}
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <JournalViewSwitch selected={route.view} onSelect={route.selectView} gridLabelKey="workspace.view.lesson" />
+                  <div
+                    data-testid="journal-lesson-band"
+                    className="sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 -mx-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border bg-cream px-4 py-1 [@media(max-height:500px)]:static"
+                  >
+                    {route.view === "grid" && journal && (
+                      <JournalLessonNavigator
+                        lessonDates={journal.lesson_dates}
+                        selectedLesson={lessonSelection.lesson}
+                        today={today}
+                        onSelect={route.selectLesson}
+                      />
+                    )}
+                    <JournalSaveStatus
+                      status={queueStatus}
+                      retryable={!queueStatus.forbidden}
+                      onRetry={() => void registry.retryAll()}
+                      onReview={() => setReviewOpen(true)}
+                    />
+                  </div>
+                  <JournalRosterSearch
+                    query={searchQuery}
+                    onChange={setSearchQuery}
+                    matched={matchedCount}
+                    total={orderedStudents.length}
+                    filtering={isFiltering}
+                  />
+                </>
+              )}
               {renderGradebookBody()}
             </section>
           ) : (

@@ -5,17 +5,18 @@ import type { GradebookView } from "../../lib/journals/JournalWorkspaceSelection
 interface JournalViewSwitchProps {
   selected: GradebookView;
   onSelect: (view: GradebookView) => void;
+  gridLabelKey: "workspace.view.grid" | "workspace.view.lesson";
 }
 
 const VIEWS: readonly GradebookView[] = ["grid", "summary"];
 
-export const JournalViewSwitch: React.FC<JournalViewSwitchProps> = ({ selected, onSelect }) => {
+export const JournalViewSwitch: React.FC<JournalViewSwitchProps> = ({ selected, onSelect, gridLabelKey }) => {
   const { t } = useTranslation("journals");
   return (
     <div
       role="group"
       aria-label={t("workspace.viewLabel")}
-      className="inline-flex rounded-[10px] border border-control-border bg-card p-0.5"
+      className="inline-flex rounded-[10px] border border-control-border bg-card p-px"
     >
       {VIEWS.map((view) => {
         const isSelected: boolean = view === selected;
@@ -29,7 +30,7 @@ export const JournalViewSwitch: React.FC<JournalViewSwitchProps> = ({ selected, 
               isSelected ? "bg-maroon text-on-primary" : "text-ink hover:bg-strip"
             }`}
           >
-            {t(`workspace.view.${view}`)}
+            {view === "grid" ? t(gridLabelKey) : t("workspace.view.summary")}
           </button>
         );
       })}

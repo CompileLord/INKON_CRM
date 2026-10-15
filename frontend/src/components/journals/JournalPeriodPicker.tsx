@@ -46,7 +46,7 @@ export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
 
   return (
     <div className="relative min-h-[56px] w-full min-w-0 rounded-[10px] border border-control-border bg-card focus-within:ring-2 focus-within:ring-ring lg:w-auto lg:min-w-[240px] lg:max-w-[420px]">
-      <div className="pointer-events-none flex min-h-[54px] items-center justify-between gap-3 px-3 py-2">
+      <div className="pointer-events-none flex min-h-[54px] items-center justify-between gap-3 px-3 py-1.5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="break-words text-sm font-semibold text-ink">{selected.period_label}</span>

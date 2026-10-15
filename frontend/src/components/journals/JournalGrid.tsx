@@ -20,6 +20,8 @@ interface JournalGridProps {
   summaryStatus: Map<number, CellSaveStatus>;
   editing: JournalRowEditing | null;
   onSelectLesson: (lessonDate: string) => void;
+  visibleStudentIds?: Set<number> | null;
+  onAnchor?: (studentId: number, control: string) => void;
 }
 
 interface GridFocus {
@@ -53,9 +55,14 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   summaryStatus,
   editing,
   onSelectLesson,
+  visibleStudentIds = null,
+  onAnchor,
 }) => {
   const { t } = useTranslation("journals");
-  const students: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
+  const stableStudents: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
+  const students: JournalStudentResponse[] = visibleStudentIds
+    ? stableStudents.filter((student) => visibleStudentIds.has(student.student_id))
+    : stableStudents;
   const [focus, setFocus] = useState<GridFocus | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const headerRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
@@ -90,8 +97,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     (key: string, control: JournalCellControl) => {
       const { studentId, lessonDate } = splitCellKey(key);
       setFocus({ journalId, studentId, lessonDate, control, fromKeyboard: false });
+      onAnchor?.(studentId, control);
     },
-    [journalId],
+    [journalId, onAnchor],
   );
 
   const handleCellNavigate = useCallback(

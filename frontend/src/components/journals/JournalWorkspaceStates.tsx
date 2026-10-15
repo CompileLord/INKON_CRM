@@ -137,3 +137,30 @@ export const JournalPeriodBarSkeleton: React.FC = () => {
     </div>
   );
 };
+
+export const JournalLessonSkeleton: React.FC = () => {
+  const { t } = useTranslation("journals");
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      data-testid="journal-lesson-skeleton"
+      className="overflow-hidden rounded-2xl border border-border bg-card"
+    >
+      <div className="flex items-center gap-3 border-b border-border bg-beige px-4 py-3 text-sm text-muted">
+        <BrandActivityIndicator size={18} aria-hidden="true" />
+        <span>{t("loading")}</span>
+      </div>
+      {Array.from({ length: 4 }, (_, rowIndex) => (
+        <div key={rowIndex} className="flex flex-col gap-2 border-b border-border px-4 py-3 last:border-b-0">
+          <JournalSkeletonBar className="h-6 w-2/3" />
+          <div className="flex flex-wrap gap-2">
+            <JournalSkeletonBar className="h-11 w-28" />
+            <JournalSkeletonBar className="h-11 w-24" />
+            <JournalSkeletonBar className="h-11 w-36" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};

@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, MessageSquare } from "lucide-react";
 import { JournalSaveMarker } from "./JournalSaveMarker";
-import { JournalAnchoredOverlay, type OverlayCloseReason } from "./JournalAnchoredOverlay";
+import { JournalScorePicker } from "./JournalScorePicker";
+import { JournalCommentEditor } from "./JournalCommentEditor";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -11,6 +12,7 @@ export type CellNavDirection = "up" | "down" | "left" | "right";
 export type JournalCellControl = "cell" | "attendance" | "score" | "comment";
 
 interface JournalScoreCellProps {
+  studentId?: number;
   studentName: string;
   lessonDate: string;
   attendance: boolean;
@@ -31,8 +33,6 @@ const NAVIGATION_KEYS: Record<string, CellNavDirection> = {
   ArrowRight: "right",
 };
 
-const SCORE_OPTIONS: readonly number[] = [0, 1, 2, 3, 4, 5];
-
 const STATUS_RING: Record<CellSaveStatus, string> = {
   dirty: "ring-1 ring-warning",
   saving: "ring-1 ring-warning",
@@ -48,6 +48,7 @@ function controlOf(target: EventTarget): JournalCellControl {
 }
 
 export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
+  studentId,
   studentName,
   lessonDate,
   attendance,
@@ -62,24 +63,13 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
 }) => {
   const { t } = useTranslation("journals");
   const [popoverOpen, setPopoverOpen] = useState<boolean>(false);
-  const [commentDraft, setCommentDraft] = useState<string | null>(null);
+  const [commentOpen, setCommentOpen] = useState<boolean>(false);
   const cellRef = useRef<HTMLDivElement>(null);
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
-  const selectedScoreOptionRef = useRef<HTMLButtonElement>(null);
+  const scoreButtonRef = useRef<HTMLButtonElement>(null);
 
-  const commentOpen: boolean = commentDraft !== null;
   const hasComment: boolean = Boolean(comment && comment.trim().length > 0);
   const formattedDate: string = formatSchoolLessonDate(lessonDate);
   const controlTabIndex: number = isFocused ? 0 : -1;
-
-  const closeScorePopover = useCallback((reason: OverlayCloseReason): void => {
-    setPopoverOpen(false);
-    if (reason === "escape") cellRef.current?.focus();
-  }, []);
-  const closeCommentPopover = useCallback((reason: OverlayCloseReason): void => {
-    setCommentDraft(null);
-    if (reason === "escape") cellRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     if (isFocused && autoFocus && cellRef.current && !cellRef.current.contains(document.activeElement)) {
@@ -89,13 +79,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
 
   const openCommentEditor = (): void => {
     setPopoverOpen(false);
-    setCommentDraft((previous) => (previous === null ? (comment ?? "") : null));
-  };
-
-  const saveComment = (): void => {
-    onCommand({ kind: "comment", comment: commentDraft ?? "" });
-    setCommentDraft(null);
-    cellRef.current?.focus();
+    setCommentOpen(true);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -131,6 +115,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       ref={cellRef}
       tabIndex={controlTabIndex}
       data-control="cell"
+      data-anchor={`${studentId}:${lessonDate}`}
       onFocus={(event) => onFocus(controlOf(event.target))}
       onKeyDown={handleKeyDown}
       className={`relative group/cell flex items-center justify-center gap-1 rounded-[10px] p-1 outline-none scroll-ml-[216px] scroll-mt-16 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
@@ -153,12 +138,10 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
 
       <button
         type="button"
+        ref={scoreButtonRef}
         data-control="score"
         tabIndex={controlTabIndex}
-        onClick={() => {
-          setCommentDraft(null);
-          setPopoverOpen((previous) => !previous);
-        }}
+        onClick={() => setPopoverOpen((previous) => !previous)}
         aria-haspopup="menu"
         aria-expanded={popoverOpen}
         className={`flex h-11 min-w-11 shrink-0 items-center justify-center rounded-[10px] border px-2 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
@@ -191,83 +174,28 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       </button>
 
       {popoverOpen && (
-        <JournalAnchoredOverlay
+        <JournalScorePicker
+          studentName={studentName}
+          formattedDate={formattedDate}
+          score={score}
+          attended={attendance}
           anchorRef={cellRef}
-          width={248}
-          role="menu"
-          initialFocusRef={selectedScoreOptionRef}
-          className="flex justify-between gap-1 p-1"
-          onClose={closeScorePopover}
-        >
-          {SCORE_OPTIONS.map((option) => (
-            <button
-              key={option}
-              ref={score === option ? selectedScoreOptionRef : undefined}
-              type="button"
-              role="menuitemradio"
-              aria-checked={score === option}
-              onClick={() => {
-                onCommand({ kind: "score", score: option });
-                setPopoverOpen(false);
-                cellRef.current?.focus();
-              }}
-              className={`flex h-11 w-9 items-center justify-center rounded-[10px] text-sm font-semibold tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                score === option ? "bg-maroon text-on-primary" : "text-ink hover:bg-beige"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </JournalAnchoredOverlay>
+          onChoose={(chosen) => onCommand({ kind: "score", score: chosen })}
+          onClose={(reason) => {
+            setPopoverOpen(false);
+            if (reason !== "outside") scoreButtonRef.current?.focus();
+          }}
+        />
       )}
 
       {commentOpen && (
-        <JournalAnchoredOverlay
-          anchorRef={cellRef}
-          width={272}
-          role="dialog"
-          initialFocusRef={commentInputRef}
-          ariaLabel={t("table.comment")}
-          className="p-3"
-          onClose={closeCommentPopover}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              saveComment();
-            }
-          }}
-        >
-          <label className="mb-1 block text-xs font-medium text-muted">
-            {t("table.comment")} — {studentName}
-          </label>
-          <textarea
-            ref={commentInputRef}
-            value={commentDraft ?? ""}
-            onChange={(event) => setCommentDraft(event.target.value)}
-            rows={3}
-            placeholder={t("table.commentPlaceholder")}
-            className="mb-2 w-full resize-none rounded-[10px] border border-control-border bg-card p-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setCommentDraft(null);
-                cellRef.current?.focus();
-              }}
-              className="min-h-11 rounded-[10px] border border-control-border px-3 text-sm font-medium text-ink hover:bg-beige focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {t("table.commentCancel")}
-            </button>
-            <button
-              type="button"
-              onClick={saveComment}
-              className="min-h-11 rounded-[10px] bg-maroon px-3 text-sm font-semibold text-on-primary hover:bg-maroon-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {t("table.commentSave")}
-            </button>
-          </div>
-        </JournalAnchoredOverlay>
+        <JournalCommentEditor
+          studentName={studentName}
+          formattedDate={formattedDate}
+          initialComment={comment}
+          onSave={(saved) => onCommand({ kind: "comment", comment: saved })}
+          onClose={() => setCommentOpen(false)}
+        />
       )}
     </div>
   );

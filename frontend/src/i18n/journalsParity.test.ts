@@ -88,7 +88,7 @@ describe("journals i18n key parity", () => {
 
   it("translates the workspace copy instead of leaving English text in ru and tg", () => {
     const sharedAcrossLocales = new Set(["help.keycap.arrows", "help.keycap.grade", "help.keycap.comment", "help.keycap.clear", "help.keycap.close"]);
-    const workspaceSections = ["workspace", "grid", "help", "summary", "period.latest", "period.upcoming", "period.past"];
+    const workspaceSections = ["workspace", "grid", "help", "summary", "period.latest", "period.upcoming", "period.past", "lesson", "picker", "comment", "search"];
     const tableKeys = ["noStudentsBody", "summaryFieldLabel", "readOnlyCellLabel", "present", "absent", "hasComment"];
     type JsonNode = string | { [key: string]: JsonNode };
     const readPath = (source: JsonNode, path: string): JsonNode =>

@@ -15,13 +15,29 @@ import { formatSchoolLessonDate } from "../i18n/formatters";
 import type { CourseResponse, JournalPeriod } from "../lib/courses/types";
 import type { JournalBatchUpdateResponse, JournalDetailResponse } from "../lib/journals/types";
 
-vi.hoisted(() =>
+const viewportState = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  const state = {
+    desktop: true,
+    listeners,
+    setDesktop(next: boolean): void {
+      state.desktop = next;
+      listeners.forEach((listener) => listener());
+    },
+  };
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
-    value: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
-  }),
-);
+    value: (query: string) => ({
+      get matches() {
+        return query.includes("1024px") ? state.desktop : false;
+      },
+      addEventListener: (_event: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_event: string, listener: () => void) => listeners.delete(listener),
+    }),
+  });
+  return state;
+});
 
 const schoolToday = vi.hoisted(() => ({ value: "2026-10-15" }));
 
@@ -178,6 +194,7 @@ async function waitForGrid(): Promise<void> {
 beforeEach(async () => {
   vi.clearAllMocks();
   schoolToday.value = "2026-10-15";
+  viewportState.desktop = true;
   await i18n.changeLanguage("en");
   useAuthStore.setState({ role: "superadmin" });
   getCourseMock.mockResolvedValue(buildCourse());
@@ -663,5 +680,200 @@ describe("workspace anatomy", () => {
     expect(within(list).getAllByRole("listitem")).toHaveLength(2);
     expect(within(list).getByText("Unavailable")).toBeDefined();
     expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
+  });
+});
+
+describe("phone and tablet Lesson view", () => {
+  beforeEach(() => {
+    viewportState.desktop = false;
+  });
+
+  function lessonRow(name: string): HTMLElement {
+    return document.querySelector(`[data-lesson-row="${name === "Anvar" ? 11 : 12}"]`) as HTMLElement;
+  }
+
+  async function waitForLesson(): Promise<void> {
+    await screen.findByRole("list", { name: "Students for the selected lesson" });
+  }
+
+  it("shows Lesson and Summary instead of the desktop grid below 1024px", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Lesson" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Summary" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Keyboard help" })).toBeNull();
+    expect(within(lessonRow("Anvar")).getByText("Anvar Tester")).toBeDefined();
+  });
+
+  it("keeps the lesson and status in one sticky band that stops sticking at short landscape heights", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    const band = screen.getByTestId("journal-lesson-band");
+    expect(band.className).toContain("sticky");
+    expect(band.className).toContain("top-[calc(3.5rem+1px+env(safe-area-inset-top))]");
+    expect(band.className).toContain("[@media(max-height:500px)]:static");
+    expect(within(band).getByRole("button", { name: "Previous lesson" })).toBeDefined();
+    expect(within(band).getByTestId("journal-save-status")).toBeDefined();
+  });
+
+  it("hides the lesson controls but keeps the status band in Summary", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
+    await screen.findByRole("list", { name: /Student totals/ });
+    const band = screen.getByTestId("journal-lesson-band");
+    expect(within(band).queryByRole("button", { name: "Previous lesson" })).toBeNull();
+    expect(within(band).getByTestId("journal-save-status")).toBeDefined();
+  });
+
+  it("queues a phone score through the same owner and journal id as the grid", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "4" }));
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+    expect(batchUpdateMock.mock.calls[0][0]).toBe(OCTOBER);
+    expect(batchUpdateMock.mock.calls[0][1]).toEqual([
+      expect.objectContaining({ student_id: 11, lesson_date: "2026-10-13", score: 4, attendance: true }),
+    ]);
+  });
+
+  it("sends the checkbox absence payload from the phone row", async () => {
+    const detail = buildJournal(OCTOBER);
+    detail.students[0].entries[1] = { ...detail.students[0].entries[1], attendance: true, score: 4 };
+    getJournalMock.mockResolvedValue(detail);
+    renderWorkspace();
+    await waitForLesson();
+    fireEvent.click(within(lessonRow("Anvar")).getByRole("checkbox"));
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+    expect(batchUpdateMock.mock.calls[0][1]).toEqual([
+      expect.objectContaining({ student_id: 11, lesson_date: "2026-10-13", attendance: false, score: 0 }),
+    ]);
+  });
+
+  it("keeps the owner, draft and a single write when the viewport crosses 1024px during the debounce", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "3" }));
+
+    await act(async () => {
+      viewportState.setDesktop(true);
+    });
+    await waitForGrid();
+    expect(within(gradeCell("Anvar", "2026-10-13")).getByRole("button", { name: "3" })).toBeDefined();
+    expect(pickerSummary()).toContain("Month 10");
+
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+    expect(batchUpdateMock.mock.calls[0][1]).toEqual([expect.objectContaining({ student_id: 11, score: 3 })]);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(batchUpdateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves focus to the equivalent control when the layout changes under a focused row control", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    const scoreButton = within(lessonRow("Bahor")).getByRole("button", { name: /Score for Bahor Tester/ });
+    scoreButton.focus();
+    await act(async () => {
+      viewportState.setDesktop(true);
+    });
+    await waitForGrid();
+    await waitFor(() => {
+      const active = document.activeElement as HTMLElement;
+      expect(active.getAttribute("data-control")).toBe("score");
+      expect(active.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe("12:2026-10-13");
+    });
+  });
+
+  it("filters the loaded roster with a matched count, keeps source order and clears", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    const search = screen.getByRole("searchbox", { name: "Search students in this period" });
+    fireEvent.change(search, { target: { value: "bah" } });
+    expect(document.querySelector('[data-lesson-row="11"]')).toBeNull();
+    expect(lessonRow("Bahor")).not.toBeNull();
+    expect(screen.getByText("1 of 2 students")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.queryByText("1 of 2 students")).toBeNull();
+    const names = Array.from(document.querySelectorAll("[data-lesson-row]")).map((row) => row.getAttribute("data-lesson-row"));
+    expect(names).toEqual(["11", "12"]);
+  });
+
+  it("keeps hidden rows' pending work in the global status and sends later grades by student identity", async () => {
+    const slow = createDeferred<JournalBatchUpdateResponse>();
+    batchUpdateMock.mockReturnValueOnce(slow.promise);
+    renderWorkspace();
+    await waitForLesson();
+    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "5" }));
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
+    expect(document.querySelector('[data-lesson-row="11"]')).toBeNull();
+    expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("saving");
+
+    fireEvent.click(within(lessonRow("Bahor")).getByRole("button", { name: /Score for Bahor Tester/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "2" }));
+    await act(async () => {
+      slow.resolve({ applied: [{ student_id: 11, lesson_date: "2026-10-13", attendance: true, score: 5, comment: null, version: 2 }], conflicts: [], summaries: [] });
+    });
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(2));
+    expect(batchUpdateMock.mock.calls[1][1]).toEqual([expect.objectContaining({ student_id: 12, score: 2 })]);
+    expect(batchUpdateMock.mock.calls.flatMap((call) => call[1]).filter((item) => item.student_id === 11)).toHaveLength(1);
+  });
+
+  it("shows no-match copy distinct from the no-students copy", async () => {
+    renderWorkspace();
+    await waitForLesson();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "zzz" } });
+    expect(await screen.findByText("No students match")).toBeDefined();
+    expect(screen.queryByText("There are no students in this course")).toBeNull();
+    cleanup();
+
+    getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), students: [] });
+    renderWorkspace();
+    expect(await screen.findByText("There are no students in this course")).toBeDefined();
+    expect(screen.queryByText("No students match")).toBeNull();
+  });
+
+  it("filters the desktop grid by identity so a grade after filtering reaches the matched student only", async () => {
+    viewportState.desktop = true;
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
+    expect(screen.queryByLabelText(new RegExp(`Score for Anvar Tester`))).toBeNull();
+    const cell = gradeCell("Bahor", "2026-10-13");
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "4" });
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+    expect(batchUpdateMock.mock.calls[0][1]).toEqual([expect.objectContaining({ student_id: 12, score: 4 })]);
+  });
+
+  it("shows read-only phone rows with the archived explanation and no editors for an assigned mentor", async () => {
+    useAuthStore.setState({ role: "mentor" });
+    getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
+    renderWorkspace();
+    await waitForLesson();
+    expect(screen.getByTestId("journal-archived-notice")).toBeDefined();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(within(lessonRow("Anvar")).queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("shows a lesson skeleton in row geometry while the journal loads and a working retry on failure", async () => {
+    getJournalMock.mockRejectedValueOnce(new AuthApiError(500, "boom"));
+    renderWorkspace();
+    expect(await screen.findByText("Failed to load journal data")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitForLesson();
+    cleanup();
+
+    const pending = createDeferred<JournalDetailResponse>();
+    getJournalMock.mockReturnValueOnce(pending.promise);
+    renderWorkspace();
+    expect(await screen.findByTestId("journal-lesson-skeleton")).toBeDefined();
+    await act(async () => {
+      pending.resolve(buildJournal(OCTOBER));
+    });
+    await waitForLesson();
   });
 });
