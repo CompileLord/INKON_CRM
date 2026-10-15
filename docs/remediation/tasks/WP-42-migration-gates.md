@@ -22,10 +22,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [.github/workflows/deploy-backend.yml:124](../../../.github/workflows/deploy-backend.yml) | Existing file, anchor line 124; only this WP’s stated behavior may change. |
 | [backend/scripts/gcp_deploy.sh:42](../../../backend/scripts/gcp_deploy.sh) | Existing file, anchor line 42; only this WP’s stated behavior may change. |
 | [backend/app/tests/migrations/test_migration_chain.py](../../../backend/app/tests/migrations/test_migration_chain.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/results/migration-runbook.md](../results/migration-runbook.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [backend/app/tests/integration/test_remediation_wp42.py](../../../backend/app/tests/integration/test_remediation_wp42.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/results/WP-42.md](../results/WP-42.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/STATUS.md:1](../STATUS.md) | Shared administrative progress ledger; integrate row updates serially, never overwrite another WP’s row. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
 
@@ -89,7 +87,7 @@ npx vitest run
 npx tsc --noEmit
 ```
 
-Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s result file. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
+Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s concise STATUS.md row. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
 
 
 Performance / operational evidence: On an upgrade-requiring clone at 10k/100k/1M summaries measure update rows, WAL, lock waits, duration and writer p95. Existing source predicts 2S+B+X updates; no forward migration can retroactively speed an applied historical revision.
@@ -114,4 +112,4 @@ Complete prerequisites first and start from their merged result. Do not require 
 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
-Use branch `remediation/wp-42-migration-gates` and one PR for this WP. Save actual evidence in `docs/remediation/results/WP-42.md` and update only its row in `docs/remediation/STATUS.md` with branch/PR, date, tests/results and residual risks. No push/PR publication occurs in this planning task.
+Use branch `remediation/wp-42-migration-gates` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.

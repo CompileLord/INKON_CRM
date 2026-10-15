@@ -20,7 +20,7 @@ First five packages: **WP-01, WP-02, WP-03, WP-04, WP-05**.
 
 ## Parallel-ready waves
 
-Each row is a maximal currently ready wave under the conservative file-order graph. Finish the prior wave in that phase before starting the next row. Packages in one row have disjoint source write sets and no dependency on one another. Separate disposable DB/Redis test targets are required. `STATUS.md` is the sole shared administrative exception: merge row updates one at a time at integration, never overwrite the ledger.
+Each row is a maximal currently ready wave under the conservative file-order graph. Finish the prior wave in that phase before starting the next row. Packages in one row have disjoint source write sets and no dependency on one another. Separate disposable DB/Redis test targets are required. `STATUS.md` is the sole shared execution record: merge row updates one at a time at integration, never overwrite the ledger.
 
 | Phase | Wave | WPs eligible together |
 |---|---|---|

@@ -24,8 +24,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [frontend/src/pages/MentorProfile.tsx:1](../../../frontend/src/pages/MentorProfile.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp41.py](../../../backend/app/tests/integration/test_remediation_wp41.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/results/WP-41.md](../results/WP-41.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/STATUS.md:1](../STATUS.md) | Shared administrative progress ledger; integrate row updates serially, never overwrite another WP’s row. |
+| [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [frontend/src/lib/users/hooks.ts:1](../../../frontend/src/lib/users/hooks.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/lib/users/endpoints.ts:1](../../../frontend/src/lib/users/endpoints.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/pages/student/MyCourseDetail.tsx:1](../../../frontend/src/pages/student/MyCourseDetail.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
@@ -90,7 +89,7 @@ npx vitest run
 npx tsc --noEmit
 ```
 
-Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s result file. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
+Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s concise STATUS.md row. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
 
 
 Verification focuses on the exact behavioral/security tests above. No speculative performance benchmark is required.
@@ -114,4 +113,4 @@ Complete prerequisites first and start from their merged result. Do not require 
 
 **S**: localized change or narrowly scoped evidence collection.
 
-Use branch `remediation/wp-41-student-mentor-card` and one PR for this WP. Save actual evidence in `docs/remediation/results/WP-41.md` and update only its row in `docs/remediation/STATUS.md` with branch/PR, date, tests/results and residual risks. No push/PR publication occurs in this planning task.
+Use branch `remediation/wp-41-student-mentor-card` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.

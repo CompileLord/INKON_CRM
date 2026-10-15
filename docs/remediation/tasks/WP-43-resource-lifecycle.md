@@ -28,8 +28,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/scripts/gcp_deploy.sh:11](../../../backend/scripts/gcp_deploy.sh) | Existing file, anchor line 11; only this WP’s stated behavior may change. |
 | [backend/.env.example:1](../../../backend/.env.example) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp43.py](../../../backend/app/tests/integration/test_remediation_wp43.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/results/WP-43.md](../results/WP-43.md) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [docs/remediation/STATUS.md:1](../STATUS.md) | Shared administrative progress ledger; integrate row updates serially, never overwrite another WP’s row. |
+| [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
 
@@ -94,7 +93,7 @@ npx vitest run
 npx tsc --noEmit
 ```
 
-Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s result file. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
+Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s concise STATUS.md row. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
 
 
 Performance / operational evidence: Measure checkout wait/hold, idle-in-transaction sessions, p95/p99 at 1/2/5 instances with revision overlap; 150/300 are potential ceilings, not observed use.
@@ -122,4 +121,4 @@ Complete prerequisites first and start from their merged result. Do not require 
 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
-Use branch `remediation/wp-43-resource-lifecycle` and one PR for this WP. Save actual evidence in `docs/remediation/results/WP-43.md` and update only its row in `docs/remediation/STATUS.md` with branch/PR, date, tests/results and residual risks. No push/PR publication occurs in this planning task.
+Use branch `remediation/wp-43-resource-lifecycle` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
