@@ -523,13 +523,14 @@
   {
     "id": "KITOB-05-09",
     "title": "Finance precision and money threshold",
-    "status": "pending",
+    "status": "completed",
     "group": "05",
     "dependencies": [
       "KITOB-05-08"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
-    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
+    "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates.",
+    "note": "Runs with its subgroup after 05-08 (user reorder 2026-10-15)."
   },
   {
     "id": "KITOB-05-10",
