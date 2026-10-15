@@ -13,6 +13,12 @@ Test the migration chain and fail deployment on migration errors. One bounded im
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+The accepted WP-14 safe-deployment controls use a fake gcloud harness with no migration configuration. Once this package correctly refuses missing migration credentials, those safe-context controls need synthetic migration configuration and a harmless fake Alembic command. Authorize only that harness adaptation, preserving every upload-exclusion and guard assertion. No real deployment is authorized. A disposable empty-to-head schema comparison also confirmed that the historical migration `e8f9a0b1c2d3` creates `ix_notification_logs_user_id` and `ix_notification_logs_read_at`, while the ORM omits both. Declare those existing indexes in the model; do not drop deployed indexes or weaken comparison. Import OrgSettings explicitly in the new migration test because Alembic already includes it; no unrelated export changes are needed.
+
+Audit correction: the shipped CI test job omitted the explicit disposable targets/testing flags and synthetic application settings required by the accepted fixtures; a clean Python 3.12 collection fails before tests. Configure these in the existing workflow test job, include its Redis/OpenSSL test tools, and verify the clean-job configuration through a meaningful regression without reading production secrets or relying on a local .env. Derive and assert the single actual Alembic head in migration tests so newly accepted additive revisions are included; keep the historical scoring boundary fixed. Existing file scope and acceptance gates remain unchanged.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -22,6 +28,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [.github/workflows/deploy-backend.yml:124](../../../.github/workflows/deploy-backend.yml) | Existing file, anchor line 124; only this WP’s stated behavior may change. |
 | [backend/scripts/gcp_deploy.sh:42](../../../backend/scripts/gcp_deploy.sh) | Existing file, anchor line 42; only this WP’s stated behavior may change. |
 | [backend/app/tests/migrations/test_migration_chain.py](../../../backend/app/tests/migrations/test_migration_chain.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_remediation_wp14.py](../../../backend/app/tests/integration/test_remediation_wp14.py) | Adapt only the fake deployment harness for required synthetic migration configuration and a harmless fake Alembic command; retain all private-context and large-list assertions. |
+| [backend/app/models/notification_log.py](../../../backend/app/models/notification_log.py) | Declare only the existing migrated indexes on user_id and read_at so model metadata matches the deployable schema. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [backend/app/tests/integration/test_remediation_wp42.py](../../../backend/app/tests/integration/test_remediation_wp42.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 
