@@ -12,7 +12,7 @@ import * as userEndpoints from "../lib/users/endpoints";
 import * as enrollmentEndpoints from "../lib/enrollments/endpoints";
 import { createDeferred } from "../lib/journals/journalQueueTestSupport";
 import { formatSchoolLessonDate } from "../i18n/formatters";
-import type { CourseResponse, JournalPeriod } from "../lib/courses/types";
+import type { CourseResponse, CourseStaffProgressResponse, JournalPeriod } from "../lib/courses/types";
 import type { JournalBatchUpdateResponse, JournalDetailResponse, JournalExamMaxScoreUpdateResponse } from "../lib/journals/types";
 
 const viewportState = vi.hoisted(() => {
@@ -48,7 +48,7 @@ vi.mock("../i18n/formatters", async (importOriginal) => {
 
 vi.mock("../lib/courses/endpoints", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/courses/endpoints")>();
-  return { ...actual, getCourse: vi.fn(), getCourseJournals: vi.fn(), getCourseProgressChart: vi.fn() };
+  return { ...actual, getCourse: vi.fn(), getCourseJournals: vi.fn(), getCourseProgressChart: vi.fn(), getCourseStaffProgress: vi.fn() };
 });
 vi.mock("../lib/journals/endpoints", () => ({
   getJournal: vi.fn(),
@@ -149,9 +149,41 @@ function buildJournal(journalId: number): JournalDetailResponse {
   };
 }
 
+function staffResult(periodId: number, score: number | null, maxScore: number | null, percentage: number | null) {
+  return { period_id: periodId, grading_state: "missing" as const, score, max_score: maxScore, percentage };
+}
+
+function buildStaffProgress(): CourseStaffProgressResponse {
+  return {
+    course_id: COURSE_ID,
+    periods: PERIODS.map((period) => ({
+      id: period.id,
+      period_label: period.period_label,
+      period_start: period.period_start,
+      period_end: period.period_end,
+    })),
+    students: [
+      {
+        student_id: 11,
+        first_name: "Anvar",
+        last_name: "Tester",
+        grading_provenance: "unknown",
+        period_results: [staffResult(AUGUST, 18, 24, 75), staffResult(SEPTEMBER, 0, 24, 0), staffResult(OCTOBER, 25, 24.5, 102)],
+      },
+      {
+        student_id: 12,
+        first_name: "Bahor",
+        last_name: "Tester",
+        grading_provenance: "unknown",
+        period_results: [staffResult(AUGUST, null, null, null), staffResult(SEPTEMBER, 12, 24, 50), staffResult(OCTOBER, 12, 24, 50)],
+      },
+    ],
+  };
+}
+
 const getCourseMock = vi.mocked(courseEndpoints.getCourse);
 const getCourseJournalsMock = vi.mocked(courseEndpoints.getCourseJournals);
-const getProgressChartMock = vi.mocked(courseEndpoints.getCourseProgressChart);
+const getStaffProgressMock = vi.mocked(courseEndpoints.getCourseStaffProgress);
 const getJournalMock = vi.mocked(journalEndpoints.getJournal);
 const batchUpdateMock = vi.mocked(journalEndpoints.batchUpdateJournalEntries);
 const updateSummaryMock = vi.mocked(journalEndpoints.updateJournalStudentSummary);
@@ -202,7 +234,7 @@ beforeEach(async () => {
   useAuthStore.setState({ role: "superadmin" });
   getCourseMock.mockResolvedValue(buildCourse());
   getCourseJournalsMock.mockResolvedValue(PERIODS);
-  getProgressChartMock.mockResolvedValue({ labels: ["Month 8"], periods: [], datasets: [] });
+  getStaffProgressMock.mockResolvedValue(buildStaffProgress());
   getJournalMock.mockImplementation(async (journalId: number) => buildJournal(journalId));
   getMentorProfileMock.mockRejectedValue(new AuthApiError(404, "none"));
   listEnrollmentsMock.mockResolvedValue({ items: [], total: 2, page: 1, page_size: 1, total_pages: 2 });
@@ -616,7 +648,7 @@ describe("workspace anatomy", () => {
     expect(screen.queryByText("Class Average")).toBeNull();
     expect(screen.queryByText("Attendance Rate")).toBeNull();
     expect(screen.queryByText("Score progress")).toBeNull();
-    expect(getProgressChartMock).toHaveBeenCalled();
+    expect(getStaffProgressMock).not.toHaveBeenCalled();
   });
 
   it("shows the back link, wrapping title, roster count, period picker, settings, tabs, view switch and reserved status", async () => {
@@ -641,16 +673,11 @@ describe("workspace anatomy", () => {
     expect(await screen.findByRole("dialog", { name: "Period settings" })).toBeDefined();
   });
 
-  it("shows the existing progress chart as the Progress tab content until the new Progress view ships", async () => {
-    getProgressChartMock.mockResolvedValue({
-      labels: ["Month 8", "Month 9"],
-      periods: [],
-      datasets: [{ student_id: 11, name: "Anvar Tester", color_hex: "#000000", scores: [50, 60, 55] }],
-    });
+  it("shows the course-wide Progress view instead of the Gradebook when the Progress tab is chosen", async () => {
     renderWorkspace();
     await waitForGrid();
     fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    expect(await screen.findByText("Score progress")).toBeDefined();
+    expect(await screen.findByTestId("progress-scope")).toBeDefined();
     expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
     expect(screen.queryByTestId("journal-save-status")).toBeNull();
   });
@@ -668,9 +695,9 @@ describe("workspace anatomy", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeDefined();
   });
 
-  it("restores the Progress tab from the URL and reports an empty chart honestly", async () => {
+  it("restores the Progress tab from the URL", async () => {
     renderWorkspace([`/journals/${COURSE_ID}?tab=progress`]);
-    expect(await screen.findByText("No chart data yet")).toBeDefined();
+    expect(await screen.findByTestId("progress-scope")).toBeDefined();
     expect(screen.getByRole("tab", { name: "Progress" }).getAttribute("aria-selected")).toBe("true");
   });
 
@@ -1304,22 +1331,25 @@ describe("Period settings: exam maximum", () => {
     expect(maximumInput().value).toBe("100");
   });
 
-  it("applies the returned maximum and summaries, closes and returns focus to Period settings", async () => {
-    await openSettings();
+  it("applies the returned maximum and summaries, closes, returns focus and refreshes Progress", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
+    await screen.findByRole("table", { name: "Class results by period" });
+    expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(settingsButton());
+    await screen.findByRole("dialog", { name: "Period settings" });
     typeMaximum("80");
     fireEvent.click(saveButton());
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
     expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 80 });
     await waitFor(() => expect(document.activeElement).toBe(settingsButton()));
+    await waitFor(() => expect(getStaffProgressMock).toHaveBeenCalledTimes(2));
 
     fireEvent.click(settingsButton());
     await screen.findByRole("dialog", { name: "Period settings" });
     expect(maximumInput().value).toBe("80");
-
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    await waitFor(() => expect(getProgressChartMock.mock.calls.length).toBeGreaterThan(1));
   });
 
   it("names the highest existing exam score when the server rejects a lower maximum and keeps the input", async () => {
@@ -1383,5 +1413,175 @@ describe("Period settings: exam maximum", () => {
     renderWorkspace();
     await waitForGrid();
     expect(settingsButton()).toBeDefined();
+  });
+});
+
+describe("Progress tab", () => {
+  const PROGRESS_URL = `/journals/${COURSE_ID}?tab=progress`;
+
+  async function openProgress(): Promise<HTMLElement> {
+    renderWorkspace([PROGRESS_URL]);
+    return screen.findByRole("table", { name: "Class results by period" });
+  }
+
+  function periodRow(table: HTMLElement, label: string): HTMLElement {
+    return within(table).getByRole("rowheader", { name: new RegExp(label) }).closest("tr") as HTMLElement;
+  }
+
+  function fills(row: HTMLElement): number[] {
+    return within(row).getAllByTestId("progress-bar").map((bar) => Number((bar.firstElementChild as HTMLElement).getAttribute("data-fill")));
+  }
+
+  it("scopes the view to the whole course with each period's range and a stored-totals note", async () => {
+    const table = await openProgress();
+    expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
+    expect(screen.getByText("Average of stored totals for every period of this course. Missing results show as Unavailable.")).toBeDefined();
+    expect(periodRow(table, "Month 8").textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
+    expect(getStaffProgressMock).toHaveBeenCalledWith(COURSE_ID);
+  });
+
+  it("counts stored results out of the roster, excludes missing results from the average and calls them Unavailable", async () => {
+    const table = await openProgress();
+    const august = periodRow(table, "Month 8");
+    expect(august.textContent).toContain("1 of 2 students");
+    expect(august.textContent).toContain("Unavailable: 1");
+    expect(within(august).getByText("75%")).toBeDefined();
+    expect(periodRow(table, "Month 9").textContent).toContain("2 of 2 students");
+  });
+
+  it("distinguishes a stored zero from a missing result", async () => {
+    const table = await openProgress();
+    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
+    const september = periodRow(table, "Month 9");
+    expect(within(september).getByText("0%")).toBeDefined();
+    expect(september.textContent).toContain("0 of 24");
+    expect(september.textContent).not.toContain("Unavailable");
+    expect(within(september).getByText("25%")).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "12" } });
+    const august = periodRow(table, "Month 8");
+    expect(within(august).getAllByText("Unavailable").length).toBeGreaterThan(0);
+    expect(fills(august)[1]).toBe(0);
+  });
+
+  it("shows values above 100 as supplied and scales bars so nothing is clipped", async () => {
+    const table = await openProgress();
+    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
+    const october = periodRow(table, "Month 10");
+    expect(within(october).getByText("102%")).toBeDefined();
+    expect(october.textContent).toContain("25 of 24.5");
+    const [classFill, studentFill] = fills(october);
+    expect(studentFill).toBe(100);
+    expect(classFill).toBeLessThan(100);
+    expect(classFill).toBeCloseTo((76 / 102) * 100, 5);
+    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "" } });
+    expect(Math.max(...fills(periodRow(table, "Month 9")))).toBeLessThanOrEqual(100);
+  });
+
+  it("keeps the same course-wide scope and one request when the Gradebook period changes", async () => {
+    await openProgress();
+    fireEvent.change(periodPicker(), { target: { value: String(AUGUST) } });
+    await waitFor(() => expect(router.state.location.search).toContain(`period=${AUGUST}`));
+    expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
+    expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers one roster-scoped comparison select with a None option and no separate search", async () => {
+    await openProgress();
+    const select = screen.getByLabelText("Compare a student") as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(["None", "Anvar Tester", "Bahor Tester"]);
+    expect(screen.queryByLabelText("Search students in this course")).toBeNull();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+  });
+
+  it("labels periods that start after school-calendar today Upcoming and Not started, by date only", async () => {
+    const data = buildStaffProgress();
+    data.periods.push({ id: 104, period_label: "Month 11", period_start: "2026-11-01", period_end: "2026-11-30" });
+    data.students.forEach((student) => student.period_results.push(staffResult(104, 0, 24, 0)));
+    getStaffProgressMock.mockResolvedValue(data);
+    const table = await openProgress();
+    const november = periodRow(table, "Month 11");
+    expect(november.textContent).toContain("Upcoming");
+    expect(november.textContent).toContain("Not started");
+    expect(november.textContent).not.toContain("0%");
+    expect(november.textContent).not.toContain("of 2 students");
+    expect(within(november).queryAllByTestId("progress-bar")).toHaveLength(0);
+    expect(periodRow(table, "Month 10").textContent).not.toContain("Upcoming");
+    schoolToday.value = "2026-11-01";
+    cleanup();
+    renderWorkspace([PROGRESS_URL]);
+    const later = await screen.findByRole("table", { name: "Class results by period" });
+    expect(periodRow(later, "Month 11").textContent).not.toContain("Not started");
+    expect(periodRow(later, "Month 11").textContent).toContain("2 of 2 students");
+  });
+
+  it("colors the student series with the primary token in both themes and the class series with the muted token", async () => {
+    const table = await openProgress();
+    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
+    const bars = within(periodRow(table, "Month 10")).getAllByTestId("progress-bar");
+    expect(bars[0].firstElementChild?.className).toContain("bg-muted");
+    expect(bars[1].firstElementChild?.className).toContain("bg-maroon");
+    expect(document.querySelector("[data-testid='journal-progress']")?.innerHTML).not.toContain("dark:bg-accent");
+  });
+
+  it("renders no completion, grading-status or needs-grading claim and no chart", async () => {
+    await openProgress();
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/graded|completed|complete\b|completion|needs grading|ungraded/i);
+    expect(document.querySelector("svg[role='img']")).toBeNull();
+  });
+
+  it("shows the divided period list with the same numbers on a narrow viewport", async () => {
+    viewportState.setDesktop(false);
+    renderWorkspace([PROGRESS_URL]);
+    const list = await screen.findByRole("list", { name: "Class results by period" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+    expect(list.textContent).toContain("1 of 2 students");
+    expect(list.textContent).toContain("75%");
+    expect(screen.queryByRole("table")).toBeNull();
+    viewportState.setDesktop(true);
+  });
+
+  it("shows a skeleton while loading, then an empty-roster explanation", async () => {
+    const pending = createDeferred<CourseStaffProgressResponse>();
+    getStaffProgressMock.mockReturnValueOnce(pending.promise);
+    renderWorkspace([PROGRESS_URL]);
+    expect(await screen.findByTestId("journal-progress-skeleton")).toBeDefined();
+    await act(async () => {
+      pending.resolve({ ...buildStaffProgress(), students: [] });
+    });
+    expect(await screen.findByText("No students in this course")).toBeDefined();
+  });
+
+  it("keeps the Gradebook and its drafts intact when Progress fails, and Retry recovers", async () => {
+    getStaffProgressMock.mockRejectedValueOnce(new AuthApiError(500, "boom"));
+    batchUpdateMock.mockImplementation(() => new Promise(() => undefined));
+    renderWorkspace();
+    await waitForGrid();
+    const cell = gradeCell("Anvar", "2026-10-13");
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "4" });
+    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
+    const alert = await screen.findByText("Could not load progress");
+    expect(alert).toBeDefined();
+    expect(screen.getByText("Your gradebook and unsaved changes are not affected.")).toBeDefined();
+    expect(screen.getByTestId("journal-save-status")).toBeDefined();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Retry" }).find((button) => button.closest("[role='alert']")?.textContent?.includes("Could not load progress")) as HTMLElement);
+    expect(await screen.findByRole("table", { name: "Class results by period" })).toBeDefined();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Gradebook" }));
+    await waitForGrid();
+    expect(within(gradeCell("Anvar", "2026-10-13")).getByRole("button", { name: "4" })).toBeDefined();
+  });
+
+  it("is translated in Russian and Tajik", async () => {
+    await i18n.changeLanguage("ru");
+    renderWorkspace([PROGRESS_URL]);
+    expect((await screen.findByTestId("progress-scope")).textContent).toBe("Весь курс, все периоды");
+    cleanup();
+    await i18n.changeLanguage("tg");
+    renderWorkspace([PROGRESS_URL]);
+    expect((await screen.findByTestId("progress-scope")).textContent).toBe("Тамоми курс, ҳамаи давраҳо");
   });
 });

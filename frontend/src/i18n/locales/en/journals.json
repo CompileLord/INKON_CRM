@@ -88,29 +88,6 @@
     "upcoming": "Upcoming",
     "past": "Past"
   },
-  "chart": {
-    "title": "Score progress",
-    "average": "Average",
-    "noData": "No chart data yet",
-    "classAverage": "Class average",
-    "studentAverage": "Student average",
-    "sortBy": "Sort by",
-    "sortAvgDesc": "Average (high to low)",
-    "sortName": "Name",
-    "sortLatest": "Latest period",
-    "searchStudent": "Search student…",
-    "showAll": "Show all",
-    "topN": "Top 5",
-    "trendUp": "Up by {{delta}}%",
-    "trendDown": "Down by {{delta}}%",
-    "trendFlat": "No change",
-    "hideSeries": "Hide {{name}}",
-    "showSeries": "Show {{name}}",
-    "ariaSummary": "Score progress chart for {{students}} students across {{periods}} periods.",
-    "loading": "Loading chart data…",
-    "hoverHint": "Hover a period to see every student's score",
-    "noMatches": "No students match your search"
-  },
   "table": {
     "students": "Students",
     "endOfWeek": "End of week",
@@ -370,5 +347,32 @@
     "discardPrompt": "You have an unsaved exam maximum.",
     "continueEditing": "Continue editing",
     "discard": "Discard changes"
+  },
+  "progress": {
+    "scope": "Whole course, all periods",
+    "scopeNote": "Average of stored totals for every period of this course. Missing results show as Unavailable.",
+    "tableLabel": "Class results by period",
+    "columns": {
+      "period": "Period",
+      "stored": "Stored results",
+      "average": "Class average of stored totals",
+      "student": "{{name}}",
+      "total": "Total"
+    },
+    "storedOf": "{{stored}} of {{roster}} students",
+    "unavailable": "Unavailable",
+    "totalOfMax": "{{score}} of {{max}}",
+    "classAverage": "Class average",
+    "legendLabel": "Bar legend",
+    "referenceMark": "100% mark",
+    "compareLabel": "Compare a student",
+    "classOnly": "None",
+    "loadFailedBody": "Your gradebook and unsaved changes are not affected.",
+    "refreshFailed": "Could not refresh progress. Showing the last loaded results.",
+    "noPeriodsTitle": "No periods to show yet",
+    "noPeriodsBody": "Results appear here once the course has journal periods.",
+    "noStudentsTitle": "No students in this course",
+    "noStudentsBody": "Once students are enrolled, each period shows how many have a stored result and their class average.",
+    "unavailableCount": "Unavailable: {{count}}"
   }
 }

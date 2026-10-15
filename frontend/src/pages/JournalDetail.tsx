@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Settings, Users } from "lucide-react";
-import { useCourse, useCourseJournals, useCourseProgressChart } from "../lib/courses/hooks";
+import { useCourse, useCourseJournals } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
@@ -10,7 +10,7 @@ import { useAuthStore } from "../store/authStore";
 import { isPathAllowed } from "../lib/auth/roleAccess";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { Button } from "../components/ui/Button";
-import { JournalScoreChart } from "../components/journals/JournalScoreChart";
+import { JournalProgressView } from "../components/journals/JournalProgressView";
 import { JournalGrid } from "../components/journals/JournalGrid";
 import { JournalSummaryView } from "../components/journals/JournalSummaryView";
 import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker";
@@ -87,7 +87,6 @@ function JournalDetailContent() {
     isError: periodsError,
     refetch: refetchPeriods,
   } = useCourseJournals(courseId);
-  const progressChartQuery = useCourseProgressChart(courseId);
 
   const route = useJournalWorkspaceRoute({ periods, today });
   const selectedPeriod = route.periodResolution.period;
@@ -477,16 +476,7 @@ function JournalDetailContent() {
                   onReview={() => setReviewOpen(true)}
                 />
               )}
-              {progressChartQuery.isError ? (
-                <JournalPanelMessage
-                  tone="error"
-                  title={t("workspace.progressLoadFailed")}
-                  retryLabel={t("common:retry")}
-                  onRetry={() => void progressChartQuery.refetch()}
-                />
-              ) : (
-                <JournalScoreChart data={progressChartQuery.data} isLoading={progressChartQuery.isLoading} />
-              )}
+              <JournalProgressView courseId={courseId} />
             </section>
           )}
         </>

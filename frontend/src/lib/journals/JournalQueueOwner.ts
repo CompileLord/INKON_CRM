@@ -805,6 +805,7 @@ export class JournalQueueOwner {
       this.derivedRefreshTimer = null;
       void this.queryClient.invalidateQueries({ queryKey: ["courses", "progress-chart", courseId] });
       void this.queryClient.invalidateQueries({ queryKey: ["courses", "journal-metrics", courseId] });
+      void this.queryClient.invalidateQueries({ queryKey: ["courses", "staff-progress", courseId] });
       void this.queryClient.invalidateQueries({ queryKey: ["courses", "journals", courseId] });
     }, DERIVED_REFRESH_MS);
   }
