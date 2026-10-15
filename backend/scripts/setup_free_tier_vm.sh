@@ -6,11 +6,13 @@ echo " IMKON CRM — Always Free Tier VM Setup (PostgreSQL + Redis)"
 echo "======================================================"
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -hex 16)}"
 POSTGRES_DB="${POSTGRES_DB:-imkon_db}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+POSTGRES_DATA_DIR="/var/lib/imkon/postgres_data"
+POSTGRES_PASSWORD_FILE="${POSTGRES_PASSWORD_FILE:-/var/lib/imkon/postgres_password}"
+POSTGRES_PASSWORD_CONTAINER_FILE="/run/secrets/postgres_password"
 REDIS_DATA_DIR="/var/lib/imkon/redis_data"
 REDIS_TLS_DIR="/var/lib/imkon/redis_tls"
 REDIS_PASSWORD_FILE="${REDIS_DATA_DIR}/app.password"
@@ -18,6 +20,33 @@ REDIS_ACL_FILE="${REDIS_DATA_DIR}/users.acl"
 REDIS_CONFIG_FILE="${REDIS_DATA_DIR}/redis.conf"
 REDIS_URL_FILE="${REDIS_DATA_DIR}/redis.env"
 REDIS_PASSWORD="${REDIS_PASSWORD:-}"
+
+validate_postgres_password_file() {
+    local password_file_mode
+
+    if [[ -L "${POSTGRES_PASSWORD_FILE}" || ! -f "${POSTGRES_PASSWORD_FILE}" ]]; then
+        echo "PostgreSQL password file must be a regular, non-symlink file." >&2
+        exit 1
+    fi
+
+    password_file_mode="$(stat -c '%a' "${POSTGRES_PASSWORD_FILE}")"
+    if [[ "${password_file_mode}" != "600" && "${password_file_mode}" != "400" ]]; then
+        echo "PostgreSQL password file permissions must be 600 or 400." >&2
+        exit 1
+    fi
+
+    if [[ ! -s "${POSTGRES_PASSWORD_FILE}" ]]; then
+        echo "PostgreSQL password file must not be empty." >&2
+        exit 1
+    fi
+}
+
+if [[ -e "${POSTGRES_PASSWORD_FILE}" || -L "${POSTGRES_PASSWORD_FILE}" ]]; then
+    validate_postgres_password_file
+elif [[ -f "${POSTGRES_DATA_DIR}/PG_VERSION" && -z "${POSTGRES_PASSWORD:-}" ]]; then
+    echo "An existing PostgreSQL database requires its known password file." >&2
+    exit 1
+fi
 
 if [[ -z "${REDIS_PASSWORD}" && -f "${REDIS_PASSWORD_FILE}" ]]; then
     REDIS_PASSWORD="$(<"${REDIS_PASSWORD_FILE}")"
@@ -48,12 +77,22 @@ REDIS_UID="$($CONTAINER_CLI run --rm --entrypoint id redis:7-alpine -u redis)"
 REDIS_GID="$($CONTAINER_CLI run --rm --entrypoint id redis:7-alpine -g redis)"
 
 echo "[2/4] Creating persistent storage directories..."
-mkdir -p /var/lib/imkon/postgres_data
+mkdir -p "${POSTGRES_DATA_DIR}" "$(dirname -- "${POSTGRES_PASSWORD_FILE}")"
 mkdir -p "${REDIS_DATA_DIR}" "${REDIS_TLS_DIR}"
 chmod 700 "${REDIS_DATA_DIR}"
 chmod 755 "${REDIS_TLS_DIR}"
 
 umask 077
+if [[ ! -e "${POSTGRES_PASSWORD_FILE}" ]]; then
+    if [[ -n "${POSTGRES_PASSWORD:-}" ]]; then
+        printf '%s' "${POSTGRES_PASSWORD}" > "${POSTGRES_PASSWORD_FILE}"
+    else
+        openssl rand -hex 32 > "${POSTGRES_PASSWORD_FILE}"
+    fi
+    chmod 600 "${POSTGRES_PASSWORD_FILE}"
+fi
+validate_postgres_password_file
+
 printf '%s' "${REDIS_PASSWORD}" > "${REDIS_PASSWORD_FILE}"
 printf 'user default off\nuser imkon_app on >%s ~* &* +@read +@write +@connection +@transaction +@scripting -@admin -flushdb -flushall -config -acl -shutdown -replicaof -slaveof -debug +info +time\n' "${REDIS_PASSWORD}" > "${REDIS_ACL_FILE}"
 install -m 600 "${SCRIPT_DIR}/../config/redis.conf.example" "${REDIS_CONFIG_FILE}"
@@ -86,8 +125,9 @@ $CONTAINER_CLI run -d \
     --restart always \
     -p "${POSTGRES_PORT}:5432" \
     -e POSTGRES_USER="${POSTGRES_USER}" \
-    -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+    -e POSTGRES_PASSWORD_FILE="${POSTGRES_PASSWORD_CONTAINER_FILE}" \
     -e POSTGRES_DB="${POSTGRES_DB}" \
+    -v "${POSTGRES_PASSWORD_FILE}:${POSTGRES_PASSWORD_CONTAINER_FILE}:ro" \
     -v /var/lib/imkon/postgres_data:/var/lib/postgresql/data \
     postgres:16-alpine
 
@@ -114,9 +154,9 @@ echo "Host IP:           ${PUBLIC_IP}"
 echo "PostgreSQL Port:   ${POSTGRES_PORT}"
 echo "PostgreSQL DB:     ${POSTGRES_DB}"
 echo "PostgreSQL User:   ${POSTGRES_USER}"
-echo "PostgreSQL Pass:   ${POSTGRES_PASSWORD}"
+echo "PostgreSQL password: stored in ${POSTGRES_PASSWORD_FILE} with restricted permissions"
 echo "Redis Port:        ${REDIS_PORT}"
 echo "Redis URL:         stored in ${REDIS_URL_FILE} with mode 600"
 echo ""
-echo "DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PUBLIC_IP}:${POSTGRES_PORT}/${POSTGRES_DB}"
+echo "DATABASE_URL credentials are redacted; configure them from the protected password file."
 echo "======================================================"
