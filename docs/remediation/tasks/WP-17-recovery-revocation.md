@@ -33,8 +33,8 @@ The new head exposes two existing test assumptions. The WP-03 valid reset fixtur
 | [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement user locking and fresh epoch reads; preserve existing guardian and directory queries. |
 | [backend/alembic/versions/rwp17_auth_version.py](../../../backend/alembic/versions/rwp17_auth_version.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp17.py](../../../backend/app/tests/integration/test_remediation_wp17.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [backend/app/tests/integration/test_remediation_wp06.py](../../../backend/app/tests/integration/test_remediation_wp06.py) | Update only the manually signed valid full-access fixture to include the required current epoch; preserve its successful full-access assertion. Missing-epoch rejection gets a WP-17 regression. |
-| [backend/app/tests/integration/test_remediation_wp03.py](../../../backend/app/tests/integration/test_remediation_wp03.py) | Add the current epoch only to the manually signed valid password-reset fixture; preserve identity-bound refresh assertions. |
+| [backend/app/tests/integration/test_remediation_wp06.py](../../../backend/app/tests/integration/test_remediation_wp06.py) | Keep valid full-access and reset fixtures aligned with the current epoch and immutable reset subject; preserve their successful access, identity and setup-scope assertions. |
+| [backend/app/tests/integration/test_remediation_wp03.py](../../../backend/app/tests/integration/test_remediation_wp03.py) | Bind the manually signed valid reset fixture to the persisted user ID and current epoch; preserve identity-bound refresh assertions. |
 | [backend/app/tests/integration/test_remediation_wp11.py](../../../backend/app/tests/integration/test_remediation_wp11.py) | Keep its database-only offline initialization probe at the historical offline-renderable boundary before WP-07, independent of later heads; preserve full current-head online migration checks and all other tests. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
@@ -63,9 +63,11 @@ Snapshot excerpt from `backend/app/services/auth_service.py`:
 ## Step-by-step change
 
 1. Add persisted auth_version and require it in newly issued access and reset grants. Lock/version the user during reset confirmation and increment the epoch atomically with password change and refresh revocation.
-2. Bind reset grant to subject, purpose, expiry and current epoch; only one concurrent reset may match and advance that epoch. Update all token issuance paths and reject legacy/missing epochs after the coordinated cutover.
+2. Bind reset grant to immutable persisted user ID, purpose, strict integer issue/expiry times within the five-minute grant lifetime, and current epoch; only one concurrent reset may match and advance that epoch. Update all token issuance paths and reject legacy/missing epochs after the coordinated cutover.
 
 This merges two defects under one credential-epoch root cause without introducing a second reset storage system. Expect reauthentication during rollout; do not roll back by accepting old epochs. Existing test helpers call create_access_token with two arguments. A generator default epoch of zero may preserve new-user fixtures, but every runtime issuance must explicitly pass the loaded user epoch and validation must reject missing epochs; never add a permissive validation fallback to satisfy tests.
+
+Audit correction: the first completed candidate accepted grants without expiry and selected the reset account by mutable email. A disposable database probe issued a real student grant, reassigned that email to a superadmin, and the old grant changed the superadmin password. Tests must reject absent/malformed/expired/future or overlong time claims and prevent a grant from following a reassigned email to another account. Cover successful recovery/revocation for privileged and student accounts and issuance at nonzero epochs. Preserve every existing acceptance criterion.
 
 ## Tests to write BEFORE the fix
 
