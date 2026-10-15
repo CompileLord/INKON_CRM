@@ -69,8 +69,9 @@ export function Finance() {
         {state.tab === "debtors" && (
           <DebtorsTab
             view={state.debtors}
+            recordedPayment={recordedPayment}
             onPageChange={navigation.setDebtorsPage}
-            onClearCourse={() => navigation.changeDebtorsFilters({ courseId: null })}
+            onChangeFilters={navigation.changeDebtorsFilters}
             onAcceptPayment={openDebtPayment}
           />
         )}
