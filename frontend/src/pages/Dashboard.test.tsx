@@ -358,12 +358,14 @@ describe("Superadmin Dashboard (/)", () => {
     expect(screen.getByText(/Due today/)).toBeTruthy();
     expect(screen.queryByText(/Overdue 0 days/)).toBeNull();
 
-    const perRowActions = screen.getAllByRole("link", { name: "Open Finance" });
+    const perRowActions = screen.getAllByRole("link", { name: /View course debts/ });
     expect(perRowActions.length).toBe(2);
-    expect(perRowActions[0].getAttribute("href")).toBe("/finance");
+    expect(perRowActions[0].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=11");
+    expect(perRowActions[1].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=12");
+    expect(perRowActions[0].getAttribute("href")).not.toContain("student");
 
     const financeFooterLink = screen.getByRole("link", { name: /Open Finance • View debts/ });
-    expect(financeFooterLink.getAttribute("href")).toBe("/finance");
+    expect(financeFooterLink.getAttribute("href")).toBe("/finance?tab=debtors");
   });
 
   it("displays successful empty state when no debts exist", () => {

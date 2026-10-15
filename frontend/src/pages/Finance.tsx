@@ -1,46 +1,93 @@
 import { useState } from "react";
-import { TrendingUp, AlertTriangle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { FinanceAnalyticsTab } from "../components/finance/FinanceAnalyticsTab";
 import { DebtorsTab } from "../components/finance/DebtorsTab";
+import { FinanceTabs } from "../components/finance/FinanceTabs";
+import { OverviewTab } from "../components/finance/OverviewTab";
+import { PaymentCompletion, PaymentDetailModal } from "../components/finance/PaymentCompletion";
+import { PaymentModal } from "../components/finance/PaymentModal";
+import { PaymentsTab } from "../components/finance/PaymentsTab";
+import { useFinanceNavigation } from "../components/finance/useFinanceNavigation";
+import { Button } from "../components/ui/Button";
+import type { DebtItem, PaymentItem } from "../lib/finance/types";
+
+interface PaymentContext {
+  studentId: number;
+  studentName: string;
+  courseId: number;
+  courseName: string;
+}
 
 export function Finance() {
   const { t } = useTranslation("finance");
-  const [activeTab, setActiveTab] = useState<"analytics" | "debtors">("analytics");
+  const navigation = useFinanceNavigation();
+  const { state } = navigation;
+  const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
+  const [paymentContext, setPaymentContext] = useState<PaymentContext | null>(null);
+  const [recordedPayment, setRecordedPayment] = useState<PaymentItem | null>(null);
+  const [detailPayment, setDetailPayment] = useState<PaymentItem | null>(null);
+
+  const openGlobalPayment = (): void => {
+    setPaymentContext(null);
+    setIsPaymentOpen(true);
+  };
+
+  const openDebtPayment = (debt: DebtItem): void => {
+    setPaymentContext({
+      studentId: debt.student.id,
+      studentName: `${debt.student.first_name} ${debt.student.last_name}`,
+      courseId: debt.course.id,
+      courseName: debt.course.title,
+    });
+    setIsPaymentOpen(true);
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Top Page Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-ink">{t("title")}</h2>
+    <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold leading-8 text-ink sm:text-[1.75rem] sm:leading-9">{t("title")}</h1>
+        </div>
+        <Button className="w-full shrink-0 sm:w-auto" onClick={openGlobalPayment}>
+          <Plus size={18} aria-hidden="true" />
+          {t("acceptPayment")}
+        </Button>
+      </header>
+      <PaymentCompletion payment={recordedPayment} />
+      <FinanceTabs selected={state.tab} onSelect={navigation.selectTab} />
+      <div key={state.tab} role="tabpanel" className="transition-opacity duration-200 ease-out starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
+        {state.tab === "overview" && (
+          <OverviewTab
+            range={state.range}
+            onApplyRange={navigation.applyRange}
+            onAcceptPayment={openDebtPayment}
+            onOpenDetails={setDetailPayment}
+            onViewDebtors={() => navigation.selectTab("debtors")}
+            onViewPayments={() => navigation.selectTab("payments")}
+          />
+        )}
+        {state.tab === "debtors" && (
+          <DebtorsTab
+            view={state.debtors}
+            onPageChange={navigation.setDebtorsPage}
+            onClearCourse={() => navigation.changeDebtorsFilters({ courseId: null })}
+            onAcceptPayment={openDebtPayment}
+          />
+        )}
+        {state.tab === "payments" && (
+          <PaymentsTab view={state.payments} onPageChange={navigation.setPaymentsPage} onOpenDetails={setDetailPayment} />
+        )}
       </div>
-
-      {/* Tabs */}
-      <div className="flex items-center border-b border-border gap-6">
-        <button
-          onClick={() => setActiveTab("analytics")}
-          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold active:scale-95 transition-[color,border-color,transform] duration-150 ease-out ${
-            activeTab === "analytics"
-              ? "border-maroon text-maroon dark:border-accent dark:text-accent"
-              : "border-transparent text-muted hover:text-ink"
-          }`}
-        >
-          <TrendingUp size={18} /> {t("tabs.analytics")}
-        </button>
-        <button
-          onClick={() => setActiveTab("debtors")}
-          className={`flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold active:scale-95 transition-[color,border-color,transform] duration-150 ease-out ${
-            activeTab === "debtors"
-              ? "border-maroon text-maroon dark:border-accent dark:text-accent"
-              : "border-transparent text-muted hover:text-ink"
-          }`}
-        >
-          <AlertTriangle size={18} /> {t("tabs.debtors")}
-        </button>
-      </div>
-
-      {/* Active Tab Content */}
-      {activeTab === "analytics" ? <FinanceAnalyticsTab /> : <DebtorsTab />}
+      <PaymentModal
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+        onSuccess={setRecordedPayment}
+        defaultStudentId={paymentContext?.studentId}
+        defaultStudentName={paymentContext?.studentName}
+        defaultCourseId={paymentContext?.courseId}
+        defaultCourseName={paymentContext?.courseName}
+      />
+      <PaymentDetailModal payment={detailPayment} onClose={() => setDetailPayment(null)} />
     </div>
   );
 }

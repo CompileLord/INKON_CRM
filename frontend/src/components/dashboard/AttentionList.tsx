@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronRight, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDebts } from "../../lib/finance/hooks";
+import { FinanceUrlState } from "../../lib/finance/urlState";
 import { formatMoney } from "../../lib/money";
 
 export function AttentionList() {
@@ -129,10 +130,10 @@ export function AttentionList() {
                       </div>
                       <div className="flex items-center justify-end pl-4.5 sm:pl-0 shrink-0">
                         <Link
-                          to="/finance"
+                          to={FinanceUrlState.debtorsLocation(item.course.id)}
                           className="inline-flex min-h-[44px] min-w-[44px] w-full sm:w-auto items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
                         >
-                          <span>{t("openFinance")}</span>
+                          <span>{t("viewCourseDebts")}<span className="sr-only"> {item.course.title}</span></span>
                         </Link>
                       </div>
                     </div>
@@ -146,7 +147,7 @@ export function AttentionList() {
 
       <div className="border-t border-border-warm bg-card px-5 py-2">
         <Link
-          to="/finance"
+          to={FinanceUrlState.debtorsLocation()}
           className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
         >
           <span>{t("openFinanceViewDebts")}</span>

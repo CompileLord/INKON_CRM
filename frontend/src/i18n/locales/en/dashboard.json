@@ -173,5 +173,6 @@
   "paymentReference": "Payment / student",
   "allocationContext": "Allocation context",
   "paymentMethodDate": "Method / payment date",
-  "viewPaymentReference": "View payment #{{id}}"
+  "viewPaymentReference": "View payment #{{id}}",
+  "viewCourseDebts": "View course debts"
 }

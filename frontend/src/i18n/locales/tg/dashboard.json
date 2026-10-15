@@ -173,5 +173,6 @@
   "paymentReference": "Пардохт / хонанда",
   "allocationContext": "Тақсимот",
   "paymentMethodDate": "Тарз / санаи пардохт",
-  "viewPaymentReference": "Дидани пардохт №{{id}}"
+  "viewPaymentReference": "Дидани пардохт №{{id}}",
+  "viewCourseDebts": "Нишон додани қарзҳои курс"
 }

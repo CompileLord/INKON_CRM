@@ -173,5 +173,6 @@
   "paymentReference": "Оплата / ученик",
   "allocationContext": "Распределение",
   "paymentMethodDate": "Способ / дата оплаты",
-  "viewPaymentReference": "Посмотреть оплату №{{id}}"
+  "viewPaymentReference": "Посмотреть оплату №{{id}}",
+  "viewCourseDebts": "Показать долги по курсу"
 }

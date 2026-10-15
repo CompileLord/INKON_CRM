@@ -1,12 +1,12 @@
 {
   "title": "Finance & Payments",
-  "subtitle": "Manage payments, cash records, and the debt registry",
   "acceptPayment": "Accept Payment",
   "tabs": {
-    "analytics": "Financial Overview",
-    "debtors": "Debtors Registry"
+    "debtors": "Debtors",
+    "overview": "Overview",
+    "payments": "Payments"
   },
-  "overdueDaysCount": "{{count}} days",
+  "overdueDaysCount": "{{count}} d",
   "analytics": {
     "title": "Financial Overview",
     "subtitle": "Overview of receivables and collections",
@@ -21,7 +21,6 @@
   },
   "debtors": {
     "title": "Debtors List",
-    "subtitle": "Students with an outstanding balance",
     "table": {
       "student": "Student",
       "course": "Course",
@@ -29,7 +28,8 @@
       "totalPaid": "Paid",
       "debtAmount": "Debt",
       "overdue": "Overdue"
-    }
+    },
+    "info": "Students with an unpaid balance on a course. Each row is one student and course. Settled counts everything applied against due charges, including discounts, not only cash."
   },
   "paymentModal": {
     "title": "Accept Payment",
@@ -89,5 +89,73 @@
     "refreshHelp": "This reference stays available while balances and lists refresh.",
     "viewPayment": "View payment"
   },
-  "moneyAmount": "{{amount}} TJS"
+  "moneyAmount": "{{amount}} TJS",
+  "tabsLabel": "Finance sections",
+  "unavailable": "Unavailable",
+  "refreshFailed": "Could not refresh. Showing the last loaded data.",
+  "overview": {
+    "summaryLabel": "Finance summary",
+    "currentDue": "Current due unpaid",
+    "currentDueHelp": "Charges that have come due and are still unpaid, right now.",
+    "currentStudents": "Current unpaid students",
+    "currentStudentsHelp": "Students with at least one unpaid course balance, right now.",
+    "netCash": "Net cash collected",
+    "collectionHelp": "Cash received in this period, minus cash refunds paid out.",
+    "rangeFrom": "From",
+    "rangeTo": "To",
+    "applyRange": "Apply",
+    "rangeIncomplete": "Choose both a start date and an end date.",
+    "rangeInvalid": "Enter valid dates.",
+    "rangeInverted": "The start date must not be after the end date.",
+    "loadingCollection": "Loading collected cash",
+    "aboutMetric": "About: {{label}}",
+    "rangeButton": "Collection period: {{period}}",
+    "rangeTitle": "Collection period",
+    "presets": "Quick periods",
+    "presetThisMonth": "This month",
+    "presetLastMonth": "Last month",
+    "presetThisYear": "This year"
+  },
+  "courseBalances": {
+    "title": "Course balances",
+    "empty": "There are no unpaid course balances right now. New balances appear here once charges come due.",
+    "error": "Course balances could not be loaded.",
+    "viewAll": "View all",
+    "viewAllLabel": "View all course balances",
+    "loading": "Loading course balances",
+    "info": "One row per student and course, largest current balance first. Due unpaid is the part of charges already due that is still unsettled."
+  },
+  "latestPayments": {
+    "title": "Latest payments",
+    "scope": "All dates",
+    "empty": "No payments have been recorded yet. Accepted payments appear here.",
+    "error": "Latest payments could not be loaded.",
+    "viewAll": "View all payments",
+    "details": "Details",
+    "loading": "Loading latest payments",
+    "info": "The five most recent payments, regardless of the collection period."
+  },
+  "row": {
+    "acceptFor": "Accept payment for {{student}}, {{course}}",
+    "detailsFor": "Details for payment {{id}}",
+    "unknownStudent": "Unknown student",
+    "pay": "Pay"
+  },
+  "debtorsFilter": {
+    "courseDebts": "Course debts: {{course}}",
+    "clear": "Clear",
+    "clearLabel": "Clear the course filter"
+  },
+  "paymentsTab": {
+    "title": "Payments",
+    "scope": "All dates",
+    "empty": "No payments have been recorded yet.",
+    "error": "Payments could not be loaded.",
+    "loading": "Loading payments",
+    "info": "Original cash received for each payment. Allocations may span several courses."
+  },
+  "debtorsTab": {
+    "empty": "There are no unpaid course balances for this view.",
+    "error": "Debtors could not be loaded."
+  }
 }
