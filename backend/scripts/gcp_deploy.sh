@@ -43,6 +43,16 @@ fi
 
 IMAGE_TAG="gcr.io/${PROJECT_ID}/${SERVICE_NAME}:latest"
 
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo "Error: DATABASE_URL is required to run migrations before deployment."
+    exit 1
+fi
+
+if ! command -v alembic &>/dev/null; then
+    echo "Error: Alembic is required to run migrations before deployment."
+    exit 1
+fi
+
 echo "Project:       ${PROJECT_ID}"
 echo "Region:        ${REGION} (GCP Free Tier region)"
 echo "Service:       ${SERVICE_NAME}"
@@ -51,14 +61,14 @@ echo "CPU:           ${CPU}"
 echo "Scaling:       ${MIN_INSTANCES} to ${MAX_INSTANCES} instances (Scale to 0 on idle)"
 echo "======================================================"
 
-echo "[1/3] Building container image via Cloud Build..."
-gcloud builds submit --tag "${IMAGE_TAG}" .
-
-echo "[2/3] Running Alembic migrations before deployment..."
-if [ -f ".env" ]; then
-    echo "Applying database schema migrations..."
-    alembic upgrade head || echo "Note: Run migrations directly against your production DB if local network does not have direct access."
+echo "[1/3] Running Alembic migrations from this network-connected runner..."
+if ! alembic upgrade head; then
+    echo "Error: Database migrations failed; deployment has been stopped."
+    exit 1
 fi
+
+echo "[2/3] Building container image via Cloud Build..."
+gcloud builds submit --tag "${IMAGE_TAG}" .
 
 echo "[3/3] Deploying service to Google Cloud Run..."
 ENV_VARS_FLAG=""

@@ -13,6 +13,21 @@ jobs:
   test:
     name: Backend Test Suite
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: testing
+      TESTING: 'true'
+      TEST_DATABASE_URL: postgresql+asyncpg://linguist_user:linguist_pass_2024@localhost:5432/imkon_test_db
+      TEST_REDIS_URL: redis://localhost:6379/15
+      DATABASE_URL: postgresql+asyncpg://linguist_user:linguist_pass_2024@localhost:5432/imkon_test_db
+      REDIS_URL: redis://localhost:6379/15
+      JWT_SECRET_KEY: test-only-jwt-secret-key-for-ci-00000000000000000000000000000000
+      JWT_REFRESH_SECRET_KEY: test-only-jwt-refresh-key-for-ci-000000000000000000000000000000
+      SMTP_HOST: smtp.invalid
+      SMTP_USER: test-only@example.invalid
+      SMTP_PASSWORD: test-only-smtp-placeholder
+      SMTP_FROM_EMAIL: test-only@example.invalid
+      TELEGRAM_BOT_TOKEN: 123456789:test_only_ci_token_0000000000000000
+      TELEGRAM_BOT_SECRET_TOKEN: test-only-telegram-webhook-secret
 
     services:
       postgres:
@@ -55,14 +70,51 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Install isolated Redis and TLS test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes redis-server openssl
+          command -v redis-server
+          command -v openssl
+
       - name: Run Pytest Suite
         run: |
           cd backend
           python -m pytest app/tests -q
 
+  migrate:
+    name: Run migrations from the network-enabled runner
+    needs: test
+    runs-on: [self-hosted, linux, migration-network]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python for Database Migration
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install backend migration dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Database Migrations Before Image Deployment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL secret is required; deployment is blocked."
+            exit 1
+          fi
+          cd backend
+          alembic upgrade head
+
   deploy:
     name: Deploy to Google Cloud Run (Always Free Tier)
-    needs: test
+    needs: [test, migrate]
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -115,23 +167,6 @@ jobs:
             ${{ env.REGION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.REPOSITORY }}/app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Set up Python for Database Migration
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Run Database Migrations (Pre-deploy)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          if [ -n "$DATABASE_URL" ]; then
-            cd backend
-            python -m pip install alembic asyncpg sqlalchemy psycopg2-binary
-            alembic upgrade head || echo "Migration warning: ensure database is reachable from CI runner or execute via Cloud Run Job."
-          else
-            echo "DATABASE_URL not set in secrets; skipping CI migration step."
-          fi
 
       - name: "Deploy to Cloud Run (Always Free: 512MB RAM, 1 vCPU, Scale to 0)"
         id: deploy
