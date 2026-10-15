@@ -211,3 +211,64 @@ describe("JournalLessonView search scope", () => {
     expect(screen.queryByText("There are no students in this course")).toBeNull();
   });
 });
+
+describe("JournalLessonView overlays", () => {
+  function renderFor(lessonDate: string) {
+    const element = (date: string) => (
+      <JournalLessonView
+        students={ROSTER}
+        visibleStudentIds={null}
+        lessonDate={date}
+        periodLabel="Month 10"
+        cellStatus={new Map()}
+        editing={{ onEntryCommand: vi.fn(), onSummaryPair: vi.fn() }}
+        searchQuery=""
+        onClearSearch={vi.fn()}
+        onAnchor={() => undefined}
+        headingRef={createRef<HTMLHeadingElement>()}
+      />
+    );
+    const view = render(element(lessonDate));
+    return { changeLesson: (date: string) => view.rerender(element(date)) };
+  }
+
+  it("keeps Tab focus inside the phone score picker in both directions", () => {
+    mount();
+    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
+    const choices = screen.getAllByRole("menuitemradio");
+    const close = screen.getByRole("button", { name: "Close" });
+    const last = choices[choices.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(last, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("does not trap Tab between controls inside the picker", () => {
+    mount();
+    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
+    const close = screen.getByRole("button", { name: "Close" });
+    close.focus();
+    const notPrevented = fireEvent.keyDown(close, { key: "Tab" });
+    expect(notPrevented).toBe(true);
+  });
+
+  it("closes an open score picker when the lesson changes so its choice cannot be saved to another date", () => {
+    const view = renderFor(LESSON);
+    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
+    expect(screen.getByRole("dialog", { name: /Score for Chiroq/ })).toBeDefined();
+    view.changeLesson("2026-10-16");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes an open comment dialog when the lesson changes", () => {
+    const view = renderFor(LESSON);
+    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Add comment for Chiroq/ }));
+    expect(screen.getByRole("dialog", { name: /Comment for Chiroq/ })).toBeDefined();
+    view.changeLesson("2026-10-16");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});

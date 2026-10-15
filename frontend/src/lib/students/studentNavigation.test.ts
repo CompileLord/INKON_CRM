@@ -76,3 +76,37 @@ describe("student profile return context", () => {
     expect(parseStudentProfileTab(null)).toBeUndefined();
   });
 });
+
+describe("student profile return to a journal", () => {
+  const journalUrl = "/journals/5?period=103&lesson=2026-10-13&view=summary&student=11";
+
+  it.each(["superadmin", "mentor"])("returns %s to the exact journal context with a Back to journal label", (role) => {
+    const target = getStudentProfileReturnTarget(role, 7, { fromJournal: journalUrl }, []);
+    expect(target.to).toBe(journalUrl);
+    expect(target.labelKey).toBe("students:backToJournal");
+  });
+
+  it.each([
+    "https://evil.example/journals/5",
+    "//evil.example/journals/5",
+    "/journals/5/../../admin",
+    "/journals/abc",
+    "/journals/0",
+    "/courses/5",
+    "/journals/5?next=//evil#x",
+    "/journals/5?x=\\evil",
+    "journals/5",
+    42,
+    null,
+  ])("rejects the forged journal return %j and keeps the existing fallback", (forged) => {
+    expect(getStudentProfileReturnTarget("superadmin", 1, { fromJournal: forged }, []).to).toBe("/students");
+    expect(getStudentProfileReturnTarget("mentor", 7, { fromJournal: forged }, []).to).toBe("/");
+  });
+
+  it("does not offer a journal return to a student and keeps directory and course returns unchanged", () => {
+    expect(getStudentProfileReturnTarget("student", 3, { fromJournal: journalUrl }, []).to).toBe("/");
+    expect(getStudentProfileReturnTarget("superadmin", 1, { fromDirectory: { search: "ann", page: 2 } }, []).to).toBe("/students?q=ann&page=2");
+    expect(getStudentProfileReturnTarget("mentor", 7, { from: "/courses/101" }, [{ id: 101, mentorId: 7 }]).to).toBe("/courses/101");
+  });
+});
+

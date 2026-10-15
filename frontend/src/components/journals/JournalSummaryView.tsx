@@ -42,23 +42,25 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
 }) => {
   const { t } = useTranslation("journals");
   const isDesktop: boolean = useDesktop();
-  const [editing, setEditing] = useState<JournalStudentResponse | null>(null);
+  const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
   const initiatorRef = useRef<number | null>(null);
   const scrollRef = useRef<number>(0);
   const breakdownHeadingRef = useRef<HTMLHeadingElement>(null);
   const pendingRestoreRef = useRef<boolean>(false);
-  const focusHeadingRef = useRef<boolean>(false);
+  const focusHeadingRef = useRef<boolean>(openStudentId !== null);
 
   const openedStudent: JournalStudentResponse | undefined =
     openStudentId === null ? undefined : allStudents.find((student) => student.student_id === openStudentId);
+  const editing: JournalStudentResponse | undefined =
+    editingStudentId === null ? undefined : allStudents.find((student) => student.student_id === editingStudentId);
 
   useEffect(() => {
     if (openedStudent) {
-      if (focusHeadingRef.current) {
-        focusHeadingRef.current = false;
-        breakdownHeadingRef.current?.focus({ preventScroll: true });
-      }
-      return undefined;
+      if (!focusHeadingRef.current) return undefined;
+      focusHeadingRef.current = false;
+      breakdownHeadingRef.current?.focus({ preventScroll: true });
+      const headingFrameId: number = requestAnimationFrame(() => breakdownHeadingRef.current?.focus({ preventScroll: true }));
+      return () => cancelAnimationFrame(headingFrameId);
     }
     if (!pendingRestoreRef.current) return undefined;
     pendingRestoreRef.current = false;
@@ -86,6 +88,7 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
   if (openedStudent) {
     return (
       <JournalStudentBreakdown
+        key={openedStudent.student_id}
         student={openedStudent}
         lessonDates={lessonDates}
         examMaximum={examMaximum}
@@ -104,7 +107,7 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
       <button
         type="button"
         data-summary-edit={student.student_id}
-        onClick={() => setEditing(student)}
+        onClick={() => setEditingStudentId(student.student_id)}
         aria-label={t("summary.editExamBonusFor", { name: `${student.first_name} ${student.last_name}` })}
         className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-maroon hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
       >
@@ -137,13 +140,12 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
       currentTotal={editing.summary.sum_score}
       maximumTotal={editing.summary.max_period_score}
       onApply={(values) => onApplyPair(editing.student_id, { ...values, version: (editing.summary as JournalEmbeddedSummary).version })}
-      onClose={() => setEditing(null)}
+      onClose={() => setEditingStudentId(null)}
       returnFocusSelector={`[data-summary-edit="${editing.student_id}"]`}
     />
   );
 
-  if (isDesktop) {
-    return (
+  const listing = isDesktop ? (
       <div className="relative w-full min-w-0 max-w-full overflow-x-auto rounded-2xl border border-border bg-card">
         <table aria-label={t("summary.listLabel", { period: periodLabel })} className="w-full min-w-[38rem] border-collapse text-sm">
           <thead>
@@ -193,13 +195,8 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
             })}
           </tbody>
         </table>
-        {editor}
       </div>
-    );
-  }
-
-  return (
-    <>
+  ) : (
       <ul aria-label={t("summary.listLabel", { period: periodLabel })} className="divide-y divide-border rounded-2xl border border-border bg-card">
         {students.map((student) => {
           const summary = student.summary;
@@ -232,6 +229,11 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
           );
         })}
       </ul>
+  );
+
+  return (
+    <>
+      {listing}
       {editor}
     </>
   );

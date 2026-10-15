@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check, MessageSquare, Minus, Pencil } from "lucide-react";
 import { JournalCalculationDisclosure } from "./JournalCalculationDisclosure";
@@ -33,6 +33,7 @@ export const JournalStudentBreakdown: React.FC<JournalStudentBreakdownProps> = (
   headingRef,
 }) => {
   const { t } = useTranslation("journals");
+  const location = useLocation();
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
   const summary = student.summary;
   const studentName: string = `${student.first_name} ${student.last_name}`;
@@ -64,6 +65,7 @@ export const JournalStudentBreakdown: React.FC<JournalStudentBreakdownProps> = (
         {profileHref && (
           <Link
             to={profileHref}
+            state={{ fromJournal: `${location.pathname}${location.search}` }}
             className="inline-flex min-h-11 items-center rounded-[10px] px-3 text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("breakdown.viewProfile")}

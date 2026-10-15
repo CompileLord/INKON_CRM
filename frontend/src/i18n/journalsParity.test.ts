@@ -88,8 +88,8 @@ describe("journals i18n key parity", () => {
 
   it("translates the workspace copy instead of leaving English text in ru and tg", () => {
     const sharedAcrossLocales = new Set(["help.keycap.arrows", "help.keycap.grade", "help.keycap.comment", "help.keycap.clear", "help.keycap.close"]);
-    const workspaceSections = ["workspace", "grid", "help", "summary", "period.latest", "period.upcoming", "period.past", "lesson", "picker", "comment", "search", "summary", "breakdown", "calculation", "summaryEditor"];
-    const tableKeys = ["noStudentsBody", "summaryFieldLabel", "readOnlyCellLabel", "present", "absent", "hasComment"];
+    const workspaceSections = ["workspace", "grid", "help", "summary", "period.latest", "period.upcoming", "period.past", "lesson", "picker", "comment", "search", "summary", "breakdown", "calculation", "summaryEditor", "periodSettings", "progress", "accessDenied", "accessDeniedBody", "notFound", "notFoundBody"];
+    const tableKeys = ["noStudentsBody", "readOnlyCellLabel", "present", "absent", "hasComment"];
     type JsonNode = string | { [key: string]: JsonNode };
     const readPath = (source: JsonNode, path: string): JsonNode =>
       path.split(".").reduce<JsonNode>((node, part) => (typeof node === "string" ? node : node[part]), source);
@@ -103,6 +103,7 @@ describe("journals i18n key parity", () => {
     for (const [path, english] of sections) {
       for (const [leafPath, englishText] of leavesOf(english, path)) {
         if (sharedAcrossLocales.has(leafPath)) continue;
+        if (!/[A-Za-z]/.test(englishText.replace(/\{\{[^}]+\}\}/g, ""))) continue;
         for (const [locale, source] of [["ru", ruJournals], ["tg", tgJournals]] as const) {
           const translated = readPath(source, leafPath);
           expect(translated, `${locale}.${leafPath} must exist`).toBeTruthy();

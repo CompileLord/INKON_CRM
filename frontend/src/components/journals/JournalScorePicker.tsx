@@ -54,6 +54,25 @@ interface PhoneFrameProps {
 }
 
 const PhoneFrame: React.FC<PhoneFrameProps> = ({ onClose, selectedOptionRef, children }) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  const keepTabFocusInside = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== "Tab") return;
+    const focusable: HTMLElement[] = Array.from(frameRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? []);
+    if (focusable.length === 0) return;
+    const first: HTMLElement = focusable[0];
+    const last: HTMLElement = focusable[focusable.length - 1];
+    const active: Element | null = document.activeElement;
+    const outside: boolean = !frameRef.current?.contains(active);
+    if (event.shiftKey && (active === first || outside)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || outside)) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   useEffect(() => {
     selectedOptionRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -67,6 +86,8 @@ const PhoneFrame: React.FC<PhoneFrameProps> = ({ onClose, selectedOptionRef, chi
 
   return (
     <div
+      ref={frameRef}
+      onKeyDown={keepTabFocusInside}
       className="fixed inset-0 z-70 flex items-center justify-center bg-scrim p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose("outside");

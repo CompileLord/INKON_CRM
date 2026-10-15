@@ -186,3 +186,16 @@ describe("JournalScoreCell overlays", () => {
   });
 });
 });
+
+describe("JournalScoreCell desktop score popover", () => {
+  it("closes on Tab and hands focus back to the score control so two popovers cannot be open", () => {
+    renderCell({ attendance: false, score: 0 });
+    const scoreButton = screen.getByRole("button", { name: "—" });
+    fireEvent.click(scoreButton);
+    const choice = screen.getByRole("menuitemradio", { name: "3" });
+    expect(document.activeElement?.closest('[role="menu"]')).not.toBeNull();
+    fireEvent.keyDown(choice, { key: "Tab" });
+    expect(screen.queryByRole("menuitemradio", { name: "3" })).toBeNull();
+    expect(document.activeElement).toBe(scoreButton);
+  });
+});

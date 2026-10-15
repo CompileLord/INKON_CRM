@@ -36,12 +36,24 @@ export function getStudentProfileLocationState(value: unknown): Record<string, u
   return isLocationStateRecord(value) ? value : {};
 }
 
+const JOURNAL_RETURN_PATTERN: RegExp = /^\/journals\/[1-9]\d{0,9}(\?[A-Za-z0-9=&_%.:+-]{0,300})?$/;
+
+function getSafeJournalReturn(locationState: unknown): string | null {
+  const candidate: unknown = getStudentProfileLocationState(locationState).fromJournal;
+  return typeof candidate === "string" && JOURNAL_RETURN_PATTERN.test(candidate) ? candidate : null;
+}
+
 export function getStudentProfileReturnTarget(
   role: string | null | undefined,
   userId: number | null | undefined,
   locationState: unknown,
   profileCourses: StudentAssignedCourse[] = [],
 ): StudentProfileReturnTarget {
+  if (role === "superadmin" || role === "mentor") {
+    const journalReturn: string | null = getSafeJournalReturn(locationState);
+    if (journalReturn) return { to: journalReturn, labelKey: "students:backToJournal" };
+  }
+
   if (role === "superadmin") {
     const typedState = getStudentProfileLocationState(locationState);
     const rawDirectory = typedState.fromDirectory;

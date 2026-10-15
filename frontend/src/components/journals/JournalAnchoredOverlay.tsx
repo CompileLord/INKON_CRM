@@ -69,7 +69,9 @@ export const JournalAnchoredOverlay: React.FC<JournalAnchoredOverlayProps> = ({
       if (event.key === "Escape") {
         event.stopPropagation();
         onClose("escape");
+        return;
       }
+      if (event.key === "Tab" && overlayRef.current?.contains(document.activeElement)) onClose("escape");
     };
     const handleScroll = (event: Event): void => {
       if (event.target instanceof Node && overlayRef.current?.contains(event.target)) return;

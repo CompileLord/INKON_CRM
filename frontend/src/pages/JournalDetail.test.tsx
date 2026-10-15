@@ -1585,3 +1585,119 @@ describe("Progress tab", () => {
     expect((await screen.findByTestId("progress-scope")).textContent).toBe("Тамоми курс, ҳамаи давраҳо");
   });
 });
+
+describe("Group 04 cross-surface integration", () => {
+  async function visitAugustThenSelectOctober(query: string = "", ready: () => Promise<unknown> = waitForGrid): Promise<void> {
+    renderWorkspace([`/journals/${COURSE_ID}?period=${AUGUST}${query}`]);
+    await ready();
+    fireEvent.change(periodPicker(), { target: { value: String(OCTOBER) } });
+    await waitFor(() => expect(pickerSummary()).toContain("Month 10"));
+    await ready();
+  }
+
+  async function goBackToAugust(): Promise<void> {
+    await act(async () => {
+      await router.navigate(-1);
+    });
+    await waitFor(() => expect(pickerSummary()).toContain("Month 8"));
+  }
+
+  it("sends View profile with the full journal URL so the profile can return to it", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?period=${OCTOBER}&lesson=2026-10-13&view=summary&student=11`]);
+    fireEvent.click(await screen.findByRole("link", { name: "View profile" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/students/11"));
+    expect(router.state.location.state).toEqual({
+      fromJournal: `/journals/${COURSE_ID}?period=${OCTOBER}&lesson=2026-10-13&view=summary&student=11`,
+    });
+  });
+
+  it("closes Period settings and discards its typed maximum when browser Back changes the period", async () => {
+    await visitAugustThenSelectOctober();
+    fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
+    await screen.findByRole("dialog", { name: "Period settings" });
+    fireEvent.change(screen.getByLabelText("Exam maximum"), { target: { value: "77" } });
+
+    await goBackToAugust();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
+    await screen.findByRole("dialog", { name: "Period settings" });
+    expect((screen.getByLabelText("Exam maximum") as HTMLInputElement).value).toBe("100");
+    expect(screen.getByRole("dialog", { name: "Period settings" }).textContent).toContain("Month 8");
+  });
+
+  it("closes the Summary editor and drops its draft when browser Back changes the period", async () => {
+    await visitAugustThenSelectOctober("&view=summary", () => screen.findByRole("table", { name: /Student totals/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
+    fireEvent.change(await screen.findByLabelText("Bonus"), { target: { value: "9" } });
+
+    await goBackToAugust();
+    await waitFor(() => expect(screen.queryByLabelText("Bonus")).toBeNull());
+    expect(updateSummaryMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes a phone comment dialog when browser Back changes the period and never saves its text to the other journal", async () => {
+    viewportState.setDesktop(false);
+    await visitAugustThenSelectOctober("", () => screen.findByRole("list", { name: "Students for the selected lesson" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add comment for Anvar Tester" }));
+    fireEvent.change(await screen.findByRole("textbox"), { target: { value: "typed for October" } });
+
+    await goBackToAugust();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(batchUpdateMock).not.toHaveBeenCalled();
+    viewportState.setDesktop(true);
+  });
+
+  it("keeps a dirty Summary editor draft when the viewport crosses the 1024px breakpoint", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
+    await screen.findByRole("table", { name: /Student totals/ });
+    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
+    fireEvent.change(await screen.findByLabelText("Bonus"), { target: { value: "9" } });
+
+    act(() => viewportState.setDesktop(false));
+    await screen.findByRole("list", { name: /Student totals/, hidden: true });
+    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("9");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+
+    act(() => viewportState.setDesktop(true));
+    await screen.findByRole("table", { name: /Student totals/, hidden: true });
+    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("9");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it.each([
+    [403, "You do not have access to this journal"],
+    [404, "Journal not found"],
+  ])("explains a %i course response as a denial with no Retry", async (status, title) => {
+    useAuthStore.setState({ role: "mentor" });
+    getCourseMock.mockRejectedValue(new AuthApiError(status, "denied"));
+    renderWorkspace();
+    expect(await screen.findByText(title)).toBeDefined();
+    expect(screen.queryByText("Failed to load course")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Journals" })).toBeDefined();
+  });
+
+  it("hides roster search while a breakdown is open and shows it again after Back to summary", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?view=summary&student=11`]);
+    await screen.findByRole("button", { name: "Back to summary" });
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back to summary" }));
+    expect(await screen.findByRole("searchbox", { name: "Search students in this period" })).toBeDefined();
+  });
+
+  it("offers no roster search when the course has no students", async () => {
+    getJournalMock.mockImplementation(async (journalId: number) => ({ ...buildJournal(journalId), students: [] }));
+    renderWorkspace();
+    expect(await screen.findByText("There are no students in this course")).toBeDefined();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+  });
+
+  it("moves focus to the breakdown heading when the page is restored with an open breakdown", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?view=summary&student=12`]);
+    const heading = await screen.findByRole("heading", { name: "Bahor Tester" });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+});

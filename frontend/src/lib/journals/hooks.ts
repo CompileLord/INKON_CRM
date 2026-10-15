@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { batchUpdateJournalEntries, getJournal, getMentorGradingQueue, updateJournalExamMaxScore, updateJournalStudentSummary } from "./endpoints";
+import { getJournal, getMentorGradingQueue, updateJournalExamMaxScore } from "./endpoints";
 import type {
   JournalDetailResponse,
-  JournalEntryUpdate,
   JournalExamMaxScoreUpdate,
   JournalStudentSummaryResponse,
-  JournalStudentSummaryUpdate,
 } from "./types";
 
 export function useJournal(journalId: number | undefined) {
@@ -22,33 +20,6 @@ export function useMentorGradingQueue(enabled = true) {
     queryKey: ["mentors", "me", "grading-queue"],
     queryFn: () => getMentorGradingQueue(),
     enabled,
-  });
-}
-
-export function useBatchUpdateJournalEntries(journalId: number | undefined, courseId?: number) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: JournalEntryUpdate[]) => batchUpdateJournalEntries(journalId!, payload),
-    onSuccess: () => {
-      if (courseId !== undefined) {
-        queryClient.invalidateQueries({ queryKey: ["courses", "progress-chart", courseId] });
-      }
-    },
-  });
-}
-
-export function useUpdateJournalStudentSummary(journalId: number | undefined, courseId?: number) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ studentId, payload }: { studentId: number; payload: JournalStudentSummaryUpdate }) =>
-      updateJournalStudentSummary(journalId!, studentId, payload),
-    onSuccess: () => {
-      if (courseId !== undefined) {
-        queryClient.invalidateQueries({ queryKey: ["courses", "progress-chart", courseId] });
-      }
-    },
   });
 }
 

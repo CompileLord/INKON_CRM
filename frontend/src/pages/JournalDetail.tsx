@@ -21,6 +21,7 @@ import { JournalLessonView } from "../components/journals/JournalLessonView";
 import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
 import { useDesktop } from "../components/shell/useDesktop";
 import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp";
+import { JournalRouteErrors } from "../components/journals/JournalRouteErrors";
 import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
 import { JournalConflictReview } from "../components/journals/JournalConflictReview";
 import { JournalDrainDialog } from "../components/journals/JournalDrainDialog";
@@ -64,7 +65,7 @@ function JournalDetailContent() {
   const userId = useAuthStore((state) => state.userId);
   const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [settingsJournalId, setSettingsJournalId] = useState<number | null>(null);
   const [settingsBusy, setSettingsBusy] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const isDesktop: boolean = useDesktop();
@@ -78,7 +79,7 @@ function JournalDetailContent() {
   const courseId: number | undefined = JournalWorkspaceSelection.parseCourseId(rawCourseId);
   const today: string = getSchoolCalendarDate();
 
-  const { data: course, isLoading: courseLoading, isError: courseError, refetch: refetchCourse } = useCourse(courseId);
+  const { data: course, isLoading: courseLoading, isError: courseError, error: courseFailure, refetch: refetchCourse } = useCourse(courseId);
   const mentorQuery = useMentorProfile(course?.mentor_id);
   const { data: rosterCount } = useCourseEnrollmentsCount(courseId);
   const {
@@ -91,6 +92,8 @@ function JournalDetailContent() {
   const route = useJournalWorkspaceRoute({ periods, today });
   const selectedPeriod = route.periodResolution.period;
   const journalId: number | undefined = selectedPeriod?.id;
+  if (settingsJournalId !== null && settingsJournalId !== journalId) setSettingsJournalId(null);
+  const settingsOpen: boolean = settingsJournalId !== null && settingsJournalId === journalId;
   const { journalQuery } = route;
   const journal = journalQuery.data;
 
@@ -103,6 +106,11 @@ function JournalDetailContent() {
   const visibleStudentIds: Set<number> | null = JournalRosterFilter.visibleIds(orderedStudents, searchQuery);
   const isFiltering: boolean = visibleStudentIds !== null;
   const matchedCount: number = visibleStudentIds ? visibleStudentIds.size : orderedStudents.length;
+  const breakdownOpen: boolean =
+    route.view === "summary" &&
+    route.studentId !== null &&
+    orderedStudents.some((student) => student.student_id === route.studentId);
+  const rosterSearchVisible: boolean = orderedStudents.length > 0 && !breakdownOpen;
   const selectedLessonForAnchor: string | undefined = route.lessonResolution.lesson;
 
   useEffect(() => {
@@ -152,6 +160,20 @@ function JournalDetailContent() {
       <div className="flex flex-col gap-4">
         {backLink}
         <JournalContextSkeleton />
+      </div>
+    );
+  }
+
+  const courseDenial = courseError ? JournalRouteErrors.denialOf(courseFailure) : null;
+  if (courseDenial) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalPanelMessage
+          tone="empty"
+          title={courseDenial === "forbidden" ? t("accessDenied") : t("notFound")}
+          body={courseDenial === "forbidden" ? t("accessDeniedBody") : t("notFoundBody")}
+        />
       </div>
     );
   }
@@ -240,6 +262,7 @@ function JournalDetailContent() {
     } else if (route.view === "summary") {
       body = (
         <JournalSummaryView
+          key={journalId}
           students={visibleStudentIds ? orderedStudents.filter((student) => visibleStudentIds.has(student.student_id)) : orderedStudents}
           allStudents={orderedStudents}
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
@@ -351,7 +374,7 @@ function JournalDetailContent() {
                 type="button"
                 variant="secondary"
                 data-period-settings=""
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => setSettingsJournalId(journalId ?? null)}
                 className="w-full lg:w-auto"
               >
                 <Settings className="h-4 w-4" aria-hidden="true" />
@@ -409,13 +432,15 @@ function JournalDetailContent() {
                       onSelect={route.selectLesson}
                     />
                   )}
-                  <JournalRosterSearch
-                    query={searchQuery}
-                    onChange={setSearchQuery}
-                    matched={matchedCount}
-                    total={orderedStudents.length}
-                    filtering={isFiltering}
-                  />
+                  {rosterSearchVisible && (
+                    <JournalRosterSearch
+                      query={searchQuery}
+                      onChange={setSearchQuery}
+                      matched={matchedCount}
+                      total={orderedStudents.length}
+                      filtering={isFiltering}
+                    />
+                  )}
                   {editing && route.view === "grid" && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
                   <div className="min-w-[14rem]">
                     <JournalSaveStatus
@@ -450,13 +475,15 @@ function JournalDetailContent() {
                     />
                   </div>
                   )}
-                  <JournalRosterSearch
-                    query={searchQuery}
-                    onChange={setSearchQuery}
-                    matched={matchedCount}
-                    total={orderedStudents.length}
-                    filtering={isFiltering}
-                  />
+                  {rosterSearchVisible && (
+                    <JournalRosterSearch
+                      query={searchQuery}
+                      onChange={setSearchQuery}
+                      matched={matchedCount}
+                      total={orderedStudents.length}
+                      filtering={isFiltering}
+                    />
+                  )}
                 </>
               )}
               {renderGradebookBody()}
@@ -498,7 +525,7 @@ function JournalDetailContent() {
           }}
           onBusyChange={setSettingsBusy}
           onReview={() => setReviewOpen(true)}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => setSettingsJournalId(null)}
           returnFocusSelector="[data-period-settings]"
         />
       )}

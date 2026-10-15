@@ -57,7 +57,7 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
         <ul className="rounded-2xl border border-border bg-card" aria-label={t("lesson.listLabel")}>
           {visibleStudents.map((student) => (
             <JournalLessonRow
-              key={student.student_id}
+              key={`${lessonDate}:${student.student_id}`}
               student={student}
               lessonDate={lessonDate}
               status={cellStatus.get(`${student.student_id}:${lessonDate}`)}
