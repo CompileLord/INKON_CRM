@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.user import User
@@ -22,6 +22,8 @@ class NotificationLog(Base):
     __tablename__ = "notification_logs"
     __table_args__ = (
         UniqueConstraint("recipient", "type", "related_entity_id", "notification_date", name="uq_notification_log"),
+        Index("ix_notification_logs_user_id", "user_id"),
+        Index("ix_notification_logs_read_at", "read_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

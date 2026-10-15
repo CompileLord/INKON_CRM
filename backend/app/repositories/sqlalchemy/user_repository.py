@@ -29,6 +29,35 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def get_by_id_for_authentication(self, user_id: int) -> Optional[User]:
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(User.id == user_id)
+            .execution_options(populate_existing=True)
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_by_id_for_update(self, user_id: int) -> Optional[User]:
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(User.id == user_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_by_email_for_update(self, email: str) -> Optional[User]:
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(User.email == email, User.is_deleted.is_(False))
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
+        return result.scalars().first()
+
     async def get_guardian_binding_candidates(
         self,
         normalized_phone_values: Sequence[str],

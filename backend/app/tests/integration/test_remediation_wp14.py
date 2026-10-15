@@ -42,6 +42,7 @@ class GcloudDeployHarness:
         self.deploy_script: Path = working_directory / "gcp_deploy.sh"
         self.command_log: Path = working_directory / "gcloud-calls.log"
         self.fake_gcloud: Path = working_directory / "gcloud"
+        self.fake_alembic: Path = working_directory / "alembic"
 
     def install(self, backend_root: Path, *, include_ignore_file: bool = True) -> None:
         self.deploy_script.write_bytes((backend_root / "scripts" / "gcp_deploy.sh").read_bytes())
@@ -62,14 +63,32 @@ class GcloudDeployHarness:
             encoding="utf-8",
         )
         self.fake_gcloud.chmod(0o755)
+        self.fake_alembic.write_text(
+            "#!/bin/sh\n"
+            "printf 'alembic %s\\n' \"$*\" >> \"$WP14_GCLOUD_CALL_LOG\"\n"
+            "exit \"${WP14_ALEMBIC_EXIT:-0}\"\n",
+            encoding="utf-8",
+        )
+        self.fake_alembic.chmod(0o755)
 
-    def run(self, upload_listing: str) -> subprocess.CompletedProcess[str]:
+    def run(
+        self,
+        upload_listing: str,
+        *,
+        database_url: str | None = "postgresql+asyncpg://wp42:synthetic@127.0.0.1/wp42_harness",
+        alembic_exit_code: int = 0,
+    ) -> subprocess.CompletedProcess[str]:
         command_environment: dict[str, str] = os.environ.copy()
         command_environment.update({
             "PATH": f"{self.working_directory}:{command_environment['PATH']}",
             "WP14_GCLOUD_CALL_LOG": str(self.command_log),
             "WP14_GCLOUD_LISTING": upload_listing,
+            "WP14_ALEMBIC_EXIT": str(alembic_exit_code),
         })
+        if database_url is None:
+            command_environment.pop("DATABASE_URL", None)
+        else:
+            command_environment["DATABASE_URL"] = database_url
         return subprocess.run(
             ["bash", str(self.deploy_script)],
             cwd=self.working_directory,
@@ -205,9 +224,42 @@ def test_deployer_accepts_large_upload_listing_without_private_files(tmp_path: P
     recorded_calls: str = harness.recorded_calls()
 
     assert process.returncode == 0
+    assert "alembic upgrade head" in recorded_calls
     assert "builds submit" in recorded_calls
     assert "run deploy" in recorded_calls
     assert "services describe" in recorded_calls
+    assert recorded_calls.index("alembic upgrade head") < recorded_calls.index("builds submit")
+
+
+def test_deployer_refuses_missing_database_url_before_build_or_deploy(tmp_path: Path) -> None:
+    backend_root: Path = Path(__file__).resolve().parents[3]
+    harness: GcloudDeployHarness = GcloudDeployHarness(tmp_path)
+    harness.install(backend_root)
+
+    process = harness.run("safe/source.py", database_url=None)
+    recorded_calls: str = harness.recorded_calls()
+
+    assert process.returncode != 0
+    assert "database_url" in process.stdout.lower() + process.stderr.lower()
+    assert "alembic upgrade head" not in recorded_calls
+    assert "builds submit" not in recorded_calls
+    assert "run deploy" not in recorded_calls
+    assert "services describe" not in recorded_calls
+
+
+def test_deployer_refuses_failed_migration_before_build_or_deploy(tmp_path: Path) -> None:
+    backend_root: Path = Path(__file__).resolve().parents[3]
+    harness: GcloudDeployHarness = GcloudDeployHarness(tmp_path)
+    harness.install(backend_root)
+
+    process = harness.run("safe/source.py", alembic_exit_code=17)
+    recorded_calls: str = harness.recorded_calls()
+
+    assert process.returncode != 0
+    assert "alembic upgrade head" in recorded_calls
+    assert "builds submit" not in recorded_calls
+    assert "run deploy" not in recorded_calls
+    assert "services describe" not in recorded_calls
 
 
 def test_deployer_refuses_missing_gcloudignore_before_running_gcloud(tmp_path: Path) -> None:

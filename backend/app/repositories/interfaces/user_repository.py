@@ -8,6 +8,15 @@ class UserRepository(BaseRepository[User], Protocol):
     async def get_by_email(self, email: str) -> Optional[User]:
         ...
 
+    async def get_by_id_for_authentication(self, user_id: int) -> Optional[User]:
+        ...
+
+    async def get_by_id_for_update(self, user_id: int) -> Optional[User]:
+        ...
+
+    async def get_by_email_for_update(self, email: str) -> Optional[User]:
+        ...
+
     async def get_guardian_binding_candidates(
         self,
         normalized_phone_values: Sequence[str],

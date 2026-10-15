@@ -195,10 +195,11 @@ async def test_password_reset_issues_identity_bound_refresh_credential(
 ) -> None:
     reset_token: str = jwt.encode(
         {
-            "sub": test_student.email,
+            "sub": str(test_student.id),
             "type": "password_reset",
             "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
             "iat": int(datetime.now(timezone.utc).timestamp()),
+            "auth_version": test_student.auth_version,
         },
         settings.JWT_SECRET_KEY,
         algorithm="HS256",

@@ -6,7 +6,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from app.core.config import settings
-from app.core.security import create_access_token, create_refresh_token, hash_token, hash_password, verify_password
+from app.core.security import (
+    PasswordResetPrincipal,
+    create_access_token,
+    create_refresh_token,
+    hash_token,
+    hash_password,
+    verify_password,
+)
 from app.core.redis import redis_client
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
@@ -24,7 +31,7 @@ class AuthService:
         self.email_service = EmailService()
 
     async def login(self, email: str, password: str) -> TokenPair:
-        user = await self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -38,7 +45,12 @@ class AuthService:
             )
 
         scope = "must_set_password" if user.must_set_password else None
-        access_token = create_access_token(user.id, user.role, scope=scope)
+        access_token = create_access_token(
+            user.id,
+            user.role,
+            scope=scope,
+            auth_version=user.auth_version,
+        )
         refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
@@ -49,18 +61,22 @@ class AuthService:
 
     async def refresh(self, refresh_token: str) -> TokenPair:
         user_id = self._decode_refresh_subject(refresh_token)
+        user = await self.user_repo.get_by_id_for_update(user_id)
+        if not user or user.is_deleted:
+            raise self._invalid_refresh_token()
         consumed = await self.token_repo.consume_valid_token(
             hash_token(refresh_token), user_id, datetime.now(timezone.utc)
         )
         if not consumed:
             raise self._invalid_refresh_token()
 
-        user = await self.user_repo.get_by_id(user_id)
-        if not user or user.is_deleted:
-            raise self._invalid_refresh_token()
-
         scope = "must_set_password" if user.must_set_password else None
-        new_access_token = create_access_token(user.id, user.role, scope=scope)
+        new_access_token = create_access_token(
+            user.id,
+            user.role,
+            scope=scope,
+            auth_version=user.auth_version,
+        )
         new_refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
@@ -173,14 +189,19 @@ class AuthService:
 
         await redis_client.delete(key)
 
-        user = await self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
 
-        access_token = create_access_token(user.id, user.role, scope="must_set_password")
+        access_token = create_access_token(
+            user.id,
+            user.role,
+            scope="must_set_password",
+            auth_version=user.auth_version,
+        )
         return TokenPair(
             access_token=access_token,
             must_set_password=True
@@ -209,7 +230,7 @@ class AuthService:
                 detail="Password must be at least 8 characters and contain at least 1 digit"
             )
 
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -218,11 +239,16 @@ class AuthService:
 
         user.password_hash = hash_password(new_password)
         user.must_set_password = False
+        user.auth_version += 1
         await self.user_repo.update(user)
 
         await self.revoke_all_user_tokens(user.id)
 
-        access_token = create_access_token(user.id, user.role)
+        access_token = create_access_token(
+            user.id,
+            user.role,
+            auth_version=user.auth_version,
+        )
         refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
@@ -272,15 +298,23 @@ class AuthService:
                 detail="Invalid reset code"
             )
 
+        user = await self.user_repo.get_by_email_for_update(email)
+        if not user or user.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
         await redis_client.delete(key)
 
         now = datetime.now(timezone.utc)
         expire = now + timedelta(minutes=5)
         to_encode = {
-            "sub": email,
+            "sub": str(user.id),
             "type": "password_reset",
             "exp": int(expire.timestamp()),
-            "iat": int(now.timestamp())
+            "iat": int(now.timestamp()),
+            "auth_version": user.auth_version,
         }
         reset_token = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
         return reset_token
@@ -293,34 +327,38 @@ class AuthService:
             )
 
         try:
-            payload = jwt.decode(reset_token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
-            token_type = payload.get("type")
-            if token_type != "password_reset":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid token type"
-                )
-            email = payload.get("sub")
-        except JWTError:
+            principal: PasswordResetPrincipal = PasswordResetPrincipal.from_token(reset_token)
+        except JWTError as exception:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired reset token"
-            )
+            ) from exception
 
-        user = await self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_id_for_update(principal.subject_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        if user.auth_version != principal.auth_version:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token"
+            )
 
         user.password_hash = hash_password(new_password)
+        user.auth_version += 1
         await self.user_repo.update(user)
 
         await self.revoke_all_user_tokens(user.id)
 
         scope = "must_set_password" if user.must_set_password else None
-        access_token = create_access_token(user.id, user.role, scope=scope)
+        access_token = create_access_token(
+            user.id,
+            user.role,
+            scope=scope,
+            auth_version=user.auth_version,
+        )
         refresh_token = await self._issue_refresh_token(user)
 
         return TokenPair(
