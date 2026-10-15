@@ -89,7 +89,14 @@
     "wed": "Ср",
     "thu": "Чт",
     "fri": "Пт",
-    "sat": "Сб"
+    "sat": "Сб",
+    "monFull": "Понедельник",
+    "tueFull": "Вторник",
+    "wedFull": "Среда",
+    "thuFull": "Четверг",
+    "friFull": "Пятница",
+    "satFull": "Суббота",
+    "sunFull": "Воскресенье"
   },
   "examTypeLabel": {
     "weekly": "Еженедельный экзамен",

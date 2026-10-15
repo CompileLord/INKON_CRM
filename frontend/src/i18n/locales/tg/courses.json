@@ -89,7 +89,14 @@
     "wed": "Чор",
     "thu": "Пан",
     "fri": "Ҷум",
-    "sat": "Шан"
+    "sat": "Шан",
+    "monFull": "Душанбе",
+    "tueFull": "Сешанбе",
+    "wedFull": "Чоршанбе",
+    "thuFull": "Панҷшанбе",
+    "friFull": "Ҷумъа",
+    "satFull": "Шанбе",
+    "sunFull": "Якшанбе"
   },
   "examTypeLabel": {
     "weekly": "Имтиҳони ҳафтаина",

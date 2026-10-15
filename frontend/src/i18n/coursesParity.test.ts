@@ -58,4 +58,32 @@ describe("courses i18n key parity", () => {
     expect(ruCourses.emptyCatalogMentor).not.toBe("");
     expect(tgCourses.emptyCatalogMentor).not.toBe("");
   });
+
+  it("verifies all weekdays have short and full localized names across all locales", () => {
+    const requiredDayKeys = [
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat",
+      "sun",
+      "monFull",
+      "tueFull",
+      "wedFull",
+      "thuFull",
+      "friFull",
+      "satFull",
+      "sunFull",
+    ] as const;
+
+    for (const key of requiredDayKeys) {
+      expect(enCourses.days[key]).toBeDefined();
+      expect(ruCourses.days[key]).toBeDefined();
+      expect(tgCourses.days[key]).toBeDefined();
+      expect(enCourses.days[key].length).toBeGreaterThan(0);
+      expect(ruCourses.days[key].length).toBeGreaterThan(0);
+      expect(tgCourses.days[key].length).toBeGreaterThan(0);
+    }
+  });
 });

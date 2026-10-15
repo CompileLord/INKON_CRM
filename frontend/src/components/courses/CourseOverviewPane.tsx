@@ -71,13 +71,13 @@ export function CourseOverviewPane({
   }, [isSettled, onReady]);
 
   const dayLabels = [
-    t("days.mon"),
-    t("days.tue"),
-    t("days.wed"),
-    t("days.thu"),
-    t("days.fri"),
-    t("days.sat"),
-    t("days.sun"),
+    t("days.monFull"),
+    t("days.tueFull"),
+    t("days.wedFull"),
+    t("days.thuFull"),
+    t("days.friFull"),
+    t("days.satFull"),
+    t("days.sunFull"),
   ];
 
   return (

@@ -91,7 +91,7 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
                         aria-label={t("form.dayOfWeek")}
                         aria-invalid={Boolean(rowErrors?.day_of_week)}
                         disabled={disabled}
-                        className={`${inputClass} font-semibold w-40 min-h-11 bg-beige`}
+                        className={`${inputClass} font-semibold w-48 min-h-11 bg-beige`}
                         {...dayField}
                       >
                         {DAY_VALUES.map((val) => (

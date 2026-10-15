@@ -575,6 +575,25 @@ it("formats read-only schedule times with formatTime", () => {
   );
 
   expect(screen.getByText("09:00–11:00")).toBeTruthy();
+  expect(screen.getByText("Monday:")).toBeTruthy();
+});
+
+it("renders localized weekday names instead of raw numbers in the schedule day selector", () => {
+  renderWithClient(<CourseFormPanel open={true} onClose={vi.fn()} onSaved={vi.fn()} />);
+
+  const daySelect = document.querySelector<HTMLSelectElement>("#schedule-day-0");
+  expect(daySelect).toBeTruthy();
+
+  const options = Array.from(daySelect?.querySelectorAll("option") ?? []).map((o) => o.textContent);
+  expect(options).toEqual([
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ]);
 });
 
 it("displays translated error message on API 403 Forbidden without raw backend sentinels", async () => {

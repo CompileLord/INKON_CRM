@@ -89,7 +89,14 @@
     "wed": "Wed",
     "thu": "Thu",
     "fri": "Fri",
-    "sat": "Sat"
+    "sat": "Sat",
+    "monFull": "Monday",
+    "tueFull": "Tuesday",
+    "wedFull": "Wednesday",
+    "thuFull": "Thursday",
+    "friFull": "Friday",
+    "satFull": "Saturday",
+    "sunFull": "Sunday"
   },
   "examTypeLabel": {
     "weekly": "Weekly exam",
