@@ -16,7 +16,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 ## Authorized scope correction
 
-Authentication budgets need validated, configurable policy values in the existing Settings class and example environment. Add only the relevant positive auth-limit/window/cooldown fields; preserve existing configuration validation. The accepted test Redis wrapper lacks EVAL, so add only a typed EVAL adapter that namespaces every declared Redis key; preserve isolation and cleanup without forwarding raw keys or weakening target guards. New limiter business logic belongs in classes, with narrow FastAPI dependency wiring in the allowed auth controller. Use the ASGI client identity from configured server ingress; do not trust arbitrary forwarded headers in application code. No other file scope is broadened.
+Authentication budgets need validated, configurable policy values in the existing Settings class and example environment. Add only the relevant positive auth-limit/window/cooldown fields; preserve existing configuration validation. The accepted test Redis wrapper lacks EVAL, so add only a typed EVAL adapter that namespaces every declared Redis key; preserve isolation and cleanup without forwarding raw keys or weakening target guards. New limiter business logic belongs in classes, with narrow FastAPI dependency wiring in the allowed auth controller. Use the ASGI client identity from configured server ingress; do not trust arbitrary forwarded headers in application code. The existing WP-09 unsupported-command parameterization forbids EVAL entirely. Update only its EVAL expectation to the newly supported namespaced contract; retain every global-command rejection and foreign-key preservation assertion, and add a real Redis multi-key EVAL isolation regression. No other file scope is broadened.
 
 ## Exact files and lines
 
@@ -29,6 +29,7 @@ Authentication budgets need validated, configurable policy values in the existin
 | [backend/app/core/config.py](../../../backend/app/core/config.py) | Add only validated positive authentication budget/window/cooldown settings. |
 | [backend/.env.example](../../../backend/.env.example) | Document only the corresponding non-secret auth policy values. |
 | [backend/app/tests/conftest.py](../../../backend/app/tests/conftest.py) | Add only a typed EVAL adapter that namespaces every declared Redis key; retain every isolation guard and cleanup rule. |
+| [backend/app/tests/integration/test_remediation_wp09.py](../../../backend/app/tests/integration/test_remediation_wp09.py) | Replace only the obsolete EVAL-unsupported expectation with real multi-key EVAL isolation coverage; retain global-command and foreign-key protections. |
 | [backend/app/tests/integration/test_remediation_wp22.py](../../../backend/app/tests/integration/test_remediation_wp22.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
