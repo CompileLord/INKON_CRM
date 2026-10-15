@@ -82,9 +82,9 @@ class ConfigurationProbe:
         migration_scripts: ScriptDirectory = ScriptDirectory.from_config(alembic_configuration)
         current_heads: list[str] = migration_scripts.get_heads()
         assert len(current_heads) == 1, "offline initialization expects a linear current migration head"
-        current_head: Script | None = migration_scripts.get_revision(current_heads[0])
-        assert current_head is not None and isinstance(current_head.down_revision, str)
-        return current_head.down_revision
+        historical_revision: Script | None = migration_scripts.get_revision("c9e3f0a1b2c4")
+        assert historical_revision is not None
+        return historical_revision.revision
 
 
 class MigrationDatabaseProbe:

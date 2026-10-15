@@ -39,9 +39,14 @@ def _forbidden_setup_exception() -> HTTPException:
 async def _get_user_for_principal(
     principal: AccessTokenPrincipal,
     db: AsyncSession,
+    lock_for_setup: bool = False,
 ) -> User:
     user_repo = SQLAlchemyUserRepository(db)
-    user = await user_repo.get_by_id(principal.subject_id)
+    user = (
+        await user_repo.get_by_id_for_update(principal.subject_id)
+        if lock_for_setup
+        else await user_repo.get_by_id_for_authentication(principal.subject_id)
+    )
     if user is None:
         raise _credentials_exception()
     if user.is_deleted:
@@ -49,6 +54,8 @@ async def _get_user_for_principal(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Account deactivated"
         )
+    if user.auth_version != principal.auth_version:
+        raise _credentials_exception()
     return user
 
 
@@ -79,7 +86,7 @@ async def get_setup_user(
     principal = _decode_principal(token_auth)
     if principal.scope != "must_set_password":
         raise _forbidden_setup_exception()
-    user = await _get_user_for_principal(principal, db)
+    user = await _get_user_for_principal(principal, db, lock_for_setup=True)
     if not user.must_set_password:
         raise _forbidden_setup_exception()
     return user
