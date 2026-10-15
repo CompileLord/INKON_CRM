@@ -13,6 +13,10 @@ Make password recovery single-use and invalidate old access. One bounded impleme
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+Source inspection on 2026-10-15 found that atomic user locking belongs in the repository contract and implementation. These paths are added before implementation to keep SQL out of authentication workflows and serialize reset with login/refresh issuance. Preserve existing token rotation and guardian/directory behavior.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -23,6 +27,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/core/deps.py:14](../../../backend/app/core/deps.py) | Existing file, anchor line 14; only this WP’s stated behavior may change. |
 | [backend/app/services/auth_service.py:194](../../../backend/app/services/auth_service.py) | Existing file, anchor line 194; only this WP’s stated behavior may change. |
 | [backend/app/models/user.py:9](../../../backend/app/models/user.py) | Existing file, anchor line 9; only this WP’s stated behavior may change. |
+| [backend/app/repositories/interfaces/user_repository.py](../../../backend/app/repositories/interfaces/user_repository.py) | Add narrowly typed user-locking operations for credential workflows. |
+| [backend/app/repositories/sqlalchemy/user_repository.py](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Implement user locking and fresh epoch reads; preserve existing guardian and directory queries. |
 | [backend/alembic/versions/rwp17_auth_version.py](../../../backend/alembic/versions/rwp17_auth_version.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp17.py](../../../backend/app/tests/integration/test_remediation_wp17.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
