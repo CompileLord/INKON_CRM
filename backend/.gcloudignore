@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.git/**
+.venv
+.venv/**
+__pycache__/**
+*.py[cod]
+.pytest_cache/**
+tests/**
+storage/**
+scripts/.seed_cache/**
+**/.seed_cache/**
