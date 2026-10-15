@@ -19,7 +19,12 @@ import {
   type DebtFilters,
   type PaymentFilters,
 } from "./api";
+import { listEnrollments } from "../enrollments/endpoints";
+import { getSchoolCalendarDate } from "../../i18n/formatters";
+import { PayableCourses } from "./payableCourses";
+import { PaymentDateBounds } from "./paymentDateBounds";
 import type {
+  PaymentItem,
   AdjustmentCreatePayload,
   AllocationCreatePayload,
   DiscountCreatePayload,
@@ -139,4 +144,50 @@ export function useReopenPeriod() {
     ({ year, month, reasonCode }: { year: number; month: number; reasonCode: string }) =>
       reopenPeriod(year, month, reasonCode)
   );
+}
+
+const STATUS_LOOKUP_PAGE_SIZE: number = 100;
+
+export interface PaymentStatusLookup {
+  payment: PaymentItem;
+  isStale: boolean;
+  isRefreshing: boolean;
+  retry: () => void;
+}
+
+export function usePaymentStatus(knownPayment: PaymentItem | null): PaymentStatusLookup | null {
+  const paymentDay: string | null = knownPayment ? getSchoolCalendarDate(new Date(knownPayment.paid_at)) : null;
+  const lookup = useQuery({
+    queryKey: ["finance", "payment-status", knownPayment?.id ?? null],
+    queryFn: () =>
+      fetchPayments(1, STATUS_LOOKUP_PAGE_SIZE, {
+        studentId: (knownPayment as PaymentItem).student_id,
+        ...PaymentDateBounds.toFilters({ from: paymentDay, to: paymentDay }),
+      }),
+    enabled: knownPayment !== null,
+  });
+  if (knownPayment === null) return null;
+  const fresh: PaymentItem | undefined = lookup.data?.items.find((candidate) => candidate.id === knownPayment.id);
+  return {
+    payment: fresh ? { ...knownPayment, ...fresh } : knownPayment,
+    isStale: lookup.isError || (lookup.isSuccess && !fresh),
+    isRefreshing: lookup.isFetching,
+    retry: () => void lookup.refetch(),
+  };
+}
+
+const PAYABLE_COURSES_PAGE_SIZE: number = 100;
+
+export function usePayableCourses(studentId: number | undefined) {
+  return useQuery({
+    queryKey: ["finance", "payable-courses", studentId],
+    queryFn: async () => {
+      const [enrollments, charges] = await Promise.all([
+        listEnrollments({ student_id: studentId, page: 1, page_size: PAYABLE_COURSES_PAGE_SIZE }),
+        fetchCharges(1, PAYABLE_COURSES_PAGE_SIZE, studentId),
+      ]);
+      return PayableCourses.build(enrollments.items, charges.items);
+    },
+    enabled: studentId !== undefined,
+  });
 }

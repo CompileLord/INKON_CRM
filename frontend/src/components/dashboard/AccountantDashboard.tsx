@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PaymentModal } from "../finance/PaymentModal";
-import { PaymentCompletion, PaymentDetailModal } from "../finance/PaymentCompletion";
+import { PaymentCompletion } from "../finance/PaymentCompletion";
+import { PaymentDetailModal } from "../finance/PaymentDetailDialog";
 import { useFinanceAnalytics, usePayments } from "../../lib/finance/hooks";
+import { PaymentIdentity } from "../../lib/finance/paymentIdentity";
 import type { PaymentItem } from "../../lib/finance/types";
 import { formatExactMoney, compareMoney } from "../../lib/money";
 import { formatDate, formatDateTime, formatNumber, getSchoolMonthRange, SCHOOL_TIMEZONE } from "../../i18n/formatters";
@@ -21,7 +23,7 @@ export function AccountantDashboard() {
   const recentPayments = payments.data?.items ?? [];
   const money = (amount: string) => t("finance:moneyAmount", { amount: formatExactMoney(amount) });
   const reference = (payment: PaymentItem) => t("finance:paymentDetail.title", { id: formatNumber(payment.id, i18n.language) });
-  const student = (payment: PaymentItem) => t("finance:analytics.studentNumber", { id: formatNumber(payment.student_id, i18n.language) });
+  const student = (payment: PaymentItem) => PaymentIdentity.displayName(payment) ?? t("finance:row.unknownStudent");
   const allocationContext = (payment: PaymentItem) => {
     const courses = Array.from(new Map(payment.allocations.map(allocation => [allocation.course_id, allocation.course_title])).values());
     return courses.length ? courses.join(" · ") : t("finance:analytics.unapplied");

@@ -1,9 +1,10 @@
-import { Clock, Search, UserCheck, X } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import { Clock, Search, UserCheck } from "lucide-react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { DebtorsViewState } from "../../lib/finance/urlState";
 import type { EnrollmentStatus } from "../../lib/finance/types";
 import { InfoTooltip } from "../ui/InfoTooltip";
+import { FilterChip } from "./FilterChip";
 import { ListboxPicker, type ListboxOption } from "./ListboxPicker";
 
 const OVERDUE_THRESHOLDS: readonly number[] = [1, 7, 30, 60, 90];
@@ -15,28 +16,6 @@ interface DebtorsToolbarProps {
   courseLabel: string | null;
   onSearchChange: (value: string) => void;
   onChangeFilters: (filters: Partial<Omit<DebtorsViewState, "page">>) => void;
-}
-
-interface FilterChipProps {
-  label: string;
-  removeLabel: string;
-  onRemove: () => void;
-}
-
-function FilterChip({ label, removeLabel, onRemove }: FilterChipProps): ReactNode {
-  return (
-    <span className="inline-flex min-h-11 items-center gap-1 rounded-[10px] bg-beige pl-3 text-sm text-ink">
-      <span className="break-words tabular-nums">{label}</span>
-      <button
-        type="button"
-        aria-label={removeLabel}
-        onClick={onRemove}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
-    </span>
-  );
 }
 
 export function DebtorsToolbar({ view, search, courseLabel, onSearchChange, onChangeFilters }: DebtorsToolbarProps) {

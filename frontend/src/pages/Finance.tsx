@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { DebtorsTab } from "../components/finance/DebtorsTab";
 import { FinanceTabs } from "../components/finance/FinanceTabs";
 import { OverviewTab } from "../components/finance/OverviewTab";
-import { PaymentCompletion, PaymentDetailModal } from "../components/finance/PaymentCompletion";
+import { PaymentCompletion } from "../components/finance/PaymentCompletion";
+import { PaymentDetailModal } from "../components/finance/PaymentDetailDialog";
 import { PaymentModal } from "../components/finance/PaymentModal";
 import { PaymentsTab } from "../components/finance/PaymentsTab";
 import { useFinanceNavigation } from "../components/finance/useFinanceNavigation";
@@ -76,7 +77,13 @@ export function Finance() {
           />
         )}
         {state.tab === "payments" && (
-          <PaymentsTab view={state.payments} onPageChange={navigation.setPaymentsPage} onOpenDetails={setDetailPayment} />
+          <PaymentsTab
+            view={state.payments}
+            onPageChange={navigation.setPaymentsPage}
+            onChangeFilters={navigation.changePaymentsFilters}
+            onOpenDetails={setDetailPayment}
+            onAcceptPayment={openGlobalPayment}
+          />
         )}
       </div>
       <PaymentModal

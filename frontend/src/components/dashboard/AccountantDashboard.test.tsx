@@ -77,7 +77,7 @@ describe("Accountant dashboard contract", () => {
     expect(screen.getAllByText("This payment was voided.")).toHaveLength(2); expect(screen.getAllByText("Refunded: 12.50 TJS")).toHaveLength(2);
     await userEvent.click(screen.getAllByRole("button", { name: "View payment #123" })[0]); const dialog = await screen.findByRole("dialog"); await within(dialog).findByText("ACTUAL-123");
     expect(within(dialog).getByText("750.50 TJS")).toBeTruthy(); expect(within(dialog).getByText("This payment was voided.")).toBeTruthy(); expect(within(dialog).getByText("Refunded: 12.50 TJS")).toBeTruthy();
-    expect(within(dialog).getByText("Unapplied")).toBeTruthy(); expect(within(dialog).queryByText("First Course")).toBeNull(); expect(within(dialog).queryByRole("button", { name: "Accept Payment" })).toBeNull();
+    expect(within(dialog).getByText("No current allocations")).toBeTruthy(); expect(within(dialog).queryByText("First Course")).toBeNull(); expect(within(dialog).queryByRole("button", { name: "Accept Payment" })).toBeNull();
     await waitFor(() => expect(mock.history.post).toHaveLength(0));
   });
 });

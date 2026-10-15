@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { FinanceUrlState } from "./urlState";
 
+const EMPTY_PAYMENTS = { page: 1, courseId: null, method: null, studentId: null, studentName: null, dateFrom: null, dateTo: null };
+
 function parse(query: string) {
   return FinanceUrlState.parse(new URLSearchParams(query));
 }
@@ -11,14 +13,14 @@ describe("finance URL schema", () => {
     expect(state.tab).toBe("overview");
     expect(state.range).toBeNull();
     expect(state.debtors).toEqual({ page: 1, courseId: null, overdueDays: null, enrollmentStatus: null });
-    expect(state.payments).toEqual({ page: 1, courseId: null, method: null });
+    expect(state.payments).toEqual(EMPTY_PAYMENTS);
   });
 
   it("ignores unknown tabs, enums, non-positive ids and malformed pages", () => {
     const state = parse("tab=audit&dpage=0&dcourse=-3&doverdue=abc&dstatus=deleted&ppage=1.5&pcourse=x&pmethod=card&student_id=7&unknown=1");
     expect(state.tab).toBe("overview");
     expect(state.debtors).toEqual({ page: 1, courseId: null, overdueDays: null, enrollmentStatus: null });
-    expect(state.payments).toEqual({ page: 1, courseId: null, method: null });
+    expect(state.payments).toEqual(EMPTY_PAYMENTS);
   });
 
   it("drops inverted, incomplete and impossible ranges", () => {
@@ -66,5 +68,24 @@ describe("finance URL schema", () => {
     expect(FinanceUrlState.isWholeMonth({ from: "2026-02-01", to: "2026-02-28" })).toBe(true);
     expect(FinanceUrlState.isWholeMonth({ from: "2026-02-01", to: "2026-02-27" })).toBe(false);
     expect(FinanceUrlState.isWholeMonth({ from: "2026-02-02", to: "2026-02-28" })).toBe(false);
+  });
+
+  it("round-trips the payments student context and Dushanbe day bounds and sends inclusive datetime bounds", () => {
+    const query = "tab=payments&pstudent=7&pname=Dilnoza+Rustamova&pfrom=2026-10-01&pto=2026-10-31";
+    const state = parse(query);
+    expect(state.payments).toMatchObject({ studentId: 7, studentName: "Dilnoza Rustamova", dateFrom: "2026-10-01", dateTo: "2026-10-31" });
+    expect(Object.fromEntries(FinanceUrlState.serialize(state))).toEqual(Object.fromEntries(new URLSearchParams(query)));
+    expect(FinanceUrlState.paymentFilters(state.payments)).toEqual({
+      studentId: 7,
+      dateFrom: "2026-10-01T00:00:00+05:00",
+      dateTo: "2026-10-31T23:59:59.999999+05:00",
+    });
+  });
+
+  it("drops an inverted or impossible payment day range and a name without a valid student", () => {
+    expect(parse("pfrom=2026-10-20&pto=2026-10-01").payments).toMatchObject({ dateFrom: null, dateTo: null });
+    expect(parse("pfrom=2026-02-30").payments.dateFrom).toBeNull();
+    expect(parse("pfrom=2026-10-05").payments).toMatchObject({ dateFrom: "2026-10-05", dateTo: null });
+    expect(parse("pname=Someone&pstudent=0").payments).toMatchObject({ studentId: null, studentName: null });
   });
 });

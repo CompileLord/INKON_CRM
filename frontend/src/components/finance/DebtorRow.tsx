@@ -6,6 +6,7 @@ import { formatExactMoney } from "../../lib/money";
 import { formatNumber } from "../../i18n/formatters";
 import { DebtorDetails } from "./DebtorDetails";
 import { DebtorOverdue } from "./DebtorOverdue";
+import { QUIET_ACTION_CLASSES as quietActionClasses } from "./quietActionClasses";
 
 interface DebtorRowProps {
   debt: DebtItem;
@@ -18,8 +19,6 @@ interface DebtorRowProps {
   onAcceptPayment: (debt: DebtItem) => void;
 }
 
-const quietActionClasses: string =
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-[10px] px-3 text-sm font-medium text-maroon hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]";
 
 export function DebtorRow({ debt, rowKey, layout, showStudentNumber, canOpenProfile, isExpanded, onToggleDetails, onAcceptPayment }: DebtorRowProps) {
   const { t, i18n } = useTranslation("finance");
