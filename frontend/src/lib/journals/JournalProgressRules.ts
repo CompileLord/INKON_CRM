@@ -2,7 +2,6 @@ import type {
   CourseStaffProgressResponse,
   StaffProgressPeriod,
   StaffProgressPeriodResult,
-  StaffProgressStudent,
 } from "../courses/types";
 
 export interface StoredPeriodResult {
@@ -20,13 +19,35 @@ export interface ProgressPeriodRow {
   upcoming: boolean;
 }
 
-export interface StudentPeriodComparison {
-  periodId: number;
-  result: StoredPeriodResult | null;
+export interface ProgressChartStudent {
+  studentId: number;
+  name: string;
+  slot: number;
+  dashVariant: number;
+  results: (StoredPeriodResult | null)[];
+  latestPercentage: number | null;
+}
+
+export interface ProgressLineVertex {
+  index: number;
+  value: number;
+}
+
+export interface ChartCoordinate {
+  x: number;
+  y: number;
 }
 
 export class JournalProgressRules {
   static readonly REFERENCE_PERCENTAGE: number = 100;
+  static readonly SERIES_SLOT_COUNT: number = 8;
+  static readonly DEFAULT_VISIBLE_STUDENTS: number = 6;
+  static readonly TOGGLE_ALL_THRESHOLD: number = 6;
+  static readonly STUDENT_DASH_PATTERNS: readonly (string | undefined)[] = [undefined, "2 3", "10 3 2 3", "1 5"];
+
+  static dashPattern(variant: number): string | undefined {
+    return JournalProgressRules.STUDENT_DASH_PATTERNS[variant % JournalProgressRules.STUDENT_DASH_PATTERNS.length];
+  }
 
   static storedResult(result: StaffProgressPeriodResult | undefined): StoredPeriodResult | null {
     if (!result || result.score === null || result.max_score === null || result.percentage === null) return null;
@@ -53,21 +74,94 @@ export class JournalProgressRules {
     });
   }
 
-  static compareStudent(student: StaffProgressStudent, periods: StaffProgressPeriod[]): StudentPeriodComparison[] {
-    return periods.map((period) => ({
-      periodId: period.id,
-      result: JournalProgressRules.storedResult(student.period_results.find((candidate) => candidate.period_id === period.id)),
+  static startedRows(rows: ProgressPeriodRow[]): ProgressPeriodRow[] {
+    return rows.filter((row) => !row.upcoming);
+  }
+
+  static chartStudents(data: CourseStaffProgressResponse, startedRows: ProgressPeriodRow[]): ProgressChartStudent[] {
+    const students: Omit<ProgressChartStudent, "slot" | "dashVariant">[] = data.students.map((student) => {
+      const results: (StoredPeriodResult | null)[] = startedRows.map((row) =>
+        JournalProgressRules.storedResult(student.period_results.find((candidate) => candidate.period_id === row.period.id)),
+      );
+      const latest: StoredPeriodResult | undefined = [...results].reverse().find((result): result is StoredPeriodResult => result !== null);
+      return {
+        studentId: student.student_id,
+        name: `${student.first_name} ${student.last_name}`,
+        results,
+        latestPercentage: latest ? latest.percentage : null,
+      };
+    });
+    students.sort((first, second) => {
+      if (first.latestPercentage === null && second.latestPercentage === null) return first.name.localeCompare(second.name);
+      if (first.latestPercentage === null) return 1;
+      if (second.latestPercentage === null) return -1;
+      return second.latestPercentage - first.latestPercentage || first.name.localeCompare(second.name);
+    });
+    return students.map((student, index) => ({
+      ...student,
+      slot: index % JournalProgressRules.SERIES_SLOT_COUNT,
+      dashVariant: Math.floor(index / JournalProgressRules.SERIES_SLOT_COUNT),
     }));
   }
 
-  static barDomainMaximum(rows: ProgressPeriodRow[], comparison: StudentPeriodComparison[] | null): number {
-    const values: number[] = [JournalProgressRules.REFERENCE_PERCENTAGE];
-    rows.forEach((row) => {
-      if (!row.upcoming && row.averagePercentage !== null) values.push(row.averagePercentage);
+  static defaultVisibleIds(students: ProgressChartStudent[]): Set<number> {
+    const visible: ProgressChartStudent[] =
+      students.length > JournalProgressRules.TOGGLE_ALL_THRESHOLD
+        ? students.slice(0, JournalProgressRules.DEFAULT_VISIBLE_STUDENTS)
+        : students;
+    return new Set(visible.map((student) => student.studentId));
+  }
+
+  static domainMaximum(values: (number | null)[]): number {
+    return Math.max(JournalProgressRules.REFERENCE_PERCENTAGE, ...values.filter((value): value is number => value !== null));
+  }
+
+  static lineRuns(values: (number | null)[]): ProgressLineVertex[][] {
+    const runs: ProgressLineVertex[][] = [];
+    let current: ProgressLineVertex[] = [];
+    values.forEach((value, index) => {
+      if (value === null) {
+        if (current.length > 0) runs.push(current);
+        current = [];
+        return;
+      }
+      current.push({ index, value });
     });
-    comparison?.forEach((item) => {
-      if (item.result) values.push(item.result.percentage);
-    });
-    return Math.max(...values);
+    if (current.length > 0) runs.push(current);
+    return runs;
+  }
+
+  static monotonePath(coordinates: ChartCoordinate[]): string {
+    const count: number = coordinates.length;
+    if (count === 0) return "";
+    if (count === 1) return `M${coordinates[0].x},${coordinates[0].y}`;
+    const widths: number[] = [];
+    const slopes: number[] = [];
+    for (let index = 0; index < count - 1; index += 1) {
+      widths.push(coordinates[index + 1].x - coordinates[index].x);
+      slopes.push((coordinates[index + 1].y - coordinates[index].y) / widths[index]);
+    }
+    const tangents: number[] = new Array<number>(count).fill(0);
+    if (count === 2) {
+      tangents[0] = slopes[0];
+      tangents[1] = slopes[0];
+    } else {
+      for (let index = 1; index < count - 1; index += 1) {
+        const weighted: number = (slopes[index - 1] * widths[index] + slopes[index] * widths[index - 1]) / (widths[index - 1] + widths[index]);
+        tangents[index] =
+          (Math.sign(slopes[index - 1]) + Math.sign(slopes[index])) *
+            Math.min(Math.abs(slopes[index - 1]), Math.abs(slopes[index]), 0.5 * Math.abs(weighted)) || 0;
+      }
+      tangents[0] = (3 * slopes[0] - tangents[1]) / 2;
+      tangents[count - 1] = (3 * slopes[count - 2] - tangents[count - 2]) / 2;
+    }
+    let path: string = `M${coordinates[0].x},${coordinates[0].y}`;
+    for (let index = 0; index < count - 1; index += 1) {
+      const third: number = widths[index] / 3;
+      const from: ChartCoordinate = coordinates[index];
+      const to: ChartCoordinate = coordinates[index + 1];
+      path += `C${from.x + third},${from.y + tangents[index] * third},${to.x - third},${to.y - tangents[index + 1] * third},${to.x},${to.y}`;
+    }
+    return path;
   }
 }

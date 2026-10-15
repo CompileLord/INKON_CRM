@@ -65,6 +65,7 @@ export const JournalKeyboardHelp: React.FC = () => {
             ))}
           </dl>
           <p className="mt-3 text-xs text-muted">{t("help.scope")}</p>
+          <p className="mt-2 text-xs text-muted">{t("help.scoreRule")}</p>
         </div>
       )}
     </div>

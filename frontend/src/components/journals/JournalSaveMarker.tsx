@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { JournalMotion } from "../../lib/journals/JournalMotion";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, AlertTriangle, Check, Loader2, Pencil, type LucideIcon } from "lucide-react";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -27,8 +28,15 @@ interface JournalSaveMarkerProps {
 export const JournalSaveMarker: React.FC<JournalSaveMarkerProps> = ({ status, className = "" }) => {
   const { t } = useTranslation("journals");
   const Icon: LucideIcon = MARKER_ICONS[status];
+  const markerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    JournalMotion.run(markerRef.current, [{ opacity: 0 }, { opacity: 1 }], JournalMotion.FEEDBACK_MILLISECONDS);
+  }, [status]);
+
   return (
     <span
+      ref={markerRef}
       data-testid="save-marker"
       data-status={status}
       className={`pointer-events-none flex h-3.5 w-3.5 items-center justify-center rounded-full bg-card ${MARKER_TONES[status]} ${className}`}

@@ -24,6 +24,12 @@ describe("JournalKeyboardHelp", () => {
     expect(document.activeElement).toBe(help);
   });
 
+  it("carries the score rule that used to sit in the score picker", () => {
+    render(<JournalKeyboardHelp />);
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard help" }));
+    expect(screen.getByText("Scores 1–5 mark the student present. Marking absent resets the lesson score.")).toBeDefined();
+  });
+
   it("closes when the pointer goes elsewhere", () => {
     render(<JournalKeyboardHelp />);
     fireEvent.click(screen.getByRole("button", { name: "Keyboard help" }));

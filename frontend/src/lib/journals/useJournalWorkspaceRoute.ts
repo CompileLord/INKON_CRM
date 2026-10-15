@@ -66,7 +66,7 @@ export function useJournalWorkspaceRoute({
 
   const periodResolution: PeriodResolution = JournalWorkspaceSelection.resolvePeriod(periods ?? [], rawPeriod, today);
   const journalQuery: UseQueryResult<JournalDetailResponse> = useJournal(periodResolution.period?.id);
-  const lessonDates: string[] | undefined = journalQuery.data?.lesson_dates;
+  const lessonDates: string[] | undefined = journalQuery.isPlaceholderData ? undefined : journalQuery.data?.lesson_dates;
   const lessonResolution: LessonResolution = JournalWorkspaceSelection.resolveLesson(lessonDates ?? [], rawLesson, today);
   const tabParse = JournalWorkspaceSelection.parseTab(rawTab);
   const viewParse = JournalWorkspaceSelection.parseView(rawView);

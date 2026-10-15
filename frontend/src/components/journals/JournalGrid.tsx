@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronsRight } from "lucide-react";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
 import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
@@ -32,6 +33,10 @@ interface GridFocus {
 }
 
 const STICKY_STUDENT_COLUMN_PX = 200;
+const LESSON_COLUMN_PX = 160;
+const TOTAL_COLUMN_PX = 96;
+const PERCENTAGE_COLUMN_PX = 80;
+const SHELL_HEADER_OFFSET = "calc(3.5rem + 1px + env(safe-area-inset-top))";
 const VISIBLE_EDGE_PADDING_PX = 8;
 
 function cellKeyOf(studentId: number, lessonDate: string): string {
@@ -63,8 +68,12 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     : stableStudents;
   const [focus, setFocus] = useState<GridFocus | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
+  const headerStripRef = useRef<HTMLDivElement>(null);
+  const scrollBarRef = useRef<HTMLDivElement>(null);
   const headerRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
-  const viewport = useJournalGridViewport(regionRef);
+  const viewport = useJournalGridViewport({ body: regionRef, header: headerStripRef, bar: scrollBarRef });
+  const tableWidthPx: number =
+    STICKY_STUDENT_COLUMN_PX + lessonDates.length * LESSON_COLUMN_PX + TOTAL_COLUMN_PX + PERCENTAGE_COLUMN_PX;
 
   const defaultLesson: string | undefined =
     selectedLesson && lessonDates.includes(selectedLesson) ? selectedLesson : lessonDates[0];
@@ -129,29 +138,34 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     <div className="flex flex-col gap-3">
       <div className="flex min-h-6 items-center justify-end">
         {showScrollCue && (
-          <p className="flex items-center gap-1.5 text-sm text-muted" data-testid="journal-scroll-cue">
+          <span className="flex items-center gap-1 text-muted" data-testid="journal-scroll-cue">
             <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-            {t("grid.scrollHint")}
-          </p>
+            <InfoTooltip label={t("grid.scrollHintLabel")}>{t("grid.scrollHint")}</InfoTooltip>
+          </span>
         )}
       </div>
 
       <div className="relative">
         <div
-          ref={regionRef}
-          role="region"
-          tabIndex={0}
-          aria-label={t("grid.regionLabel", { period: periodLabel })}
-          data-testid="journal-grid-region"
-          style={{ maxHeight: viewport.maxHeightPx ?? "max(24rem, calc(100dvh - 22rem))" }}
-          className="w-full overflow-auto overscroll-x-contain rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          ref={headerStripRef}
+          data-testid="journal-grid-header"
+          style={{ top: SHELL_HEADER_OFFSET }}
+          className="sticky z-20 overflow-hidden rounded-t-2xl border border-b-0 border-border bg-beige"
         >
-          <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+          <table style={{ width: tableWidthPx, tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
+            <colgroup>
+              <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
+              {lessonDates.map((date) => (
+                <col key={date} style={{ width: LESSON_COLUMN_PX }} />
+              ))}
+              <col style={{ width: TOTAL_COLUMN_PX }} />
+              <col style={{ width: PERCENTAGE_COLUMN_PX }} />
+            </colgroup>
             <thead>
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 top-0 z-30 w-[200px] min-w-[200px] border-b border-r border-border bg-beige px-4 py-3 text-left text-sm font-semibold text-ink"
+                  className="sticky left-0 z-30 border-b border-r border-border bg-beige px-4 py-3 text-left text-sm font-semibold text-ink"
                 >
                   {t("table.students")}
                 </th>
@@ -165,7 +179,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                     }}
                     scope="col"
                     aria-current={date === selectedLesson ? "date" : undefined}
-                    className={`sticky top-0 z-20 min-w-[160px] border-b border-border p-0 text-center ${
+                    className={`border-b border-border p-0 text-center motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
                       date === selectedLesson ? "bg-info-surface text-ink" : "bg-beige text-ink"
                     }`}
                   >
@@ -180,16 +194,37 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   </th>
                 ))}
 
-                <th scope="col" className="sticky top-0 z-20 min-w-[96px] border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
                   {t("table.sum")}
                 </th>
 
-                <th scope="col" className="sticky top-0 z-20 min-w-[80px] border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                <th scope="col" className="border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
                   %
                 </th>
               </tr>
             </thead>
+          </table>
+        </div>
 
+        <div
+          ref={regionRef}
+          role="region"
+          tabIndex={0}
+          aria-label={t("grid.regionLabel", { period: periodLabel })}
+          data-testid="journal-grid-region"
+          className={`w-full overflow-x-auto overflow-y-hidden overscroll-x-contain border-x border-border bg-card [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-scrollbar]:hidden ${
+            viewport.overflows ? "" : "rounded-b-2xl border-b"
+          }`}
+        >
+          <table style={{ width: tableWidthPx, tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
+            <colgroup>
+              <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
+              {lessonDates.map((date) => (
+                <col key={date} style={{ width: LESSON_COLUMN_PX }} />
+              ))}
+              <col style={{ width: TOTAL_COLUMN_PX }} />
+              <col style={{ width: PERCENTAGE_COLUMN_PX }} />
+            </colgroup>
             <tbody>
               {students.map((student) => (
                 <JournalStudentRow
@@ -209,10 +244,19 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
             </tbody>
           </table>
         </div>
+
+        <div
+          ref={scrollBarRef}
+          data-testid="journal-grid-scrollbar"
+          aria-hidden="true"
+          className={`sticky bottom-0 z-20 h-[14px] overflow-x-scroll overflow-y-hidden rounded-b-2xl [&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-control-border [&::-webkit-scrollbar-track]:bg-strip border border-t-0 border-border bg-card ${viewport.overflows ? "" : "hidden"}`}
+        >
+          <div style={{ width: tableWidthPx, height: 1 }} />
+        </div>
         {viewport.canScrollRight && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-px right-px w-10 rounded-r-2xl bg-gradient-to-l from-card to-transparent"
+            className="pointer-events-none absolute bottom-3 right-px top-14 w-10 bg-gradient-to-l from-card to-transparent"
           />
         )}
       </div>

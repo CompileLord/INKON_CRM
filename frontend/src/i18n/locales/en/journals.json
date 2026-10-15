@@ -182,7 +182,8 @@
     "scrollHint": "Scroll sideways to see more lessons",
     "refreshFailed": "Could not refresh the journal. Showing the last loaded data.",
     "noLessonsTitle": "No lessons in this period",
-    "noLessonsBody": "Lessons appear here when the course schedule has lessons in this period. Summary is still available."
+    "noLessonsBody": "Lessons appear here when the course schedule has lessons in this period. Summary is still available.",
+    "scrollHintLabel": "About horizontal scrolling"
   },
   "help": {
     "button": "Keyboard help",
@@ -201,7 +202,8 @@
       "comment": "C",
       "clear": "Backspace",
       "close": "Esc"
-    }
+    },
+    "scoreRule": "Scores 1–5 mark the student present. Marking absent resets the lesson score."
   },
   "summary": {
     "listLabel": "Student totals, {{period}}",
@@ -233,13 +235,7 @@
     "conflictLine": "This change conflicts with newer data. Use Review in the status line."
   },
   "picker": {
-    "title": "Score for {{name}}, {{date}}",
-    "current": "Current score: {{value}}",
-    "none": "none",
-    "present": "Present",
-    "absent": "Absent",
-    "choices": "Score choices",
-    "hint": "Scores 1–5 mark the student present. Marking absent resets the lesson score."
+    "title": "Score for {{name}}, {{date}}"
   },
   "comment": {
     "title": "Comment for {{name}}, {{date}}",
@@ -325,24 +321,31 @@
     "columns": {
       "period": "Period",
       "stored": "Stored results",
-      "average": "Class average of stored totals",
-      "student": "{{name}}",
-      "total": "Total"
+      "average": "Class average of stored totals"
     },
     "storedOf": "{{stored}} of {{roster}} students",
     "unavailable": "Unavailable",
     "totalOfMax": "{{score}} of {{max}}",
     "classAverage": "Class average",
-    "legendLabel": "Bar legend",
-    "referenceMark": "100% mark",
-    "compareLabel": "Compare a student",
-    "classOnly": "None",
+    "legendLabel": "Chart series",
     "loadFailedBody": "Your gradebook and unsaved changes are not affected.",
     "refreshFailed": "Could not refresh progress. Showing the last loaded results.",
     "noPeriodsTitle": "No periods to show yet",
     "noPeriodsBody": "Results appear here once the course has journal periods.",
     "noStudentsTitle": "No students in this course",
     "noStudentsBody": "Once students are enrolled, each period shows how many have a stored result and their class average.",
-    "unavailableCount": "Unavailable: {{count}}"
+    "unavailableCount": "Unavailable: {{count}}",
+    "chart": {
+      "label": "Percentage by period",
+      "hint": "Use the left and right arrow keys to move between periods.",
+      "noValues": "No stored results",
+      "entry": "{{name}} {{value}}"
+    },
+    "infoLabel": "About these results",
+    "showAll": "Show all",
+    "hideAll": "Hide all",
+    "moreCount": "+{{count}} more",
+    "moreList": "More students",
+    "moreListLabel": "Choose students to plot"
   }
 }

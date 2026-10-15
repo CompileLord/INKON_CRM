@@ -4,6 +4,7 @@ import { Check, MessageSquare } from "lucide-react";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { JournalScorePicker } from "./JournalScorePicker";
 import { JournalCommentEditor } from "./JournalCommentEditor";
+import { JournalMotion } from "../../lib/journals/JournalMotion";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -94,10 +95,12 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
     } else if (event.key.length === 1 && event.key >= "0" && event.key <= "5") {
       event.preventDefault();
       onCommand({ kind: "score", score: parseInt(event.key, 10) });
+      JournalMotion.settle(scoreButtonRef.current);
       onNavigate?.("down");
     } else if (event.key === "Backspace" || event.key === "Delete") {
       event.preventDefault();
       onCommand({ kind: "score", score: 0 });
+      JournalMotion.settle(scoreButtonRef.current);
     } else if (event.key === " " || event.code === "Space") {
       event.preventDefault();
       onCommand({ kind: "attendance", attended: !attendance });
@@ -118,7 +121,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       data-anchor={`${studentId}:${lessonDate}`}
       onFocus={(event) => onFocus(controlOf(event.target))}
       onKeyDown={handleKeyDown}
-      className={`relative group/cell flex items-center justify-center gap-1 rounded-[10px] p-1 outline-none scroll-ml-[216px] scroll-mt-16 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
+      className={`relative group/cell flex items-center justify-center gap-1 rounded-[10px] p-1 outline-none scroll-ml-[216px] scroll-mt-36 scroll-mb-8 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
       aria-label={t("table.scoreCellLabel", { name: studentName, date: formattedDate })}
     >
       {status && <JournalSaveMarker status={status} className="absolute -top-1.5 -right-1.5" />}
@@ -178,9 +181,11 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
           studentName={studentName}
           formattedDate={formattedDate}
           score={score}
-          attended={attendance}
           anchorRef={cellRef}
-          onChoose={(chosen) => onCommand({ kind: "score", score: chosen })}
+          onChoose={(chosen) => {
+            onCommand({ kind: "score", score: chosen });
+            JournalMotion.settle(scoreButtonRef.current);
+          }}
           onClose={(reason) => {
             setPopoverOpen(false);
             if (reason !== "outside") scoreButtonRef.current?.focus();

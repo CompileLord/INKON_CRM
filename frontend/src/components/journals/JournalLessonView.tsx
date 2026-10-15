@@ -1,8 +1,10 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { JournalLessonRow } from "./JournalLessonRow";
 import { JournalPanelMessage } from "./JournalWorkspaceStates";
 import type { JournalRowEditing } from "./JournalStudentRow";
+import { useJournalSlideTransition } from "./useJournalSlideTransition";
+import { JournalMotion, type MotionDirection } from "../../lib/journals/JournalMotion";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
 
@@ -32,6 +34,14 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
   headingRef,
 }) => {
   const { t } = useTranslation("journals");
+  const [track, setTrack] = useState<{ lesson: string; direction: MotionDirection }>({ lesson: lessonDate, direction: "later" });
+  if (lessonDate !== track.lesson) setTrack({ lesson: lessonDate, direction: lessonDate < track.lesson ? "earlier" : "later" });
+  const listRef = useJournalSlideTransition<HTMLUListElement>(
+    track.lesson,
+    track.direction,
+    JournalMotion.LESSON_SLIDE_PIXELS,
+    JournalMotion.FEEDBACK_MILLISECONDS,
+  );
   const visibleStudents: JournalStudentResponse[] = visibleStudentIds
     ? students.filter((student) => visibleStudentIds.has(student.student_id))
     : students;
@@ -54,7 +64,7 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
           onRetry={onClearSearch}
         />
       ) : (
-        <ul className="rounded-2xl border border-border bg-card" aria-label={t("lesson.listLabel")}>
+        <ul ref={listRef} data-direction={track.direction} className="rounded-2xl border border-border bg-card" aria-label={t("lesson.listLabel")}>
           {visibleStudents.map((student) => (
             <JournalLessonRow
               key={`${lessonDate}:${student.student_id}`}

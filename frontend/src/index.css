@@ -59,12 +59,28 @@
   --color-input: var(--imkon-control-border);
   --color-surface: var(--imkon-beige);
   --color-surface-strong: var(--imkon-beige-dark);
+  --color-series-1: var(--imkon-series-1);
+  --color-series-2: var(--imkon-series-2);
+  --color-series-3: var(--imkon-series-3);
+  --color-series-4: var(--imkon-series-4);
+  --color-series-5: var(--imkon-series-5);
+  --color-series-6: var(--imkon-series-6);
+  --color-series-7: var(--imkon-series-7);
+  --color-series-8: var(--imkon-series-8);
 }
 
 :root {
   --imkon-cream: #f5f8fd;
   --imkon-auth-field: #eaf1fa;
   --imkon-card: #ffffff;
+  --imkon-series-1: #2a78d6;
+  --imkon-series-2: #eb6834;
+  --imkon-series-3: #1baf7a;
+  --imkon-series-4: #eda100;
+  --imkon-series-5: #e87ba4;
+  --imkon-series-6: #008300;
+  --imkon-series-7: #4a3aa7;
+  --imkon-series-8: #e34948;
   --imkon-border: #d9e3f0;
   --imkon-border-warm: #c4d3e7;
   --imkon-control-border: #7c8ea7;
@@ -106,6 +122,14 @@
   --imkon-cream: #0a1528;
   --imkon-auth-field: #192a45;
   --imkon-card: #142139;
+  --imkon-series-1: #3987e5;
+  --imkon-series-2: #d95926;
+  --imkon-series-3: #199e70;
+  --imkon-series-4: #c98500;
+  --imkon-series-5: #d55181;
+  --imkon-series-6: #008300;
+  --imkon-series-7: #9085e9;
+  --imkon-series-8: #e66767;
   --imkon-border: #31445f;
   --imkon-border-warm: #405673;
   --imkon-control-border: #748ca9;

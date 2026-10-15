@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, MessageSquare } from "lucide-react";
 import { JournalSaveMarker } from "./JournalSaveMarker";
-import { JournalScorePicker } from "./JournalScorePicker";
+import { JournalScoreChoices } from "./JournalScorePicker";
 import { JournalCommentEditor } from "./JournalCommentEditor";
+import { JournalMotion } from "../../lib/journals/JournalMotion";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -26,6 +27,17 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
     const [pickerOpen, setPickerOpen] = useState<boolean>(false);
     const [commentOpen, setCommentOpen] = useState<boolean>(false);
     const scoreButtonRef = useRef<HTMLButtonElement>(null);
+    const rowRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+      if (!pickerOpen) return undefined;
+      const collapseOnOutsidePress = (event: PointerEvent): void => {
+        if (rowRef.current && event.target instanceof Node && rowRef.current.contains(event.target)) return;
+        setPickerOpen(false);
+      };
+      document.addEventListener("pointerdown", collapseOnOutsidePress);
+      return () => document.removeEventListener("pointerdown", collapseOnOutsidePress);
+    }, [pickerOpen]);
 
     const studentName: string = `${student.first_name} ${student.last_name}`;
     const entry = student.entries.find((candidate) => candidate.lesson_date === lessonDate);
@@ -39,6 +51,7 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
 
     return (
       <li
+        ref={rowRef}
         data-lesson-row={student.student_id}
         className="scroll-mt-36 border-b border-border px-4 py-2 last:border-b-0"
       >
@@ -71,10 +84,10 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
               ref={scoreButtonRef}
               type="button"
               data-control="score"
-              aria-haspopup="dialog"
+              aria-haspopup="menu"
               aria-expanded={pickerOpen}
               onFocus={() => onAnchor(student.student_id, "score")}
-              onClick={() => setPickerOpen(true)}
+              onClick={() => setPickerOpen((previous) => !previous)}
               aria-label={t("lesson.scoreAria", { name: studentName, value: scoreText })}
               className={`${ACTION_BUTTON_CLASS} tabular-nums ${score > 0 ? "font-semibold" : "text-muted"}`}
             >
@@ -110,24 +123,30 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
             )}
           </div>
         )}
+        {pickerOpen && onCommand && (
+          <div className="mt-2" data-testid="lesson-score-choices">
+            <JournalScoreChoices
+              ariaLabel={t("picker.title", { name: studentName, date: formattedDate })}
+              score={score}
+              size="touch"
+              focusOnMount
+              onChoose={(chosen) => {
+                onCommand(student.student_id, lessonDate, { kind: "score", score: chosen });
+                JournalMotion.settle(scoreButtonRef.current);
+                setPickerOpen(false);
+                scoreButtonRef.current?.focus();
+              }}
+              onEscape={() => {
+                setPickerOpen(false);
+                scoreButtonRef.current?.focus();
+              }}
+            />
+          </div>
+        )}
         {needsAttention && (
           <p role="status" className="mt-2 text-sm font-medium text-destructive">
             {status === "conflict" ? t("lesson.conflictLine") : t("lesson.errorLine")}
           </p>
-        )}
-        {pickerOpen && onCommand && (
-          <JournalScorePicker
-            studentName={studentName}
-            formattedDate={formattedDate}
-            score={score}
-            attended={attended}
-            anchorRef={scoreButtonRef}
-            onChoose={(chosen) => onCommand(student.student_id, lessonDate, { kind: "score", score: chosen })}
-            onClose={(reason) => {
-              setPickerOpen(false);
-              if (reason !== "outside") scoreButtonRef.current?.focus();
-            }}
-          />
         )}
         {commentOpen && onCommand && (
           <JournalCommentEditor

@@ -72,7 +72,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         return (
           <td
             key={date}
-            className={`min-w-[160px] border-b border-border px-1 py-2 text-center align-middle group-hover/row:bg-row-hover ${
+            className={`min-w-[160px] border-b border-border px-1 py-2 text-center align-middle motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out group-hover/row:bg-row-hover ${
               date === selectedLesson ? "bg-info-surface" : ""
             }`}
           >

@@ -135,34 +135,37 @@ describe("JournalLessonView rows", () => {
     expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "attendance", attended: false });
   });
 
-  it("opens a bounded score picker, applies a choice, returns focus to the score control and does not advance", () => {
+  it("expands an inline row of six 44px choices under the action line with no dialog, applies a choice and returns focus", () => {
     const view = mount();
     const row = document.querySelector('[data-lesson-row="1"]') as HTMLElement;
     const scoreButton = within(row).getByRole("button", { name: /Score for Anvar Tester/ });
     fireEvent.click(scoreButton);
-    const dialog = screen.getByRole("dialog", { name: /Score for Anvar Tester/ });
-    const bound = (dialog.parentElement as HTMLElement).getAttribute("style") ?? "";
-    expect(bound).toContain("min(320px");
-    expect(bound).toContain("100vw");
-    expect(bound).toContain("32px");
-    expect(dialog.querySelector('[role="menu"]')?.className).toContain("grid-cols-3");
-    expect(screen.getAllByRole("menuitemradio")).toHaveLength(6);
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "2" }));
-    expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "score", score: 2 });
     expect(screen.queryByRole("dialog")).toBeNull();
+    const menu = within(row).getByRole("menu", { name: /Score for Anvar Tester, / });
+    const choices = within(menu).getAllByRole("menuitemradio");
+    expect(choices).toHaveLength(6);
+    choices.forEach((choice) => expect(choice.className).toContain("h-11"));
+    expect(menu.className).toContain("flex");
+    expect(row.contains(menu)).toBe(true);
+    expect(within(menu).queryByRole("button", { name: "Close" })).toBeNull();
+    expect(menu.textContent).toBe("012345");
+    fireEvent.click(within(menu).getByRole("menuitemradio", { name: "2" }));
+    expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "score", score: 2 });
+    expect(within(row).queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(scoreButton);
   });
 
-  it("changes nothing when the picker is dismissed with Escape or Close", () => {
+  it("collapses the inline choices on Escape or an outside press without changing the score", () => {
     const view = mount();
     const row = document.querySelector('[data-lesson-row="1"]') as HTMLElement;
     const scoreButton = within(row).getByRole("button", { name: /Score for Anvar Tester/ });
     fireEvent.click(scoreButton);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.keyDown(within(row).getAllByRole("menuitemradio")[4], { key: "Escape" });
+    expect(within(row).queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(scoreButton);
     fireEvent.click(scoreButton);
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.pointerDown(document.body);
+    expect(within(row).queryByRole("menu")).toBeNull();
     expect(view.onEntryCommand).not.toHaveBeenCalled();
   });
 
@@ -232,36 +235,12 @@ describe("JournalLessonView overlays", () => {
     return { changeLesson: (date: string) => view.rerender(element(date)) };
   }
 
-  it("keeps Tab focus inside the phone score picker in both directions", () => {
-    mount();
-    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
-    const choices = screen.getAllByRole("menuitemradio");
-    const close = screen.getByRole("button", { name: "Close" });
-    const last = choices[choices.length - 1];
-
-    last.focus();
-    fireEvent.keyDown(last, { key: "Tab" });
-    expect(document.activeElement).toBe(close);
-
-    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
-    expect(document.activeElement).toBe(last);
-  });
-
-  it("does not trap Tab between controls inside the picker", () => {
-    mount();
-    fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
-    const close = screen.getByRole("button", { name: "Close" });
-    close.focus();
-    const notPrevented = fireEvent.keyDown(close, { key: "Tab" });
-    expect(notPrevented).toBe(true);
-  });
-
-  it("closes an open score picker when the lesson changes so its choice cannot be saved to another date", () => {
+  it("closes an open inline score row when the lesson changes so its choice cannot be saved to another date", () => {
     const view = renderFor(LESSON);
     fireEvent.click(within(document.querySelector('[data-lesson-row="3"]') as HTMLElement).getByRole("button", { name: /Score for Chiroq/ }));
-    expect(screen.getByRole("dialog", { name: /Score for Chiroq/ })).toBeDefined();
+    expect(screen.getByRole("menu", { name: /Score for Chiroq/ })).toBeDefined();
     view.changeLesson("2026-10-16");
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("closes an open comment dialog when the lesson changes", () => {

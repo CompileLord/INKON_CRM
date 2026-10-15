@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatSchoolLessonDate, formatSchoolLessonWeekday } from "../../i18n/formatters";
 import { JournalWorkspaceSelection } from "../../lib/journals/JournalWorkspaceSelection";
+import { JournalMotion, type MotionDirection } from "../../lib/journals/JournalMotion";
+import { useJournalSlideTransition } from "./useJournalSlideTransition";
 
 interface JournalLessonNavigatorProps {
   lessonDates: string[];
@@ -21,6 +23,19 @@ export const JournalLessonNavigator: React.FC<JournalLessonNavigatorProps> = ({
   onSelect,
 }) => {
   const { t } = useTranslation("journals");
+  const [track, setTrack] = useState<{ lesson: string | undefined; direction: MotionDirection }>({ lesson: selectedLesson, direction: "later" });
+  if (selectedLesson !== track.lesson) {
+    setTrack({
+      lesson: selectedLesson,
+      direction: selectedLesson !== undefined && track.lesson !== undefined && selectedLesson < track.lesson ? "earlier" : "later",
+    });
+  }
+  const labelRef = useJournalSlideTransition<HTMLDivElement>(
+    track.lesson,
+    track.direction,
+    JournalMotion.LESSON_SLIDE_PIXELS,
+    JournalMotion.FEEDBACK_MILLISECONDS,
+  );
   const previous: string | undefined = JournalWorkspaceSelection.neighbourLesson(lessonDates, selectedLesson, -1);
   const next: string | undefined = JournalWorkspaceSelection.neighbourLesson(lessonDates, selectedLesson, 1);
 
@@ -35,7 +50,7 @@ export const JournalLessonNavigator: React.FC<JournalLessonNavigatorProps> = ({
       >
         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
       </button>
-      <div className="min-w-[10.5rem] px-1 text-center" aria-live="polite">
+      <div ref={labelRef} data-direction={track.direction} className="min-w-[10.5rem] px-1 text-center" aria-live="polite">
         {selectedLesson ? (
           <>
             <div className="text-sm font-semibold tabular-nums text-ink">

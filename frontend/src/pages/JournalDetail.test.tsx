@@ -210,12 +210,18 @@ function renderWorkspace(entries: string[] = [`/journals/${COURSE_ID}`], index: 
   );
 }
 
-function periodPicker(): HTMLSelectElement {
-  return screen.getByRole("combobox", { name: "Period" }) as HTMLSelectElement;
+function periodPicker(): HTMLElement {
+  return screen.getByRole("combobox", { name: "Period" });
 }
 
 function pickerSummary(): string {
-  return periodPicker().parentElement?.textContent ?? "";
+  return periodPicker().textContent ?? "";
+}
+
+function choosePeriod(periodId: number): void {
+  fireEvent.click(periodPicker());
+  const label: string = (PERIODS.find((period) => period.id === periodId) as JournalPeriod).period_label;
+  fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: new RegExp(`^${label}`) }));
 }
 
 function gradeCell(name: string, date: string): HTMLElement {
@@ -305,18 +311,26 @@ describe("period selection", () => {
     expect(pickerSummary()).toContain("Upcoming");
   });
 
-  it("lists every period with label, formatted range and timing tag but no fill-state badge", async () => {
+  it("opens a listbox of rows with label, muted range, timing chip and a check on the selected period, with no fill-state badge", async () => {
     renderWorkspace();
     await waitForGrid();
-    const options = within(periodPicker()).getAllByRole("option").map((option) => option.textContent);
+    fireEvent.click(periodPicker());
+    const listbox = screen.getByRole("listbox", { name: "Period" });
+    const options = within(listbox).getAllByRole("option");
     expect(options).toHaveLength(3);
-    expect(options[0]).toBe(`Month 8 · ${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")} · Past`);
-    expect(options[2]).toBe(`Month 10 · ${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")} · Current`);
-    const visible = pickerSummary();
+    expect(options[0].textContent).toContain("Month 8");
+    expect(options[0].textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
+    expect(options[0].textContent).toContain("Past");
+    expect(options[2].textContent).toContain("Current");
+    options.forEach((option) => expect(option.className).toContain("min-h-11"));
+    expect(options.map((option) => option.getAttribute("aria-selected"))).toEqual(["false", "false", "true"]);
+    expect(options[2].querySelector("svg")).not.toBeNull();
+    expect(options[0].querySelector("svg")).toBeNull();
     for (const fillState of ["Complete", "In progress", "Not started", "Unavailable"]) {
-      expect(visible).not.toContain(fillState);
-      options.forEach((option) => expect(option).not.toContain(fillState));
+      expect(listbox.textContent).not.toContain(fillState);
+      expect(pickerSummary()).not.toContain(fillState);
     }
+    expect(periodPicker().getAttribute("aria-expanded")).toBe("true");
   });
 
   it("honours a valid period query without a notice", async () => {
@@ -366,7 +380,7 @@ describe("period selection", () => {
     await waitForGrid();
     expect(pickerSummary()).toContain("Month 10");
 
-    fireEvent.change(periodPicker(), { target: { value: String(AUGUST) } });
+    choosePeriod(AUGUST);
     await waitFor(() => expect(router.state.location.search).toBe(`?period=${AUGUST}`));
     await waitFor(() => expect(pickerSummary()).toContain("Month 8"));
     expect(router.state.historyAction).toBe("PUSH");
@@ -479,7 +493,7 @@ describe("period change goes through the drain", () => {
     await waitForGrid();
     await gradeAnvarInOctober();
 
-    fireEvent.change(periodPicker(), { target: { value: String(AUGUST) } });
+    choosePeriod(AUGUST);
 
     await screen.findByText("Saving your changes before you leave…");
     expect(router.state.location.search).toBe("");
@@ -505,7 +519,7 @@ describe("period change goes through the drain", () => {
     await waitForGrid();
     await gradeAnvarInOctober();
 
-    fireEvent.change(periodPicker(), { target: { value: String(AUGUST) } });
+    choosePeriod(AUGUST);
 
     await screen.findByText("Changes could not be saved");
     expect(router.state.location.search).toBe("");
@@ -1428,14 +1442,10 @@ describe("Progress tab", () => {
     return within(table).getByRole("rowheader", { name: new RegExp(label) }).closest("tr") as HTMLElement;
   }
 
-  function fills(row: HTMLElement): number[] {
-    return within(row).getAllByTestId("progress-bar").map((bar) => Number((bar.firstElementChild as HTMLElement).getAttribute("data-fill")));
-  }
-
   it("scopes the view to the whole course with each period's range and a stored-totals note", async () => {
     const table = await openProgress();
     expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
-    expect(screen.getByText("Average of stored totals for every period of this course. Missing results show as Unavailable.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "About these results" })).toBeDefined();
     expect(periodRow(table, "Month 8").textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
     expect(getStaffProgressMock).toHaveBeenCalledWith(COURSE_ID);
   });
@@ -1445,53 +1455,16 @@ describe("Progress tab", () => {
     const august = periodRow(table, "Month 8");
     expect(august.textContent).toContain("1 of 2 students");
     expect(august.textContent).toContain("Unavailable: 1");
-    expect(within(august).getByText("75%")).toBeDefined();
+    expect(within(august).getAllByText("75%").length).toBeGreaterThan(0);
     expect(periodRow(table, "Month 9").textContent).toContain("2 of 2 students");
-  });
-
-  it("distinguishes a stored zero from a missing result", async () => {
-    const table = await openProgress();
-    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
-    const september = periodRow(table, "Month 9");
-    expect(within(september).getByText("0%")).toBeDefined();
-    expect(september.textContent).toContain("0 of 24");
-    expect(september.textContent).not.toContain("Unavailable");
-    expect(within(september).getByText("25%")).toBeDefined();
-
-    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "12" } });
-    const august = periodRow(table, "Month 8");
-    expect(within(august).getAllByText("Unavailable").length).toBeGreaterThan(0);
-    expect(fills(august)[1]).toBe(0);
-  });
-
-  it("shows values above 100 as supplied and scales bars so nothing is clipped", async () => {
-    const table = await openProgress();
-    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
-    const october = periodRow(table, "Month 10");
-    expect(within(october).getByText("102%")).toBeDefined();
-    expect(october.textContent).toContain("25 of 24.5");
-    const [classFill, studentFill] = fills(october);
-    expect(studentFill).toBe(100);
-    expect(classFill).toBeLessThan(100);
-    expect(classFill).toBeCloseTo((76 / 102) * 100, 5);
-    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "" } });
-    expect(Math.max(...fills(periodRow(table, "Month 9")))).toBeLessThanOrEqual(100);
   });
 
   it("keeps the same course-wide scope and one request when the Gradebook period changes", async () => {
     await openProgress();
-    fireEvent.change(periodPicker(), { target: { value: String(AUGUST) } });
+    choosePeriod(AUGUST);
     await waitFor(() => expect(router.state.location.search).toContain(`period=${AUGUST}`));
     expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
     expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("offers one roster-scoped comparison select with a None option and no separate search", async () => {
-    await openProgress();
-    const select = screen.getByLabelText("Compare a student") as HTMLSelectElement;
-    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(["None", "Anvar Tester", "Bahor Tester"]);
-    expect(screen.queryByLabelText("Search students in this course")).toBeNull();
-    expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
   it("labels periods that start after school-calendar today Upcoming and Not started, by date only", async () => {
@@ -1513,15 +1486,6 @@ describe("Progress tab", () => {
     const later = await screen.findByRole("table", { name: "Class results by period" });
     expect(periodRow(later, "Month 11").textContent).not.toContain("Not started");
     expect(periodRow(later, "Month 11").textContent).toContain("2 of 2 students");
-  });
-
-  it("colors the student series with the primary token in both themes and the class series with the muted token", async () => {
-    const table = await openProgress();
-    fireEvent.change(screen.getByLabelText("Compare a student"), { target: { value: "11" } });
-    const bars = within(periodRow(table, "Month 10")).getAllByTestId("progress-bar");
-    expect(bars[0].firstElementChild?.className).toContain("bg-muted");
-    expect(bars[1].firstElementChild?.className).toContain("bg-maroon");
-    expect(document.querySelector("[data-testid='journal-progress']")?.innerHTML).not.toContain("dark:bg-accent");
   });
 
   it("renders no completion, grading-status or needs-grading claim and no chart", async () => {
@@ -1590,7 +1554,7 @@ describe("Group 04 cross-surface integration", () => {
   async function visitAugustThenSelectOctober(query: string = "", ready: () => Promise<unknown> = waitForGrid): Promise<void> {
     renderWorkspace([`/journals/${COURSE_ID}?period=${AUGUST}${query}`]);
     await ready();
-    fireEvent.change(periodPicker(), { target: { value: String(OCTOBER) } });
+    choosePeriod(OCTOBER);
     await waitFor(() => expect(pickerSummary()).toContain("Month 10"));
     await ready();
   }
@@ -1699,5 +1663,222 @@ describe("Group 04 cross-surface integration", () => {
     renderWorkspace([`/journals/${COURSE_ID}?view=summary&student=12`]);
     const heading = await screen.findByRole("heading", { name: "Bahor Tester" });
     await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+});
+
+describe("period listbox keyboard and focus", () => {
+  it("opens with ArrowDown, moves with the arrows, Home and End and shows the active option through aria-activedescendant", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    periodPicker().focus();
+    fireEvent.keyDown(periodPicker(), { key: "ArrowDown" });
+    const listbox = screen.getByRole("listbox");
+    expect(document.activeElement).toBe(listbox);
+    const options = within(listbox).getAllByRole("option");
+    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[2].id);
+    fireEvent.keyDown(listbox, { key: "ArrowUp" });
+    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[1].id);
+    fireEvent.keyDown(listbox, { key: "Home" });
+    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[0].id);
+    fireEvent.keyDown(listbox, { key: "End" });
+    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[2].id);
+  });
+
+  it("jumps by typeahead on the period label", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(periodPicker());
+    const listbox = screen.getByRole("listbox");
+    const options = within(listbox).getAllByRole("option");
+    fireEvent.keyDown(listbox, { key: "m" });
+    fireEvent.keyDown(listbox, { key: "o" });
+    fireEvent.keyDown(listbox, { key: "n" });
+    fireEvent.keyDown(listbox, { key: "t" });
+    fireEvent.keyDown(listbox, { key: "h" });
+    fireEvent.keyDown(listbox, { key: " " });
+    expect(options.length).toBe(3);
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+  });
+
+  it("selects with Enter through the drain: waits for the slow save, then switches", async () => {
+    const slow = createDeferred<JournalBatchUpdateResponse>();
+    batchUpdateMock.mockReturnValueOnce(slow.promise);
+    renderWorkspace();
+    await waitForGrid();
+    const cell = gradeCell("Anvar", "2026-10-13");
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "4" });
+    periodPicker().focus();
+    fireEvent.keyDown(periodPicker(), { key: "ArrowDown" });
+    const listbox = screen.getByRole("listbox");
+    fireEvent.keyDown(listbox, { key: "Home" });
+    fireEvent.keyDown(listbox, { key: "Enter" });
+    await screen.findByText("Saving your changes before you leave…");
+    expect(router.state.location.search).toBe("");
+    await act(async () => {
+      slow.resolve({ applied: [{ student_id: 11, lesson_date: "2026-10-13", attendance: true, score: 4, comment: null, version: 2 }], conflicts: [], summaries: [] });
+    });
+    await waitFor(() => expect(router.state.location.search).toBe(`?period=${AUGUST}`));
+  });
+
+  it("closes with Escape and returns focus to the trigger without changing the period", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(periodPicker());
+    const listbox = screen.getByRole("listbox");
+    fireEvent.keyDown(listbox, { key: "Home" });
+    fireEvent.keyDown(listbox, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(document.activeElement).toBe(periodPicker());
+    expect(router.state.location.search).toBe("");
+  });
+
+  it("closes on an outside press", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(periodPicker());
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+});
+
+describe("period and lesson motion", () => {
+  const animateMock = vi.fn();
+  const cancelMock = vi.fn();
+  let reducedMotion = false;
+
+  beforeEach(() => {
+    animateMock.mockReset();
+    cancelMock.mockReset();
+    animateMock.mockImplementation(() => ({ cancel: cancelMock, onfinish: null, oncancel: null }));
+    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, writable: true, value: animateMock });
+    reducedMotion = false;
+    const baseMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) =>
+        query.includes("prefers-reduced-motion")
+          ? { matches: reducedMotion, addEventListener: () => {}, removeEventListener: () => {} }
+          : baseMatchMedia(query),
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(HTMLElement.prototype, "animate");
+  });
+
+  function transitionNode(): HTMLElement {
+    return screen.getByTestId("journal-period-transition");
+  }
+
+  function slideCalls() {
+    return animateMock.mock.calls.filter(([keyframes]) => Array.isArray(keyframes) && keyframes.some((frame: Keyframe) => typeof frame.transform === "string" && frame.transform.startsWith("translateX")));
+  }
+
+  it("slides in from the right for a later period and from the left for an earlier one over 200ms with the arrival easing", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
+    await waitForGrid();
+    animateMock.mockClear();
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
+    expect(transitionNode().getAttribute("data-direction")).toBe("later");
+    const later = slideCalls().pop() as [Keyframe[], KeyframeAnimationOptions];
+    expect(later[0][0].transform).toBe("translateX(8px)");
+    expect(later[1]).toMatchObject({ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+
+    animateMock.mockClear();
+    choosePeriod(AUGUST);
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(AUGUST)));
+    expect(transitionNode().getAttribute("data-direction")).toBe("earlier");
+    const earlier = slideCalls().pop() as [Keyframe[], KeyframeAnimationOptions];
+    expect(earlier[0][0].transform).toBe("translateX(-8px)");
+  });
+
+  it("uses an opacity-only crossfade under reduced motion", async () => {
+    reducedMotion = true;
+    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
+    await waitForGrid();
+    animateMock.mockClear();
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
+    expect(slideCalls()).toHaveLength(0);
+    const fades = animateMock.mock.calls.filter(([keyframes]) => Array.isArray(keyframes) && keyframes.every((frame: Keyframe) => frame.transform === undefined));
+    expect(fades.some(([, options]) => (options as KeyframeAnimationOptions).duration === 200)).toBe(true);
+  });
+
+  it("keeps the previous content visible without a skeleton while an uncached period loads, then enters the new one", async () => {
+    const pending = createDeferred<JournalDetailResponse>();
+    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
+    await waitForGrid();
+    getJournalMock.mockImplementationOnce(() => pending.promise);
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(transitionNode().getAttribute("aria-busy")).toBe("true"));
+    expect(screen.queryByTestId("journal-grid-skeleton")).toBeNull();
+    expect(screen.getByRole("region", { name: /Gradebook grid, Month 9/ })).toBeDefined();
+    expect(transitionNode().hasAttribute("inert")).toBe(true);
+    await act(async () => {
+      pending.resolve(buildJournal(OCTOBER));
+    });
+    await waitFor(() => expect(transitionNode().getAttribute("aria-busy")).toBe("false"));
+    expect(screen.getByRole("region", { name: /Gradebook grid, Month 10/ })).toBeDefined();
+  });
+
+  it("does not flash a skeleton when returning to an already cached period", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
+    await waitForGrid();
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
+    choosePeriod(SEPTEMBER);
+    expect(screen.queryByTestId("journal-grid-skeleton")).toBeNull();
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(SEPTEMBER)));
+  });
+
+  it("ends on the last selection after two quick period changes and cancels the interrupted animation", async () => {
+    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
+    await waitForGrid();
+    choosePeriod(AUGUST);
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(router.state.location.search).toBe(`?period=${OCTOBER}`));
+    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
+    expect(transitionNode().getAttribute("aria-busy")).toBe("false");
+    expect(pickerSummary()).toContain("Month 10");
+    expect(cancelMock).toHaveBeenCalled();
+  });
+
+  it("animates the lesson label with a 6px slide over 150ms in the direction of travel", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    animateMock.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Previous lesson" }));
+    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-06"));
+    const label = screen.getByRole("group", { name: "Lesson navigation" }).querySelector("[data-direction]") as HTMLElement;
+    expect(label.getAttribute("data-direction")).toBe("earlier");
+    const call = slideCalls().find(([, options]) => (options as KeyframeAnimationOptions).duration === 150) as [Keyframe[], KeyframeAnimationOptions];
+    expect(call[0][0].transform).toBe("translateX(-6px)");
+  });
+
+  it("settles the chosen score with a 150ms scale from 0.96 and does not delay the write", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    const cell = gradeCell("Anvar", "2026-10-13");
+    animateMock.mockClear();
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "4" });
+    const settle = animateMock.mock.calls.find(([keyframes]) => Array.isArray(keyframes) && keyframes[0].transform === "scale(0.96)") as [Keyframe[], KeyframeAnimationOptions];
+    expect(settle[1]).toMatchObject({ duration: 150 });
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("animates a phone Lesson list crossfade with a 6px slide on lesson change", async () => {
+    viewportState.desktop = false;
+    renderWorkspace();
+    await screen.findByRole("list", { name: "Students for the selected lesson" });
+    animateMock.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Next lesson" }));
+    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-20"));
+    const list = screen.getByRole("list", { name: "Students for the selected lesson" });
+    expect(list.getAttribute("data-direction")).toBe("later");
+    expect(slideCalls().some(([keyframes]) => keyframes[0].transform === "translateX(6px)")).toBe(true);
   });
 });

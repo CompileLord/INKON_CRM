@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { JournalMotion } from "../../lib/journals/JournalMotion";
 
 interface JournalAnchoredOverlayProps {
   anchorRef: React.RefObject<HTMLElement | null>;
@@ -18,6 +19,7 @@ export type OverlayCloseReason = "escape" | "outside";
 interface OverlayPosition {
   top: number;
   left: number;
+  origin: string;
 }
 
 const VIEWPORT_MARGIN_PX = 8;
@@ -43,20 +45,32 @@ export const JournalAnchoredOverlay: React.FC<JournalAnchoredOverlayProps> = ({
     const anchorBounds: DOMRect = anchor.getBoundingClientRect();
     const overlayHeight: number = overlayRef.current?.offsetHeight ?? 40;
     let top: number = anchorBounds.bottom + ANCHOR_GAP_PX;
+    let placedBelow = true;
     if (top + overlayHeight > window.innerHeight - VIEWPORT_MARGIN_PX) {
       top = Math.max(VIEWPORT_MARGIN_PX, anchorBounds.top - overlayHeight - ANCHOR_GAP_PX);
+      placedBelow = false;
     }
     const centered: number = anchorBounds.left + anchorBounds.width / 2 - width / 2;
     const left: number = Math.min(
       Math.max(VIEWPORT_MARGIN_PX, centered),
       window.innerWidth - width - VIEWPORT_MARGIN_PX,
     );
-    setPosition({ top, left });
+    const originX: number = Math.round(anchorBounds.left + anchorBounds.width / 2 - left);
+    setPosition({ top, left, origin: `${originX}px ${placedBelow ? "top" : "bottom"}` });
   }, [anchorRef, width]);
 
   useEffect(() => {
     if (position) initialFocusRef?.current?.focus();
   }, [position, initialFocusRef]);
+
+  const hasPosition: boolean = position !== null;
+  const origin: string | undefined = position?.origin;
+  useLayoutEffect(() => {
+    if (!hasPosition || !origin) return undefined;
+    const node: HTMLDivElement | null = overlayRef.current;
+    JournalMotion.popIn(node, origin);
+    return () => JournalMotion.exitGhost(node);
+  }, [hasPosition, origin]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent): void => {

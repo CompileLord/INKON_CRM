@@ -36,25 +36,79 @@ describe("JournalProgressRules", () => {
     expect(JournalProgressRules.storedResult(undefined)).toBeNull();
   });
 
-  it("extends the bar domain beyond 100 and never below it", () => {
-    const rows = JournalProgressRules.buildPeriodRows(data, "2026-12-31");
-    expect(JournalProgressRules.barDomainMaximum(rows, null)).toBe(100);
-    const above = [{ periodId: 1, result: { score: 25, maxScore: 24, percentage: 104.2 } }];
-    expect(JournalProgressRules.barDomainMaximum(rows, above)).toBe(104.2);
-  });
-
   it("marks only periods starting after today as upcoming, by date alone", () => {
-    const rows = JournalProgressRules.buildPeriodRows(data, "2026-08-31");
-    expect(rows.map((row) => row.upcoming)).toEqual([false, true]);
+    expect(JournalProgressRules.buildPeriodRows(data, "2026-08-31").map((row) => row.upcoming)).toEqual([false, true]);
     expect(JournalProgressRules.buildPeriodRows(data, "2026-09-01").map((row) => row.upcoming)).toEqual([false, false]);
   });
 
-  it("keeps upcoming periods out of the bar domain", () => {
-    const upcomingData: CourseStaffProgressResponse = {
+  it("orders chart students by latest stored value, missing last, and assigns stable slots", () => {
+    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(data, "2026-12-31"));
+    const students = JournalProgressRules.chartStudents(data, rows);
+    expect(students.map((student) => student.name)).toEqual(["Bob Y", "Ann X", "Cy Z"]);
+    expect(students.map((student) => student.slot)).toEqual([0, 1, 2]);
+    expect(students[2].results).toEqual([null, null]);
+    expect(students[1].latestPercentage).toBe(0);
+  });
+
+  it("shows everyone up to six students and the top six above that", () => {
+    const many: CourseStaffProgressResponse = {
       ...data,
-      students: [{ ...data.students[0], period_results: [result(1, 0, 24, 0), result(2, 30, 24, 125)] }],
+      students: Array.from({ length: 8 }, (_, index) => ({
+        student_id: index + 1,
+        first_name: `S${index}`,
+        last_name: "T",
+        grading_provenance: "unknown" as const,
+        period_results: [result(1, index, 24, index * 10)],
+      })),
     };
-    const rows = JournalProgressRules.buildPeriodRows(upcomingData, "2026-08-31");
-    expect(JournalProgressRules.barDomainMaximum(rows, null)).toBe(100);
+    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(many, "2026-12-31"));
+    const students = JournalProgressRules.chartStudents(many, rows);
+    const visible = JournalProgressRules.defaultVisibleIds(students);
+    expect(visible.size).toBe(6);
+    expect([...visible].sort()).toEqual([3, 4, 5, 6, 7, 8]);
+    const few = JournalProgressRules.chartStudents(data, rows);
+    expect(JournalProgressRules.defaultVisibleIds(few).size).toBe(3);
+  });
+
+  it("gives each student beyond the palette a distinct dash variant so no two lines look identical", () => {
+    const wide: CourseStaffProgressResponse = {
+      ...data,
+      students: Array.from({ length: 18 }, (_, index) => ({
+        student_id: index + 1,
+        first_name: `S${index}`,
+        last_name: "T",
+        grading_provenance: "unknown" as const,
+        period_results: [result(1, index, 24, index * 5)],
+      })),
+    };
+    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(wide, "2026-12-31"));
+    const students = JournalProgressRules.chartStudents(wide, rows);
+    const looks = new Set(students.map((student) => `${student.slot}:${JournalProgressRules.dashPattern(student.dashVariant)}`));
+    expect(looks.size).toBe(18);
+    expect(students[0].dashVariant).toBe(0);
+    expect(students[17].dashVariant).toBe(2);
+  });
+
+  it("extends the domain beyond 100 and never below it", () => {
+    expect(JournalProgressRules.domainMaximum([10, null, 50])).toBe(100);
+    expect(JournalProgressRules.domainMaximum([10, 114.49, null])).toBe(114.49);
+  });
+
+  it("breaks lines at missing values", () => {
+    expect(JournalProgressRules.lineRuns([10, 20, null, 30, null, null, 40, 50]).map((run) => run.map((vertex) => vertex.index))).toEqual([[0, 1], [3], [6, 7]]);
+    expect(JournalProgressRules.lineRuns([null, null])).toEqual([]);
+  });
+
+  it("draws a monotone curve that never overshoots between real values", () => {
+    const coordinates = [{ x: 0, y: 100 }, { x: 10, y: 20 }, { x: 20, y: 20 }, { x: 30, y: 80 }];
+    const path = JournalProgressRules.monotonePath(coordinates);
+    expect(path.startsWith("M0,100C")).toBe(true);
+    const controlYs = Array.from(path.matchAll(/C([\d.-]+),([\d.-]+),([\d.-]+),([\d.-]+),([\d.-]+),([\d.-]+)/g));
+    expect(controlYs).toHaveLength(3);
+    const flat = controlYs[1];
+    expect(Number(flat[2])).toBeCloseTo(20, 5);
+    expect(Number(flat[4])).toBeCloseTo(20, 5);
+    expect(JournalProgressRules.monotonePath([{ x: 5, y: 7 }])).toBe("M5,7");
+    expect(JournalProgressRules.monotonePath([])).toBe("");
   });
 });

@@ -126,32 +126,46 @@ describe("JournalScoreCell overlays", () => {
     expect(document.activeElement).toBe(scoreButton);
   });
 
-  it("roves focus between the six choices with the arrow keys", () => {
+  it("roves focus along the single row of six choices with the arrow keys", () => {
     renderCell({ score: 3 });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     const choice = (name: string) => screen.getByRole("menuitemradio", { name });
     fireEvent.keyDown(choice("3"), { key: "ArrowRight" });
     expect(document.activeElement).toBe(choice("4"));
-    fireEvent.keyDown(choice("4"), { key: "ArrowDown" });
+    fireEvent.keyDown(choice("4"), { key: "ArrowRight" });
+    fireEvent.keyDown(choice("5"), { key: "ArrowRight" });
     expect(document.activeElement).toBe(choice("5"));
-    fireEvent.keyDown(choice("5"), { key: "ArrowDown" });
-    expect(document.activeElement).toBe(choice("5"));
-    fireEvent.keyDown(choice("5"), { key: "ArrowUp" });
-    expect(document.activeElement).toBe(choice("2"));
-    fireEvent.keyDown(choice("2"), { key: "ArrowLeft" });
-    expect(document.activeElement).toBe(choice("1"));
-    fireEvent.keyDown(choice("1"), { key: "Home" });
+    fireEvent.keyDown(choice("5"), { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(choice("4"));
+    fireEvent.keyDown(choice("4"), { key: "Home" });
     expect(document.activeElement).toBe(choice("0"));
+    fireEvent.keyDown(choice("0"), { key: "End" });
+    expect(document.activeElement).toBe(choice("5"));
   });
 
-  it("shows student, date, current score and presence context in the picker and closes with its Close button", () => {
+  it("sets a grade directly from a digit key while the picker is focused", () => {
+    const { onCommand } = renderCell({ score: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    fireEvent.keyDown(screen.getByRole("menuitemradio", { name: "3" }), { key: "1" });
+    expect(onCommand).toHaveBeenCalledWith({ kind: "score", score: 1 });
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("is a minimal popover: one row of six choices, no title, student, date, current-score line, help text or close button", () => {
     const { onCommand } = renderCell({ score: 3, attendance: true });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
-    const dialog = screen.getByRole("dialog", { name: /Score for Aziza Rahimova/ });
-    expect(dialog.textContent).toContain("Aziza Rahimova");
-    expect(dialog.textContent).toContain("Current score: 3");
-    expect(dialog.textContent).toContain("Present");
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    const menu = screen.getByRole("menu", { name: /Score for Aziza Rahimova, / });
+    expect(menu.textContent).toBe("012345");
+    const popover = menu.parentElement as HTMLElement;
+    expect(popover.textContent).toBe("012345");
+    expect(screen.queryByRole("dialog", { name: /Score for/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    expect(screen.queryByText(/Current score/)).toBeNull();
+    expect(screen.queryByText(/mark the student present/)).toBeNull();
+    screen.getAllByRole("menuitemradio").forEach((choice) => expect(choice.className).toContain("h-9"));
+    expect(screen.getByRole("menuitemradio", { name: "3" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.pointerDown(document.body);
+    fireEvent.mouseDown(document.body);
     expect(screen.queryByRole("menu")).toBeNull();
     expect(onCommand).not.toHaveBeenCalled();
   });
@@ -168,6 +182,28 @@ describe("JournalScoreCell overlays", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(onCommand).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(cell));
+  });
+
+  it("animates the popover in over 150ms and leaves a 100ms exit ghost without delaying the closing", () => {
+    const animate = vi.fn<(...animationArguments: [Keyframe[], KeyframeAnimationOptions]) => { onfinish: null; oncancel: null }>(() => ({ onfinish: null, oncancel: null }));
+    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, writable: true, value: animate });
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: !query.includes("prefers-reduced-motion"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    const { onCommand } = renderCell({ score: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    const opening = animate.mock.calls.find(([frames]) => frames[0].transform === "scale(0.96)" && frames[0].opacity === 0);
+    expect(opening?.[1]).toMatchObject({ duration: 150 });
+    fireEvent.keyDown(screen.getByRole("menuitemradio", { name: "3" }), { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(animate.mock.calls.some(([, options]) => options.duration === 100)).toBe(true);
+    expect(onCommand).not.toHaveBeenCalled();
+    Reflect.deleteProperty(HTMLElement.prototype, "animate");
+    Object.defineProperty(window, "matchMedia", { configurable: true, writable: true, value: originalMatchMedia });
+    document.querySelectorAll("[inert]").forEach((node) => node.remove());
   });
 
   it("makes the inner controls tab stops only while the cell is the focused cell", () => {

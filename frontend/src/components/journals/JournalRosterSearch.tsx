@@ -13,7 +13,7 @@ interface JournalRosterSearchProps {
 export const JournalRosterSearch: React.FC<JournalRosterSearchProps> = ({ query, onChange, matched, total, filtering }) => {
   const { t } = useTranslation("journals");
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1 lg:w-auto lg:flex-1 lg:basis-64" data-testid="journal-search-slot">
+    <div className="flex w-full min-w-0 flex-col gap-1 lg:w-auto lg:flex-1 lg:basis-40" data-testid="journal-search-slot">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
         <input

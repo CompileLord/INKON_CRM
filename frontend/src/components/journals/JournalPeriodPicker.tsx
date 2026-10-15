@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalWorkspaceSelection, type PeriodTiming } from "../../lib/journals/JournalWorkspaceSelection";
 import type { JournalPeriod } from "../../lib/courses/types";
+import { JournalMotion } from "../../lib/journals/JournalMotion";
 
 interface JournalPeriodPickerProps {
   periods: JournalPeriod[];
@@ -20,6 +21,8 @@ const TIMING_LABEL_KEYS: Record<PeriodTiming, string> = {
   upcoming: "period.upcoming",
 };
 
+const TYPEAHEAD_RESET_MILLISECONDS = 700;
+
 export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
   periods,
   selectedPeriodId,
@@ -30,50 +33,166 @@ export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
   const { t } = useTranslation("journals");
   const ordered: JournalPeriod[] = JournalWorkspaceSelection.orderPeriods(periods);
   const selected: JournalPeriod = ordered.find((period) => period.id === selectedPeriodId) ?? ordered[0];
+  const selectedIndex: number = ordered.indexOf(selected);
+  const [open, setOpen] = useState<boolean>(false);
+  const [activeIndex, setActiveIndex] = useState<number>(selectedIndex);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const typeaheadRef = useRef<{ buffer: string; timer: ReturnType<typeof setTimeout> | null }>({ buffer: "", timer: null });
+  const baseId: string = useId();
+  const optionId = useCallback((index: number): string => `${baseId}-option-${index}`, [baseId]);
 
   const rangeOf = (period: JournalPeriod): string =>
     t("period.range", {
       start: formatSchoolLessonDate(period.period_start),
       end: formatSchoolLessonDate(period.period_end),
     });
+  const timingLabelOf = (period: JournalPeriod): string =>
+    t(TIMING_LABEL_KEYS[JournalWorkspaceSelection.timingOf(period, ordered, today)]);
 
-  const timingLabelOf = (period: JournalPeriod): string => {
-    const timing: PeriodTiming = JournalWorkspaceSelection.timingOf(period, ordered, today);
-    return t(TIMING_LABEL_KEYS[timing]);
+  const openList = (): void => {
+    if (disabled) return;
+    setActiveIndex(selectedIndex);
+    setOpen(true);
   };
 
-  const selectedTiming: string = timingLabelOf(selected);
+  const closeList = useCallback((returnFocus: boolean): void => {
+    setOpen(false);
+    if (returnFocus) triggerRef.current?.focus();
+  }, []);
+
+  const choose = (index: number): void => {
+    const period: JournalPeriod = ordered[index];
+    closeList(true);
+    if (period.id !== selected.id) onSelect(period.id);
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const node: HTMLDivElement | null = listRef.current;
+    node?.focus();
+    JournalMotion.popIn(node, "top center");
+    return () => JournalMotion.exitGhost(node);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsidePress = (event: PointerEvent): void => {
+      const target: Node = event.target as Node;
+      if (listRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const activeNode: HTMLElement | null = document.getElementById(optionId(activeIndex));
+    if (typeof activeNode?.scrollIntoView === "function") activeNode.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex, optionId]);
+
+  const typeahead = (character: string): void => {
+    const state = typeaheadRef.current;
+    if (state.timer) clearTimeout(state.timer);
+    state.buffer += character.toLocaleLowerCase();
+    state.timer = setTimeout(() => {
+      state.buffer = "";
+    }, TYPEAHEAD_RESET_MILLISECONDS);
+    const matches = (period: JournalPeriod): boolean => period.period_label.toLocaleLowerCase().startsWith(state.buffer);
+    const fromCurrent: number = ordered.findIndex((period, index) => index > activeIndex && matches(period));
+    const found: number = state.buffer.length > 1 ? ordered.findIndex(matches) : fromCurrent === -1 ? ordered.findIndex(matches) : fromCurrent;
+    if (found !== -1) setActiveIndex(found);
+  };
+
+  const handleListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    const lastIndex: number = ordered.length - 1;
+    if (event.key === "ArrowDown") setActiveIndex((index) => Math.min(index + 1, lastIndex));
+    else if (event.key === "ArrowUp") setActiveIndex((index) => Math.max(index - 1, 0));
+    else if (event.key === "Home") setActiveIndex(0);
+    else if (event.key === "End") setActiveIndex(lastIndex);
+    else if (event.key === "Enter" || event.key === " ") choose(activeIndex);
+    else if (event.key === "Escape") closeList(true);
+    else if (event.key === "Tab") closeList(false);
+    else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) typeahead(event.key);
+    else return;
+    event.preventDefault();
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>): void => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      openList();
+    }
+  };
 
   return (
-    <div className="relative min-h-[56px] w-full min-w-0 rounded-[10px] border border-control-border bg-card focus-within:ring-2 focus-within:ring-ring lg:w-auto lg:min-w-[240px] lg:max-w-[420px]">
-      <div className="pointer-events-none flex min-h-[54px] items-center justify-between gap-3 px-3 py-1.5">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+    <div className="relative w-full min-w-0 lg:w-auto lg:min-w-[240px] lg:max-w-[420px]">
+      <button
+        ref={triggerRef}
+        type="button"
+        role="combobox"
+        aria-label={t("workspace.periodPickerLabel")}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? `${baseId}-list` : undefined}
+        disabled={disabled}
+        onClick={() => (open ? closeList(false) : openList())}
+        onKeyDown={handleTriggerKeyDown}
+        className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-[10px] border border-control-border bg-card px-3 py-1.5 text-left hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 motion-safe:transition-colors motion-safe:duration-150"
+      >
+        <span className="min-w-0">
+          <span className="flex flex-wrap items-center gap-2">
             <span className="break-words text-sm font-semibold text-ink">{selected.period_label}</span>
             <span className="rounded-full border border-info/30 bg-info-surface px-2 py-0.5 text-xs font-semibold text-info">
-              {selectedTiming}
+              {timingLabelOf(selected)}
             </span>
-          </div>
-          <div className="mt-0.5 text-xs tabular-nums text-muted">{rangeOf(selected)}</div>
+          </span>
+          <span className="mt-0.5 block text-xs tabular-nums text-muted">{rangeOf(selected)}</span>
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div
+          ref={listRef}
+          id={`${baseId}-list`}
+          role="listbox"
+          tabIndex={-1}
+          aria-label={t("workspace.periodPickerLabel")}
+          aria-activedescendant={optionId(activeIndex)}
+          onKeyDown={handleListKeyDown}
+          className="absolute left-0 top-full z-40 mt-1 max-h-[min(24rem,60vh)] w-full min-w-[22rem] max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-lg focus-visible:outline-none"
+        >
+          {ordered.map((period, index) => {
+            const isSelected: boolean = period.id === selected.id;
+            return (
+              <div
+                key={period.id}
+                id={optionId(index)}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => choose(index)}
+                onPointerMove={() => setActiveIndex(index)}
+                className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] px-2 py-1.5 ${
+                  index === activeIndex ? "bg-row-hover" : ""
+                }`}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-maroon">
+                  {isSelected && <Check className="h-4 w-4" aria-hidden="true" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-sm font-semibold text-ink">{period.period_label}</span>
+                  <span className="block text-xs tabular-nums text-muted">{rangeOf(period)}</span>
+                </span>
+                <span className="shrink-0 rounded-full border border-info/30 bg-info-surface px-2 py-0.5 text-xs font-semibold text-info">
+                  {timingLabelOf(period)}
+                </span>
+              </div>
+            );
+          })}
         </div>
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-      </div>
-      <select
-        aria-label={t("workspace.periodPickerLabel")}
-        value={selected.id}
-        disabled={disabled}
-        onChange={(event) => onSelect(Number(event.target.value))}
-        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
-      >
-        {ordered.map((period) => {
-          const label: string = [period.period_label, rangeOf(period), timingLabelOf(period)].join(" · ");
-          return (
-            <option key={period.id} value={period.id}>
-              {label}
-            </option>
-          );
-        })}
-      </select>
+      )}
     </div>
   );
 };

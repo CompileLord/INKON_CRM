@@ -280,16 +280,24 @@ describe("JournalGrid structure", () => {
     expect(region.getAttribute("tabindex")).toBe("0");
   });
 
-  it("pins the student column, the date header and a highest corner without pinning the right edge", () => {
+  it("has no vertical scroll region of its own, only horizontal overflow", () => {
     mountGrid();
+    const region = screen.getByTestId("journal-grid-region");
+    expect(region.className).toContain("overflow-x-auto");
+    expect(region.className).toContain("overflow-y-hidden");
+    expect(region.getAttribute("style") ?? "").not.toContain("max-height");
+  });
+
+  it("sticks the date header strip below the shell header and pins the student column inside it with a highest corner", () => {
+    mountGrid();
+    const strip = screen.getByTestId("journal-grid-header");
+    expect(strip.className).toContain("sticky");
+    expect(strip.getAttribute("style")).toContain("3.5rem");
+    expect(strip.getAttribute("style")).toContain("safe-area-inset-top");
     const corner = screen.getByRole("columnheader", { name: "Students" });
     expect(corner.className).toContain("sticky");
     expect(corner.className).toContain("left-0");
-    expect(corner.className).toContain("top-0");
     expect(corner.className).toContain("z-30");
-    const dateHeader = screen.getAllByRole("columnheader").find((header) => header.getAttribute("aria-current") === "date");
-    expect(dateHeader?.className).toContain("top-0");
-    expect(dateHeader?.className).toContain("z-20");
     const rowHeader = screen.getAllByRole("rowheader")[0];
     expect(rowHeader.className).toContain("left-0");
     expect(rowHeader.className).toContain("min-w-[200px]");
@@ -297,9 +305,36 @@ describe("JournalGrid structure", () => {
     expect(everyCellClass).not.toMatch(/right-0|right-16/);
   });
 
+  it("gives the header and body tables identical fixed column widths so they stay aligned", () => {
+    mountGrid();
+    const widths = (table: Element) => Array.from(table.querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
+    const tables = document.querySelectorAll("table");
+    expect(tables).toHaveLength(2);
+    expect(widths(tables[0])).toEqual(widths(tables[1]));
+    expect(widths(tables[0])[1]).toBe("160px");
+    expect((tables[0] as HTMLElement).style.tableLayout).toBe("fixed");
+  });
+
+  it("keeps the header strip, the body and the sticky bottom scrollbar on the same horizontal offset", () => {
+    mountGrid();
+    const body = screen.getByTestId("journal-grid-region");
+    const header = screen.getByTestId("journal-grid-header");
+    const bar = screen.getByTestId("journal-grid-scrollbar");
+    expect(bar.className).toContain("sticky");
+    expect(bar.className).toContain("bottom-0");
+    body.scrollLeft = 240;
+    fireEvent.scroll(body);
+    expect(header.scrollLeft).toBe(240);
+    expect(bar.scrollLeft).toBe(240);
+    bar.scrollLeft = 80;
+    fireEvent.scroll(bar);
+    expect(body.scrollLeft).toBe(80);
+    expect(header.scrollLeft).toBe(80);
+  });
+
   it("gives every lesson column at least 160px so three 44px controls fit", () => {
     mountGrid();
-    screen.getAllByRole("columnheader").slice(1, 4).forEach((header) => expect(header.className).toContain("min-w-[160px]"));
+    expect((document.querySelector("col:nth-child(2)") as HTMLElement).style.width).toBe("160px");
     const cell = cellOf("Anvar", DATES[0]);
     const targets = [within(cell).getByRole("checkbox").closest("label"), ...within(cell).getAllByRole("button")];
     expect(targets).toHaveLength(3);

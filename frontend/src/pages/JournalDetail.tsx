@@ -17,6 +17,7 @@ import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker"
 import { JournalWorkspaceTabs } from "../components/journals/JournalWorkspaceTabs";
 import { JournalViewSwitch } from "../components/journals/JournalViewSwitch";
 import { JournalLessonNavigator } from "../components/journals/JournalLessonNavigator";
+import { JournalPeriodTransition } from "../components/journals/JournalPeriodTransition";
 import { JournalLessonView } from "../components/journals/JournalLessonView";
 import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
 import { useDesktop } from "../components/shell/useDesktop";
@@ -102,7 +103,7 @@ function JournalDetailContent() {
   const autosave = useJournalAutosave(canEditByRole && !isArchivedForMentor ? journalId : undefined, courseId);
   const updateExamMaxScore = useUpdateJournalExamMaxScore(journalId, courseId);
 
-  const orderedStudents = useStableStudentOrder(journalId ?? 0, journal?.students ?? []);
+  const orderedStudents = useStableStudentOrder(journal?.journal_id ?? 0, journal?.students ?? []);
   const visibleStudentIds: Set<number> | null = JournalRosterFilter.visibleIds(orderedStudents, searchQuery);
   const isFiltering: boolean = visibleStudentIds !== null;
   const matchedCount: number = visibleStudentIds ? visibleStudentIds.size : orderedStudents.length;
@@ -130,7 +131,8 @@ function JournalDetailContent() {
     return () => cancelAnimationFrame(frameId);
   }, [isDesktop, selectedLessonForAnchor]);
 
-  const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden;
+  const isSwitchingPeriod: boolean = journalQuery.isPlaceholderData;
+  const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden && !isSwitchingPeriod;
   const { applyEntryCommand, editSummary } = autosave;
   const editing: JournalRowEditing | null = useMemo(
     () => (editorsMounted && !settingsBusy ? { onEntryCommand: applyEntryCommand, onSummaryPair: editSummary } : null),
@@ -209,7 +211,7 @@ function JournalDetailContent() {
     <span>{t("hub.mentorUnavailable")}</span>
   ) : null;
 
-  const periodLabel: string = selectedPeriod?.period_label ?? "";
+  const periodLabel: string = journal?.period_label ?? selectedPeriod?.period_label ?? "";
   const lessonSelection = route.lessonResolution;
   const gradebookStatusVisible: boolean = route.tab === "gradebook" || queueStatus.phase !== "idle";
 
@@ -262,7 +264,7 @@ function JournalDetailContent() {
     } else if (route.view === "summary") {
       body = (
         <JournalSummaryView
-          key={journalId}
+          key={journal.journal_id}
           students={visibleStudentIds ? orderedStudents.filter((student) => visibleStudentIds.has(student.student_id)) : orderedStudents}
           allStudents={orderedStudents}
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
@@ -295,8 +297,8 @@ function JournalDetailContent() {
     } else {
       body = (
         <JournalGrid
-          key={journalId}
-          journalId={journalId}
+          key={journal.journal_id}
+          journalId={journal.journal_id}
           periodLabel={periodLabel}
           students={orderedStudents}
           visibleStudentIds={visibleStudentIds}
@@ -486,7 +488,13 @@ function JournalDetailContent() {
                   )}
                 </>
               )}
-              {renderGradebookBody()}
+              <JournalPeriodTransition
+                displayedJournalId={journal?.journal_id}
+                displayedPeriodStart={journal?.period_start}
+                switching={isSwitchingPeriod}
+              >
+                {renderGradebookBody()}
+              </JournalPeriodTransition>
             </section>
           ) : (
             <section

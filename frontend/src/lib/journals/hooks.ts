@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getJournal, getMentorGradingQueue, updateJournalExamMaxScore } from "./endpoints";
 import type {
   JournalDetailResponse,
@@ -12,6 +12,7 @@ export function useJournal(journalId: number | undefined) {
     queryFn: () => getJournal(journalId!),
     enabled: journalId !== undefined,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 
