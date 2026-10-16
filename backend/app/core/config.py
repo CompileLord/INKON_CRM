@@ -50,6 +50,35 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    AUTH_LOGIN_RATE_LIMIT: int = Field(default=30, gt=0)
+    AUTH_LOGIN_RATE_WINDOW_SECONDS: int = Field(default=60, gt=0)
+    AUTH_LOGIN_LOCKOUT_LIMIT: int = Field(default=5, gt=0)
+    AUTH_LOGIN_LOCKOUT_WINDOW_SECONDS: int = Field(default=900, gt=0)
+    AUTH_LOGIN_AGGREGATE_LIMIT: int = Field(default=300, gt=0)
+    AUTH_LOGIN_AGGREGATE_WINDOW_SECONDS: int = Field(default=60, gt=0)
+
+    AUTH_RESEND_COOLDOWN_SECONDS: int = Field(default=60, gt=0)
+    AUTH_RESEND_ACCOUNT_LIMIT: int = Field(default=5, gt=0)
+    AUTH_RESEND_ACCOUNT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    AUTH_RESEND_CLIENT_LIMIT: int = Field(default=10, gt=0)
+    AUTH_RESEND_CLIENT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    AUTH_RESEND_AGGREGATE_LIMIT: int = Field(default=50, gt=0)
+    AUTH_RESEND_AGGREGATE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+
+    AUTH_VERIFY_RATE_LIMIT: int = Field(default=30, gt=0)
+    AUTH_VERIFY_RATE_WINDOW_SECONDS: int = Field(default=60, gt=0)
+    AUTH_VERIFY_LOCKOUT_LIMIT: int = Field(default=5, gt=0)
+    AUTH_VERIFY_LOCKOUT_WINDOW_SECONDS: int = Field(default=900, gt=0)
+    AUTH_VERIFY_AGGREGATE_LIMIT: int = Field(default=300, gt=0)
+    AUTH_VERIFY_AGGREGATE_WINDOW_SECONDS: int = Field(default=60, gt=0)
+
+    AUTH_RESET_REQUEST_LIMIT: int = Field(default=3, gt=0)
+    AUTH_RESET_REQUEST_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    AUTH_RESET_CLIENT_LIMIT: int = Field(default=10, gt=0)
+    AUTH_RESET_CLIENT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    AUTH_RESET_AGGREGATE_LIMIT: int = Field(default=100, gt=0)
+    AUTH_RESET_AGGREGATE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+
     DATABASE_URL: str
 
     REDIS_HOST: str = "localhost"

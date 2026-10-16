@@ -118,6 +118,21 @@ class RedisNamespaceClient:
     def pipeline(self, transaction: bool = True) -> RedisNamespacePipeline:
         return RedisNamespacePipeline(self._client.pipeline(transaction=transaction), self._prefix)
 
+    async def eval(
+        self,
+        script: str,
+        numkeys: int,
+        *keys_and_args: Any,
+    ) -> Any:
+        if numkeys < 0 or numkeys > len(keys_and_args):
+            raise ValueError("Invalid numkeys specified for Redis eval")
+        declared_keys: list[str] = [
+            f"{self._prefix}{str(key)}"
+            for key in keys_and_args[:numkeys]
+        ]
+        args: list[Any] = list(keys_and_args[numkeys:])
+        return await self._client.eval(script, numkeys, *(declared_keys + args))
+
 
 class RedisNamespaceCleanup:
     def __init__(self, client: Redis, prefix: str) -> None:
