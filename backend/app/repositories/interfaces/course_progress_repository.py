@@ -46,5 +46,9 @@ class CourseProgressRepositoryInterface(Protocol):
     async def get_course_access_record(self, course_id: int) -> Optional[CourseAccessRecord]:
         ...
 
-    async def get_course_progress_snapshot(self, course_id: int) -> CourseProgressSnapshot:
+    async def get_course_progress_snapshot(
+        self,
+        course_id: int,
+        always_include_student_id: Optional[int] = None
+    ) -> CourseProgressSnapshot:
         ...

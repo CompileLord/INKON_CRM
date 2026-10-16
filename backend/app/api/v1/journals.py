@@ -13,6 +13,7 @@ from app.schemas.journal import (
     JournalResponse,
     JournalBatchUpdateResponse,
     JournalExamMaxScoreUpdateResponse,
+    ClassJournalResponse,
 )
 from app.services.journal_service import JournalService
 
@@ -27,6 +28,16 @@ async def get_journal(
 ) -> dict:
     journal_service = JournalService(db)
     return await journal_service.get_journal(id, current_user)
+
+
+@router.get("/{id}/class", response_model=ClassJournalResponse)
+async def get_class_journal(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> dict:
+    journal_service = JournalService(db)
+    return await journal_service.get_class_journal(id, current_user)
 
 
 @router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK)

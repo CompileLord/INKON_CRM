@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.course import Course
@@ -33,7 +33,11 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             is_deleted=row.is_deleted
         )
 
-    async def get_course_progress_snapshot(self, course_id: int) -> CourseProgressSnapshot:
+    async def get_course_progress_snapshot(
+        self,
+        course_id: int,
+        always_include_student_id: Optional[int] = None
+    ) -> CourseProgressSnapshot:
         journals_stmt = (
             select(Journal)
             .filter(Journal.course_id == course_id)
@@ -47,7 +51,10 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             .options(joinedload(Enrollment.student))
             .filter(
                 Enrollment.course_id == course_id,
-                Enrollment.status == EnrollmentStatus.ACTIVE,
+                or_(
+                    Enrollment.status == EnrollmentStatus.ACTIVE,
+                    Enrollment.student_id == always_include_student_id
+                ),
                 Enrollment.is_deleted == False
             )
             .join(User, Enrollment.student_id == User.id)

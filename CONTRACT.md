@@ -1718,6 +1718,54 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## GET /api/v1/courses/{id}/class-progress
+
+**Summary:** Get Class Progress
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "course_id": integer,
+    "periods": [
+      {
+        "id": integer,
+        "period_label": string,
+        "period_start": string,
+        "period_end": string,
+      }
+    ],
+    "students": [
+      {
+        "student_id": integer,
+        "first_name": string,
+        "last_name": string,
+        "period_results": array[],
+        "grading_provenance?": string,
+      }
+    ],
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/courses/{id}/progress-chart
 
 **Summary:** Get Progress Chart
@@ -2060,6 +2108,58 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 - **200**: Successful Response
   ```json
   object
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/journals/{id}/class
+
+**Summary:** Get Class Journal
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "journal_id": integer,
+    "course_id": integer,
+    "period_label": string,
+    "period_start": string,
+    "period_end": string,
+    "period_type": "week" | "month",
+    "exam_max_score": integer,
+    "lesson_dates": array[string],
+    "students": [
+      {
+        "student_id": integer,
+        "first_name": string,
+        "last_name": string,
+        "color_hex": string,
+        "is_self": boolean,
+        "entries": array[],
+        "summary?": any,
+      }
+    ],
+    "my_rank": integer,
+    "class_size": integer,
+    "class_avg_percentage": number,
+  }
   ```
 - **422**: Validation Error
   ```json

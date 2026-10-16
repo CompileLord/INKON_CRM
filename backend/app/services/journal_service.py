@@ -196,7 +196,32 @@ class JournalService:
         queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
         return queue
 
-    async def get_journal(self, journal_id: int, current_user: User) -> dict:
+    async def get_class_journal(self, journal_id: int, current_user: User) -> dict:
+        if current_user.role != UserRole.STUDENT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+        payload: dict = await self.get_journal(journal_id, current_user, include_classmates=True)
+        classmates_view: List[dict] = []
+        for student_record in payload["students"]:
+            is_self: bool = student_record["student_id"] == current_user.id
+            entries_view: List[dict] = [
+                entry if is_self else {**entry, "comment": None, "has_comment": False}
+                for entry in student_record["entries"]
+            ]
+            classmates_view.append({
+                "student_id": student_record["student_id"],
+                "first_name": student_record["first_name"],
+                "last_name": student_record["last_name"],
+                "color_hex": student_record["color_hex"],
+                "is_self": is_self,
+                "entries": entries_view,
+                "summary": student_record["summary"],
+            })
+        return {**payload, "students": classmates_view}
+
+    async def get_journal(self, journal_id: int, current_user: User, include_classmates: bool = False) -> dict:
         journal = await self.db.get(Journal, journal_id)
         if not journal:
             raise HTTPException(
@@ -245,7 +270,7 @@ class JournalService:
 
         lesson_dates = get_lesson_dates(journal.period_start, journal.period_end, schedules)
 
-        if current_user.role == UserRole.STUDENT:
+        if current_user.role == UserRole.STUDENT and not include_classmates:
             students_query = select(User, Enrollment.color_hex).join(Enrollment, Enrollment.student_id == User.id).filter(
                 User.id == current_user.id,
                 Enrollment.course_id == course.id,

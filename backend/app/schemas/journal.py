@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from app.models.journal import JournalPeriodType
 
@@ -112,3 +112,54 @@ class JournalExamMaxScoreUpdateResponse(BaseModel):
     journal: JournalResponse
     summaries: list[JournalStudentSummaryResponse]
 
+
+
+class ClassJournalEntryResponse(BaseModel):
+    id: int
+    lesson_date: date
+    attendance: bool
+    score: int
+    comment: Optional[str] = None
+    has_comment: bool = False
+    version: int
+
+
+class ClassJournalSummaryResponse(BaseModel):
+    id: int
+    journal_id: int
+    student_id: int
+    homework_score: int
+    attendance_score: int
+    exam_score: int
+    bonus_score: int
+    sum_score: int
+    max_period_score: int
+    percentage: float
+    attendance_count: int
+    total_lessons: int
+    version: int
+
+
+class ClassJournalStudentResponse(BaseModel):
+    student_id: int
+    first_name: str
+    last_name: str
+    color_hex: str
+    is_self: bool
+    entries: List[ClassJournalEntryResponse]
+    summary: Optional[ClassJournalSummaryResponse] = None
+
+
+class ClassJournalResponse(BaseModel):
+    journal_id: int
+    course_id: int
+    period_label: str
+    period_start: date
+    period_end: date
+    period_type: JournalPeriodType
+    exam_max_score: int
+    lesson_dates: List[date]
+    students: List[ClassJournalStudentResponse]
+    my_rank: int
+    class_size: int
+    class_avg_percentage: float

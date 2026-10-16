@@ -235,6 +235,22 @@ async def get_staff_progress(
 
 
 
+@router.get("/{id}/class-progress", response_model=CourseStaffProgressResponse)
+async def get_class_progress(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    progress_service: CourseProgressService = Depends(get_course_progress_service)
+) -> CourseStaffProgressResponse:
+    if current_user.role != UserRole.STUDENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    await check_course_access(id, current_user, db)
+    return await progress_service.get_student_class_progress(id, current_user.id)
+
+
 @router.get("/{id}/progress-chart")
 async def get_progress_chart(
     id: int,
