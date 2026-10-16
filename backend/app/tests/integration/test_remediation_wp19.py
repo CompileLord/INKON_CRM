@@ -53,6 +53,8 @@ class RedisProbe:
     def __init__(self, client: RedisNamespaceClient) -> None:
         self.client: RedisNamespaceClient = client
         self.calls: list[str] = []
+        self.network_calls: list[str] = []
+        self.owned_cache_keys: set[str] = set()
         self.get_keys: list[str] = []
         self.set_keys: list[str] = []
         self.denied: bool = False
@@ -63,7 +65,9 @@ class RedisProbe:
         self.proceed: asyncio.Event = asyncio.Event()
 
     async def _record(self, operation: str) -> None:
-        self.calls.append(operation)
+        self.network_calls.append(operation)
+        if operation in {"get", "set", "scan", "delete"}:
+            self.calls.append(operation)
         if self.denied:
             raise AssertionError("Redis accessed while a student account transaction is locked")
         if self.outage:
@@ -74,13 +78,28 @@ class RedisProbe:
 
     async def get(self, key: str) -> str | None:
         self.get_keys.append(key)
-        await self._record("get")
+        await self._record("recheck" if key in self.owned_cache_keys else "get")
         return await self.client.get(key)
 
-    async def set(self, key: str, value: str, *, ex: int) -> bool | None:
-        self.set_keys.append(key)
-        await self._record("set")
-        return await self.client.set(key, value, ex=ex)
+    async def set(self, key: str, value: str, **options: object) -> bool | None:
+        await self._record("lease" if options.get("nx") else "set")
+        if not options.get("nx"):
+            self.set_keys.append(key)
+        acquired: bool | None = await self.client.set(key, value, **options)
+        if acquired and options.get("nx"):
+            self.owned_cache_keys.add(key.removesuffix(":lease"))
+        return acquired
+
+    async def eval(self, script: str, numkeys: int, *keys_and_args: str | int) -> object:
+        if numkeys == 2:
+            self.set_keys.append(str(keys_and_args[1]))
+            await self._record("set")
+        else:
+            await self._record("release")
+        result: object = await self.client.eval(script, numkeys, *keys_and_args)
+        if numkeys == 1:
+            self.owned_cache_keys.discard(str(keys_and_args[0]).removesuffix(":lease"))
+        return result
 
     async def scan(self, cursor: int = 0, match: str | None = None, count: int | None = None) -> tuple[int, list[str]]:
         await self._record("scan")
@@ -179,11 +198,13 @@ async def test_own_uncommitted_mutation_never_reads_or_publishes_shared_cache(
     session: AsyncSession
     await scenario.analytics()
     cache_probe.calls.clear()
+    cache_probe.network_calls.clear()
     async with TestingSessionLocal() as session:
         await scenario.payment(session)
         own_result: dict[str, object] = await FinanceService(session).get_analytics(date(2020, 1, 1), date(2099, 12, 31))
         assert own_result["collected_in_period"] == "10.00"
         assert cache_probe.calls == []
+        assert cache_probe.network_calls == []
         await session.rollback()
         await scenario.payment(session, "20.00")
         await session.commit()
@@ -206,6 +227,7 @@ async def test_account_lock_bypasses_redis_and_cache_outage_does_not_abort_finan
         await scenario.payment(session)
         await session.commit()
     assert cache_probe.calls == []
+    assert cache_probe.network_calls == []
     cache_probe.denied = False
     cache_probe.outage = True
     result: dict[str, object] = await scenario.analytics()

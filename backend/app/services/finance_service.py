@@ -21,11 +21,9 @@ Money semantics:
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
-import json
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException, status
-from redis.exceptions import RedisError
 from sqlalchemy import Date, and_, case, cast, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -47,6 +45,7 @@ from app.schemas.ledger import (
     VoidPaymentPayload,
 )
 from app.core.redis import redis_client
+from app.services.analytics_cache_service import AnalyticsCacheService
 from app.repositories.interfaces.cache_generation_repository import CacheGenerationRepository
 from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
 
@@ -1263,18 +1262,19 @@ class FinanceService:
         }
 
     async def get_analytics(self, date_from: date, date_to: date) -> dict:
-        cache_eligible: bool = self.cache_generation_repo.can_use_shared_cache()
-        cache_key: str | None = None
-        if cache_eligible:
-            generation: int = await self.cache_generation_repo.read_committed_generation()
-            cache_key = f"{ANALYTICS_CACHE_KEY_PREFIX}{generation}:{date_from.isoformat()}:{date_to.isoformat()}"
-            try:
-                cached: str | None = await redis_client.get(cache_key)
-                if cached:
-                    return json.loads(cached)
-            except RedisError:
-                pass
+        if not self.cache_generation_repo.can_use_shared_cache():
+            return await self._compute_analytics(date_from, date_to)
+        generation: int = await self.cache_generation_repo.read_committed_generation()
+        cache_key: str = f"{ANALYTICS_CACHE_KEY_PREFIX}{generation}:{date_from.isoformat()}:{date_to.isoformat()}"
 
+        async def compute() -> dict[str, object]:
+            return await self._compute_analytics(date_from, date_to)
+
+        return await AnalyticsCacheService(redis_client).get_or_compute(
+            cache_key, compute, self.cache_generation_repo.can_use_shared_cache,
+        )
+
+    async def _compute_analytics(self, date_from: date, date_to: date) -> dict[str, object]:
         today = get_dushanbe_today()
         active_enrollment = and_(
             Enrollment.status == EnrollmentStatus.ACTIVE,
@@ -1396,11 +1396,6 @@ class FinanceService:
             "debtors_preview": debtors_preview,
         }
 
-        if cache_key is not None and self.cache_generation_repo.can_use_shared_cache():
-            try:
-                await redis_client.set(cache_key, json.dumps(analytics), ex=600)
-            except RedisError:
-                pass
         return analytics
 
     @staticmethod
