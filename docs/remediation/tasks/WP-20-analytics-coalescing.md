@@ -12,6 +12,10 @@ Coalesce identical analytics misses across instances. One bounded implementation
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+WP19 regressions instrument cache publication through a get/set-only Redis probe. Atomic owner-fenced Lua publication requires adapting that probe to forward real Redis lease options and EVAL calls while retaining publication pause barriers and every existing assertion. This is a test-transport update, not permission to weaken cache freshness or account-lock checks.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -21,6 +25,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/services/finance_service.py:1223](../../../backend/app/services/finance_service.py) | Existing file, anchor line 1223; only this WP’s stated behavior may change. |
 | [backend/app/services/analytics_cache_service.py](../../../backend/app/services/analytics_cache_service.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp20.py](../../../backend/app/tests/integration/test_remediation_wp20.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/tests/integration/test_remediation_wp19.py](../../../backend/app/tests/integration/test_remediation_wp19.py) | Adapt RedisProbe transport only for lease SET options and real Lua publication visibility; preserve every existing invariant assertion and pause barrier. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

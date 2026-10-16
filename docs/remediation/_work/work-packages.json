@@ -862,6 +862,7 @@
       "backend/app/services/finance_service.py",
       "backend/app/services/analytics_cache_service.py",
       "backend/app/tests/integration/test_remediation_wp20.py",
+      "backend/app/tests/integration/test_remediation_wp19.py",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
