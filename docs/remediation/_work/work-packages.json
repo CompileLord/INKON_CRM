@@ -1099,20 +1099,40 @@
       "backend/app/services/user_service.py",
       "backend/app/services/course_service.py",
       "backend/app/tests/integration/test_remediation_wp25.py",
+      "backend/app/services/document_file_storage.py",
+      "backend/app/services/storage_lifecycle_service.py",
+      "backend/app/models/storage_intent.py",
+      "backend/app/models/__init__.py",
+      "backend/app/repositories/interfaces/storage_intent_repository.py",
+      "backend/app/repositories/sqlalchemy/storage_intent_repository.py",
+      "backend/app/workers/storage_cleanup.py",
+      "backend/app/workers/settings.py",
+      "backend/alembic/versions/rwp25_storage_intents.py",
+      "backend/app/repositories/interfaces/course_repository.py",
+      "backend/app/repositories/sqlalchemy/course_repository.py",
+      "backend/app/tests/integration/test_avatar.py",
+      "backend/app/db/storage_intent_session.py",
+      "backend/app/main.py",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
-      "Generate immutable UUID/object keys for both local and GCS writes while retaining original filename metadata.",
-      "Stage replacement images under new keys; remove previous objects only after successful DB commit through the established outbox or an explicitly durable cleanup intent. Preserve legacy object resolution."
+      "Generate immutable UUID/object keys for current local storage while retaining original filename metadata and safe image extensions. Create files exclusively; collisions must never overwrite. Preserve WP04 document UUIDs and confinement; GCS was removed from main and is outside this task.",
+      "Use separate durable storage intents; preserve the email-only encrypted outbox. Reserve each exact key in a short independent committed transaction before writing bytes. Its bounded engine has pool_size=1, max_overflow=0 and finite checkout/statement timeouts, adding at most one DB connection per API or cleanup-worker process. API and worker lifecycles dispose their own engines; never commit the request transaction or reuse its occupied pool for reservations.",
+      "Lock avatar/course owners and reload current paths before replacement. Reservation rows have no owner foreign keys. The request locks a still-pending staging intent before writing, then adopts it and records old-object cleanup in the same transaction as reference updates. A claimed/removed reservation cannot be adopted. Rollback, partial write or process death leaves independently committed staging intents recoverable.",
+      "Document deletion soft-deletes metadata and enqueues cleanup in the same request transaction. Delete bytes only through committed intents. Cleanup claims eligible rows with SKIP LOCKED, never locks owner rows, and uses MVCC reference checks. Protect all user/course photo references and active documents, including shared legacy paths. Claimed cleanup must survive worker restart, deletion-before-settlement crashes and retryable failures; never silently discard unresolved intents after a retry limit.",
+      "Validate canonical relative paths at reservation and deletion: approved entity prefix, positive owner id, maximum 255 characters, no traversal/absolute/root paths and symlink-safe confinement. Preserve valid legacy resolution. No directory-scan erasure or operational-data cleanup. Request/worker races must never delete an active adopted object."
     ],
     "tests": [
-      "Two identical filenames under one owner and across journals retain distinct bytes; deleting one preserves the other. Failed replacement leaves old photo/document usable and eventually removes orphan staged objects."
+      "Two identical filenames under one owner and across journals retain distinct bytes; deleting one preserves the other. Failed replacement leaves old photo/document usable and eventually removes orphan staged objects.",
+      "Real commit/rollback, failed thumbnail writes, interrupted upload and cleanup restart, deletion-before-settlement retry, concurrent replacements, worker/adoption locking, shared legacy references, confinement and unchanged metadata.",
+      "Occupied single request-pool connection permits bounded independent reservation; engine shutdown and migration preservation/recovery pass; actual worker eventually deletes committed superseded files."
     ],
     "accept": "Uploads never overwrite another document by filename; replacements and deletes have documented transaction/cleanup behavior.",
     "measure": "",
     "deps": [
       "WP-04",
-      "WP-18"
+      "WP-18",
+      "WP-19"
     ],
     "severity": "Medium",
     "effort": "M",
@@ -1129,6 +1149,10 @@
       ],
       "WP-18": [
         "backend/app/services/user_service.py"
+      ],
+      "WP-19": [
+        "backend/app/models/__init__.py",
+        "Alembic single-head revision chain"
       ]
     },
     "contributes": []
