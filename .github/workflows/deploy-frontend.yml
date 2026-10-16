@@ -1,6 +1,10 @@
-name: Frontend CI/CD to Cloudflare Pages
+name: Deploy Frontend
 
 on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
   push:
     branches:
       - main
@@ -8,22 +12,59 @@ on:
       - 'frontend/**'
       - 'CONTRACT.md'
       - '.github/workflows/deploy-frontend.yml'
-      - '!frontend/**/*.md'
-      - '!frontend/README.md'
+  workflow_run:
+    workflows: ['Deploy Backend']
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        options:
+          - production
+          - staging
+        default: production
+
+permissions:
+  contents: read
 
 concurrency:
-  group: frontend-${{ github.ref }}
-  cancel-in-progress: false
+  group: frontend-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || (github.event_name == 'workflow_run' && 'production') || (github.event_name == 'workflow_dispatch' && inputs.environment) || 'staging' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test-and-build:
-    name: Frontend Quality & Build
+  build-and-deploy:
+    name: Build and deploy to Cloudflare Pages
     runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    environment: ${{ (github.event_name == 'workflow_run' && 'production') || (github.event_name == 'workflow_dispatch' && inputs.environment) || 'staging' }}
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PROJECT_NAME: imkon-crm
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      DEPLOY_BRANCH: ${{ (github.event_name == 'pull_request' && format('pr-{0}', github.event.number)) || (github.event_name == 'workflow_run' && 'main') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production' && 'main') || 'staging' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+
+      - name: Require API base URL
+        run: |
+          if [ -z "${VITE_API_BASE_URL}" ]; then
+            echo "VITE_API_BASE_URL is empty: set it as a variable on this GitHub Environment" >&2
+            exit 1
+          fi
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -33,72 +74,60 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        working-directory: frontend
+        run: npx vitest run
+
+      - name: Build production bundle
+        working-directory: frontend
+        run: npm run build
+
+      - name: Verify build output
         run: |
-          cd frontend
-          npm ci
+          test -f frontend/dist/index.html || { echo "dist/index.html missing" >&2; exit 1; }
+          test -f frontend/dist/_redirects || { echo "dist/_redirects missing" >&2; exit 1; }
+          test -f frontend/dist/_headers || { echo "dist/_headers missing" >&2; exit 1; }
 
-      - name: Run TypeScript Typecheck
-        run: |
-          cd frontend
-          npx tsc --noEmit
-
-      - name: Run Vitest Suite
-        run: |
-          cd frontend
-          npm run test
-
-      - name: Build Vite Production Bundle
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api-imkon-crm.shadowme.pro/api/v1' }}
-        run: |
-          cd frontend
-          npm run build
-
-      - name: Verify Build Output and SPA Redirects
-        run: |
-          test -f frontend/dist/index.html || { echo "Error: dist/index.html missing"; exit 1; }
-          test -f frontend/dist/_redirects || { echo "Error: dist/_redirects missing"; exit 1; }
-          echo "Build artifacts and SPA routing rules verified successfully."
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
-          retention-days: 1
-
-  deploy:
-    name: Deploy to Cloudflare Pages
-    needs: test-and-build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-
-    env:
-      PROJECT_NAME: 'imkon-crm'
-
-    steps:
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist
-
-      - name: Deploy to Cloudflare Pages via Wrangler
+      - name: Deploy to Cloudflare Pages
         id: pages_deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=main --commit-dirty=false
+          workingDirectory: frontend
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ env.DEPLOY_BRANCH }} --commit-hash=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }} --commit-dirty=true
 
-      - name: Deployment Summary
+      - name: Comment preview URL on pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.pages_deploy.outputs.pages-deployment-alias-url || steps.pages_deploy.outputs.deployment-url }}
+        with:
+          script: |
+            const marker = '<!-- frontend-preview -->';
+            const body = `${marker}\nFrontend preview (staging API): ${process.env.PREVIEW_URL}\n\nCommit: ${context.payload.pull_request.head.sha}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((comment) => comment.body && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Deployment summary
         run: |
-          echo "======================================================"
-          echo "Frontend deployed successfully to Cloudflare Pages!"
-          echo "Project:      ${{ env.PROJECT_NAME }}"
-          echo "Custom URL:   https://imkon-crm.shadowme.pro"
-          echo "Pages URL:    ${{ steps.pages_deploy.outputs.deployment-url }}"
-          echo "Alias URL:    ${{ steps.pages_deploy.outputs.pages-deployment-alias-url }}"
-          echo "======================================================"
+          {
+            echo "### Frontend deployed"
+            echo "- Branch: ${DEPLOY_BRANCH}"
+            echo "- Deployment: ${{ steps.pages_deploy.outputs.deployment-url }}"
+            echo "- Alias: ${{ steps.pages_deploy.outputs.pages-deployment-alias-url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
