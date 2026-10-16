@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.refresh_token import RefreshToken
 from app.repositories.interfaces.refresh_token_repository import RefreshTokenRepository
@@ -25,13 +24,17 @@ class SQLAlchemyRefreshTokenRepository(SQLAlchemyBaseRepository[RefreshToken], R
         await self.session.execute(statement)
         await self.session.flush()
 
-    async def get_valid_token(self, token_hash: str) -> Optional[RefreshToken]:
-        now = datetime.now(timezone.utc)
-        query = select(RefreshToken).filter(
-            RefreshToken.token_hash == token_hash,
-            RefreshToken.revoked_at == None,
-            RefreshToken.expires_at > now
-        ).limit(2)
-        result = await self.session.execute(query)
-        matches: list[RefreshToken] = list(result.scalars().all())
-        return matches[0] if len(matches) == 1 else None
+    async def consume_valid_token(self, token_hash: str, user_id: int, now: datetime) -> bool:
+        statement = (
+            update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at == None,
+                RefreshToken.expires_at > now,
+            )
+            .values(revoked_at=now)
+            .returning(RefreshToken.id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None

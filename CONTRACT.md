@@ -425,8 +425,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
   "last_name?": string,
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
-  "parent_phone?": string,
 }
 ```
 
@@ -3198,32 +3196,6 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
-## GET /api/v1/documents/{id}/download
-
-**Summary:** Download Document
-
-**Parameters:**
-- `id` [path] *(required)*
-
-**Responses:**
-- **200**: Successful Response
-- **422**: Validation Error
-  ```json
-  {
-    "detail?": [
-      {
-        "loc": array[],
-        "msg": string,
-        "type": string,
-        "input?": any,
-        "ctx?": object,
-      }
-    ],
-  }
-  ```
-
----
-
 ## GET /api/v1/documents/
 
 **Summary:** List Documents
@@ -3334,6 +3306,32 @@ Manually apply a student's wallet credit to a specific charge.
 
 **Responses:**
 - **204**: Successful Response
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/documents/{document_id}/download
+
+**Summary:** Download Document
+
+**Parameters:**
+- `document_id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
 - **422**: Validation Error
   ```json
   {

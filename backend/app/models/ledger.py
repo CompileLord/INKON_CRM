@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from decimal import Decimal
 from typing import Optional, List
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.payment import PaymentMethod
@@ -27,6 +27,12 @@ class LedgerEntry(Base):
         Index("idx_ledger_student_occurred", "student_id", "occurred_at"),
         Index("idx_ledger_type_occurred", "type", "occurred_at"),
         Index("idx_ledger_reverses", "reverses_entry_id"),
+        Index(
+            "uq_ledger_void_per_payment",
+            "reverses_entry_id",
+            unique=True,
+            postgresql_where=text("type = 'void'"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

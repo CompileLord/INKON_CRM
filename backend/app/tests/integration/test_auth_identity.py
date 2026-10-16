@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from httpx import AsyncClient
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.core import security
 from app.models.user import User, UserRole
@@ -131,7 +132,7 @@ async def test_same_second_logins_and_rotations_keep_refresh_identity_isolated(
 
 
 @pytest.mark.asyncio
-async def test_ambiguous_legacy_refresh_token_is_denied_instead_of_selecting_an_identity(
+async def test_duplicate_refresh_hash_is_rejected_without_changing_original_identity(
     client: AsyncClient,
     db_session: AsyncSession,
     test_admin: User,
@@ -140,9 +141,13 @@ async def test_ambiguous_legacy_refresh_token_is_denied_instead_of_selecting_an_
     login = await client.post("/api/v1/auth/login", json={"email": test_student.email, "password": "student_pass123"})
     assert login.status_code == 200
     refresh_token: str = login.json()["refresh_token"]
+    student_id: int = test_student.id
     duplicate = RefreshToken(user_id=test_admin.id, token_hash=security.hash_token(refresh_token), expires_at=datetime.now(timezone.utc) + timedelta(days=1))
     db_session.add(duplicate)
-    await db_session.commit()
+    with pytest.raises(IntegrityError):
+        await db_session.commit()
+    await db_session.rollback()
     refreshed = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
-    assert refreshed.status_code == 401
-    assert "access_token" not in refreshed.json()
+    assert refreshed.status_code == 200
+    claims = jwt.decode(refreshed.json()["access_token"], settings.JWT_SECRET_KEY, algorithms=["HS256"])
+    assert claims["sub"] == str(student_id)

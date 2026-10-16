@@ -23,22 +23,14 @@ from app.api.v1.cron import router as cron_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.telegram_bot.bot import bot
-    if not settings.TESTING:
+    try:
+        yield
+    finally:
         try:
-            await bot.set_webhook(
-                url=settings.TELEGRAM_WEBHOOK_URL,
-                secret_token=settings.TELEGRAM_BOT_SECRET_TOKEN
-            )
-        except Exception:
-            pass
-    yield
-    if not settings.TESTING:
-        try:
-            await bot.delete_webhook()
-        except Exception:
-            pass
-    from app.core.redis import close_arq_pool
-    await close_arq_pool()
+            await bot.session.close()
+        finally:
+            from app.core.redis import close_arq_pool
+            await close_arq_pool()
 
 
 is_prod = settings.ENVIRONMENT == "production"
@@ -96,7 +88,7 @@ async def add_security_headers(request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-XSS-Protection"] = "0"
     path = request.url.path
-    if path.startswith("/storage"):
+    if path.startswith(("/storage/avatar/", "/storage/course/")):
         response.headers["Cache-Control"] = "public, max-age=86400"
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"

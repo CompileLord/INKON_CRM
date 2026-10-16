@@ -527,28 +527,21 @@ async def test_duplicate_enrollment_simultaneous_race(
     course = await create_helper_course(db_session, test_mentor.id)
     await db_session.commit()
 
-    precheck1_event = asyncio.Event()
-    precheck2_event = asyncio.Event()
+    lock_acquisition_barrier = asyncio.Barrier(2)
 
     async def run_enroll_session(session_index: int) -> Tuple[int, Optional[Enrollment], Optional[Exception]]:
         async with TestingSessionLocal() as session:
             service = EnrollmentService(session)
             original_execute = session.execute
+            synchronized = False
 
-            prechecked = False
             async def patched_execute(statement, *args, **kwargs):
-                nonlocal prechecked
-                result = await original_execute(statement, *args, **kwargs)
-                sql_str = str(statement)
-                if not prechecked and "enrollments.student_id" in sql_str and "enrollments.course_id" in sql_str and "SELECT" in sql_str.upper():
-                    prechecked = True
-                    if session_index == 1:
-                        precheck1_event.set()
-                        await asyncio.wait_for(precheck2_event.wait(), timeout=10.0)
-                    elif session_index == 2:
-                        await asyncio.wait_for(precheck1_event.wait(), timeout=10.0)
-                        precheck2_event.set()
-                return result
+                nonlocal synchronized
+                sql_string = str(statement)
+                if not synchronized and "users.id" in sql_string and "FOR UPDATE" in sql_string:
+                    synchronized = True
+                    await asyncio.wait_for(lock_acquisition_barrier.wait(), timeout=10.0)
+                return await original_execute(statement, *args, **kwargs)
 
             session.execute = patched_execute
             try:
@@ -596,12 +589,14 @@ async def test_duplicate_enrollment_simultaneous_race(
         )
         assert summaries_count_res.scalar() == 5
 
-        charges_count_res = await check_session.execute(
-            select(func.count(Charge.id)).filter(
+        charges_summary = await check_session.execute(
+            select(func.count(Charge.id), func.sum(Charge.amount)).filter(
                 Charge.enrollment_id == successes[0][1].id
             )
         )
-        assert charges_count_res.scalar() > 0
+        charge_count, total_charged_amount = charges_summary.one()
+        assert charge_count == 1
+        assert total_charged_amount == course.price
 
 
 @pytest.mark.asyncio

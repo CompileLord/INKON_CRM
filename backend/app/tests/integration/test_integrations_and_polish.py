@@ -426,6 +426,7 @@ async def test_telegram_webhook_and_parent_binding(
     monkeypatch.setattr(Bot, "__call__", mock_call)
 
     test_student.phone = "+992900000000"
+    test_student.parent_phone = "+992900000001"
     db_session.add(test_student)
     await db_session.commit()
 
@@ -453,6 +454,16 @@ async def test_telegram_webhook_and_parent_binding(
     }
 
     headers = {"X-Telegram-Bot-Api-Secret-Token": settings.TELEGRAM_BOT_SECRET_TOKEN}
+    response = await client.post("/api/v1/telegram/webhook", json=payload, headers=headers)
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+    await db_session.refresh(test_student)
+    assert test_student.parent_telegram_chat_id is None
+
+    payload["update_id"] = 12346
+    payload["message"]["message_id"] = 54322
+    payload["message"]["contact"]["phone_number"] = "992900000001"
     response = await client.post("/api/v1/telegram/webhook", json=payload, headers=headers)
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}

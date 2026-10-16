@@ -1,19 +1,19 @@
 import asyncio
+import ssl
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from arq import create_pool
-from arq.connections import RedisSettings
 from app.core.config import settings
+from app.core.redis import enqueue_job
+
+SMTP_SOCKET_TIMEOUT_SECONDS = 10.0
+
+
+class EmailDeliveryError(RuntimeError):
+    pass
 
 
 class EmailService:
-    def __init__(self) -> None:
-        self.redis_settings = RedisSettings(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT
-        )
-
     def _send_smtp(self, to_email: str, subject: str, body: str) -> None:
         message = MIMEMultipart()
         message["From"] = settings.SMTP_FROM_EMAIL
@@ -21,12 +21,33 @@ class EmailService:
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
 
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(message)
+        try:
+            with smtplib.SMTP(
+                settings.SMTP_HOST,
+                settings.SMTP_PORT,
+                timeout=SMTP_SOCKET_TIMEOUT_SECONDS,
+            ) as server:
+                server.ehlo()
+                try:
+                    server.starttls(context=ssl.create_default_context())
+                except ssl.SSLCertVerificationError:
+                    raise EmailDeliveryError(
+                        "SMTP TLS certificate verification failed"
+                    ) from None
+                except ssl.SSLError:
+                    raise EmailDeliveryError("SMTP TLS negotiation failed") from None
+                server.ehlo()
+                try:
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                except smtplib.SMTPAuthenticationError:
+                    raise EmailDeliveryError("SMTP authentication failed") from None
+                server.send_message(message)
+        except EmailDeliveryError:
+            raise
+        except (OSError, smtplib.SMTPException) as exception:
+            raise EmailDeliveryError(
+                f"SMTP delivery failed ({type(exception).__name__})"
+            ) from None
 
     async def send_email(self, to_email: str, subject: str, body: str) -> None:
         if settings.TESTING:
@@ -36,5 +57,4 @@ class EmailService:
     async def enqueue_verification_email(self, email: str, code: str) -> None:
         if settings.TESTING:
             return
-        pool = await create_pool(self.redis_settings)
-        await pool.enqueue_job("send_verification_email_task", email, code)
+        await enqueue_job("send_verification_email_task", email, code)

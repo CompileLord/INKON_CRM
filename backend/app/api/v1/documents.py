@@ -1,35 +1,16 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, status
+from pathlib import PurePosixPath
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, get_document_delivery_service, require_superadmin
-from fastapi.responses import FileResponse
+from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User, UserRole
 from app.models.document import Document
 from app.schemas.document import DocumentResponse
 from app.schemas.common import PaginatedResponse
 from app.services.document_service import DocumentService
-from app.services.document_delivery_service import DocumentDeliveryService
 
 router = APIRouter()
-
-
-@router.get("/{id}/download", response_class=FileResponse, responses={
-    200: {"content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}}
-})
-async def download_document(
-    id: int,
-    current_user: User = Depends(get_current_user),
-    document_delivery: DocumentDeliveryService = Depends(get_document_delivery_service)
-) -> FileResponse:
-    if current_user.role not in (UserRole.SUPERADMIN, UserRole.MENTOR, UserRole.STUDENT):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not enough permissions")
-    download = await document_delivery.prepare_download(id, current_user)
-    return FileResponse(
-        path=download.path,
-        filename=download.filename,
-        media_type=download.media_type,
-        headers={"Cache-Control": "no-store, max-age=0, must-revalidate"}
-    )
 
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -86,3 +67,27 @@ async def list_documents(
     if journal_id is not None:
         filters["journal_id"] = journal_id
     return await document_service.list_documents(filters, page, page_size, current_user)
+
+
+@router.get("/{document_id}/download", response_class=Response, responses={
+    200: {"content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}}
+})
+async def download_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> Response:
+    document_service = DocumentService(db)
+    document, file_content = await document_service.read_document(document_id, current_user)
+    basename = PurePosixPath(document.file_name.replace("\\", "/")).name
+    safe_filename = "".join(character for character in basename if ord(character) >= 32 and ord(character) != 127)
+    filename = quote(safe_filename if safe_filename not in ("", ".", "..") else "document", safe="")
+    return Response(
+        content=file_content,
+        media_type="application/octet-stream",
+        headers={
+            "Cache-Control": "no-store, max-age=0, must-revalidate",
+            "Content-Disposition": f"attachment; filename*=utf-8''{filename}",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

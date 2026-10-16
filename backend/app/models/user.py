@@ -1,7 +1,7 @@
 from datetime import date
 from enum import Enum
 from typing import Optional
-from sqlalchemy import BigInteger, Integer, String, Date, CheckConstraint
+from sqlalchemy import BigInteger, Integer, String, Date, CheckConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin
 
@@ -36,3 +36,4 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     thumbnail_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     payment_day_of_month: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     must_set_password: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
+    auth_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"), nullable=False)

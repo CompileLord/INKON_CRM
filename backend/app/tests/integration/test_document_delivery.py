@@ -50,9 +50,9 @@ async def test_document_download_preserves_exact_role_policy(
             elif viewer.role == UserRole.SUPERADMIN:
                 expected_status = 200
             elif viewer.role == UserRole.STUDENT:
-                expected_status = 200 if owner.role == UserRole.STUDENT and owner.id == viewer.id else 403
+                expected_status = 200 if owner.role == UserRole.STUDENT and owner.id == viewer.id else 404
             elif viewer.role == UserRole.MENTOR:
-                expected_status = 200 if owner.role == UserRole.STUDENT or owner.id == viewer.id else 403
+                expected_status = 200 if owner.role == UserRole.STUDENT or owner.id == viewer.id else 404
             else:
                 expected_status = 403
             assert response.status_code == expected_status, (owner.id, viewer.id if viewer else None, response.text)
