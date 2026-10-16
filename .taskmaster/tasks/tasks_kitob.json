@@ -579,7 +579,7 @@
   {
     "id": "KITOB-06-04",
     "title": "/settings personal account every role",
-    "status": "in_progress",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-03"
@@ -590,7 +590,7 @@
   {
     "id": "KITOB-06-05",
     "title": "Organization section",
-    "status": "pending",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-04"
@@ -601,7 +601,7 @@
   {
     "id": "KITOB-06-06",
     "title": "Notification rules section",
-    "status": "pending",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-05"
@@ -612,7 +612,7 @@
   {
     "id": "KITOB-06-07",
     "title": "/notifications every role",
-    "status": "pending",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-06"
@@ -623,7 +623,7 @@
   {
     "id": "KITOB-06-08",
     "title": "Group 06 integration audit",
-    "status": "pending",
+    "status": "in_progress",
     "group": "06",
     "dependencies": [
       "KITOB-06-07"
