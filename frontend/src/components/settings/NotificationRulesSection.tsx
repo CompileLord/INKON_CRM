@@ -51,7 +51,7 @@ export function NotificationRulesSection({ onSaved, onFailed }: NotificationRule
           label={rule.name}
           description={rule.description}
         >
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div className="flex items-center justify-between gap-3 @[34rem]:justify-end">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-info-surface px-2.5 py-1 text-xs font-medium text-info">
               <Send size={12} aria-hidden="true" />
               {t("rules.telegram")}

@@ -147,7 +147,6 @@
       "result": "Натиҷаи имтиҳон",
       "reminder": "Ёдраскунии пардохт",
       "generic": "Огоҳии ҳисоб"
-    },
-    "detail": "{{destination}} · {{reference}}"
+    }
   }
 }

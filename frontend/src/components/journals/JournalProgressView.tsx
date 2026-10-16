@@ -550,7 +550,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
       <JournalPanelMessage
         tone="error"
         title={t("workspace.progressLoadFailed")}
-        body={t("progress.loadFailedBody")}
+        body={t(selfStudentId === null ? "progress.loadFailedBody" : "progress.loadFailedBodyStudent")}
         retryLabel={t("common:retry")}
         onRetry={() => void query.refetch()}
       />

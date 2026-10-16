@@ -62,24 +62,26 @@ export function AvatarUploadField({
   const activeObjectUrlsRef = useRef<Set<string>>(new Set());
 
   const onUploadedRef = useRef(onUploaded);
-  onUploadedRef.current = onUploaded;
-
   const onBusyChangeRef = useRef(onBusyChange);
-  onBusyChangeRef.current = onBusyChange;
-
   const onOperationStateChangeRef = useRef(onOperationStateChange);
-  onOperationStateChangeRef.current = onOperationStateChange;
+
+  useEffect(() => {
+    onUploadedRef.current = onUploaded;
+    onBusyChangeRef.current = onBusyChange;
+    onOperationStateChangeRef.current = onOperationStateChange;
+  });
 
   const uploadAvatarMutation = useUploadAvatar(role);
 
   useEffect(() => {
     isMountedRef.current = true;
+    const activeObjectUrls: Set<string> = activeObjectUrlsRef.current;
     return () => {
       isMountedRef.current = false;
-      for (const url of activeObjectUrlsRef.current) {
+      for (const url of activeObjectUrls) {
         URL.revokeObjectURL(url);
       }
-      activeObjectUrlsRef.current.clear();
+      activeObjectUrls.clear();
     };
   }, []);
 

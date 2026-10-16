@@ -72,8 +72,8 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
               onChange={(event) => setDraftName(event.target.value)}
             />
           ) : (
-            <div className="flex items-center justify-between gap-2 sm:justify-end">
-              <p className="min-w-0 break-words text-sm font-medium text-ink sm:text-right">{currentName}</p>
+            <div className="flex items-center justify-between gap-2 @[34rem]:justify-end">
+              <p className="min-w-0 break-words text-sm font-medium text-ink @[34rem]:text-right">{currentName}</p>
               <Button type="button" variant="secondary" aria-label={t("organization.editName")} title={t("organization.editName")} onClick={startEditing} className="shrink-0 px-3">
                 <Pencil size={16} aria-hidden="true" />
               </Button>
@@ -85,10 +85,10 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
           label={t("organization.currency")}
           hint={<InfoTooltip label={t("organization.currency")}>{t("organization.currencyInfo")}</InfoTooltip>}
         >
-          <p className="text-sm font-medium text-ink sm:text-right">{t("organization.currencyValue")}</p>
+          <p className="text-sm font-medium text-ink @[34rem]:text-right">{t("organization.currencyValue")}</p>
         </SettingsRow>
         <SettingsRow icon={<Send size={18} />} label={t("organization.telegram")} description={t("organization.telegramHint")}>
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div className="flex items-center justify-between gap-3 @[34rem]:justify-end">
             <p role="status" className="flex min-w-0 items-center gap-2 text-sm text-ink" data-testid="telegram-status" data-state={botState}>
               <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} />
               <span className="min-w-0 break-words">

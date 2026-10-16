@@ -185,3 +185,15 @@ describe("shared shell lifecycle", () => {
     layout(); expect(screen.getAllByRole("link")[0].getAttribute("href")).toBe("#main-content"); expect(screen.queryByPlaceholderText("Search...")).toBeNull();
   });
 });
+
+describe("detail route header", () => {
+  it("names the section without exposing the route identifier", () => {
+    useAuthStore.setState({ status: "authenticated", userId: 42, role: "student", mustSetPassword: false });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/my/courses/7"]}><Routes><Route element={<AppLayout/>}><Route path="/my/courses/:courseId" element={<h1>Course fixture</h1>}/></Route></Routes></MemoryRouter></QueryClientProvider>);
+    const header = screen.getByRole("banner");
+    expect(within(header).getByText("My Courses")).toBeTruthy();
+    expect(header.textContent).not.toMatch(/\b7\b/);
+    expect(header.textContent).not.toContain("·");
+  });
+});

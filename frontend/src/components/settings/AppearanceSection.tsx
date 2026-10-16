@@ -43,7 +43,7 @@ export function AppearanceSection() {
       </SettingsGroup>
       <SettingsGroup title={t("settings:about.title")}>
         <SettingsRow icon={<Info size={18} />} label={t("settings:about.version")}>
-          <p className="text-sm text-muted tabular-nums sm:text-right">{FULL_VERSION_STRING}</p>
+          <p className="text-sm text-muted tabular-nums @[34rem]:text-right">{FULL_VERSION_STRING}</p>
         </SettingsRow>
       </SettingsGroup>
     </div>

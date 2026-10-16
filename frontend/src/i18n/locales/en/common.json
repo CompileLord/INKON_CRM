@@ -147,7 +147,6 @@
       "result": "Exam result",
       "reminder": "Payment reminder",
       "generic": "Account notification"
-    },
-    "detail": "{{destination}} · {{reference}}"
+    }
   }
 }

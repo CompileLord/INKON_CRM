@@ -602,6 +602,19 @@ describe("Progress view as a read-only student", () => {
     } as unknown as ReturnType<typeof courseHooks.useCourseClassProgress>);
   }
 
+  it("shows a student-phrased load error that does not mention gradebooks or unsaved changes", () => {
+    vi.mocked(courseHooks.useCourseClassProgress).mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() } as unknown as ReturnType<typeof courseHooks.useCourseClassProgress>);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={107} />);
+    expect(screen.getByText("Your results are not affected. Try again in a moment.")).toBeTruthy();
+    expect(screen.queryByText(/gradebook|unsaved/i)).toBeNull();
+  });
+
+  it("keeps the mentor-phrased load error for staff", () => {
+    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+    render(<JournalProgressView courseId={1} />);
+    expect(screen.getByText("Your gradebook and unsaved changes are not affected.")).toBeTruthy();
+  });
+
   it("reads the class endpoint, not the staff endpoint", () => {
     mockClassProgress(manyStudents);
     render(<JournalProgressView courseId={1} readOnlySelfStudentId={107} />);
