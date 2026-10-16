@@ -24,8 +24,7 @@ import { CourseOverviewPane } from "../components/courses/CourseOverviewPane";
 import { CourseStudentsPane } from "../components/courses/CourseStudentsPane";
 import type { CourseRosterSortOption } from "../components/courses/CourseRosterSection";
 import type { EnrollmentStatus } from "../lib/enrollments/types";
-import { CourseProgressPane } from "../components/courses/CourseProgressPane";
-import type { SortOption, ViewMode } from "../components/courses/CourseProgressChart";
+import { CourseProgressPane, type ProgressSortOption } from "../components/courses/CourseProgressPane";
 import {
   buildCourseJournalUrl,
   consumeSavedCourseDetailContext,
@@ -76,28 +75,25 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
     const saved = getSavedCourseDetailContext(courseId);
     return saved?.tab === "progress" ? (saved?.search ?? "") : "";
   });
-  const [progressSort, setProgressSort] = useState<SortOption>(() => {
-    if (!courseId) return "avg_desc";
+  const [progressSort, setProgressSort] = useState<ProgressSortOption>(() => {
+    if (!courseId) return "score_desc";
     const isReturning = isInternalReturnSignal(location.state, searchParams);
-    if (!isReturning) return "avg_desc";
+    if (!isReturning) return "score_desc";
     const saved = getSavedCourseDetailContext(courseId);
-    if (
-      saved?.tab === "progress" &&
-      (saved?.sort === "avg_desc" || saved?.sort === "name_asc" || saved?.sort === "latest_desc")
-    ) {
-      return saved.sort;
+    if (saved?.tab === "progress" && saved?.sort) {
+      if (
+        saved.sort === "score_desc" ||
+        saved.sort === "score_asc" ||
+        saved.sort === "name_asc" ||
+        saved.sort === "name_desc"
+      ) {
+        return saved.sort;
+      }
+      if (saved.sort === "avg_desc" || saved.sort === "latest_desc") {
+        return "score_desc";
+      }
     }
-    return "avg_desc";
-  });
-  const [progressView, setProgressView] = useState<ViewMode>(() => {
-    if (!courseId) return "matrix";
-    const isReturning = isInternalReturnSignal(location.state, searchParams);
-    if (!isReturning) return "matrix";
-    const saved = getSavedCourseDetailContext(courseId);
-    if (saved?.tab === "progress" && (saved?.view === "matrix" || saved?.view === "table")) {
-      return saved.view;
-    }
-    return "matrix";
+    return "score_desc";
   });
 
   const [rosterSearch, setRosterSearch] = useState(() => {
@@ -239,15 +235,17 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
       if (saved.search !== undefined) {
         setProgressSearch(saved.search);
       }
-      if (
-        saved.sort === "avg_desc" ||
-        saved.sort === "name_asc" ||
-        saved.sort === "latest_desc"
-      ) {
-        setProgressSort(saved.sort);
-      }
-      if (saved.view === "matrix" || saved.view === "table") {
-        setProgressView(saved.view);
+      if (saved.sort) {
+        if (
+          saved.sort === "score_desc" ||
+          saved.sort === "score_asc" ||
+          saved.sort === "name_asc" ||
+          saved.sort === "name_desc"
+        ) {
+          setProgressSort(saved.sort);
+        } else if (saved.sort === "avg_desc" || saved.sort === "latest_desc") {
+          setProgressSort("score_desc");
+        }
       }
     }
 
@@ -285,8 +283,7 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
         setRosterPage(1);
         setRosterStatus(undefined);
         setProgressSearch("");
-        setProgressSort("avg_desc");
-        setProgressView("matrix");
+        setProgressSort("score_desc");
       }
     }
   }, [courseId, location.state, searchParams]);
@@ -331,15 +328,21 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
     if (pendingScrollYRef.current === null || pendingScrollYRef.current <= 0) return;
 
     const targetY = pendingScrollYRef.current;
-    const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const maxScroll = Math.max(0, scrollableHeight);
-    const scrollToY =
-      document.documentElement.scrollHeight > 0
-        ? Math.min(targetY, maxScroll)
-        : targetY;
+    const restore = () => {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const maxScroll = Math.max(0, scrollableHeight);
+      const scrollToY =
+        document.documentElement.scrollHeight > 0
+          ? Math.min(targetY, maxScroll)
+          : targetY;
 
-    window.scrollTo({ top: scrollToY, behavior: "instant" as ScrollBehavior });
-    pendingScrollYRef.current = null;
+      window.scrollTo({ top: scrollToY, behavior: "instant" as ScrollBehavior });
+      pendingScrollYRef.current = null;
+    };
+
+    restore();
+    const frameId = requestAnimationFrame(restore);
+    return () => cancelAnimationFrame(frameId);
   }, [isCurrentPaneSettled, activeTab]);
 
   useEffect(() => {
@@ -730,7 +733,6 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
       periodId: searchParams.get("period") ? Number(searchParams.get("period")) : undefined,
       search: progressSearch,
       sort: progressSort,
-      view: progressView,
       scrollY: typeof window !== "undefined" ? window.scrollY : 0,
     });
   };
@@ -962,10 +964,22 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
               onSearchQueryChange={setProgressSearch}
               sortOption={progressSort}
               onSortOptionChange={setProgressSort}
-              viewMode={progressView}
-              onViewModeChange={setProgressView}
+              selectedPeriodId={
+                searchParams.get("period") ? Number(searchParams.get("period")) : undefined
+              }
+              onSelectedPeriodIdChange={(periodId) => {
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("period", String(periodId));
+                    return next;
+                  },
+                  { replace: true },
+                );
+              }}
               onReady={() => handlePaneReady("progress")}
             />
+
           </div>
         ) : null}
       </div>
