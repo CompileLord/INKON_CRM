@@ -1,0 +1,48 @@
+name: Rollback Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        required: true
+      sha:
+        description: Full commit SHA of a previously deployed image
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    name: Roll back ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      ROLLBACK_SHA: ${{ inputs.sha }}
+    steps:
+      - name: Validate SHA
+        run: |
+          printf '%s' "$ROLLBACK_SHA" | grep -Eq '^[0-9a-f]{40}$'
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Redeploy previous image without migrations
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" "/opt/imkon/deploy/deploy.sh --skip-migrations $ROLLBACK_SHA"

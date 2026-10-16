@@ -55,6 +55,9 @@ This file contains the strict coding standards, architectural rules, and workflo
 - **Optimistic Locking**: Always apply optimistic concurrency checks using SQLAlchemy `version_id_col` for critical update paths (`JournalEntry` and `JournalStudentSummary`).
 - **Graceful Concurrency Failure**: Catch `StaleObjectError` concurrency conflicts during transactional commits, rollback, and raise a `409 Conflict` HTTP exception.
 
+### 3.3. Backward-Compatible Migrations (Expand/Contract)
+- Rollback redeploys the previous image against the already-migrated database, so every migration must be compatible with the previous release. Add nullable columns, tables and indexes first (expand); stop using old columns in a later release; drop them only in a release after that (contract). Never rename or drop a column or table that the currently deployed release still reads in the same release that stops using it.
+
 ---
 
 ## 4. AI-Agent Workflow & Task Tracking

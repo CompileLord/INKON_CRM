@@ -1,0 +1,9 @@
+[Unit]
+Description=IMKON restore drill into a throwaway Postgres container
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/opt/imkon/deploy/restore_check.sh

@@ -1,0 +1,82 @@
+name: ${COMPOSE_PROJECT_NAME:-imkon}
+
+x-backend-service: &backend-service
+  image: ghcr.io/compilelord/inkon_crm-api:${IMAGE_TAG:?IMAGE_TAG must be set}
+  env_file: /etc/imkon/backend.env
+  restart: unless-stopped
+  networks:
+    - internal
+    - edge
+  volumes:
+    - ${IMKON_DATA_DIR:-/var/lib/imkon}/storage:/app/storage
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-api-imkon-crm.shadowme.pro}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${IMKON_DATA_DIR:-/var/lib/imkon}/caddy:/data
+    networks:
+      - edge
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    <<: *backend-service
+    command: ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    <<: *backend-service
+    command: ["arq", "app.workers.settings.WorkerSettings"]
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: /etc/imkon/backend.env
+    volumes:
+      - ${IMKON_DATA_DIR:-/var/lib/imkon}/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    env_file: /etc/imkon/backend.env
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    volumes:
+      - ${IMKON_DATA_DIR:-/var/lib/imkon}/redis:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  internal:
+    internal: true
+  edge:

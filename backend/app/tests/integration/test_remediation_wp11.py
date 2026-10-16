@@ -16,7 +16,7 @@ from sqlalchemy.engine import URL, make_url
 
 
 BACKEND_ROOT: Path = Path(__file__).resolve().parents[3]
-WORKFLOW_PATH: Path = BACKEND_ROOT.parent / ".github/workflows/deploy-backend.yml"
+WORKFLOW_PATH: Path = BACKEND_ROOT.parent / "deploy/backend.env.example"
 
 
 class ConfigurationProbe:
@@ -177,11 +177,8 @@ def test_configuration_probe_uses_pytest_managed_temporary_directory(
 
 
 def workflow_environment_names() -> set[str]:
-    workflow: str = WORKFLOW_PATH.read_text()
-    deployment_block: str = workflow.split("env_vars: |", maxsplit=1)[1].split(
-        "- name:", maxsplit=1
-    )[0]
-    return set(re.findall(r"^\s{12}([A-Z][A-Z0-9_]*)=", deployment_block, re.MULTILINE))
+    environment_template: str = WORKFLOW_PATH.read_text()
+    return set(re.findall(r"^([A-Z][A-Z0-9_]*)=", environment_template, re.MULTILINE))
 
 
 def synthetic_workflow_values() -> dict[str, str]:
@@ -199,7 +196,6 @@ def synthetic_workflow_values() -> dict[str, str]:
         "TELEGRAM_BOT_TOKEN": "123456789:synthetic-wp11-token",
         "TELEGRAM_BOT_SECRET_TOKEN": "synthetic-wp11-telegram-not-a-secret",
         "TELEGRAM_WEBHOOK_URL": "https://hooks.example.com/api/v1/telegram/webhook",
-        "GCS_BUCKET_NAME": "synthetic-wp11-bucket",
         "CRON_SECRET": "synthetic-wp11-cron-not-a-secret",
         "BACKEND_CORS_ORIGINS": "[]",
     }
@@ -237,7 +233,6 @@ def test_deployment_variable_names_satisfy_settings_without_dotenv(
         "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_BOT_SECRET_TOKEN",
         "TELEGRAM_WEBHOOK_URL",
-        "GCS_BUCKET_NAME",
         "CRON_SECRET",
         "BACKEND_CORS_ORIGINS",
     }
