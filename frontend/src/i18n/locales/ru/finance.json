@@ -151,7 +151,6 @@
   },
   "row": {
     "acceptFor": "Принять платёж: {{student}}, {{course}}",
-    "detailsFor": "Подробности платежа {{id}}",
     "unknownStudent": "Неизвестный студент",
     "pay": "Оплата"
   },

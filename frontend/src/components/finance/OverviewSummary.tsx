@@ -37,8 +37,8 @@ function Metric({ icon, label, help, isLoading, isUnavailable, isRefreshFailed, 
   const valueSize: string = large ? "text-[1.75rem] leading-9" : "text-xl leading-7";
   return (
     <div className="min-w-0">
-      <div className="flex min-h-11 items-center justify-between gap-2">
-        <h2 className="flex min-w-0 flex-1 items-center gap-1.5 text-sm text-label">
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <h2 className="flex min-w-0 flex-1 basis-40 items-center gap-1.5 text-sm text-label">
           <span className="shrink-0 text-muted">{icon}</span>
           <span className="min-w-0 [overflow-wrap:normal]">{label}</span>
           <InfoTooltip label={t("finance:overview.aboutMetric", { label })}>{help}</InfoTooltip>
@@ -58,7 +58,7 @@ function Metric({ icon, label, help, isLoading, isUnavailable, isRefreshFailed, 
           </Button>
         </div>
       ) : (
-        <p key={value} className={`mt-1 min-h-9 break-words font-semibold text-ink tabular-nums transition-opacity duration-150 ease-out starting:opacity-0 ${valueSize}`}>{value}</p>
+        <p key={value} className={`mt-1 min-h-9 break-words font-semibold text-ink tabular-nums motion-safe:transition-opacity motion-safe:duration-150 motion-safe:ease-out motion-safe:starting:opacity-0 ${valueSize}`}>{value}</p>
       )}
       {isRefreshFailed && (
         <p role="status" className="mt-1 flex flex-wrap items-center gap-2 text-xs text-warning">
@@ -91,7 +91,7 @@ function CollectionRangePicker({ range, onApply }: CollectionRangePickerProps) {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8} collisionPadding={16} className="z-70">
-          <Popover.Popup className="w-[min(22rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
+          <Popover.Popup className="w-[min(22rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
             <Popover.Title className="text-sm font-semibold text-ink">{t("overview.rangeTitle")}</Popover.Title>
             <CollectionRangeForm
               key={range.from + "|" + range.to}
@@ -204,7 +204,7 @@ export function OverviewSummary({ range, onApplyRange }: OverviewSummaryProps) {
         large
         onRetry={() => void current.refetch()}
       />
-      <div className="grid gap-x-3 gap-y-5 @[20rem]:grid-cols-[7rem_minmax(0,1fr)] @[52.5rem]:contents">
+      <div className="grid gap-x-3 gap-y-5 @[30rem]:grid-cols-[10rem_minmax(0,1fr)] @[52.5rem]:contents">
         <Metric
           icon={<Users size={18} aria-hidden="true" className="hidden @[26rem]:block" />}
           label={t("finance:overview.currentStudents")}

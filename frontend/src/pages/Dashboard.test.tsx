@@ -15,7 +15,7 @@ import * as auditHooks from "../lib/audit/hooks";
 import type { FinanceAnalyticsResponse, DebtItem } from "../lib/finance/types";
 import type { CourseResponse } from "../lib/courses/types";
 import type { User } from "../lib/users/types";
-import type { AuditLogItem } from "../lib/audit/api";
+import type { AuditEvent } from "../lib/audit/api";
 import type { Paginated } from "../lib/pagination";
 
 vi.mock("../components/dashboard/AccountantDashboard", () => ({
@@ -209,63 +209,40 @@ const mockDebtsPaginated: Paginated<DebtItem> = {
   total_pages: 1,
 };
 
-const mockAuditLogsPaginated: Paginated<AuditLogItem> = {
+function auditEvent(id: number, overrides: Partial<AuditEvent> = {}): AuditEvent {
+  return {
+    id,
+    user_id: 4,
+    actor_name: "Dilnoza Karimova",
+    action: "update",
+    entity_type: "course",
+    entity_id: id,
+    entity_label: "Python Basics",
+    student_id: null,
+    course_id: null,
+    course_title: null,
+    amount: null,
+    created_at: "2026-10-10T10:00:00Z",
+    changes: [{ id, field_name: "price", old_value: "500.00", new_value: "600.00" }],
+    ...overrides,
+  };
+}
+
+const mockAuditLogsPaginated: Paginated<AuditEvent> = {
   items: [
-    {
-      id: 1,
-      user_id: 1,
+    auditEvent(1, {
       action: "create",
-      entity_type: "course",
-      entity_id: 11,
-      field_name: "status",
-      old_value: null,
-      new_value: "active",
-      created_at: "2026-10-10T10:00:00Z",
-    },
-    {
-      id: 2,
-      user_id: 2,
-      action: "update",
-      entity_type: "student",
-      entity_id: 101,
-      field_name: "score",
-      old_value: "0",
-      new_value: "95",
-      created_at: "2026-10-10T11:00:00Z",
-    },
-    {
-      id: 3,
-      user_id: null,
-      action: "delete",
-      entity_type: "enrollment",
-      entity_id: 55,
-      field_name: "status",
-      old_value: "active",
-      new_value: null,
-      created_at: "2026-10-10T12:00:00Z",
-    },
-    {
-      id: 4,
-      user_id: 1,
-      action: "update",
-      entity_type: "course",
-      entity_id: 12,
-      field_name: "price",
-      old_value: "500.00",
-      new_value: "600.00",
-      created_at: "2026-10-10T13:00:00Z",
-    },
-    {
-      id: 5,
-      user_id: 1,
-      action: "create",
-      entity_type: "user",
-      entity_id: 1,
-      field_name: "role",
-      old_value: null,
-      new_value: "student",
-      created_at: "2026-10-10T14:00:00Z",
-    },
+      entity_type: "payment",
+      entity_id: 3,
+      entity_label: "Aziz Rahimov",
+      course_title: "Python Basics",
+      amount: "250.00",
+      changes: [{ id: 1, field_name: "method", old_value: null, new_value: "cash" }],
+    }),
+    auditEvent(2),
+    auditEvent(3, { actor_name: null, user_id: null }),
+    auditEvent(4),
+    auditEvent(5),
   ],
   total: 5,
   page: 1,
@@ -287,7 +264,7 @@ describe("Superadmin Dashboard (/)", () => {
     vi.mocked(courseHooks.useCourses).mockReturnValue(mockSuccessResult(mockCoursesPaginated));
     vi.mocked(userHooks.useStudents).mockReturnValue(mockSuccessResult(mockStudentsPaginated));
     vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(mockDebtsPaginated));
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(mockSuccessResult(mockAuditLogsPaginated));
+    vi.mocked(auditHooks.useAuditEvents).mockReturnValue(mockSuccessResult(mockAuditLogsPaginated));
   });
 
   afterEach(() => {
@@ -367,6 +344,14 @@ describe("Superadmin Dashboard (/)", () => {
     expect(financeFooterLink.getAttribute("href")).toBe("/finance?tab=debtors");
   });
 
+  it("uses the singular form for a one day overdue balance", () => {
+    const oneDay: Paginated<DebtItem> = { ...mockDebtsPaginated, items: [{ ...mockDebtsPaginated.items[0], overdue_days: 1 }] };
+    vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(oneDay));
+    renderDashboard();
+    expect(screen.getByText(/Overdue 1 day$/)).toBeTruthy();
+    expect(screen.queryByText(/Overdue 1 days/)).toBeNull();
+  });
+
   it("displays successful empty state when no debts exist", () => {
     const emptyDebts: Paginated<DebtItem> = {
       items: [],
@@ -396,71 +381,28 @@ describe("Superadmin Dashboard (/)", () => {
     expect(screen.getAllByText("Update failed — showing cached data").length).toBeGreaterThan(0);
   });
 
-  it("formats audit log records truthfully with primary changed line and preserves explicit zero", () => {
+  it("renders recent activity as readable sentences without raw user or entity ids", () => {
     renderDashboard();
 
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Score:") === true &&
-          element.textContent?.includes("0 ➔ 95") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Price:") === true &&
-          element.textContent?.includes("500.00 ➔ 600.00") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Created Course") === true &&
-          element.textContent?.includes("Status = Active") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Deleted Enrollment") === true
-      )
-    ).toBeTruthy();
-
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("User #2") === true &&
-          element.textContent?.includes("Student #101") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("System") === true &&
-          element.textContent?.includes("Enrollment #55") === true
-      )
-    ).toBeTruthy();
+    expect(screen.getAllByText("Dilnoza Karimova", { selector: "strong" })).toHaveLength(4);
+    expect(screen.getByText(/recorded 250\.00 TJS from Aziz Rahimov/)).toBeTruthy();
+    expect(screen.queryByText(/User #/)).toBeNull();
+    expect(screen.queryByText(/Payment #/)).toBeNull();
+    expect(screen.queryByText(/#\d+/)).toBeNull();
 
     const auditLink = screen.getByRole("link", { name: /View all activity/ });
     expect(auditLink.getAttribute("href")).toBe("/audit");
   });
 
   it("displays explanatory empty state when no activity logs exist", () => {
-    const emptyAudit: Paginated<AuditLogItem> = {
+    const emptyAudit: Paginated<AuditEvent> = {
       items: [],
       total: 0,
       page: 1,
       page_size: 5,
       total_pages: 0,
     };
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(mockSuccessResult(emptyAudit));
+    vi.mocked(auditHooks.useAuditEvents).mockReturnValue(mockSuccessResult(emptyAudit));
 
     renderDashboard();
     expect(screen.getByText("Field change history appears when operations occur")).toBeTruthy();
@@ -468,24 +410,10 @@ describe("Superadmin Dashboard (/)", () => {
 
   it("hides items beyond 3 on phone and shows them on desktop", () => {
     const { container } = renderDashboard();
-    const listItems = container.querySelectorAll("ul.divide-y > li");
-    const activityItems = Array.from(listItems).filter((el) => el.textContent?.includes("•"));
-    expect(activityItems.length).toBe(7);
-
-    const auditListItems = container.querySelectorAll("div.border-border-warm:last-child ul.divide-y > li");
-    expect(auditListItems.length).toBe(5);
-
-    expect(auditListItems[0].className).toContain("flex");
-    expect(auditListItems[0].className).not.toContain("hidden lg:flex");
-
-    expect(auditListItems[1].className).toContain("flex");
-    expect(auditListItems[1].className).not.toContain("hidden lg:flex");
-
-    expect(auditListItems[2].className).toContain("flex");
-    expect(auditListItems[2].className).not.toContain("hidden lg:flex");
-
-    expect(auditListItems[3].className).toContain("hidden lg:flex");
-    expect(auditListItems[4].className).toContain("hidden lg:flex");
+    const feedItems = Array.from(container.querySelectorAll("li")).filter((el) => el.querySelector("time") !== null);
+    expect(feedItems.length).toBe(5);
+    feedItems.slice(0, 3).forEach((item) => expect(item.className).not.toContain("hidden"));
+    feedItems.slice(3).forEach((item) => expect(item.className).toContain("hidden lg:flex"));
   });
 
   it("truthfully renders summary true zeros without fallback or fabrication", () => {
@@ -638,366 +566,13 @@ describe("Superadmin Dashboard (/)", () => {
   });
 });
 
-describe("independent activity fallback audit", () => {
-  afterEach(() => {
-    cleanup();
-    i18n.changeLanguage("en");
-  });
-
-  it("never renders unknown raw field/entity identifiers", () => {
-    useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
-    const log: AuditLogItem = {
-      id: 98,
-      user_id: null,
-      action: "update",
-      entity_type: "private_storage_trace",
-      entity_id: 3,
-      field_name: "internal_debug_column",
-      old_value: "0",
-      new_value: "1",
-      created_at: "2026-10-11T00:00:00Z",
-    };
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(
-      mockSuccessResult({ items: [log], total: 1, page: 1, page_size: 5, total_pages: 1 })
-    );
-    render(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-    expect(screen.queryByText(/private_storage_trace/)).toBeNull();
-    expect(screen.queryByText(/internal_debug_column/)).toBeNull();
-  });
-
-  it("renders localized unknown action, entity, and field across all three locales", () => {
-    useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
-    const mysteriousLogs: AuditLogItem[] = [
-      {
-        id: 77,
-        user_id: 1,
-        action: "update",
-        entity_type: "mysterious_device",
-        entity_id: 3,
-        field_name: "flux_capacitor",
-        old_value: "100",
-        new_value: "200",
-        created_at: "2026-10-11T00:00:00Z",
-      },
-      {
-        id: 78,
-        user_id: 1,
-        action: "teleport",
-        entity_type: "mysterious_device",
-        entity_id: 4,
-        field_name: "",
-        old_value: null,
-        new_value: null,
-        created_at: "2026-10-11T00:01:00Z",
-      },
-    ];
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(
-      mockSuccessResult({ items: mysteriousLogs, total: 2, page: 1, page_size: 5, total_pages: 1 })
-    );
-
-    i18n.changeLanguage("en");
-    const { rerender } = render(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Field:") === true &&
-          element.textContent?.includes("100 ➔ 200") === true
-      )
-    ).toBeTruthy();
-    expect(screen.getByText(/Record #3/)).toBeTruthy();
-    expect(screen.getByText(/Operation Record/)).toBeTruthy();
-
-    i18n.changeLanguage("ru");
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Поле:") === true &&
-          element.textContent?.includes("100 ➔ 200") === true
-      )
-    ).toBeTruthy();
-    expect(screen.getByText(/Запись #3/)).toBeTruthy();
-    expect(screen.getByText(/Операция Запись/)).toBeTruthy();
-
-    i18n.changeLanguage("tg");
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Майдон:") === true &&
-          element.textContent?.includes("100 ➔ 200") === true
-      )
-    ).toBeTruthy();
-    expect(screen.getByText(/Сабт #3/)).toBeTruthy();
-    expect(screen.getByText(/Амалиёт Сабт/)).toBeTruthy();
-  });
-
-  it("formats structured domain values for role, attendance, payment method, and status truthfully", () => {
-    useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
-    i18n.changeLanguage("en");
-    const structuredLogs: AuditLogItem[] = [
-      {
-        id: 81,
-        user_id: 1,
-        action: "update",
-        entity_type: "user",
-        entity_id: 10,
-        field_name: "role",
-        old_value: "mentor",
-        new_value: "superadmin",
-        created_at: "2026-10-11T00:00:00Z",
-      },
-      {
-        id: 82,
-        user_id: 1,
-        action: "update",
-        entity_type: "lesson",
-        entity_id: 11,
-        field_name: "attendance",
-        old_value: "0",
-        new_value: "1",
-        created_at: "2026-10-11T00:01:00Z",
-      },
-      {
-        id: 83,
-        user_id: 1,
-        action: "update",
-        entity_type: "payment",
-        entity_id: 12,
-        field_name: "payment_method",
-        old_value: "cash",
-        new_value: "card",
-        created_at: "2026-10-11T00:02:00Z",
-      },
-      {
-        id: 84,
-        user_id: 1,
-        action: "update",
-        entity_type: "course",
-        entity_id: 13,
-        field_name: "status",
-        old_value: "active",
-        new_value: "archived",
-        created_at: "2026-10-11T00:03:00Z",
-      },
-    ];
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(
-      mockSuccessResult({ items: structuredLogs, total: 4, page: 1, page_size: 5, total_pages: 1 })
-    );
-
-    render(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Role:") === true &&
-          element.textContent?.includes("Teacher ➔ Administrator") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Attendance:") === true &&
-          element.textContent?.includes("Absent ➔ Present") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Payment Method:") === true &&
-          element.textContent?.includes("Cash ➔ Card") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Status:") === true &&
-          element.textContent?.includes("Active ➔ Archived") === true
-      )
-    ).toBeTruthy();
-  });
-
-  it("preserves explicit zero and shows em-dash for null or empty values", () => {
-    useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
-    i18n.changeLanguage("en");
-    const zeroAndNullLogs: AuditLogItem[] = [
-      {
-        id: 91,
-        user_id: 1,
-        action: "update",
-        entity_type: "grade",
-        entity_id: 21,
-        field_name: "score",
-        old_value: "0",
-        new_value: "95",
-        created_at: "2026-10-11T00:00:00Z",
-      },
-      {
-        id: 92,
-        user_id: 1,
-        action: "update",
-        entity_type: "grade",
-        entity_id: 22,
-        field_name: "score",
-        old_value: null,
-        new_value: "50",
-        created_at: "2026-10-11T00:01:00Z",
-      },
-      {
-        id: 93,
-        user_id: 1,
-        action: "update",
-        entity_type: "grade",
-        entity_id: 23,
-        field_name: "score",
-        old_value: "50",
-        new_value: "",
-        created_at: "2026-10-11T00:02:00Z",
-      },
-    ];
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(
-      mockSuccessResult({ items: zeroAndNullLogs, total: 3, page: 1, page_size: 5, total_pages: 1 })
-    );
-
-    render(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Score:") === true &&
-          element.textContent?.includes("0 ➔ 95") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Score:") === true &&
-          element.textContent?.includes("— ➔ 50") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Score:") === true &&
-          element.textContent?.includes("50 ➔ —") === true
-      )
-    ).toBeTruthy();
-  });
-
-  it("does not merge audit records that share entity and timestamp", () => {
-    useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
-    i18n.changeLanguage("en");
-    const identicalLogs: AuditLogItem[] = [
-      {
-        id: 101,
-        user_id: 1,
-        action: "update",
-        entity_type: "course",
-        entity_id: 5,
-        field_name: "price",
-        old_value: "100",
-        new_value: "150",
-        created_at: "2026-10-11T00:00:00Z",
-      },
-      {
-        id: 102,
-        user_id: 1,
-        action: "update",
-        entity_type: "course",
-        entity_id: 5,
-        field_name: "title",
-        old_value: "Old Title",
-        new_value: "New Title",
-        created_at: "2026-10-11T00:00:00Z",
-      },
-    ];
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(
-      mockSuccessResult({ items: identicalLogs, total: 2, page: 1, page_size: 5, total_pages: 1 })
-    );
-
-    const { container } = render(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <ActivityFeed />
-        </MemoryRouter>
-      </I18nextProvider>
-    );
-
-    const items = container.querySelectorAll("ul.divide-y > li");
-    expect(items.length).toBe(2);
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Price:") === true &&
-          element.textContent?.includes("100 ➔ 150") === true
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        (_, element) =>
-          element?.tagName.toLowerCase() === "p" &&
-          element.textContent?.includes("Title:") === true &&
-          element.textContent?.includes("Old Title ➔ New Title") === true
-      )
-    ).toBeTruthy();
-  });
-});
-
-
 describe("independent retained collection audit", () => {
   beforeEach(async () => { await i18n.changeLanguage("en"); });
   afterEach(() => cleanup());
   it.each([false, true])("retains loaded or empty activity during refetch failure (empty=%s)", (empty) => {
     const data = empty ? {...mockAuditLogsPaginated,items:[],total:0} : mockAuditLogsPaginated;
     const result=mockStaleErrorResult(data);
-    vi.mocked(auditHooks.useAuditLogs).mockReturnValue(result);
+    vi.mocked(auditHooks.useAuditEvents).mockReturnValue(result);
     render(<I18nextProvider i18n={i18n}><MemoryRouter><ActivityFeed /></MemoryRouter></I18nextProvider>);
     expect(screen.getByText("Update failed — showing cached data")).toBeTruthy();
     expect(screen.queryByText("Failed to load activity")).toBeNull();
@@ -1015,5 +590,20 @@ describe("independent retained collection audit", () => {
     expect(screen.queryByText("Failed to load debtors")).toBeNull();
     fireEvent.click(screen.getByRole("button",{name:"Retry"}));
     expect(result.refetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("dashboard recent activity locales", () => {
+  afterEach(async () => {
+    cleanup();
+    await i18n.changeLanguage("en");
+  });
+  it.each(["ru", "tg"])("renders the payment sentence in %s without the English verb", async (language) => {
+    await i18n.changeLanguage(language);
+    vi.mocked(auditHooks.useAuditEvents).mockReturnValue(mockSuccessResult(mockAuditLogsPaginated));
+    render(<I18nextProvider i18n={i18n}><MemoryRouter><ActivityFeed /></MemoryRouter></I18nextProvider>);
+    expect(screen.getByText("Aziz Rahimov", { exact: false })).toBeTruthy();
+    expect(screen.queryByText(/recorded/)).toBeNull();
+    expect(screen.queryByText(/User #|Payment #/)).toBeNull();
   });
 });

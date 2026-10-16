@@ -22,7 +22,7 @@ export function StudentAccountAccessPopover({ rawPassword }: StudentAccountAcces
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={6} collisionPadding={16} className="z-70">
-          <Popover.Popup className="w-[min(20rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-3 text-sm shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:scale-[0.96]">
+          <Popover.Popup className="w-[min(20rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-3 text-sm shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:scale-[0.96]">
             <Popover.Title className="text-xs font-semibold text-label">{t("accountAccess")}</Popover.Title>
             <div className="mt-1 flex items-center gap-2">
               {rawPassword ? (

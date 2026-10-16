@@ -123,7 +123,6 @@
   "states": {
     "loading": "Loading changes",
     "error": "The audit log could not be loaded.",
-    "retry": "Try again",
     "refreshFailed": "Could not refresh. Showing the last loaded changes.",
     "empty": "No changes recorded yet. Changes made by staff will appear here.",
     "noMatch": "No changes match these filters.",

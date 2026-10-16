@@ -151,7 +151,6 @@
   },
   "row": {
     "acceptFor": "Қабули пардохт: {{student}}, {{course}}",
-    "detailsFor": "Тафсилоти пардохти {{id}}",
     "unknownStudent": "Донишҷӯи номаълум",
     "pay": "Пардохт"
   },

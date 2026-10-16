@@ -25,7 +25,7 @@ export function GuardianPhonePopover({ guardianPhone }: GuardianPhonePopoverProp
         <Popover.Positioner side="bottom" align="center" sideOffset={4} collisionPadding={8} className="z-70">
           <Popover.Popup
             onClick={(event) => event.stopPropagation()}
-            className="origin-[var(--transform-origin)] rounded-[10px] border border-border-warm bg-card px-3 py-2 text-sm text-ink shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:scale-[0.96]"
+            className="origin-[var(--transform-origin)] rounded-[10px] border border-border-warm bg-card px-3 py-2 text-sm text-ink shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:scale-[0.96]"
           >
             <div className="text-xs text-label">{label}</div>
             <a

@@ -5,7 +5,7 @@ import type { DebtorsViewState } from "../../lib/finance/urlState";
 import type { EnrollmentStatus } from "../../lib/finance/types";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { FilterChip } from "./FilterChip";
-import { ListboxPicker, type ListboxOption } from "./ListboxPicker";
+import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 
 const OVERDUE_THRESHOLDS: readonly number[] = [1, 7, 30, 60, 90];
 const STATUSES: readonly EnrollmentStatus[] = ["active", "withdrawn", "completed"];

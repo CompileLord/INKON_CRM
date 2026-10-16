@@ -196,7 +196,7 @@ describe("Audit states", () => {
     expect(screen.getByText("Loading changes")).toBeTruthy();
     expect(await screen.findByText("The audit log could not be loaded.")).toBeTruthy();
     mock.onGet(logsUrl).reply(200, listing([paymentCreated]));
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText(/recorded 75\.50 TJS/)).toBeTruthy();
   });
 

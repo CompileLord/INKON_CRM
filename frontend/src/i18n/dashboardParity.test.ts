@@ -19,9 +19,11 @@ function getKeys(obj: unknown, prefix = ""): string[] {
 
 describe("dashboard i18n key parity", () => {
   it("ensures all dashboard keys match bidirectionally across en, ru, and tg", () => {
-    const enKeys = getKeys(enDashboard).sort();
-    const ruKeys = getKeys(ruDashboard).sort();
-    const tgKeys = getKeys(tgDashboard).sort();
+    const pluralSuffix = /_(zero|one|two|few|many|other)$/;
+    const baseKeys = (source: unknown): string[] => [...new Set(getKeys(source).map((key) => key.replace(pluralSuffix, "")))].sort();
+    const enKeys = baseKeys(enDashboard);
+    const ruKeys = baseKeys(ruDashboard);
+    const tgKeys = baseKeys(tgDashboard);
 
     const missingInRu = enKeys.filter((k) => !ruKeys.includes(k));
     const missingInTg = enKeys.filter((k) => !tgKeys.includes(k));
@@ -42,5 +44,11 @@ describe("dashboard i18n key parity", () => {
     expect(enDashboard.dueToday).toBe("Due today");
     expect(ruDashboard.dueToday).toBe("Срок сегодня");
     expect(tgDashboard.dueToday).toBe("Мӯҳлат имрӯз");
+  });
+
+  it("defines the plural forms each language needs for the attention overdue duration", () => {
+    expect(getKeys(enDashboard)).toEqual(expect.arrayContaining(["overdueDays_one", "overdueDays_other"]));
+    expect(getKeys(ruDashboard)).toEqual(expect.arrayContaining(["overdueDays_one", "overdueDays_few", "overdueDays_many", "overdueDays_other"]));
+    expect(getKeys(tgDashboard)).toEqual(expect.arrayContaining(["overdueDays_one", "overdueDays_other"]));
   });
 });

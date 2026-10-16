@@ -94,7 +94,7 @@ export function Audit() {
 
   const retry = (
     <Button variant="secondary" loading={logs.isFetching} onClick={() => void logs.refetch()}>
-      {t("audit:states.retry")}
+      {t("common:retry")}
     </Button>
   );
 

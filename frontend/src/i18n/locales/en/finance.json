@@ -151,7 +151,6 @@
   },
   "row": {
     "acceptFor": "Accept payment for {{student}}, {{course}}",
-    "detailsFor": "Details for payment {{id}}",
     "unknownStudent": "Unknown student",
     "pay": "Pay"
   },

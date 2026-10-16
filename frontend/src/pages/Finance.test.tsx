@@ -251,7 +251,7 @@ describe("Finance overview", () => {
     const balances = await screen.findByRole("region", { name: "Course balances" });
     expect(await within(balances).findByRole("alert")).toBeTruthy();
     const latest = screen.getByRole("region", { name: "Latest payments" });
-    expect(await within(latest).findByRole("button", { name: "Details for payment 123" })).toBeTruthy();
+    expect(await within(latest).findByRole("button", { name: "Details for Dilnoza Rustamova, payment 123" })).toBeTruthy();
     const paymentCalls = requests(paymentsUrl).length;
     mock.onGet(debtsUrl).reply(200, page(twoCourseDebts));
     await userEvent.click(within(balances).getByRole("button", { name: "Retry" }));
@@ -288,7 +288,7 @@ describe("Finance overview", () => {
   it("opens payment details from the latest payments and returns focus to the trigger", async () => {
     mock.onGet("/finance/payments/123/receipt").reply(200, { receipt_number: "R-1", student_name: "Anisa", accepted_by_name: "Acc", allocations: [] });
     renderFinance();
-    const trigger = await screen.findByRole("button", { name: "Details for payment 123" });
+    const trigger = await screen.findByRole("button", { name: "Details for Dilnoza Rustamova, payment 123" });
     await userEvent.click(trigger);
     const dialog = await screen.findByRole("dialog");
     await within(dialog).findByText("R-1");

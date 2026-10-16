@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { usePayableCourses } from "../../lib/finance/hooks";
 import { Button } from "../ui/Button";
 import { InfoTooltip } from "../ui/InfoTooltip";
-import { ListboxPicker, type ListboxOption } from "./ListboxPicker";
+import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 
 export const PAYMENT_COURSE_TRIGGER_ID: string = "payment-course";
 

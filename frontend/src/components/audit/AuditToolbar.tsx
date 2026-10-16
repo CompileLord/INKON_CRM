@@ -6,7 +6,7 @@ import type { AuditFilterOptions, KnownAuditAction } from "../../lib/audit/api";
 import { AuditUrlState, type AuditViewState } from "../../lib/audit/auditUrlState";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { FilterChip } from "../finance/FilterChip";
-import { ListboxPicker, type ListboxOption } from "../finance/ListboxPicker";
+import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { PaymentDateRangePicker } from "../finance/PaymentDateRangePicker";
 import { useAuditLabels } from "./useAuditLabels";
 

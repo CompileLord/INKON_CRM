@@ -4,7 +4,7 @@ import type { PaymentItem } from "../../lib/finance/types";
 import { PaymentIdentity } from "../../lib/finance/paymentIdentity";
 import { compareMoney, formatExactMoney } from "../../lib/money";
 import { formatDateTime, formatNumber, SCHOOL_TIMEZONE } from "../../i18n/formatters";
-import { Button } from "../ui/Button";
+import { QUIET_ACTION_CLASSES } from "./quietActionClasses";
 
 interface PaymentRowProps {
   payment: PaymentItem;
@@ -48,14 +48,15 @@ export function PaymentRow({ payment, showStudentNumber, onOpenDetails }: Paymen
             {formatDateTime(payment.paid_at, i18n.language, SCHOOL_TIMEZONE)}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          aria-label={t("finance:row.detailsFor", { id: formatNumber(payment.id, i18n.language) })}
+        <button
+          type="button"
+          aria-label={t("finance:paymentsTab.detailsFor", { student: PaymentIdentity.displayName(payment) ?? t("finance:row.unknownStudent"), id: formatNumber(payment.id, i18n.language) })}
           onClick={() => onOpenDetails(payment)}
+          className={QUIET_ACTION_CLASSES + " px-2 text-muted"}
         >
           <Eye size={16} aria-hidden="true" />
           <span className="@[30rem]:sr-only">{t("finance:latestPayments.details")}</span>
-        </Button>
+        </button>
       </div>
     </li>
   );

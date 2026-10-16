@@ -4,7 +4,7 @@ import type { PaymentMethod } from "../../lib/finance/types";
 import { FinanceUrlState, type PaymentsViewState } from "../../lib/finance/urlState";
 import { formatDate, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { FilterChip } from "./FilterChip";
-import { ListboxPicker, type ListboxOption } from "./ListboxPicker";
+import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { PaymentDateRangePicker } from "./PaymentDateRangePicker";
 import { PaymentStudentFilter } from "./PaymentStudentFilter";
 

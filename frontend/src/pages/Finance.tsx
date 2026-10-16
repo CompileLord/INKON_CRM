@@ -56,7 +56,7 @@ export function Finance() {
       </header>
       <PaymentCompletion payment={recordedPayment} />
       <FinanceTabs selected={state.tab} onSelect={navigation.selectTab} />
-      <div key={state.tab} role="tabpanel" className="transition-opacity duration-200 ease-out starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
+      <div key={state.tab} role="tabpanel" className="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
         {state.tab === "overview" && (
           <OverviewTab
             range={state.range}

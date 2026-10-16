@@ -40,7 +40,7 @@ export function SchoolDatePicker({ id, value, onChange, triggerRef, invalid = fa
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start" sideOffset={6} collisionPadding={16} className="z-80">
-          <Popover.Popup finalFocus={triggerRef} className="w-[min(20rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
+          <Popover.Popup finalFocus={triggerRef} className="w-[min(20rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
             <Popover.Title className="text-sm font-semibold text-ink">{t("paymentModal.date")}</Popover.Title>
             <div role="group" aria-label={t("overview.presets")} className="mt-3 flex flex-wrap gap-2">
               <Button variant="secondary" className="min-h-11 px-3" onClick={() => apply(getSchoolCalendarDate())}>

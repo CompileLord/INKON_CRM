@@ -1,97 +1,45 @@
-import { History, Clock, ShieldCheck, DollarSign, UserCheck, RefreshCw, ChevronRight } from "lucide-react";
+import { Clock, History, RefreshCw, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useAuditLogs } from "../../lib/audit/hooks";
-import { formatDateTime } from "../../i18n/formatters";
+import { useAuditEvents } from "../../lib/audit/hooks";
+import type { AuditEvent } from "../../lib/audit/api";
+import { formatDateTime, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
+import { AuditActionChip } from "../audit/AuditActionChip";
+import { AuditSentence } from "../audit/AuditSentence";
+import { useAuditEventText } from "../audit/useAuditEventText";
+
+interface ActivityEventRowProps {
+  event: AuditEvent;
+  phoneHidden: boolean;
+}
+
+function ActivityEventRow({ event, phoneHidden }: ActivityEventRowProps) {
+  const { i18n } = useTranslation("dashboard");
+  const { subtitle } = useAuditEventText(event);
+  const language: string = i18n.language;
+  const timeText: string = formatRecentRelativeTime(event.created_at, language) ?? formatTime(event.created_at, language, SCHOOL_TIMEZONE);
+  return (
+    <li className={`${phoneHidden ? "hidden lg:flex" : "flex"} min-w-0 items-start gap-2.5 px-2 py-3`}>
+      <AuditActionChip action={event.action} />
+      <div className="min-w-0 flex-1">
+        <p className="break-words text-sm text-ink">
+          <AuditSentence event={event} />
+        </p>
+        <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted">
+          {subtitle !== "" && <span className="min-w-0 break-words">{subtitle}</span>}
+          <Clock size={11} aria-hidden="true" className="shrink-0" />
+          <time dateTime={event.created_at} title={formatDateTime(event.created_at, language, SCHOOL_TIMEZONE)} className="tabular-nums">{timeText}</time>
+        </p>
+      </div>
+    </li>
+  );
+}
 
 export function ActivityFeed() {
-  const { t, i18n } = useTranslation(["dashboard", "common"]);
-  const { data, isLoading, isError, refetch } = useAuditLogs(1, 5);
-  const logs = data?.items ?? [];
+  const { t } = useTranslation(["dashboard", "common"]);
+  const { data, isLoading, isError, refetch } = useAuditEvents(1, 5);
 
-  const getActionIcon = (action: string) => {
-    const act = action.toLowerCase();
-    if (act === "create") {
-      return <UserCheck size={14} className="text-success shrink-0" aria-hidden="true" />;
-    }
-    if (act === "update") {
-      return <ShieldCheck size={14} className="text-info shrink-0" aria-hidden="true" />;
-    }
-    if (act === "delete") {
-      return <History size={14} className="text-destructive shrink-0" aria-hidden="true" />;
-    }
-    return <DollarSign size={14} className="text-warning shrink-0" aria-hidden="true" />;
-  };
-
-  const formatValue = (value: string | null | undefined, fieldName?: string): string => {
-    if (value === null || value === undefined || value === "") return "—";
-    const field = fieldName?.toLowerCase();
-    const val = value.toLowerCase();
-
-    if (field === "status") {
-      const statusKey = `status_${val}`;
-      const translated = t(statusKey);
-      if (translated !== statusKey) return translated;
-    }
-
-    if (field === "role") {
-      const roleKey = `role_${val}`;
-      const translated = t(roleKey);
-      if (translated !== roleKey) return translated;
-    }
-
-    if (field === "attendance") {
-      if (val === "true" || val === "1") {
-        return t("attendance_present");
-      }
-      if (val === "false" || val === "0") {
-        return t("attendance_absent");
-      }
-    }
-
-    if (field === "payment_method" || field === "method") {
-      const methodKey = `method_${val}`;
-      const translated = t(methodKey);
-      if (translated !== methodKey) return translated;
-    }
-
-    if (value === "0") return "0";
-
-    return String(value);
-  };
-
-  const getActionLabel = (action: string): string => {
-    const act = action.toLowerCase();
-    const key = `action_${act}`;
-    const translated = t(key);
-    if (translated !== key) return translated;
-    const legacyKey = `action${act.charAt(0).toUpperCase()}${act.slice(1)}`;
-    const legacyTranslated = t(legacyKey);
-    if (legacyTranslated !== legacyKey) return legacyTranslated;
-    return t("unknownAction");
-  };
-
-  const getEntityLabel = (entityType: string): string => {
-    const act = entityType.toLowerCase();
-    const key = `entity_${act}`;
-    const translated = t(key);
-    if (translated !== key) return translated;
-    const legacyKey = `entity${act.charAt(0).toUpperCase()}${act.slice(1)}`;
-    const legacyTranslated = t(legacyKey);
-    if (legacyTranslated !== legacyKey) return legacyTranslated;
-    return t("unknownEntity");
-  };
-
-  const getFieldLabel = (fieldName: string): string => {
-    const act = fieldName.toLowerCase();
-    const key = `field_${act}`;
-    const translated = t(key);
-    if (translated !== key) return translated;
-    const legacyKey = `field${act.charAt(0).toUpperCase()}${act.slice(1)}`;
-    const legacyTranslated = t(legacyKey);
-    if (legacyTranslated !== legacyKey) return legacyTranslated;
-    return t("unknownField");
-  };
+  const events: AuditEvent[] = data?.items ?? [];
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-border-warm bg-card overflow-hidden">
@@ -138,13 +86,13 @@ export function ActivityFeed() {
             <button
               type="button"
               onClick={() => refetch()}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
             >
               <RefreshCw size={13} aria-hidden="true" />
               <span>{t("common:retry")}</span>
             </button>
           </div>
-        ) : logs.length === 0 ? (
+        ) : events.length === 0 ? (
           <div className="py-8 text-center flex flex-col items-center justify-center gap-3">
             {isError && (
               <div className="w-full mb-2 flex flex-col gap-2 rounded-lg border border-border-warm bg-strip p-2.5 text-left">
@@ -154,7 +102,7 @@ export function ActivityFeed() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 >
                   <RefreshCw size={13} aria-hidden="true" />
                   <span>{t("common:retry")}</span>
@@ -175,7 +123,7 @@ export function ActivityFeed() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 >
                   <RefreshCw size={13} aria-hidden="true" />
                   <span>{t("common:retry")}</span>
@@ -183,61 +131,9 @@ export function ActivityFeed() {
               </div>
             )}
             <ul className="divide-y divide-border-warm">
-              {logs.map((item, index) => {
-                const actor = item.user_id ? t("userWithId", { id: item.user_id }) : t("systemUser");
-                const isDesktopOnly = index >= 3;
-
-                return (
-                  <li
-                    key={item.id}
-                    className={
-                      isDesktopOnly
-                        ? "hidden lg:flex items-start gap-2.5 py-3 px-2 min-w-0"
-                        : "flex items-start gap-2.5 py-3 px-2 min-w-0"
-                    }
-                  >
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card">
-                      {getActionIcon(item.action)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      {item.action === "update" ? (
-                        <p className="text-sm font-medium text-ink break-words">
-                          {getFieldLabel(item.field_name)}:{" "}
-                          <span className="tabular-nums font-semibold">{formatValue(item.old_value, item.field_name)}</span>
-                          {" ➔ "}
-                          <span className="tabular-nums font-semibold">{formatValue(item.new_value, item.field_name)}</span>
-                        </p>
-                      ) : item.action === "create" ? (
-                        <p className="text-sm font-medium text-ink break-words">
-                          {getActionLabel(item.action)} {getEntityLabel(item.entity_type)}
-                          {item.field_name && item.new_value !== null && item.new_value !== undefined ? (
-                            <>
-                              : {getFieldLabel(item.field_name)} ={" "}
-                              <span className="tabular-nums font-semibold">
-                                {formatValue(item.new_value, item.field_name)}
-                              </span>
-                            </>
-                          ) : null}
-                        </p>
-                      ) : (
-                        <p className="text-sm font-medium text-ink break-words">
-                          {getActionLabel(item.action)} {getEntityLabel(item.entity_type)}
-                        </p>
-                      )}
-                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted tabular-nums">
-                        <span>{actor}</span>
-                        <span>•</span>
-                        <span>
-                          {getEntityLabel(item.entity_type)} #{item.entity_id}
-                        </span>
-                        <span>•</span>
-                        <Clock size={11} aria-hidden="true" className="shrink-0" />
-                        <span>{formatDateTime(item.created_at, i18n.language)}</span>
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
+              {events.map((event, index) => (
+                <ActivityEventRow key={event.id} event={event} phoneHidden={index >= 3} />
+              ))}
             </ul>
           </div>
         )}
@@ -246,7 +142,7 @@ export function ActivityFeed() {
       <div className="border-t border-border-warm bg-card px-5 py-2">
         <Link
           to="/audit"
-          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
         >
           <span>{t("viewAllActivity")}</span>
           <ChevronRight size={14} aria-hidden="true" />

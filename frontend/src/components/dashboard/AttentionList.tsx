@@ -48,7 +48,7 @@ export function AttentionList() {
             <button
               type="button"
               onClick={() => refetch()}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
             >
               <RefreshCw size={13} aria-hidden="true" />
               <span>{t("common:retry")}</span>
@@ -64,7 +64,7 @@ export function AttentionList() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 >
                   <RefreshCw size={13} aria-hidden="true" />
                   <span>{t("common:retry")}</span>
@@ -85,7 +85,7 @@ export function AttentionList() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 >
                   <RefreshCw size={13} aria-hidden="true" />
                   <span>{t("common:retry")}</span>
@@ -123,7 +123,7 @@ export function AttentionList() {
                           <p className="mt-0.5 text-xs text-muted break-words">
                             {item.course.title} •{" "}
                             <span className="tabular-nums">
-                              {isOverdue ? t("overdueDays", { days: item.overdue_days }) : t("dueToday")}
+                              {isOverdue ? t("overdueDays", { count: item.overdue_days }) : t("dueToday")}
                             </span>
                           </p>
                         </div>
@@ -131,7 +131,7 @@ export function AttentionList() {
                       <div className="flex items-center justify-end pl-4.5 sm:pl-0 shrink-0">
                         <Link
                           to={FinanceUrlState.debtorsLocation(item.course.id, { id: item.student.id, name: `${item.student.first_name} ${item.student.last_name}` })}
-                          className="inline-flex min-h-[44px] min-w-[44px] w-full sm:w-auto items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+                          className="inline-flex min-h-[44px] min-w-[44px] w-full sm:w-auto items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                         >
                           <span>{t("viewStudentBalance")}<span className="sr-only"> {item.student.first_name} {item.student.last_name}, {item.course.title}</span></span>
                         </Link>
@@ -148,7 +148,7 @@ export function AttentionList() {
       <div className="border-t border-border-warm bg-card px-5 py-2">
         <Link
           to={FinanceUrlState.debtorsLocation()}
-          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-info [@media(hover:hover)_and_(pointer:fine)]:hover:underline motion-safe:active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
         >
           <span>{t("openFinanceViewDebts")}</span>
           <ChevronRight size={14} aria-hidden="true" />

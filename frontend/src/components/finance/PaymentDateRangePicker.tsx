@@ -41,7 +41,7 @@ export function PaymentDateRangePicker({ range, onApply, title }: PaymentDateRan
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start" sideOffset={6} collisionPadding={16} className="z-70">
-          <Popover.Popup className="w-[min(22rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
+          <Popover.Popup className="w-[min(22rem,calc(100vw-32px))] origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-4 shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 motion-safe:data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]">
             <Popover.Title className="text-sm font-semibold text-ink">{title ?? t("paymentsTab.dateTitle")}</Popover.Title>
             <PaymentDateRangeForm
               key={`${range.from ?? ""}|${range.to ?? ""}`}

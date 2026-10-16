@@ -106,7 +106,7 @@ export function InfoTooltip({ label, children }: InfoTooltipProps) {
           id={tooltipId}
           role="tooltip"
           style={position ? { left: position.left, top: position.top, transformOrigin: position.transformOrigin } : { left: 0, top: 0, visibility: "hidden" }}
-          className="fixed z-80 w-max max-w-[min(20rem,calc(100vw-16px))] rounded-[10px] border border-border-warm bg-card px-3 py-2 text-left text-sm font-normal text-ink shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] starting:opacity-0 motion-safe:transition-[opacity,transform] motion-safe:starting:scale-[0.96]"
+          className="fixed z-80 w-max max-w-[min(20rem,calc(100vw-16px))] rounded-[10px] border border-border-warm bg-card px-3 py-2 text-left text-sm font-normal text-ink shadow-lg motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] starting:opacity-0 motion-safe:transition-[opacity,transform] motion-safe:starting:scale-[0.96]"
         >
           {children}
         </span>
