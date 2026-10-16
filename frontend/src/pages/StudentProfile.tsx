@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, Cake, Mail, Phone, Award, CheckCircle2, XCircle, BookOpen, Eye, EyeOff, Key } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStudentProfile } from "../lib/users/hooks";
@@ -39,6 +39,34 @@ export function StudentProfile() {
   const [showPassword, setShowPassword] = useState(false);
   const role = useAuthStore((state) => state.role);
 
+  const location = useLocation();
+  const [createdFeedbackVisible, setCreatedFeedbackVisible] = useState(() => {
+    const locState = location.state as { createdStudentId?: number } | null;
+    return Boolean(role === "superadmin" && numericId && locState?.createdStudentId === numericId);
+  });
+
+  useEffect(() => {
+    const locState = location.state as {
+      createdStudentId?: number;
+      fromDirectory?: { studentId?: number; search?: string; page?: number; pageSize?: number };
+    } | null;
+    if (numericId && locState?.createdStudentId === numericId) {
+      const nextState = { ...locState };
+      delete nextState.createdStudentId;
+      window.history.replaceState(
+        { ...window.history.state, usr: nextState },
+        "",
+      );
+      const timer = window.setTimeout(() => {
+        setCreatedFeedbackVisible(false);
+      }, 5000);
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+    setCreatedFeedbackVisible(false);
+  }, [location.state, numericId]);
+
   const {
     data: profile,
     isLoading,
@@ -55,6 +83,27 @@ export function StudentProfile() {
     </Link>
   );
 
+  const creationBanner = createdFeedbackVisible ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-ink"
+    >
+      <div className="flex items-center gap-2">
+        <CheckCircle2 size={18} className="shrink-0 text-maroon dark:text-accent" />
+        <span>{t("students:form.createSuccess")}</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => setCreatedFeedbackVisible(false)}
+        className="min-h-11 min-w-11 px-3 text-sm font-semibold hover:underline"
+        aria-label={t("common:close")}
+      >
+        {t("common:close")}
+      </button>
+    </div>
+  ) : null;
+
   if (!numericId || Number.isNaN(numericId)) {
     return (
       <div className="flex flex-col gap-4">
@@ -70,6 +119,7 @@ export function StudentProfile() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
+        {creationBanner}
         <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading")}</div>
       </div>
     );
@@ -100,6 +150,7 @@ export function StudentProfile() {
   return (
     <div className="flex flex-col gap-5">
       {backLink}
+      {creationBanner}
 
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border-warm bg-card p-5">
         <PersonAvatar

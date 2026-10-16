@@ -114,8 +114,10 @@ export function useUploadAvatar(role: ListableRole) {
   return useMutation({
     mutationFn: ({ id, file, onUploadProgress, signal }: UploadAvatarInput) =>
       uploadAvatar(id, file, { onUploadProgress, signal }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users", resourceFor(role)] });
+      queryClient.invalidateQueries({ queryKey: ["users", resourceFor(role), "profile", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["users", "me"] });
     },
   });
 }

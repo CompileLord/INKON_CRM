@@ -34,6 +34,19 @@
   "uploadPhoto": "Upload Photo",
   "cancelUpload": "Cancel upload",
   "uploadError": "Failed to upload photo",
+  "avatar": {
+    "label": "Photo",
+    "uploadPhoto": "Upload photo",
+    "changePhoto": "Change photo",
+    "uploading": "Uploading...",
+    "saved": "Photo saved",
+    "uploadError": "Failed to upload photo",
+    "retry": "Retry",
+    "reselect": "Choose another file",
+    "invalidType": "Only JPEG and PNG images are supported",
+    "invalidContent": "The selected image file is corrupted or invalid",
+    "fileTooLarge": "File is too large (maximum 5 MB)"
+  },
   "enums": {
     "userRole": {
       "superadmin": "Superadmin",
