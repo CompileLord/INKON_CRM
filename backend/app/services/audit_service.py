@@ -1,4 +1,3 @@
-import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +9,6 @@ from app.repositories.interfaces.audit_log_repository import (
     AuditLogRow,
 )
 from app.repositories.sqlalchemy.audit_log_repository import SQLAlchemyAuditLogRepository
-
-logger = logging.getLogger(__name__)
 
 DUSHANBE_UTC_OFFSET: timedelta = timedelta(hours=5)
 MAXIMUM_PAGE_SIZE: int = 100
@@ -30,26 +27,17 @@ class AuditService:
         entity_id: int,
         changes: Dict[str, Any]
     ) -> None:
-        try:
-            for field, values in changes.items():
-                old_val, new_val = values
-                audit_log = AuditLog(
-                    user_id=user_id,
-                    action=AuditAction(action),
-                    entity_type=entity_type,
-                    entity_id=entity_id,
-                    field_name=field,
-                    old_value=str(old_val) if old_val is not None else None,
-                    new_value=str(new_val) if new_val is not None else None
-                )
-                self.db.add(audit_log)
-            await self.db.flush()
-        except Exception:
-            # Audit must not break the operation being audited, but a silent
-            # swallow makes "everything is audited" unverifiable — log it.
-            logger.exception(
-                "Failed to write audit log for %s #%s (action=%s)", entity_type, entity_id, action
-            )
+        for field, values in changes.items():
+            old_val, new_val = values
+            self.db.add(AuditLog(
+                user_id=user_id,
+                action=AuditAction(action),
+                entity_type=entity_type,
+                entity_id=entity_id,
+                field_name=field,
+                old_value=str(old_val) if old_val is not None else None,
+                new_value=str(new_val) if new_val is not None else None,
+            ))
 
     @staticmethod
     def _dushanbe_day_start_in_utc(local_day: date) -> datetime:

@@ -10,7 +10,7 @@ class SumCalculationService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def recalculate(self, journal_id: int, student_id: int) -> None:
+    async def recalculate(self, journal_id: int, student_id: int, flush: bool = True) -> None:
         journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
         journal = journal_result.scalars().first()
         exam_max_score_val = journal.exam_max_score if journal else DEFAULT_JOURNAL_EXAM_MAX_SCORE
@@ -56,7 +56,8 @@ class SumCalculationService:
         summary.max_period_score = max_period_score(total_lessons, exam_max_score_val)
         summary.sum_score = summary.homework_score + summary.attendance_score + summary.exam_score + summary.bonus_score
 
-        await self.db.flush()
+        if flush:
+            await self.db.flush()
 
     async def recalculate_journal(self, journal_id: int) -> None:
         journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))

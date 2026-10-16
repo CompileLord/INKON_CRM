@@ -473,7 +473,6 @@ class JournalService:
                 and entry.score == update_item.score
                 and entry.comment == update_item.comment
             ):
-                updated_student_ids.add(update_item.student_id)
                 applied_entries.append(entry)
                 continue
 
@@ -534,7 +533,9 @@ class JournalService:
 
         if updated_student_ids:
             sum_service = SumCalculationService(self.db)
-            await sum_service.recalculate_journal(journal_id)
+            for student_id in sorted(updated_student_ids):
+                await sum_service.recalculate(journal_id, student_id, flush=False)
+            await self.db.flush()
 
         summaries_query = select(JournalStudentSummary).filter(
             JournalStudentSummary.journal_id == journal_id,
