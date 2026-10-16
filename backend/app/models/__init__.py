@@ -1,5 +1,6 @@
 from app.models.user import User, UserRole
 from app.models.refresh_token import RefreshToken
+from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.models.course import Course, CourseStatus, CourseExamType
 from app.models.course_schedule import CourseSchedule
 from app.models.course_mentor_history import CourseMentorHistory
@@ -20,6 +21,9 @@ __all__ = [
     "User",
     "UserRole",
     "RefreshToken",
+    "OutboxEvent",
+    "OutboxEventKind",
+    "OutboxEventStatus",
     "Course",
     "CourseStatus",
     "CourseExamType",

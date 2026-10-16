@@ -19,8 +19,10 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.schemas.auth import TokenPair
 from app.services.email_service import EmailService
+from app.services.outbox_service import OutboxService
 
 
 class AuthService:
@@ -29,6 +31,8 @@ class AuthService:
         self.user_repo = SQLAlchemyUserRepository(db)
         self.token_repo = SQLAlchemyRefreshTokenRepository(db)
         self.email_service = EmailService()
+        self.outbox_repo = SQLAlchemyOutboxRepository(db)
+        self.outbox_service = OutboxService(self.outbox_repo, settings.JWT_SECRET_KEY)
 
     async def login(self, email: str, password: str) -> TokenPair:
         user = await self.user_repo.get_by_email_for_update(email)
@@ -154,12 +158,13 @@ class AuthService:
         key = f"auth:code:{email}"
         data = {"code": code, "attempts": 0}
         await redis_client.set(key, json.dumps(data), ex=600)
-        await self.email_service.send_email(
-            to_email=email,
-            subject="Verification Code",
-            body=f"Your verification code is: {code}"
+        await self.outbox_service.enqueue_verification_email(
+            recipient_email=email,
+            code=code,
+            correlation_key=f"verification:{email}",
         )
         return code
+
 
     async def verify_code(self, email: str, code: str) -> TokenPair:
         key = f"auth:code:{email}"
@@ -266,10 +271,10 @@ class AuthService:
         key = f"auth:reset:{email}"
         data = {"code": code, "attempts": 0}
         await redis_client.set(key, json.dumps(data), ex=600)
-        await self.email_service.send_email(
-            to_email=email,
-            subject="Password Reset Code",
-            body=f"Your password reset code is: {code}"
+        await self.outbox_service.enqueue_password_reset_email(
+            recipient_email=email,
+            code=code,
+            correlation_key=f"reset:{email}",
         )
 
     async def password_reset_verify(self, email: str, code: str) -> str:

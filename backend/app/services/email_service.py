@@ -49,8 +49,14 @@ class EmailService:
                 f"SMTP delivery failed ({type(exception).__name__})"
             ) from None
 
-    async def send_email(self, to_email: str, subject: str, body: str) -> None:
-        if settings.TESTING:
+    async def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        force_transport: bool = False,
+    ) -> None:
+        if settings.TESTING and not force_transport:
             return
         await asyncio.to_thread(self._send_smtp, to_email, subject, body)
 

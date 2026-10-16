@@ -1,7 +1,8 @@
+from typing import Any
 from arq import cron
+from arq.connections import RedisSettings
 from app.core.config import settings
 from app.core.redis import RedisConnectionConfiguration
-from arq.connections import RedisSettings
 from app.workers.tasks import (
     send_verification_email_task,
     send_telegram_message,
@@ -11,6 +12,23 @@ from app.workers.tasks import (
     check_payment_reminders,
     send_email
 )
+
+
+async def outbox_worker_startup(ctx: dict[str, Any]) -> None:
+    from app.workers.outbox import OutboxWorkerManager
+
+    manager = OutboxWorkerManager(
+        database_url=settings.DATABASE_URL,
+        payload_master_key=settings.JWT_SECRET_KEY,
+    )
+    await manager.start()
+    ctx["outbox_worker"] = manager
+
+
+async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
+    manager: Any = ctx.get("outbox_worker")
+    if manager is not None:
+        await manager.stop()
 
 
 class WorkerSettings:
@@ -28,3 +46,5 @@ class WorkerSettings:
         cron(archive_expired_courses, hour=20, minute=0),
         cron(check_payment_reminders, hour=4, minute=0)
     ]
+    on_startup = outbox_worker_startup
+    on_shutdown = outbox_worker_shutdown
