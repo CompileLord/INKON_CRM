@@ -154,9 +154,31 @@ class StudentJournalPeriodResponse(BaseModel):
 
 
 class MentorProfileResponse(BaseModel):
+    model_config = {"extra": "forbid"}
     user: UserResponse
     active_courses: list[CourseResponse]
     active_students_count: int
     avg_score: float
+    active_students_population: Literal["active_enrollments_on_assigned_courses_including_soft_deleted_courses"]
+    avg_score_grading_state: Literal["missing", "unknown"]
+    avg_score_provenance: Literal["unknown"]
+    avg_score_basis: Literal["all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived"]
+    avg_score_summary_count: int
+    avg_score_defined_ratio_count: int
+    avg_score_undefined_ratio_count: int
+    avg_score_defined_ratios_mean: Optional[float]
+
+
+class MentorAnalyticsResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    active_courses_count: int
+    active_courses_population: Literal["active_non_deleted_courses"]
+    total_students_count: int
+    total_students_population: Literal["non_deleted_enrollments_on_assigned_courses_all_statuses_including_soft_deleted_courses"]
+    average_student_score: float
+    average_student_score_grading_state: Literal["missing", "unknown"]
+    average_student_score_provenance: Literal["unknown"]
+    average_student_score_basis: Literal["all_summaries_on_non_deleted_courses_including_archived_raw_points"]
+    average_student_score_summary_count: int
 
 
