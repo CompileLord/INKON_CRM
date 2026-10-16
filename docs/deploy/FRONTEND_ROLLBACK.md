@@ -21,3 +21,4 @@ Rollback is a dashboard action. From the CLI, redeploy the last good tag instead
 - Staging is the Pages branch alias `staging`; PR previews are `pr-<number>`.
 - If the API contract changed, roll back the backend first (see the backend runbook), then the frontend.
 - Hashed `/assets/*` are immutable and old ones stay served, so a rollback never leaves a half-cached bundle.
+- Production frontend deploys automatically after a successful "Deploy Backend" run for a `v*` tag. After a manual backend production deploy (workflow_dispatch), deploy the frontend with this workflow's workflow_dispatch, environment `production`.
