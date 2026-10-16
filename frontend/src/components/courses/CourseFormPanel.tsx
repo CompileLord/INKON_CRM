@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect, type ComponentProps, type FormEvent } from "react";
+import { Dialog } from "@base-ui/react/dialog";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ interface CourseFormPanelProps {
   course?: CourseResponse;
   onClose: () => void;
   onSaved: (action: "created" | "updated", course: CourseResponse) => void;
+  finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
 }
 
 const inputClass =
@@ -63,7 +65,7 @@ interface PartialSuccessState {
   savedCourse: CourseResponse;
 }
 
-export function CourseFormPanel({ open, course, onClose, onSaved }: CourseFormPanelProps) {
+export function CourseFormPanel({ open, course, onClose, onSaved, finalFocus }: CourseFormPanelProps) {
   if (!open) {
     return null;
   }
@@ -77,6 +79,7 @@ export function CourseFormPanel({ open, course, onClose, onSaved }: CourseFormPa
       isEditing={isEditing}
       onClose={onClose}
       onSaved={onSaved}
+      finalFocus={finalFocus}
     />
   );
 }
@@ -87,6 +90,7 @@ interface CourseFormPanelInnerProps {
   isEditing: boolean;
   onClose: () => void;
   onSaved: (action: "created" | "updated", course: CourseResponse) => void;
+  finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
 }
 
 function CourseFormPanelInner({
@@ -95,6 +99,7 @@ function CourseFormPanelInner({
   isEditing,
   onClose,
   onSaved,
+  finalFocus,
 }: CourseFormPanelInnerProps) {
   const { t } = useTranslation(["courses", "common"]);
   const role = useAuthStore((s) => s.role);
@@ -416,6 +421,7 @@ function CourseFormPanelInner({
         title={titleText}
         pending={isSubmittingRef.current || isLocked}
         closeDisabled={isSubmittingRef.current || isLocked || showDiscardConfirm}
+        finalFocus={finalFocus}
         footer={
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button

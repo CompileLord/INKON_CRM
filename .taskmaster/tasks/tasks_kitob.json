@@ -663,7 +663,7 @@
   {
     "id": "KITOB-02-05-LIFECYCLE",
     "title": "Course forms and accepted lifecycle integration",
-    "status": "pending",
+    "status": "in_progress",
     "group": "02",
     "dependencies": [
       "KITOB-02-02",
