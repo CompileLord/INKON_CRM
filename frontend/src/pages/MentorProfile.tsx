@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, BookOpen, Users, Award, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, Mail, Phone, BookOpen, Users, Award, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMentorAnalytics, useMentorProfile } from "../lib/users/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
@@ -8,6 +8,7 @@ import { dateOnlyToDate } from "../lib/users/dates";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
 import type { CourseResponse } from "../lib/courses/types";
+import { useAuthStore } from "../store/authStore";
 
 function formatDateOnly(dateStr: string, locale: string = "ru-RU"): string {
   const date = dateOnlyToDate(dateStr);
@@ -52,6 +53,35 @@ export function MentorProfile() {
   const { id } = useParams<{ id: string }>();
   const numericId = id ? Number(id) : undefined;
   const [tabIndex, setTabIndex] = useState<number>(0);
+  const location = useLocation();
+  const role = useAuthStore((state) => state.role);
+
+  const [createdFeedbackVisible, setCreatedFeedbackVisible] = useState(() => {
+    const locState = location.state as { createdMentorId?: number } | null;
+    return Boolean(role === "superadmin" && numericId && locState?.createdMentorId === numericId);
+  });
+
+  useEffect(() => {
+    const locState = location.state as {
+      createdMentorId?: number;
+      fromDirectory?: { mentorId?: number; search?: string; page?: number; pageSize?: number };
+    } | null;
+    if (numericId && locState?.createdMentorId === numericId) {
+      const nextState = { ...locState };
+      delete nextState.createdMentorId;
+      window.history.replaceState(
+        { ...window.history.state, usr: nextState },
+        "",
+      );
+      const timer = window.setTimeout(() => {
+        setCreatedFeedbackVisible(false);
+      }, 5000);
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+    setCreatedFeedbackVisible(false);
+  }, [location.state, numericId]);
 
   const tabs = [
     t("tabs.courses", "Курсы"),
@@ -69,19 +99,50 @@ export function MentorProfile() {
 
   const { data: analytics } = useMentorAnalytics(Number.isFinite(numericId) ? numericId : undefined);
 
+  const locationState = location.state as {
+    fromDirectory?: { mentorId?: number; search?: string; page?: number; pageSize?: number };
+  } | null;
+
   const backLink = (
     <Link
       to="/mentors"
+      state={
+        locationState?.fromDirectory
+          ? { fromDirectory: locationState.fromDirectory }
+          : undefined
+      }
       className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
     >
-      <ArrowLeft size={16} /> {t("common:nav.mentors", "Преподаватели")}
+      <ArrowLeft size={16} /> {t("title")}
     </Link>
   );
+
+  const creationBanner = createdFeedbackVisible ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-ink"
+    >
+      <div className="flex items-center gap-2">
+        <CheckCircle2 size={18} className="shrink-0 text-maroon dark:text-accent" />
+        <span>{t("mentors:form.createSuccess")}</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => setCreatedFeedbackVisible(false)}
+        className="min-h-11 min-w-11 px-3 text-sm font-semibold hover:underline"
+        aria-label={t("common:close")}
+      >
+        {t("common:close")}
+      </button>
+    </div>
+  ) : null;
 
   if (!numericId || Number.isNaN(numericId)) {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
+        {creationBanner}
         <div className="rounded-2xl border border-border bg-card p-6 text-muted">
           {t("notFound", "Преподаватель не найден")}
         </div>
@@ -93,6 +154,7 @@ export function MentorProfile() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
+        {creationBanner}
         <div className="rounded-2xl border border-border bg-card p-6 text-muted">{t("common:loading", "Загрузка…")}</div>
       </div>
     );
@@ -102,6 +164,7 @@ export function MentorProfile() {
     return (
       <div className="flex flex-col gap-4">
         {backLink}
+        {creationBanner}
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
           <p className="text-sm text-muted">{t("loadError", "Не удалось загрузить профиль ментора")}</p>
           <button
@@ -121,6 +184,7 @@ export function MentorProfile() {
   return (
     <div className="flex flex-col gap-5">
       {backLink}
+      {creationBanner}
 
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border-warm bg-card p-5">
         <PersonAvatar
