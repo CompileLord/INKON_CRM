@@ -10,11 +10,22 @@ from app.core.redis import redis_client
 from app.core.security import create_access_token
 from app.models.user import User
 from app.services.finance_service import ANALYTICS_CACHE_KEY_PREFIX, FinanceService
+from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
+from app.tests.conftest import TestingSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.tests.integration.test_finance import _setup_student_course
 
 DEBTS_URL: str = "/api/v1/finance/debts/"
 ANALYTICS_URL: str = "/api/v1/finance/analytics/?date_from=2020-01-01&date_to=2099-12-31"
-ANALYTICS_CACHE_KEY: str = f"{ANALYTICS_CACHE_KEY_PREFIX}2020-01-01:2099-12-31"
+
+
+async def analytics_cache_key() -> str:
+    session: AsyncSession
+    async with TestingSessionLocal() as session:
+        generation: int = await SQLAlchemyCacheGenerationRepository(session).read_committed_generation()
+    return f"{ANALYTICS_CACHE_KEY_PREFIX}{generation}:2020-01-01:2099-12-31"
+
+
 LEGACY_CACHE_KEY: str = "finance:analytics:2020-01-01:2099-12-31"
 MONEY_FIELDS: List[str] = [
     "gross_contract_value",
@@ -63,7 +74,7 @@ async def test_cold_and_cached_analytics_are_identical_exact_strings(
     headers = bearer(test_accountant)
 
     cold_response = await client.get(ANALYTICS_URL, headers=headers)
-    cached_raw: str = await redis_client.get(ANALYTICS_CACHE_KEY)
+    cached_raw: str = await redis_client.get(await analytics_cache_key())
     cached_response = await client.get(ANALYTICS_URL, headers=headers)
 
     assert cold_response.status_code == 200
@@ -91,7 +102,7 @@ async def test_legacy_float_cache_entry_is_never_read(
     assert response.status_code == 200
     assert "poisoned" not in response.json()
     assert response.json()["gross_contract_value"] != "0.10"
-    assert await redis_client.get(ANALYTICS_CACHE_KEY) is not None
+    assert await redis_client.get(await analytics_cache_key()) is not None
 
 
 @pytest.mark.asyncio
