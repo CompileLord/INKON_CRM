@@ -546,7 +546,7 @@
   {
     "id": "KITOB-06-01",
     "title": "/my/courses Active and Archive",
-    "status": "in_progress",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-05-10"
@@ -557,7 +557,7 @@
   {
     "id": "KITOB-06-02",
     "title": "/my/courses/:courseId",
-    "status": "pending",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-01"
@@ -568,7 +568,7 @@
   {
     "id": "KITOB-06-03",
     "title": "/my/journal/:journalId",
-    "status": "pending",
+    "status": "completed",
     "group": "06",
     "dependencies": [
       "KITOB-06-02"
@@ -579,7 +579,7 @@
   {
     "id": "KITOB-06-04",
     "title": "/settings personal account every role",
-    "status": "pending",
+    "status": "in_progress",
     "group": "06",
     "dependencies": [
       "KITOB-06-03"
