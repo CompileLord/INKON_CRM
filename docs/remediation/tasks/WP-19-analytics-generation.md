@@ -14,6 +14,10 @@ Contributes without duplicating coverage ownership: [BUS-11 — report section](
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+Generation SQL and transaction-local cache eligibility belong behind a narrow repository protocol, preserving the repository/service boundary. Add the two exact repository paths below. The existing finance-precision regression reads a fixed date-only cache key; update only that addressing for generation keys, preserving every exact-money and legacy-cache rejection assertion. Analytics computed from an uncommitted financial mutation must bypass cache publication so a rollback cannot poison a generation later reused by another transaction.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -26,6 +30,9 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/models/__init__.py:1](../../../backend/app/models/__init__.py) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/alembic/versions/rwp19_cache_generation.py](../../../backend/alembic/versions/rwp19_cache_generation.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp19.py](../../../backend/app/tests/integration/test_remediation_wp19.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/repositories/interfaces/cache_generation_repository.py](../../../backend/app/repositories/interfaces/cache_generation_repository.py) | NEW narrow generation/cache-eligibility protocol. |
+| [backend/app/repositories/sqlalchemy/cache_generation_repository.py](../../../backend/app/repositories/sqlalchemy/cache_generation_repository.py) | NEW SQL generation implementation; no HTTP/business rules. |
+| [backend/app/tests/integration/test_finance_precision.py](../../../backend/app/tests/integration/test_finance_precision.py) | Synchronize generation-key addressing only; retain exact-money and legacy-cache assertions. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

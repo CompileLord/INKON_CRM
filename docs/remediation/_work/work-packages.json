@@ -805,7 +805,10 @@
       "backend/app/models/__init__.py",
       "backend/alembic/versions/rwp19_cache_generation.py",
       "backend/app/tests/integration/test_remediation_wp19.py",
-      "docs/remediation/STATUS.md"
+      "docs/remediation/STATUS.md",
+      "backend/app/repositories/interfaces/cache_generation_repository.py",
+      "backend/app/repositories/sqlalchemy/cache_generation_repository.py",
+      "backend/app/tests/integration/test_finance_precision.py"
     ],
     "steps": [
       "Advance a durable finance generation in the same transaction as every affected payment/allocation/reversal/schedule/withdrawal mutation.",
