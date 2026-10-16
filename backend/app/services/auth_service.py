@@ -15,6 +15,12 @@ from app.core.security import (
     verify_password,
 )
 from app.core.redis import redis_client
+from app.core.verification_codes import (
+    ChallengeBackendUnavailable,
+    ChallengeOutcome,
+    ChallengeResult,
+    VerificationCodeStore,
+)
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
@@ -167,32 +173,7 @@ class AuthService:
 
 
     async def verify_code(self, email: str, code: str) -> TokenPair:
-        key = f"auth:code:{email}"
-        raw_data = await redis_client.get(key)
-        if not raw_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification code expired or not requested"
-            )
-
-        data = json.loads(raw_data)
-        if data.get("attempts", 0) >= 5:
-            await redis_client.delete(key)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Too many incorrect attempts. Code invalidated."
-            )
-
-        data["attempts"] += 1
-        await redis_client.set(key, json.dumps(data), keepttl=True)
-
-        if data["code"] != code:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid verification code"
-            )
-
-        await redis_client.delete(key)
+        await self._consume_challenge(f"auth:code:{email}", code, "Verification")
 
         user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
@@ -278,30 +259,7 @@ class AuthService:
         )
 
     async def password_reset_verify(self, email: str, code: str) -> str:
-        key = f"auth:reset:{email}"
-        raw_data = await redis_client.get(key)
-        if not raw_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Reset code expired or not requested"
-            )
-
-        data = json.loads(raw_data)
-        if data.get("attempts", 0) >= 5:
-            await redis_client.delete(key)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Too many incorrect attempts. Reset code invalidated."
-            )
-
-        data["attempts"] += 1
-        await redis_client.set(key, json.dumps(data), keepttl=True)
-
-        if data["code"] != code:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reset code"
-            )
+        await self._consume_challenge(f"auth:reset:{email}", code, "Reset")
 
         user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
@@ -309,8 +267,6 @@ class AuthService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-
-        await redis_client.delete(key)
 
         now = datetime.now(timezone.utc)
         expire = now + timedelta(minutes=5)
@@ -323,6 +279,25 @@ class AuthService:
         }
         reset_token = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
         return reset_token
+
+    async def _consume_challenge(self, key: str, code: str, label: str) -> None:
+        store: VerificationCodeStore = VerificationCodeStore(redis_client)
+        try:
+            result: ChallengeResult = await store.consume(key, code)
+        except ChallengeBackendUnavailable:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Verification service is currently unavailable. Request a new code and try again.",
+            ) from None
+        if result.outcome == ChallengeOutcome.CONSUMED:
+            return
+        if result.outcome == ChallengeOutcome.EXHAUSTED:
+            detail: str = "Too many incorrect attempts. Code invalidated."
+        elif result.outcome == ChallengeOutcome.INVALID:
+            detail = f"Invalid {label.lower()} code"
+        else:
+            detail = f"{label} code expired or not requested"
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
     async def password_reset_confirm(self, reset_token: str, new_password: str) -> TokenPair:
         if len(new_password) < 8 or not any(char.isdigit() for char in new_password):
