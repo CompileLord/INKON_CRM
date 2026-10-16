@@ -215,7 +215,7 @@
   {
     "id": "KITOB-02-04",
     "title": "Progress tab",
-    "status": "pending",
+    "status": "in_progress",
     "group": "02",
     "dependencies": [
       "KITOB-02-03",
@@ -247,7 +247,8 @@
       "KITOB-02-02",
       "KITOB-02-03",
       "KITOB-02-04",
-      "KITOB-02-05"
+      "KITOB-02-05",
+      "KITOB-02-06-PREP"
     ],
     "description": "Implement only this bounded task against current group PLAN.md and shared contracts. Resolve and separately track necessary contract prerequisites before dependent surfaces.",
     "testStrategy": "Task-specific meaningful behavioral regressions, both-theme real rendered evidence at 1440x1000 and 390x844; 320/768/1024, en/ru/tg parity, keyboard/reduced motion; backend pytest, frontend vitest and tsc gates. Record physical-phone gaps. No completion before independent PASS and required gates."
@@ -734,5 +735,20 @@
     ],
     "description": "Bounded staff read contract: explicit missing summaries versus present stored totals, unknown grading provenance, stable dates and documented average scope. Preserve existing scoring and student payload; no historic grading inference or migration.",
     "testStrategy": "Real role authorization, missing versus stored zero, positive and above100 totals, unknown grading state and unequal denominators; bounded SQL queries, schema/TypeScript synchronization, required full gates."
+  },
+  {
+    "id": "KITOB-02-06-PREP",
+    "group": "02",
+    "title": "Review accepted course workflows before final group integration",
+    "status": "in_progress",
+    "dependencies": [
+      "KITOB-02-01",
+      "KITOB-02-02",
+      "KITOB-02-03",
+      "KITOB-02-05",
+      "KITOB-02-04-RESULT-CONTRACT"
+    ],
+    "description": "Read-only cross-page regression preparation on accepted directory, Overview, Students and forms/lifecycle while independent Progress UI is implemented. Does not accept pending Progress or whole group.",
+    "testStrategy": "Review actual role/navigation/query/focus contracts and existing meaningful regressions; isolated browser reproduction only if needed; root audits findings before final group acceptance."
   }
 ]
