@@ -74,6 +74,12 @@ export function getCourseJournalMetrics(id: number): Promise<CourseJournalMetric
   return httpClient.get<CourseJournalMetricsResponse>(`/courses/${id}/journal-metrics`).then((res) => res.data);
 }
 
+export function getCourseClassProgress(id: number): Promise<CourseStaffProgressResponse> {
+  return httpClient
+    .get<CourseStaffProgressResponse>(`/courses/${id}/class-progress`)
+    .then((res) => res.data);
+}
+
 export function getCourseStaffProgress(id: number): Promise<CourseStaffProgressResponse> {
   return httpClient
     .get<CourseStaffProgressResponse>(`/courses/${id}/staff-progress`)

@@ -118,12 +118,22 @@ export class JournalProgressRules {
     }));
   }
 
-  static defaultVisibleIds(students: ProgressChartStudent[]): Set<number> {
+  static defaultVisibleIds(students: ProgressChartStudent[], pinnedStudentId: number | null = null): Set<number> {
     const visible: ProgressChartStudent[] =
       students.length > JournalProgressRules.TOGGLE_ALL_THRESHOLD
         ? students.slice(0, JournalProgressRules.DEFAULT_VISIBLE_STUDENTS)
         : students;
-    return new Set(visible.map((student) => student.studentId));
+    const visibleIds: Set<number> = new Set(visible.map((student) => student.studentId));
+    if (pinnedStudentId !== null && students.some((student) => student.studentId === pinnedStudentId)) {
+      visibleIds.add(pinnedStudentId);
+    }
+    return visibleIds;
+  }
+
+  static pinFirst(students: ProgressChartStudent[], pinnedStudentId: number | null): ProgressChartStudent[] {
+    if (pinnedStudentId === null) return students;
+    const pinned: ProgressChartStudent[] = students.filter((student) => student.studentId === pinnedStudentId);
+    return [...pinned, ...students.filter((student) => student.studentId !== pinnedStudentId)];
   }
 
   static domainMaximum(values: (number | null)[]): number {

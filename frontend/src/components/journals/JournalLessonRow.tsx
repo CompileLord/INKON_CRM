@@ -16,13 +16,15 @@ interface JournalLessonRowProps {
   status: CellSaveStatus | undefined;
   onCommand: ((studentId: number, lessonDate: string, command: JournalEntryCommand) => void) | null;
   onAnchor: (studentId: number, control: string) => void;
+  isSelf?: boolean;
+  markUnrecorded?: boolean;
 }
 
 const ACTION_BUTTON_CLASS: string =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[10px] border border-control-border bg-card px-3 text-base text-ink hover:bg-row-hover select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]";
 
 export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
-  ({ student, lessonDate, status, onCommand, onAnchor }) => {
+  ({ student, lessonDate, status, onCommand, onAnchor, isSelf = false, markUnrecorded = false }) => {
     const { t } = useTranslation("journals");
     const [pickerOpen, setPickerOpen] = useState<boolean>(false);
     const [commentOpen, setCommentOpen] = useState<boolean>(false);
@@ -53,10 +55,14 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
       <li
         ref={rowRef}
         data-lesson-row={student.student_id}
-        className="scroll-mt-36 border-b border-border px-4 py-2 last:border-b-0"
+        data-self={isSelf ? "true" : undefined}
+        className={`scroll-mt-36 border-b border-border px-4 py-2 last:border-b-0 ${isSelf ? "border-l-4 border-l-maroon bg-beige dark:border-l-accent" : ""}`}
       >
         <div className="flex items-start justify-between gap-2">
-          <span className="min-w-0 select-text break-words text-base font-semibold leading-6 text-ink">{studentName}</span>
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="min-w-0 select-text break-words text-base font-semibold leading-6 text-ink">{studentName}</span>
+            {isSelf && <span className="rounded-full bg-info-surface px-2 text-xs font-semibold text-ink">{t("readOnly.you")}</span>}
+          </span>
           <span className="relative mt-1 h-5 w-5 shrink-0" data-testid="lesson-marker-slot">
             {status && <JournalSaveMarker status={status} className="absolute inset-0 h-5 w-5" />}
           </span>
@@ -108,6 +114,10 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
               <span className="hidden sm:inline">{hasComment ? t("lesson.editComment") : t("lesson.addComment")}</span>
             </button>
           </div>
+        ) : markUnrecorded && entry === undefined ? (
+          <p className="mt-2 text-base text-muted" data-testid="not-recorded-cell">
+            {t("table.notRecorded")}
+          </p>
         ) : (
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-base" role="group" aria-label={t("table.readOnlyCellLabel", { name: studentName, date: formattedDate })}>
             <span className="inline-flex items-center gap-1">

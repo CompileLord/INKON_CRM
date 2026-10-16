@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useCourseStaffProgress } from "../../lib/courses/hooks";
+import { useCourseClassProgress, useCourseStaffProgress } from "../../lib/courses/hooks";
 import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 import {
   JournalProgressRules,
@@ -18,6 +18,7 @@ import { JournalNotice, JournalPanelMessage } from "./JournalWorkspaceStates";
 
 interface JournalProgressViewProps {
   courseId: number;
+  readOnlySelfStudentId?: number;
 }
 
 const SERIES_STROKE: readonly string[] = [
@@ -68,9 +69,10 @@ interface ProgressChartProps {
   students: ProgressChartStudent[];
   visibleIds: Set<number>;
   showAverage: boolean;
+  selfStudentId: number | null;
 }
 
-const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage }) => {
+const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage, selfStudentId }) => {
   const { t } = useTranslation("journals");
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(640);
@@ -133,7 +135,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibl
       return result
         ? [{
             key: `s${student.studentId}`,
-            name: student.name,
+            name: student.studentId === selfStudentId ? `${student.name} (${t("readOnly.you")})` : student.name,
             value: result.percentage,
             swatch: <StudentSwatch student={student} />,
           }]
@@ -284,7 +286,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibl
                     d={JournalProgressRules.monotonePath(run.map((vertex) => ({ x: xFor(vertex.index), y: yFor(vertex.value) })))}
                     fill="none"
                     className={SERIES_STROKE[student.slot]}
-                    strokeWidth={2}
+                    strokeWidth={student.studentId === selfStudentId ? 3.5 : 2}
                     strokeDasharray={JournalProgressRules.dashPattern(student.dashVariant)}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -500,9 +502,12 @@ const SkeletonBar: React.FC<{ className: string }> = ({ className }) => (
   <div className={`rounded-md bg-beige-dark motion-safe:animate-pulse ${className}`} />
 );
 
-export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId }) => {
+export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId }) => {
   const { t } = useTranslation("journals");
-  const query = useCourseStaffProgress(courseId);
+  const selfStudentId: number | null = readOnlySelfStudentId ?? null;
+  const staffQuery = useCourseStaffProgress(courseId, selfStudentId === null);
+  const classQuery = useCourseClassProgress(courseId, selfStudentId !== null);
+  const query = selfStudentId === null ? staffQuery : classQuery;
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
   const [sortOverride, setSortOverride] = useState<ProgressSort | null>(null);
@@ -518,8 +523,8 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     [data, started],
   );
   const visibleIds: Set<number> = useMemo(
-    () => visibleOverride ?? JournalProgressRules.defaultVisibleIds(students),
-    [visibleOverride, students],
+    () => visibleOverride ?? JournalProgressRules.defaultVisibleIds(students, selfStudentId),
+    [visibleOverride, students, selfStudentId],
   );
 
   if (query.isLoading) {
@@ -604,7 +609,14 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
       pressed ? "border-border bg-card text-ink" : "border-transparent bg-transparent text-muted"
     }`;
 
-  const plottedStudents: ProgressChartStudent[] = students.filter((student) => visibleIds.has(student.studentId));
+  const youBadge = (student: ProgressChartStudent) =>
+    student.studentId === selfStudentId ? (
+      <span className="rounded-full bg-info-surface px-2 text-xs font-semibold text-ink">{t("readOnly.you")}</span>
+    ) : null;
+  const plottedStudents: ProgressChartStudent[] = JournalProgressRules.pinFirst(
+    students.filter((student) => visibleIds.has(student.studentId)),
+    selfStudentId,
+  );
   const hiddenStudents: ProgressChartStudent[] = students.filter((student) => !visibleIds.has(student.studentId));
 
   const legend = (
@@ -621,13 +633,14 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
             <button type="button" aria-pressed onClick={() => toggleStudent(student.studentId)} className={chipClass(true)}>
               <StudentSwatch student={student} />
               {student.name}
+              {youBadge(student)}
             </button>
           </li>
         ))}
       </ul>
       {(hiddenStudents.length > 0 || manyStudents) && (
         <MoreStudentsMenu
-          students={students}
+          students={JournalProgressRules.pinFirst(students, selfStudentId)}
           hiddenCount={hiddenStudents.length}
           visibleIds={visibleIds}
           onToggle={toggleStudent}
@@ -642,7 +655,10 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
 
   const latestIndex: number = Math.max(started.length - 1, 0);
   const sort: ProgressSort = sortOverride ?? { key: { kind: "period", index: latestIndex }, direction: "desc" };
-  const sortedStudents: ProgressChartStudent[] = JournalProgressRules.sortStudents(students, sort);
+  const sortedStudents: ProgressChartStudent[] = JournalProgressRules.pinFirst(
+    JournalProgressRules.sortStudents(students, sort),
+    selfStudentId,
+  );
   const isSortedBy = (key: ProgressSort["key"]): boolean =>
     sort.key.kind === key.kind && (key.kind !== "period" || (sort.key.kind === "period" && sort.key.index === key.index));
   const requestSort = (key: ProgressSort["key"]): void =>
@@ -668,6 +684,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const classValues: (number | null)[] = started.map((row) => row.averagePercentage);
   const rowDivider: string = "border-b border-border/60";
   const stickyName: string = "sticky left-0 z-[1] bg-cream group-hover:bg-row-hover";
+  const selfStickyName: string = "sticky left-0 z-[1] bg-beige group-hover:bg-row-hover";
 
   const table = (
     <div className="relative w-full max-w-full overflow-x-auto overscroll-x-contain [contain:inline-size]" data-testid="progress-table-scroll">
@@ -706,9 +723,10 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
                 data-student-id={student.studentId}
                 data-visible={plotted}
                 onClick={() => toggleStudent(student.studentId)}
-                className={`group h-11 cursor-pointer hover:bg-row-hover ${rowDivider} ${plotted ? "text-ink" : "text-muted"}`}
+                data-self={student.studentId === selfStudentId}
+                className={`group h-11 cursor-pointer hover:bg-row-hover ${rowDivider} ${plotted ? "text-ink" : "text-muted"} ${student.studentId === selfStudentId ? "bg-beige font-semibold" : ""}`}
               >
-                <th scope="row" className={`${stickyName} max-w-[11rem] px-3 text-left font-normal`}>
+                <th scope="row" className={`${student.studentId === selfStudentId ? selfStickyName : stickyName} max-w-[11rem] px-3 text-left font-normal`}>
                   <button
                     type="button"
                     aria-pressed={plotted}
@@ -716,6 +734,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
                   >
                     <StudentSwatch student={student} muted={!plotted} />
                     <span className="min-w-0 truncate" title={student.name}>{student.name}</span>
+                    {youBadge(student)}
                   </button>
                 </th>
                 {values.map((value, index) => (
@@ -746,7 +765,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
       </div>
       {started.length > 0 && (
         <>
-          <ProgressChart periods={started} students={students} visibleIds={visibleIds} showAverage={showAverage} />
+          <ProgressChart periods={started} students={students} visibleIds={visibleIds} showAverage={showAverage} selfStudentId={selfStudentId} />
           {legend}
         </>
       )}

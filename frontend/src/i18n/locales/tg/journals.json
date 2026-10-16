@@ -89,7 +89,8 @@
     "readOnlyCellLabel": "Ҳозирӣ, баҳо ва шарҳ: {{name}}, {{date}}",
     "present": "Ҳозир",
     "absent": "Ғоиб",
-    "hasComment": "Шарҳ дорад"
+    "hasComment": "Шарҳ дорад",
+    "notRecorded": "Қайд нашудааст"
   },
   "cellStatus": {
     "dirty": "Тағйироти захиранашуда",
@@ -352,5 +353,8 @@
     },
     "noStartedTitle": "Ҳоло ягон давра оғоз нашудааст",
     "noStartedBody": "Натиҷаҳо пас аз оғози давраи аввал пайдо мешаванд."
+  },
+  "readOnly": {
+    "you": "Шумо"
   }
 }

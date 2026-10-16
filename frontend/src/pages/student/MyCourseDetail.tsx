@@ -1,263 +1,273 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Clock, ChevronDown, ChevronUp } from "lucide-react";
-import { useCourse, useCourseSchedule, useCourseProgressChart } from "../../lib/courses/hooks";
-import { useMyStudentProfile, useMyStudentJournals, useMentorProfile } from "../../lib/users/hooks";
-import { resolveMediaUrl } from "../../lib/users/media";
-import { formatDate, formatTime } from "../../i18n/formatters";
-import type { StudentCourseProgressChartResponse } from "../../lib/courses/types";
-import { PersonAvatar } from "../../components/ui/PersonAvatar";
-import { StudentTrendChart } from "../../components/student/StudentTrendChart";
+import { CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Clock, Target, Trophy, UserX } from "lucide-react";
+import { useCourse, useCourseSchedule } from "../../lib/courses/hooks";
+import { useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
+import { useAuthStore } from "../../store/authStore";
+import { JournalRouteErrors } from "../../components/journals/JournalRouteErrors";
+import { NextLessonCalculator, type ScheduleGroup, type UpcomingLesson } from "../../lib/students/NextLessonCalculator";
+import { ScoreBand } from "../../lib/students/ScoreBand";
+import { CourseResultSummaries, type CourseResultSummary } from "../../lib/students/CourseResultSummary";
+import { formatNumber, formatSchoolLessonDate, formatTime } from "../../i18n/formatters";
+import { JournalProgressView } from "../../components/journals/JournalProgressView";
+import { JournalNotice, JournalPanelMessage } from "../../components/journals/JournalWorkspaceStates";
+import { InfoTooltip } from "../../components/ui/InfoTooltip";
+import { BrandActivityIndicator } from "../../components/ui/BrandActivityIndicator";
+import { CoursePeriodList } from "../../components/student/CoursePeriodList";
+import { CourseStatTile } from "../../components/student/CourseStatTile";
+import { TeacherLine } from "../../components/student/TeacherLine";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DESCRIPTION_COLLAPSE_THRESHOLD: number = 140;
+
+function parseCourseId(raw: string | undefined): number | undefined {
+  return raw !== undefined && /^[1-9]\d*$/.test(raw) ? Number(raw) : undefined;
+}
+
+function CourseDetailSkeleton() {
+  const { t } = useTranslation("student");
+  return (
+    <div role="status" aria-busy="true" data-testid="course-detail-skeleton" className="flex flex-col gap-6">
+      <span className="sr-only">{t("loadingCourse")}</span>
+      <div className="h-4 w-48 rounded-md bg-beige-dark motion-safe:animate-pulse" />
+      <div className="h-9 w-2/3 max-w-md rounded-md bg-beige-dark motion-safe:animate-pulse" />
+      <div className="h-5 w-1/2 max-w-sm rounded-md bg-beige-dark motion-safe:animate-pulse" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="flex h-24 items-center justify-center rounded-2xl border border-border-warm bg-card">
+            <BrandActivityIndicator size={22} aria-hidden="true" />
+          </div>
+        ))}
+      </div>
+      <div className="h-64 rounded-2xl border border-border-warm bg-card" />
+    </div>
+  );
+}
 
 export function MyCourseDetail() {
-  const { courseId } = useParams<{ courseId: string }>();
-  const numericCourseId = courseId ? Number(courseId) : undefined;
-  const { t, i18n } = useTranslation(["student", "courses", "common"]);
-  const [showFullDescription, setShowFullDescription] = useState(false);
+  const { courseId: rawCourseId } = useParams<{ courseId: string }>();
+  const courseId: number | undefined = parseCourseId(rawCourseId);
+  const { t, i18n } = useTranslation(["student", "common"]);
+  const userId: number | null = useAuthStore((state) => state.userId);
+  const [descriptionOpen, setDescriptionOpen] = useState<boolean>(false);
+  const descriptionId: string = useId();
 
-  const { data: profile } = useMyStudentProfile();
-  const { data: course, isLoading: isCourseLoading, isError } = useCourse(numericCourseId);
-  const { data: schedules } = useCourseSchedule(numericCourseId);
-  const { data: progressChart, isLoading: isChartLoading } = useCourseProgressChart(numericCourseId);
-  const { data: journals, isLoading: isJournalsLoading } = useMyStudentJournals(numericCourseId);
+  const courseQuery = useCourse(courseId);
+  const scheduleQuery = useCourseSchedule(courseId);
+  const profileQuery = useMyStudentProfile();
+  const periodsQuery = useMyStudentJournals(courseId);
 
-  const mentorId = course?.mentor_id;
-  const { data: mentorProfile } = useMentorProfile(mentorId);
-  const mentorUser = mentorProfile?.user;
+  const course = courseQuery.data;
+  const entry = profileQuery.data?.courses.find((candidate) => candidate.course.id === courseId);
+  const listHref: string = entry?.bucket === "archive" ? "/my/courses?bucket=archive" : "/my/courses";
+  const backLink = (
+    <Link to="/my/courses" className="inline-flex min-h-11 w-fit items-center text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
+      {t("backToCourses")}
+    </Link>
+  );
 
-  const courseEntry = profile?.courses.find((c) => c.course.id === numericCourseId);
-
-  if (isCourseLoading) {
-    return (
-      <div className="flex flex-col gap-6 animate-pulse">
-        <div className="h-6 w-32 rounded bg-card" />
-        <div className="h-20 rounded-2xl bg-card border border-border-warm" />
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 h-96 rounded-2xl bg-card border border-border-warm" />
-          <div className="h-64 rounded-2xl bg-card border border-border-warm" />
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !course) {
+  if (courseId === undefined) {
     return (
       <div className="flex flex-col gap-4">
-        <Link to="/my/courses" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-maroon hover:underline">
-          <ArrowLeft size={16} /> {t("backToCourses", "К списку курсов")}
-        </Link>
-        <div className="rounded-2xl border border-border bg-card p-8 text-center text-muted">
-          {t("common:error", "Курс не найден")}
-        </div>
+        {backLink}
+        <JournalPanelMessage tone="empty" title={t("courseNotFoundTitle")} body={t("courseNotFoundBody")} />
+      </div>
+    );
+  }
+  if (courseQuery.isLoading) return <CourseDetailSkeleton />;
+
+  const denial = courseQuery.isError ? JournalRouteErrors.denialOf(courseQuery.error) : null;
+  if (denial) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalPanelMessage
+          tone="empty"
+          title={denial === "forbidden" ? t("courseForbiddenTitle") : t("courseNotFoundTitle")}
+          body={denial === "forbidden" ? t("courseForbiddenBody") : t("courseNotFoundBody")}
+        />
+      </div>
+    );
+  }
+  if (courseQuery.isError || !course) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalPanelMessage tone="error" title={t("courseLoadFailed")} retryLabel={t("common:retry")} onRetry={() => void courseQuery.refetch()} />
       </div>
     );
   }
 
-  const todayWeekday = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+  const scheduleGroups: ScheduleGroup[] = scheduleQuery.data ? NextLessonCalculator.groupByTime(scheduleQuery.data) : [];
+  const nextLesson: UpcomingLesson | null =
+    scheduleQuery.data && course.status === "active" ? NextLessonCalculator.next(scheduleQuery.data, course.end_date, new Date()) : null;
+  const weekdayName = (index: number): string => t(`weekdays.${index}`);
+  const scheduleLine: string = scheduleGroups
+    .map(
+      (group) =>
+        `${group.weekdayIndexes.map(weekdayName).join(" · ")} ${formatTime(group.timeStart, i18n.language)}–${formatTime(group.timeEnd, i18n.language)}`,
+    )
+    .join("; ");
+  const results: CourseResultSummary | null = periodsQuery.data ? CourseResultSummaries.summarize(periodsQuery.data) : null;
+  const averagePercentage: number | null = results ? results.averagePercentage : null;
+  const hasGrade: boolean = averagePercentage !== null;
+  const longDescription: boolean = course.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+  const averageBand = averagePercentage !== null ? ScoreBand.of(averagePercentage) : null;
+
+  const renderStats = () => {
+    if (profileQuery.isLoading) {
+      return (
+        <div role="status" aria-busy="true" data-testid="stats-skeleton" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((index) => (
+            <div key={index} className="h-24 rounded-2xl border border-border-warm bg-card motion-safe:animate-pulse" />
+          ))}
+        </div>
+      );
+    }
+    if (profileQuery.isError && !entry && !results) {
+      return (
+        <JournalPanelMessage
+          tone="error"
+          title={t("profileRefreshError")}
+          body={t("profileUnavailableBody")}
+          retryLabel={t("common:retry")}
+          onRetry={() => void profileQuery.refetch()}
+        />
+      );
+    }
+    if (!entry && !results) return null;
+    const unavailable: string = t("metricUnavailable");
+    return (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="course-stats">
+        <CourseStatTile
+          testId="stat-score"
+          icon={<Target className="h-4 w-4" />}
+          label={t("myAverage")}
+          hint={<InfoTooltip label={t("scoreInfoLabel")}>{t("scoreInfo")}</InfoTooltip>}
+          value={averagePercentage !== null ? `${formatNumber(averagePercentage, i18n.language, { maximumFractionDigits: 0 })}%` : results ? t("notGradedYet") : unavailable}
+          toneClass={averageBand ? averageBand.textClass : "text-muted"}
+        />
+        <CourseStatTile
+          testId="stat-attendance"
+          icon={<CalendarCheck className="h-4 w-4" />}
+          label={t("attendance")}
+          value={results && results.totalLessons > 0 ? `${formatNumber((results.attendedLessons * 100) / results.totalLessons, i18n.language, { maximumFractionDigits: 0 })}%` : unavailable}
+        />
+        <CourseStatTile
+          testId="stat-absences"
+          icon={<UserX className="h-4 w-4" />}
+          label={t("absences")}
+          value={results && results.totalLessons > 0 ? formatNumber(results.totalLessons - results.attendedLessons, i18n.language) : unavailable}
+        />
+        <CourseStatTile
+          testId="stat-rank"
+          icon={<Trophy className="h-4 w-4" />}
+          label={t("rankInClass")}
+          hint={entry ? <InfoTooltip label={t("rankInfoLabel")}>{t("rankInfo", { average: formatNumber(entry.class_avg_percentage, i18n.language, { maximumFractionDigits: 1 }) })}</InfoTooltip> : undefined}
+          value={hasGrade && entry ? t("rankValue", { rank: entry.my_rank, size: entry.class_size }) : unavailable}
+        />
+      </div>
+    );
+  };
+
+  const renderPeriods = () => {
+    if (periodsQuery.isLoading) {
+      return (
+        <div role="status" aria-busy="true" data-testid="periods-skeleton" className="flex flex-col divide-y divide-border rounded-2xl border border-border-warm bg-card">
+          <span className="sr-only">{t("loadingPeriods")}</span>
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="flex min-h-14 items-center justify-between px-4">
+              <div className="h-4 w-1/3 rounded-md bg-beige-dark motion-safe:animate-pulse" />
+              <div className="h-6 w-14 rounded-full bg-beige-dark motion-safe:animate-pulse" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (periodsQuery.isError && !periodsQuery.data) {
+      return <JournalPanelMessage tone="error" title={t("periodsLoadFailed")} retryLabel={t("common:retry")} onRetry={() => void periodsQuery.refetch()} />;
+    }
+    const periods = periodsQuery.data ?? [];
+    if (periods.length === 0) return <JournalPanelMessage tone="empty" title={t("noPeriods")} body={t("noPeriodsBody")} />;
+    return (
+      <div className="flex flex-col gap-3">
+        {periodsQuery.isError && (
+          <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void periodsQuery.refetch() }}>
+            {t("journalsRefreshError")}
+          </JournalNotice>
+        )}
+        <CoursePeriodList periods={periods} />
+      </div>
+    );
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* 5.3.1 Header (full width) */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border-warm bg-card p-6">
-        <Link to="/my/courses" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-maroon dark:text-accent hover:underline">
-          <ArrowLeft size={16} /> {t("backToCourses", "К списку курсов")}
-        </Link>
-
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-ink">{course.title}</h1>
-            <p className="mt-1 text-xs text-muted">
-              {t(`common:enums.examType.${course.exam_type}`, course.exam_type)} ·{" "}
-              {formatDate(course.start_date, i18n.language)} – {formatDate(course.end_date, i18n.language)}
-            </p>
-          </div>
-
-          {mentorUser && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-border-warm bg-strip px-3 py-2">
-              <PersonAvatar
-                firstName={mentorUser.first_name}
-                lastName={mentorUser.last_name}
-                photoUrl={resolveMediaUrl(mentorUser.thumbnail_path ?? mentorUser.photo_path) ?? undefined}
-                size={28}
-              />
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wide text-muted">{t("mentor", "Преподаватель")}</span>
-                <span className="text-xs font-semibold text-ink">
-                  {mentorUser.first_name} {mentorUser.last_name}
-                </span>
-              </div>
-            </div>
+    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6">
+      <header className="flex flex-col gap-2">
+        <nav aria-label={t("breadcrumbLabel")} className="flex flex-wrap items-center gap-1 text-sm text-muted">
+          <Link to={listHref} className="inline-flex min-h-11 items-center font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
+            {t("myCoursesTitle")}
+          </Link>
+          <ChevronRight className="h-4 w-4 max-sm:hidden" aria-hidden="true" />
+          <span aria-current="page" className="min-w-0 truncate max-sm:hidden">{course.title}</span>
+        </nav>
+        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">{course.title}</h1>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted" data-testid="course-meta">
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            {formatSchoolLessonDate(course.start_date, i18n.language)} – {formatSchoolLessonDate(course.end_date, i18n.language)}
+          </span>
+          {scheduleLine !== "" && (
+            <span className="inline-flex items-center gap-1.5 tabular-nums" data-testid="schedule-line">
+              <Clock className="h-4 w-4" aria-hidden="true" />
+              {scheduleLine}
+            </span>
+          )}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <TeacherLine mentorId={course.mentor_id} size={28} />
+          {nextLesson && (
+            <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-info-surface px-3 text-sm font-semibold text-ink tabular-nums" data-testid="next-lesson-chip">
+              {t("nextLessonChip", { when: `${weekdayName(nextLesson.weekdayIndex)} ${formatTime(nextLesson.timeStart, i18n.language)}` })}
+            </span>
           )}
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Column (lg:col-span-2) */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* 5.3.2 My performance strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-2xl border border-border-warm bg-card p-4">
-              <p className="text-xs uppercase tracking-wide text-muted">{t("myAverage", "Мой балл")}</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-                {courseEntry ? courseEntry.my_avg_percentage.toFixed(1) : "0.0"}%
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border-warm bg-card p-4">
-              <p className="text-xs uppercase tracking-wide text-muted">{t("attendance", "Посещаемость")}</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-                {courseEntry ? courseEntry.attendance_percentage.toFixed(1) : "100.0"}%
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border-warm bg-card p-4">
-              <p className="text-xs uppercase tracking-wide text-muted">{t("absences", "Пропуски")}</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-                {courseEntry ? courseEntry.absences : 0}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border-warm bg-card p-4">
-              <p className="text-xs uppercase tracking-wide text-muted">{t("rankInClass", "Ранг в группе")}</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-                {courseEntry ? `${courseEntry.my_rank} ${t("common:of", "из")} ${courseEntry.class_size}` : "—"}
-              </p>
-              {courseEntry && (
-                <p className="text-[11px] text-muted tabular-nums">
-                  {t("classAvg", "средний")} {courseEntry.class_avg_percentage.toFixed(1)}%
-                </p>
-              )}
-            </div>
-          </div>
+      {renderStats()}
 
-          {/* 5.3.3 Trend chart */}
-          <StudentTrendChart data={progressChart as unknown as StudentCourseProgressChartResponse} isLoading={isChartLoading} />
-
-          {/* 5.3.4 Period list */}
-          <div className="flex flex-col gap-3 rounded-2xl border border-border-warm bg-card p-5">
-            <h3 className="text-base font-bold text-ink">{t("periodsTitle", "Периоды обучения")}</h3>
-
-            {isJournalsLoading ? (
-              <div className="h-32 animate-pulse bg-strip rounded-xl" />
-            ) : !journals || journals.length === 0 ? (
-              <p className="text-xs text-muted">{t("noPeriods", "Периоды пока не сформированы.")}</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-border-warm/60">
-                {journals.map((j) => {
-                  const isUpcoming = j.state === "upcoming";
-                  const content = (
-                    <div className="flex items-center justify-between py-3 transition-colors hover:bg-row-hover rounded-xl px-2">
-                      <div className="flex flex-col">
-                        <span className={`text-sm font-semibold ${isUpcoming ? "text-muted" : "text-ink"}`}>
-                          {j.period_label}
-                        </span>
-                        <span className="text-xs text-muted">
-                          {formatDate(j.period_start, i18n.language)} – {formatDate(j.period_end, i18n.language)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold tabular-nums text-ink">
-                          {isUpcoming ? "—" : `${j.percentage.toFixed(1)}%`}
-                        </span>
-                        <span
-                          className={[
-                            "h-2.5 w-2.5 rounded-full shrink-0",
-                            j.state === "graded"
-                              ? "bg-emerald-500"
-                              : j.state === "in_progress"
-                              ? "bg-amber-500"
-                              : "bg-border-warm",
-                          ].join(" ")}
-                          title={t(`state.${j.state}`, j.state)}
-                        />
-                      </div>
-                    </div>
-                  );
-
-                  return isUpcoming ? (
-                    <div key={j.journal_id} className="cursor-not-allowed opacity-70">
-                      {content}
-                    </div>
-                  ) : (
-                    <Link key={j.journal_id} to={`/my/journal/${j.journal_id}`}>
-                      {content}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      <section aria-labelledby="periods-heading" className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <h2 id="periods-heading" className="text-lg font-semibold leading-7 text-ink">{t("periodsTitle")}</h2>
+          <InfoTooltip label={t("periodsInfoLabel")}>{t("periodsInfo")}</InfoTooltip>
         </div>
+        {renderPeriods()}
+      </section>
 
-        {/* 5.3.5 Sidebar column (lg:col-span-1) */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
-          {/* Schedule card */}
-          <div className="flex flex-col gap-3 rounded-2xl border border-border-warm bg-card p-5">
-            <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-              <Clock size={16} className="text-maroon dark:text-accent" />
-              {t("weeklySchedule", "Расписание занятий")}
-            </h3>
+      <section aria-label={t("trendTitle")} className="flex flex-col gap-3">
+        <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} />
+      </section>
 
-            {!schedules || schedules.length === 0 ? (
-              <p className="text-xs text-muted">{t("noSchedule", "Расписание не указано.")}</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {schedules.map((s) => {
-                  const isToday = s.day_of_week === todayWeekday;
-                  const weekdayName = t(`weekdays.${s.day_of_week}`, WEEKDAYS[s.day_of_week]);
-                  return (
-                    <div
-                      key={s.id}
-                      className={[
-                        "flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors",
-                        isToday ? "bg-beige text-ink font-semibold border border-border-warm" : "bg-strip text-muted",
-                      ].join(" ")}
-                    >
-                      <span>{weekdayName}</span>
-                      <span className="tabular-nums">
-                        {formatTime(s.time_start, i18n.language)} – {formatTime(s.time_end, i18n.language)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Description card */}
-          {course.description && (
-            <div className="flex flex-col gap-2 rounded-2xl border border-border-warm bg-card p-5">
-              <h3 className="text-sm font-bold text-ink">{t("courseDescription", "О курсе")}</h3>
-              <p
-                className={[
-                  "text-sm text-muted leading-relaxed transition-all",
-                  showFullDescription ? "" : "line-clamp-4",
-                ].join(" ")}
-              >
-                {course.description}
-              </p>
-              {course.description.length > 180 && (
-                <button
-                  type="button"
-                  onClick={() => setShowFullDescription(!showFullDescription)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-maroon dark:text-accent hover:underline mt-1"
-                >
-                  {showFullDescription ? (
-                    <>
-                      {t("showLess", "Свернуть")} <ChevronUp size={14} />
-                    </>
-                  ) : (
-                    <>
-                      {t("showMore", "Читать далее")} <ChevronDown size={14} />
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+      {course.description.trim() !== "" && (
+        <section aria-labelledby="about-heading" className="flex flex-col gap-2">
+          <h2 id="about-heading" className="text-lg font-semibold leading-7 text-ink">{t("courseDescription")}</h2>
+          <p id={descriptionId} className={`select-text break-words text-sm leading-6 text-muted ${descriptionOpen ? "" : "line-clamp-2"}`}>
+            {course.description}
+          </p>
+          {longDescription && (
+            <button
+              type="button"
+              aria-expanded={descriptionOpen}
+              aria-controls={descriptionId}
+              onClick={() => setDescriptionOpen((open) => !open)}
+              className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
+            >
+              {descriptionOpen ? t("showLess") : t("showMore")}
+              <ChevronDown aria-hidden="true" className={`h-4 w-4 ${descriptionOpen ? "rotate-180" : ""}`} />
+            </button>
           )}
-        </div>
-      </div>
+        </section>
+      )}
     </div>
   );
 }

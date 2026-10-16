@@ -7,6 +7,12 @@ interface RememberedOrder {
 }
 
 export class JournalStudentOrdering {
+  static pinFirst(students: readonly JournalStudentResponse[], pinnedStudentId: number | null): JournalStudentResponse[] {
+    if (pinnedStudentId === null) return [...students];
+    const pinned: JournalStudentResponse[] = students.filter((student) => student.student_id === pinnedStudentId);
+    return [...pinned, ...students.filter((student) => student.student_id !== pinnedStudentId)];
+  }
+
   static stabilize(
     rememberedIds: readonly number[],
     students: readonly JournalStudentResponse[],

@@ -1,165 +1,234 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useId, useRef } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
-import { useJournal } from "../../lib/journals/hooks";
-import { useCourse } from "../../lib/courses/hooks";
-import { formatDate } from "../../i18n/formatters";
-import { ScoreBreakdown } from "../../components/student/ScoreBreakdown";
+import { ArrowLeft, CalendarDays, Eye } from "lucide-react";
+import { useCourse, useCourseJournals } from "../../lib/courses/hooks";
+import { useScopedJournal } from "../../lib/journals/hooks";
+import { useJournalWorkspaceRoute } from "../../lib/journals/useJournalWorkspaceRoute";
+import { JournalWorkspaceSelection } from "../../lib/journals/JournalWorkspaceSelection";
+import { useAuthStore } from "../../store/authStore";
+import { formatSchoolLessonDate, getSchoolCalendarDate } from "../../i18n/formatters";
+import { JournalRouteErrors } from "../../components/journals/JournalRouteErrors";
+import { JournalGrid } from "../../components/journals/JournalGrid";
+import { JournalLessonView } from "../../components/journals/JournalLessonView";
+import { JournalLessonNavigator } from "../../components/journals/JournalLessonNavigator";
+import { JournalPeriodPicker } from "../../components/journals/JournalPeriodPicker";
+import { JournalProgressView } from "../../components/journals/JournalProgressView";
+import { JournalWorkspaceTabs } from "../../components/journals/JournalWorkspaceTabs";
+import {
+  JournalContextSkeleton,
+  JournalGridSkeleton,
+  JournalLessonSkeleton,
+  JournalNotice,
+  JournalPanelMessage,
+  JournalPeriodBarSkeleton,
+} from "../../components/journals/JournalWorkspaceStates";
+import { InfoTooltip } from "../../components/ui/InfoTooltip";
+import { useDesktop } from "../../components/shell/useDesktop";
+import { OwnLessonNotes } from "../../components/student/OwnLessonNotes";
+import { PeriodScoreSummary } from "../../components/student/PeriodScoreSummary";
+import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
+import type { JournalStudentResponse } from "../../lib/journals/types";
+
+function parseJournalId(raw: string | undefined): number | undefined {
+  return raw !== undefined && /^[1-9]\d*$/.test(raw) ? Number(raw) : undefined;
+}
+
+const NO_ANCHOR = (): void => undefined;
+const NO_CELL_STATUS: Map<string, CellSaveStatus> = new Map();
+const NO_SUMMARY_STATUS: Map<number, CellSaveStatus> = new Map();
 
 export function MyJournalPeriod() {
-  const { journalId } = useParams<{ journalId: string }>();
-  const numericJournalId = journalId ? Number(journalId) : undefined;
-  const { t, i18n } = useTranslation(["student", "journals", "common"]);
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const { journalId: rawJournalId } = useParams<{ journalId: string }>();
+  const journalId: number | undefined = parseJournalId(rawJournalId);
+  const { t } = useTranslation(["student", "journals", "common"]);
+  const navigate = useNavigate();
+  const isDesktop: boolean = useDesktop();
+  const userId: number | null = useAuthStore((state) => state.userId);
+  const panelIdPrefix: string = useId();
+  const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
+  const today: string = getSchoolCalendarDate();
 
-  const { data: journal, isLoading, isError, refetch } = useJournal(numericJournalId);
-  const { data: course } = useCourse(journal?.course_id);
+  const initialQuery = useScopedJournal(journalId, "student");
+  const courseId: number | undefined = initialQuery.data?.course_id;
+  const { data: course } = useCourse(courseId);
+  const periodsQuery = useCourseJournals(courseId);
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-6 animate-pulse">
-        <div className="h-6 w-32 rounded bg-card" />
-        <div className="h-20 rounded-2xl bg-card border border-border-warm" />
-        <div className="h-48 rounded-2xl bg-card border border-border-warm" />
-        <div className="h-64 rounded-2xl bg-card border border-border-warm" />
-      </div>
-    );
-  }
+  const openPeriod = useCallback((periodId: number): void => navigate(`/my/journal/${periodId}`), [navigate]);
+  const route = useJournalWorkspaceRoute({
+    periods: periodsQuery.data,
+    today,
+    studentScope: journalId === undefined ? undefined : { journalId, openPeriod },
+  });
+  const journal = route.journalQuery.data;
+  const selfRecord: JournalStudentResponse | undefined = journal?.students.find((student) => student.is_self === true);
+  const lessonSelection = route.lessonResolution;
 
-  if (isError || !journal || !journal.students || journal.students.length === 0) {
+  const backHref: string = courseId !== undefined ? `/my/courses/${courseId}` : "/my/courses";
+  const backLink = (
+    <Link
+      to={backHref}
+      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[10px] text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
+    >
+      <ArrowLeft size={16} aria-hidden="true" />
+      {course ? course.title : t("backToCourses")}
+    </Link>
+  );
+
+  if (journalId === undefined) {
     return (
       <div className="flex flex-col gap-4">
-        <Link to="/my/courses" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-maroon hover:underline">
-          <ArrowLeft size={16} /> {t("backToCourses", "К списку курсов")}
-        </Link>
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted">{t("common:error", "Период журнала не найден")}</p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="rounded-lg border border-border-warm bg-card px-4 py-2 text-sm font-medium text-ink hover:bg-strip"
-          >
-            {t("common:retry", "Повторить")}
-          </button>
-        </div>
+        {backLink}
+        <JournalPanelMessage tone="empty" title={t("journalNotFoundTitle")} body={t("journalNotFoundBody")} />
       </div>
     );
   }
+  if (initialQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalContextSkeleton />
+      </div>
+    );
+  }
+  const denial = initialQuery.isError && !journal ? JournalRouteErrors.denialOf(initialQuery.error) : null;
+  if (denial) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalPanelMessage
+          tone="empty"
+          title={denial === "forbidden" ? t("courseForbiddenTitle") : t("journalNotFoundTitle")}
+          body={denial === "forbidden" ? t("courseForbiddenBody") : t("journalNotFoundBody")}
+        />
+      </div>
+    );
+  }
+  if (initialQuery.isError && !journal) {
+    return (
+      <div className="flex flex-col gap-4">
+        {backLink}
+        <JournalPanelMessage tone="error" title={t("journalLoadFailed")} retryLabel={t("common:retry")} onRetry={() => void initialQuery.refetch()} />
+      </div>
+    );
+  }
+  if (!journal || userId === null) return null;
 
-  const studentData = journal.students?.[0];
-  const entriesMap = new Map((studentData?.entries || []).map((e) => [e.lesson_date, e]));
+  const periods = periodsQuery.data;
+  const lessonDates: string[] = JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates);
 
-  const toggleComment = (dateStr: string) => {
-    setExpandedComments((prev) => ({ ...prev, [dateStr]: !prev[dateStr] }));
+  const renderGradebookBody = () => {
+    if (lessonDates.length === 0) {
+      return <JournalPanelMessage tone="empty" title={t("journals:grid.noLessonsTitle")} body={t("journals:grid.noLessonsBody")} />;
+    }
+    return isDesktop || !lessonSelection.lesson ? (
+      <JournalGrid
+        key={journal.journal_id}
+        journalId={journal.journal_id}
+        periodLabel={journal.period_label}
+        students={journal.students}
+        lessonDates={lessonDates}
+        selectedLesson={lessonSelection.lesson}
+        cellStatus={NO_CELL_STATUS}
+        summaryStatus={NO_SUMMARY_STATUS}
+        editing={null}
+        onSelectLesson={route.selectLesson}
+        readOnlySelfStudentId={userId}
+      />
+    ) : (
+      <JournalLessonView
+        students={journal.students}
+        visibleStudentIds={null}
+        lessonDate={lessonSelection.lesson}
+        periodLabel={journal.period_label}
+        cellStatus={NO_CELL_STATUS}
+        editing={null}
+        searchQuery=""
+        onClearSearch={NO_ANCHOR}
+        onAnchor={NO_ANCHOR}
+        headingRef={lessonHeadingRef}
+        readOnlySelfStudentId={userId}
+      />
+    );
+  };
+
+  const renderGradebook = () => {
+    if (route.journalQuery.isPlaceholderData) return isDesktop ? <JournalGridSkeleton /> : <JournalLessonSkeleton />;
+    return (
+      <>
+        {route.journalQuery.isError && (
+          <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void route.journalQuery.refetch() }}>
+            {t("journals:grid.refreshFailed")}
+          </JournalNotice>
+        )}
+        {renderGradebookBody()}
+      </>
+    );
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* 5.4.1 Header */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border-warm bg-card p-6">
-        <Link
-          to={journal.course_id ? `/my/courses/${journal.course_id}` : "/my/courses"}
-          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-maroon dark:text-accent hover:underline"
-        >
-          <ArrowLeft size={16} /> {course ? course.title : t("backToCourse", "К курсу")}
-        </Link>
+    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6">
+      <header className="flex flex-col gap-1">
+        {backLink}
+        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">{journal.period_label}</h1>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            {formatSchoolLessonDate(journal.period_start)} – {formatSchoolLessonDate(journal.period_end)}
+          </span>
+          <span className="inline-flex items-center gap-1.5" data-testid="read-only-badge">
+            <Eye className="h-4 w-4" aria-hidden="true" />
+            {t("readOnlyBadge")}
+            <InfoTooltip label={t("readOnlyInfoLabel")}>{t("readOnlyInfo")}</InfoTooltip>
+          </span>
+        </p>
+      </header>
 
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-ink">{journal.period_label}</h1>
-            <p className="mt-0.5 text-xs text-muted">
-              {formatDate(journal.period_start, i18n.language)} – {formatDate(journal.period_end, i18n.language)}
-              {course && ` · ${course.title}`}
-            </p>
-          </div>
+      {periodsQuery.isLoading ? (
+        <JournalPeriodBarSkeleton />
+      ) : periodsQuery.isError && !periods ? (
+        <JournalPanelMessage tone="error" title={t("journals:workspace.periodsLoadFailed")} retryLabel={t("common:retry")} onRetry={() => void periodsQuery.refetch()} />
+      ) : periods && periods.length > 0 ? (
+        <div className="w-full lg:w-fit">
+          <JournalPeriodPicker periods={periods} selectedPeriodId={journalId} today={today} onSelect={route.selectPeriod} />
         </div>
-      </div>
+      ) : null}
 
-      {/* 5.4.2 Score breakdown */}
-      {studentData?.summary && (
-        <ScoreBreakdown
-          summary={studentData.summary}
-          myRank={journal.my_rank}
-          classSize={journal.class_size}
-          classAvgPercentage={journal.class_avg_percentage}
-        />
+      <PeriodScoreSummary
+        summary={selfRecord?.summary ?? null}
+        rank={journal.my_rank}
+        classSize={journal.class_size}
+        classAveragePercentage={journal.class_avg_percentage}
+      />
+
+      <JournalWorkspaceTabs selected={route.tab} onSelect={route.selectTab} idPrefix={panelIdPrefix} />
+
+      {route.tab === "gradebook" ? (
+        <section
+          role="tabpanel"
+          id={`${panelIdPrefix}-panel-gradebook`}
+          aria-labelledby={`${panelIdPrefix}-tab-gradebook`}
+          className="flex min-w-0 flex-col gap-3"
+        >
+          {lessonDates.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <JournalLessonNavigator lessonDates={lessonDates} selectedLesson={lessonSelection.lesson} today={today} onSelect={route.selectLesson} />
+            </div>
+          )}
+          {renderGradebook()}
+        </section>
+      ) : (
+        <section
+          role="tabpanel"
+          id={`${panelIdPrefix}-panel-progress`}
+          aria-labelledby={`${panelIdPrefix}-tab-progress`}
+          className="flex min-w-0 flex-col gap-4"
+        >
+          {courseId !== undefined && <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId} />}
+        </section>
       )}
 
-      {/* 5.4.3 Lesson list */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border-warm bg-card p-5">
-        <h3 className="text-base font-bold text-ink">{t("lessonsList", "Занятия и оценки")}</h3>
-
-        <div className="flex flex-col divide-y divide-border-warm/60">
-          {journal.lesson_dates.map((dateStr) => {
-            const entry = entriesMap.get(dateStr);
-            const isUpcoming = !entry;
-            const isAbsent = entry && !entry.attendance;
-            const isExpanded = expandedComments[dateStr];
-            const hasComment = entry && entry.comment && entry.comment.trim().length > 0;
-            const isLongComment = hasComment && entry.comment!.length > 60;
-
-            return (
-              <div
-                key={dateStr}
-                className={[
-                  "flex flex-col gap-1.5 py-3 px-2 rounded-xl transition-colors",
-                  isAbsent ? "bg-strip opacity-85" : isUpcoming ? "opacity-60" : "hover:bg-row-hover",
-                ].join(" ")}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold tabular-nums text-ink">
-                      {formatDate(dateStr, i18n.language)}
-                    </span>
-
-                    {isUpcoming ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted">
-                        <Clock size={14} /> {t("upcomingLesson", "Предстоит")}
-                      </span>
-                    ) : entry.attendance ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                        <CheckCircle2 size={16} /> {t("attended", "Был(а)")}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400 font-medium">
-                        <XCircle size={16} /> {t("absent", "Пропуск")}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-bold tabular-nums text-ink">
-                      {isUpcoming ? "—" : entry.score}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mentor comment */}
-                {hasComment && entry && (
-                  <div className="mt-1 flex flex-col gap-1 text-xs text-muted bg-beige/60 p-2.5 rounded-xl border border-border-warm/40">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className={`italic ${!isExpanded && isLongComment ? "line-clamp-2" : ""}`}>
-                        <MessageSquare size={13} className="inline mr-1.5 text-maroon dark:text-accent" />
-                        {entry.comment}
-                      </p>
-                      {isLongComment && (
-                        <button
-                          type="button"
-                          onClick={() => toggleComment(dateStr)}
-                          className="shrink-0 text-[11px] font-semibold text-maroon dark:text-accent hover:underline flex items-center gap-0.5"
-                        >
-                          {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {selfRecord && <OwnLessonNotes entries={selfRecord.entries} />}
     </div>
   );
 }

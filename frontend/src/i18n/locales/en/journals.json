@@ -89,7 +89,8 @@
     "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
     "present": "Present",
     "absent": "Absent",
-    "hasComment": "Has a comment"
+    "hasComment": "Has a comment",
+    "notRecorded": "Not recorded"
   },
   "cellStatus": {
     "dirty": "Unsaved change",
@@ -352,5 +353,8 @@
     },
     "noStartedTitle": "No period has started yet",
     "noStartedBody": "Results appear here once the first period starts."
+  },
+  "readOnly": {
+    "you": "You"
   }
 }

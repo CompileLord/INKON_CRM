@@ -5,6 +5,7 @@ import {
   createCourse,
   deleteCourse,
   getCourse,
+  getCourseClassProgress,
   getCourseJournals,
   getCourseJournalMetrics,
   getCourseMentorHistory,
@@ -149,10 +150,18 @@ export function useCourseJournalMetrics(courseId: number | undefined) {
   });
 }
 
-export function useCourseStaffProgress(courseId: number | undefined) {
+export function useCourseStaffProgress(courseId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: ["courses", "staff-progress", courseId],
     queryFn: () => getCourseStaffProgress(courseId!),
-    enabled: courseId !== undefined,
+    enabled: courseId !== undefined && enabled,
+  });
+}
+
+export function useCourseClassProgress(courseId: number | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["courses", "class-progress", courseId],
+    queryFn: () => getCourseClassProgress(courseId!),
+    enabled: courseId !== undefined && enabled,
   });
 }

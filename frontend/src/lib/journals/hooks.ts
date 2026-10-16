@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getJournal, getMentorGradingQueue, updateJournalExamMaxScore } from "./endpoints";
+import { getClassJournal, getJournal, getMentorGradingQueue, updateJournalExamMaxScore } from "./endpoints";
 import type {
   JournalDetailResponse,
   JournalExamMaxScoreUpdate,
@@ -10,6 +10,18 @@ export function useJournal(journalId: number | undefined) {
   return useQuery({
     queryKey: ["journals", "detail", journalId],
     queryFn: () => getJournal(journalId!),
+    enabled: journalId !== undefined,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export type JournalReaderScope = "staff" | "student";
+
+export function useScopedJournal(journalId: number | undefined, scope: JournalReaderScope) {
+  return useQuery({
+    queryKey: scope === "student" ? ["journals", "class", journalId] : ["journals", "detail", journalId],
+    queryFn: () => (scope === "student" ? getClassJournal(journalId!) : getJournal(journalId!)),
     enabled: journalId !== undefined,
     staleTime: 30_000,
     placeholderData: keepPreviousData,

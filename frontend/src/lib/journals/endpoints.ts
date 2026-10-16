@@ -14,6 +14,10 @@ export function getJournal(id: number): Promise<JournalDetailResponse> {
   return httpClient.get<JournalDetailResponse>(`/journals/${id}`).then((res) => res.data);
 }
 
+export function getClassJournal(id: number): Promise<JournalDetailResponse> {
+  return httpClient.get<JournalDetailResponse>(`/journals/${id}/class`).then((res) => res.data);
+}
+
 export function getMentorGradingQueue(): Promise<GradingQueueItemResponse[]> {
   return httpClient.get<GradingQueueItemResponse[]>("/mentors/me/grading-queue").then((res) => res.data);
 }

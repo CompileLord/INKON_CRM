@@ -4,6 +4,7 @@ import { JournalLessonRow } from "./JournalLessonRow";
 import { JournalPanelMessage } from "./JournalWorkspaceStates";
 import type { JournalRowEditing } from "./JournalStudentRow";
 import { useJournalSlideTransition } from "./useJournalSlideTransition";
+import { JournalStudentOrdering } from "../../lib/journals/JournalStudentOrdering";
 import { JournalMotion, type MotionDirection } from "../../lib/journals/JournalMotion";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
@@ -19,6 +20,7 @@ interface JournalLessonViewProps {
   searchQuery: string;
   onAnchor: (studentId: number, control: string) => void;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
+  readOnlySelfStudentId?: number | null;
 }
 
 export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
@@ -32,6 +34,7 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
   searchQuery,
   onAnchor,
   headingRef,
+  readOnlySelfStudentId = null,
 }) => {
   const { t } = useTranslation("journals");
   const [track, setTrack] = useState<{ lesson: string; direction: MotionDirection }>({ lesson: lessonDate, direction: "later" });
@@ -42,9 +45,11 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
     JournalMotion.LESSON_SLIDE_PIXELS,
     JournalMotion.FEEDBACK_MILLISECONDS,
   );
-  const visibleStudents: JournalStudentResponse[] = visibleStudentIds
+  const filteredStudents: JournalStudentResponse[] = visibleStudentIds
     ? students.filter((student) => visibleStudentIds.has(student.student_id))
     : students;
+  const visibleStudents: JournalStudentResponse[] = JournalStudentOrdering.pinFirst(filteredStudents, readOnlySelfStudentId);
+  const rowEditing: JournalRowEditing | null = readOnlySelfStudentId === null ? editing : null;
   const onCommand = useCallback(
     (...args: Parameters<JournalRowEditing["onEntryCommand"]>): void => editing?.onEntryCommand(...args),
     [editing],
@@ -71,7 +76,9 @@ export const JournalLessonView: React.FC<JournalLessonViewProps> = ({
               student={student}
               lessonDate={lessonDate}
               status={cellStatus.get(`${student.student_id}:${lessonDate}`)}
-              onCommand={editing ? onCommand : null}
+              onCommand={rowEditing ? onCommand : null}
+              isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
+              markUnrecorded={readOnlySelfStudentId !== null}
               onAnchor={onAnchor}
             />
           ))}

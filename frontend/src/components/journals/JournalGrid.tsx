@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronsRight } from "lucide-react";
 import { InfoTooltip } from "../ui/InfoTooltip";
@@ -6,7 +6,7 @@ import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
 import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
 import { formatSchoolLessonDate, formatSchoolLessonWeekday } from "../../i18n/formatters";
-import { useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
+import { JournalStudentOrdering, useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
 
@@ -22,6 +22,7 @@ interface JournalGridProps {
   onSelectLesson: (lessonDate: string) => void;
   visibleStudentIds?: Set<number> | null;
   onAnchor?: (studentId: number, control: string) => void;
+  readOnlySelfStudentId?: number | null;
 }
 
 interface GridFocus {
@@ -60,12 +61,17 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   onSelectLesson,
   visibleStudentIds = null,
   onAnchor,
+  readOnlySelfStudentId = null,
 }) => {
   const { t } = useTranslation("journals");
   const stableStudents: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
-  const students: JournalStudentResponse[] = visibleStudentIds
-    ? stableStudents.filter((student) => visibleStudentIds.has(student.student_id))
-    : stableStudents;
+  const students: JournalStudentResponse[] = useMemo(() => {
+    const filtered: JournalStudentResponse[] = visibleStudentIds
+      ? stableStudents.filter((student) => visibleStudentIds.has(student.student_id))
+      : stableStudents;
+    return JournalStudentOrdering.pinFirst(filtered, readOnlySelfStudentId);
+  }, [stableStudents, visibleStudentIds, readOnlySelfStudentId]);
+  const effectiveEditing: JournalRowEditing | null = readOnlySelfStudentId === null ? editing : null;
   const [focus, setFocus] = useState<GridFocus | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   const headerStripRef = useRef<HTMLDivElement>(null);
@@ -236,7 +242,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   summaryStatus={summaryStatus.get(student.student_id)}
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}
-                  editing={editing}
+                  editing={effectiveEditing}
+                  isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
+                  markUnrecorded={readOnlySelfStudentId !== null}
                   onCellFocus={handleCellFocus}
                   onCellNavigate={handleCellNavigate}
                 />

@@ -12,6 +12,7 @@ interface JournalReadOnlyCellProps {
   score: number;
   comment: string | null;
   status?: CellSaveStatus;
+  recorded?: boolean;
 }
 
 export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
@@ -21,6 +22,7 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
   score,
   comment,
   status,
+  recorded = true,
 }) => {
   const { t } = useTranslation("journals");
   const hasComment: boolean = Boolean(comment && comment.trim().length > 0);
@@ -33,7 +35,12 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
       aria-label={t("table.readOnlyCellLabel", { name: studentName, date: formattedDate })}
     >
       {status && <JournalSaveMarker status={status} className="absolute -top-1.5 -right-1.5" />}
-      {attendance ? (
+      {!recorded ? (
+        <span className="text-muted" data-testid="not-recorded-cell">
+          <span aria-hidden="true">—</span>
+          <span className="sr-only">{t("table.notRecorded")}</span>
+        </span>
+      ) : attendance ? (
         <span className="inline-flex items-center gap-1 text-ink">
           <Check className="h-4 w-4 text-success" aria-hidden="true" />
           <span className="text-xs text-muted">{t("table.present")}</span>
@@ -44,9 +51,11 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
           <span className="sr-only">{t("table.absent")}</span>
         </span>
       )}
-      <span className={`min-w-6 text-center tabular-nums ${score > 0 ? "font-semibold text-ink" : "text-muted"}`}>
-        {score > 0 ? score : "—"}
-      </span>
+      {recorded && (
+        <span className={`min-w-6 text-center tabular-nums ${score > 0 ? "font-semibold text-ink" : "text-muted"}`}>
+          {score > 0 ? score : "—"}
+        </span>
+      )}
       {hasComment && (
         <span title={comment as string} className="inline-flex text-maroon">
           <MessageSquare className="h-4 w-4 fill-current" aria-hidden="true" />

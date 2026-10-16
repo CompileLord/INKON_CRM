@@ -7,7 +7,7 @@ import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 
 vi.mock("../../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/courses/hooks")>();
-  return { ...actual, useCourseStaffProgress: vi.fn() };
+  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })) };
 });
 
 vi.mock("../../i18n/formatters", async (importOriginal) => {
@@ -589,5 +589,46 @@ describe("Progress table number format", () => {
     expect(dashed[0].querySelector("circle")).toBeNull();
     expect(dashed[0].querySelector("line")?.getAttribute("stroke-dasharray")).toBeTruthy();
     expect(studentRows()[0].querySelector("span.rounded-full")).not.toBeNull();
+  });
+});
+
+describe("Progress view as a read-only student", () => {
+  function mockClassProgress(response: CourseStaffProgressResponse): void {
+    vi.mocked(courseHooks.useCourseClassProgress).mockReturnValue({
+      data: response,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof courseHooks.useCourseClassProgress>);
+  }
+
+  it("reads the class endpoint, not the staff endpoint", () => {
+    mockClassProgress(manyStudents);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={107} />);
+    expect(vi.mocked(courseHooks.useCourseClassProgress)).toHaveBeenLastCalledWith(1, true);
+    expect(vi.mocked(courseHooks.useCourseStaffProgress)).toHaveBeenLastCalledWith(1, false);
+  });
+
+  it("selects the own line by default even when it ranks outside the top six, and pins it first with a You badge", () => {
+    mockClassProgress(manyStudents);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={100} />);
+    const ownGroup = screen.getAllByTestId("chart-series-student").find((node) => node.getAttribute("data-student-id") === "100");
+    expect(ownGroup?.getAttribute("data-visible")).toBe("true");
+    expect(visibleSeries()).toHaveLength(7);
+    const legendButtons = within(screen.getByTestId("progress-legend")).getAllByRole("button");
+    expect(legendButtons[1].textContent).toContain("Pupil0");
+    expect(legendButtons[1].textContent).toContain("You");
+    const rows = screen.getAllByTestId("student-row");
+    expect(rows[0].getAttribute("data-student-id")).toBe("100");
+    expect(rows[0].getAttribute("data-self")).toBe("true");
+    expect(rows.filter((row) => row.getAttribute("data-self") === "true")).toHaveLength(1);
+  });
+
+  it("draws the own line thicker than classmates", () => {
+    mockClassProgress(data);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} />);
+    const widthOf = (id: string) =>
+      screen.getAllByTestId("chart-series-student").find((node) => node.getAttribute("data-student-id") === id)?.querySelector("path")?.getAttribute("stroke-width");
+    expect(Number(widthOf("12"))).toBeGreaterThan(Number(widthOf("13")));
   });
 });

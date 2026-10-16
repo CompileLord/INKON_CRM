@@ -72,8 +72,9 @@ export interface JournalStudentResponse {
   student_id: number;
   first_name: string;
   last_name: string;
-  email: string;
+  email?: string;
   color_hex: string;
+  is_self?: boolean;
   entries: JournalEntryResponse[];
   summary: JournalEmbeddedSummary | null;
 }

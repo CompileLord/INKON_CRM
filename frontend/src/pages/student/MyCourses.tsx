@@ -1,131 +1,120 @@
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BookOpen } from "lucide-react";
-import { useMyStudentProfile } from "../../lib/users/hooks";
-import { StudentCourseCard } from "../../components/student/StudentCourseCard";
-import { StudentEmptyState } from "../../components/student/StudentEmptyState";
+import { useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
+import { CourseResultSummaries } from "../../lib/students/CourseResultSummary";
+import type { StudentCourseProfile } from "../../lib/users/types";
+import { StudentCourseCard, type CourseResultState } from "../../components/student/StudentCourseCard";
+import { StudentBucketTabs, type CourseBucket } from "../../components/student/StudentBucketTabs";
+import { Button } from "../../components/ui/Button";
+import { BrandActivityIndicator } from "../../components/ui/BrandActivityIndicator";
+import { InfoTooltip } from "../../components/ui/InfoTooltip";
+import { JournalNotice, JournalPanelMessage } from "../../components/journals/JournalWorkspaceStates";
+
+const CARD_GRID_CLASS: string = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3";
+const SKELETON_CARD_COUNT: number = 3;
+
+function CourseCardsSkeleton() {
+  const { t } = useTranslation("student");
+  return (
+    <div role="status" aria-busy="true" data-testid="courses-skeleton" className={CARD_GRID_CLASS}>
+      <span className="sr-only">{t("loadingCourses")}</span>
+      {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+        <div key={index} className="overflow-hidden rounded-2xl border border-border-warm bg-card">
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <BrandActivityIndicator size={22} aria-hidden="true" />
+              <div className="h-5 w-3/4 rounded-md bg-beige-dark motion-safe:animate-pulse" />
+            </div>
+            <div className="h-4 w-1/2 rounded-md bg-beige-dark motion-safe:animate-pulse" />
+            <div className="h-6 w-2/5 rounded-md bg-beige-dark motion-safe:animate-pulse" />
+            <div className="h-8 w-full rounded-md bg-beige-dark motion-safe:animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function MyCourses() {
   const { t } = useTranslation(["student", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const bucketParam = searchParams.get("bucket") === "archive" ? "archive" : "active";
-
+  const bucket: CourseBucket = searchParams.get("bucket") === "archive" ? "archive" : "active";
   const { data: profile, isLoading, isError, refetch } = useMyStudentProfile();
+  const journalsQuery = useMyStudentJournals();
+  const summaries = journalsQuery.data ? CourseResultSummaries.byCourse(journalsQuery.data) : null;
+  const resultsOf = (courseId: number): CourseResultState =>
+    summaries ? (summaries.get(courseId) ?? CourseResultSummaries.summarize([])) : journalsQuery.isError ? "unavailable" : "loading";
 
-  const setBucket = (bucket: "active" | "archive") => {
-    if (bucket === "archive") {
-      setSearchParams({ bucket: "archive" });
-    } else {
-      setSearchParams({});
-    }
+  const selectBucket = (next: CourseBucket): void => {
+    setSearchParams(next === "archive" ? { bucket: "archive" } : {}, { replace: false });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-6 animate-pulse">
-        <div className="h-8 w-48 rounded-lg bg-card" />
-        <div className="h-10 w-64 rounded-xl bg-card" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 rounded-2xl bg-card border border-border-warm" />
-          ))}
+  const activeCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry) => entry.bucket === "active") : [];
+  const archiveCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry) => entry.bucket === "archive") : [];
+  const visibleCourses: StudentCourseProfile[] = bucket === "archive" ? archiveCourses : activeCourses;
+
+  const renderBody = () => {
+    if (isLoading) return <CourseCardsSkeleton />;
+    if (isError && !profile) {
+      return (
+        <JournalPanelMessage
+          tone="error"
+          title={t("coursesRefreshError")}
+          retryLabel={t("common:retry")}
+          onRetry={() => void refetch()}
+        />
+      );
+    }
+    if (visibleCourses.length === 0) {
+      return bucket === "archive" ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-10 text-center">
+          <h2 className="text-base font-semibold text-ink">{t("noArchivedTitle")}</h2>
+          <p className="max-w-prose text-sm text-muted">{t("noArchivedBody")}</p>
+          <Button type="button" variant="secondary" onClick={() => selectBucket("active")}>
+            {t("returnToActive")}
+          </Button>
         </div>
-      </div>
-    );
-  }
-
-  if (isError || !profile) {
+      ) : (
+        <JournalPanelMessage tone="empty" title={t("noCoursesTitle")} body={t("noCoursesBody")} />
+      );
+    }
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-        <p className="text-sm text-muted">{t("common:error", "Произошла ошибка при загрузке курсов")}</p>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="rounded-lg border border-border-warm bg-card px-4 py-2 text-sm font-medium text-ink hover:bg-strip"
-        >
-          {t("common:retry", "Повторить")}
-        </button>
+      <div className="flex flex-col gap-3">
+        {isError && (
+          <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void refetch() }}>
+            {t("coursesRefreshError")}
+          </JournalNotice>
+        )}
+        <ul className={CARD_GRID_CLASS} aria-label={bucket === "archive" ? t("archiveSegment") : t("activeSegment")}>
+          {visibleCourses.map((entry) => (
+            <li key={entry.course.id} className="flex min-w-0 flex-col [&>a]:flex-1">
+              <StudentCourseCard entry={entry} variant={bucket} results={resultsOf(entry.course.id)} />
+            </li>
+          ))}
+        </ul>
       </div>
     );
-  }
-
-  const activeCourses = profile.courses.filter((c) => c.bucket === "active");
-  const archiveCourses = profile.courses.filter((c) => c.bucket === "archive");
-  const currentList = bucketParam === "archive" ? archiveCourses : activeCourses;
+  };
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 5.2.1 Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
-            <BookOpen size={24} className="text-maroon dark:text-accent" />
-            {t("myCoursesTitle", "Мои курсы")}
-          </h1>
-          <span className="rounded-full bg-strip px-2.5 py-0.5 text-xs font-semibold tabular-nums text-muted border border-border-warm">
-            {profile.courses.length}
-          </span>
-        </div>
+      <div className="flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
+          <BookOpen className="h-6 w-6 text-maroon dark:text-accent" aria-hidden="true" />
+          {t("myCoursesTitle")}
+        </h1>
+        <InfoTooltip label={t("coursesInfoLabel")}>{t("coursesInfo")}</InfoTooltip>
       </div>
-
-      {/* 5.2.2 Segmented control */}
-      <div role="tablist" className="inline-flex w-fit rounded-xl bg-strip p-1 border border-border-warm">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={bucketParam === "active"}
-          onClick={() => setBucket("active")}
-          className={[
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-all duration-150 motion-safe:transition-transform",
-            bucketParam === "active"
-              ? "bg-card font-semibold text-ink shadow-xs"
-              : "font-medium text-nav hover:text-ink",
-          ].join(" ")}
-        >
-          {t("activeSegment", "Активные")}
-          <span className="rounded-full bg-beige px-2 py-0.2 text-xs font-semibold tabular-nums text-muted">
-            {activeCourses.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={bucketParam === "archive"}
-          onClick={() => setBucket("archive")}
-          className={[
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-all duration-150 motion-safe:transition-transform",
-            bucketParam === "archive"
-              ? "bg-card font-semibold text-ink shadow-xs"
-              : "font-medium text-nav hover:text-ink",
-          ].join(" ")}
-        >
-          {t("archiveSegment", "Архив")}
-          <span className="rounded-full bg-beige px-2 py-0.2 text-xs font-semibold tabular-nums text-muted">
-            {archiveCourses.length}
-          </span>
-        </button>
+      <StudentBucketTabs
+        selected={bucket}
+        activeCount={profile ? activeCourses.length : null}
+        archiveCount={profile ? archiveCourses.length : null}
+        onSelect={selectBucket}
+      />
+      <div id="bucket-panel" role="tabpanel" aria-labelledby={`bucket-tab-${bucket}`}>
+        {renderBody()}
       </div>
-
-      {/* 5.2.3 Grid */}
-      {currentList.length === 0 ? (
-        bucketParam === "archive" ? (
-          <StudentEmptyState
-            title={t("noArchivedTitle", "В архиве пока ничего нет")}
-            body={t("noArchivedBody", "Курсы появятся здесь после их завершения.")}
-          />
-        ) : (
-          <StudentEmptyState
-            title={t("noCoursesTitle", "Вы пока не зачислены ни на один курс")}
-            body={t("noCoursesBody", "Ваш координатор добавит вас после подтверждения записи.")}
-          />
-        )
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {currentList.map((entry) => (
-            <StudentCourseCard key={entry.course.id} entry={entry} variant={bucketParam} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

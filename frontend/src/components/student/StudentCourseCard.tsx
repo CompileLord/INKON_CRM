@@ -1,105 +1,97 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { CalendarDays, ChevronRight, Target } from "lucide-react";
 import type { StudentCourseProfile } from "../../lib/users/types";
+import type { CourseResultSummary } from "../../lib/students/CourseResultSummary";
 import { resolveMediaUrl } from "../../lib/users/media";
-import { formatDate } from "../../i18n/formatters";
-import { FillBar } from "../courses/FillBar";
+import { ScoreBand, type ScoreBandStyle } from "../../lib/students/ScoreBand";
+import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
+import { CourseCover, InitialsTile } from "./CourseCover";
+import { PeriodStepper } from "./PeriodStepper";
+import { TeacherLine } from "./TeacherLine";
 
-import { useMentorProfile } from "../../lib/users/hooks";
-import { PersonAvatar } from "../ui/PersonAvatar";
+export type CourseResultState = CourseResultSummary | "loading" | "unavailable";
 
 interface StudentCourseCardProps {
   entry: StudentCourseProfile;
-  variant?: "active" | "archive";
+  variant: "active" | "archive";
+  results: CourseResultState;
 }
 
-export function StudentCourseCard({ entry, variant }: StudentCourseCardProps) {
-  const { t, i18n } = useTranslation(["student", "courses", "common"]);
-  const { course, bucket, enrollment_status, my_avg_percentage, periods_graded, periods_total } = entry;
-  const isArchive = (variant ?? bucket) === "archive";
-  const photoUrl = resolveMediaUrl(course.photo_path);
-
-  const { data: mentorProfile } = useMentorProfile(course.mentor_id);
-  const mentorUser = mentorProfile?.user;
-
-  const fillRate = periods_total > 0 ? (periods_graded / periods_total) * 100 : 0;
+export function StudentCourseCard({ entry, variant, results }: StudentCourseCardProps) {
+  const { t, i18n } = useTranslation(["student", "common"]);
+  const { course, enrollment_status: enrollmentStatus, periods_total: periodsTotal } = entry;
+  const [imageFailed, setImageFailed] = useState<boolean>(false);
+  const photoUrl: string | null = resolveMediaUrl(course.photo_path) ?? null;
+  const hasCover: boolean = photoUrl !== null && !imageFailed;
+  const isArchive: boolean = variant === "archive";
+  const summary: CourseResultSummary | null = typeof results === "object" ? results : null;
+  const average: number | null = summary ? summary.averagePercentage : null;
+  const band: ScoreBandStyle | null = average === null ? null : ScoreBand.of(average);
+  const statusLabel: string =
+    enrollmentStatus === "completed" ? t("status.completed") : enrollmentStatus === "withdrawn" ? t("status.left") : t("status.archived");
 
   return (
     <Link
       to={`/my/courses/${course.id}`}
-      className={[
-        "group flex flex-col justify-between rounded-2xl border border-border-warm p-4 transition-all duration-150 active:scale-[0.96]",
-        isArchive ? "bg-strip hover:bg-card" : "bg-card hover:bg-row-hover",
-      ].join(" ")}
+      className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border-warm shadow-xs hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
+        isArchive ? "bg-strip" : "bg-card"
+      }`}
     >
-      <div className="flex flex-col gap-3">
-        {photoUrl && (
-          <img
-            src={photoUrl}
-            alt={course.title}
-            className={[
-              "aspect-[16/9] w-full rounded-xl object-cover transition-opacity",
-              isArchive ? "opacity-75" : "opacity-100",
-            ].join(" ")}
+      {hasCover && photoUrl && <CourseCover photoUrl={photoUrl} muted={isArchive} onFailed={() => setImageFailed(true)} />}
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex items-start gap-3">
+          {!hasCover && <InitialsTile title={course.title} />}
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h2 className="line-clamp-2 break-words text-base font-semibold text-ink">{course.title}</h2>
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                {formatSchoolLessonDate(course.start_date, i18n.language)} – {formatSchoolLessonDate(course.end_date, i18n.language)}
+              </span>
+              {isArchive && (
+                <span className="rounded-full bg-beige px-2 py-0.5 font-semibold text-ink" data-testid="course-status-chip">
+                  {statusLabel}
+                </span>
+              )}
+            </p>
+          </div>
+          <ChevronRight
+            aria-hidden="true"
+            className="mt-0.5 h-5 w-5 shrink-0 text-muted motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:group-hover:translate-x-0.5"
           />
-        )}
+        </div>
 
-        <div className="flex flex-col gap-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-base font-semibold text-ink group-hover:text-maroon dark:group-hover:text-accent">
-              {course.title}
-            </h3>
-            {isArchive && (
-              <span
-                className={[
-                  "shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold",
-                  enrollment_status === "completed"
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                    : "bg-strip text-muted",
-                ].join(" ")}
-              >
-                {enrollment_status === "completed"
-                  ? t("status.completed", "Завершено")
-                  : enrollment_status === "withdrawn"
-                  ? t("status.left", "Завершено")
-                  : t("status.archived", "В архиве")}
+        <TeacherLine mentorId={course.mentor_id} />
+
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="flex items-end justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+              <Target className="h-4 w-4" aria-hidden="true" />
+              {t("myAverage")}
+            </span>
+            {results === "loading" ? (
+              <span className="h-6 w-14 rounded-md bg-beige-dark motion-safe:animate-pulse" data-testid="course-score" data-band="loading" />
+            ) : results === "unavailable" ? (
+              <span className="text-sm font-medium text-muted" data-testid="course-score" data-band="unavailable">{t("metricUnavailable")}</span>
+            ) : average !== null && band ? (
+              <span className={`text-2xl font-semibold leading-none tabular-nums ${band.textClass}`} data-testid="course-score" data-band={band.name}>
+                {formatNumber(average, i18n.language, { maximumFractionDigits: 0 })}%
+              </span>
+            ) : (
+              <span className="text-sm font-medium text-muted" data-testid="course-score" data-band="none">
+                {t("notGradedYet")}
               </span>
             )}
           </div>
-          <p className="text-xs text-muted">
-            {t(`common:enums.examType.${course.exam_type}`, course.exam_type)} ·{" "}
-            {formatDate(course.start_date, i18n.language)} – {formatDate(course.end_date, i18n.language)}
-          </p>
-        </div>
-
-        <div className="mt-1 flex items-baseline justify-between">
-          <div>
-            <span className="text-xs text-muted block">{t("myAverage", "Мой балл")}</span>
-            <span className="text-2xl font-bold tabular-nums text-ink">{my_avg_percentage.toFixed(1)}%</span>
-          </div>
-          {mentorUser && (
-            <div className="flex items-center gap-1.5 rounded-lg bg-strip px-2 py-1">
-              <PersonAvatar
-                firstName={mentorUser.first_name}
-                lastName={mentorUser.last_name}
-                photoUrl={resolveMediaUrl(mentorUser.thumbnail_path ?? mentorUser.photo_path) ?? undefined}
-                size={20}
-              />
-              <span className="text-xs font-medium text-ink truncate max-w-[100px]">
-                {mentorUser.first_name} {mentorUser.last_name}
-              </span>
+          {band && average !== null && (
+            <div className="h-1.5 overflow-hidden rounded-full bg-beige" aria-hidden="true">
+              <div className={`h-full rounded-full ${band.barClass}`} style={{ width: `${Math.min(100, Math.max(0, average))}%` }} />
             </div>
           )}
+          {summary && <PeriodStepper graded={summary.gradedPeriods} total={periodsTotal} />}
         </div>
-
-        {!isArchive && (
-          <div className="flex flex-col gap-1">
-            <FillBar rate={fillRate} />
-            <span className="text-xs text-muted tabular-nums">
-              {t("periodsCount", "{{graded}} из {{total}} периодов", { graded: periods_graded, total: periods_total })}
-            </span>
-          </div>
-        )}
       </div>
     </Link>
   );

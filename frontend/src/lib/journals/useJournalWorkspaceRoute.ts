@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useJournal } from "./hooks";
+import { useScopedJournal } from "./hooks";
 import type { JournalPeriod } from "../courses/types";
 import type { JournalDetailResponse } from "./types";
 import {
@@ -23,9 +23,15 @@ interface JournalRouteLocationState {
   journalRouteNotice?: JournalRouteNoticeKind[];
 }
 
+export interface StudentJournalScope {
+  journalId: number;
+  openPeriod: (periodId: number) => void;
+}
+
 interface UseJournalWorkspaceRouteArguments {
   periods: JournalPeriod[] | undefined;
   today: string;
+  studentScope?: StudentJournalScope;
 }
 
 export interface JournalWorkspaceRoute {
@@ -54,6 +60,7 @@ function noticesFromState(state: unknown): JournalRouteNoticeKind[] {
 export function useJournalWorkspaceRoute({
   periods,
   today,
+  studentScope,
 }: UseJournalWorkspaceRouteArguments): JournalWorkspaceRoute {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -64,8 +71,17 @@ export function useJournalWorkspaceRoute({
   const rawTab: string | null = searchParams.get(TAB_QUERY_KEY);
   const rawView: string | null = searchParams.get(VIEW_QUERY_KEY);
 
-  const periodResolution: PeriodResolution = JournalWorkspaceSelection.resolvePeriod(periods ?? [], rawPeriod, today);
-  const journalQuery: UseQueryResult<JournalDetailResponse> = useJournal(periodResolution.period?.id);
+  const periodResolution: PeriodResolution = studentScope
+    ? {
+        period: periods?.find((period) => period.id === studentScope.journalId),
+        source: "query",
+        queryInvalid: false,
+      }
+    : JournalWorkspaceSelection.resolvePeriod(periods ?? [], rawPeriod, today);
+  const journalQuery: UseQueryResult<JournalDetailResponse> = useScopedJournal(
+    studentScope ? studentScope.journalId : periodResolution.period?.id,
+    studentScope ? "student" : "staff",
+  );
   const lessonDates: string[] | undefined = journalQuery.isPlaceholderData ? undefined : journalQuery.data?.lesson_dates;
   const lessonResolution: LessonResolution = JournalWorkspaceSelection.resolveLesson(lessonDates ?? [], rawLesson, today);
   const tabParse = JournalWorkspaceSelection.parseTab(rawTab);
@@ -121,14 +137,20 @@ export function useJournalWorkspaceRoute({
     [setSearchParams],
   );
 
+  const openStudentPeriod = studentScope?.openPeriod;
   const selectPeriod = useCallback(
-    (periodId: number): void =>
+    (periodId: number): void => {
+      if (openStudentPeriod) {
+        openStudentPeriod(periodId);
+        return;
+      }
       update((next) => {
         next.set(PERIOD_QUERY_KEY, String(periodId));
         next.delete(LESSON_QUERY_KEY);
         next.delete(STUDENT_QUERY_KEY);
-      }, false),
-    [update],
+      }, false);
+    },
+    [update, openStudentPeriod],
   );
 
   const selectLesson = useCallback(
