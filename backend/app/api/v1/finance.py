@@ -232,6 +232,7 @@ async def reopen_period(
 @router.get("/debts/", response_model=PaginatedResponse[DebtResponse])
 async def get_debts(
     course_id: Optional[int] = Query(None),
+    student_id: Optional[int] = Query(None, ge=1),
     min_debt: Optional[Decimal] = Query(None, ge=0, max_digits=12, decimal_places=2),
     overdue_days: Optional[int] = Query(None),
     enrollment_status: Optional[EnrollmentStatus] = Query(
@@ -246,6 +247,8 @@ async def get_debts(
     filters = {}
     if course_id is not None:
         filters["course_id"] = course_id
+    if student_id is not None:
+        filters["student_id"] = student_id
     if min_debt is not None:
         filters["min_debt"] = min_debt
     if overdue_days is not None:

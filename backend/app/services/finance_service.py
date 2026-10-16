@@ -1174,6 +1174,8 @@ class FinanceService:
 
         if filters.get("course_id"):
             query = query.filter(Enrollment.course_id == filters["course_id"])
+        if filters.get("student_id"):
+            query = query.filter(Enrollment.student_id == filters["student_id"])
         if filters.get("status"):
             query = query.filter(Enrollment.status == filters["status"])
 

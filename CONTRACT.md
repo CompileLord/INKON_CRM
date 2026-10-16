@@ -2990,6 +2990,7 @@ Manually apply a student's wallet credit to a specific charge.
 
 **Parameters:**
 - `course_id` [query]
+- `student_id` [query]
 - `min_debt` [query]
 - `overdue_days` [query]
 - `enrollment_status` [query] Defaults to all statuses; use 'active' to exclude withdrawn students
@@ -3257,6 +3258,13 @@ Manually apply a student's wallet credit to a specific charge.
 **Parameters:**
 - `page` [query]
 - `page_size` [query]
+- `actor_id` [query]
+- `action` [query]
+- `entity_type` [query]
+- `entity_id` [query]
+- `date_from` [query] Inclusive Dushanbe calendar day
+- `date_to` [query] Inclusive Dushanbe calendar day
+- `search` [query] Matches actor name, entity type or field name
 
 **Responses:**
 - **200**: Successful Response
@@ -3266,9 +3274,13 @@ Manually apply a student's wallet credit to a specific charge.
       {
         "id": integer,
         "user_id": integer,
+        "actor_name?": string,
         "action": "create" | "update" | "delete" | "void" | "refund" | "close_period" | "reopen_period",
         "entity_type": string,
         "entity_id": integer,
+        "entity_label?": string,
+        "student_id?": integer,
+        "course_id?": integer,
         "field_name": string,
         "old_value": string,
         "new_value": string,
@@ -3293,6 +3305,85 @@ Manually apply a student's wallet credit to a specific charge.
         "ctx?": object,
       }
     ],
+  }
+  ```
+
+---
+
+## GET /api/v1/audit-log/events/
+
+**Summary:** List Audit Events
+
+**Parameters:**
+- `page` [query]
+- `page_size` [query]
+- `actor_id` [query]
+- `action` [query]
+- `entity_type` [query]
+- `entity_id` [query]
+- `date_from` [query] Inclusive Dushanbe calendar day
+- `date_to` [query] Inclusive Dushanbe calendar day
+- `search` [query] Matches actor name, entity type or field name
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "id": integer,
+        "user_id": integer,
+        "actor_name?": string,
+        "action": "create" | "update" | "delete" | "void" | "refund" | "close_period" | "reopen_period",
+        "entity_type": string,
+        "entity_id": integer,
+        "entity_label?": string,
+        "student_id?": integer,
+        "course_id?": integer,
+        "course_title?": string,
+        "amount?": string,
+        "created_at": string,
+        "changes": array[],
+      }
+    ],
+    "total": integer,
+    "page": integer,
+    "page_size": integer,
+    "total_pages": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/audit-log/filter-options/
+
+**Summary:** Get Audit Filter Options
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "actors": [
+      {
+        "id": integer,
+        "name": string,
+      }
+    ],
+    "entity_types": array[string],
   }
   ```
 
