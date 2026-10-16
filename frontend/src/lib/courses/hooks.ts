@@ -10,6 +10,7 @@ import {
   getCourseMentorHistory,
   getCourseProgressChart,
   getCourseSchedule,
+  getCourseStaffProgress,
   listCourses,
   updateCourse,
   uploadCourseImage,
@@ -147,3 +148,12 @@ export function useCourseJournalMetrics(courseId: number | undefined) {
     enabled: courseId !== undefined,
   });
 }
+
+export function useCourseStaffProgress(courseId: number | undefined) {
+  return useQuery({
+    queryKey: ["courses", "staff-progress", courseId],
+    queryFn: () => getCourseStaffProgress(courseId!),
+    enabled: courseId !== undefined,
+  });
+}
+

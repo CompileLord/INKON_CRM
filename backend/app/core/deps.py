@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
+from app.repositories.interfaces.course_progress_repository import CourseProgressRepositoryInterface
+from app.repositories.sqlalchemy.course_progress_repository import SqlAlchemyCourseProgressRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.services.course_progress_service import CourseProgressService
 
 oauth2_scheme = HTTPBearer()
 
@@ -133,3 +136,16 @@ def get_student_profile_service(
     user_repo = SQLAlchemyUserRepository(db)
     schedule_service = LessonScheduleService()
     return StudentProfileService(user_repo=user_repo, schedule_service=schedule_service)
+
+
+def get_course_progress_repository(
+    db: AsyncSession = Depends(get_db_session)
+) -> CourseProgressRepositoryInterface:
+    return SqlAlchemyCourseProgressRepository(db)
+
+
+def get_course_progress_service(
+    repo: CourseProgressRepositoryInterface = Depends(get_course_progress_repository)
+) -> CourseProgressService:
+    return CourseProgressService(repo)
+
