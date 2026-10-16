@@ -41,6 +41,7 @@ Current main removed GCS, WP04 already made document names unique, and the exist
 | [backend/app/tests/integration/test_avatar.py](../../../backend/app/tests/integration/test_avatar.py) | Replace immediate-deletion assertion with committed-intent and actual eventual-cleanup assertions. |
 | [backend/app/db/storage_intent_session.py](../../../backend/app/db/storage_intent_session.py) | NEW separately bounded reservation engine/session owner. |
 | [backend/app/main.py](../../../backend/app/main.py) | Dispose the separately bounded storage-intent engine during API shutdown. |
+| [backend/app/tests/integration/test_remediation_wp13.py](../../../backend/app/tests/integration/test_remediation_wp13.py) | Adapt the ARQ-only document producer fake to the lifecycle boundary; preserve exact enqueue and added-document assertions. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

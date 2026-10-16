@@ -1114,6 +1114,7 @@
       "backend/app/tests/integration/test_avatar.py",
       "backend/app/db/storage_intent_session.py",
       "backend/app/main.py",
+      "backend/app/tests/integration/test_remediation_wp13.py",
       "docs/remediation/STATUS.md"
     ],
     "steps": [
