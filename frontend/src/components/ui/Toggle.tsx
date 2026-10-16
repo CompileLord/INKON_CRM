@@ -5,6 +5,7 @@ export interface ToggleProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
+  ariaLabel?: string;
   disabled?: boolean;
   id?: string;
   className?: string;
@@ -14,6 +15,7 @@ export function Toggle({
   checked,
   onChange,
   label,
+  ariaLabel,
   disabled = false,
   id,
   className = "",
@@ -44,7 +46,7 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         aria-labelledby={label ? labelId : undefined}
-        aria-label={label ? undefined : t("controls.toggle")}
+        aria-label={label ? undefined : ariaLabel ?? t("controls.toggle")}
         disabled={disabled}
         onClick={handleToggle}
         className={[
@@ -56,7 +58,7 @@ export function Toggle({
       >
         <span
           className={[
-            "relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5",
+            "relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5 motion-safe:transition-[background-color,border-color] motion-safe:duration-150 motion-safe:ease-out",
             disabled
               ? "bg-beige border border-control-border"
               : checked
@@ -66,7 +68,7 @@ export function Toggle({
         >
           <span
             className={[
-              "inline-block h-5 w-5 rounded-full shadow-xs",
+              "inline-block h-5 w-5 rounded-full shadow-xs motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
               disabled
                 ? `${checked ? "translate-x-5" : "translate-x-0"} bg-muted`
                 : checked

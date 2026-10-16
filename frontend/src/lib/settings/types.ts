@@ -10,3 +10,8 @@ export interface OrgSettingsUpdate {
   notify_payments?: boolean;
   notify_debts?: boolean;
 }
+
+export interface TelegramBotCheck {
+  reachable: boolean;
+  bot_username: string | null;
+}

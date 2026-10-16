@@ -1,5 +1,5 @@
 import { httpClient } from "../auth/httpClient";
-import type { OrgSettings, OrgSettingsUpdate } from "./types";
+import type { OrgSettings, OrgSettingsUpdate, TelegramBotCheck } from "./types";
 
 export function fetchOrgSettings(): Promise<OrgSettings> {
   return httpClient
@@ -10,5 +10,11 @@ export function fetchOrgSettings(): Promise<OrgSettings> {
 export function updateOrgSettings(payload: OrgSettingsUpdate): Promise<OrgSettings> {
   return httpClient
     .patch<OrgSettings>("/settings/org", payload)
+    .then((res) => res.data);
+}
+
+export function testTelegramBot(): Promise<TelegramBotCheck> {
+  return httpClient
+    .post<TelegramBotCheck>("/settings/telegram/test")
     .then((res) => res.data);
 }

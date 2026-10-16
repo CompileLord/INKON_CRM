@@ -29,6 +29,7 @@ export interface AvatarUploadFieldProps {
   onUploaded: (user: User) => void;
   onBusyChange?: (busy: boolean) => void;
   onOperationStateChange?: (state: AvatarOperationState) => void;
+  hideLabel?: boolean;
 }
 
 export function AvatarUploadField({
@@ -40,6 +41,7 @@ export function AvatarUploadField({
   onUploaded,
   onBusyChange,
   onOperationStateChange,
+  hideLabel = false,
 }: AvatarUploadFieldProps) {
   const { t } = useTranslation("common");
   const inputId = useId();
@@ -333,7 +335,7 @@ export function AvatarUploadField({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-ink">{t("avatar.label")}</span>
+      <span className={hideLabel ? "sr-only" : "text-sm font-medium text-ink"}>{t("avatar.label")}</span>
       <div className="flex items-center gap-4">
         <div
           data-testid="avatar-preview-container"

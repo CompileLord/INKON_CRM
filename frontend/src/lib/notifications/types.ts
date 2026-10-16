@@ -14,7 +14,6 @@ export interface NotificationLogItem {
   attempts: number;
   sent_at: string | null;
   read_at: string | null;
-  error_message: string | null;
 }
 
 export type PaginatedNotifications = Paginated<NotificationLogItem>;
@@ -22,3 +21,19 @@ export type PaginatedNotifications = Paginated<NotificationLogItem>;
 export interface UnreadCountResponse {
   unread_count: number;
 }
+
+export interface MarkAllReadResponse {
+  updated_count: number;
+}
+
+export interface DeliveryLogItem {
+  id: number;
+  recipient_name: string | null;
+  type: NotificationType;
+  notification_date: string;
+  status: NotificationStatus;
+  attempts: number;
+  sent_at: string | null;
+}
+
+export type PaginatedDeliveryLog = Paginated<DeliveryLogItem>;

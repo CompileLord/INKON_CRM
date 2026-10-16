@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const phonePattern = /^\+?[1-9]\d{1,14}$/;
+export const phonePattern = /^\+?[1-9]\d{1,14}$/;
 
 export function createStudentFormSchema(t: (key: string) => string = (k) => k) {
   return z.object({

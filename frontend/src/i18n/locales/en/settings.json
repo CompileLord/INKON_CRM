@@ -1,24 +1,80 @@
 {
-  "title": "System Settings",
-  "subtitle": "Manage profile, system parameters, and notifications",
-  "saved": "Settings saved!",
-  "tabs": {
-    "profile": "User Profile",
-    "system": "System Parameters",
-    "notifications": "Notifications & Bot"
+  "title": "Settings",
+  "navLabel": "Settings sections",
+  "saved": "Saved",
+  "retry": "Retry",
+  "loadFailed": "Couldn't load this section.",
+  "sections": {
+    "profile": "Profile",
+    "appearance": "Appearance",
+    "organization": "Organization",
+    "rules": "Notification rules"
   },
-  "profileSection": "Personal Information",
-  "uploadAvatar": "Upload avatar",
-  "firstName": "First Name",
-  "lastName": "Last Name",
-  "email": "Email",
-  "phone": "Phone",
-  "systemSection": "General System Settings",
-  "orgName": "Organization Name",
-  "currency": "Primary Base Currency",
-  "tgWebhook": "Telegram Bot Webhook",
-  "webhookActive": "Active",
-  "rulesSection": "Notification Rules",
-  "paymentNotify": "Payment Notifications",
-  "debtNotify": "Debt Reminders"
+  "sectionHints": {
+    "profile": "Your name, photo and contact details.",
+    "appearance": "Theme and language for this device.",
+    "organization": "Center name, currency and the Telegram bot.",
+    "rules": "Choose which messages the center sends."
+  },
+  "saveBar": {
+    "label": "Unsaved changes",
+    "unsaved": "Unsaved changes",
+    "discard": "Discard",
+    "save": "Save",
+    "failed": "Couldn't save. Try again."
+  },
+  "profile": {
+    "photo": "Photo",
+    "photoHint": "JPG or PNG, up to 5 MB.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "emailHint": "Used to sign in. Ask an administrator to change it.",
+    "phone": "Phone",
+    "phoneHint": "International format, e.g. +992901234567.",
+    "nameRequired": "Enter a name.",
+    "phoneInvalid": "Use the international format, e.g. +992901234567."
+  },
+  "appearance": {
+    "theme": "Theme",
+    "themeHint": "Applies immediately.",
+    "themeOptions": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": "Language",
+    "languageHint": "Applies immediately.",
+    "languageCodes": {
+      "ru": "RU",
+      "tg": "TG",
+      "en": "EN"
+    }
+  },
+  "about": {
+    "title": "About",
+    "version": "Version"
+  },
+  "organization": {
+    "name": "Organization name",
+    "nameHint": "Shown to staff and in messages.",
+    "editName": "Edit name",
+    "nameRequired": "Enter a name.",
+    "currency": "Currency",
+    "currencyValue": "TJS · Somoni",
+    "currencyInfo": "All payments and balances use one currency. It can't be changed here.",
+    "telegram": "Telegram bot",
+    "telegramHint": "Sends reminders to students and parents.",
+    "botReachable": "Connected",
+    "botUnreachable": "Not reachable",
+    "botUnchecked": "Not checked yet",
+    "test": "Test"
+  },
+  "rules": {
+    "payments": "Payment notifications",
+    "paymentsHint": "Tell students about upcoming payments.",
+    "debts": "Debt reminders",
+    "debtsHint": "Remind students who have an overdue balance.",
+    "telegram": "Telegram"
+  }
 }

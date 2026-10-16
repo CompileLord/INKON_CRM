@@ -117,8 +117,8 @@ describe("shared shell lifecycle", () => {
     expect(await screen.findByText("Exam result")).toBeTruthy();
   });
   it("handles row-local read failure and retry while preserving adjacent row actions", async () => {
-    const itemA: NotificationLogItem = { id: 11, user_id: 42, type: "exam_result", status: "sent", attempts: 1, sent_at: "2026-10-10T10:00:00Z", notification_date: "2026-10-10", read_at: null, error_message: null, recipient: "test1", related_entity_id: 1 };
-    const itemB: NotificationLogItem = { id: 12, user_id: 42, type: "payment_reminder_1d", status: "sent", attempts: 1, sent_at: "2026-10-10T10:00:00Z", notification_date: "2026-10-10", read_at: null, error_message: null, recipient: "test2", related_entity_id: 2 };
+    const itemA: NotificationLogItem = { id: 11, user_id: 42, type: "exam_result", status: "sent", attempts: 1, sent_at: "2026-10-10T10:00:00Z", notification_date: "2026-10-10", read_at: null, recipient: "test1", related_entity_id: 1 };
+    const itemB: NotificationLogItem = { id: 12, user_id: 42, type: "payment_reminder_1d", status: "sent", attempts: 1, sent_at: "2026-10-10T10:00:00Z", notification_date: "2026-10-10", read_at: null, recipient: "test2", related_entity_id: 2 };
     mock.onGet("/notifications/").reply(() => [200, { items: [itemA, itemB], total: 2, page: 1, page_size: 5 }]);
     mock.onPatch("/notifications/11/read").replyOnce(500).onPatch("/notifications/11/read").reply(() => {
       itemA.read_at = "2026-10-10T12:00:00Z";

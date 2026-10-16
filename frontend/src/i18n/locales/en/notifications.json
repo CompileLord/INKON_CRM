@@ -1,18 +1,54 @@
 {
-  "title": "System Notifications Log",
-  "subtitle": "Dispatch log of Telegram & client messages",
-  "searchPlaceholder": "Search by recipient or text...",
-  "allStatuses": "All statuses",
-  "sent": "Sent",
-  "failed": "Failed",
-  "recipient": "Recipient",
-  "type": "Type",
-  "message": "Message",
-  "retry": "Retry",
-  "retrying": "Resending for #{{id}}",
-  "markAllRead": "Mark all as read",
-  "viewHistory": "View notification history",
+  "title": "Notifications",
+  "titleInfo": "Your own messages from the center: exam results and payment reminders.",
+  "titleInfoAdmin": "Your own messages, plus the log of every message the system sent to users.",
+  "tabs": {
+    "inbox": "Inbox",
+    "log": "Delivery log"
+  },
+  "days": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "events": {
+    "examResult": {
+      "title": "Exam result",
+      "body": "Your exam result is ready."
+    },
+    "paymentTwoDays": {
+      "title": "Payment reminder",
+      "body": "Your payment is due in 2 days."
+    },
+    "paymentOneDay": {
+      "title": "Payment reminder",
+      "body": "Your payment is due tomorrow."
+    },
+    "generic": {
+      "title": "Notification",
+      "body": "You have a new message."
+    }
+  },
+  "unread": "Unread",
   "markRead": "Mark as read",
-  "read": "Read",
-  "noNotifications": "No notifications"
+  "markReadFailed": "Couldn't mark as read. Try again.",
+  "markAllRead": "Mark all read",
+  "markAllFailed": "Couldn't mark all as read. Try again.",
+  "unreadSummary": "Unread: {{count}}",
+  "allRead": "All caught up",
+  "loadFailed": "Couldn't load notifications.",
+  "inboxEmpty": "Nothing here yet. New messages from the center will show up here.",
+  "deliveryLog": {
+    "failedOnly": "Failed only",
+    "sent": "Sent",
+    "failed": "Failed · {{count}}",
+    "unknownRecipient": "Unknown recipient",
+    "notSent": "Not sent",
+    "empty": "No messages have been sent yet.",
+    "emptyFailed": "No failed deliveries.",
+    "recipient": "Recipient",
+    "event": "Event",
+    "date": "Date",
+    "status": "Status",
+    "sentAt": "Sent"
+  }
 }
