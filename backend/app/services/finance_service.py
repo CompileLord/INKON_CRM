@@ -25,6 +25,7 @@ import json
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException, status
+from redis.exceptions import RedisError
 from sqlalchemy import Date, and_, case, cast, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -46,12 +47,14 @@ from app.schemas.ledger import (
     VoidPaymentPayload,
 )
 from app.core.redis import redis_client
+from app.repositories.interfaces.cache_generation_repository import CacheGenerationRepository
+from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
 
 
 # The centre operates on Asia/Dushanbe (UTC+5, no DST).
 DUSHANBE_TZ_OFFSET = timedelta(hours=5)
 
-ANALYTICS_CACHE_KEY_PREFIX: str = "finance:analytics:v2:"
+ANALYTICS_CACHE_KEY_PREFIX: str = "finance:analytics:v3:"
 ZERO = Decimal("0.00")
 
 # Entry types that put credit on a student's account.
@@ -74,8 +77,9 @@ def _q(value: Decimal) -> Decimal:
 
 
 class FinanceService:
-    def __init__(self, db: AsyncSession) -> None:
-        self.db = db
+    def __init__(self, db: AsyncSession, cache_generation_repo: CacheGenerationRepository | None = None) -> None:
+        self.db: AsyncSession = db
+        self.cache_generation_repo: CacheGenerationRepository = cache_generation_repo or SQLAlchemyCacheGenerationRepository(db)
 
     async def lock_student_accounts(self, student_ids: Sequence[int]) -> None:
         ordered_student_ids: list[int] = sorted(set(student_ids))
@@ -87,6 +91,7 @@ class FinanceService:
             .order_by(User.id)
             .with_for_update()
         )
+        self.cache_generation_repo.mark_account_lock()
 
     # ------------------------------------------------------------------
     # Infrastructure helpers
@@ -132,18 +137,7 @@ class FinanceService:
         )
 
     async def _invalidate_cache(self) -> None:
-        """Drop cached analytics. Uses SCAN — KEYS blocks the Redis event loop."""
-        try:
-            cursor = 0
-            while True:
-                cursor, keys = await redis_client.scan(cursor=cursor, match="finance:analytics:*", count=100)
-                if keys:
-                    await redis_client.delete(*keys)
-                if cursor == 0:
-                    break
-        except Exception:
-            # Cache invalidation must never fail a financial write.
-            pass
+        await self.cache_generation_repo.advance()
 
     # ------------------------------------------------------------------
     # Ledger primitives
@@ -251,6 +245,7 @@ class FinanceService:
             charge.status = ChargeStatus.SETTLED if allocated >= charge.amount else ChargeStatus.OPEN
 
         await self.db.flush()
+        await self._invalidate_cache()
 
     async def _reverse_allocations(
         self,
@@ -523,6 +518,7 @@ class FinanceService:
 
         await self.db.flush()
         await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
+        await self._invalidate_cache()
         return charges
 
     # ------------------------------------------------------------------
@@ -1267,10 +1263,17 @@ class FinanceService:
         }
 
     async def get_analytics(self, date_from: date, date_to: date) -> dict:
-        cache_key = f"{ANALYTICS_CACHE_KEY_PREFIX}{date_from.isoformat()}:{date_to.isoformat()}"
-        cached = await redis_client.get(cache_key)
-        if cached:
-            return json.loads(cached)
+        cache_eligible: bool = self.cache_generation_repo.can_use_shared_cache()
+        cache_key: str | None = None
+        if cache_eligible:
+            generation: int = await self.cache_generation_repo.read_committed_generation()
+            cache_key = f"{ANALYTICS_CACHE_KEY_PREFIX}{generation}:{date_from.isoformat()}:{date_to.isoformat()}"
+            try:
+                cached: str | None = await redis_client.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+            except RedisError:
+                pass
 
         today = get_dushanbe_today()
         active_enrollment = and_(
@@ -1393,7 +1396,11 @@ class FinanceService:
             "debtors_preview": debtors_preview,
         }
 
-        await redis_client.set(cache_key, json.dumps(analytics), ex=600)
+        if cache_key is not None and self.cache_generation_repo.can_use_shared_cache():
+            try:
+                await redis_client.set(cache_key, json.dumps(analytics), ex=600)
+            except RedisError:
+                pass
         return analytics
 
     @staticmethod

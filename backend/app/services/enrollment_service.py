@@ -220,6 +220,7 @@ class EnrollmentService:
         for fc in future_charges:
             fc.status = ChargeStatus.CANCELLED
 
+        await FinanceService(self.db)._invalidate_cache()
         await self.db.refresh(enrollment)
         return enrollment
 

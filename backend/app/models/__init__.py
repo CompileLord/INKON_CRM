@@ -1,3 +1,4 @@
+from app.models.cache_generation import CacheGeneration
 from app.models.user import User, UserRole
 from app.models.refresh_token import RefreshToken
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
@@ -18,6 +19,7 @@ from app.models.notification_log import NotificationLog
 from app.models.audit_log import AuditLog, AuditAction
 
 __all__ = [
+    "CacheGeneration",
     "User",
     "UserRole",
     "RefreshToken",
