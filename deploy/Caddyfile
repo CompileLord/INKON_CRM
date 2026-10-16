@@ -1,0 +1,21 @@
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	request_body {
+		max_size 55MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy api:8080 {
+		health_uri /health
+		health_interval 15s
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

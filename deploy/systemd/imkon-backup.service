@@ -1,0 +1,9 @@
+[Unit]
+Description=IMKON nightly database dump and off-site backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/opt/imkon/deploy/backup.sh
