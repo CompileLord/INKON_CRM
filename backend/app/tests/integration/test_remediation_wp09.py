@@ -188,10 +188,57 @@ async def test_pipeline_delete_namespaces_every_key(
         await test_redis_connection.delete(foreign_key)
 
 
-@pytest.mark.parametrize("command_name", ["flushdb", "flushall", "eval", "keys", "migrate"])
+@pytest.mark.parametrize("command_name", ["flushdb", "flushall", "keys", "migrate"])
 def test_namespaced_redis_client_rejects_global_and_unsupported_commands(command_name: str) -> None:
     with pytest.raises(AttributeError):
         getattr(redis_client, command_name)
+
+
+@pytest.mark.asyncio
+async def test_namespaced_redis_client_eval_isolates_multi_key_operations(
+    test_redis_connection: Any,
+) -> None:
+    foreign_key: str = f"wp09:foreign:{uuid4().hex}"
+    owned_key_1: str = f"test:eval:key1:{uuid4().hex}"
+    owned_key_2: str = f"test:eval:key2:{uuid4().hex}"
+    await test_redis_connection.set(foreign_key, "preserve_foreign")
+    await redis_client.set(owned_key_1, "value_1")
+    await redis_client.set(owned_key_2, "value_2")
+
+    try:
+        script: str = """
+        local k1 = KEYS[1]
+        local k2 = KEYS[2]
+        local prefix_arg = ARGV[1]
+        local v1 = redis.call('GET', k1)
+        local v2 = redis.call('GET', k2)
+        redis.call('SET', k1, v1 .. '_updated')
+        redis.call('SET', k2, v2 .. '_updated')
+        return {k1, k2, prefix_arg}
+        """
+        eval_result: list[Any] = await redis_client.eval(
+            script,
+            2,
+            owned_key_1,
+            owned_key_2,
+            "raw_arg_unchanged",
+        )
+        returned_arg: str = (
+            eval_result[2].decode()
+            if isinstance(eval_result[2], bytes)
+            else str(eval_result[2])
+        )
+        assert returned_arg == "raw_arg_unchanged"
+
+        updated_val_1: str | None = await redis_client.get(owned_key_1)
+        updated_val_2: str | None = await redis_client.get(owned_key_2)
+        assert updated_val_1 == "value_1_updated"
+        assert updated_val_2 == "value_2_updated"
+
+        assert await test_redis_connection.get(foreign_key) == "preserve_foreign"
+    finally:
+        await test_redis_connection.delete(foreign_key)
+        await redis_client.delete(owned_key_1, owned_key_2)
 
 
 def test_namespaced_redis_pipeline_rejects_global_commands() -> None:

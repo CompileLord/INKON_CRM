@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_setup_user
-from app.core.rate_limiter import check_rate_limit, clear_rate_limit
+from app.core.rate_limiter import (
+    AuthenticationRateLimiter,
+    LockoutReservation,
+    get_auth_rate_limiter,
+    get_client_ip,
+)
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -22,14 +27,35 @@ router = APIRouter()
 @router.post("/login", response_model=TokenPair)
 async def login(
     payload: LoginRequest,
-    db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
-    key = f"auth:attempts:login:{payload.email}"
-    await check_rate_limit(key, 5, 900)
-    auth_service = AuthService(db)
-    result = await auth_service.login(payload.email, payload.password)
-    await clear_rate_limit(key)
-    return result
+    client_ip: str = get_client_ip(request)
+    await limiter.consume_login_budget(payload.email, client_ip)
+    reservation: LockoutReservation = await limiter.reserve_login_slot(payload.email)
+    try:
+        auth_service: AuthService = AuthService(db)
+        try:
+            result: TokenPair = await auth_service.login(payload.email, payload.password)
+            await reservation.commit_success()
+            return result
+        except HTTPException as error:
+            if error.status_code == status.HTTP_401_UNAUTHORIZED:
+                await reservation.commit_failure()
+            elif not reservation.is_committed:
+                try:
+                    await reservation.release()
+                except Exception:
+                    pass
+            raise
+    except BaseException:
+        if not reservation.is_committed:
+            try:
+                await reservation.release()
+            except Exception:
+                pass
+        raise
 
 
 @router.post("/refresh", response_model=TokenPair)
@@ -53,22 +79,48 @@ async def logout(
 @router.post("/verify-code", response_model=TokenPair)
 async def verify_code(
     payload: VerifyCodeRequest,
-    db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
-    key = f"auth:attempts:{payload.email}"
-    await check_rate_limit(key, 5, 900)
-    auth_service = AuthService(db)
-    result = await auth_service.verify_code(payload.email, payload.code)
-    await clear_rate_limit(key)
-    return result
+    client_ip: str = get_client_ip(request)
+    await limiter.consume_verify_budget(payload.email, client_ip)
+    reservation: LockoutReservation = await limiter.reserve_verify_slot(payload.email)
+    try:
+        auth_service: AuthService = AuthService(db)
+        try:
+            result: TokenPair = await auth_service.verify_code(payload.email, payload.code)
+            await reservation.commit_success()
+            return result
+        except HTTPException as error:
+            if error.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED):
+                await reservation.commit_failure()
+            elif not reservation.is_committed:
+                try:
+                    await reservation.release()
+                except Exception:
+                    pass
+            raise
+    except BaseException:
+        if not reservation.is_committed:
+            try:
+                await reservation.release()
+            except Exception:
+                pass
+        raise
 
 
 @router.post("/resend-code", status_code=status.HTTP_204_NO_CONTENT)
 async def resend_code(
     payload: ResendCodeRequest,
-    db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> None:
-    auth_service = AuthService(db)
+    client_ip: str = get_client_ip(request)
+    await limiter.check_resend_cooldown(payload.email)
+    await limiter.consume_resend_budgets(payload.email, client_ip)
+    auth_service: AuthService = AuthService(db)
     await auth_service.resend_code(payload.email)
 
 
@@ -85,11 +137,13 @@ async def set_password(
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)
 async def password_reset_request(
     payload: PasswordResetRequest,
-    db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> dict:
-    key = f"auth:reset_request:{payload.email}"
-    await check_rate_limit(key, 3, 3600)
-    auth_service = AuthService(db)
+    client_ip: str = get_client_ip(request)
+    await limiter.consume_password_reset_budgets(payload.email, client_ip)
+    auth_service: AuthService = AuthService(db)
     await auth_service.password_reset_request(payload.email)
     return {"message": "If the email exists, a reset code has been sent."}
 
