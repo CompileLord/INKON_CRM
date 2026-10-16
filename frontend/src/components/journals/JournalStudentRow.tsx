@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { JournalScoreCell, type CellNavDirection } from "./JournalScoreCell";
 import type { CellSaveStatus } from "../../lib/journals/useJournalAutosave";
@@ -43,8 +43,16 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   const [examInput, setExamInput] = useState<string>(
     summary ? String(summary.exam_score) : "0"
   );
+  const bonusEditingRef = useRef(false);
+  const examEditingRef = useRef(false);
+
+  useEffect(() => {
+    if (!bonusEditingRef.current) setBonusInput(String(summary?.bonus_score ?? 0));
+    if (!examEditingRef.current) setExamInput(String(summary?.exam_score ?? 0));
+  }, [summary?.bonus_score, summary?.exam_score, summary?.version]);
 
   const handleBonusBlur = () => {
+    bonusEditingRef.current = false;
     const parsed = parseInt(bonusInput, 10);
     const val = isNaN(parsed) ? 0 : Math.max(0, parsed);
     setBonusInput(String(val));
@@ -58,6 +66,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   };
 
   const handleExamBlur = () => {
+    examEditingRef.current = false;
     const parsed = parseInt(examInput, 10);
     const val = isNaN(parsed) ? 0 : Math.min(examMaxScore, Math.max(0, parsed));
     setExamInput(String(val));
@@ -142,6 +151,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
           type="text"
           inputMode="numeric"
           value={bonusInput}
+          onFocus={() => { bonusEditingRef.current = true; }}
           onChange={(e) => setBonusInput(e.target.value)}
           onBlur={handleBonusBlur}
           className="w-12 h-7 text-center text-xs border border-border rounded bg-card text-ink focus:outline-none focus:ring-1 focus:ring-accent tabular-nums"
@@ -154,6 +164,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
           type="text"
           inputMode="numeric"
           value={examInput}
+          onFocus={() => { examEditingRef.current = true; }}
           onChange={(e) => setExamInput(e.target.value)}
           onBlur={handleExamBlur}
           className="w-12 h-7 text-center text-xs border border-border rounded bg-card text-ink focus:outline-none focus:ring-1 focus:ring-accent tabular-nums"
