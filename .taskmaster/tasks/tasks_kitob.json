@@ -535,7 +535,7 @@
   {
     "id": "KITOB-05-10",
     "title": "Group 05 integration audit",
-    "status": "in_progress",
+    "status": "completed",
     "group": "05",
     "dependencies": [
       "KITOB-05-09"
@@ -546,7 +546,7 @@
   {
     "id": "KITOB-06-01",
     "title": "/my/courses Active and Archive",
-    "status": "pending",
+    "status": "in_progress",
     "group": "06",
     "dependencies": [
       "KITOB-05-10"
