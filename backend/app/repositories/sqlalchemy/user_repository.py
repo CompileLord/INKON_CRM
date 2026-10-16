@@ -6,9 +6,12 @@ from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
-from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
-from app.repositories.interfaces.user_repository import UserRepository
+from app.repositories.interfaces.user_repository import (
+    StudentCourseRawRecord,
+    StudentTotalsRawRecord,
+    UserRepository,
+)
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
 
@@ -79,6 +82,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             if e.status == EnrollmentStatus.ACTIVE and c.status == CourseStatus.ACTIVE
         )
         archived_course_count = len(enrollment_pairs) - active_course_count
+        course_ids = [c.id for _, c in enrollment_pairs]
 
         stats_query = select(
             func.avg(
@@ -87,29 +91,48 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 )
             ),
             func.sum(JournalStudentSummary.attendance_count),
-            func.sum(JournalStudentSummary.total_lessons)
-        ).filter(JournalStudentSummary.student_id == student_id)
+            func.sum(JournalStudentSummary.total_lessons),
+            func.count(JournalStudentSummary.id),
+            func.count(case(((JournalStudentSummary.max_period_score > 0), 1)))
+        ).filter(
+            JournalStudentSummary.student_id == student_id
+        )
 
         stats_result = await self.session.execute(stats_query)
-        avg_score, attendance_count, total_lessons = stats_result.one()
+        avg_score_raw, attendance_count_raw, total_lessons_raw, summaries_count_raw, max_score_count_raw = stats_result.one()
 
-        avg_score = round(float(avg_score), 1) if avg_score is not None else 0.0
-        total_lessons = int(total_lessons) if total_lessons is not None else 0
-        attendance_count = int(attendance_count) if attendance_count is not None else 0
+        period_summaries_count = int(summaries_count_raw) if summaries_count_raw is not None else 0
+        periods_with_max_score_count = int(max_score_count_raw) if max_score_count_raw is not None else 0
+        total_lessons = int(total_lessons_raw) if total_lessons_raw is not None else 0
+        attendance_count = int(attendance_count_raw) if attendance_count_raw is not None else 0
         absences = total_lessons - attendance_count
-        attendance_percentage = round((attendance_count * 100.0 / total_lessons), 1) if total_lessons > 0 else 100.0
+
+        legacy_avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
+        legacy_attendance_percentage = (
+            round((attendance_count * 100.0 / total_lessons), 1)
+            if total_lessons > 0
+            else 100.0
+        )
 
         totals = {
-            "avg_percentage": avg_score,
-            "attendance_percentage": attendance_percentage,
+            "avg_percentage": legacy_avg_score,
+            "attendance_percentage": legacy_attendance_percentage,
             "absences": absences,
             "total_lessons": total_lessons,
             "active_course_count": active_course_count,
             "archived_course_count": archived_course_count,
         }
 
-        course_ids = [c.id for _, c in enrollment_pairs]
+        raw_totals = StudentTotalsRawRecord(
+            avg_score_raw=float(avg_score_raw) if avg_score_raw is not None else None,
+            attendance_count=attendance_count,
+            total_lessons=total_lessons,
+            summaries_count=period_summaries_count,
+            periods_with_max_score_count=periods_with_max_score_count,
+        )
+
         courses_data = []
+        raw_courses: Dict[int, StudentCourseRawRecord] = {}
 
         if course_ids:
             journals_count_query = select(
@@ -155,6 +178,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 ),
                 func.sum(JournalStudentSummary.attendance_count),
                 func.sum(JournalStudentSummary.total_lessons),
+                func.count(JournalStudentSummary.id),
                 func.count(case(((JournalStudentSummary.max_period_score > 0), 1)))
             ).join(
                 Journal, JournalStudentSummary.journal_id == Journal.id
@@ -163,15 +187,25 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 Journal.course_id.in_(course_ids)
             ).group_by(Journal.course_id)
             student_course_res = await self.session.execute(student_course_query)
-            student_course_map = {
-                cid: {
+            student_course_map = {}
+            for cid, avg_val, att_cnt, tot_les, s_cnt, p_graded in student_course_res.all():
+                att_int = int(att_cnt) if att_cnt is not None else 0
+                tot_int = int(tot_les) if tot_les is not None else 0
+                s_int = int(s_cnt) if s_cnt is not None else 0
+                p_int = int(p_graded) if p_graded is not None else 0
+                student_course_map[cid] = {
                     "avg": round(float(avg_val), 1) if avg_val is not None else 0.0,
-                    "attendance_count": int(att_cnt) if att_cnt is not None else 0,
-                    "total_lessons": int(tot_les) if tot_les is not None else 0,
-                    "periods_graded": int(p_graded) if p_graded is not None else 0,
+                    "attendance_count": att_int,
+                    "total_lessons": tot_int,
+                    "periods_graded": p_int,
                 }
-                for cid, avg_val, att_cnt, tot_les, p_graded in student_course_res.all()
-            }
+                raw_courses[cid] = StudentCourseRawRecord(
+                    avg_score_raw=float(avg_val) if avg_val is not None else None,
+                    attendance_count=att_int,
+                    total_lessons=tot_int,
+                    summaries_count=s_int,
+                    periods_with_max_score_count=p_int,
+                )
 
             schedules_query = select(
                 CourseSchedule.course_id,
@@ -216,7 +250,15 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             for enrollment, course in enrollment_pairs:
                 is_active = (enrollment.status == EnrollmentStatus.ACTIVE and course.status == CourseStatus.ACTIVE)
                 bucket = "active" if is_active else "archive"
-                st_info = student_course_map.get(course.id, {"avg": 0.0, "attendance_count": 0, "total_lessons": 0, "periods_graded": 0})
+                st_info = student_course_map.get(
+                    course.id,
+                    {
+                        "avg": 0.0,
+                        "attendance_count": 0,
+                        "total_lessons": 0,
+                        "periods_graded": 0,
+                    }
+                )
                 c_tot = st_info["total_lessons"]
                 c_att = st_info["attendance_count"]
                 c_abs = c_tot - c_att
@@ -235,15 +277,17 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     "class_size": class_size_map.get(course.id, 0),
                     "class_avg_percentage": class_avg_map.get(course.id, 0.0),
                     "schedules": schedules_by_course.get(course.id, []),
-                    "next_lesson_at": None
+                    "next_lesson_at": None,
                 })
 
         return {
             "totals": totals,
             "courses": courses_data,
-            "avg_score": avg_score,
+            "avg_score": legacy_avg_score,
             "absences": absences,
-            "total_lessons": total_lessons
+            "total_lessons": total_lessons,
+            "raw_totals": raw_totals,
+            "raw_courses": raw_courses,
         }
 
     async def get_student_journals(

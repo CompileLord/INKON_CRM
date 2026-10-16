@@ -3,6 +3,7 @@ from datetime import date, datetime, time
 from typing import Any, List
 from zoneinfo import ZoneInfo
 from app.models.course import CourseStatus
+from app.repositories.interfaces.user_repository import StudentTotalsRawRecord
 from app.services.schedule_service import LessonScheduleService, ScheduleRuleDTO
 from app.services.student_profile_service import StudentProfileService
 import pytest
@@ -19,12 +20,24 @@ class ProfileCourseFixture:
 
 class ProfileRepositoryFixture:
     async def get_student_profile_stats(self, student_id: int) -> dict:
-        return {"courses": [
-            {"course": ProfileCourseFixture(identifier, date(2026, 6, 1), date(2026, 6, 30)),
-             "bucket": "active", "enrollment_status": "active",
-             "schedules": [ScheduleRuleDTO(0, time(9), time(10))]}
-            for identifier in [1, 2]
-        ]}
+        return {
+            "courses": [
+                {
+                    "course": ProfileCourseFixture(identifier, date(2026, 6, 1), date(2026, 6, 30)),
+                    "bucket": "active",
+                    "enrollment_status": "active",
+                    "schedules": [ScheduleRuleDTO(0, time(9), time(10))],
+                }
+                for identifier in [1, 2]
+            ],
+            "raw_totals": StudentTotalsRawRecord(
+                avg_score_raw=None,
+                attendance_count=0,
+                total_lessons=0,
+                summaries_count=0,
+                periods_with_max_score_count=0,
+            ),
+        }
 
 
 class MatrixProfileRepositoryFixture:
@@ -32,7 +45,16 @@ class MatrixProfileRepositoryFixture:
         self.courses_payload = courses_payload
 
     async def get_student_profile_stats(self, student_id: int) -> dict:
-        return {"courses": self.courses_payload}
+        return {
+            "courses": self.courses_payload,
+            "raw_totals": StudentTotalsRawRecord(
+                avg_score_raw=None,
+                attendance_count=0,
+                total_lessons=0,
+                summaries_count=0,
+                periods_with_max_score_count=0,
+            ),
+        }
 
 
 @pytest.mark.asyncio
@@ -130,3 +152,14 @@ async def test_student_profile_service_eligibility_matrix() -> None:
         assert course_result["next_lesson_at"] == f["expected_next"]
         assert course_result["bucket"] == f["expected_bucket"]
         assert "schedules" not in course_result
+
+
+@pytest.mark.asyncio
+async def test_student_profile_omitted_aggregate_fails_clearly_without_inventing_zeros() -> None:
+    class IncompleteRepositoryFixture:
+        async def get_student_profile_stats(self, student_id: int) -> dict:
+            return {"courses": []}
+
+    service = StudentProfileService(IncompleteRepositoryFixture())
+    with pytest.raises(ValueError, match="Repository contract violation"):
+        await service.get_student_profile_payload(1)

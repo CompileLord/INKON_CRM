@@ -53,6 +53,12 @@ class UserService:
                 detail="User not found"
             )
 
+        if "payment_day_of_month" in user_update.model_fields_set and user.role != UserRole.STUDENT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment day of month can only be set for students"
+            )
+
         if user_update.email and user_update.email != user.email:
             existing_user = await self.user_repo.get_by_email(user_update.email)
             if existing_user:
@@ -69,20 +75,8 @@ class UserService:
             user.first_name = user_update.first_name
         if user_update.last_name is not None:
             user.last_name = user_update.last_name
-        if user_update.date_of_birth is not None:
-            user.date_of_birth = user_update.date_of_birth
-        if user_update.phone is not None:
-            user.phone = user_update.phone
-        if user_update.parent_telegram_chat_id is not None:
-            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
-        if user_update.parent_phone is not None:
-            user.parent_phone = user_update.parent_phone
-        if user_update.payment_day_of_month is not None:
-            if user.role != UserRole.STUDENT:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Payment day of month can only be set for students"
-                )
+        self.apply_optional_profile_fields(user, user_update)
+        if "payment_day_of_month" in user_update.model_fields_set:
             user.payment_day_of_month = user_update.payment_day_of_month
 
         updated_user = await self.user_repo.update(user)
@@ -101,18 +95,21 @@ class UserService:
             user.first_name = user_update.first_name
         if user_update.last_name is not None:
             user.last_name = user_update.last_name
-        if user_update.date_of_birth is not None:
-            user.date_of_birth = user_update.date_of_birth
-        if user_update.phone is not None:
-            user.phone = user_update.phone
-        if user_update.parent_telegram_chat_id is not None:
-            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
-        if user_update.parent_phone is not None:
-            user.parent_phone = user_update.parent_phone
+        self.apply_optional_profile_fields(user, user_update)
 
         updated_user = await self.user_repo.update(user)
         await self.db.refresh(updated_user)
         return updated_user
+
+    def apply_optional_profile_fields(self, user: User, user_update: UserUpdate | UserSelfUpdate) -> None:
+        if "date_of_birth" in user_update.model_fields_set:
+            user.date_of_birth = user_update.date_of_birth
+        if "phone" in user_update.model_fields_set:
+            user.phone = user_update.phone
+        if "parent_telegram_chat_id" in user_update.model_fields_set:
+            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
+        if "parent_phone" in user_update.model_fields_set:
+            user.parent_phone = user_update.parent_phone
 
     async def delete_user(self, user_id: int, current_user_id: int) -> bool:
         if user_id == current_user_id:

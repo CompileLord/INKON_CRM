@@ -55,6 +55,7 @@ function renderPanel(props: Partial<Parameters<typeof StudentFormPanel>[0]> = {}
     student: undefined,
     onClose: vi.fn(),
     onSaved: vi.fn(),
+    onAvatarSaved: vi.fn(),
     ...props,
   };
 
@@ -219,7 +220,7 @@ describe("StudentFormPanel", () => {
     fireEvent.change(fileInput, { target: { files: [fakeFile] } });
 
     await waitFor(() => {
-      expect(props.onSaved).toHaveBeenCalledWith("updated", expect.anything());
+      expect(props.onAvatarSaved).toHaveBeenCalledWith(expect.anything());
     });
 
     const cancelButton = screen.getByRole("button", { name: "Cancel" });

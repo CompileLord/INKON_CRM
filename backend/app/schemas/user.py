@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 from app.models.user import UserRole
 
@@ -58,7 +58,41 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
-from app.schemas.course import CourseResponse
+from app.schemas.course import CourseResponse, StaffGradingProvenance, StaffGradingState
+
+
+class StudentPerformanceTotalsResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    scope: Literal["all_recorded_student_period_summaries"] = "all_recorded_student_period_summaries"
+    measured_population: Literal["all_recorded_student_period_summaries"] = "all_recorded_student_period_summaries"
+    denominator_basis: Literal["stored_period_total_lessons"] = "stored_period_total_lessons"
+    grading_state: StaffGradingState
+    grading_provenance: StaffGradingProvenance = "unknown"
+    raw_avg_percentage: Optional[float] = None
+    attendance_percentage: Optional[float] = None
+    attendance_denominator: int = 0
+    attended_lessons: int = 0
+    absences: int = 0
+    total_lessons: int = 0
+    period_summaries_count: int = 0
+    periods_with_max_score_count: int = 0
+
+
+class StudentCoursePerformanceResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    scope: Literal["single_course"] = "single_course"
+    measured_population: Literal["single_course_recorded_period_summaries"] = "single_course_recorded_period_summaries"
+    denominator_basis: Literal["stored_period_total_lessons"] = "stored_period_total_lessons"
+    grading_state: StaffGradingState
+    grading_provenance: StaffGradingProvenance = "unknown"
+    raw_avg_percentage: Optional[float] = None
+    attendance_percentage: Optional[float] = None
+    attendance_denominator: int = 0
+    attended_lessons: int = 0
+    absences: int = 0
+    total_lessons: int = 0
+    period_summaries_count: int = 0
+    periods_with_max_score_count: int = 0
 
 
 class StudentTotalsResponse(BaseModel):
@@ -85,6 +119,7 @@ class StudentCourseProfileResponse(BaseModel):
     class_size: int
     class_avg_percentage: float
     next_lesson_at: Optional[datetime] = None
+    performance: Optional[StudentCoursePerformanceResponse] = None
 
 
 class StudentProfileResponse(BaseModel):
@@ -95,6 +130,7 @@ class StudentProfileResponse(BaseModel):
     avg_score: float = 0.0
     absences: int = 0
     total_lessons: int = 0
+    performance: Optional[StudentPerformanceTotalsResponse] = None
 
 
 class StudentJournalPeriodResponse(BaseModel):

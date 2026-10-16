@@ -99,7 +99,21 @@ All AI coding assistants must follow this workflow to maintain project synchroni
 - Reuse an executor with the needed context for related tasks and corrections. Save its exact identity and use the appropriate resume mechanism. Never use agy `--continue`, replace a failed conversation to evade review, or silently change the requested model. Native child agents and external agy processes use different completion mechanisms; verify the actual result rather than assuming a missing live-agent entry means success.
 - Use multiple executors when dependencies and ownership permit. Isolate implementation in separate worktrees with named branches, exclusive source ownership, locale key boundaries and unique preview/API ports. Keep shared contracts and persistence owners under one writer. Do not advance a dependent page before its prerequisite passes audit; integrate accepted work sequentially and rerun integration gates.
 - Handoffs require implementation, meaningful tests, actual rendered self-review and a concise complete result. Self-checking does not replace independent audit. Never accept a SUCCESS label, stale test record, fabricated screenshot, unconditional passing probe or missing report as completion.
-- For this redesign, return subsequent implementation to agy with `gemini-3.8-flash-high` after the explicitly authorized Luna task is accepted. Preserve existing subgroup conversations and use the authorized bounded full-access flags; never expand scope or remove unrelated protections.
+
+### 4.7. GPT-6 Luna audit escalation
+- Use GPT-6 Luna medium for the current authorized native implementation workflow. Reuse the same executor for related tasks and corrections within its ownership boundary.
+- Count independent FAIL verdicts after complete results per task. Timeouts, incomplete results, questions and infrastructure failures do not count as failed audits.
+- After two failed independent audits of the same task implemented by GPT-6 Luna, the orchestrator must take over implementation itself or delegate the remaining correction to GPT-6.1 Sol low. Do not issue a third Luna correction attempt for that task.
+- Preserve existing work, executor identities, evidence and unresolved acceptance criteria during escalation. Record the two failures and the new implementation owner in the existing task record; retain the full original scope and verification gates. This user-authorized escalation is an exception to executor reuse, not permission to weaken requirements or replace unavailable sessions silently.
+
+### 4.6. Executor timeouts and unfinished work
+- A wrapper timeout or process exit does not establish that the executor finished its task. Empty replies, waiting-only replies and reports of checks still running are incomplete results, regardless of a SUCCESS label.
+- Before the executor returns a complete task result, do not inspect its unfinished source, run independent implementation checks, edit its files or issue an audit verdict. Status/result inspection and lifecycle recovery are permitted; routine progress checks remain limited to 17-minute intervals unless the user requests otherwise.
+- Preserve the exact conversation or agent identity, requested model, worktree, branch, owned files, active commands and evidence after a timeout. Record the incomplete result and failure facts in the existing task/session record. Keep the task in progress unless an actual external blocker prevents continuation; never mark it completed because its wrapper stopped.
+- Resume the same saved agy conversation with `--resume`, or follow up with the same native agent. Never use `--continue`, create a replacement session for a timeout or silently switch models. Use an appropriate bounded continuation timeout and the same reusable handoff, asking the executor to collect existing background checks and return the complete result without restarting completed work or beginning the next page.
+- Keep the orchestrator turn active while waiting for the resumed executor. Once it returns a complete result, inspect exit status, errors and permission denials, then independently audit source, required checks and real evidence. Correct failed acceptance criteria in that same session; complete and integrate the task only after PASS.
+- If the saved session or requested model is unavailable, preserve the state and report the actual blocker. Do not work around it by discarding the conversation, weakening protections or claiming unfinished work is accepted.
+- For this redesign, the user authorized GPT-6 Luna medium native executors from 2026-10-14 onward. Preserve previous agy conversation IDs and unfinished work; reuse each native executor for its related tasks and corrections. All ownership, complete-result, self-check, independent audit and integration gates still apply.
 
 ## 5. Development Environment & Tooling
 
@@ -179,6 +193,7 @@ A task is not complete until all of the following are true:
   Scope is the feature area (`journals`, `student`, `courses`, `finance`, `i18n`, `auth`).
 - The commit body states what changed and why; do not claim test results that were not actually run.
 - Do not commit secrets, `.env` files, seed credentials, `storage/` uploads, or `.omc/` state.
+- After each task passes independent audit and all required gates, integrate its logical commit into `main` and rerun the necessary integration checks before advancing dependent tasks. Keep failed or unfinished work isolated; preserve unrelated user changes.
 - Do not `push` or open a PR unless explicitly asked.
 
 ### 7.3. Report Honestly
