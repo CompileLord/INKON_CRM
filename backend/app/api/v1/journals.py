@@ -15,7 +15,7 @@ from app.schemas.journal import (
     JournalExamMaxScoreUpdateResponse,
     ClassJournalResponse,
 )
-from app.services.journal_service import JournalService
+from app.services.journal_service import JournalService, JournalCommandTransaction
 
 router = APIRouter()
 
@@ -48,7 +48,8 @@ async def batch_update_entries(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     journal_service = JournalService(db)
-    return await journal_service.batch_update_entries(id, payload, current_user)
+    async with JournalCommandTransaction(db):
+        return await journal_service.batch_update_entries(id, payload, current_user)
 
 
 @router.patch("/{journal_id}/students/{student_id}/summary", response_model=JournalStudentSummaryResponse)
@@ -60,14 +61,15 @@ async def update_exam_or_bonus(
     db: AsyncSession = Depends(get_db_session)
 ) -> JournalStudentSummary:
     journal_service = JournalService(db)
-    return await journal_service.update_exam_or_bonus(
-        journal_id=journal_id,
-        student_id=student_id,
-        exam_score=payload.exam_score,
-        bonus_score=payload.bonus_score,
-        version=payload.version,
-        current_user=current_user
-    )
+    async with JournalCommandTransaction(db):
+        return await journal_service.update_exam_or_bonus(
+            journal_id=journal_id,
+            student_id=student_id,
+            exam_score=payload.exam_score,
+            bonus_score=payload.bonus_score,
+            version=payload.version,
+            current_user=current_user
+        )
 
 
 @router.patch("/{id}/exam-max-score", response_model=JournalExamMaxScoreUpdateResponse)
@@ -78,9 +80,10 @@ async def update_exam_max_score(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     journal_service = JournalService(db)
-    return await journal_service.update_exam_max_score(
-        journal_id=id,
-        exam_max_score=payload.exam_max_score,
-        current_user=current_user
-    )
+    async with JournalCommandTransaction(db):
+        return await journal_service.update_exam_max_score(
+            journal_id=id,
+            exam_max_score=payload.exam_max_score,
+            current_user=current_user
+        )
 

@@ -1,10 +1,12 @@
 from collections import defaultdict
 from datetime import date, timedelta
 from typing import List, Optional
+from types import TracebackType
 from fastapi import HTTPException, status
 from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError as StaleObjectError
+from app.db.session import sanitize_html
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
@@ -15,6 +17,41 @@ from app.models.user import User, UserRole
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import MAX_BONUS_SCORE, EXAM_MAX_SCORE_LIMIT, score_percentage
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
+
+
+class JournalCommandTransaction:
+    def __init__(self, db: AsyncSession) -> None:
+        self.db: AsyncSession = db
+
+    async def __aenter__(self) -> "JournalCommandTransaction":
+        return self
+
+    async def __aexit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        if exception is not None:
+            await self.db.rollback()
+            if isinstance(exception, StaleObjectError):
+                raise self._conflict() from exception
+            return
+        try:
+            await self.db.commit()
+        except StaleObjectError as conflict:
+            await self.db.rollback()
+            raise self._conflict() from conflict
+        except BaseException:
+            await self.db.rollback()
+            raise
+
+    @staticmethod
+    def _conflict() -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Conflict: The journal entries have been updated by another user. Please refresh and try again.",
+        )
 
 
 def get_lesson_dates(period_start: date, period_end: date, schedules: List[CourseSchedule]) -> List[date]:
@@ -473,7 +510,6 @@ class JournalService:
                 and entry.score == update_item.score
                 and entry.comment == update_item.comment
             ):
-                updated_student_ids.add(update_item.student_id)
                 applied_entries.append(entry)
                 continue
 
@@ -502,9 +538,17 @@ class JournalService:
                 changes["comment"] = (entry.comment, update_item.comment)
 
             if changes:
+                sanitized_comment: str | None = sanitize_html(update_item.comment) if update_item.comment is not None else None
+                entry_values_changed: bool = (
+                    entry.attendance != target_attendance
+                    or entry.score != update_item.score
+                    or entry.comment != sanitized_comment
+                )
                 entry.attendance = target_attendance
                 entry.score = update_item.score
-                entry.comment = update_item.comment
+                entry.comment = sanitized_comment
+                if entry_values_changed:
+                    entry.version += 1
 
                 await audit_service.log(
                     user_id=current_user.id,
@@ -523,18 +567,12 @@ class JournalService:
                 detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
             )
 
-        try:
+        if updated_student_ids:
             await self.db.flush()
-        except StaleObjectError:
-            await self.db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Conflict: The journal entries have been updated by another user. Please refresh and try again."
-            )
 
         if updated_student_ids:
             sum_service = SumCalculationService(self.db)
-            await sum_service.recalculate_journal(journal_id)
+            await sum_service.recalculate_journal(journal_id, updated_student_ids)
 
         summaries_query = select(JournalStudentSummary).filter(
             JournalStudentSummary.journal_id == journal_id,
