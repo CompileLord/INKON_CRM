@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { FileText, Upload, Trash2, Download, AlertCircle, File, Image as ImageIcon, Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteDocument, useDocuments, useUploadDocument } from "../../lib/documents/hooks";
-import { resolveMediaUrl } from "../../lib/users/media";
+import { downloadDocument, saveDownloadedDocument } from "../../lib/documents/endpoints";
 import type { DocumentItem } from "../../lib/documents/types";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Toast } from "../ui/Toast";
@@ -99,6 +99,15 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
     }
   };
 
+  const handleDownloadDocument = async (documentItem: DocumentItem) => {
+    try {
+      const content = await downloadDocument(documentItem.id);
+      saveDownloadedDocument(content, documentItem.file_name);
+    } catch {
+      showToast(t("downloadError"), "error");
+    }
+  };
+
   const docs = data?.items ?? [];
 
   return (
@@ -167,7 +176,6 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {docs.map((doc) => {
-              const fileUrl = resolveMediaUrl(doc.file_path);
               return (
                 <div
                   key={doc.id}
@@ -186,17 +194,15 @@ export function DocumentsTab({ ownerType, ownerId, canManage }: DocumentsTabProp
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {fileUrl && (
-                      <a
-                        href={fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-strip hover:text-ink transition-colors"
-                        title={t("common:download", "Скачать / открыть")}
-                      >
-                        <Download size={15} />
-                      </a>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadDocument(doc)}
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-strip hover:text-ink transition-colors"
+                      aria-label={t("common:download")}
+                      title={t("common:download")}
+                    >
+                      <Download size={15} />
+                    </button>
 
                     {allowManage && (
                       <button

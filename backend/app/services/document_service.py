@@ -1,4 +1,4 @@
-import os
+from urllib.parse import quote
 from typing import List, Optional
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
@@ -72,7 +72,7 @@ class DocumentService:
                 detail="Invalid file contents for specified file type"
             )
 
-        filepath = await self.storage_service.save(content, owner_type, owner_id, file.filename)
+        filepath = await self.storage_service.save_unique(content, owner_type, owner_id)
 
         document = Document(
             owner_type=DocumentOwnerType(owner_type),
@@ -165,3 +165,61 @@ class DocumentService:
 
         query = query.order_by(Document.id.desc())
         return await self.document_repo.get_paginated(query, page, page_size)
+
+    async def download_document(self, document_id: int, current_user: User) -> tuple[bytes, str]:
+        document = await self.document_repo.get_by_id(document_id)
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
+
+        can_download = current_user.role == UserRole.SUPERADMIN
+        if current_user.role == UserRole.STUDENT:
+            can_download = (
+                document.owner_type == DocumentOwnerType.STUDENT
+                and document.owner_id == current_user.id
+            )
+        elif current_user.role == UserRole.MENTOR:
+            can_download = (
+                document.owner_type == DocumentOwnerType.STUDENT
+                or (
+                    document.owner_type == DocumentOwnerType.MENTOR
+                    and document.owner_id == current_user.id
+                )
+            )
+
+        if not can_download:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+
+        owner_type_value = (
+            document.owner_type.value
+            if isinstance(document.owner_type, DocumentOwnerType)
+            else document.owner_type
+        )
+        expected_path_prefix = f"/storage/{owner_type_value}/{document.owner_id}/"
+        if not document.file_path.startswith(expected_path_prefix):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document file not found"
+            )
+        stored_filename = document.file_path.removeprefix(expected_path_prefix)
+        if not stored_filename or "/" in stored_filename or stored_filename in {".", ".."}:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document file not found"
+            )
+
+        content = await self.storage_service.read(document.file_path)
+        if content is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document file not found"
+            )
+
+        filename = document.file_name or f"document-{document.id}"
+        safe_filename = quote(filename, safe="")
+        return content, f"attachment; filename*=UTF-8''{safe_filename}"

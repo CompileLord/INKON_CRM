@@ -34,3 +34,22 @@ export async function uploadDocument(params: UploadDocumentParams): Promise<Docu
 export async function deleteDocument(id: number): Promise<void> {
   await httpClient.delete(`/documents/${id}`);
 }
+
+export async function downloadDocument(id: number): Promise<Blob> {
+  const response = await httpClient.get<Blob>(`/documents/${id}/download`, {
+    responseType: "blob",
+  });
+  return response.data;
+}
+
+export function saveDownloadedDocument(blob: Blob, fileName: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const downloadLink = document.createElement("a");
+  downloadLink.href = objectUrl;
+  downloadLink.download = fileName;
+  downloadLink.hidden = true;
+  document.body.append(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+}

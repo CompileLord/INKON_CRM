@@ -64,10 +64,21 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-import os
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-os.makedirs(settings.STORAGE_PATH, exist_ok=True)
-app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+storage_root = Path(settings.STORAGE_PATH).resolve()
+storage_root.mkdir(parents=True, exist_ok=True)
+for public_media_directory in ("avatar", "course"):
+    public_media_path = storage_root / public_media_directory
+    public_media_path.mkdir(parents=True, exist_ok=True)
+    resolved_public_media_path = public_media_path.resolve(strict=True)
+    if resolved_public_media_path.parent != storage_root:
+        raise RuntimeError("Public media directory escapes its storage subroot")
+    app.mount(
+        f"/storage/{public_media_directory}",
+        StaticFiles(directory=str(resolved_public_media_path)),
+        name=f"{public_media_directory}-storage"
+    )
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])

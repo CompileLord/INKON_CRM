@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user, require_superadmin
 from app.models.user import User
@@ -65,3 +66,22 @@ async def list_documents(
     if journal_id is not None:
         filters["journal_id"] = journal_id
     return await document_service.list_documents(filters, page, page_size, current_user)
+
+
+@router.get("/{id}/download")
+async def download_document(
+    id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> Response:
+    document_service = DocumentService(db)
+    content, content_disposition = await document_service.download_document(id, current_user)
+    return Response(
+        content=content,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": content_disposition,
+            "Cache-Control": "no-store, max-age=0, must-revalidate",
+            "X-Content-Type-Options": "nosniff"
+        }
+    )

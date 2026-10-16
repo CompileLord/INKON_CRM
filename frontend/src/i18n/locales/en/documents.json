@@ -5,6 +5,7 @@
   "uploading": "Uploading...",
   "loadingDocs": "Loading documents...",
   "loadError": "Failed to load documents",
+  "downloadError": "Failed to download document. Please try again.",
   "noDocs": "No attached documents",
   "emptyHelp": "Upload the first document using the button above",
   "maxSizeError": "The file exceeds the maximum size of 20MB",
