@@ -1049,9 +1049,8 @@
       "backend/app/schemas/course.py",
       "backend/app/services/finance_service.py",
       "CONTRACT.md",
-      "frontend/src/lib/finance/types.ts",
-      "frontend/src/lib/courses/types.ts",
       "backend/app/tests/integration/test_remediation_wp24.py",
+      "backend/app/services/enrollment_service.py",
       "docs/remediation/STATUS.md"
     ],
     "steps": [

@@ -13,6 +13,10 @@ Validate persisted money and generate positive installments. One bounded impleme
 
 Reports are provenance links, not required reading for execution; the relevant problem, evidence and action are included here. All source line numbers describe commit `32d7a07` as inspected on 2026-10-14. Locate the named operation after dependencies land; stop if behavior/assumptions have materially changed.
 
+## Authorized scope correction
+
+Enrollment currently flushes enrollment and journal rows before calling schedule generation. Add only its exact service path so the required schedule validation runs before the first write. Existing input adjustment amounts are positive credits; preserve signed derived/response values and optional allocation amounts. Current frontend inputs already use decimal strings; tighter input constraints do not change their shape. Frontend files are read-only context under separate ownership and are removed from this executor allowlist. Regenerate CONTRACT.md and record actual client compatibility evidence.
+
 ## Exact files and lines
 
 ### Allowed writes
@@ -25,9 +29,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/schemas/course.py:32](../../../backend/app/schemas/course.py) | Existing file, anchor line 32; only this WP’s stated behavior may change. |
 | [backend/app/services/finance_service.py:432](../../../backend/app/services/finance_service.py) | Existing file, anchor line 432; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
-| [frontend/src/lib/finance/types.ts:1](../../../frontend/src/lib/finance/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
-| [frontend/src/lib/courses/types.ts:1](../../../frontend/src/lib/courses/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp24.py](../../../backend/app/tests/integration/test_remediation_wp24.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/services/enrollment_service.py](../../../backend/app/services/enrollment_service.py) | Validate proposed contract installments before enrollment/journal add or flush, including legacy course prices. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -90,7 +93,7 @@ Also run the targeted tests described here. Configure test storage/temp output a
 
 Verification focuses on the exact behavioral/security tests above. No speculative performance benchmark is required.
 
-Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment; synchronize only the listed client types/callers and verify them by reading their contents (frontend/src/lib is broadly gitignored). New visible text must use existing translations or stop to add exact locale paths to the plan.
+Regenerate contract with `python backend/scripts/generate_contract.py` from repository root in the isolated test environment; verify the existing decimal-string client input types by reading them; report any actual shape incompatibility to the separate frontend owner without editing frontend files. New visible text must use existing translations or stop to add exact locale paths to the plan.
 
 ## Risks and rollback
 
