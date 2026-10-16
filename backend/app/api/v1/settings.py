@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user, get_db_session, require_superadmin
 from app.models.user import User
 from app.schemas.org_settings import OrgSettingsResponse, OrgSettingsUpdate
+from app.schemas.telegram_status import TelegramBotCheckResponse
+from app.services.telegram_status_service import TelegramStatusService
+from app.telegram_bot.bot import bot
 from app.services.settings_service import SettingsService
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
@@ -26,3 +29,15 @@ async def update_org_settings(
 ) -> OrgSettingsResponse:
     settings_service = SettingsService(db)
     return await settings_service.update_org_settings(data)
+
+
+def get_telegram_status_service() -> TelegramStatusService:
+    return TelegramStatusService(bot)
+
+
+@router.post("/telegram/test", response_model=TelegramBotCheckResponse)
+async def test_telegram_bot(
+    current_user: User = Depends(require_superadmin),
+    service: TelegramStatusService = Depends(get_telegram_status_service),
+) -> dict:
+    return await service.check_bot()

@@ -1,10 +1,11 @@
 from datetime import date, datetime, timezone
 from typing import Callable, Awaitable, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from arq import Retry
+from app.models.user import User
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
 from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
 
@@ -62,6 +63,49 @@ class NotificationService:
             await self.db.commit()
             await self.db.refresh(log)
         return log
+
+    async def mark_all_as_read(self, user_id: int) -> int:
+        statement = (
+            update(NotificationLog)
+            .where(NotificationLog.user_id == user_id, NotificationLog.read_at.is_(None))
+            .values(read_at=datetime.now(timezone.utc))
+        )
+        result = await self.db.execute(statement)
+        await self.db.commit()
+        return result.rowcount or 0
+
+    async def get_delivery_log(self, page: int, page_size: int, delivery_status: Optional[NotificationStatus]) -> dict:
+        conditions = [NotificationLog.status == delivery_status.value] if delivery_status is not None else []
+        total_result = await self.db.execute(select(func.count()).select_from(NotificationLog).filter(*conditions))
+        total: int = total_result.scalar() or 0
+        statement = (
+            select(NotificationLog, User.first_name, User.last_name)
+            .outerjoin(User, User.id == NotificationLog.user_id)
+            .filter(*conditions)
+            .order_by(NotificationLog.notification_date.desc(), NotificationLog.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        rows = (await self.db.execute(statement)).all()
+        items: list[dict] = [
+            {
+                "id": log.id,
+                "recipient_name": f"{first_name} {last_name}".strip() if first_name is not None else None,
+                "type": log.type,
+                "notification_date": log.notification_date,
+                "status": log.status,
+                "attempts": log.attempts,
+                "sent_at": log.sent_at,
+            }
+            for log, first_name, last_name in rows
+        ]
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size if total > 0 else 1,
+        }
 
     async def send_notification_with_idempotency(
         self,

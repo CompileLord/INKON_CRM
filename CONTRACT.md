@@ -3513,7 +3513,6 @@ Manually apply a student's wallet credit to a specific charge.
         "attempts?": integer,
         "sent_at?": string,
         "read_at?": string,
-        "error_message?": string,
       }
     ],
     "total": integer,
@@ -3553,6 +3552,67 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## POST /api/v1/notifications/read-all
+
+**Summary:** Mark All Notifications Read
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "updated_count": integer,
+  }
+  ```
+
+---
+
+## GET /api/v1/notifications/delivery-log
+
+**Summary:** List Delivery Log
+
+**Parameters:**
+- `page` [query]
+- `page_size` [query]
+- `status` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "id": integer,
+        "recipient_name?": string,
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+        "notification_date": string,
+        "status": "sent" | "failed",
+        "attempts": integer,
+        "sent_at?": string,
+      }
+    ],
+    "total": integer,
+    "page": integer,
+    "page_size": integer,
+    "total_pages": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## PATCH /api/v1/notifications/{id}/read
 
 **Summary:** Mark Notification Read
@@ -3574,7 +3634,6 @@ Manually apply a student's wallet credit to a specific charge.
     "attempts?": integer,
     "sent_at?": string,
     "read_at?": string,
-    "error_message?": string,
   }
   ```
 - **422**: Validation Error
@@ -3658,6 +3717,21 @@ Manually apply a student's wallet credit to a specific charge.
         "ctx?": object,
       }
     ],
+  }
+  ```
+
+---
+
+## POST /api/v1/settings/telegram/test
+
+**Summary:** Test Telegram Bot
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "reachable": boolean,
+    "bot_username?": string,
   }
   ```
 

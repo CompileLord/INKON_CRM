@@ -1,9 +1,11 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_current_user, get_db_session
+from app.core.deps import get_current_user, get_db_session, require_superadmin
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
-from app.schemas.notification import NotificationResponse, UnreadCountResponse
+from app.models.notification_log import NotificationStatus
+from app.schemas.notification import DeliveryLogResponse, MarkAllReadResponse, NotificationResponse, UnreadCountResponse
 from app.services.notification_service import NotificationService
 
 router = APIRouter()
@@ -28,6 +30,28 @@ async def get_unread_count(
     service = NotificationService(db)
     count = await service.get_unread_count(current_user.id)
     return {"unread_count": count}
+
+
+@router.post("/read-all", response_model=MarkAllReadResponse)
+async def mark_all_notifications_read(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+) -> dict:
+    service = NotificationService(db)
+    updated_count = await service.mark_all_as_read(current_user.id)
+    return {"updated_count": updated_count}
+
+
+@router.get("/delivery-log", response_model=PaginatedResponse[DeliveryLogResponse])
+async def list_delivery_log(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    delivery_status: Optional[NotificationStatus] = Query(default=None, alias="status"),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db_session)
+) -> dict:
+    service = NotificationService(db)
+    return await service.get_delivery_log(page, page_size, delivery_status)
 
 
 @router.patch("/{id}/read", response_model=NotificationResponse)
