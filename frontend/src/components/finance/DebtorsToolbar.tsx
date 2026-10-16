@@ -14,11 +14,12 @@ interface DebtorsToolbarProps {
   view: DebtorsViewState;
   search: string;
   courseLabel: string | null;
+  studentLabel: string | null;
   onSearchChange: (value: string) => void;
   onChangeFilters: (filters: Partial<Omit<DebtorsViewState, "page">>) => void;
 }
 
-export function DebtorsToolbar({ view, search, courseLabel, onSearchChange, onChangeFilters }: DebtorsToolbarProps) {
+export function DebtorsToolbar({ view, search, courseLabel, studentLabel, onSearchChange, onChangeFilters }: DebtorsToolbarProps) {
   const { t } = useTranslation("finance");
   const searchId: string = useId();
   const statusLabel = (status: EnrollmentStatus): string => t(`debtorsTab.status${status[0].toUpperCase()}${status.slice(1)}`);
@@ -30,7 +31,7 @@ export function DebtorsToolbar({ view, search, courseLabel, onSearchChange, onCh
     { value: "", label: t("debtorsTab.any") },
     ...STATUSES.map((status) => ({ value: status, label: statusLabel(status) })),
   ];
-  const hasFilters: boolean = view.courseId !== null || view.overdueDays !== null || view.enrollmentStatus !== null;
+  const hasFilters: boolean = view.courseId !== null || view.studentId !== null || view.overdueDays !== null || view.enrollmentStatus !== null;
 
   return (
     <div className="flex flex-col gap-3 border-b border-border px-4 py-3">
@@ -75,6 +76,9 @@ export function DebtorsToolbar({ view, search, courseLabel, onSearchChange, onCh
           {courseLabel !== null && (
             <FilterChip label={courseLabel} removeLabel={t("debtorsFilter.clearLabel")} onRemove={() => onChangeFilters({ courseId: null })} />
           )}
+          {studentLabel !== null && (
+            <FilterChip label={studentLabel} removeLabel={t("debtorsFilter.clearStudentLabel")} onRemove={() => onChangeFilters({ studentId: null, studentName: null })} />
+          )}
           {view.overdueDays !== null && (
             <FilterChip
               label={t("debtorsTab.chipOverdue", { count: view.overdueDays })}
@@ -91,7 +95,7 @@ export function DebtorsToolbar({ view, search, courseLabel, onSearchChange, onCh
           )}
           <button
             type="button"
-            onClick={() => onChangeFilters({ courseId: null, overdueDays: null, enrollmentStatus: null })}
+            onClick={() => onChangeFilters({ courseId: null, studentId: null, studentName: null, overdueDays: null, enrollmentStatus: null })}
             className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("debtorsTab.clearFilters")}

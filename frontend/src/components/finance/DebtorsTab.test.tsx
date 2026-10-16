@@ -291,3 +291,54 @@ describe("Debtors registry states", () => {
     });
   });
 });
+
+describe("Debtors exact student context", () => {
+  it("sends student_id together with course_id and shows a clearable student chip", async () => {
+    mock.onGet(debtsUrl).reply(200, listing([anisa]));
+    renderDebtors("?tab=debtors&dcourse=11&dstudent=7&dname=Anisa+Karimova");
+    await screen.findByText("Python Advanced");
+    const url = debtRequests()[0].url ?? "";
+    expect(url).toContain("student_id=7");
+    expect(url).toContain("course_id=11");
+    expect(screen.getByText("Student: Anisa Karimova")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Clear the student filter" }));
+    await waitFor(() => expect(location()).toBe("/finance?tab=debtors&dcourse=11"));
+    await waitFor(() => expect(debtRequests().at(-1)?.url).not.toContain("student_id"));
+    expect(debtRequests().at(-1)?.url).toContain("course_id=11");
+  });
+
+  it("restarts the page at one when the student changes and never filters by name locally", async () => {
+    renderDebtors("?tab=debtors&dpage=3&dstudent=7&dname=Anisa+Karimova");
+    await screen.findByText("Python Advanced");
+    expect(debtRequests()[0].url).toContain("page=3");
+    await userEvent.click(screen.getByRole("button", { name: "Clear the student filter" }));
+    await waitFor(() => expect(location()).toBe("/finance?tab=debtors"));
+    expect(debtRequests().at(-1)?.url).toContain("page=1");
+  });
+
+  it("explains a missing student balance with Back and keeps the context chip", async () => {
+    mock.onGet(debtsUrl).reply(200, listing([]));
+    renderDebtors("?tab=debtors&dstudent=99&dname=Removed+Person");
+    expect(await screen.findByText(/No unpaid balance found for this student/)).toBeTruthy();
+    expect(screen.getByText("Student: Removed Person")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back" })).toBeTruthy();
+    expect(screen.queryByText("Accept payment", { selector: "dialog *" })).toBeNull();
+  });
+
+  it("keeps the student context while a failed request is retried", async () => {
+    mock.onGet(debtsUrl).reply(500);
+    renderDebtors("?tab=debtors&dstudent=7&dname=Anisa+Karimova");
+    await screen.findByText("Debtors could not be loaded.");
+    expect(screen.getByText("Student: Anisa Karimova")).toBeTruthy();
+    mock.onGet(debtsUrl).reply(200, listing([anisa]));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await screen.findByText("Python Advanced");
+    expect(debtRequests().every((request) => (request.url ?? "").includes("student_id=7"))).toBe(true);
+  });
+
+  it("ignores an invalid student id in the URL", async () => {
+    renderDebtors("?tab=debtors&dstudent=abc");
+    await screen.findByText("Anisa Karimova");
+    expect(debtRequests()[0].url).not.toContain("student_id");
+  });
+});

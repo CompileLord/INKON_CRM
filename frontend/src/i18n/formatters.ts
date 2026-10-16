@@ -141,6 +141,19 @@ export function getSchoolMonthRange(date: Date = new Date()): { start: string; e
   return { start: prefix + "-01", end: prefix + "-" + String(lastDay).padStart(2, "0") };
 }
 
+export function formatRecentRelativeTime(
+  date: string | Date | null | undefined,
+  lng?: string,
+  now: Date = new Date()
+): string | null {
+  if (!date) return null;
+  const moment = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(moment.getTime())) return null;
+  const elapsedMinutes = Math.floor((now.getTime() - moment.getTime()) / 60000);
+  if (elapsedMinutes < 0 || elapsedMinutes >= 60) return null;
+  return new Intl.RelativeTimeFormat(getActiveLocale(lng), { numeric: "auto" }).format(-elapsedMinutes, "minute");
+}
+
 export function formatPercentage(value: number, lng?: string): string {
   return `${formatNumber(value, lng, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
 }

@@ -158,7 +158,11 @@
   "debtorsFilter": {
     "courseDebts": "Долги по курсу: {{course}}",
     "clear": "Сбросить",
-    "clearLabel": "Сбросить фильтр по курсу"
+    "clearLabel": "Сбросить фильтр по курсу",
+    "studentDebts": "Студент: {{student}}",
+    "clearStudentLabel": "Сбросить фильтр по студенту",
+    "studentMissing": "Для этого студента нет неоплаченных балансов при текущих фильтрах. Возможно, он уже оплачен или удалён.",
+    "back": "Назад"
   },
   "paymentsTab": {
     "title": "Платежи",

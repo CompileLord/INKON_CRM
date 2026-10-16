@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDebts } from "../../lib/finance/hooks";
 import { FinanceUrlState, type DebtorsViewState } from "../../lib/finance/urlState";
@@ -32,6 +33,7 @@ function rowKeyOf(debt: DebtItem): string {
 
 export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilters, onAcceptPayment }: DebtorsTabProps) {
   const { t, i18n } = useTranslation(["finance", "common"]);
+  const navigate = useNavigate();
   const role = useAuthStore((state) => state.role);
   const [sectionRef, sectionWidth] = useElementWidth<HTMLElement>();
   const headingRef = useRef<HTMLSpanElement>(null);
@@ -60,7 +62,11 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
       : t("finance:debtorsFilter.courseDebts", {
           course: courseTitle ?? t("finance:analytics.courseNumber", { id: formatNumber(view.courseId, i18n.language) }),
         });
-  const hasServerFilters: boolean = view.courseId !== null || view.overdueDays !== null || view.enrollmentStatus !== null;
+  const matchedStudentRow: DebtItem | undefined = loaded.find((debt) => debt.student.id === view.studentId);
+  const studentName: string | undefined = matchedStudentRow ? CourseBalanceIdentity.displayName(matchedStudentRow) : undefined;
+  const studentLabel: string | null =
+    view.studentId === null ? null : t("finance:debtorsFilter.studentDebts", { student: studentName ?? view.studentName ?? t("finance:row.unknownStudent") });
+  const hasServerFilters: boolean = view.courseId !== null || view.studentId !== null || view.overdueDays !== null || view.enrollmentStatus !== null;
   const firstRecord: number = (view.page - 1) * PAGE_SIZE + 1;
 
   useEffect(() => {
@@ -144,7 +150,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
           </p>
         )}
       </div>
-      <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} />
+      <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} />
       <p role="status" ref={announcementRef} className="sr-only" />
       {debts.isPending ? (
         <div role="status" aria-busy="true">
@@ -164,7 +170,14 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
         </div>
       ) : loaded.length === 0 ? (
         <div className="p-4">
-          <p className="text-sm text-muted">{t(hasServerFilters ? "finance:debtorsTab.noMatchFilters" : "finance:debtorsTab.empty")}</p>
+          <p className="text-sm text-muted">
+            {t(view.studentId !== null ? "finance:debtorsFilter.studentMissing" : hasServerFilters ? "finance:debtorsTab.noMatchFilters" : "finance:debtorsTab.empty")}
+          </p>
+          {view.studentId !== null && (
+            <Button variant="secondary" className="mt-3" onClick={() => navigate(-1)}>
+              {t("finance:debtorsFilter.back")}
+            </Button>
+          )}
         </div>
       ) : visible.length === 0 ? (
         <div className="flex flex-col items-start gap-3 p-4">

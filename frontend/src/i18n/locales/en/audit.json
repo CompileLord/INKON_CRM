@@ -1,15 +1,159 @@
 {
-  "title": "Audit Log",
-  "subtitle": "History of all changes, user actions, and system events",
-  "time": "Time",
-  "user": "User",
-  "action": "Action",
-  "entity": "Entity",
-  "field": "Field",
-  "oldValue": "Old value",
-  "newValue": "New value",
-  "filterAction": "All actions",
-  "filterEntity": "All entities",
-  "loading": "Loading audit log...",
-  "empty": "No audit records found"
+  "title": "Audit",
+  "titleInfo": "Who changed what, and when. Each row is one changed field.",
+  "refresh": "Refresh",
+  "searchLabel": "Search changes",
+  "searchPlaceholder": "Search",
+  "searchInfo": "Searches the person, the kind of record and the field across every change, not only this page.",
+  "filters": {
+    "actor": "Who",
+    "action": "Action",
+    "entity": "Record",
+    "allActors": "Everyone",
+    "allActions": "Any action",
+    "allEntities": "Any record",
+    "actorUnavailable": "Actor unavailable",
+    "dateTitle": "Dates of the changes"
+  },
+  "chips": {
+    "remove": "Remove filter: {{filter}}",
+    "clearAll": "Clear filters",
+    "search": "Search: {{query}}",
+    "actor": "By {{name}}",
+    "record": "Only this {{entity}}",
+    "dates": "{{from}} – {{to}}",
+    "from": "From {{date}}",
+    "to": "Until {{date}}"
+  },
+  "total": "Changes: {{total}}",
+  "range": "{{from}}–{{to}} of {{total}}",
+  "days": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "actions": {
+    "create": "Created",
+    "update": "Updated",
+    "delete": "Deleted",
+    "void": "Voided",
+    "refund": "Refunded",
+    "close_period": "Period closed",
+    "reopen_period": "Period reopened",
+    "unknown": "Other"
+  },
+  "sentence": {
+    "create": "<actor>{{actor}}</actor> created {{entity}}",
+    "update": "<actor>{{actor}}</actor> updated {{entity}}",
+    "delete": "<actor>{{actor}}</actor> deleted {{entity}}",
+    "void": "<actor>{{actor}}</actor> voided {{entity}}",
+    "refund": "<actor>{{actor}}</actor> refunded {{entity}}",
+    "close_period": "<actor>{{actor}}</actor> closed {{entity}}",
+    "reopen_period": "<actor>{{actor}}</actor> reopened {{entity}}",
+    "unknown": "<actor>{{actor}}</actor> changed {{entity}}"
+  },
+  "entities": {
+    "payment": "Payment",
+    "discount": "Discount",
+    "adjustment": "Adjustment",
+    "allocation": "Payment allocation",
+    "accounting_period": "Accounting period",
+    "course": "Course",
+    "journal_entry": "Journal entry",
+    "journal": "Journal",
+    "enrollment": "Enrollment",
+    "user": "User",
+    "student": "Student"
+  },
+  "change": {
+    "created": "{{field}}: {{value}}",
+    "updated": "{{field}}: {{from}} → {{to}}",
+    "removed": "{{field}} removed: {{value}}",
+    "referenceSet": "{{field}} recorded",
+    "referenceChanged": "{{field}} changed",
+    "referenceCleared": "{{field}} cleared"
+  },
+  "fields": {
+    "amount": "Amount",
+    "method": "Method",
+    "student_id": "Student",
+    "course_id": "Course",
+    "price": "Price",
+    "status": "Status",
+    "mentor_id": "Mentor",
+    "score": "Score",
+    "attendance": "Attendance",
+    "comment": "Comment",
+    "exam_max_score": "Maximum exam score",
+    "reason_code": "Reason",
+    "destination": "Refund destination",
+    "void_entry_id": "Voiding entry",
+    "allocated": "Allocated amount",
+    "year": "Year",
+    "month": "Month",
+    "role": "Role",
+    "title": "Title",
+    "paid_at": "Paid on",
+    "discount_percent": "Discount percent"
+  },
+  "values": {
+    "none": "No value",
+    "empty": "Empty text",
+    "method": {
+      "cash": "Cash",
+      "transfer": "Bank transfer"
+    },
+    "status": {
+      "active": "Active",
+      "withdrawn": "Withdrawn",
+      "completed": "Completed",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "role": {
+      "superadmin": "Administrator",
+      "mentor": "Mentor",
+      "student": "Student",
+      "accountant": "Accountant"
+    },
+    "destination": {
+      "cash": "Cash out",
+      "wallet": "Student credit"
+    }
+  },
+  "states": {
+    "loading": "Loading changes",
+    "error": "The audit log could not be loaded.",
+    "retry": "Try again",
+    "refreshFailed": "Could not refresh. Showing the last loaded changes.",
+    "empty": "No changes recorded yet. Changes made by staff will appear here.",
+    "noMatch": "No changes match these filters.",
+    "clear": "Clear filters",
+    "pageCorrected": "That page no longer exists. Showing the last page."
+  },
+  "inspector": {
+    "title": "Change details",
+    "who": "Who",
+    "when": "When",
+    "record": "Record",
+    "changeNumber": "Change number",
+    "before": "Before",
+    "after": "After",
+    "openStudent": "Open student",
+    "openCourse": "Open course",
+    "showRecord": "Show all changes to this record",
+    "technical": "Technical data",
+    "unknownRecord": "Unnamed record",
+    "fields": "Changed fields"
+  },
+  "row": {
+    "open": "Open details"
+  },
+  "event": {
+    "paymentRecorded": "<actor>{{actor}}</actor> recorded {{amount}} from {{student}}",
+    "paymentVoided": "<actor>{{actor}}</actor> voided {{amount}} payment from {{student}}",
+    "reason": "Reason: {{reason}}",
+    "fieldsChanged_one": "{{count}} field changed",
+    "fieldsChanged_other": "{{count}} fields changed"
+  },
+  "moneyAmount": "{{amount}} TJS"
 }

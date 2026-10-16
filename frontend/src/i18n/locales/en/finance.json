@@ -158,7 +158,11 @@
   "debtorsFilter": {
     "courseDebts": "Course debts: {{course}}",
     "clear": "Clear",
-    "clearLabel": "Clear the course filter"
+    "clearLabel": "Clear the course filter",
+    "studentDebts": "Student: {{student}}",
+    "clearStudentLabel": "Clear the student filter",
+    "studentMissing": "No unpaid balance found for this student with the current filters. It may be paid off or removed.",
+    "back": "Back"
   },
   "paymentsTab": {
     "title": "Payments",

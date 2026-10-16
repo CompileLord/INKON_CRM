@@ -130,10 +130,10 @@ export function AttentionList() {
                       </div>
                       <div className="flex items-center justify-end pl-4.5 sm:pl-0 shrink-0">
                         <Link
-                          to={FinanceUrlState.debtorsLocation(item.course.id)}
+                          to={FinanceUrlState.debtorsLocation(item.course.id, { id: item.student.id, name: `${item.student.first_name} ${item.student.last_name}` })}
                           className="inline-flex min-h-[44px] min-w-[44px] w-full sm:w-auto items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-strip motion-safe:active:scale-[0.96] motion-safe:transition-transform duration-150 ease-out"
                         >
-                          <span>{t("viewCourseDebts")}<span className="sr-only"> {item.course.title}</span></span>
+                          <span>{t("viewStudentBalance")}<span className="sr-only"> {item.student.first_name} {item.student.last_name}, {item.course.title}</span></span>
                         </Link>
                       </div>
                     </div>

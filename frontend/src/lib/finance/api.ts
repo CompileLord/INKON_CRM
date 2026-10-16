@@ -30,6 +30,7 @@ export interface PaymentFilters {
 
 export interface DebtFilters {
   courseId?: number;
+  studentId?: number;
   /** Exact decimal string, for example "100.50". */
   minDebt?: string;
   overdueDays?: number;
@@ -77,6 +78,7 @@ export async function fetchDebts(
     page_size: pageSize.toString(),
   });
   if (filters.courseId) params.append("course_id", filters.courseId.toString());
+  if (filters.studentId) params.append("student_id", filters.studentId.toString());
   if (filters.minDebt !== undefined) params.append("min_debt", filters.minDebt.toString());
   if (filters.overdueDays !== undefined) params.append("overdue_days", filters.overdueDays.toString());
   if (filters.enrollmentStatus) params.append("enrollment_status", filters.enrollmentStatus);

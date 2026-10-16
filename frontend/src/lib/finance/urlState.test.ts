@@ -12,14 +12,14 @@ describe("finance URL schema", () => {
     const state = parse("");
     expect(state.tab).toBe("overview");
     expect(state.range).toBeNull();
-    expect(state.debtors).toEqual({ page: 1, courseId: null, overdueDays: null, enrollmentStatus: null });
+    expect(state.debtors).toEqual({ page: 1, courseId: null, studentId: null, studentName: null, overdueDays: null, enrollmentStatus: null });
     expect(state.payments).toEqual(EMPTY_PAYMENTS);
   });
 
   it("ignores unknown tabs, enums, non-positive ids and malformed pages", () => {
     const state = parse("tab=audit&dpage=0&dcourse=-3&doverdue=abc&dstatus=deleted&ppage=1.5&pcourse=x&pmethod=card&student_id=7&unknown=1");
     expect(state.tab).toBe("overview");
-    expect(state.debtors).toEqual({ page: 1, courseId: null, overdueDays: null, enrollmentStatus: null });
+    expect(state.debtors).toEqual({ page: 1, courseId: null, studentId: null, studentName: null, overdueDays: null, enrollmentStatus: null });
     expect(state.payments).toEqual(EMPTY_PAYMENTS);
   });
 
@@ -87,5 +87,17 @@ describe("finance URL schema", () => {
     expect(parse("pfrom=2026-02-30").payments.dateFrom).toBeNull();
     expect(parse("pfrom=2026-10-05").payments).toMatchObject({ dateFrom: "2026-10-05", dateTo: null });
     expect(parse("pname=Someone&pstudent=0").payments).toMatchObject({ studentId: null, studentName: null });
+  });
+
+  it("round-trips the exact student context and builds the attention location with course and student", () => {
+    const state = parse("tab=debtors&dstudent=7&dname=Anisa%20Karimova&dcourse=11");
+    expect(state.debtors.studentId).toBe(7);
+    expect(state.debtors.studentName).toBe("Anisa Karimova");
+    expect(FinanceUrlState.debtFilters(state.debtors)).toEqual({ courseId: 11, studentId: 7 });
+    expect(FinanceUrlState.serialize(state).toString()).toBe("tab=debtors&dcourse=11&dstudent=7&dname=Anisa+Karimova");
+    expect(FinanceUrlState.debtorsLocation(11, { id: 7, name: "Anisa Karimova" })).toBe(
+      "/finance?tab=debtors&dcourse=11&dstudent=7&dname=Anisa+Karimova",
+    );
+    expect(FinanceUrlState.debtorsLocation(11, { id: 0, name: "Nobody" })).toBe("/finance?tab=debtors&dcourse=11");
   });
 });

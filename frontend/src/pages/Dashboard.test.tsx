@@ -358,11 +358,10 @@ describe("Superadmin Dashboard (/)", () => {
     expect(screen.getByText(/Due today/)).toBeTruthy();
     expect(screen.queryByText(/Overdue 0 days/)).toBeNull();
 
-    const perRowActions = screen.getAllByRole("link", { name: /View course debts/ });
+    const perRowActions = screen.getAllByRole("link", { name: /View balance/ });
     expect(perRowActions.length).toBe(2);
-    expect(perRowActions[0].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=11");
-    expect(perRowActions[1].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=12");
-    expect(perRowActions[0].getAttribute("href")).not.toContain("student");
+    expect(perRowActions[0].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=11&dstudent=101&dname=Ali+Valiev");
+    expect(perRowActions[1].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=12&dstudent=102&dname=Zara+Karimova");
 
     const financeFooterLink = screen.getByRole("link", { name: /Open Finance • View debts/ });
     expect(financeFooterLink.getAttribute("href")).toBe("/finance?tab=debtors");

@@ -1,15 +1,159 @@
 {
-  "title": "Журнали аудит",
-  "subtitle": "Таърихи ҳамаи тағйирот, амалҳои корбарон ва ҳодисаҳои системавӣ",
-  "time": "Вақт",
-  "user": "Корбар",
-  "action": "Амал",
-  "entity": "Объект",
-  "field": "Майдон",
-  "oldValue": "Қиммати кӯҳна",
-  "newValue": "Қиммати нав",
-  "filterAction": "Ҳамаи амалҳо",
-  "filterEntity": "Ҳамаи объектҳо",
-  "loading": "Боргирии журнали аудит...",
-  "empty": "Кайдҳои аудит ёфт нашуданд"
+  "title": "Аудит",
+  "titleInfo": "Кӣ, чӣ ва кай тағйир додааст. Ҳар сатр як майдони тағйирёфтаро нишон медиҳад.",
+  "refresh": "Навсозӣ",
+  "searchLabel": "Ҷустуҷӯи тағйирот",
+  "searchPlaceholder": "Ҷустуҷӯ",
+  "searchInfo": "Аз рӯи шахс, навъи сабт ва майдон дар байни ҳамаи тағйирот ҷустуҷӯ мекунад, на танҳо дар ин саҳифа.",
+  "filters": {
+    "actor": "Кӣ",
+    "action": "Амал",
+    "entity": "Сабт",
+    "allActors": "Ҳама",
+    "allActions": "Ҳар амал",
+    "allEntities": "Ҳар сабт",
+    "actorUnavailable": "Муаллиф дастнорас аст",
+    "dateTitle": "Санаҳои тағйирот"
+  },
+  "chips": {
+    "remove": "Хориҷ кардани филтр: {{filter}}",
+    "clearAll": "Тоза кардани филтрҳо",
+    "search": "Ҷустуҷӯ: {{query}}",
+    "actor": "Муаллиф: {{name}}",
+    "record": "Танҳо ин сабт: {{entity}}",
+    "dates": "{{from}} – {{to}}",
+    "from": "Аз {{date}}",
+    "to": "То {{date}}"
+  },
+  "total": "Тағйирот: {{total}}",
+  "range": "{{from}}–{{to}} аз {{total}}",
+  "days": {
+    "today": "Имрӯз",
+    "yesterday": "Дирӯз"
+  },
+  "actions": {
+    "create": "Сохтан",
+    "update": "Тағйир",
+    "delete": "Нест кардан",
+    "void": "Бекор кардан",
+    "refund": "Бозгардонӣ",
+    "close_period": "Давра баста шуд",
+    "reopen_period": "Давра аз нав кушода шуд",
+    "unknown": "Дигар"
+  },
+  "sentence": {
+    "create": "<actor>{{actor}}</actor>: {{entity}} сохта шуд",
+    "update": "<actor>{{actor}}</actor>: {{entity}} тағйир ёфт",
+    "delete": "<actor>{{actor}}</actor>: {{entity}} нест карда шуд",
+    "void": "<actor>{{actor}}</actor>: {{entity}} бекор карда шуд",
+    "refund": "<actor>{{actor}}</actor>: {{entity}} баргардонида шуд",
+    "close_period": "<actor>{{actor}}</actor>: {{entity}} баста шуд",
+    "reopen_period": "<actor>{{actor}}</actor>: {{entity}} аз нав кушода шуд",
+    "unknown": "<actor>{{actor}}</actor>: {{entity}} дигаргун шуд"
+  },
+  "entities": {
+    "payment": "Пардохт",
+    "discount": "Тахфиф",
+    "adjustment": "Ислоҳ",
+    "allocation": "Тақсими пардохт",
+    "accounting_period": "Давраи ҳисобдорӣ",
+    "course": "Курс",
+    "journal_entry": "Сабти журнал",
+    "journal": "Журнал",
+    "enrollment": "Сабти номи курс",
+    "user": "Корбар",
+    "student": "Донишҷӯ"
+  },
+  "change": {
+    "created": "{{field}}: {{value}}",
+    "updated": "{{field}}: {{from}} → {{to}}",
+    "removed": "{{field}} хориҷ шуд: {{value}}",
+    "referenceSet": "{{field}} сабт шуд",
+    "referenceChanged": "{{field}} тағйир ёфт",
+    "referenceCleared": "{{field}} тоза карда шуд"
+  },
+  "fields": {
+    "amount": "Маблағ",
+    "method": "Усул",
+    "student_id": "Донишҷӯ",
+    "course_id": "Курс",
+    "price": "Нарх",
+    "status": "Ҳолат",
+    "mentor_id": "Мураббӣ",
+    "score": "Баҳо",
+    "attendance": "Ҳузур",
+    "comment": "Шарҳ",
+    "exam_max_score": "Баҳои ҳадди аксари имтиҳон",
+    "reason_code": "Сабаб",
+    "destination": "Ба куҷо баргардонида шуд",
+    "void_entry_id": "Сабти бекоркунанда",
+    "allocated": "Маблағи тақсимшуда",
+    "year": "Сол",
+    "month": "Моҳ",
+    "role": "Нақш",
+    "title": "Ном",
+    "paid_at": "Санаи пардохт",
+    "discount_percent": "Фоизи тахфиф"
+  },
+  "values": {
+    "none": "Арзиш нест",
+    "empty": "Матни холӣ",
+    "method": {
+      "cash": "Пули нақд",
+      "transfer": "Интиқоли бонкӣ"
+    },
+    "status": {
+      "active": "Фаъол",
+      "withdrawn": "Хориҷшуда",
+      "completed": "Анҷомёфта",
+      "open": "Кушода",
+      "closed": "Баста"
+    },
+    "role": {
+      "superadmin": "Маъмур",
+      "mentor": "Мураббӣ",
+      "student": "Донишҷӯ",
+      "accountant": "Ҳисобдор"
+    },
+    "destination": {
+      "cash": "Бо пули нақд баргардонида шуд",
+      "wallet": "Кредити донишҷӯ"
+    }
+  },
+  "states": {
+    "loading": "Боркунии тағйирот",
+    "error": "Ҷурнали аудит бор карда нашуд.",
+    "retry": "Аз нав кӯшиш кардан",
+    "refreshFailed": "Навсозӣ нашуд. Тағйироти охирини боршуда нишон дода мешавад.",
+    "empty": "Ҳоло тағйирот сабт нашудааст. Амалҳои кормандон дар ин ҷо пайдо мешаванд.",
+    "noMatch": "Тағйироте, ки ба филтрҳо мувофиқ бошад, нест.",
+    "clear": "Тоза кардани филтрҳо",
+    "pageCorrected": "Чунин саҳифа дигар нест. Саҳифаи охирин нишон дода мешавад."
+  },
+  "inspector": {
+    "title": "Тафсилоти тағйир",
+    "who": "Кӣ",
+    "when": "Кай",
+    "record": "Сабт",
+    "changeNumber": "Рақами тағйир",
+    "before": "Пештар",
+    "after": "Баъд",
+    "openStudent": "Кушодани донишҷӯ",
+    "openCourse": "Кушодани курс",
+    "showRecord": "Нишон додани ҳамаи тағйироти ин сабт",
+    "technical": "Маълумоти техникӣ",
+    "unknownRecord": "Сабти беном",
+    "fields": "Майдонҳои тағйирёфта"
+  },
+  "row": {
+    "open": "Кушодани тафсилот"
+  },
+  "event": {
+    "paymentRecorded": "<actor>{{actor}}</actor>: {{amount}} аз {{student}} қабул шуд",
+    "paymentVoided": "<actor>{{actor}}</actor>: пардохти {{amount}} аз {{student}} бекор карда шуд",
+    "reason": "Сабаб: {{reason}}",
+    "fieldsChanged_one": "{{count}} майдон тағйир ёфт",
+    "fieldsChanged_other": "{{count}} майдон тағйир ёфт"
+  },
+  "moneyAmount": "{{amount}} TJS"
 }

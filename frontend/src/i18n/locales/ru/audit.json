@@ -1,15 +1,161 @@
 {
-  "title": "Журнал аудита",
-  "subtitle": "История всех изменений, действий пользователей и системных событий",
-  "time": "Время",
-  "user": "Пользователь",
-  "action": "Действие",
-  "entity": "Сущность",
-  "field": "Поле",
-  "oldValue": "Старое значение",
-  "newValue": "Новое значение",
-  "filterAction": "Все действия",
-  "filterEntity": "Все сущности",
-  "loading": "Загрузка журнала аудита...",
-  "empty": "Записи аудита не найдены"
+  "title": "Аудит",
+  "titleInfo": "Кто, что и когда изменил. Каждая строка — одно изменённое поле.",
+  "refresh": "Обновить",
+  "searchLabel": "Поиск по изменениям",
+  "searchPlaceholder": "Поиск",
+  "searchInfo": "Ищет по сотруднику, типу записи и полю среди всех изменений, а не только на этой странице.",
+  "filters": {
+    "actor": "Кто",
+    "action": "Действие",
+    "entity": "Запись",
+    "allActors": "Все",
+    "allActions": "Любое",
+    "allEntities": "Любая",
+    "actorUnavailable": "Автор недоступен",
+    "dateTitle": "Даты изменений"
+  },
+  "chips": {
+    "remove": "Убрать фильтр: {{filter}}",
+    "clearAll": "Сбросить фильтры",
+    "search": "Поиск: {{query}}",
+    "actor": "Автор: {{name}}",
+    "record": "Только эта запись: {{entity}}",
+    "dates": "{{from}} – {{to}}",
+    "from": "С {{date}}",
+    "to": "По {{date}}"
+  },
+  "total": "Изменений: {{total}}",
+  "range": "{{from}}–{{to}} из {{total}}",
+  "days": {
+    "today": "Сегодня",
+    "yesterday": "Вчера"
+  },
+  "actions": {
+    "create": "Создание",
+    "update": "Изменение",
+    "delete": "Удаление",
+    "void": "Аннулирование",
+    "refund": "Возврат",
+    "close_period": "Период закрыт",
+    "reopen_period": "Период открыт снова",
+    "unknown": "Другое"
+  },
+  "sentence": {
+    "create": "<actor>{{actor}}</actor>: создание — {{entity}}",
+    "update": "<actor>{{actor}}</actor>: изменение — {{entity}}",
+    "delete": "<actor>{{actor}}</actor>: удаление — {{entity}}",
+    "void": "<actor>{{actor}}</actor>: аннулирование — {{entity}}",
+    "refund": "<actor>{{actor}}</actor>: возврат — {{entity}}",
+    "close_period": "<actor>{{actor}}</actor>: закрытие — {{entity}}",
+    "reopen_period": "<actor>{{actor}}</actor>: повторное открытие — {{entity}}",
+    "unknown": "<actor>{{actor}}</actor>: изменение — {{entity}}"
+  },
+  "entities": {
+    "payment": "Платёж",
+    "discount": "Скидка",
+    "adjustment": "Корректировка",
+    "allocation": "Распределение платежа",
+    "accounting_period": "Учётный период",
+    "course": "Курс",
+    "journal_entry": "Запись журнала",
+    "journal": "Журнал",
+    "enrollment": "Запись на курс",
+    "user": "Пользователь",
+    "student": "Студент"
+  },
+  "change": {
+    "created": "{{field}}: {{value}}",
+    "updated": "{{field}}: {{from}} → {{to}}",
+    "removed": "{{field}} удалено: {{value}}",
+    "referenceSet": "{{field}} указан",
+    "referenceChanged": "{{field}} изменён",
+    "referenceCleared": "{{field}} очищен"
+  },
+  "fields": {
+    "amount": "Сумма",
+    "method": "Способ",
+    "student_id": "Студент",
+    "course_id": "Курс",
+    "price": "Цена",
+    "status": "Статус",
+    "mentor_id": "Ментор",
+    "score": "Балл",
+    "attendance": "Посещаемость",
+    "comment": "Комментарий",
+    "exam_max_score": "Максимальный балл экзамена",
+    "reason_code": "Причина",
+    "destination": "Куда возвращено",
+    "void_entry_id": "Аннулирующая запись",
+    "allocated": "Распределённая сумма",
+    "year": "Год",
+    "month": "Месяц",
+    "role": "Роль",
+    "title": "Название",
+    "paid_at": "Дата оплаты",
+    "discount_percent": "Процент скидки"
+  },
+  "values": {
+    "none": "Нет значения",
+    "empty": "Пустой текст",
+    "method": {
+      "cash": "Наличные",
+      "transfer": "Банковский перевод"
+    },
+    "status": {
+      "active": "Активен",
+      "withdrawn": "Отчислен",
+      "completed": "Завершён",
+      "open": "Открыт",
+      "closed": "Закрыт"
+    },
+    "role": {
+      "superadmin": "Администратор",
+      "mentor": "Ментор",
+      "student": "Студент",
+      "accountant": "Бухгалтер"
+    },
+    "destination": {
+      "cash": "Выдано наличными",
+      "wallet": "Кредит студента"
+    }
+  },
+  "states": {
+    "loading": "Загрузка изменений",
+    "error": "Не удалось загрузить журнал аудита.",
+    "retry": "Повторить",
+    "refreshFailed": "Не удалось обновить. Показаны последние загруженные изменения.",
+    "empty": "Изменений пока нет. Действия сотрудников появятся здесь.",
+    "noMatch": "Нет изменений, подходящих под фильтры.",
+    "clear": "Сбросить фильтры",
+    "pageCorrected": "Такой страницы больше нет. Показана последняя страница."
+  },
+  "inspector": {
+    "title": "Детали изменения",
+    "who": "Кто",
+    "when": "Когда",
+    "record": "Запись",
+    "changeNumber": "Номер изменения",
+    "before": "Было",
+    "after": "Стало",
+    "openStudent": "Открыть студента",
+    "openCourse": "Открыть курс",
+    "showRecord": "Показать все изменения этой записи",
+    "technical": "Технические данные",
+    "unknownRecord": "Запись без названия",
+    "fields": "Изменённые поля"
+  },
+  "row": {
+    "open": "Открыть детали"
+  },
+  "event": {
+    "paymentRecorded": "<actor>{{actor}}</actor>: принят платёж {{amount}} от {{student}}",
+    "paymentVoided": "<actor>{{actor}}</actor>: аннулирован платёж {{amount}} от {{student}}",
+    "reason": "Причина: {{reason}}",
+    "fieldsChanged_one": "Изменено {{count}} поле",
+    "fieldsChanged_few": "Изменено {{count}} поля",
+    "fieldsChanged_many": "Изменено {{count}} полей",
+    "fieldsChanged_other": "Изменено {{count}} полей"
+  },
+  "moneyAmount": "{{amount}} TJS"
 }

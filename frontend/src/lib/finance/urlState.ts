@@ -17,6 +17,8 @@ export type RangeProblem = "incomplete" | "invalid" | "inverted";
 export interface DebtorsViewState {
   page: number;
   courseId: number | null;
+  studentId: number | null;
+  studentName: string | null;
   overdueDays: number | null;
   enrollmentStatus: EnrollmentStatus | null;
 }
@@ -52,12 +54,15 @@ export class FinanceUrlState {
     const rawMethod: string | null = params.get("pmethod");
     const paymentDays = FinanceUrlState.parsePaymentDays(params.get("pfrom"), params.get("pto"));
     const paymentStudentId: number | null = FinanceUrlState.parsePositiveInteger(params.get("pstudent"));
+    const debtorStudentId: number | null = FinanceUrlState.parsePositiveInteger(params.get("dstudent"));
     return {
       tab,
       range: FinanceUrlState.parseRange(params.get("from"), params.get("to")),
       debtors: {
         page: FinanceUrlState.parsePositiveInteger(params.get("dpage")) ?? 1,
         courseId: FinanceUrlState.parsePositiveInteger(params.get("dcourse")),
+        studentId: debtorStudentId,
+        studentName: debtorStudentId === null ? null : FinanceUrlState.parseStudentName(params.get("dname")),
         overdueDays: FinanceUrlState.parseOverdueDays(params.get("doverdue")),
         enrollmentStatus: FinanceUrlState.enrollmentStatuses.find((candidate) => candidate === rawStatus) ?? null,
       },
@@ -82,6 +87,10 @@ export class FinanceUrlState {
     }
     if (state.debtors.page > 1) params.set("dpage", String(state.debtors.page));
     if (state.debtors.courseId !== null) params.set("dcourse", String(state.debtors.courseId));
+    if (state.debtors.studentId !== null) {
+      params.set("dstudent", String(state.debtors.studentId));
+      if (state.debtors.studentName) params.set("dname", state.debtors.studentName);
+    }
     if (state.debtors.overdueDays !== null) params.set("doverdue", String(state.debtors.overdueDays));
     if (state.debtors.enrollmentStatus) params.set("dstatus", state.debtors.enrollmentStatus);
     if (state.payments.page > 1) params.set("ppage", String(state.payments.page));
@@ -100,9 +109,13 @@ export class FinanceUrlState {
     return FinanceUrlState.parse(new URLSearchParams());
   }
 
-  static debtorsLocation(courseId?: number): string {
+  static debtorsLocation(courseId?: number, student?: { id: number; name: string }): string {
     const state: FinanceViewState = FinanceUrlState.defaultState();
     state.tab = "debtors";
+    if (student !== undefined && Number.isSafeInteger(student.id) && student.id > 0) {
+      state.debtors.studentId = student.id;
+      state.debtors.studentName = FinanceUrlState.parseStudentName(student.name);
+    }
     if (courseId !== undefined && Number.isSafeInteger(courseId) && courseId > 0) state.debtors.courseId = courseId;
     return "/finance?" + FinanceUrlState.serialize(state).toString();
   }
@@ -153,6 +166,7 @@ export class FinanceUrlState {
   static debtFilters(view: DebtorsViewState): DebtFilters {
     return {
       ...(view.courseId !== null ? { courseId: view.courseId } : {}),
+      ...(view.studentId !== null ? { studentId: view.studentId } : {}),
       ...(view.overdueDays !== null ? { overdueDays: view.overdueDays } : {}),
       ...(view.enrollmentStatus ? { enrollmentStatus: view.enrollmentStatus } : {}),
     };

@@ -75,7 +75,7 @@ export function ListboxPicker({ label, icon, options, value, onChange, layout = 
             initialFocus={() => optionRefs.current[Math.max(0, options.findIndex((option) => option.value === selected?.value))]}
             className={`${isField ? "w-[var(--anchor-width)] max-w-[calc(100vw-32px)]" : "w-[min(16rem,calc(100vw-32px))]"} origin-[var(--transform-origin)] rounded-2xl border border-border-warm bg-card p-1 shadow-lg transition-opacity duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none motion-safe:transition-[opacity,transform] data-[starting-style]:opacity-0 motion-safe:data-[starting-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[ending-style]:duration-100 motion-safe:data-[ending-style]:scale-[0.96]`}
           >
-            <div role="listbox" aria-label={label} onKeyDown={moveFocus}>
+            <div role="listbox" aria-label={label} onKeyDown={moveFocus} className="max-h-[min(20rem,calc(100dvh-10rem))] overflow-y-auto overscroll-contain">
               {options.map((option, index) => {
                 const isSelected: boolean = option.value === selected?.value;
                 return (
