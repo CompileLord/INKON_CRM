@@ -1,0 +1,63 @@
+from datetime import datetime
+from typing import Optional, Sequence
+from typing_extensions import Protocol
+from app.models.outbox_event import OutboxEvent
+
+
+class OutboxRepository(Protocol):
+    async def enqueue(self, event: OutboxEvent) -> OutboxEvent:
+        ...
+
+    async def claim_pending_batch(
+        self,
+        lease_owner: str,
+        lease_duration_seconds: int,
+        batch_size: int,
+        now: datetime,
+    ) -> Sequence[OutboxEvent]:
+        ...
+
+    async def is_lease_valid(
+        self,
+        event_id: int,
+        lease_owner: str,
+        now: datetime,
+    ) -> bool:
+        ...
+
+    async def mark_delivered(
+        self,
+        event_id: int,
+        lease_owner: str,
+        now: datetime,
+    ) -> bool:
+        ...
+
+    async def mark_failed(
+        self,
+        event_id: int,
+        lease_owner: str,
+        error_summary: str,
+        next_attempt_at: Optional[datetime],
+        now: datetime,
+        terminal: bool = False,
+    ) -> bool:
+        ...
+
+    async def mark_expired(
+        self,
+        event_id: int,
+        lease_owner: str,
+        reason: str,
+        now: datetime,
+    ) -> bool:
+        ...
+
+    async def expire_stale(self, now: datetime) -> int:
+        ...
+
+    async def release_stale_leases(self, now: datetime) -> int:
+        ...
+
+    async def purge_sensitive_payload(self, event_id: int) -> None:
+        ...
