@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
@@ -58,7 +58,9 @@ class SumCalculationService:
 
         await self.db.flush()
 
-    async def recalculate_journal(self, journal_id: int) -> None:
+    async def recalculate_journal(self, journal_id: int, student_ids: set[int] | None = None) -> None:
+        if student_ids is not None and not student_ids:
+            return
         journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
         journal = journal_result.scalars().first()
         if not journal:
@@ -66,18 +68,20 @@ class SumCalculationService:
 
         exam_max_score_val = journal.exam_max_score
 
-        entries_result = await self.db.execute(
-            select(JournalEntry).filter(JournalEntry.journal_id == journal_id)
-        )
+        entries_query: Select[tuple[JournalEntry]] = select(JournalEntry).filter(JournalEntry.journal_id == journal_id)
+        if student_ids is not None:
+            entries_query = entries_query.filter(JournalEntry.student_id.in_(student_ids))
+        entries_result = await self.db.execute(entries_query)
         entries = list(entries_result.scalars().all())
 
         entries_by_student: dict[int, list[JournalEntry]] = {}
         for entry in entries:
             entries_by_student.setdefault(entry.student_id, []).append(entry)
 
-        summaries_result = await self.db.execute(
-            select(JournalStudentSummary).filter(JournalStudentSummary.journal_id == journal_id)
-        )
+        summaries_query: Select[tuple[JournalStudentSummary]] = select(JournalStudentSummary).filter(JournalStudentSummary.journal_id == journal_id)
+        if student_ids is not None:
+            summaries_query = summaries_query.filter(JournalStudentSummary.student_id.in_(student_ids))
+        summaries_result = await self.db.execute(summaries_query)
         summaries = list(summaries_result.scalars().all())
         summaries_by_student: dict[int, JournalStudentSummary] = {s.student_id: s for s in summaries}
 
