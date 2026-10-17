@@ -2,7 +2,7 @@
 Description=Run IMKON backup nightly
 
 [Timer]
-OnCalendar=*-*-* 02:30:00 UTC
+OnCalendar=*-*-* 03:00:00 Asia/Dushanbe
 Persistent=true
 
 [Install]
