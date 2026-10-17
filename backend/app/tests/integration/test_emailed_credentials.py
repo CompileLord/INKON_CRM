@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from fastapi import HTTPException
+from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -20,8 +21,6 @@ from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxPayloadEncryptor
 from app.services.user_service import UserService
 from app.workers.outbox import OutboxWorkerManager
-
-AMBIGUOUS_CHARACTERS: frozenset[str] = frozenset("0O1lIo")
 
 
 def build_session_factory() -> async_sessionmaker[AsyncSession]:
@@ -56,22 +55,24 @@ def decrypt_temporary_password(event: OutboxEvent) -> str:
 
 
 class TestTemporaryPasswordGenerator:
-    def test_generated_password_meets_policy_and_avoids_ambiguous_characters(self) -> None:
+    def test_generated_password_is_exactly_six_digits_over_many_samples(self) -> None:
         generator = TemporaryPasswordGenerator()
-        for _ in range(200):
+        for _ in range(2000):
             password: str = generator.generate()
-            assert len(password) >= 12
-            assert any(character.isdigit() for character in password)
-            assert any(character.isalpha() for character in password)
-            assert not AMBIGUOUS_CHARACTERS.intersection(password)
+            assert len(password) == 6
+            assert password.isascii() and password.isdigit()
 
-    def test_two_generations_differ(self) -> None:
-        generator = TemporaryPasswordGenerator()
-        assert len({generator.generate() for _ in range(50)}) == 50
+    def test_generator_draws_from_secrets_and_zero_pads(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        requested_bounds: list[int] = []
 
-    def test_length_below_minimum_is_rejected(self) -> None:
-        with pytest.raises(ValueError):
-            TemporaryPasswordGenerator(length=11)
+        def fake_randbelow(upper_bound: int) -> int:
+            requested_bounds.append(upper_bound)
+            return 42
+
+        monkeypatch.setattr("app.core.temporary_passwords.secrets.randbelow", fake_randbelow)
+
+        assert TemporaryPasswordGenerator().generate() == "000042"
+        assert requested_bounds == [1_000_000]
 
 
 @pytest.mark.asyncio
@@ -101,7 +102,7 @@ async def test_emailed_password_logs_in_with_must_set_password_scope(db_session:
     token_pair: TokenPair = await AuthService(db_session).login(user.email, temporary_password)
 
     assert token_pair.must_set_password is True
-    from jose import jwt
+    assert len(temporary_password) == 6 and temporary_password.isdigit()
 
     claims: dict[str, Any] = jwt.decode(token_pair.access_token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
     assert claims["scope"] == "must_set_password"
