@@ -3793,6 +3793,23 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## GET /api/v1/system/version
+
+**Summary:** Get Build Version
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "version": string,
+    "commit_sha": string,
+    "commit_message": string,
+    "built_at": string,
+  }
+  ```
+
+---
+
 ## GET /health
 
 **Summary:** Health Check

@@ -33,6 +33,15 @@ COPY --chown=appuser:appgroup scripts/ ./scripts/
 
 RUN mkdir -p /app/storage && chown -R appuser:appgroup /app/storage
 
+ARG BUILD_VERSION=dev
+ARG BUILD_COMMIT_SHA=unknown
+ARG BUILD_COMMIT_MESSAGE=unknown
+ARG BUILD_TIME=unknown
+ENV BUILD_VERSION=${BUILD_VERSION} \
+    BUILD_COMMIT_SHA=${BUILD_COMMIT_SHA} \
+    BUILD_COMMIT_MESSAGE=${BUILD_COMMIT_MESSAGE} \
+    BUILD_TIME=${BUILD_TIME}
+
 USER appuser
 
 EXPOSE 8080
