@@ -9,6 +9,7 @@ from app.db.base import Base
 class OutboxEventKind(str, enum.Enum):
     VERIFICATION_EMAIL = "verification_email"
     PASSWORD_RESET_EMAIL = "password_reset_email"
+    CREDENTIALS_EMAIL = "credentials_email"
 
 
 class OutboxEventStatus(str, enum.Enum):
