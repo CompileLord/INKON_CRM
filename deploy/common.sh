@@ -9,7 +9,7 @@ if [[ -f "$DEPLOY_CONFIGURATION_FILE" ]]; then
   set +a
 fi
 
-export API_DOMAIN="${API_DOMAIN:-api-imkon-crm.shadowme.pro}"
+export API_DOMAIN="${API_DOMAIN:-api-kitob-crm.shadowme.pro}"
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-imkon}"
 export IMKON_DATA_DIR="${IMKON_DATA_DIR:-/var/lib/imkon}"
 BACKUP_DIRECTORY="${BACKUP_DIRECTORY:-/var/backups/imkon}"
