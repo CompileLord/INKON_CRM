@@ -6,7 +6,7 @@ Status of each task lives in [STATUS_CI_CD_PIPELINE.md](../STATUS_CI_CD_PIPELINE
 
 | Component | Where | Notes |
 | --- | --- | --- |
-| Frontend (Vite SPA) | Cloudflare Pages, project `imkon-crm`, `https://imkon-crm.shadowme.pro` | Static build; `VITE_API_BASE_URL` baked in at build time |
+| Frontend (Vite SPA) | Cloudflare Pages, project `imkon-crm`, `https://imkon-crm.pages.dev` | Static build; `VITE_API_BASE_URL` baked in at build time |
 | Backend API (FastAPI) | VPS, Docker Compose, `https://api-kitob-crm.shadowme.pro` | One image, two processes: `api` and `worker` |
 | Worker (arq) | VPS, same image | Runs queued tasks and the arq `cron_jobs` (`archive_expired_courses`, `check_payment_reminders`) |
 | PostgreSQL 16 | VPS container, no public port | Data in `/var/lib/imkon/postgres` |
@@ -76,7 +76,7 @@ Acceptance: a PR with a deliberately failing test, a type error and an un-regene
 
 **VPS-02 · `deploy/docker-compose.prod.yml` + `deploy/Caddyfile`.** Services `caddy`, `api`, `worker`, `db`, `redis`; `image: ghcr.io/compilelord/inkon_crm-api:${IMAGE_TAG}`; `env_file: /etc/imkon/backend.env`; healthchecks (`/health` for api, `pg_isready`, `redis-cli ping`); `restart: unless-stopped`; internal network only for db/redis. Caddy proxies `api-kitob-crm.shadowme.pro` → `api:8080`, sets security headers and an upload body limit matching the backend's limit.
 
-**VPS-03 · Production configuration.** Template `deploy/backend.env.example` (no real values). Production values: `ENVIRONMENT=production`, `BACKEND_CORS_ORIGINS=["https://imkon-crm.shadowme.pro"]` (never `*`), `TELEGRAM_WEBHOOK_URL=https://api-kitob-crm.shadowme.pro/api/v1/telegram/webhook`, strong JWT secrets, Redis password/ACL. Secrets live only on the VPS in `/etc/imkon/backend.env` (mode 600).
+**VPS-03 · Production configuration.** Template `deploy/backend.env.example` (no real values). Production values: `ENVIRONMENT=production`, `BACKEND_CORS_ORIGINS=["https://imkon-crm.pages.dev"]` (never `*`), `TELEGRAM_WEBHOOK_URL=https://api-kitob-crm.shadowme.pro/api/v1/telegram/webhook`, strong JWT secrets, Redis password/ACL. Secrets live only on the VPS in `/etc/imkon/backend.env` (mode 600).
 
 **VPS-04 · Storage verification.** Upload an avatar, a course image and a private document in staging; confirm they persist across `docker compose up -d --force-recreate`, public mounts serve only avatar/course media, and private documents require auth.
 

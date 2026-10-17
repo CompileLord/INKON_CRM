@@ -6,7 +6,7 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 1. Point DNS for `api-kitob-crm.shadowme.pro` (and `api-staging-kitob-crm.shadowme.pro` for staging) at the VPS.
 2. As root on the VPS, copy the repository's `deploy/` directory and run `DEPLOY_PUBLIC_KEY="<ssh public key>" ./provision_vps.sh`. It is idempotent.
-3. As the `deploy` user create `/etc/imkon/backend.env` from `deploy/backend.env.example` (mode 600) with real secrets. Generate secrets with `openssl rand -hex 32`. `BACKEND_CORS_ORIGINS` must stay `["https://imkon-crm.shadowme.pro"]`. The `DATABASE_URL` and `REDIS_URL` passwords must match `POSTGRES_PASSWORD` and `REDIS_PASSWORD`.
+3. As the `deploy` user create `/etc/imkon/backend.env` from `deploy/backend.env.example` (mode 600) with real secrets. Generate secrets with `openssl rand -hex 32`. `BACKEND_CORS_ORIGINS` must stay `["https://imkon-crm.pages.dev"]`. The `DATABASE_URL` and `REDIS_URL` passwords must match `POSTGRES_PASSWORD` and `REDIS_PASSWORD`.
 4. Create `/etc/imkon/deploy.env` from `deploy/deploy.env.example`. For a staging host set `API_DOMAIN=api-staging-kitob-crm.shadowme.pro`.
 5. Create `/etc/imkon/backup.env` (mode 600) with `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the Backblaze B2 or Cloudflare R2 credentials, then run `restic init` once with that environment.
 6. `docker login ghcr.io` as `deploy` with a read-only token (`read:packages`).
