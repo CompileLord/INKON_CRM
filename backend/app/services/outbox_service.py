@@ -5,6 +5,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.repositories.interfaces.outbox_repository import OutboxRepository
+from app.services.email_templates import (
+    CredentialsEmailTemplate,
+    PasswordResetEmailTemplate,
+    VerificationCodeEmailTemplate,
+)
 
 OUTBOX_PAYLOAD_DOMAIN_SEPARATOR = b"imkon-crm:outbox-payload:v1"
 OUTBOX_CODE_TTL_SECONDS = 600
@@ -63,7 +68,7 @@ class OutboxService:
             kind=OutboxEventKind.VERIFICATION_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject="Verification Code",
+            subject=VerificationCodeEmailTemplate.SUBJECT,
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,
@@ -85,7 +90,7 @@ class OutboxService:
             kind=OutboxEventKind.PASSWORD_RESET_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject="Password Reset Code",
+            subject=PasswordResetEmailTemplate.SUBJECT,
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,
@@ -110,7 +115,7 @@ class OutboxService:
             kind=OutboxEventKind.CREDENTIALS_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject="Your IMKON CRM login details",
+            subject=CredentialsEmailTemplate.SUBJECT,
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,

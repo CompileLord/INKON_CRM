@@ -202,7 +202,7 @@ class RecordingEmailService(EmailService):
         self.sent_messages: list[dict[str, str]] = []
 
     async def send_email(
-        self, to_email: str, subject: str, body: str, force_transport: bool = False
+        self, to_email: str, subject: str, body: str, force_transport: bool = False, **_: object
     ) -> None:
         self.sent_messages.append({"to": to_email, "subject": subject, "body": body})
 

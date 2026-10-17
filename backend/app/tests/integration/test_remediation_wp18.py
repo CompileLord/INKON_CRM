@@ -99,7 +99,7 @@ async def test_payload_wrong_key_or_tampering_raises() -> None:
 async def test_user_service_create_user_rollback_no_mail_sent(db_session: AsyncSession) -> None:
     sent_emails: list[str] = []
 
-    async def capture_send(self_: Any, to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def capture_send(self_: Any, to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         sent_emails.append(to_email)
 
     test_email = f"rollback_{int(time_seconds := datetime.now().timestamp()*1000)}@example.com"
@@ -354,7 +354,7 @@ async def test_worker_skips_send_when_lease_expired_in_queue() -> None:
 
     sent_emails: list[str] = []
 
-    async def track_send(self_: Any, to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def track_send(self_: Any, to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         sent_emails.append(to_email)
 
     worker = OutboxWorkerManager(
@@ -538,7 +538,7 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
     session_factory = _make_test_session_factory()
     delivered_bodies: list[str] = []
 
-    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         delivered_bodies.append(body)
 
     email_svc = EmailService()
@@ -552,7 +552,7 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
     processed = await worker.run_once(session_factory)
     assert processed >= 1
     assert len(delivered_bodies) == 1
-    assert "Your password reset code is:" in delivered_bodies[0]
+    assert "Your password reset code:" in delivered_bodies[0]
 
     async with session_factory() as session:
         res = await session.execute(
@@ -582,7 +582,7 @@ async def test_worker_once_delivers_and_purges_payload(db_session: AsyncSession)
     session_factory = _make_test_session_factory()
     delivered_calls: list[dict[str, str]] = []
 
-    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         delivered_calls.append({"to": to_email, "subject": subject, "body": body})
 
     email_service = EmailService()
@@ -627,7 +627,7 @@ async def test_worker_does_not_send_superseded_or_expired_code(db_session: Async
     session_factory = _make_test_session_factory()
     delivered: list[str] = []
 
-    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         delivered.append(to_email)
 
     email_service = EmailService()
@@ -717,7 +717,7 @@ async def test_no_db_checkout_held_during_smtp_send(db_session: AsyncSession) ->
 
     checkouts_during_smtp: list[int] = []
 
-    async def slow_send_email(to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def slow_send_email(to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         checked_out = instrumented_engine.sync_engine.pool.checkedout()
         checkouts_during_smtp.append(checked_out)
         await asyncio.sleep(0.1)
@@ -830,7 +830,7 @@ async def test_worker_stop_waits_for_inflight_smtp_thread(db_session: AsyncSessi
     started = threading.Event()
     finished = threading.Event()
 
-    def synthetic_smtp(to_email: str, subject: str, body: str) -> None:
+    def synthetic_smtp(to_email: str, subject: str, body: str, *_: object) -> None:
         started.set()
         time.sleep(0.4)
         finished.set()
@@ -864,7 +864,7 @@ async def test_worker_stop_timeout_does_not_cancel_transport_wrapper(db_session:
     async def accelerated_shutdown_wait(awaitable: Any, timeout: float | None) -> Any:
         return await original_wait_for(awaitable, timeout=0.05 if timeout == 15.0 else timeout)
 
-    def synthetic_smtp(to_email: str, subject: str, body: str) -> None:
+    def synthetic_smtp(to_email: str, subject: str, body: str, *_: object) -> None:
         started.set()
         time.sleep(0.4)
         finished.set()
@@ -916,7 +916,7 @@ async def test_worker_expires_mail_for_invalid_user_state(
     await redis_client.set(cache_key, json.dumps({"code": "123456"}), ex=600)
     sent_recipients: list[str] = []
 
-    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False) -> None:
+    async def capture_send(to_email: str, subject: str, body: str, force_transport: bool = False, **_: object) -> None:
         sent_recipients.append(to_email)
 
     email = EmailService()

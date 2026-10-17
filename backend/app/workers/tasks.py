@@ -21,6 +21,7 @@ from app.models.document import Document, DocumentOwnerType
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
 from app.services.notification_service import NotificationService
 from app.services.email_service import EmailService
+from app.services.email_templates import RenderedEmail, VerificationCodeEmailTemplate
 from app.services.storage_service import LocalStorageService
 from app.telegram_bot.bot import bot
 
@@ -29,10 +30,13 @@ logger = logging.getLogger(__name__)
 
 async def send_verification_email_task(ctx, email: str, code: str) -> None:
     email_service = EmailService()
+    rendered_email: RenderedEmail = VerificationCodeEmailTemplate(code=code).render()
     await email_service.send_email(
         email,
-        "Verification Code",
-        f"Your verification code is: {code}"
+        rendered_email.subject,
+        rendered_email.plain_text,
+        html_body=rendered_email.html_body,
+        inline_images=rendered_email.inline_images,
     )
 
 

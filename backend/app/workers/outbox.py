@@ -15,6 +15,7 @@ from app.repositories.interfaces.user_repository import UserRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.email_service import EmailDeliveryError, EmailService, SMTP_SOCKET_TIMEOUT_SECONDS
+from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
 from app.services.outbox_service import OutboxPayloadEncryptor
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class OutboxWorkerManager:
         self.payload_master_key = payload_master_key
         self.email_service = email_service or EmailService()
         self.encryptor = OutboxPayloadEncryptor(payload_master_key)
+        self.template_factory = OutboxEmailTemplateFactory()
         self.batch_size = batch_size
         self.lease_duration_seconds = lease_duration_seconds
         self.poll_interval_seconds = poll_interval_seconds
@@ -122,16 +124,8 @@ class OutboxWorkerManager:
 
         return False, f"unsupported_event_kind_{event.kind}"
 
-    @staticmethod
-    def render_credentials_body(event: OutboxEvent, payload: str) -> str:
-        details: dict[str, str] = json.loads(payload)
-        return (
-            f"Hello, {details['first_name']}!\n\n"
-            "An account has been created for you in IMKON CRM.\n\n"
-            f"Login: {event.recipient_email}\n"
-            f"Temporary password: {details['temporary_password']}\n\n"
-            "You will be asked to choose a new password the first time you log in."
-        )
+    def render_email(self, event: OutboxEvent, payload: str) -> RenderedEmail:
+        return self.template_factory.create(event.kind, event.recipient_email, payload).render()
 
     async def process_single_event(
         self,
@@ -203,20 +197,17 @@ class OutboxWorkerManager:
         if not lease_still_valid:
             return False
 
-        if event.kind == OutboxEventKind.VERIFICATION_EMAIL:
-            body = f"Your verification code is: {code}"
-        elif event.kind == OutboxEventKind.CREDENTIALS_EMAIL:
-            body = self.render_credentials_body(event, code)
-        else:
-            body = f"Your password reset code is: {code}"
+        rendered_email: RenderedEmail = self.render_email(event, code)
 
         send_error: Optional[str] = None
         transport_task = asyncio.create_task(
             self.email_service.send_email(
                 to_email=event.recipient_email,
-                subject=event.subject,
-                body=body,
+                subject=rendered_email.subject,
+                body=rendered_email.plain_text,
                 force_transport=True,
+                html_body=rendered_email.html_body,
+                inline_images=rendered_email.inline_images,
             )
         )
         self._inflight_transports.add(transport_task)
