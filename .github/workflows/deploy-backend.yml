@@ -62,7 +62,7 @@ jobs:
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
     steps:
       - name: Checkout deploy files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.resolve.outputs.sha }}
           sparse-checkout: deploy
