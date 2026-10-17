@@ -44,10 +44,10 @@ grep -qxF "$DEPLOY_PUBLIC_KEY" "/home/$DEPLOY_USER/.ssh/authorized_keys" 2> /dev
 chown "$DEPLOY_USER:$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh/authorized_keys"
 chmod 600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 
-cat > /etc/ssh/sshd_config.d/99-imkon-hardening.conf <<'CONF'
+cat > /etc/ssh/sshd_config.d/00-imkon-hardening.conf <<'CONF'
 PasswordAuthentication no
 KbdInteractiveAuthentication no
-PermitRootLogin prohibit-password
+PermitRootLogin no
 CONF
 sshd -t
 systemctl reload ssh || systemctl reload sshd
