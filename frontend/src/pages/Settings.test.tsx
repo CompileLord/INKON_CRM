@@ -33,6 +33,15 @@ vi.mock("../lib/settings/hooks", () => ({
   useTestTelegramBot: () => ({ mutate: mocks.testBot, data: undefined, isPending: false, isError: false }),
 }));
 
+vi.mock("../lib/system/hooks", () => ({
+  useServerBuildInfo: () => ({
+    data: { version: "0.1.0", commit_sha: "abcdef1234567890", commit_message: "feat: ship", built_at: "2026-10-17T10:00:00Z" },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
+
 function stubViewport(desktop: boolean): void {
   window.matchMedia = ((query: string) => ({ matches: desktop && query.includes("1024"), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as unknown as typeof window.matchMedia;
 }
@@ -168,11 +177,12 @@ describe("Appearance section", () => {
     expect(within(theme).getByRole("radio", { name: "System" }).getAttribute("aria-checked")).toBe("true");
   });
 
-  it("places the version in an About row", () => {
+  it("places the app and server builds in the About group", () => {
     renderSettings("student", "/settings?section=appearance");
     const about = screen.getByRole("heading", { name: "About" }).closest("section") as HTMLElement;
-    expect(within(about).getByText("Version")).toBeTruthy();
-    expect(within(about).getByText(/^v\d/)).toBeTruthy();
+    expect(within(about).getByText("App")).toBeTruthy();
+    expect(within(about).getByText("Server")).toBeTruthy();
+    expect(within(about).getAllByText("Version")).toHaveLength(2);
   });
 });
 

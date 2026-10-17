@@ -1,9 +1,9 @@
-import { Info, Languages, Monitor, Moon, Palette, Sun } from "lucide-react";
+import { Languages, Monitor, Moon, Palette, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SegmentedControl } from "../ui/SegmentedControl";
 import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { useThemeStore } from "../../store/themeStore";
-import { FULL_VERSION_STRING } from "../../config/version";
+import { AboutSection } from "./AboutSection";
 
 const LANGUAGE_CODES: readonly string[] = ["ru", "tg", "en"];
 
@@ -41,11 +41,7 @@ export function AppearanceSection() {
           />
         </SettingsRow>
       </SettingsGroup>
-      <SettingsGroup title={t("settings:about.title")}>
-        <SettingsRow icon={<Info size={18} />} label={t("settings:about.version")}>
-          <p className="text-sm text-muted tabular-nums @[34rem]:text-right">{FULL_VERSION_STRING}</p>
-        </SettingsRow>
-      </SettingsGroup>
+      <AboutSection />
     </div>
   );
 }

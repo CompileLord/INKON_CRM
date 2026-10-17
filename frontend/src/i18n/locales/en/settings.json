@@ -53,7 +53,17 @@
   },
   "about": {
     "title": "About",
-    "version": "Version"
+    "version": "Version",
+    "app": "App",
+    "appHint": "This web app, as loaded in your browser.",
+    "server": "Server",
+    "serverHint": "The API this app talks to.",
+    "commit": "Commit",
+    "commitName": "Change",
+    "builtAt": "Built",
+    "unknown": "Unknown",
+    "serverLoadFailed": "Couldn't load the server version.",
+    "hashDiffers": "The app and the server are on different commits. Reload the page if you just deployed."
   },
   "organization": {
     "name": "Organization name",
