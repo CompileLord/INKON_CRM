@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthFrame } from "../layouts/AuthFrame";
@@ -171,6 +171,8 @@ export function Login() {
             {...register("password")}
           />
 
+          <p className="text-sm leading-5 text-muted">{t("auth:newUserPasswordHint")}</p>
+
           <Button
             type="submit"
             variant="primary"
@@ -181,16 +183,6 @@ export function Login() {
             {t("auth:signIn")}
           </Button>
         </form>
-
-        <div className="mt-6 flex flex-col items-center justify-center gap-1 text-center text-sm text-muted">
-          <span>{t("auth:haveInvitationCode")}</span>
-          <Link
-            to="/verify-email"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-md px-2 py-1 font-medium text-maroon hover:text-maroon-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-          >
-            {t("auth:activateAccount")}
-          </Link>
-        </div>
       </div>
     </AuthFrame>
   );

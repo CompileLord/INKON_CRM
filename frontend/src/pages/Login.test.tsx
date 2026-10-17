@@ -9,6 +9,9 @@ import * as authEndpoints from "../lib/auth/endpoints";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
 import { useAuthStore } from "../store/authStore";
 import type { TokenPair } from "../lib/auth/types";
+import { httpClient } from "../lib/auth/httpClient";
+import { tokenStorage } from "../lib/auth/tokenStorage";
+import { SetPasswordRoute } from "../components/auth/SetPasswordRoute";
 
 vi.hoisted(() => {
   Object.defineProperty(window, "matchMedia", {
@@ -41,10 +44,9 @@ function renderLogin(initialEntry = "/login") {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<div data-testid="dashboard-landing">Dashboard Landing</div>} />
           <Route path="/courses" element={<div data-testid="courses-landing">Courses Landing</div>} />
-          <Route path="/set-password" element={<div data-testid="set-password-landing">Set Password Landing</div>} />
+          <Route path="/set-password" element={<SetPasswordRoute><div data-testid="set-password-landing">Set Password Landing</div></SetPasswordRoute>} />
           <Route path="/students/:id" element={<div data-testid="student-landing">Student Landing</div>} />
           <Route path="/mentors/:id" element={<div data-testid="mentor-landing">Mentor Landing</div>} />
-          <Route path="/verify-email" element={<div data-testid="verify-email-landing">Verify Email</div>} />
         </Routes>
       </MemoryRouter>
     </I18nextProvider>,
@@ -86,11 +88,10 @@ describe("Login page integration", () => {
     const submitBtn = screen.getByRole("button", { name: /sign in/i });
     expect(submitBtn.getAttribute("type")).toBe("submit");
 
-    const inviteLink = screen.getByRole("link", { name: /activate account/i });
-    expect(inviteLink.getAttribute("href")).toBe("/verify-email");
-    expect(inviteLink.className).toContain("min-h-[44px]");
-    expect(inviteLink.className).toContain("text-maroon");
-    expect(inviteLink.className).not.toContain("text-accent");
+    expect(screen.queryByRole("link", { name: /activate account/i })).toBeNull();
+    expect(document.querySelector('a[href="/verify-email"]')).toBeNull();
+    const hint = screen.getByText("New user? Enter the 6-digit password we sent to your email.");
+    expect(hint.className).toContain("text-muted");
   });
 
   it("validates empty and invalid fields with accessible error association", async () => {
@@ -463,11 +464,20 @@ describe("Login page integration", () => {
 
     await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "forced@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "InitialPass123");
+    const getSpy = vi.spyOn(httpClient, "get");
+    const postSpy = vi.spyOn(httpClient, "post");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("set-password-landing")).not.toBeNull();
     });
+    expect(useAuthStore.getState().mustSetPassword).toBe(true);
+    expect(useAuthStore.getState().status).toBe("authenticated");
+    expect(tokenStorage.getAccessToken()).toBe(token);
+    expect(tokenStorage.getRefreshToken()).toBe("refresh-tok");
+    expect(screen.queryByTestId("dashboard-landing")).toBeNull();
+    expect(getSpy).not.toHaveBeenCalled();
+    expect(postSpy).not.toHaveBeenCalled();
   });
 
   it.each([

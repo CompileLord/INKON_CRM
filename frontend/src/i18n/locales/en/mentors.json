@@ -71,7 +71,7 @@
     "discardWithSavedAvatar": "The uploaded photo has already been saved. Unsaved profile details will be discarded. Discard remaining changes?",
     "discardConfirm": "Discard",
     "keepEditing": "Keep editing",
-    "createSuccess": "Teacher created successfully",
+    "createSuccess": "Teacher created. Login details (email and temporary password) were sent to their email",
     "updateSuccess": "Teacher updated successfully",
     "deleteSuccess": "Teacher deleted successfully",
     "deleteAccountError": "Failed to delete teacher account. The teacher was not deleted.",

@@ -31,23 +31,6 @@ export const createLoginFormSchema = (t: TFunction) =>
     password: z.string().min(1, t("validation:required")),
   });
 
-export const createVerifyEmailFormSchema = (t: TFunction) =>
-  z.object({
-    email: z.string().trim().min(1, t("validation:required")).email(t("validation:invalidEmail")),
-    code: z
-      .string()
-      .trim()
-      .min(1, t("validation:required"))
-      .refine((val) => /^\d{6}$/.test(val), {
-        message: t("auth:invalidCode"),
-      }),
-  });
-
-export interface VerifyEmailFormValues {
-  email: string;
-  code: string;
-}
-
 export const loginFormSchema = z.object({
   email: z.string().trim().min(1, "Введите email").email("Некорректный email"),
   password: z.string().min(1, "Введите пароль"),

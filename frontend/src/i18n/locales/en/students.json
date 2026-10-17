@@ -115,7 +115,7 @@
     "discardWithSavedAvatar": "The uploaded photo has already been saved. Unsaved profile details will be discarded. Discard remaining changes?",
     "discardConfirm": "Discard",
     "keepEditing": "Keep editing",
-    "createSuccess": "Student created successfully",
+    "createSuccess": "Student created. Login details (email and temporary password) were sent to their email",
     "updateSuccess": "Student updated successfully",
     "deleteSuccess": "Student deleted successfully",
     "deleteWithdrawError": "Failed to withdraw student's active enrollments. The student account was not deleted.",

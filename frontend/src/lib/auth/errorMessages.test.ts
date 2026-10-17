@@ -3,10 +3,8 @@ import { AuthApiError, NetworkError } from "./errors";
 import {
   describeAuthError,
   getAuthErrorKind,
-  mapResendCodeError,
   mapSetPasswordError,
   mapValidationError,
-  mapVerifyCodeError,
 } from "./errorMessages";
 
 describe("describeAuthError", () => {
@@ -105,82 +103,6 @@ describe("describeAuthError", () => {
     expect(nonArrayResult.fieldErrors).toEqual([]);
     expect(nonArrayResult.formErrorKey).toBe("genericError");
 
-    const codeMissingResult = mapVerifyCodeError(
-      new AuthApiError(422, [
-        { loc: ["body", "code"], msg: "Field required", type: "missing" },
-      ]),
-    );
-    expect(codeMissingResult.fieldErrors).toEqual([{ field: "code", messageKey: "validation:required" }]);
-    expect(codeMissingResult.formErrorKey).toBeNull();
-
-    const codeLengthResult = mapVerifyCodeError(
-      new AuthApiError(422, [
-        { loc: ["body", "code"], msg: "String should have at least 6 characters", type: "string_too_short" },
-      ]),
-    );
-    expect(codeLengthResult.fieldErrors).toEqual([{ field: "code", messageKey: "auth:invalidCode" }]);
-    expect(codeLengthResult.formErrorKey).toBeNull();
-
-    const arbitrary422Result = mapVerifyCodeError(
-      new AuthApiError(422, [
-        { loc: ["body", "code"], msg: "Some unexpected error", type: "custom_type" },
-      ]),
-    );
-    expect(arbitrary422Result.fieldErrors).toEqual([{ field: "code", messageKey: "auth:genericError" }]);
-    expect(arbitrary422Result.formErrorKey).toBe("genericError");
-  });
-
-  it("maps verify code server errors to localized keys without leaking technical strings", () => {
-    const expired = mapVerifyCodeError(new AuthApiError(400, "Verification code expired or not requested"));
-    expect(expired.formErrorKey).toBe("codeExpired");
-    expect(expired.fieldErrors).toEqual([]);
-
-    const invalidated = mapVerifyCodeError(new AuthApiError(400, "Too many incorrect attempts. Code invalidated."));
-    expect(invalidated.formErrorKey).toBe("tooManyAttempts");
-    expect(invalidated.fieldErrors).toEqual([]);
-
-    const wrongCode = mapVerifyCodeError(new AuthApiError(400, "Invalid verification code"));
-    expect(wrongCode.formErrorKey).toBeNull();
-    expect(wrongCode.fieldErrors).toEqual([{ field: "code", messageKey: "auth:invalidCode" }]);
-
-    const unknown400 = mapVerifyCodeError(new AuthApiError(400, "Some unexpected business logic error"));
-    expect(unknown400.formErrorKey).toBe("genericError");
-    expect(unknown400.fieldErrors).toEqual([]);
-
-    const userNotFound = mapVerifyCodeError(new AuthApiError(404, "User not found"));
-    expect(userNotFound.formErrorKey).toBeNull();
-    expect(userNotFound.fieldErrors).toEqual([{ field: "email", messageKey: "auth:userNotFound" }]);
-
-    const rateLimited = mapVerifyCodeError(new AuthApiError(429, "Too many attempts"));
-    expect(rateLimited.formErrorKey).toBe("rateLimited");
-
-    const serverError = mapVerifyCodeError(new AuthApiError(500, "Internal Server Error"));
-    expect(serverError.formErrorKey).toBe("serverError");
-
-    const networkError = mapVerifyCodeError(new NetworkError());
-    expect(networkError.formErrorKey).toBe("networkError");
-  });
-
-  it("maps resend code server errors to localized keys", () => {
-    const passwordSet = mapResendCodeError(new AuthApiError(400, "Password already set"));
-    expect(passwordSet.formErrorKey).toBe("passwordAlreadySet");
-
-    const unknownResend400 = mapResendCodeError(new AuthApiError(400, "Arbitrary resend failure"));
-    expect(unknownResend400.formErrorKey).toBe("resendError");
-    expect(unknownResend400.fieldErrors).toEqual([]);
-
-    const userNotFound = mapResendCodeError(new AuthApiError(404, "User not found"));
-    expect(userNotFound.formErrorKey).toBeNull();
-    expect(userNotFound.fieldErrors).toEqual([{ field: "email", messageKey: "auth:userNotFound" }]);
-
-    const rateLimited = mapResendCodeError(new AuthApiError(429, "Too many attempts"));
-    expect(rateLimited.formErrorKey).toBe("rateLimited");
-
-    const serverError = mapResendCodeError(new AuthApiError(500, "Internal Server Error"));
-    expect(serverError.formErrorKey).toBe("serverError");
-
-    const networkError = mapResendCodeError(new NetworkError());
-    expect(networkError.formErrorKey).toBe("networkError");
   });
 
   it("maps set password server errors to localized keys", () => {

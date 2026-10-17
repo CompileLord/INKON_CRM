@@ -245,7 +245,7 @@ describe("Students page", () => {
 
     await waitFor(() => {
       expect(getLocation()?.pathname).toBe("/students/99");
-      expect(screen.getByRole("status").textContent).toContain("Student created successfully");
+      expect(screen.getByRole("status").textContent).toContain("Student created. Login details (email and temporary password) were sent to their email");
       expect(screen.getByRole("heading", { name: "Nodir Yusupov" })).toBeDefined();
     });
     navigate("/students/11");

@@ -7,10 +7,8 @@ import type {
   PasswordResetVerifyRequest,
   PasswordResetVerifyResponse,
   RefreshRequest,
-  ResendCodeRequest,
   SetPasswordRequest,
   TokenPair,
-  VerifyCodeRequest,
 } from "./types";
 
 export function login(email: string, password: string): Promise<TokenPair> {
@@ -27,16 +25,6 @@ export function refresh(refreshToken: string): Promise<TokenPair> {
 export function logout(refreshToken: string): Promise<void> {
   const body: RefreshRequest = { refresh_token: refreshToken };
   return httpClient.post<void>("/auth/logout", body).then(() => undefined);
-}
-
-export function verifyCode(email: string, code: string): Promise<TokenPair> {
-  const body: VerifyCodeRequest = { email, code };
-  return httpClient.post<TokenPair>("/auth/verify-code", body).then((res) => res.data);
-}
-
-export function resendCode(email: string): Promise<void> {
-  const body: ResendCodeRequest = { email };
-  return httpClient.post<void>("/auth/resend-code", body).then(() => undefined);
 }
 
 /** Requires an Authorization bearer token — the caller's current access token. */

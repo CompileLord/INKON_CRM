@@ -297,7 +297,7 @@ describe("Mentors directory page", () => {
 
     await waitFor(() => {
       expect(getLocation()?.pathname).toBe("/mentors/99");
-      expect(screen.getByRole("status").textContent).toContain("Teacher created successfully");
+      expect(screen.getByRole("status").textContent).toContain("Teacher created. Login details (email and temporary password) were sent to their email");
     });
   });
 

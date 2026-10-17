@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { Students } from "./pages/Students";
@@ -14,7 +14,6 @@ import { Finance } from "./pages/Finance";
 import { Audit } from "./pages/Audit";
 import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
-import { VerifyEmail } from "./pages/VerifyEmail";
 import { SetPassword } from "./pages/SetPassword";
 import { Notifications } from "./pages/Notifications";
 import { AuthGuard } from "./components/auth/AuthGuard";
@@ -38,11 +37,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email",
-    element: (
-      <GuestRoute>
-        <VerifyEmail />
-      </GuestRoute>
-    ),
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/set-password",

@@ -72,17 +72,8 @@ try {
       assert.equal(subtitleMetrics?.fontSize, "16px");
       assert.equal(subtitleMetrics?.lineHeight, "24px");
 
-      const linkMetrics = await page.evaluate(() => {
-        const link = document.querySelector('a[href="/verify-email"]');
-        if (!link) return null;
-        const rect = link.getBoundingClientRect();
-        const style = window.getComputedStyle(link);
-        return {
-          height: rect.height,
-          color: style.color,
-        };
-      });
-      assert.ok(linkMetrics && linkMetrics.height >= 44);
+      const activationLinkCount = await page.locator('a[href="/verify-email"]').count();
+      assert.equal(activationLinkCount, 0);
 
       const fileName = width === 1440 ? `login-desktop-${theme}.png` : `login-mobile-${theme}.png`;
       await saveScreenshot(page, fileName);
@@ -94,7 +85,6 @@ try {
         locale: "en",
         subtitleFontSize: subtitleMetrics?.fontSize,
         subtitleLineHeight: subtitleMetrics?.lineHeight,
-        inviteLinkHeight: linkMetrics?.height,
         overflows,
         file: fileName,
       });

@@ -12,15 +12,6 @@ export interface RefreshRequest {
   refresh_token: string;
 }
 
-export interface ResendCodeRequest {
-  email: string;
-}
-
-export interface VerifyCodeRequest {
-  email: string;
-  code: string;
-}
-
 export interface SetPasswordRequest {
   new_password: string;
 }

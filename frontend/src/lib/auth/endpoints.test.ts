@@ -12,8 +12,6 @@ const {
   login,
   refresh,
   logout,
-  verifyCode,
-  resendCode,
   setPassword,
   passwordResetRequest,
   passwordResetVerify,
@@ -67,22 +65,6 @@ describe("logout", () => {
     mock.onPost("/auth/logout", { refresh_token: "refresh-123" }).reply(204);
 
     await expect(logout("refresh-123")).resolves.toBeUndefined();
-  });
-});
-
-describe("verifyCode", () => {
-  it("posts email + code and returns the token pair", async () => {
-    mock.onPost("/auth/verify-code", { email: "a@b.com", code: "123456" }).reply(200, tokenPair);
-
-    await expect(verifyCode("a@b.com", "123456")).resolves.toEqual(tokenPair);
-  });
-});
-
-describe("resendCode", () => {
-  it("posts email and resolves on 204", async () => {
-    mock.onPost("/auth/resend-code", { email: "a@b.com" }).reply(204);
-
-    await expect(resendCode("a@b.com")).resolves.toBeUndefined();
   });
 });
 

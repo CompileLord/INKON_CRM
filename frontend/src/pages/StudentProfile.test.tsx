@@ -1304,11 +1304,11 @@ describe("StudentProfile Component", () => {
       },
     ]);
 
-    expect(screen.getByText(/Student created successfully/i)).toBeDefined();
+    expect(screen.getByText(/Student created\. Login details/i)).toBeDefined();
 
     const closeBtn = screen.getByRole("button", { name: /Close/i });
     await user.click(closeBtn);
 
-    expect(screen.queryByText(/Student created successfully/i)).toBeNull();
+    expect(screen.queryByText(/Student created\. Login details/i)).toBeNull();
   });
 });
