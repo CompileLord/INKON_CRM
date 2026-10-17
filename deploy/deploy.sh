@@ -81,7 +81,8 @@ else
 fi
 
 log "Starting api and worker"
-compose up -d api worker caddy
+compose up -d --force-recreate --no-deps api worker
+compose up -d caddy
 
 if ! wait_for_health; then
   log "Health check failed at $HEALTH_URL"
