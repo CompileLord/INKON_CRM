@@ -41,7 +41,8 @@ class UserService:
         created_user = await self.user_repo.create(user)
 
         auth_service = AuthService(self.db)
-        await auth_service.generate_verification_code(user.email)
+        await auth_service.issue_temporary_credentials(created_user)
+        await self.db.refresh(created_user)
 
         return created_user
 
@@ -67,9 +68,8 @@ class UserService:
                     detail="User with this email already exists"
                 )
             user.email = user_update.email
-            user.must_set_password = True
             auth_service = AuthService(self.db)
-            await auth_service.generate_verification_code(user.email)
+            await auth_service.issue_temporary_credentials(user)
 
         if user_update.first_name is not None:
             user.first_name = user_update.first_name

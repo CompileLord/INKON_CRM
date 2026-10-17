@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -85,6 +86,31 @@ class OutboxService:
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
             subject="Password Reset Code",
+            encrypted_payload=encrypted_payload,
+            correlation_key=correlation_key,
+            max_attempts=5,
+            next_attempt_at=now,
+            expires_at=expires_at,
+        )
+        return await self._repository.enqueue(event)
+
+    async def enqueue_credentials_email(
+        self,
+        recipient_email: str,
+        first_name: str,
+        temporary_password: str,
+        correlation_key: Optional[str] = None,
+    ) -> OutboxEvent:
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
+        encrypted_payload = self._encryptor.encrypt(
+            json.dumps({"first_name": first_name, "temporary_password": temporary_password})
+        )
+        event = OutboxEvent(
+            kind=OutboxEventKind.CREDENTIALS_EMAIL,
+            status=OutboxEventStatus.PENDING,
+            recipient_email=recipient_email,
+            subject="Your IMKON CRM login details",
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,

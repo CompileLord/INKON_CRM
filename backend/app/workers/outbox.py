@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.core.config import settings
 from app.core.redis import redis_client
+from app.core.security import verify_password
 from app.models.outbox_event import OutboxEvent, OutboxEventKind
 from app.repositories.interfaces.user_repository import UserRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
@@ -105,7 +106,32 @@ class OutboxWorkerManager:
 
             return True, ""
 
+        elif event.kind == OutboxEventKind.CREDENTIALS_EMAIL:
+            user = await user_repository.get_by_email(event.recipient_email)
+            if not user or not user.must_set_password:
+                return False, "user_state_invalid_or_password_already_set"
+
+            try:
+                temporary_password: str = json.loads(code)["temporary_password"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                return False, "credentials_payload_corrupted"
+            if not user.password_hash or not verify_password(temporary_password, user.password_hash):
+                return False, "credentials_superseded"
+
+            return True, ""
+
         return False, f"unsupported_event_kind_{event.kind}"
+
+    @staticmethod
+    def render_credentials_body(event: OutboxEvent, payload: str) -> str:
+        details: dict[str, str] = json.loads(payload)
+        return (
+            f"Hello, {details['first_name']}!\n\n"
+            "An account has been created for you in IMKON CRM.\n\n"
+            f"Login: {event.recipient_email}\n"
+            f"Temporary password: {details['temporary_password']}\n\n"
+            "You will be asked to choose a new password the first time you log in."
+        )
 
     async def process_single_event(
         self,
@@ -179,6 +205,8 @@ class OutboxWorkerManager:
 
         if event.kind == OutboxEventKind.VERIFICATION_EMAIL:
             body = f"Your verification code is: {code}"
+        elif event.kind == OutboxEventKind.CREDENTIALS_EMAIL:
+            body = self.render_credentials_body(event, code)
         else:
             body = f"Your password reset code is: {code}"
 

@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from conftest import RedisNamespaceClient, TestTargetConfiguration, TEST_REDIS_PREFIX
@@ -17,6 +18,7 @@ from app.core.rate_limiter import (
 from app.core.redis import redis_client
 from app.core.security import hash_password
 from app.main import app
+from app.models.outbox_event import OutboxEvent, OutboxEventKind
 from app.models.user import User, UserRole
 from app.services.auth_service import AuthService
 
@@ -127,6 +129,16 @@ async def test_failed_login_lockout_enforced(
     assert int(locked_response.headers["Retry-After"]) >= 1
 
 
+async def load_credentials_event_ids(db_session: AsyncSession, email: str) -> list[int]:
+    result = await db_session.execute(
+        select(OutboxEvent.id).where(
+            OutboxEvent.kind == OutboxEventKind.CREDENTIALS_EMAIL,
+            OutboxEvent.recipient_email == email,
+        )
+    )
+    return list(result.scalars().all())
+
+
 @pytest.mark.asyncio
 async def test_resend_code_cooldown_prevents_repeated_generation(
     client: AsyncClient,
@@ -143,10 +155,10 @@ async def test_resend_code_cooldown_prevents_repeated_generation(
     )
     assert first_response.status_code == 204
 
-    initial_code_key: str = f"auth:code:{test_student.email}"
-    initial_raw_data: str | None = await redis_client.get(initial_code_key)
-    assert initial_raw_data is not None
-    initial_code: str = json.loads(initial_raw_data)["code"]
+    await db_session.refresh(test_student)
+    initial_password_hash: str | None = test_student.password_hash
+    initial_event_count: int = len(await load_credentials_event_ids(db_session, test_student.email))
+    assert initial_event_count == 1
 
     second_response: Response = await client.post(
         "/api/v1/auth/resend-code",
@@ -156,10 +168,9 @@ async def test_resend_code_cooldown_prevents_repeated_generation(
     assert "Retry-After" in second_response.headers
     assert int(second_response.headers["Retry-After"]) >= 1
 
-    subsequent_raw_data: str | None = await redis_client.get(initial_code_key)
-    assert subsequent_raw_data is not None
-    subsequent_code: str = json.loads(subsequent_raw_data)["code"]
-    assert subsequent_code == initial_code
+    await db_session.refresh(test_student)
+    assert test_student.password_hash == initial_password_hash
+    assert len(await load_credentials_event_ids(db_session, test_student.email)) == initial_event_count
 
 
 @pytest.mark.asyncio
@@ -415,14 +426,14 @@ async def test_resend_rejection_does_not_call_email_service(
     await db_session.commit()
 
     code_generation_count: int = 0
-    original_generate = AuthService.generate_verification_code
+    original_generate = AuthService.issue_temporary_credentials
 
-    async def track_generation(self: AuthService, email: str) -> str:
+    async def track_generation(self: AuthService, user: User) -> None:
         nonlocal code_generation_count
         code_generation_count += 1
-        return await original_generate(self, email)
+        await original_generate(self, user)
 
-    monkeypatch.setattr(AuthService, "generate_verification_code", track_generation)
+    monkeypatch.setattr(AuthService, "issue_temporary_credentials", track_generation)
 
     first_response: Response = await client.post(
         "/api/v1/auth/resend-code",

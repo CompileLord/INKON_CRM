@@ -15,6 +15,7 @@ from app.core.security import (
     verify_password,
 )
 from app.core.redis import redis_client
+from app.core.temporary_passwords import TemporaryPasswordGenerator
 from app.core.verification_codes import (
     ChallengeBackendUnavailable,
     ChallengeOutcome,
@@ -39,6 +40,7 @@ class AuthService:
         self.email_service = EmailService()
         self.outbox_repo = SQLAlchemyOutboxRepository(db)
         self.outbox_service = OutboxService(self.outbox_repo, settings.JWT_SECRET_KEY)
+        self.temporary_password_generator = TemporaryPasswordGenerator()
 
     async def login(self, email: str, password: str) -> TokenPair:
         user = await self.user_repo.get_by_email_for_update(email)
@@ -159,6 +161,20 @@ class AuthService:
     async def revoke_all_user_tokens(self, user_id: int) -> None:
         await self.token_repo.revoke_all_for_user(user_id)
 
+    async def issue_temporary_credentials(self, user: User) -> None:
+        temporary_password: str = self.temporary_password_generator.generate()
+        user.password_hash = hash_password(temporary_password)
+        user.must_set_password = True
+        user.auth_version += 1
+        await self.user_repo.update(user)
+        await self.revoke_all_user_tokens(user.id)
+        await self.outbox_service.enqueue_credentials_email(
+            recipient_email=user.email,
+            first_name=user.first_name,
+            temporary_password=temporary_password,
+            correlation_key=f"credentials:{user.email}",
+        )
+
     async def generate_verification_code(self, email: str) -> str:
         code = str(secrets.randbelow(900000) + 100000)
         key = f"auth:code:{email}"
@@ -194,7 +210,7 @@ class AuthService:
         )
 
     async def resend_code(self, email: str) -> None:
-        user = await self.user_repo.get_by_email(email)
+        user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -207,7 +223,7 @@ class AuthService:
                 detail="Password already set"
             )
 
-        await self.generate_verification_code(email)
+        await self.issue_temporary_credentials(user)
 
     async def set_password(self, user_id: int, new_password: str) -> TokenPair:
         if len(new_password) < 8 or not any(char.isdigit() for char in new_password):
