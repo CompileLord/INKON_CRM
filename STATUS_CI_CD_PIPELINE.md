@@ -5,7 +5,7 @@ Specification: [docs/CI_CD_PIPELINE_PLAN.md](docs/CI_CD_PIPELINE_PLAN.md).
 Statuses: `not started` · `in progress` · `blocked` · `finished`.
 Update a row when a task starts, finishes or blocks. `finished` requires its acceptance check to have run; record the evidence in Notes.
 
-**Current stage:** Staging pipeline works end to end (push to main, CI, image, VPS deploy, Pages staging). Remaining: production environment and tag release, real SMTP/Telegram values, off-site backups, branch protection, monitoring.
+**Current stage:** Staging pipeline works end to end (push to main, CI, image, VPS deploy, Pages staging). Backups to R2 are running. Remaining: working SMTP app password and Telegram token, production release flow, branch protection, monitoring.
 **Last updated:** 2026-10-17 (staging deploy verified)
 
 | ID | Task | Phase | Depends on | Status | Notes |
@@ -28,8 +28,8 @@ Update a row when a task starts, finishes or blocks. `finished` requires its acc
 | FE-01 | Rework `deploy-frontend.yml` (PR previews, staging, production after backend) | 5 | CI-01, CD-04 | in progress | Deploy Frontend succeeded for staging (staging.imkon-crm.pages.dev, 200). Production Pages (main) not yet deployed by the new pipeline: needs a v* tag after Deploy Backend production |
 | FE-02 | `frontend/public/_headers` security and cache headers | 5 | — | finished | 4547fe7 `frontend/public/_headers`; present in dist after build. Browser CSP console check not run |
 | FE-03 | Frontend rollback procedure | 5 | FE-01 | finished | 4547fe7 + 12e8ff2 docs/deploy/FRONTEND_ROLLBACK.md |
-| OPS-01 | Nightly DB and storage backups off-site | 6 | VPS-02 | blocked | e3bd66c backup.sh + systemd units installed on server (not enabled); needs off-site bucket credentials |
-| OPS-02 | Restore drill script | 6 | OPS-01 | blocked | e3bd66c restore_check.sh + timer installed (not enabled); untested until OPS-01 has data |
+| OPS-01 | Nightly DB and storage backups off-site | 6 | VPS-02 | finished | Cloudflare R2 bucket `kitob`, restic repo v2 (encrypted, zstd). backup.sh uses pg_dump -Fc -Z0 and --compression max for the db snapshot. First run 2026-10-17: db + storage snapshots saved, compression ratio 6.27x. imkon-backup.timer enabled (02:30 UTC nightly). Restic password only in /etc/imkon/backup.env on the VPS and handed to the user once |
+| OPS-02 | Restore drill script | 6 | OPS-01 | finished | restore_check.sh ran against the R2 snapshot on 2026-10-17: restored dump, alembic current = head, users=1. imkon-restore-check.timer enabled (monthly) |
 | OPS-03 | Uptime, disk and error monitoring; post-deploy smoke test | 6 | CD-04, FE-01 | not started | |
 | OPS-04 | Deployment runbook | 6 | CD-05, FE-03, OPS-02 | finished | e3bd66c docs/deploy/RUNBOOK.md |
 
@@ -37,7 +37,6 @@ Update a row when a task starts, finishes or blocks. `finished` requires its acc
 
 - Real `SMTP_*` and `TELEGRAM_BOT_TOKEN` values in `/etc/imkon/backend.env` on the server.
 - Production: GitHub Environment `production` (reviewers, same VPS secrets) and a decision how it is separated from staging on the single VPS.
-- Off-site backup bucket credentials (OPS-01) before enabling the systemd timers.
 - Branch protection on `main` (CI-05), after CI has been stable.
 - Pre-existing red gates: frontend ESLint, npm audit, pip-audit (CI-03).
 - Open Dependabot PRs for major upgrades fail CI and add noise.
@@ -45,4 +44,3 @@ Update a row when a task starts, finishes or blocks. `finished` requires its acc
 ## Open decisions
 
 - Staging on the same VPS (CD-06) or skip it.
-- Off-site backup target (Backblaze B2, Cloudflare R2 or other).
