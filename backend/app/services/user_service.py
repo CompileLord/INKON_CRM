@@ -1,4 +1,9 @@
-from typing import List, Optional
+import asyncio
+import io
+from concurrent.futures import ThreadPoolExecutor
+from typing import ClassVar, List, Optional
+
+from PIL import Image
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
@@ -7,6 +12,56 @@ from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
+
+
+class AvatarTransformationService:
+    maximum_upload_bytes: ClassVar[int] = 5 * 1024 * 1024
+    maximum_dimension: ClassVar[int] = 4096
+    maximum_pixels: ClassVar[int] = 16_000_000
+    worker_slots: ClassVar[asyncio.Semaphore] = asyncio.Semaphore(2)
+    worker_pool: ClassVar[ThreadPoolExecutor] = ThreadPoolExecutor(max_workers=2, thread_name_prefix="avatar")
+
+    async def transform(self, file: UploadFile) -> tuple[bytes, str]:
+        await self.worker_slots.acquire()
+        try:
+            content: bytes = await file.read(self.maximum_upload_bytes + 1)
+            if len(content) > self.maximum_upload_bytes:
+                raise HTTPException(status_code=413, detail="Avatar size exceeds the 5MB limit")
+            loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+            worker: asyncio.Future[tuple[bytes, str]] = loop.run_in_executor(
+                self.worker_pool, self._transform_image, content,
+            )
+        except BaseException:
+            self.worker_slots.release()
+            raise
+        worker.add_done_callback(self._release_worker_slot)
+        return await asyncio.shield(worker)
+
+    @classmethod
+    def _release_worker_slot(cls, worker: asyncio.Future[tuple[bytes, str]]) -> None:
+        cls.worker_slots.release()
+        if not worker.cancelled():
+            worker.exception()
+
+    @classmethod
+    def _transform_image(cls, content: bytes) -> tuple[bytes, str]:
+        try:
+            image: Image.Image
+            with Image.open(io.BytesIO(content)) as image:
+                if image.format not in ("PNG", "JPEG"):
+                    raise HTTPException(status_code=400, detail="Unsupported image format. PNG or JPEG only.")
+                if max(image.size) > cls.maximum_dimension or image.width * image.height > cls.maximum_pixels:
+                    raise HTTPException(status_code=400, detail="Invalid image file")
+                image.verify()
+            with Image.open(io.BytesIO(content)) as image:
+                image_format: str | None = image.format
+                image.thumbnail((200, 200))
+                output: io.BytesIO
+                with io.BytesIO() as output:
+                    image.save(output, format=image_format)
+                    return output.getvalue(), "png" if image_format == "PNG" else "jpg"
+        except (OSError, ValueError, SyntaxError, Image.DecompressionBombError):
+            raise HTTPException(status_code=400, detail="Invalid image file") from None
 
 
 class UserService:
@@ -205,69 +260,34 @@ class UserService:
         return await self.user_repo.get_mentors_list(page=page, page_size=page_size, search=search)
 
     async def upload_avatar(self, user_id: int, file: UploadFile) -> User:
-        from PIL import Image
-        import io
-
-        user = await self.user_repo.get_by_id_for_update(user_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
 
-        content = await file.read()
-        if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="Avatar size exceeds the 5MB limit"
-            )
-        try:
-            # verify() consumes the file handle; open the image again below
-            image = Image.open(io.BytesIO(content))
-            image.verify()
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid image file"
-            )
-
-        image = Image.open(io.BytesIO(content))
-        if image.format not in ["PNG", "JPEG"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unsupported image format. PNG or JPEG only."
-            )
-
-        image.thumbnail((200, 200))
-
-        out_io = io.BytesIO()
-        image.save(out_io, format=image.format)
-        resized_bytes = out_io.getvalue()
+        resized_bytes: bytes
+        ext: str
+        resized_bytes, ext = await AvatarTransformationService().transform(file)
 
         lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.storage_service)
         old_photo: str | None = user.photo_path
         old_thumbnail: str | None = user.thumbnail_path
 
-        ext = "png" if image.format == "PNG" else "jpg"
-        # Save full-size original as photo_path
-        filename = f"avatar.{ext}"
+        filename: str = f"avatar.{ext}"
         new_path: str
         photo_intent: str
         new_path, photo_intent = await lifecycle.stage(resized_bytes, "avatar", user_id, filename)
 
-        # Save the thumbnail
-        thumb = Image.open(io.BytesIO(content))
-        thumb.thumbnail((200, 200))
-        thumb_io = io.BytesIO()
-        thumb.save(thumb_io, format=thumb.format or image.format)
-        thumb_filename = f"avatar_thumb.{ext}"
+        thumb_filename: str = f"avatar_thumb.{ext}"
         thumb_path: str
         thumbnail_intent: str
-        thumb_path, thumbnail_intent = await lifecycle.stage(thumb_io.getvalue(), "avatar", user_id, thumb_filename)
+        thumb_path, thumbnail_intent = await lifecycle.stage(resized_bytes, "avatar", user_id, thumb_filename)
 
         user.photo_path = new_path
         user.thumbnail_path = thumb_path
-        updated_user = await self.user_repo.update(user)
+        updated_user: User = await self.user_repo.update(user)
         await lifecycle.adopt(photo_intent)
         await lifecycle.adopt(thumbnail_intent)
         await lifecycle.delete_after_commit(old_photo)
