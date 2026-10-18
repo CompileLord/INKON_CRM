@@ -438,7 +438,7 @@ async def test_migration_upgrade_preserves_legacy_metadata_and_downgrade_recover
     url: str = database_probe.migration_url(database, username, password).render_as_string(hide_password=False)
     environment: dict[str, str] = {'DATABASE_URL': url}
     try:
-        upgraded: subprocess.CompletedProcess[str] = configuration.run_alembic(environment, False, 'c91f0a4b7e19')
+        upgraded: subprocess.CompletedProcess[str] = configuration.run_alembic(environment, False, 'd4e5f6a7b8c9')
         assert upgraded.returncode == 0, upgraded.stderr
         connection: asyncpg.Connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
         try:
@@ -459,7 +459,7 @@ async def test_migration_upgrade_preserves_legacy_metadata_and_downgrade_recover
             await connection.execute("INSERT INTO storage_intents(id,object_key,purpose,state,next_attempt_at,attempts) VALUES ('migration-orphan','avatar/1/orphan.png','stage','pending',now(),0)")
         finally:
             await connection.close()
-        arguments: list[str] = ['python', '-m', 'alembic', '-c', str(backend_root / 'alembic.ini'), 'downgrade', 'c91f0a4b7e19']
+        arguments: list[str] = ['python', '-m', 'alembic', '-c', str(backend_root / 'alembic.ini'), 'downgrade', 'd4e5f6a7b8c9']
         blocked: subprocess.CompletedProcess[str] = subprocess.run(arguments,
             cwd=tmp_path, env=configuration.environment(environment), capture_output=True, text=True, check=False)
         assert blocked.returncode != 0
