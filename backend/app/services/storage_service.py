@@ -3,6 +3,7 @@ import errno
 import re
 import stat
 from pathlib import PurePosixPath
+from collections.abc import AsyncIterator, Callable
 from typing import BinaryIO, Protocol
 from uuid import uuid4
 
@@ -11,17 +12,32 @@ import anyio
 from app.core.config import settings
 
 
+STREAM_CHUNK_SIZE: int = 64 * 1024
+PRIVATE_URL_TTL_SECONDS: int = 300
+
+
 class StorageService(Protocol):
+    def canonical_key(self, filepath: str) -> str: ...
+    def new_key(self, entity_type: str, entity_id: int, filename: str) -> str: ...
+    def validate_key(self, key: str) -> str: ...
+    async def write_reserved(self, file_content: bytes, key: str) -> str: ...
     async def save(self, file_content: bytes, entity_type: str, entity_id: int, filename: str) -> str: ...
     async def get_url(self, filepath: str) -> str: ...
     async def read(self, filepath: str) -> bytes: ...
+    def stream(self, filepath: str, chunk_size: int = STREAM_CHUNK_SIZE) -> AsyncIterator[bytes]: ...
+    async def create_private_url(self, filepath: str, ttl_seconds: int = PRIVATE_URL_TTL_SECONDS) -> str | None: ...
     async def delete(self, filepath: str) -> bool: ...
 
 
-class LocalStorageService:
-    def __init__(self, storage_path: str = settings.STORAGE_PATH) -> None:
-        self.storage_path: str = os.path.realpath(storage_path)
+class ObjectStoreClient(Protocol):
+    async def put_object(self, key: str, content: bytes) -> None: ...
+    async def get_object(self, key: str) -> bytes: ...
+    def stream_object(self, key: str, chunk_size: int) -> AsyncIterator[bytes]: ...
+    async def delete_object(self, key: str) -> bool: ...
+    async def sign_url(self, key: str, ttl_seconds: int) -> str: ...
 
+
+class StorageKeyPolicy:
     def canonical_key(self, filepath: str) -> str:
         key: str = filepath.removeprefix('/storage/').removeprefix('storage/')
         parts: tuple[str, ...] = PurePosixPath(key).parts
@@ -33,6 +49,20 @@ class LocalStorageService:
             raise ValueError('Invalid storage key')
         return key
 
+    def new_key(self, entity_type: str, entity_id: int, filename: str) -> str:
+        suffix: str = os.path.splitext(filename)[1].lower()
+        if not re.fullmatch(r'\.[a-z0-9]{1,12}', suffix):
+            suffix = ''
+        return self.canonical_key(f'{entity_type}/{entity_id}/{uuid4().hex}{suffix}')
+
+    def validate_key(self, key: str) -> str:
+        return self.canonical_key(key)
+
+
+class LocalStorageService(StorageKeyPolicy):
+    def __init__(self, storage_path: str = settings.STORAGE_PATH) -> None:
+        self.storage_path: str = os.path.realpath(storage_path)
+
     def _get_absolute_path(self, filepath: str) -> str:
         key: str = self.canonical_key(filepath)
         path: str = os.path.join(self.storage_path, key)
@@ -40,11 +70,9 @@ class LocalStorageService:
             raise ValueError('Invalid storage path')
         return path
 
-    def new_key(self, entity_type: str, entity_id: int, filename: str) -> str:
-        suffix: str = os.path.splitext(filename)[1].lower()
-        if not re.fullmatch(r'\.[a-z0-9]{1,12}', suffix):
-            suffix = ''
-        return self.canonical_key(f'{entity_type}/{entity_id}/{uuid4().hex}{suffix}')
+    def validate_key(self, key: str) -> str:
+        self._get_absolute_path(key)
+        return self.canonical_key(key)
 
     def _owner_directory(self, key: str, create: bool) -> int:
         parts: tuple[str, ...] = PurePosixPath(self.canonical_key(key)).parts
@@ -94,7 +122,7 @@ class LocalStorageService:
     async def get_url(self, filepath: str) -> str:
         return f'/storage/{self.canonical_key(filepath)}'
 
-    def _read(self, key: str) -> bytes:
+    def _open(self, key: str) -> BinaryIO:
         directory: int = self._owner_directory(key, False)
         try:
             try:
@@ -106,14 +134,32 @@ class LocalStorageService:
             if not stat.S_ISREG(os.fstat(descriptor).st_mode):
                 os.close(descriptor)
                 raise ValueError('Invalid storage object')
-            source: BinaryIO
-            with os.fdopen(descriptor, 'rb') as source:
-                return source.read()
+            return os.fdopen(descriptor, 'rb')
         finally:
             os.close(directory)
 
+    def _read(self, key: str) -> bytes:
+        source: BinaryIO
+        with self._open(key) as source:
+            return source.read()
+
     async def read(self, filepath: str) -> bytes:
         return await anyio.to_thread.run_sync(self._read, self.canonical_key(filepath))
+
+    async def stream(self, filepath: str, chunk_size: int = STREAM_CHUNK_SIZE) -> AsyncIterator[bytes]:
+        source: BinaryIO = await anyio.to_thread.run_sync(self._open, self.canonical_key(filepath))
+        try:
+            while True:
+                chunk: bytes = await anyio.to_thread.run_sync(source.read, chunk_size)
+                if not chunk:
+                    return
+                yield chunk
+        finally:
+            await anyio.to_thread.run_sync(source.close)
+
+    async def create_private_url(self, filepath: str, ttl_seconds: int = PRIVATE_URL_TTL_SECONDS) -> str | None:
+        self.canonical_key(filepath)
+        return None
 
     def _delete(self, key: str) -> bool:
         try:
@@ -138,5 +184,55 @@ class LocalStorageService:
         return await anyio.to_thread.run_sync(self._delete, self.canonical_key(filepath))
 
 
+class ObjectStorageService(StorageKeyPolicy):
+    def __init__(self, client: ObjectStoreClient) -> None:
+        self.client: ObjectStoreClient = client
+
+    async def write_reserved(self, file_content: bytes, key: str) -> str:
+        canonical: str = self.canonical_key(key)
+        await self.client.put_object(canonical, file_content)
+        return f'/storage/{canonical}'
+
+    async def save(self, file_content: bytes, entity_type: str, entity_id: int, filename: str) -> str:
+        return await self.write_reserved(file_content, self.new_key(entity_type, entity_id, filename))
+
+    async def get_url(self, filepath: str) -> str:
+        return f'/storage/{self.canonical_key(filepath)}'
+
+    async def read(self, filepath: str) -> bytes:
+        return await self.client.get_object(self.canonical_key(filepath))
+
+    async def stream(self, filepath: str, chunk_size: int = STREAM_CHUNK_SIZE) -> AsyncIterator[bytes]:
+        chunk: bytes
+        async for chunk in self.client.stream_object(self.canonical_key(filepath), chunk_size):
+            yield chunk
+
+    async def create_private_url(self, filepath: str, ttl_seconds: int = PRIVATE_URL_TTL_SECONDS) -> str | None:
+        return await self.client.sign_url(self.canonical_key(filepath), ttl_seconds)
+
+    async def delete(self, filepath: str) -> bool:
+        return await self.client.delete_object(self.canonical_key(filepath))
+
+
+class StorageBackendRegistry:
+    def __init__(self) -> None:
+        self.factories: dict[str, Callable[[], StorageService]] = {'local': LocalStorageService}
+
+    def register(self, name: str, factory: Callable[[], StorageService]) -> None:
+        self.factories[name] = factory
+
+    def unregister(self, name: str) -> None:
+        self.factories.pop(name, None)
+
+    def resolve(self, name: str) -> StorageService:
+        factory: Callable[[], StorageService] | None = self.factories.get(name)
+        if factory is None:
+            raise RuntimeError(f'Storage backend {name} is not registered')
+        return factory()
+
+
+storage_backends: StorageBackendRegistry = StorageBackendRegistry()
+
+
 def get_storage_service() -> StorageService:
-    return LocalStorageService()
+    return storage_backends.resolve(settings.STORAGE_BACKEND)

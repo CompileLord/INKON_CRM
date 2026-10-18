@@ -95,6 +95,7 @@ class Settings(BaseSettings):
 
     TIMEZONE: str = "Asia/Dushanbe"
     STORAGE_PATH: str = "storage"
+    STORAGE_BACKEND: str = "local"
     PORT: int = 8080
     CRON_SECRET: Optional[str] = None
     TELEGRAM_BOT_TOKEN: str

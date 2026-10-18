@@ -15,13 +15,15 @@ from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.course import CourseCreate, CourseUpdate
 from app.services.journal_generation_service import JournalGenerationService
 from app.services.storage_lifecycle_service import StorageLifecycleService
+from app.services.storage_service import StorageService, get_storage_service
 
 
 class CourseService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, storage: StorageService | None = None) -> None:
         self.db = db
         self.course_repo = SQLAlchemyCourseRepository(db)
         self.user_repo = SQLAlchemyUserRepository(db)
+        self.storage_service: StorageService = storage or get_storage_service()
 
     async def create_course(self, data: CourseCreate, current_user: User) -> Course:
         if data.start_date >= data.end_date:
@@ -183,7 +185,7 @@ class CourseService:
                 detail="Unsupported image format. PNG, JPEG or WEBP only."
             )
 
-        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.storage_service)
         old_photo: str | None = course.photo_path
 
         ext = image.format.lower()

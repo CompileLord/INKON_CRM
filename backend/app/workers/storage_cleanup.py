@@ -9,16 +9,16 @@ from app.db.storage_intent_session import StorageIntentSessions, storage_intent_
 from app.models.storage_intent import StorageIntent
 from app.repositories.interfaces.storage_intent_repository import StorageIntentRepository
 from app.repositories.sqlalchemy.storage_intent_repository import SQLAlchemyStorageIntentRepository
-from app.services.storage_service import LocalStorageService
+from app.services.storage_service import StorageService, get_storage_service
 
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 
 class StorageCleanupWorker:
-    def __init__(self, sessions: StorageIntentSessions | None = None, storage: LocalStorageService | None = None) -> None:
+    def __init__(self, sessions: StorageIntentSessions | None = None, storage: StorageService | None = None) -> None:
         self.sessions: StorageIntentSessions = sessions or storage_intent_sessions
-        self.storage: LocalStorageService = storage or LocalStorageService()
+        self.storage: StorageService = storage or get_storage_service()
         self.task: asyncio.Task[None] | None = None
 
     async def run_once(self, now: datetime | None = None) -> int:

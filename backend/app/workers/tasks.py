@@ -1,12 +1,13 @@
 from datetime import date, datetime, timezone, timedelta
-import os
 import zoneinfo
 import logging
 from sqlalchemy import select, update, func, cast, Numeric
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
-from aiogram.types import FSInputFile
+from collections.abc import AsyncIterator
+from aiogram import Bot
+from aiogram.types import InputFile
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 
 from app.db.session import AsyncSessionLocal
@@ -22,7 +23,7 @@ from app.models.notification_log import NotificationLog, NotificationType, Notif
 from app.services.notification_service import NotificationService
 from app.services.email_service import EmailService
 from app.services.email_templates import RenderedEmail, VerificationCodeEmailTemplate
-from app.services.storage_service import LocalStorageService
+from app.services.storage_service import STREAM_CHUNK_SIZE, StorageService, get_storage_service
 from app.telegram_bot.bot import bot
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,29 @@ async def send_telegram_message(ctx, chat_id: int, text: str) -> None:
         await bot.send_message(chat_id, text)
     except (TelegramForbiddenError, TelegramBadRequest) as e:
         logger.error(f"Telegram send failed to {chat_id}: {e}")
+
+
+class StreamedStorageInputFile(InputFile):
+    def __init__(self, storage: StorageService, file_path: str, filename: str) -> None:
+        super().__init__(filename=filename, chunk_size=STREAM_CHUNK_SIZE)
+        self.storage: StorageService = storage
+        self.file_path: str = file_path
+
+    @classmethod
+    async def open(cls, storage: StorageService, file_path: str, filename: str) -> "StreamedStorageInputFile | None":
+        source: AsyncIterator[bytes] = storage.stream(file_path)
+        try:
+            await anext(source, b"")
+        except (FileNotFoundError, ValueError):
+            return None
+        finally:
+            await source.aclose()
+        return cls(storage, file_path, filename)
+
+    async def read(self, bot: Bot) -> AsyncIterator[bytes]:
+        chunk: bytes
+        async for chunk in self.storage.stream(self.file_path, self.chunk_size):
+            yield chunk
 
 
 async def send_exam_result_notification_task(ctx, student_id: int, journal_id: int) -> None:
@@ -110,19 +134,19 @@ async def send_exam_result_notification_task(ctx, student_id: int, journal_id: i
 
             
             if document:
+                storage_service: StorageService = get_storage_service()
                 if document.file_size > 50 * 1024 * 1024:
-                    storage_service = LocalStorageService()
-                    url = await storage_service.get_url(document.file_path)
-                    full_text = f"{text}\nСсылка на документ: {url}"
+                    url: str | None = await storage_service.create_private_url(document.file_path)
+                    full_text: str = text if url is None else f"{text}\nСсылка на документ: {url}"
                     await bot.send_message(student.parent_telegram_chat_id, full_text)
                 else:
-                    storage_service = LocalStorageService()
-                    abs_path = storage_service._get_absolute_path(document.file_path)
-                    if os.path.exists(abs_path):
-                        document_file = FSInputFile(abs_path, filename=document.file_name)
-                        await bot.send_document(student.parent_telegram_chat_id, document_file, caption=text)
-                    else:
+                    document_file: InputFile | None = await StreamedStorageInputFile.open(
+                        storage_service, document.file_path, document.file_name
+                    )
+                    if document_file is None:
                         await bot.send_message(student.parent_telegram_chat_id, text)
+                    else:
+                        await bot.send_document(student.parent_telegram_chat_id, document_file, caption=text)
             else:
                 await bot.send_message(student.parent_telegram_chat_id, text)
 

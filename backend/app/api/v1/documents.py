@@ -3,12 +3,13 @@ from pathlib import PurePosixPath
 from urllib.parse import quote
 from fastapi import APIRouter, Depends, Form, File, UploadFile, Query, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, require_superadmin
+from app.core.deps import get_db_session, get_current_user, get_storage_service, require_superadmin
 from app.models.user import User, UserRole
 from app.models.document import Document
 from app.schemas.document import DocumentResponse
 from app.schemas.common import PaginatedResponse
 from app.services.document_service import DocumentService
+from app.services.storage_service import StorageService
 
 router = APIRouter()
 
@@ -20,7 +21,8 @@ async def upload_document(
     owner_id: int = Form(...),
     journal_id: Optional[int] = Form(None),
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> Document:
     if owner_type not in ["student", "mentor"]:
         raise HTTPException(
@@ -28,7 +30,7 @@ async def upload_document(
             detail="Invalid owner_type"
         )
 
-    document_service = DocumentService(db)
+    document_service = DocumentService(db, storage)
     return await document_service.upload_document(
         file=file,
         owner_type=owner_type,
@@ -42,9 +44,10 @@ async def upload_document(
 async def delete_document(
     id: int,
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> None:
-    document_service = DocumentService(db)
+    document_service = DocumentService(db, storage)
     await document_service.delete_document(id)
 
 
@@ -56,9 +59,10 @@ async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> dict:
-    document_service = DocumentService(db)
+    document_service = DocumentService(db, storage)
     filters = {}
     if owner_type:
         filters["owner_type"] = owner_type
@@ -76,8 +80,9 @@ async def download_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> Response:
-    document_service = DocumentService(db)
+    document_service = DocumentService(db, storage)
     document, file_content = await document_service.read_document(document_id, current_user)
     basename = PurePosixPath(document.file_name.replace("\\", "/")).name
     safe_filename = "".join(character for character in basename if ord(character) >= 32 and ord(character) != 127)

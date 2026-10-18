@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
 from app.core.deps import (
+    get_storage_service,
     get_db_session,
     get_current_user,
     require_superadmin,
@@ -22,6 +23,7 @@ from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, Cours
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
+from app.services.storage_service import StorageService
 from app.services.journal_service import JournalService
 from app.services.course_progress_service import CourseProgressService
 from app.repositories.interfaces.course_progress_repository import (
@@ -153,9 +155,10 @@ async def upload_course_image(
     id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> Course:
-    course_service = CourseService(db)
+    course_service = CourseService(db, storage)
     return await course_service.upload_course_image(id, file)
 
 
