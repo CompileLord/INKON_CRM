@@ -59,14 +59,6 @@ Rules for every developer and AI coding agent working on **IMKON CRM** (KITOB). 
 - Isolate concurrent executors in separate worktrees with exclusive file ownership; serialize shared files, migrations and contract generation.
 - Tests that drop schemas or flush Redis must only run against disposable PostgreSQL and Redis, never the ordinary services.
 
-### 4.4. Backend remediation pipeline (lead auditors, agy executors, worker branch)
-- **Executors** are agy `gemini-3.8-flash-high` runs (see the delegate-to-agy skill), one per work package, each in its own worktree and branch `remediation/wp-NN-*` created from `remediation/worker`. Allowed paths come from the WP file.
-- **Lead auditors** are Claude subagents (one per lane of related WPs) that write the handoff, run the agy executors, then audit the diff, rerun the gates and send concrete defects back to the same agy conversation (`--resume`). They never push product code themselves.
-- A lead merges a WP into **`remediation/worker`** only after its own audit passes. Worker is the staging branch; it never goes to `main`.
-- **Security review**: after the lead's approval, a Claude Sonnet 5.5 low reviewer runs the security-review skill on the WP diff. A security finding blocks the merge to `remediation/worker`.
-- **Orchestrator** (top session) audits each worker-approved WP and, if it passes, merges it into `master` and records it in `docs/remediation/STATUS.md`. Merging `master` into `main` happens only when the user asks.
-- Worktrees live under `INKON_CRM-worktrees/`. `remediation/worker` is checked out in `backend-remediation-worker`.
-
 ---
 
 ## 5. Frontend
