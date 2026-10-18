@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from app.models.ledger import LedgerEntryType
 from app.models.payment import PaymentMethod
+from app.schemas.common import PositiveMoney
 
 
 class AllocationResponse(BaseModel):
@@ -39,7 +40,7 @@ class VoidPaymentPayload(BaseModel):
 
 class RefundPaymentPayload(BaseModel):
     model_config = {"extra": "forbid"}
-    amount: Decimal = Field(gt=0)
+    amount: PositiveMoney
     # False -> cash leaves the centre. True -> value is retained as wallet credit.
     to_wallet: bool = False
     reason_code: str = Field(..., min_length=1, max_length=50)
@@ -52,7 +53,7 @@ class DiscountCreatePayload(BaseModel):
     model_config = {"extra": "forbid"}
     student_id: int
     charge_id: Optional[int] = None
-    amount: Decimal = Field(gt=0)
+    amount: PositiveMoney
     occurred_at: Optional[datetime] = None
     reason_code: Optional[str] = Field(None, max_length=50)
     comment: Optional[str] = None
@@ -63,7 +64,7 @@ class AdjustmentCreatePayload(BaseModel):
 
     model_config = {"extra": "forbid"}
     student_id: int
-    amount: Decimal = Field(gt=0)
+    amount: PositiveMoney
     occurred_at: Optional[datetime] = None
     reason_code: str = Field(..., min_length=1, max_length=50)
     comment: Optional[str] = None
@@ -75,7 +76,7 @@ class AllocationCreatePayload(BaseModel):
     model_config = {"extra": "forbid"}
     student_id: int
     charge_id: int
-    amount: Optional[Decimal] = Field(None, gt=0)
+    amount: Optional[PositiveMoney] = None
 
 
 class StudentBalanceResponse(BaseModel):
