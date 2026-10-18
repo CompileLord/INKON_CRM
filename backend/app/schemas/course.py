@@ -1,8 +1,9 @@
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Optional, List, Literal
-from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Literal, Self
+from pydantic import BaseModel, Field, field_validator, model_validator
 from app.models.course import CourseExamType, CourseStatus
+from app.schemas.common import InstallmentPriceInput, PositiveMoney
 
 
 class CourseScheduleCreate(BaseModel):
@@ -35,9 +36,14 @@ class CourseCreate(BaseModel):
     start_date: date
     end_date: date
     exam_type: CourseExamType
-    price: Decimal = Field(gt=0)
+    price: PositiveMoney
     mentor_id: int
     schedules: List[CourseScheduleCreate] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_installment_price(self) -> Self:
+        InstallmentPriceInput(price=self.price, start_date=self.start_date, end_date=self.end_date)
+        return self
 
     @field_validator("end_date")
     @classmethod

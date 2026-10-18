@@ -1,8 +1,8 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from app.models.payment import PaymentMethod
+from app.schemas.common import PositiveMoney
 
 
 class PaymentCreate(BaseModel):
@@ -16,7 +16,7 @@ class PaymentCreate(BaseModel):
     model_config = {"extra": "forbid"}
     student_id: int
     course_id: int
-    amount: Decimal = Field(gt=0)
+    amount: PositiveMoney
     paid_at: datetime
     method: PaymentMethod
     comment: Optional[str] = None

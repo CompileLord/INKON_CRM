@@ -24,6 +24,7 @@ import calendar
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException, status
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import Date, and_, case, cast, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -37,6 +38,7 @@ from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.models.payment import PaymentMethod
 from app.models.user import User, UserRole
 from app.schemas.accounting_period import ClosePeriodPayload, ReopenPeriodPayload
+from app.schemas.common import InstallmentPriceInput, PositiveMoney
 from app.schemas.ledger import (
     AdjustmentCreatePayload,
     AllocationCreatePayload,
@@ -76,6 +78,8 @@ def _q(value: Decimal) -> Decimal:
 
 
 class FinanceService:
+    _positive_money_adapter: TypeAdapter[Decimal] = TypeAdapter(PositiveMoney)
+
     def __init__(self, db: AsyncSession, cache_generation_repo: CacheGenerationRepository | None = None) -> None:
         self.db: AsyncSession = db
         self.cache_generation_repo: CacheGenerationRepository = cache_generation_repo or SQLAlchemyCacheGenerationRepository(db)
@@ -439,12 +443,21 @@ class FinanceService:
     # Schedule generation
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def validate_installment_price(price: Decimal, start_date: date, end_date: date) -> None:
+        try:
+            InstallmentPriceInput(price=price, start_date=start_date, end_date=end_date)
+        except ValidationError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Contract price must be valid money and cover at least one cent per monthly installment",
+            ) from error
+
     async def generate_schedule_for_enrollment(self, enrollment_id: int) -> List[Charge]:
         """Generate the monthly installment schedule for an enrollment.
 
-        Installments are equal to the cent, with the rounding remainder carried
-        by the final installment so the schedule sums exactly to the contracted
-        price. Idempotent: returns existing charges if already generated.
+        Integer cents are divided evenly, with one extra cent in each of the
+        final remainder installments. Existing schedules are returned unchanged.
         """
         res = await self.db.execute(
             select(Enrollment, User, Course)
@@ -474,22 +487,21 @@ class FinanceService:
         total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
         total_months = max(1, total_months)
 
-        price = Decimal(enrollment.price_at_enrollment)
-        base = (price / Decimal(total_months)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        price: Decimal = Decimal(enrollment.price_at_enrollment)
+        self.validate_installment_price(price, start_date, end_date)
+        price_cents: int = int(price * 100)
+        base_cents: int = price_cents // total_months
+        remainder_cents: int = price_cents % total_months
 
         payment_day = student.payment_day_of_month or min(28, course.start_date.day)
 
         charges: List[Charge] = []
-        accumulated = ZERO
         year, month = start_date.year, start_date.month
 
         for index in range(total_months):
             sequence_no = index + 1
-            if sequence_no == total_months:
-                amount = price - accumulated
-            else:
-                amount = base
-                accumulated += amount
+            additional_cent: int = 1 if index >= total_months - remainder_cents else 0
+            amount: Decimal = Decimal(base_cents + additional_cent) * Decimal("0.01")
 
             _, max_days = calendar.monthrange(year, month)
             due_date = date(year, month, min(payment_day, max_days))
@@ -535,11 +547,13 @@ class FinanceService:
         current_user: User,
     ) -> LedgerEntry:
         """Record cash received. ``amount`` is always the cash actually taken."""
-        if amount <= 0:
+        try:
+            amount = self._positive_money_adapter.validate_python(amount)
+        except ValidationError as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment amount must be greater than 0",
-            )
+                detail="Payment amount must be positive valid money with at most two decimal places and a maximum of 99999999.99",
+            ) from error
 
         await self.lock_student_accounts([student_id])
         await self._check_period_open(paid_at, "payment")

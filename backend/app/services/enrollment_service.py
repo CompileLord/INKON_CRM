@@ -91,6 +91,8 @@ class EnrollmentService:
                 detail="Course is archived/inactive"
             )
 
+        FinanceService.validate_installment_price(course.price, course.start_date, course.end_date)
+
         student = await self.user_repo.get_by_id(student_id)
         if not student or student.is_deleted or student.role != UserRole.STUDENT:
             raise HTTPException(
