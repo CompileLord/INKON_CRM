@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException, status
 from pydantic import TypeAdapter, ValidationError
-from sqlalchemy import Date, and_, case, cast, func, literal, or_, select
+from sqlalchemy import Date, Result, Select, and_, case, cast, func, literal, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -79,6 +79,7 @@ def _q(value: Decimal) -> Decimal:
 
 class FinanceService:
     _positive_money_adapter: TypeAdapter[Decimal] = TypeAdapter(PositiveMoney)
+    PERIOD_LOCK_NAMESPACE: int = 36
 
     def __init__(self, db: AsyncSession, cache_generation_repo: CacheGenerationRepository | None = None) -> None:
         self.db: AsyncSession = db
@@ -100,23 +101,44 @@ class FinanceService:
     # Infrastructure helpers
     # ------------------------------------------------------------------
 
-    async def _check_period_open(self, occurred_at: datetime, what: str = "entry") -> None:
-        """Reject writes dated into a closed accounting period."""
-        local_dt = _to_dushanbe(occurred_at)
-        query = select(AccountingPeriod).filter(
-            AccountingPeriod.year == local_dt.year,
-            AccountingPeriod.month == local_dt.month,
-        )
-        res = await self.db.execute(query)
-        period = res.scalars().first()
-        if period is not None and period.status == AccountingPeriodStatus.CLOSED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Accounting period {local_dt.year}-{local_dt.month:02d} is closed; "
-                    f"cannot record {what}. Post an adjustment in the open period instead."
-                ),
+    @staticmethod
+    def _period_lock_key(year: int, month: int) -> int:
+        return year * 12 + (month - 1)
+
+    async def _acquire_period_locks(self, period_keys: Sequence[int], exclusive: bool) -> None:
+        lock_function: str = "pg_advisory_xact_lock" if exclusive else "pg_advisory_xact_lock_shared"
+        for period_key in sorted(set(period_keys)):
+            await self.db.execute(
+                text(f"SELECT {lock_function}(:namespace, :period_key)"),
+                {"namespace": self.PERIOD_LOCK_NAMESPACE, "period_key": period_key},
             )
+
+    async def _check_periods_open(self, dated_entries: Sequence[tuple[datetime, str]]) -> None:
+        local_dates: list[tuple[datetime, str]] = [
+            (_to_dushanbe(occurred_at), what) for occurred_at, what in dated_entries
+        ]
+        await self._acquire_period_locks(
+            [self._period_lock_key(local_dt.year, local_dt.month) for local_dt, _ in local_dates],
+            exclusive=False,
+        )
+        for local_dt, what in local_dates:
+            query: Select[tuple[AccountingPeriod]] = select(AccountingPeriod).filter(
+                AccountingPeriod.year == local_dt.year,
+                AccountingPeriod.month == local_dt.month,
+            )
+            res: Result[tuple[AccountingPeriod]] = await self.db.execute(query)
+            period: Optional[AccountingPeriod] = res.scalars().first()
+            if period is not None and period.status == AccountingPeriodStatus.CLOSED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Accounting period {local_dt.year}-{local_dt.month:02d} is closed; "
+                        f"cannot record {what}. Post an adjustment in the open period instead."
+                    ),
+                )
+
+    async def _check_period_open(self, occurred_at: datetime, what: str = "entry") -> None:
+        await self._check_periods_open([(occurred_at, what)])
 
     async def _log_audit(
         self,
@@ -718,9 +740,10 @@ class FinanceService:
 
         # Both the original period and the current one must be open: voiding
         # mutates allocations, which would silently restate a closed month.
-        await self._check_period_open(target.occurred_at, "a void of an entry in that period")
-        now = datetime.now(timezone.utc)
-        await self._check_period_open(now, "void")
+        now: datetime = datetime.now(timezone.utc)
+        await self._check_periods_open(
+            [(target.occurred_at, "a void of an entry in that period"), (now, "void")]
+        )
 
         void_entry = LedgerEntry(
             student_id=target.student_id,
@@ -769,9 +792,10 @@ class FinanceService:
         await self.lock_student_accounts([target.student_id])
         await self._ensure_payment_reversal_eligible(target, LedgerEntryType.REFUND)
 
-        await self._check_period_open(target.occurred_at, "a refund of an entry in that period")
-        now = datetime.now(timezone.utc)
-        await self._check_period_open(now, "refund")
+        now: datetime = datetime.now(timezone.utc)
+        await self._check_periods_open(
+            [(target.occurred_at, "a refund of an entry in that period"), (now, "refund")]
+        )
 
         refunded_res = await self.db.execute(
             select(func.coalesce(func.sum(LedgerEntry.amount), ZERO)).filter(
@@ -1669,6 +1693,7 @@ class FinanceService:
                 detail="Only SuperAdmin can close accounting periods",
             )
 
+        await self._acquire_period_locks([self._period_lock_key(year, month)], exclusive=True)
         res = await self.db.execute(
             select(AccountingPeriod).filter(AccountingPeriod.year == year, AccountingPeriod.month == month)
         )
@@ -1703,6 +1728,7 @@ class FinanceService:
                 detail="Only SuperAdmin can reopen accounting periods",
             )
 
+        await self._acquire_period_locks([self._period_lock_key(year, month)], exclusive=True)
         res = await self.db.execute(
             select(AccountingPeriod).filter(AccountingPeriod.year == year, AccountingPeriod.month == month)
         )
