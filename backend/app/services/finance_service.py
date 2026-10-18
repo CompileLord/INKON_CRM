@@ -490,9 +490,8 @@ class FinanceService:
         price: Decimal = Decimal(enrollment.price_at_enrollment)
         self.validate_installment_price(price, start_date, end_date)
         price_cents: int = int(price * 100)
-        base_cents: int
-        remainder_cents: int
-        base_cents, remainder_cents = divmod(price_cents, total_months)
+        base_cents: int = price_cents // total_months
+        remainder_cents: int = price_cents % total_months
 
         payment_day = student.payment_day_of_month or min(28, course.start_date.day)
 
