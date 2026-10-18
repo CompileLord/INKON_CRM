@@ -6,12 +6,14 @@ from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
 from app.services.storage_lifecycle_service import StorageLifecycleService
+from app.services.storage_service import StorageService, get_storage_service
 
 
 class UserService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, storage: StorageService | None = None) -> None:
         self.db = db
         self.user_repo = SQLAlchemyUserRepository(db)
+        self.storage_service: StorageService = storage or get_storage_service()
 
     async def create_user(self, user_create: UserCreate) -> User:
         existing_user = await self.user_repo.get_by_email(user_create.email)
@@ -242,7 +244,7 @@ class UserService:
         image.save(out_io, format=image.format)
         resized_bytes = out_io.getvalue()
 
-        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.storage_service)
         old_photo: str | None = user.photo_path
         old_thumbnail: str | None = user.thumbnail_path
 

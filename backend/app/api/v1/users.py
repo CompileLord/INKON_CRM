@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, status, File, UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, require_superadmin, get_current_user
+from app.core.deps import get_db_session, get_storage_service, require_superadmin, get_current_user
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate, UserResponse
+from app.services.storage_service import StorageService
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -61,12 +62,13 @@ async def upload_avatar(
     id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
 ) -> User:
     if current_user.role != UserRole.SUPERADMIN and current_user.id != id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
-    user_service = UserService(db)
+    user_service = UserService(db, storage)
     return await user_service.upload_avatar(id, file)

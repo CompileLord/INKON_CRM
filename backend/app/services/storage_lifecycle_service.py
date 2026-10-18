@@ -7,19 +7,19 @@ from app.db.storage_intent_session import StorageIntentSessions, storage_intent_
 from app.models.storage_intent import StorageIntent
 from app.repositories.interfaces.storage_intent_repository import StorageIntentRepository
 from app.repositories.sqlalchemy.storage_intent_repository import SQLAlchemyStorageIntentRepository
-from app.services.storage_service import LocalStorageService
+from app.services.storage_service import StorageService, get_storage_service
 
 
 class StorageLifecycleService:
-    def __init__(self, session: AsyncSession, storage: LocalStorageService | None = None,
+    def __init__(self, session: AsyncSession, storage: StorageService | None = None,
                  reservations: StorageIntentSessions | None = None) -> None:
-        self.storage: LocalStorageService = storage or LocalStorageService()
+        self.storage: StorageService = storage or get_storage_service()
         self.reservations: StorageIntentSessions = reservations or storage_intent_sessions
         self.repository: StorageIntentRepository = SQLAlchemyStorageIntentRepository(session)
 
     async def stage(self, content: bytes, entity_type: str, entity_id: int, filename: str) -> tuple[str, str]:
         key: str = self.storage.new_key(entity_type, entity_id, filename)
-        self.storage._get_absolute_path(key)
+        self.storage.validate_key(key)
         intent_id: str = uuid4().hex
         reservation_session: AsyncSession
         async with self.reservations.factory() as reservation_session:

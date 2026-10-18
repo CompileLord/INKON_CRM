@@ -164,8 +164,8 @@ async def require_student_self(
 
 
 def get_storage_service() -> "StorageService":
-    from app.services.storage_service import StorageService, LocalStorageService
-    return LocalStorageService()
+    from app.services.storage_service import get_storage_service as resolve_configured_storage_service
+    return resolve_configured_storage_service()
 
 
 def get_student_profile_service(

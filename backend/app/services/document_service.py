@@ -10,7 +10,6 @@ from app.models.document import Document, DocumentOwnerType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
-from app.services.document_file_storage import LocalDocumentFileStorage
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
 
@@ -37,11 +36,11 @@ def verify_magic_bytes(content: bytes, filename: str) -> bool:
 
 
 class DocumentService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, storage: StorageService | None = None) -> None:
         self.db = db
         self.document_repo = SQLAlchemyDocumentRepository(db)
-        self.storage_service: StorageService = get_storage_service()
-        self.upload_storage_service = LocalDocumentFileStorage()
+        self.storage_service: StorageService = storage or get_storage_service()
+        self.upload_storage_service: StorageService = self.storage_service
 
     async def upload_document(
         self,
@@ -78,6 +77,8 @@ class DocumentService:
                 detail="Invalid file contents for specified file type"
             )
 
+        if owner_type not in ("student", "mentor") or owner_id <= 0:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid document storage path")
         try:
             lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.upload_storage_service)
             filepath: str
@@ -129,7 +130,7 @@ class DocumentService:
                 detail="Document not found"
             )
 
-        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.storage_service)
         success = await self.document_repo.soft_delete(document_id)
         await lifecycle.delete_after_commit(doc.file_path)
         return success
@@ -172,9 +173,7 @@ class DocumentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         try:
             if document.file_path.startswith(("/storage/", "storage/")):
-                self.upload_storage_service.resolve_document_path(
-                    document.file_path, DocumentOwnerType(document.owner_type).value, document.owner_id
-                )
+                self._assert_key_belongs_to_owner(document)
             file_content: bytes = await self.storage_service.read(document.file_path)
         except PermissionError:
             raise HTTPException(
@@ -184,6 +183,14 @@ class DocumentService:
         except (FileNotFoundError, ValueError):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return document, file_content
+
+    def _assert_key_belongs_to_owner(self, document: Document) -> None:
+        owner_segment: str
+        owner_identifier: str
+        object_name: str
+        owner_segment, owner_identifier, object_name = self.storage_service.canonical_key(document.file_path).split("/")
+        if owner_segment != DocumentOwnerType(document.owner_type).value or owner_identifier != str(document.owner_id):
+            raise ValueError("Invalid document path")
 
     @staticmethod
     def _document_visibility_filter(current_user: User) -> ColumnElement[bool]:
