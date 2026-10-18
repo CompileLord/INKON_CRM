@@ -20,4 +20,3 @@ class CourseMentorHistory(Base):
 
     course: Mapped["Course"] = relationship("Course")
     mentor: Mapped["User"] = relationship("User")
-Length: 792
