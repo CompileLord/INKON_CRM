@@ -154,7 +154,7 @@ def test_factory_rejects_unsupported_event_kind() -> None:
 
 
 def test_default_frontend_base_url_setting() -> None:
-    assert type(settings).model_fields["FRONTEND_BASE_URL"].default == "https://imkon-crm.pages.dev"
+    assert type(settings).model_fields["FRONTEND_BASE_URL"].default == "https://crm.kitobedu.com"
 
 
 def test_email_service_builds_alternative_inside_related_with_inline_logo() -> None:

@@ -91,7 +91,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     SMTP_FROM_EMAIL: str
 
-    FRONTEND_BASE_URL: str = "https://imkon-crm.pages.dev"
+    FRONTEND_BASE_URL: str = "https://crm.kitobedu.com"
 
     TIMEZONE: str = "Asia/Dushanbe"
     STORAGE_PATH: str = "storage"
