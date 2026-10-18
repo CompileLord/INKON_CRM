@@ -242,6 +242,18 @@ class FakeUploadStorage:
         return f"wp13/{owner_type}/{owner_id}/{filename}"
 
 
+class FakeDocumentLifecycle:
+    def __init__(self, database: Any, storage: FakeUploadStorage) -> None:
+        self.storage: FakeUploadStorage = storage
+
+    async def stage(self, content: bytes, owner_type: str, owner_id: int, filename: str) -> tuple[str, str]:
+        path: str = await self.storage.save(content, owner_type, owner_id, filename)
+        return path, 'wp13-document-stage'
+
+    async def adopt(self, intent_id: str) -> None:
+        assert intent_id == 'wp13-document-stage'
+
+
 async def wp13_harmless_job(ctx: dict[str, Any], marker: str) -> str:
     return marker
 
@@ -430,6 +442,7 @@ async def test_document_producer_delegates_to_shared_arq_enqueue(
     monkeypatch.setattr(settings, "TESTING", False)
     monkeypatch.setattr(document_service_module, "enqueue_job", record_enqueue, raising=False)
     monkeypatch.setattr(arq, "create_pool", stub_create_pool)
+    monkeypatch.setattr(document_service_module, "StorageLifecycleService", FakeDocumentLifecycle)
     database: FakeDocumentDatabase = FakeDocumentDatabase()
     service: DocumentService = DocumentService(cast(AsyncSession, database))
     service.upload_storage_service = cast(Any, FakeUploadStorage())

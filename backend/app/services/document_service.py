@@ -11,6 +11,7 @@ from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
 from app.services.document_file_storage import LocalDocumentFileStorage
+from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
 
 
@@ -78,7 +79,10 @@ class DocumentService:
             )
 
         try:
-            filepath = await self.upload_storage_service.save(content, owner_type, owner_id, file.filename)
+            lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.upload_storage_service)
+            filepath: str
+            intent_id: str
+            filepath, intent_id = await lifecycle.stage(content, owner_type, owner_id, file.filename)
         except ValueError:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid document storage path")
 
@@ -113,6 +117,7 @@ class DocumentService:
                     except Exception:
                         pass
 
+        await lifecycle.adopt(intent_id)
         await self.db.refresh(document)
         return document
 
@@ -124,8 +129,9 @@ class DocumentService:
                 detail="Document not found"
             )
 
-        await self.storage_service.delete(doc.file_path)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
         success = await self.document_repo.soft_delete(document_id)
+        await lifecycle.delete_after_commit(doc.file_path)
         return success
 
     async def list_documents(

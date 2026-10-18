@@ -14,6 +14,7 @@ from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseReposi
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.course import CourseCreate, CourseUpdate
 from app.services.journal_generation_service import JournalGenerationService
+from app.services.storage_lifecycle_service import StorageLifecycleService
 
 
 class CourseService:
@@ -153,9 +154,7 @@ class CourseService:
     async def upload_course_image(self, course_id: int, file: UploadFile) -> Course:
         from PIL import Image
         import io
-        from app.services.storage_service import LocalStorageService
-
-        course = await self.course_repo.get_by_id(course_id)
+        course: Course | None = await self.course_repo.get_by_id_for_update(course_id)
         if not course or course.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -184,18 +183,21 @@ class CourseService:
                 detail="Unsupported image format. PNG, JPEG or WEBP only."
             )
 
-        storage_service = LocalStorageService()
-        if course.photo_path:
-            await storage_service.delete(course.photo_path)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
+        old_photo: str | None = course.photo_path
 
         ext = image.format.lower()
         if ext == "jpeg":
             ext = "jpg"
         filename = f"course_image.{ext}"
-        new_path = await storage_service.save(content, "course", course_id, filename)
+        new_path: str
+        intent_id: str
+        new_path, intent_id = await lifecycle.stage(content, "course", course_id, filename)
 
         course.photo_path = new_path
         updated_course = await self.course_repo.update(course)
+        await lifecycle.adopt(intent_id)
+        await lifecycle.delete_after_commit(old_photo)
         await self.db.refresh(updated_course)
         return updated_course
 
