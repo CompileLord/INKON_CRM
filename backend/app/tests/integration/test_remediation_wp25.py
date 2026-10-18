@@ -102,9 +102,9 @@ async def test_staging_commit_adoption_and_rollback_recovery(lifecycle: Lifecycl
     session: AsyncSession
     async with TestingSessionLocal() as session:
         service: StorageLifecycleService = lifecycle.service(session)
-        abandoned: str
-        abandoned_id: str
-        abandoned, abandoned_id = await service.stage(b'abandoned', 'avatar', test_student.id, 'same.png')
+        staged_abandoned: tuple[str, str] = await service.stage(b'abandoned', 'avatar', test_student.id, 'same.png')
+        abandoned: str = staged_abandoned[0]
+        abandoned_id: str = staged_abandoned[1]
         assert len(await lifecycle.intents()) == 1
         assert await lifecycle.worker.run_once(lifecycle.future) == 0
         await session.rollback()
@@ -114,10 +114,10 @@ async def test_staging_commit_adoption_and_rollback_recovery(lifecycle: Lifecycl
         await lifecycle.storage.read(abandoned)
     assert await lifecycle.intents() == []
     async with TestingSessionLocal() as session:
-        service = lifecycle.service(session)
-        adopted: str
-        adopted_id: str
-        adopted, adopted_id = await service.stage(b'adopted', 'avatar', test_student.id, 'same.png')
+        service: StorageLifecycleService = lifecycle.service(session)
+        staged_adopted: tuple[str, str] = await service.stage(b'adopted', 'avatar', test_student.id, 'same.png')
+        adopted: str = staged_adopted[0]
+        adopted_id: str = staged_adopted[1]
         user: User | None = await session.get(User, test_student.id)
         assert user is not None
         user.photo_path = adopted
@@ -445,16 +445,16 @@ async def test_migration_upgrade_preserves_legacy_metadata_and_downgrade_recover
             await connection.execute("INSERT INTO users(email,first_name,last_name,role,photo_path) VALUES ('legacy@example.invalid','Legacy','Owner','student','/storage/avatar/1/avatar.png')")
         finally:
             await connection.close()
-        upgraded = configuration.run_alembic(environment, False)
+        upgraded: subprocess.CompletedProcess[str] = configuration.run_alembic(environment, False)
         assert upgraded.returncode == 0, upgraded.stderr
-        connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
+        connection: asyncpg.Connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
         try:
             assert await connection.fetchval("SELECT photo_path FROM users WHERE email='legacy@example.invalid'") == '/storage/avatar/1/avatar.png'
             assert await connection.fetchval("SELECT to_regclass('storage_intents') IS NOT NULL")
         finally:
             await connection.close()
         backend_root: Path = Path(__file__).resolve().parents[3]
-        connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
+        connection: asyncpg.Connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
         try:
             await connection.execute("INSERT INTO storage_intents(id,object_key,purpose,state,next_attempt_at,attempts) VALUES ('migration-orphan','avatar/1/orphan.png','stage','pending',now(),0)")
         finally:
@@ -472,9 +472,9 @@ async def test_migration_upgrade_preserves_legacy_metadata_and_downgrade_recover
         downgraded: subprocess.CompletedProcess[str] = subprocess.run(arguments,
             cwd=tmp_path, env=configuration.environment(environment), capture_output=True, text=True, check=False)
         assert downgraded.returncode == 0, downgraded.stderr
-        upgraded = configuration.run_alembic(environment, False)
+        upgraded: subprocess.CompletedProcess[str] = configuration.run_alembic(environment, False)
         assert upgraded.returncode == 0, upgraded.stderr
-        connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
+        connection: asyncpg.Connection = await asyncpg.connect(url.replace('+asyncpg', '', 1))
         try:
             assert await connection.fetchval("SELECT photo_path FROM users WHERE email='legacy@example.invalid'") == '/storage/avatar/1/avatar.png'
         finally:
@@ -491,9 +491,9 @@ async def test_worker_and_adoption_barrier_never_delete_inflight_object(lifecycl
         session: AsyncSession
         async with TestingSessionLocal() as session:
             service: StorageLifecycleService = lifecycle.service(session)
-            path: str
-            intent_id: str
-            path, intent_id = await service.stage(b'active', 'avatar', 1, 'file.png')
+            staged_path: tuple[str, str] = await service.stage(b'active', 'avatar', 1, 'file.png')
+            path: str = staged_path[0]
+            intent_id: str = staged_path[1]
             await barrier.wait()
             await inspected.wait()
             await service.adopt(intent_id)
@@ -566,7 +566,7 @@ async def test_worker_shutdown_disposes_its_bounded_engine(lifecycle: LifecycleS
         connected: bool = True
         attempt: int
         for attempt in range(50):
-            connected = bool((await session.execute(text('SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = :pid)'), {'pid': backend_pid})).scalar_one())
+            connected: bool = bool((await session.execute(text('SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = :pid)'), {'pid': backend_pid})).scalar_one())
             if not connected:
                 break
             await asyncio.sleep(0.02)
@@ -622,7 +622,7 @@ async def test_course_producer_concurrent_replacements_preserve_final_bytes_and_
     async with TestingSessionLocal() as session:
         persisted: Course | None = await session.get(Course, image_course.id)
         assert persisted is not None and persisted.photo_path is not None
-        final_path = persisted.photo_path
+        final_path: str = persisted.photo_path
     expected_by_path: dict[str, bytes] = dict(results)
     assert final_path in expected_by_path
     assert await storage.read(original_path) == original_bytes
@@ -639,7 +639,7 @@ async def test_course_producer_concurrent_replacements_preserve_final_bytes_and_
             with pytest.raises(FileNotFoundError):
                 await storage.read(path)
     async with TestingSessionLocal() as session:
-        persisted = await session.get(Course, image_course.id)
+        persisted: Course | None = await session.get(Course, image_course.id)
         assert persisted is not None and persisted.photo_path == final_path
 
 
@@ -689,7 +689,7 @@ async def test_course_producer_failed_replacement_preserves_old_reference_and_re
     with pytest.raises(FileNotFoundError):
         await storage.read(stages[0].object_key)
     async with TestingSessionLocal() as session:
-        persisted = await session.get(Course, image_course.id)
+        persisted: Course | None = await session.get(Course, image_course.id)
         assert persisted is not None and persisted.photo_path == old_path
         assert list((await session.execute(select(StorageIntent))).scalars()) == []
 
@@ -743,7 +743,7 @@ async def test_avatar_producer_failed_second_physical_write_preserves_both_old_a
     assert await storage.read(old_photo) == old_photo_bytes
     assert await storage.read(old_thumbnail) == old_thumbnail_bytes
     async with TestingSessionLocal() as session:
-        persisted = await session.get(User, test_student.id)
+        persisted: User | None = await session.get(User, test_student.id)
         assert persisted is not None
         assert (persisted.photo_path, persisted.thumbnail_path) == (old_photo, old_thumbnail)
         assert list((await session.execute(select(StorageIntent))).scalars()) == []

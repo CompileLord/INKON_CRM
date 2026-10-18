@@ -37,16 +37,16 @@ class StorageCleanupWorker:
                     raise ValueError('Invalid storage intent purpose')
                 key: str = self.storage.canonical_key(intent.object_key)
                 async with self.sessions.factory() as session:
-                    repository = SQLAlchemyStorageIntentRepository(session)
+                    repository: StorageIntentRepository = SQLAlchemyStorageIntentRepository(session)
                     referenced: bool = await repository.referenced(key)
                 if referenced:
-                    error = 'object_still_referenced'
+                    error: str | None = 'object_still_referenced'
                 else:
                     await self.storage.delete(key)
             except Exception as exception:
-                error = type(exception).__name__
+                error: str | None = type(exception).__name__
             async with self.sessions.factory() as session:
-                repository = SQLAlchemyStorageIntentRepository(session)
+                repository: StorageIntentRepository = SQLAlchemyStorageIntentRepository(session)
                 await repository.settle(intent.id, token, error, timestamp + timedelta(seconds=30))
                 await session.commit()
         return len(intents)

@@ -55,11 +55,10 @@ class SQLAlchemyStorageIntentRepository:
 
     async def settle(self, intent_id: str, token: str, error: str | None, retry_at: datetime) -> bool:
         conditions: tuple[ColumnElement[bool], ...] = (StorageIntent.id == intent_id, StorageIntent.state == 'claimed', StorageIntent.lease_token == token)
-        result: CursorResult[Any]
         if error is None:
-            result = await self.session.execute(delete(StorageIntent).where(*conditions))
+            result: CursorResult[Any] = await self.session.execute(delete(StorageIntent).where(*conditions))
         else:
-            result = await self.session.execute(update(StorageIntent).where(*conditions).values(
+            result: CursorResult[Any] = await self.session.execute(update(StorageIntent).where(*conditions).values(
                 state='pending', lease_token=None, lease_expires_at=None,
                 last_error=error, next_attempt_at=retry_at,
             ))
