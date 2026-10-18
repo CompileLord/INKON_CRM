@@ -23,12 +23,21 @@ async def outbox_worker_startup(ctx: dict[str, Any]) -> None:
     )
     await manager.start()
     ctx["outbox_worker"] = manager
+    from app.workers.storage_cleanup import StorageCleanupWorker
+    cleanup: StorageCleanupWorker = StorageCleanupWorker()
+    await cleanup.start()
+    ctx["storage_cleanup"] = cleanup
 
 
 async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
-    manager: Any = ctx.get("outbox_worker")
-    if manager is not None:
-        await manager.stop()
+    cleanup: Any = ctx.get("storage_cleanup")
+    try:
+        if cleanup is not None:
+            await cleanup.stop()
+    finally:
+        manager: Any = ctx.get("outbox_worker")
+        if manager is not None:
+            await manager.stop()
 
 
 class WorkerSettings:

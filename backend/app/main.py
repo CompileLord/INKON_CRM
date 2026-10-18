@@ -31,7 +31,11 @@ async def lifespan(app: FastAPI):
             await bot.session.close()
         finally:
             from app.core.redis import close_arq_pool
-            await close_arq_pool()
+            try:
+                await close_arq_pool()
+            finally:
+                from app.db.storage_intent_session import storage_intent_sessions
+                await storage_intent_sessions.close()
 
 
 is_prod = settings.ENVIRONMENT == "production"

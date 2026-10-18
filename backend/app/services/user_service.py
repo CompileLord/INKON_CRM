@@ -5,6 +5,7 @@ from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
+from app.services.storage_lifecycle_service import StorageLifecycleService
 
 
 class UserService:
@@ -204,9 +205,8 @@ class UserService:
     async def upload_avatar(self, user_id: int, file: UploadFile) -> User:
         from PIL import Image
         import io
-        from app.services.storage_service import LocalStorageService
 
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -242,16 +242,16 @@ class UserService:
         image.save(out_io, format=image.format)
         resized_bytes = out_io.getvalue()
 
-        storage_service = LocalStorageService()
-        if user.photo_path:
-            await storage_service.delete(user.photo_path)
-        if user.thumbnail_path:
-            await storage_service.delete(user.thumbnail_path)
+        lifecycle: StorageLifecycleService = StorageLifecycleService(self.db)
+        old_photo: str | None = user.photo_path
+        old_thumbnail: str | None = user.thumbnail_path
 
         ext = "png" if image.format == "PNG" else "jpg"
         # Save full-size original as photo_path
         filename = f"avatar.{ext}"
-        new_path = await storage_service.save(resized_bytes, "avatar", user_id, filename)
+        new_path: str
+        photo_intent: str
+        new_path, photo_intent = await lifecycle.stage(resized_bytes, "avatar", user_id, filename)
 
         # Save the thumbnail
         thumb = Image.open(io.BytesIO(content))
@@ -259,10 +259,16 @@ class UserService:
         thumb_io = io.BytesIO()
         thumb.save(thumb_io, format=thumb.format or image.format)
         thumb_filename = f"avatar_thumb.{ext}"
-        thumb_path = await storage_service.save(thumb_io.getvalue(), "avatar", user_id, thumb_filename)
+        thumb_path: str
+        thumbnail_intent: str
+        thumb_path, thumbnail_intent = await lifecycle.stage(thumb_io.getvalue(), "avatar", user_id, thumb_filename)
 
         user.photo_path = new_path
         user.thumbnail_path = thumb_path
         updated_user = await self.user_repo.update(user)
+        await lifecycle.adopt(photo_intent)
+        await lifecycle.adopt(thumbnail_intent)
+        await lifecycle.delete_after_commit(old_photo)
+        await lifecycle.delete_after_commit(old_thumbnail)
         await self.db.refresh(updated_user)
         return updated_user

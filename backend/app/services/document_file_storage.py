@@ -23,6 +23,11 @@ class LocalDocumentFileStorage(LocalStorageService):
             raise ValueError("Invalid document path")
         return resolved
 
+    def new_key(self, entity_type: str, entity_id: int, filename: str) -> str:
+        if entity_type not in ('student', 'mentor') or entity_id <= 0:
+            raise ValueError('Invalid document owner')
+        return super().new_key(entity_type, entity_id, filename)
+
     async def save(self, file_content: bytes, entity_type: str, entity_id: int, filename: str) -> str:
         if entity_type not in ("student", "mentor") or entity_id <= 0:
             raise ValueError("Invalid document owner")
