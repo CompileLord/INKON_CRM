@@ -16,5 +16,6 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | UX-5b | Admin list pages | — | pending | needs UX-5a, SC-1 |
 | UX-5c | Detail pages | — | pending | needs UX-5a, SC-1 |
 | UX-5d | Mentor and student experience | — | pending | needs UX-5a, SC-1 |
-| FIN-1 | Debtors reminders | — | pending | needs UX-5b |
+| FIN-1a | Debt reminders backend (Codex gpt-6.1-sol) | kitob/fin-1a-debt-reminders | pending | needs SC-1 merged (migration chain) |
+| FIN-1b | Debt reminders UI | — | pending | needs FIN-1a, UX-5b |
 | QA-1 | Full regression | — | pending | needs all |

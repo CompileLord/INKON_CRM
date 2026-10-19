@@ -1,6 +1,6 @@
 # KITOB UX Overhaul Plan
 
-Integration branch: `master` (worktree `INKON_CRM-worktrees/master-integration`). Each task runs on its own branch `kitob/<task-id>-<slug>` in `INKON_CRM-worktrees/<task-id>`, cut from current `master`, and is merged by the orchestrator after audit. `main` is untouched. Execution status lives only in `STATUS.md` next to this file.
+Integration branch: `master` (worktree `INKON_CRM-worktrees/master-integration`). Each task runs on its own branch `kitob/<task-id>-<slug>` in `INKON_CRM-worktrees/<task-id>`, cut from current `master`, and is merged by the orchestrator after audit. `main` is untouched. Execution status lives only in `STATUS.md` next to this file. Backend tasks are delegated to Codex (gpt-6.1-sol, medium); if Codex hits its usage limit they fall back to a Sonnet 5.5 executor. Frontend tasks use Sonnet 5.5 executors.
 
 ## Decisions (user-approved defaults, 2026-10-19)
 
@@ -41,7 +41,8 @@ Guard tests fail when a page outside `components/ui` defines its own `role="tabl
 | UX-5b | Admin list pages | UX-5a, SC-1 | Login, admin dashboard, courses (grid, list view fix, initial tile, create/edit form with custom Select/DatePicker), journals hub, students list, mentors list, finance (all tabs, accept-payment dialog primary button), audit (human wording per entity type, grouped duplicates, filter row), notifications, settings. Score-first values where shown. |
 | UX-5c | Detail pages | UX-5a, SC-1 | Course profile (overview with one schedule summary line, students, performance without empty "Сводка" column, score-first), student profile (UX-4: compact header, parent-link popover, ⋯ menu, three distinct tiles incl. balance, course cards, progress, documents), mentor profile (plain-language performance tab). |
 | UX-5d | Mentor and student experience | UX-5a, SC-1 | Mentor dashboard; student dashboard, my courses, course detail (ranking table removed, score-first, translated period names), journal period page; journal detail page restyle onto shared primitives, mobile grid opening at the first lesson column, chart score axis with per-period max step line. |
-| FIN-1 | Debtors reminders | UX-5b | "Remind in Telegram" per debtor and bulk on the debtors tab; localized reminder to the linked parent chat; rate-limited (one per student per 24 h); audit record; no parent → disabled with reason. |
+| FIN-1a | Debt reminders backend | SC-1 | `POST /finance/debts/reminders` (bulk), durable worker delivery, localized text, one per student per 24 h (race-safe), audit record, `parent_telegram_linked`/`last_reminder_at` on debts. Executed by Codex. |
+| FIN-1b | Debt reminders UI | FIN-1a, UX-5b | "Remind in Telegram" per debtor and bulk on the debtors tab; no parent → disabled with reason; shows last reminder. |
 | QA-1 | Full regression | all | Full screenshot pass (same matrix as the 2026-10-19 audit) compared against the audit set, live Telegram walk-through (link, relink, lockout, exam card, debt reminder), full backend and frontend gates on `master`. |
 
 ## Gates for every task
