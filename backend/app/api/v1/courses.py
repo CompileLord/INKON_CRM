@@ -19,7 +19,7 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
-from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
+from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseListItemResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
@@ -115,7 +115,7 @@ async def create_course(
     return await course_service.create_course(payload, current_user)
 
 
-@router.get("/", response_model=PaginatedResponse[CourseResponse])
+@router.get("/", response_model=PaginatedResponse[CourseListItemResponse])
 async def list_courses(
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),

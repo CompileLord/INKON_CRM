@@ -1,8 +1,9 @@
 from datetime import date
-from typing import List, Optional
-from sqlalchemy import or_, select, Select
+from typing import Dict, List, Optional, Sequence
+from sqlalchemy import func, or_, select, Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.course import Course, CourseStatus
+from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.repositories.interfaces.course_repository import CourseRepository
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
@@ -34,3 +35,18 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
         ).offset(skip).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def count_active_students_by_course(self, course_ids: Sequence[int]) -> Dict[int, int]:
+        if not course_ids:
+            return {}
+        statement: Select[tuple[int, int]] = (
+            select(Enrollment.course_id, func.count(Enrollment.id))
+            .where(
+                Enrollment.course_id.in_(course_ids),
+                Enrollment.status == EnrollmentStatus.ACTIVE,
+                Enrollment.is_deleted == False,
+            )
+            .group_by(Enrollment.course_id)
+        )
+        rows = (await self.session.execute(statement)).all()
+        return {course_id: student_count for course_id, student_count in rows}

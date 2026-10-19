@@ -9,6 +9,7 @@ from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
+from app.models.enrollment import Enrollment, EnrollmentStatus
 
 
 @pytest.mark.asyncio
@@ -214,3 +215,108 @@ async def test_update_course_mentor_history(client: AsyncClient, test_admin: Use
         assert history[0].assigned_to is not None
         assert history[1].mentor_id == other_mentor.id
         assert history[1].assigned_to is None
+
+
+@pytest.mark.asyncio
+async def test_list_courses_includes_schedules_and_active_student_count(
+    client: AsyncClient,
+    test_admin: User,
+    test_mentor: User,
+    test_student: User,
+    db_session: AsyncSession,
+) -> None:
+    admin_headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
+    mentor_headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_mentor.id, test_mentor.role)}"}
+
+    create_response = await client.post(
+        "/api/v1/courses/",
+        json={
+            "title": "Scheduled Course",
+            "description": "desc",
+            "start_date": "2026-08-01",
+            "end_date": "2026-08-31",
+            "exam_type": "weekly",
+            "price": "150.00",
+            "mentor_id": test_mentor.id,
+            "schedules": [
+                {"day_of_week": 2, "time_start": "14:00:00", "time_end": "15:30:00"},
+                {"day_of_week": 0, "time_start": "14:00:00", "time_end": "15:30:00"},
+            ],
+        },
+        headers=admin_headers,
+    )
+    course_id: int = create_response.json()["id"]
+
+    withdrawn_student: User = User(
+        email="withdrawn@example.com",
+        first_name="With",
+        last_name="Drawn",
+        role="student",
+        must_set_password=False,
+    )
+    db_session.add(withdrawn_student)
+    await db_session.flush()
+    db_session.add(
+        Enrollment(student_id=test_student.id, course_id=course_id, price_at_enrollment=150, color_hex="#112233")
+    )
+    db_session.add(
+        Enrollment(
+            student_id=withdrawn_student.id,
+            course_id=course_id,
+            price_at_enrollment=150,
+            color_hex="#445566",
+            status=EnrollmentStatus.WITHDRAWN,
+        )
+    )
+    await db_session.commit()
+
+    for headers in (admin_headers, mentor_headers):
+        list_response = await client.get("/api/v1/courses/", headers=headers)
+        assert list_response.status_code == 200
+        item: dict = list_response.json()["items"][0]
+        assert item["id"] == course_id
+        assert item["active_student_count"] == 1
+        assert sorted(schedule["day_of_week"] for schedule in item["schedules"]) == [0, 2]
+        assert {schedule["time_start"] for schedule in item["schedules"]} == {"14:00:00"}
+        assert {schedule["time_end"] for schedule in item["schedules"]} == {"15:30:00"}
+
+
+@pytest.mark.asyncio
+async def test_list_courses_mentor_sees_only_own_courses_with_zero_students(
+    client: AsyncClient,
+    test_admin: User,
+    test_mentor: User,
+    db_session: AsyncSession,
+) -> None:
+    other_mentor: User = User(
+        email="mentor-other@example.com",
+        first_name="Other",
+        last_name="Mentor",
+        role="mentor",
+        must_set_password=False,
+    )
+    db_session.add(other_mentor)
+    await db_session.commit()
+    admin_headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
+    for mentor_id, title in ((test_mentor.id, "Mine"), (other_mentor.id, "Theirs")):
+        created = await client.post(
+            "/api/v1/courses/",
+            json={
+                "title": title,
+                "description": "d",
+                "start_date": "2026-08-01",
+                "end_date": "2026-08-31",
+                "exam_type": "weekly",
+                "price": "100.00",
+                "mentor_id": mentor_id,
+                "schedules": [{"day_of_week": 1, "time_start": "09:00:00", "time_end": "10:00:00"}],
+            },
+            headers=admin_headers,
+        )
+        assert created.status_code == 201
+
+    mentor_headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_mentor.id, test_mentor.role)}"}
+    response = await client.get("/api/v1/courses/", headers=mentor_headers)
+    items: list[dict] = response.json()["items"]
+    assert [item["title"] for item in items] == ["Mine"]
+    assert items[0]["active_student_count"] == 0
