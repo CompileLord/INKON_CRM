@@ -1,0 +1,52 @@
+{
+  "retry": "Retry",
+  "error": {
+    "title": "Something went wrong",
+    "message": "We could not load this. Try again."
+  },
+  "empty": {
+    "title": "Nothing here yet"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page does not exist or was moved.",
+    "home": "Go to the start page"
+  },
+  "routeError": {
+    "title": "This page failed to open",
+    "description": "Reload the page. If it keeps happening, contact support."
+  },
+  "menu": {
+    "actions": "More actions"
+  },
+  "missing": "No data",
+  "badge": {
+    "active": "Active",
+    "archived": "Archived",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "partial": "Partially paid",
+    "pending": "Pending",
+    "linked": "Linked",
+    "notLinked": "Not linked",
+    "completed": "Completed",
+    "draft": "Draft"
+  },
+  "period": {
+    "week": "Week {{index}}",
+    "month": "Month {{index}}"
+  },
+  "datePicker": {
+    "open": "Open calendar",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "placeholder": "dd.mm.yyyy",
+    "invalid": "Enter a date as dd.mm.yyyy",
+    "calendar": "Calendar",
+    "clear": "Clear date"
+  },
+  "back": "Back",
+  "dev": {
+    "title": "Design system"
+  }
+}
