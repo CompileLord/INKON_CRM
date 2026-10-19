@@ -36,8 +36,12 @@ async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
             await cleanup.stop()
     finally:
         manager: Any = ctx.get("outbox_worker")
-        if manager is not None:
-            await manager.stop()
+        try:
+            if manager is not None:
+                await manager.stop()
+        finally:
+            from app.core.redis import close_arq_pool
+            await close_arq_pool()
 
 
 class WorkerSettings:

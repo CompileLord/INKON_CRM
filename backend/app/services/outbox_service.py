@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.repositories.interfaces.outbox_repository import OutboxRepository
 from app.services.email_templates import (
@@ -13,6 +14,13 @@ from app.services.email_templates import (
 
 OUTBOX_PAYLOAD_DOMAIN_SEPARATOR = b"imkon-crm:outbox-payload:v1"
 OUTBOX_CODE_TTL_SECONDS = 600
+
+
+class NotificationIntentPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    student_id: int = Field(gt=0)
+    journal_id: int = Field(gt=0)
 
 
 class OutboxPayloadEncryptor:
@@ -54,6 +62,28 @@ class OutboxService:
         self._repository = repository
         self._payload_master_key = payload_master_key
         self._encryptor = encryptor or OutboxPayloadEncryptor(payload_master_key)
+
+    async def enqueue_notification(
+        self,
+        kind: OutboxEventKind,
+        student_id: int,
+        journal_id: int,
+        correlation_key: str,
+    ) -> OutboxEvent:
+        if kind not in (OutboxEventKind.EXAM_RESULT_NOTIFICATION, OutboxEventKind.DOCUMENT_NOTIFICATION):
+            raise ValueError("Unsupported notification intent kind")
+        payload: NotificationIntentPayload = NotificationIntentPayload(student_id=student_id, journal_id=journal_id)
+        event: OutboxEvent = OutboxEvent(
+            kind=kind,
+            status=OutboxEventStatus.PENDING,
+            recipient_email="",
+            subject="",
+            encrypted_payload=self._encryptor.encrypt(payload.model_dump_json()),
+            correlation_key=correlation_key,
+            max_attempts=5,
+            next_attempt_at=datetime.now(timezone.utc),
+        )
+        return await self._repository.enqueue(event)
 
     async def enqueue_verification_email(
         self,

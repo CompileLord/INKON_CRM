@@ -2,14 +2,16 @@ import os
 from typing import List, Optional
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
-from app.core.redis import enqueue_job
 from sqlalchemy import and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from app.models.document import Document, DocumentOwnerType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
+from app.models.outbox_event import OutboxEventKind
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
+from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
+from app.services.outbox_service import OutboxService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
 
@@ -108,15 +110,15 @@ class DocumentService:
             summary_res = await self.db.execute(summary_query)
             summary = summary_res.scalars().first()
             if summary and summary.exam_score > 0:
-                if not settings.TESTING:
-                    try:
-                        await enqueue_job(
-                            "send_student_document_notification_task",
-                            owner_id,
-                            journal_id,
-                        )
-                    except Exception:
-                        pass
+                outbox_service: OutboxService = OutboxService(
+                    SQLAlchemyOutboxRepository(self.db), settings.JWT_SECRET_KEY
+                )
+                await outbox_service.enqueue_notification(
+                    OutboxEventKind.DOCUMENT_NOTIFICATION,
+                    owner_id,
+                    journal_id,
+                    f"document:{document.id}",
+                )
 
         await lifecycle.adopt(intent_id)
         await self.db.refresh(document)

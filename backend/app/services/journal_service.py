@@ -14,6 +14,10 @@ from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
+from app.core.config import settings
+from app.models.outbox_event import OutboxEventKind
+from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
+from app.services.outbox_service import OutboxService
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import MAX_BONUS_SCORE, EXAM_MAX_SCORE_LIMIT, score_percentage
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
@@ -694,11 +698,13 @@ class JournalService:
         sum_service = SumCalculationService(self.db)
         await sum_service.recalculate(journal_id, student_id)
 
-        from app.core.redis import enqueue_job
-        try:
-            await enqueue_job("send_exam_result_notification_task", student_id, journal_id)
-        except Exception:
-            pass
+        outbox_service: OutboxService = OutboxService(SQLAlchemyOutboxRepository(self.db), settings.JWT_SECRET_KEY)
+        await outbox_service.enqueue_notification(
+            OutboxEventKind.EXAM_RESULT_NOTIFICATION,
+            student_id,
+            journal_id,
+            f"exam-result:{journal_id}:{student_id}:{summary.version}",
+        )
 
         await self.db.refresh(summary)
         return summary

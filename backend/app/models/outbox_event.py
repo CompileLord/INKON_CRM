@@ -10,6 +10,8 @@ class OutboxEventKind(str, enum.Enum):
     VERIFICATION_EMAIL = "verification_email"
     PASSWORD_RESET_EMAIL = "password_reset_email"
     CREDENTIALS_EMAIL = "credentials_email"
+    EXAM_RESULT_NOTIFICATION = "exam_result_notification"
+    DOCUMENT_NOTIFICATION = "document_notification"
 
 
 class OutboxEventStatus(str, enum.Enum):
