@@ -146,7 +146,8 @@
       "title": "No journals match",
       "body": "Nothing on this page matches your search or status filter. Clear them to see every journal loaded for this page.",
       "clear": "Clear search and filters"
-    }
+    },
+    "statusLabel": "Status"
   },
   "workspace": {
     "periodPickerLabel": "Period",

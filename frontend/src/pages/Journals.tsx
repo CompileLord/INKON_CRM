@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
-import { PageHeader } from "../components/PageHeader";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
-import { AlertCircle, AlertTriangle, ClipboardList, SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCourses } from "../lib/courses/hooks";
 import { useMentors } from "../lib/users/hooks";
 import { parseSafePageParam } from "../lib/courses/returnContext";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
-import { Pagination as CoursePagination } from "../components/ui/Pagination";
+import { Pagination } from "../components/ui/Pagination";
 import { JournalListRow, JournalListRowSkeleton } from "../components/journals/JournalListRow";
 import type { JournalRowMentorState } from "../components/journals/JournalListRow";
 import { JournalsToolbar } from "../components/journals/JournalsToolbar";
@@ -156,8 +158,10 @@ function JournalsHub() {
   const isTrulyEmptyCatalog = isEmptyCatalog && normalizedQuery === "";
   const hasRows = isSettled && visibleCourses.length > 0;
 
+  const listCard = "flex flex-col rounded-2xl border border-border bg-card p-1";
+
   return (
-    <div className="flex flex-col gap-5">
+    <PageContainer>
       <PageHeader title={t("hubTitle")} />
 
       {isTrulyEmptyCatalog ? null : (
@@ -170,7 +174,7 @@ function JournalsHub() {
       )}
 
       {isSettled && coursesPage && !isTrulyEmptyCatalog ? (
-        <div role="status" className="flex flex-col gap-0.5 text-xs text-muted">
+        <div role="status" className="flex flex-col gap-0.5 text-sm text-muted">
           <span className="tabular-nums">
             {normalizedQuery
               ? t("hub.searchPageScope", { count: visibleCourses.length, total: coursesPage.items.length })
@@ -181,65 +185,37 @@ function JournalsHub() {
         </div>
       ) : null}
 
-      {showSkeleton ? <div aria-hidden="true" className="h-4 w-24 rounded-[10px] bg-strip motion-safe:animate-pulse" /> : null}
-
       {isRefreshFailed ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning-surface bg-warning-surface/40 px-4 py-3 text-sm text-ink"
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="shrink-0 text-warning" aria-hidden="true" />
-            <span>{t("hub.refreshFailed")}</span>
-          </div>
-          <Button type="button" variant="secondary" onClick={() => refetch()} className="min-h-[44px] min-w-[44px]">
-            {t("common:retry")}
-          </Button>
+        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+          <span>{t("hub.refreshFailed")}</span>
+          <Button type="button" variant="secondary" onClick={() => refetch()}>{t("common:retry")}</Button>
         </div>
       ) : null}
 
       {showSkeleton ? (
-        <ul
-          aria-busy="true"
-          aria-label={t("hub.listLabel")}
-          className="divide-y divide-border overflow-hidden rounded-2xl border border-border-warm bg-card"
-        >
+        <ul aria-busy="true" aria-label={t("hub.listLabel")} className={listCard}>
           {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
             <JournalListRowSkeleton key={index} showMentor={isSuperAdmin} />
           ))}
         </ul>
       ) : isHardError ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-10 text-center">
-          <AlertCircle size={28} className="text-destructive" aria-hidden="true" />
-          <p className="text-sm font-semibold text-ink">{t("loadFailedHub")}</p>
-          <Button type="button" variant="secondary" onClick={() => refetch()} className="mt-2 min-h-[44px] min-w-[44px]">
-            {t("common:retry")}
-          </Button>
+        <div className="rounded-2xl border border-border bg-card">
+          <ErrorState message={t("loadFailedHub")} onRetry={() => refetch()} />
         </div>
       ) : isEmptyCatalog ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
-            <ClipboardList size={26} className="text-maroon-text dark:text-accent" aria-hidden="true" />
-          </div>
-          <h2 className="text-base font-semibold text-ink">{t("hub.emptyCatalog.title")}</h2>
-          <p className="max-w-md text-sm text-muted">{t("hub.emptyCatalog.body")}</p>
+        <div className="rounded-2xl border border-border bg-card">
+          <EmptyState title={t("hub.emptyCatalog.title")} description={t("hub.emptyCatalog.body")} />
         </div>
       ) : isNoMatch ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
-            <SearchX size={26} className="text-maroon-text dark:text-accent" aria-hidden="true" />
-          </div>
-          <h2 className="text-base font-semibold text-ink">{t("hub.noMatch.title")}</h2>
-          <p className="max-w-md text-sm text-muted">{t("hub.noMatch.body")}</p>
-          <Button type="button" variant="secondary" onClick={clearSearchAndFilters} className="mt-2 min-h-[44px] min-w-[44px]">
-            {t("hub.noMatch.clear")}
-          </Button>
+        <div className="rounded-2xl border border-border bg-card">
+          <EmptyState
+            title={t("hub.noMatch.title")}
+            description={t("hub.noMatch.body")}
+            action={<Button type="button" variant="secondary" onClick={clearSearchAndFilters}>{t("hub.noMatch.clear")}</Button>}
+          />
         </div>
       ) : hasRows ? (
-        <ul
-          aria-label={t("hub.listLabel")}
-          className="divide-y divide-border overflow-hidden rounded-2xl border border-border-warm bg-card"
-        >
+        <ul aria-label={t("hub.listLabel")} className={listCard}>
           {visibleCourses.map((course) => (
             <JournalListRow
               key={course.id}
@@ -252,10 +228,10 @@ function JournalsHub() {
       ) : null}
 
       {isSettled && coursesPage && coursesPage.total_pages > 1 ? (
-        <div className="flex justify-center pt-2">
-          <CoursePagination page={page} totalPages={coursesPage.total_pages} onPageChange={handlePageChange} />
+        <div className="flex justify-center">
+          <Pagination page={page} totalPages={coursesPage.total_pages} onPageChange={handlePageChange} />
         </div>
       ) : null}
-    </div>
+    </PageContainer>
   );
 }

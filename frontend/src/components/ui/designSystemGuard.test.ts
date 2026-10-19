@@ -29,7 +29,6 @@ const ALLOWLIST: readonly string[] = [
   "pages/CourseProfile.tsx::page-max-width",
   "pages/CourseProfile.tsx::role-tablist",
   "pages/Finance.tsx::page-max-width",
-  "pages/Journals.tsx::page-max-width",
   "pages/MentorProfile.tsx::page-max-width",
   "pages/Mentors.tsx::native-select",
   "pages/Mentors.tsx::page-max-width",
