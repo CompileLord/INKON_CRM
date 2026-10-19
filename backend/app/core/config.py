@@ -101,6 +101,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_BOT_SECRET_TOKEN: str
     TELEGRAM_BOT_USERNAME: Optional[str] = None
+    EXAM_RESULT_NOTIFICATION_DELAY_SECONDS: int = Field(default=14400, ge=0)
     TELEGRAM_WEBHOOK_URL: str = Field(
         default="http://localhost:8000/api/v1/telegram/webhook",
         validate_default=True,

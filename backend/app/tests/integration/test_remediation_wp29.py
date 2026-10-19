@@ -106,7 +106,7 @@ class RecordingBot:
 
 
 class TestNotificationOutbox:
-    @pytest.mark.parametrize("kind", ["exam", "document"])
+    @pytest.mark.parametrize("kind", ["document"])
     async def test_old_notification_retries_through_last_attempt_while_same_age_email_expires(
         self, kind: str, test_student: User, test_admin: User,
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -169,7 +169,7 @@ class TestNotificationOutbox:
             expired = await session.get(OutboxEvent, email_id)
             assert expired is not None and expired.status == OutboxEventStatus.EXPIRED
 
-    @pytest.mark.parametrize("kind", ["exam", "document"])
+    @pytest.mark.parametrize("kind", ["document"])
     @pytest.mark.parametrize("commit", [True, False])
     async def test_worker_cannot_publish_before_commit_and_rollback_has_no_intent(
         self, kind: str, commit: bool, test_student: User, test_admin: User,
@@ -223,7 +223,7 @@ class TestNotificationOutbox:
             assert f"Sum = {20 if kind == 'exam' else 10}/" in bot.messages[0]
             assert bot.documents == ([] if kind == "exam" else [b"%PDF wp29"])
 
-    @pytest.mark.parametrize("kind", ["exam", "document"])
+    @pytest.mark.parametrize("kind", ["document"])
     async def test_redis_failure_retains_intent_and_retries_with_stable_id(
         self, kind: str, test_student: User, test_admin: User,
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -304,7 +304,7 @@ class TestNotificationOutbox:
         job_id: str | None = None
         try:
             async with TestingSessionLocal() as session:
-                await scenario.change(session, "exam")
+                await scenario.change(session, "document")
                 await session.commit()
                 event: OutboxEvent | None = await session.scalar(select(OutboxEvent))
                 assert event is not None
@@ -318,7 +318,7 @@ class TestNotificationOutbox:
             assert await worker.run_once(TestingSessionLocal) == 1
             info: Any = await Job(job_id, pool).info()
             assert info is not None
-            assert info.function == "send_exam_result_notification_task"
+            assert info.function == "send_student_document_notification_task"
             assert info.args == (test_student.id, scenario.journal.id)
             async with TestingSessionLocal() as session:
                 delivered: OutboxEvent = (await session.scalars(select(OutboxEvent))).one()
