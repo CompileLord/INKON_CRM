@@ -32,6 +32,7 @@ Scope correction (2026-10-19): notification delivery SQL must live in the existi
 | `backend/app/repositories/interfaces/notification_log_repository.py` | Extend existing notification persistence interface for atomic claims and delivery outcomes. |
 | `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Implement claim SQL and notification persistence. |
 | `backend/app/tests/integration/test_integrations_and_polish.py` | Adapt notification service construction to injected repository only; preserve behavioral assertions. |
+| `backend/app/workers/settings.py` | Register bounded notification recovery task and 30-second cron only; abandoned claims and enqueue failures require an actual recovery path. |
 | `backend/app/core/deps.py` | Wire notification repository/service dependencies only. |
 | `backend/app/api/v1/notifications.py` | Inject notification service only. |
 | `backend/app/services/telegram_link_service.py` | Adapt existing notification service construction only. |
