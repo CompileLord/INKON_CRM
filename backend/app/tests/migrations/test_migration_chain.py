@@ -317,7 +317,7 @@ def test_migration_database_rejects_non_disposable_targets_before_connecting(
 async def test_bonus_maximum_migration_recomputes_stored_period_maximum_without_clipping_bonuses() -> None:
     backend_root: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     async with DisposableMigrationDatabase(backend_root) as database:
-        prior_upgrade: subprocess.CompletedProcess[str] = database.upgrade("be2a1b2c3d4e")
+        prior_upgrade: subprocess.CompletedProcess[str] = database.upgrade("rwp30_delivery_claims")
         assert prior_upgrade.returncode == 0, prior_upgrade.stdout + prior_upgrade.stderr
         summary_id: int = await MigrationFixtureWriter(database).create_scoring_fixture(invalid_bonus_score=20)
         await database.execute("UPDATE journal_student_summaries SET max_period_score = 120 WHERE id = $1", summary_id)
@@ -335,7 +335,7 @@ async def test_bonus_maximum_migration_recomputes_stored_period_maximum_without_
         ) == 20
         assert await database.compare_models() == []
 
-        downgrade: subprocess.CompletedProcess[str] = database.run_alembic("downgrade", "be2a1b2c3d4e")
+        downgrade: subprocess.CompletedProcess[str] = database.run_alembic("downgrade", "rwp30_delivery_claims")
         assert downgrade.returncode == 0, downgrade.stdout + downgrade.stderr
         assert await database.fetchval(
             "SELECT max_period_score FROM journal_student_summaries WHERE id = $1", summary_id
