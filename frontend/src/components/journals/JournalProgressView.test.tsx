@@ -645,3 +645,46 @@ describe("Progress view as a read-only student", () => {
     expect(Number(widthOf("12"))).toBeGreaterThan(Number(widthOf("13")));
   });
 });
+
+describe("Progress chart-only mode on the journal page", () => {
+  it("renders the chart without the per-student table, scope heading or class row", () => {
+    render(<JournalProgressView courseId={1} chartOnly />);
+    expect(screen.getByTestId("progress-chart")).toBeDefined();
+    expect(screen.queryByTestId("progress-table")).toBeNull();
+    expect(screen.queryByTestId("student-row")).toBeNull();
+  });
+
+  it("renders nothing when no period has graded data", () => {
+    const ungraded: CourseStaffProgressResponse = {
+      ...data,
+      students: data.students.map((entry) => ({
+        ...entry,
+        period_results: entry.period_results.map((periodResult) => result(periodResult.period_id, null, null, null)),
+      })),
+    };
+    mockProgress(ungraded);
+    const view = render(<JournalProgressView courseId={1} chartOnly />);
+    expect(view.container.innerHTML).toBe("");
+  });
+
+  it("collapses and expands the chart and remembers the collapsed state in localStorage", () => {
+    window.localStorage.clear();
+    const first = render(<JournalProgressView courseId={1} chartOnly />);
+    const toggle: HTMLElement = screen.getByTestId("progress-collapse-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("false");
+    first.unmount();
+    render(<JournalProgressView courseId={1} chartOnly />);
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+    fireEvent.click(screen.getByTestId("progress-collapse-toggle"));
+    expect(screen.getByTestId("progress-chart")).toBeDefined();
+    window.localStorage.clear();
+  });
+
+  it("still renders the full table in the default student mode", () => {
+    render(<JournalProgressView courseId={1} />);
+    expect(screen.getByTestId("progress-table")).toBeDefined();
+  });
+});

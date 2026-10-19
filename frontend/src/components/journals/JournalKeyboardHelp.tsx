@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Keyboard } from "lucide-react";
+import { CircleHelp } from "lucide-react";
 
 const SHORTCUT_IDS: readonly string[] = ["arrows", "grade", "attendance", "comment", "clear", "close"];
 
@@ -40,10 +40,11 @@ export const JournalKeyboardHelp: React.FC = () => {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((previous) => !previous)}
-        className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-control-border bg-card px-3 text-sm font-medium text-ink hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+        aria-label={t("help.button")}
+        title={t("help.button")}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-control-border bg-card text-muted hover:bg-row-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-11 pointer-coarse:w-11 motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
       >
-        <Keyboard className="h-4 w-4" aria-hidden="true" />
-        {t("help.button")}
+        <CircleHelp className="h-4 w-4" aria-hidden="true" />
       </button>
       {open && (
         <div
@@ -51,7 +52,7 @@ export const JournalKeyboardHelp: React.FC = () => {
           id={panelId}
           role="region"
           aria-label={t("help.title")}
-          className="absolute left-0 top-full z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 text-ink shadow-lg"
+          className="absolute right-0 top-full z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 text-ink shadow-lg"
         >
           <h3 className="mb-3 text-sm font-semibold">{t("help.title")}</h3>
           <dl className="space-y-2 text-sm">

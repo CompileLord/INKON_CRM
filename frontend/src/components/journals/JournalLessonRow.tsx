@@ -146,6 +146,12 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
                 setPickerOpen(false);
                 scoreButtonRef.current?.focus();
               }}
+              onClear={() => {
+                onCommand(student.student_id, lessonDate, { kind: "score", score: 0 });
+                JournalMotion.settle(scoreButtonRef.current);
+                setPickerOpen(false);
+                scoreButtonRef.current?.focus();
+              }}
               onEscape={() => {
                 setPickerOpen(false);
                 scoreButtonRef.current?.focus();

@@ -92,7 +92,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       event.preventDefault();
       setPopoverOpen(false);
       onNavigate?.(direction);
-    } else if (event.key.length === 1 && event.key >= "0" && event.key <= "5") {
+    } else if (event.key.length === 1 && event.key >= "1" && event.key <= "5") {
       event.preventDefault();
       onCommand({ kind: "score", score: parseInt(event.key, 10) });
       JournalMotion.settle(scoreButtonRef.current);

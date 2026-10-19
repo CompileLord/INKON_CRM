@@ -12,7 +12,9 @@ afterEach(() => cleanup());
 describe("JournalKeyboardHelp", () => {
   it("is a labeled control that opens translated shortcut help and closes on Escape returning focus", () => {
     render(<JournalKeyboardHelp />);
-    const help = screen.getByRole("button", { name: "Keyboard help" });
+    const help = screen.getByRole("button", { name: "Keyboard shortcuts" });
+    expect(help.getAttribute("title")).toBe("Keyboard shortcuts");
+    expect(help.textContent).toBe("");
     expect(help.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(help);
     expect(help.getAttribute("aria-expanded")).toBe("true");
@@ -26,13 +28,13 @@ describe("JournalKeyboardHelp", () => {
 
   it("carries the score rule that used to sit in the score picker", () => {
     render(<JournalKeyboardHelp />);
-    fireEvent.click(screen.getByRole("button", { name: "Keyboard help" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
     expect(screen.getByText("Scores 1–5 mark the student present. Marking absent resets the lesson score.")).toBeDefined();
   });
 
   it("closes when the pointer goes elsewhere", () => {
     render(<JournalKeyboardHelp />);
-    fireEvent.click(screen.getByRole("button", { name: "Keyboard help" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
     fireEvent.mouseDown(document.body);
     expect(screen.queryByRole("region", { name: "Keyboard shortcuts" })).toBeNull();
   });

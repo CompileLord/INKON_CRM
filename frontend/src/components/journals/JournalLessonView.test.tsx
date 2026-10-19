@@ -135,7 +135,7 @@ describe("JournalLessonView rows", () => {
     expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "attendance", attended: false });
   });
 
-  it("expands an inline row of six 44px choices under the action line with no dialog, applies a choice and returns focus", () => {
+  it("expands an inline row of five 44px choices plus Clear under the action line with no dialog, applies a choice and returns focus", () => {
     const view = mount();
     const row = document.querySelector('[data-lesson-row="1"]') as HTMLElement;
     const scoreButton = within(row).getByRole("button", { name: /Score for Anvar Tester/ });
@@ -143,12 +143,12 @@ describe("JournalLessonView rows", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     const menu = within(row).getByRole("menu", { name: /Score for Anvar Tester, / });
     const choices = within(menu).getAllByRole("menuitemradio");
-    expect(choices).toHaveLength(6);
+    expect(choices).toHaveLength(5);
     choices.forEach((choice) => expect(choice.className).toContain("h-11"));
     expect(menu.className).toContain("flex");
     expect(row.contains(menu)).toBe(true);
     expect(within(menu).queryByRole("button", { name: "Close" })).toBeNull();
-    expect(menu.textContent).toBe("012345");
+    expect(menu.textContent).toBe("12345Clear");
     fireEvent.click(within(menu).getByRole("menuitemradio", { name: "2" }));
     expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "score", score: 2 });
     expect(within(row).queryByRole("menu")).toBeNull();

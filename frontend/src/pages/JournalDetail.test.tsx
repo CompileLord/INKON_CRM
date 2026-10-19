@@ -218,10 +218,21 @@ function pickerSummary(): string {
   return periodPicker().textContent ?? "";
 }
 
+function optionTextOf(label: string): string {
+  if (periodPicker().getAttribute("aria-expanded") !== "true") fireEvent.click(periodPicker());
+  const option: HTMLElement = within(screen.getByRole("listbox")).getByRole("option", { name: new RegExp(`^${label}`) });
+  return option.textContent ?? "";
+}
+
 function choosePeriod(periodId: number): void {
   fireEvent.click(periodPicker());
   const label: string = (PERIODS.find((period) => period.id === periodId) as JournalPeriod).period_label;
   fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: new RegExp(`^${label}`) }));
+}
+
+function periodSettingsButton(): HTMLElement {
+  fireEvent.click(screen.getByRole("button", { name: "Period options" }));
+  return screen.getByRole("menuitem", { name: "Period settings" });
 }
 
 function gradeCell(name: string, date: string): HTMLElement {
@@ -290,7 +301,7 @@ describe("period selection", () => {
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(OCTOBER);
     expect(pickerSummary()).toContain("Month 10");
-    expect(pickerSummary()).toContain("Current");
+    expect(optionTextOf("Month 10")).toContain("Current");
   });
 
   it("selects the latest started period and labels it Latest when the course calendar has ended", async () => {
@@ -298,8 +309,8 @@ describe("period selection", () => {
     renderWorkspace();
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(OCTOBER);
-    expect(pickerSummary()).toContain("Latest");
-    expect(pickerSummary()).not.toContain("Current");
+    expect(optionTextOf("Month 10")).toContain("Latest");
+    expect(optionTextOf("Month 10")).not.toContain("Current");
   });
 
   it("selects the earliest period and labels it Upcoming when every period is in the future", async () => {
@@ -308,7 +319,16 @@ describe("period selection", () => {
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(AUGUST);
     expect(pickerSummary()).toContain("Month 8");
-    expect(pickerSummary()).toContain("Upcoming");
+    expect(optionTextOf("Month 8")).toContain("Upcoming");
+  });
+
+  it("shows only the period label in the trigger, with range and status inside the dropdown items", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    expect(pickerSummary().trim()).toBe("Month 10");
+    const optionText: string = optionTextOf("Month 10");
+    expect(optionText).toContain(formatSchoolLessonDate("2026-10-01"));
+    expect(optionText).toContain("Current");
   });
 
   it("opens a listbox of rows with label, muted range, timing chip and a check on the selected period, with no fill-state badge", async () => {
@@ -422,7 +442,6 @@ describe("lesson selection", () => {
     await waitForGrid();
     const selected = screen.getAllByRole("columnheader").find((header) => header.getAttribute("aria-current") === "date");
     expect(selected?.textContent).toContain(formatSchoolLessonDate("2026-10-20"));
-    expect(screen.getByText("Today")).toBeDefined();
   });
 
   it("selects the first lesson when the whole period is still ahead", async () => {
@@ -444,39 +463,6 @@ describe("lesson selection", () => {
     expect(router.state.location.pathname).toBe("/journals");
   });
 
-  it("stops the previous and next arrows at the period boundary", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    const previous = screen.getByRole("button", { name: "Previous lesson" });
-    const next = screen.getByRole("button", { name: "Next lesson" });
-
-    fireEvent.click(previous);
-    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-06"));
-    expect((screen.getByRole("button", { name: "Previous lesson" }) as HTMLButtonElement).disabled).toBe(true);
-
-    fireEvent.click(next);
-    fireEvent.click(next);
-    fireEvent.click(next);
-    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-27"));
-    expect((screen.getByRole("button", { name: "Next lesson" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(router.state.location.search).not.toContain("period=");
-    expect(getJournalMock).not.toHaveBeenCalledWith(AUGUST);
-  });
-
-  it("uses replacement history for lesson, tab and view changes so Back leaves the journal", async () => {
-    renderWorkspace(["/journals", `/journals/${COURSE_ID}`]);
-    await waitForGrid();
-    fireEvent.click(screen.getByRole("button", { name: "Previous lesson" }));
-    fireEvent.click(screen.getByRole("button", { name: "Summary" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    await waitFor(() => expect(router.state.location.search).toContain("tab=progress"));
-    expect(router.state.location.search).toContain("view=summary");
-    expect(router.state.location.search).toContain("lesson=2026-10-06");
-    await act(async () => {
-      await router.navigate(-1);
-    });
-    expect(router.state.location.pathname).toBe("/journals");
-  });
 });
 
 describe("period change goes through the drain", () => {
@@ -537,7 +523,7 @@ describe("period change goes through the drain", () => {
     await waitForGrid();
     await gradeAnvarInOctober();
 
-    fireEvent.click(screen.getByRole("button", { name: "Previous lesson" }));
+    fireEvent.click(within(screen.getAllByRole("columnheader")[1]).getAllByRole("button")[0]);
 
     await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-06"));
     expect(screen.queryByText("Saving your changes before you leave…")).toBeNull();
@@ -557,7 +543,7 @@ describe("read-only and permission loss", () => {
     expect(screen.queryByRole("checkbox")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(document.querySelectorAll('[aria-haspopup="menu"], [aria-haspopup="dialog"]')).toHaveLength(0);
-    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Period options" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Keyboard help" })).toBeNull();
 
     const group = screen.getAllByRole("group", { name: /Attendance, score and comment/ })[0];
@@ -640,14 +626,6 @@ describe("four states", () => {
     expect(screen.queryByTestId("journal-grid-skeleton")).toBeNull();
   });
 
-  it("explains a period with no scheduled lessons and offers Summary", async () => {
-    getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), lesson_dates: [] });
-    renderWorkspace();
-    expect(await screen.findByText("No lessons in this period")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Summary" }));
-    expect(await screen.findByRole("table", { name: /Student totals/ })).toBeDefined();
-  });
-
   it("explains an empty roster", async () => {
     getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), students: [] });
     renderWorkspace();
@@ -656,434 +634,145 @@ describe("four states", () => {
 });
 
 describe("workspace anatomy", () => {
-  it("has no metric cards or progress chart above the grid", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    expect(screen.queryByText("Class Average")).toBeNull();
-    expect(screen.queryByText("Attendance Rate")).toBeNull();
-    expect(screen.queryByText("Score progress")).toBeNull();
-    expect(getStaffProgressMock).not.toHaveBeenCalled();
-  });
-
-  it("shows the back link, wrapping title, roster count, period picker, settings, tabs, view switch and reserved status", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    expect(screen.getByRole("link", { name: "Journals" }).getAttribute("href")).toBe("/journals");
-    expect(screen.getByRole("heading", { level: 1 }).className).toContain("break-words");
-    expect(await screen.findByText("2 students")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Period settings" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Keyboard help" })).toBeDefined();
-    expect(screen.getByRole("tab", { name: "Gradebook" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tab", { name: "Progress" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Grid" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("journal-search-slot")).toBeDefined();
-    expect(screen.getByTestId("journal-save-status")).toBeDefined();
-  });
-
   it("keeps the exam limit reachable through Period settings", async () => {
     renderWorkspace();
     await waitForGrid();
-    fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
+    fireEvent.click(periodSettingsButton());
     expect(await screen.findByRole("dialog", { name: "Period settings" })).toBeDefined();
   });
 
-  it("shows the course-wide Progress view instead of the Gradebook when the Progress tab is chosen", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    expect(await screen.findByTestId("progress-scope")).toBeDefined();
-    expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
-    expect(screen.queryByTestId("journal-save-status")).toBeNull();
-  });
-
-  it("keeps the save status visible in Progress while work is unresolved", async () => {
-    batchUpdateMock.mockRejectedValue(new AuthApiError(400, "Bad request"));
-    renderWorkspace();
-    await waitForGrid();
-    const cell = gradeCell("Anvar", "2026-10-13");
-    cell.focus();
-    fireEvent.keyDown(cell, { key: "4" });
-    await waitFor(() => expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("failed"));
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("failed");
-    expect(screen.getByRole("button", { name: "Retry" })).toBeDefined();
-  });
-
-  it("restores the Progress tab from the URL", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?tab=progress`]);
-    expect(await screen.findByTestId("progress-scope")).toBeDefined();
-    expect(screen.getByRole("tab", { name: "Progress" }).getAttribute("aria-selected")).toBe("true");
-  });
-
-  it("restores the Summary view from the URL and lists totals with an honest unavailable state", async () => {
-    const detail = buildJournal(OCTOBER);
-    detail.students[1] = { ...detail.students[1], summary: null };
-    getJournalMock.mockResolvedValue(detail);
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
-    const list = await screen.findByRole("table", { name: /Student totals/ });
-    expect(within(list).getAllByRole("row")).toHaveLength(3);
-    expect(within(list).getByText("Unavailable")).toBeDefined();
-    expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
-  });
 });
 
-describe("phone and tablet Lesson view", () => {
-  beforeEach(() => {
-    viewportState.desktop = false;
-  });
-
-  function lessonRow(name: string): HTMLElement {
-    return document.querySelector(`[data-lesson-row="${name === "Anvar" ? 11 : 12}"]`) as HTMLElement;
-  }
-
-  async function waitForLesson(): Promise<void> {
-    await screen.findByRole("list", { name: "Students for the selected lesson" });
-  }
-
-  it("shows Lesson and Summary instead of the desktop grid below 1024px", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "Lesson" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "Summary" })).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Keyboard help" })).toBeNull();
-    expect(within(lessonRow("Anvar")).getByText("Anvar Tester")).toBeDefined();
-  });
-
-  it("keeps the lesson and status in one sticky band that stops sticking at short landscape heights", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    const band = screen.getByTestId("journal-lesson-band");
-    expect(band.className).toContain("sticky");
-    expect(band.className).toContain("top-[calc(3.5rem+1px+env(safe-area-inset-top))]");
-    expect(band.className).toContain("[@media(max-height:500px)]:static");
-    expect(within(band).getByRole("button", { name: "Previous lesson" })).toBeDefined();
-    expect(within(band).getByTestId("journal-save-status")).toBeDefined();
-  });
-
-  it("collapses the lesson band in Summary while nothing is unsettled", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
-    await screen.findByRole("list", { name: /Student totals/ });
-    expect(screen.queryByTestId("journal-lesson-band")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Previous lesson" })).toBeNull();
-  });
-
-  it("keeps the status line visible in Summary while there is unsettled work", async () => {
-    const slow = createDeferred<Record<string, number>>();
-    updateSummaryMock.mockReturnValueOnce(slow.promise as never);
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
-    await screen.findByRole("list", { name: /Student totals/ });
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
-    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "6" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    const band = await screen.findByTestId("journal-lesson-band");
-    expect(within(band).getByTestId("journal-save-status")).toBeDefined();
-    expect(within(band).queryByRole("button", { name: "Previous lesson" })).toBeNull();
-    await act(async () => {
-      slow.resolve({ id: 1101, journal_id: OCTOBER, student_id: 11, homework_score: 0, attendance_score: 0, exam_score: 0, bonus_score: 6, sum_score: 6, max_period_score: 100, percentage: 6, attendance_count: 0, total_lessons: 4, version: 2 });
-    });
-  });
-
-  it("queues a phone score through the same owner and journal id as the grid", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "4" }));
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-    expect(batchUpdateMock.mock.calls[0][0]).toBe(OCTOBER);
-    expect(batchUpdateMock.mock.calls[0][1]).toEqual([
-      expect.objectContaining({ student_id: 11, lesson_date: "2026-10-13", score: 4, attendance: true }),
-    ]);
-  });
-
-  it("sends the checkbox absence payload from the phone row", async () => {
-    const detail = buildJournal(OCTOBER);
-    detail.students[0].entries[1] = { ...detail.students[0].entries[1], attendance: true, score: 4 };
-    getJournalMock.mockResolvedValue(detail);
-    renderWorkspace();
-    await waitForLesson();
-    fireEvent.click(within(lessonRow("Anvar")).getByRole("checkbox"));
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-    expect(batchUpdateMock.mock.calls[0][1]).toEqual([
-      expect.objectContaining({ student_id: 11, lesson_date: "2026-10-13", attendance: false, score: 0 }),
-    ]);
-  });
-
-  it("keeps the owner, draft and a single write when the viewport crosses 1024px during the debounce", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "3" }));
-
-    await act(async () => {
-      viewportState.setDesktop(true);
-    });
-    await waitForGrid();
-    expect(within(gradeCell("Anvar", "2026-10-13")).getByRole("button", { name: "3" })).toBeDefined();
-    expect(pickerSummary()).toContain("Month 10");
-
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-    expect(batchUpdateMock.mock.calls[0][1]).toEqual([expect.objectContaining({ student_id: 11, score: 3 })]);
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    expect(batchUpdateMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("moves focus to the equivalent control when the layout changes under a focused row control", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    const scoreButton = within(lessonRow("Bahor")).getByRole("button", { name: /Score for Bahor Tester/ });
-    scoreButton.focus();
-    await act(async () => {
-      viewportState.setDesktop(true);
-    });
-    await waitForGrid();
-    await waitFor(() => {
-      const active = document.activeElement as HTMLElement;
-      expect(active.getAttribute("data-control")).toBe("score");
-      expect(active.closest("[data-anchor]")?.getAttribute("data-anchor")).toBe("12:2026-10-13");
-    });
-  });
-
-  it("filters the loaded roster with a matched count, keeps source order and clears", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    const search = screen.getByRole("searchbox", { name: "Search students in this period" });
-    fireEvent.change(search, { target: { value: "bah" } });
-    expect(document.querySelector('[data-lesson-row="11"]')).toBeNull();
-    expect(lessonRow("Bahor")).not.toBeNull();
-    expect(screen.getByText("1 of 2 students")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
-    expect(screen.queryByText("1 of 2 students")).toBeNull();
-    const names = Array.from(document.querySelectorAll("[data-lesson-row]")).map((row) => row.getAttribute("data-lesson-row"));
-    expect(names).toEqual(["11", "12"]);
-  });
-
-  it("keeps hidden rows' pending work in the global status and sends later grades by student identity", async () => {
-    const slow = createDeferred<JournalBatchUpdateResponse>();
-    batchUpdateMock.mockReturnValueOnce(slow.promise);
-    renderWorkspace();
-    await waitForLesson();
-    fireEvent.click(within(lessonRow("Anvar")).getByRole("button", { name: /Score for Anvar Tester/ }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "5" }));
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
-    expect(document.querySelector('[data-lesson-row="11"]')).toBeNull();
-    expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("saving");
-
-    fireEvent.click(within(lessonRow("Bahor")).getByRole("button", { name: /Score for Bahor Tester/ }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "2" }));
-    await act(async () => {
-      slow.resolve({ applied: [{ student_id: 11, lesson_date: "2026-10-13", attendance: true, score: 5, comment: null, version: 2 }], conflicts: [], summaries: [] });
-    });
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(2));
-    expect(batchUpdateMock.mock.calls[1][1]).toEqual([expect.objectContaining({ student_id: 12, score: 2 })]);
-    expect(batchUpdateMock.mock.calls.flatMap((call) => call[1]).filter((item) => item.student_id === 11)).toHaveLength(1);
-  });
-
-  it("shows no-match copy distinct from the no-students copy", async () => {
-    renderWorkspace();
-    await waitForLesson();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "zzz" } });
-    expect(await screen.findByText("No students match")).toBeDefined();
-    expect(screen.queryByText("There are no students in this course")).toBeNull();
-    cleanup();
-
-    getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), students: [] });
-    renderWorkspace();
-    expect(await screen.findByText("There are no students in this course")).toBeDefined();
-    expect(screen.queryByText("No students match")).toBeNull();
-  });
-
-  it("filters the desktop grid by identity so a grade after filtering reaches the matched student only", async () => {
-    viewportState.desktop = true;
+describe("single-screen journal page", () => {
+  it("renders no tabs, no Table/Results switch and no day arrows", async () => {
     renderWorkspace();
     await waitForGrid();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
-    expect(screen.queryByLabelText(new RegExp(`Score for Anvar Tester`))).toBeNull();
-    const cell = gradeCell("Bahor", "2026-10-13");
-    cell.focus();
-    fireEvent.keyDown(cell, { key: "4" });
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-    expect(batchUpdateMock.mock.calls[0][1]).toEqual([expect.objectContaining({ student_id: 12, score: 4 })]);
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    for (const name of ["Grid", "Summary", "Lesson", "Table", "Results", "Previous lesson", "Next lesson"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
   });
 
-  it("shows read-only phone rows with the archived explanation and no editors for an assigned mentor", async () => {
+  it("shows a compact toolbar with the period dropdown, search, options menu, save status and a shortcuts icon button", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    const toolbar: HTMLElement = screen.getByTestId("journal-toolbar");
+    expect(within(toolbar).getByRole("combobox", { name: "Period" })).toBeDefined();
+    expect(within(toolbar).getByTestId("journal-search-slot")).toBeDefined();
+    expect(within(toolbar).getByRole("button", { name: "Period options" })).toBeDefined();
+    expect(within(toolbar).getByTestId("journal-save-status")).toBeDefined();
+    const help: HTMLElement = within(toolbar).getByRole("button", { name: "Keyboard shortcuts" });
+    expect(help.textContent).toBe("");
+    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
+  });
+
+  it("puts the progress chart between the toolbar and the grid and renders no per-student progress table", async () => {
+    renderWorkspace();
+    await waitForGrid();
+    const chart: HTMLElement = await screen.findByTestId("progress-chart");
+    const toolbar: HTMLElement = screen.getByTestId("journal-toolbar");
+    const grid: HTMLElement = screen.getByRole("region", { name: /Gradebook grid/ });
+    expect(toolbar.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(chart.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("progress-table")).toBeNull();
+  });
+
+  it("renders no chart when no period has graded data", async () => {
+    const ungraded: CourseStaffProgressResponse = buildStaffProgress();
+    ungraded.students = ungraded.students.map((entry) => ({
+      ...entry,
+      period_results: entry.period_results.map((periodResult) => staffResult(periodResult.period_id, null, null, null)),
+    }));
+    getStaffProgressMock.mockResolvedValue(ungraded);
+    renderWorkspace();
+    await waitForGrid();
+    await waitFor(() => expect(getStaffProgressMock).toHaveBeenCalled());
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+    expect(screen.queryByTestId("progress-collapse-toggle")).toBeNull();
+  });
+
+  it("shows Exam and Bonus as the last editable columns before Total and %, and saves an exam edit through the summary endpoint", async () => {
+    updateSummaryMock.mockImplementation(async (journalId, studentId, payload) => ({
+      ...(buildJournal(journalId).students[0].summary as NonNullable<JournalDetailResponse["students"][number]["summary"]>),
+      student_id: studentId,
+      exam_score: payload.exam_score,
+      bonus_score: payload.bonus_score,
+      version: payload.version + 1,
+    }));
+    renderWorkspace();
+    await waitForGrid();
+    const names: string[] = screen.getAllByRole("columnheader").map((header) => header.textContent ?? "");
+    expect(names.slice(-4)).toEqual(["Exam", "Bonus", "Total", "%"]);
+    const exam = screen.getByRole("textbox", { name: "Exam score for Anvar Tester" });
+    fireEvent.change(exam, { target: { value: "30" } });
+    fireEvent.blur(exam);
+    await waitFor(() => expect(updateSummaryMock).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    expect(updateSummaryMock).toHaveBeenCalledWith(OCTOBER, 11, { exam_score: 30, bonus_score: 0, version: 1 });
+  });
+
+  it("keeps Exam and Bonus read-only for a mentor on an archived course", async () => {
     useAuthStore.setState({ role: "mentor" });
     getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
     renderWorkspace();
-    await waitForLesson();
-    expect(screen.getByTestId("journal-archived-notice")).toBeDefined();
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(within(lessonRow("Anvar")).queryAllByRole("button")).toHaveLength(0);
-  });
-
-  it("shows a lesson skeleton in row geometry while the journal loads and a working retry on failure", async () => {
-    getJournalMock.mockRejectedValueOnce(new AuthApiError(500, "boom"));
-    renderWorkspace();
-    expect(await screen.findByText("Failed to load journal data")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await waitForLesson();
-    cleanup();
-
-    const pending = createDeferred<JournalDetailResponse>();
-    getJournalMock.mockReturnValueOnce(pending.promise);
-    renderWorkspace();
-    expect(await screen.findByTestId("journal-lesson-skeleton")).toBeDefined();
-    await act(async () => {
-      pending.resolve(buildJournal(OCTOBER));
-    });
-    await waitForLesson();
-  });
-});
-
-describe("Summary, breakdown and the paired editor", () => {
-  const SUMMARY_URL = `/journals/${COURSE_ID}?view=summary`;
-
-  async function openBreakdown(name = "Anvar"): Promise<void> {
-    fireEvent.click(await screen.findByRole("button", { name: `Open breakdown for ${name} Tester` }));
-    await screen.findByRole("button", { name: "Back to summary" });
-  }
-
-  it("replaces the interim list with a readable table and hides the lesson controls while keeping search and status", async () => {
-    renderWorkspace([SUMMARY_URL]);
-    const table = await screen.findByRole("table", { name: /Student totals/ });
-    ["Students", "Homework", "Attendance", "Exam", "Bonus", "Total / max", "%"].forEach((heading) =>
-      expect(within(table).getByRole("columnheader", { name: heading })).toBeDefined(),
-    );
-    expect(screen.queryByRole("button", { name: "Previous lesson" })).toBeNull();
-    expect(screen.getByRole("searchbox", { name: "Search students in this period" })).toBeDefined();
-    expect(screen.getByTestId("journal-save-status")).toBeDefined();
-  });
-
-  it("keeps the selected lesson in the URL while Summary is shown so Grid returns to it", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?lesson=2026-10-06`]);
     await waitForGrid();
-    fireEvent.click(screen.getByRole("button", { name: "Summary" }));
-    await screen.findByRole("table", { name: /Student totals/ });
-    expect(router.state.location.search).toContain("lesson=2026-10-06");
-    fireEvent.click(screen.getByRole("button", { name: "Grid" }));
-    await waitForGrid();
-    const selected = screen.getAllByRole("columnheader").find((header) => header.getAttribute("aria-current") === "date");
-    expect(selected?.textContent).toContain(formatSchoolLessonDate("2026-10-06"));
+    expect(screen.queryAllByRole("textbox", { name: /^(Exam|Bonus) score for/ })).toHaveLength(0);
+    expect(screen.getAllByLabelText("Exam score for Anvar Tester").length).toBeGreaterThan(0);
   });
 
-  it("opens the breakdown in place without any further request and Back restores the row focus", async () => {
-    renderWorkspace([SUMMARY_URL]);
-    await screen.findByRole("table", { name: /Student totals/ });
-    const journalCalls = getJournalMock.mock.calls.length;
-    const enrollmentCalls = listEnrollmentsMock.mock.calls.length;
-    await openBreakdown();
-    expect(router.state.location.search).toContain("student=11");
-    expect(getJournalMock.mock.calls.length).toBe(journalCalls);
-    expect(listEnrollmentsMock.mock.calls.length).toBe(enrollmentCalls);
-    expect(screen.getByRole("heading", { name: "Anvar Tester" })).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Back to summary" }));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Open breakdown for Anvar Tester" })));
-    expect(router.state.location.search).not.toContain("student=");
-  });
-
-  it("restores an open breakdown from the URL", async () => {
-    renderWorkspace([`${SUMMARY_URL}&student=12`]);
-    expect(await screen.findByRole("heading", { name: "Bahor Tester" })).toBeDefined();
-  });
-
-  it("shows View profile for a superadmin and sends navigation through the drain", async () => {
-    const slow = createDeferred<{ id: number; journal_id: number; student_id: number }>();
-    updateSummaryMock.mockReturnValueOnce(slow.promise as never);
-    renderWorkspace([SUMMARY_URL]);
-    await openBreakdown();
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
-    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "7" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(updateSummaryMock).toHaveBeenCalledTimes(1));
-
-    fireEvent.click(screen.getByRole("link", { name: "View profile" }));
-    await screen.findByText("Saving your changes before you leave…");
-    expect(router.state.location.pathname).toBe(`/journals/${COURSE_ID}`);
-
-    await act(async () => {
-      slow.resolve({ id: 1101, journal_id: OCTOBER, student_id: 11, homework_score: 0, attendance_score: 0, exam_score: 0, bonus_score: 7, sum_score: 7, max_period_score: 100, percentage: 7, attendance_count: 0, total_lessons: 4, version: 2 } as never);
-    });
-    await waitFor(() => expect(router.state.location.pathname).toBe("/students/11"));
-  });
-
-  it("queues bonus and exam together with the current version as one summary write", async () => {
-    updateSummaryMock.mockImplementation(async (_journalId, studentId, payload) => ({
-      id: 1, journal_id: OCTOBER, student_id: studentId, homework_score: 0, attendance_score: 0, exam_score: payload.exam_score,
-      bonus_score: payload.bonus_score, sum_score: payload.exam_score + payload.bonus_score, max_period_score: 100,
-      percentage: payload.exam_score + payload.bonus_score, attendance_count: 0, total_lessons: 4, version: payload.version + 1,
-    }));
-    renderWorkspace([SUMMARY_URL]);
-    await openBreakdown();
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
-    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "8" } });
-    fireEvent.change(screen.getByLabelText("Exam"), { target: { value: "45" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(updateSummaryMock).toHaveBeenCalledTimes(1));
-    expect(updateSummaryMock).toHaveBeenCalledWith(OCTOBER, 11, { bonus_score: 8, exam_score: 45, version: 1 });
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit exam and bonus" })));
-  });
-
-  it("keeps both local values and enters review when the summary version is stale", async () => {
-    updateSummaryMock.mockRejectedValue(new AuthApiError(409, "Conflict"));
-    renderWorkspace([SUMMARY_URL]);
-    await openBreakdown();
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
-    fireEvent.change(screen.getByLabelText("Bonus"), { target: { value: "8" } });
-    fireEvent.change(screen.getByLabelText("Exam"), { target: { value: "45" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(screen.getByTestId("journal-save-status").getAttribute("data-phase")).toBe("conflict"));
-    expect(screen.getByRole("button", { name: "Review" })).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus" }));
-    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("8");
-    expect((screen.getByLabelText("Exam") as HTMLInputElement).value).toBe("45");
-  });
-
-  it("shows no edit action and no editor to a mentor on an archived journal but still opens the breakdown", async () => {
-    useAuthStore.setState({ role: "mentor", userId: 77 });
-    getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
-    renderWorkspace([SUMMARY_URL]);
-    await screen.findByRole("table", { name: /Student totals/ });
-    expect(screen.queryByRole("button", { name: /Edit exam and bonus/ })).toBeNull();
-    await openBreakdown();
-    expect(screen.queryByRole("button", { name: "Edit exam and bonus" })).toBeNull();
-    expect(screen.getByRole("link", { name: "View profile" }).getAttribute("href")).toBe("/students/11");
-  });
-
-  it("reads Unavailable for a missing summary and a percentage above 100 as supplied", async () => {
-    const detail = buildJournal(OCTOBER);
-    detail.students[0].summary = { ...detail.students[0].summary!, sum_score: 130, max_period_score: 124, percentage: 104.84 };
-    detail.students[1] = { ...detail.students[1], summary: null };
+  it("bulk-fills a lesson column through one batched autosave request that touches only empty cells", async () => {
+    const detail: JournalDetailResponse = buildJournal(OCTOBER);
+    detail.students[1] = {
+      ...detail.students[1],
+      entries: detail.students[1].entries.map((entry) =>
+        entry.lesson_date === "2026-10-13" ? { ...entry, attendance: true, score: 3 } : entry,
+      ),
+    };
     getJournalMock.mockResolvedValue(detail);
-    renderWorkspace([SUMMARY_URL]);
-    const table = await screen.findByRole("table", { name: /Student totals/ });
-    expect(within(table).getByText("104.84%")).toBeDefined();
-    expect(within(table).getByText("130 / 124")).toBeDefined();
-    expect(within(table).getByText("Unavailable")).toBeDefined();
+    renderWorkspace();
+    await waitForGrid();
+    fireEvent.click(screen.getByRole("button", { name: `Bulk actions for ${formatSchoolLessonDate("2026-10-13")}` }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mark all present" }));
+    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    const payload = batchUpdateMock.mock.calls[0][1];
+    expect(payload).toHaveLength(1);
+    expect(payload[0]).toEqual(expect.objectContaining({ student_id: 11, lesson_date: "2026-10-13", attendance: true }));
   });
 
-  it("shows divided rows with labeled component pairs on narrow viewports", async () => {
-    viewportState.desktop = false;
-    renderWorkspace([SUMMARY_URL]);
-    const list = await screen.findByRole("list", { name: /Student totals/ });
-    const first = within(list).getAllByRole("listitem")[0];
-    ["Homework", "Attendance", "Exam", "Bonus"].forEach((label) => expect(within(first).getByText(label)).toBeDefined());
-    expect(within(first).getByRole("button", { name: /Edit exam and bonus for Anvar Tester/ })).toBeDefined();
+  it("marks only the at-risk students: low period percentage or three absences in a row", async () => {
+    const detail: JournalDetailResponse = buildJournal(OCTOBER);
+    detail.students[0] = { ...detail.students[0], summary: { ...(detail.students[0].summary as NonNullable<typeof detail.students[0]["summary"]>), percentage: 40 } };
+    detail.students[1] = { ...detail.students[1], summary: { ...(detail.students[1].summary as NonNullable<typeof detail.students[1]["summary"]>), percentage: 80 } };
+    getJournalMock.mockResolvedValue(detail);
+    renderWorkspace();
+    await waitForGrid();
+    const markers: HTMLElement[] = screen.getAllByTestId("at-risk-marker");
+    expect(markers).toHaveLength(1);
+    expect(within(screen.getByRole("rowheader", { name: /Anvar Tester/ })).getByTestId("at-risk-marker")).toBe(markers[0]);
   });
 
-  it("filters Summary rows with the roster search", async () => {
-    renderWorkspace([SUMMARY_URL]);
-    const table = await screen.findByRole("table", { name: /Student totals/ });
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search students in this period" }), { target: { value: "bahor" } });
-    expect(within(table).getAllByRole("row")).toHaveLength(2);
-    expect(within(table).queryByText("Anvar Tester")).toBeNull();
+  it("shows a single empty state without toolbar, chart or grid when the course has no students, with an Add students link for an administrator", async () => {
+    getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), students: [] });
+    renderWorkspace();
+    expect(await screen.findByText("There are no students in this course")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Add students" }).getAttribute("href")).toBe(`/courses/${COURSE_ID}`);
+    expect(screen.queryByTestId("journal-toolbar")).toBeNull();
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+    expect(screen.queryByRole("region", { name: /Gradebook grid/ })).toBeNull();
+  });
+
+  it("offers no Add students link to a mentor on an empty course", async () => {
+    useAuthStore.setState({ role: "mentor" });
+    getJournalMock.mockResolvedValue({ ...buildJournal(OCTOBER), students: [] });
+    renderWorkspace();
+    expect(await screen.findByText("There are no students in this course")).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Add students" })).toBeNull();
   });
 });
 
 describe("Period settings: exam maximum", () => {
   function settingsButton(): HTMLElement {
-    return screen.getByRole("button", { name: "Period settings" });
+    return periodSettingsButton();
   }
 
   async function openSettings(): Promise<HTMLElement> {
@@ -1348,8 +1037,7 @@ describe("Period settings: exam maximum", () => {
   it("applies the returned maximum and summaries, closes, returns focus and refreshes Progress", async () => {
     renderWorkspace();
     await waitForGrid();
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    await screen.findByRole("table", { name: "Class results by period" });
+    await screen.findByTestId("progress-chart");
     expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(settingsButton());
@@ -1358,7 +1046,7 @@ describe("Period settings: exam maximum", () => {
     fireEvent.click(saveButton());
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
     expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 80 });
-    await waitFor(() => expect(document.activeElement).toBe(settingsButton()));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Period options" })));
     await waitFor(() => expect(getStaffProgressMock).toHaveBeenCalledTimes(2));
 
     fireEvent.click(settingsButton());
@@ -1403,13 +1091,15 @@ describe("Period settings: exam maximum", () => {
     await i18n.changeLanguage("ru");
     renderWorkspace();
     await screen.findByRole("region", { name: /./ });
-    fireEvent.click(screen.getByRole("button", { name: "Настройки периода" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Параметры периода" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Настройки периода" }));
     expect(await screen.findByRole("dialog", { name: "Настройки периода" })).toBeDefined();
     cleanup();
     await i18n.changeLanguage("tg");
     renderWorkspace();
     await screen.findByRole("region", { name: /./ });
-    fireEvent.click(screen.getByRole("button", { name: "Танзимоти давра" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Параметрҳои давра" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Танзимоти давра" }));
     expect(await screen.findByRole("dialog", { name: "Танзимоти давра" })).toBeDefined();
   });
 
@@ -1418,7 +1108,7 @@ describe("Period settings: exam maximum", () => {
     getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
     renderWorkspace();
     await waitForGrid();
-    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Period options" })).toBeNull();
     expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull();
   });
 
@@ -1427,115 +1117,6 @@ describe("Period settings: exam maximum", () => {
     renderWorkspace();
     await waitForGrid();
     expect(settingsButton()).toBeDefined();
-  });
-});
-
-describe("Progress tab", () => {
-  const PROGRESS_URL = `/journals/${COURSE_ID}?tab=progress`;
-
-  async function openProgress(): Promise<HTMLElement> {
-    renderWorkspace([PROGRESS_URL]);
-    return screen.findByRole("table", { name: "Class results by period" });
-  }
-
-  it("scopes the view to the whole course with every roster student and period columns", async () => {
-    const table = await openProgress();
-    expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
-    expect(screen.getByRole("button", { name: "About these results" })).toBeDefined();
-    expect(within(table).getAllByRole("columnheader").map((header) => header.textContent?.replace(/[↑↓]/g, "").trim())).toEqual(["Student", "Month 8", "Month 9", "Month 10", "Average", "Trend"]);
-    expect(within(table).getByText("Anvar Tester")).toBeDefined();
-    expect(within(table).getByText("Bahor Tester")).toBeDefined();
-    expect(getStaffProgressMock).toHaveBeenCalledWith(COURSE_ID);
-  });
-
-  it("shows a missing result as a muted dash and a stored zero as 0%", async () => {
-    const table = await openProgress();
-    const bahor = within(table).getAllByTestId("student-row").find((row) => row.textContent?.includes("Bahor")) as HTMLElement;
-    expect(within(bahor).getAllByRole("cell")[0].textContent).toContain("—");
-    const anvar = within(table).getAllByTestId("student-row").find((row) => row.textContent?.includes("Anvar")) as HTMLElement;
-    expect(within(anvar).getAllByRole("cell")[1].textContent).toBe("0%");
-  });
-
-  it("keeps the same course-wide scope and one request when the Gradebook period changes", async () => {
-    await openProgress();
-    choosePeriod(AUGUST);
-    await waitFor(() => expect(router.state.location.search).toContain(`period=${AUGUST}`));
-    expect(screen.getByTestId("progress-scope").textContent).toBe("Whole course, all periods");
-    expect(getStaffProgressMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("leaves periods that start after school-calendar today out of the table, by date only", async () => {
-    const data = buildStaffProgress();
-    data.periods.push({ id: 104, period_label: "Month 11", period_start: "2026-11-01", period_end: "2026-11-30" });
-    data.students.forEach((student) => student.period_results.push(staffResult(104, 0, 24, 0)));
-    getStaffProgressMock.mockResolvedValue(data);
-    const table = await openProgress();
-    expect(within(table).queryByText("Month 11")).toBeNull();
-    schoolToday.value = "2026-11-01";
-    cleanup();
-    renderWorkspace([PROGRESS_URL]);
-    const later = await screen.findByRole("table", { name: "Class results by period" });
-    expect(within(later).getByText("Month 11")).toBeDefined();
-  });
-
-  it("renders no completion, grading-status or needs-grading claim and no chart", async () => {
-    await openProgress();
-    const text = document.body.textContent ?? "";
-    expect(text).not.toMatch(/graded|completed|complete\b|completion|needs grading|ungraded/i);
-    expect(document.querySelector("svg[role='img']")).toBeNull();
-  });
-
-  it("keeps the same table on a narrow viewport with a sticky name column and sideways scroll inside it", async () => {
-    viewportState.setDesktop(false);
-    renderWorkspace([PROGRESS_URL]);
-    const table = await screen.findByRole("table", { name: "Class results by period" });
-    expect(screen.getByTestId("progress-table-scroll").className).toContain("overflow-x-auto");
-    expect(within(table).getAllByTestId("student-row")[0].querySelector("th")?.className).toContain("sticky");
-    expect(screen.queryByRole("list", { name: "Class results by period" })).toBeNull();
-    viewportState.setDesktop(true);
-  });
-
-  it("shows a skeleton while loading, then an empty-roster explanation", async () => {
-    const pending = createDeferred<CourseStaffProgressResponse>();
-    getStaffProgressMock.mockReturnValueOnce(pending.promise);
-    renderWorkspace([PROGRESS_URL]);
-    expect(await screen.findByTestId("journal-progress-skeleton")).toBeDefined();
-    await act(async () => {
-      pending.resolve({ ...buildStaffProgress(), students: [] });
-    });
-    expect(await screen.findByText("No students in this course")).toBeDefined();
-  });
-
-  it("keeps the Gradebook and its drafts intact when Progress fails, and Retry recovers", async () => {
-    getStaffProgressMock.mockRejectedValueOnce(new AuthApiError(500, "boom"));
-    batchUpdateMock.mockImplementation(() => new Promise(() => undefined));
-    renderWorkspace();
-    await waitForGrid();
-    const cell = gradeCell("Anvar", "2026-10-13");
-    cell.focus();
-    fireEvent.keyDown(cell, { key: "4" });
-    fireEvent.click(screen.getByRole("tab", { name: "Progress" }));
-    const alert = await screen.findByText("Could not load progress");
-    expect(alert).toBeDefined();
-    expect(screen.getByText("Your gradebook and unsaved changes are not affected.")).toBeDefined();
-    expect(screen.getByTestId("journal-save-status")).toBeDefined();
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Retry" }).find((button) => button.closest("[role='alert']")?.textContent?.includes("Could not load progress")) as HTMLElement);
-    expect(await screen.findByRole("table", { name: "Class results by period" })).toBeDefined();
-
-    fireEvent.click(screen.getByRole("tab", { name: "Gradebook" }));
-    await waitForGrid();
-    expect(within(gradeCell("Anvar", "2026-10-13")).getByRole("button", { name: "4" })).toBeDefined();
-  });
-
-  it("is translated in Russian and Tajik", async () => {
-    await i18n.changeLanguage("ru");
-    renderWorkspace([PROGRESS_URL]);
-    expect((await screen.findByTestId("progress-scope")).textContent).toBe("Весь курс, все периоды");
-    cleanup();
-    await i18n.changeLanguage("tg");
-    renderWorkspace([PROGRESS_URL]);
-    expect((await screen.findByTestId("progress-scope")).textContent).toBe("Тамоми курс, ҳамаи давраҳо");
   });
 });
 
@@ -1555,18 +1136,9 @@ describe("Group 04 cross-surface integration", () => {
     await waitFor(() => expect(pickerSummary()).toContain("Month 8"));
   }
 
-  it("sends View profile with the full journal URL so the profile can return to it", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?period=${OCTOBER}&lesson=2026-10-13&view=summary&student=11`]);
-    fireEvent.click(await screen.findByRole("link", { name: "View profile" }));
-    await waitFor(() => expect(router.state.location.pathname).toBe("/students/11"));
-    expect(router.state.location.state).toEqual({
-      fromJournal: `/journals/${COURSE_ID}?period=${OCTOBER}&lesson=2026-10-13&view=summary&student=11`,
-    });
-  });
-
   it("closes Period settings and discards its typed maximum when browser Back changes the period", async () => {
     await visitAugustThenSelectOctober();
-    fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
+    fireEvent.click(periodSettingsButton());
     await screen.findByRole("dialog", { name: "Period settings" });
     fireEvent.change(screen.getByLabelText("Exam maximum"), { target: { value: "77" } });
 
@@ -1574,50 +1146,10 @@ describe("Group 04 cross-surface integration", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
     expect(updateExamMaxMock).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Period settings" }));
+    fireEvent.click(periodSettingsButton());
     await screen.findByRole("dialog", { name: "Period settings" });
     expect((screen.getByLabelText("Exam maximum") as HTMLInputElement).value).toBe("100");
     expect(screen.getByRole("dialog", { name: "Period settings" }).textContent).toContain("Month 8");
-  });
-
-  it("closes the Summary editor and drops its draft when browser Back changes the period", async () => {
-    await visitAugustThenSelectOctober("&view=summary", () => screen.findByRole("table", { name: /Student totals/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
-    fireEvent.change(await screen.findByLabelText("Bonus"), { target: { value: "9" } });
-
-    await goBackToAugust();
-    await waitFor(() => expect(screen.queryByLabelText("Bonus")).toBeNull());
-    expect(updateSummaryMock).not.toHaveBeenCalled();
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("closes a phone comment dialog when browser Back changes the period and never saves its text to the other journal", async () => {
-    viewportState.setDesktop(false);
-    await visitAugustThenSelectOctober("", () => screen.findByRole("list", { name: "Students for the selected lesson" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Add comment for Anvar Tester" }));
-    fireEvent.change(await screen.findByRole("textbox"), { target: { value: "typed for October" } });
-
-    await goBackToAugust();
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(batchUpdateMock).not.toHaveBeenCalled();
-    viewportState.setDesktop(true);
-  });
-
-  it("keeps a dirty Summary editor draft when the viewport crosses the 1024px breakpoint", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary`]);
-    await screen.findByRole("table", { name: /Student totals/ });
-    fireEvent.click(screen.getByRole("button", { name: "Edit exam and bonus for Anvar Tester" }));
-    fireEvent.change(await screen.findByLabelText("Bonus"), { target: { value: "9" } });
-
-    act(() => viewportState.setDesktop(false));
-    await screen.findByRole("list", { name: /Student totals/, hidden: true });
-    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("9");
-    expect(screen.getAllByRole("dialog")).toHaveLength(1);
-
-    act(() => viewportState.setDesktop(true));
-    await screen.findByRole("table", { name: /Student totals/, hidden: true });
-    expect((screen.getByLabelText("Bonus") as HTMLInputElement).value).toBe("9");
-    expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
 
   it.each([
@@ -1633,14 +1165,6 @@ describe("Group 04 cross-surface integration", () => {
     expect(screen.getByRole("link", { name: "Journals" })).toBeDefined();
   });
 
-  it("hides roster search while a breakdown is open and shows it again after Back to summary", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary&student=11`]);
-    await screen.findByRole("button", { name: "Back to summary" });
-    expect(screen.queryByRole("searchbox")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Back to summary" }));
-    expect(await screen.findByRole("searchbox", { name: "Search students in this period" })).toBeDefined();
-  });
-
   it("offers no roster search when the course has no students", async () => {
     getJournalMock.mockImplementation(async (journalId: number) => ({ ...buildJournal(journalId), students: [] }));
     renderWorkspace();
@@ -1648,11 +1172,6 @@ describe("Group 04 cross-surface integration", () => {
     expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
-  it("moves focus to the breakdown heading when the page is restored with an open breakdown", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?view=summary&student=12`]);
-    const heading = await screen.findByRole("heading", { name: "Bahor Tester" });
-    await waitFor(() => expect(document.activeElement).toBe(heading));
-  });
 });
 
 describe("period listbox keyboard and focus", () => {
@@ -1728,146 +1247,5 @@ describe("period listbox keyboard and focus", () => {
     fireEvent.click(periodPicker());
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("listbox")).toBeNull();
-  });
-});
-
-describe("period and lesson motion", () => {
-  const animateMock = vi.fn();
-  const cancelMock = vi.fn();
-  let reducedMotion = false;
-
-  beforeEach(() => {
-    animateMock.mockReset();
-    cancelMock.mockReset();
-    animateMock.mockImplementation(() => ({ cancel: cancelMock, onfinish: null, oncancel: null }));
-    Object.defineProperty(HTMLElement.prototype, "animate", { configurable: true, writable: true, value: animateMock });
-    reducedMotion = false;
-    const baseMatchMedia = window.matchMedia;
-    Object.defineProperty(window, "matchMedia", {
-      configurable: true,
-      writable: true,
-      value: (query: string) =>
-        query.includes("prefers-reduced-motion")
-          ? { matches: reducedMotion, addEventListener: () => {}, removeEventListener: () => {} }
-          : baseMatchMedia(query),
-    });
-  });
-
-  afterEach(() => {
-    Reflect.deleteProperty(HTMLElement.prototype, "animate");
-  });
-
-  function transitionNode(): HTMLElement {
-    return screen.getByTestId("journal-period-transition");
-  }
-
-  function slideCalls() {
-    return animateMock.mock.calls.filter(([keyframes]) => Array.isArray(keyframes) && keyframes.some((frame: Keyframe) => typeof frame.transform === "string" && frame.transform.startsWith("translateX")));
-  }
-
-  it("slides in from the right for a later period and from the left for an earlier one over 200ms with the arrival easing", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
-    await waitForGrid();
-    animateMock.mockClear();
-    choosePeriod(OCTOBER);
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
-    expect(transitionNode().getAttribute("data-direction")).toBe("later");
-    const later = slideCalls().pop() as [Keyframe[], KeyframeAnimationOptions];
-    expect(later[0][0].transform).toBe("translateX(8px)");
-    expect(later[1]).toMatchObject({ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
-
-    animateMock.mockClear();
-    choosePeriod(AUGUST);
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(AUGUST)));
-    expect(transitionNode().getAttribute("data-direction")).toBe("earlier");
-    const earlier = slideCalls().pop() as [Keyframe[], KeyframeAnimationOptions];
-    expect(earlier[0][0].transform).toBe("translateX(-8px)");
-  });
-
-  it("uses an opacity-only crossfade under reduced motion", async () => {
-    reducedMotion = true;
-    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
-    await waitForGrid();
-    animateMock.mockClear();
-    choosePeriod(OCTOBER);
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
-    expect(slideCalls()).toHaveLength(0);
-    const fades = animateMock.mock.calls.filter(([keyframes]) => Array.isArray(keyframes) && keyframes.every((frame: Keyframe) => frame.transform === undefined));
-    expect(fades.some(([, options]) => (options as KeyframeAnimationOptions).duration === 200)).toBe(true);
-  });
-
-  it("keeps the previous content visible without a skeleton while an uncached period loads, then enters the new one", async () => {
-    const pending = createDeferred<JournalDetailResponse>();
-    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
-    await waitForGrid();
-    getJournalMock.mockImplementationOnce(() => pending.promise);
-    choosePeriod(OCTOBER);
-    await waitFor(() => expect(transitionNode().getAttribute("aria-busy")).toBe("true"));
-    expect(screen.queryByTestId("journal-grid-skeleton")).toBeNull();
-    expect(screen.getByRole("region", { name: /Gradebook grid, Month 9/ })).toBeDefined();
-    expect(transitionNode().hasAttribute("inert")).toBe(true);
-    await act(async () => {
-      pending.resolve(buildJournal(OCTOBER));
-    });
-    await waitFor(() => expect(transitionNode().getAttribute("aria-busy")).toBe("false"));
-    expect(screen.getByRole("region", { name: /Gradebook grid, Month 10/ })).toBeDefined();
-  });
-
-  it("does not flash a skeleton when returning to an already cached period", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
-    await waitForGrid();
-    choosePeriod(OCTOBER);
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
-    choosePeriod(SEPTEMBER);
-    expect(screen.queryByTestId("journal-grid-skeleton")).toBeNull();
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(SEPTEMBER)));
-  });
-
-  it("ends on the last selection after two quick period changes and cancels the interrupted animation", async () => {
-    renderWorkspace([`/journals/${COURSE_ID}?period=${SEPTEMBER}`]);
-    await waitForGrid();
-    choosePeriod(AUGUST);
-    choosePeriod(OCTOBER);
-    await waitFor(() => expect(router.state.location.search).toBe(`?period=${OCTOBER}`));
-    await waitFor(() => expect(transitionNode().getAttribute("data-journal")).toBe(String(OCTOBER)));
-    expect(transitionNode().getAttribute("aria-busy")).toBe("false");
-    expect(pickerSummary()).toContain("Month 10");
-    expect(cancelMock).toHaveBeenCalled();
-  });
-
-  it("animates the lesson label with a 6px slide over 150ms in the direction of travel", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    animateMock.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: "Previous lesson" }));
-    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-06"));
-    const label = screen.getByRole("group", { name: "Lesson navigation" }).querySelector("[data-direction]") as HTMLElement;
-    expect(label.getAttribute("data-direction")).toBe("earlier");
-    const call = slideCalls().find(([, options]) => (options as KeyframeAnimationOptions).duration === 150) as [Keyframe[], KeyframeAnimationOptions];
-    expect(call[0][0].transform).toBe("translateX(-6px)");
-  });
-
-  it("settles the chosen score with a 150ms scale from 0.96 and does not delay the write", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    const cell = gradeCell("Anvar", "2026-10-13");
-    animateMock.mockClear();
-    cell.focus();
-    fireEvent.keyDown(cell, { key: "4" });
-    const settle = animateMock.mock.calls.find(([keyframes]) => Array.isArray(keyframes) && keyframes[0].transform === "scale(0.96)") as [Keyframe[], KeyframeAnimationOptions];
-    expect(settle[1]).toMatchObject({ duration: 150 });
-    await waitFor(() => expect(batchUpdateMock).toHaveBeenCalledTimes(1));
-  });
-
-  it("animates a phone Lesson list crossfade with a 6px slide on lesson change", async () => {
-    viewportState.desktop = false;
-    renderWorkspace();
-    await screen.findByRole("list", { name: "Students for the selected lesson" });
-    animateMock.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: "Next lesson" }));
-    await waitFor(() => expect(router.state.location.search).toContain("lesson=2026-10-20"));
-    const list = screen.getByRole("list", { name: "Students for the selected lesson" });
-    expect(list.getAttribute("data-direction")).toBe("later");
-    expect(slideCalls().some(([keyframes]) => keyframes[0].transform === "translateX(6px)")).toBe(true);
   });
 });

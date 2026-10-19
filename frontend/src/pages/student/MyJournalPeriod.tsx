@@ -125,6 +125,7 @@ export function MyJournalPeriod() {
         cellStatus={NO_CELL_STATUS}
         summaryStatus={NO_SUMMARY_STATUS}
         editing={null}
+        examMaximum={journal.exam_max_score}
         onSelectLesson={route.selectLesson}
         readOnlySelfStudentId={userId}
       />
