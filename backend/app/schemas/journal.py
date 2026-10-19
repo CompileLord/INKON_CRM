@@ -1,6 +1,7 @@
 from datetime import date
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+from app.core.scoring import ScoringPolicy
 from app.models.journal import JournalPeriodType
 
 
@@ -12,18 +13,27 @@ class JournalResponse(BaseModel):
     period_end: date
     period_type: JournalPeriodType
     exam_max_score: int
+    bonus_max_score: int = ScoringPolicy.DEFAULT_BONUS_MAX_SCORE
     student_count: int = 0
     lesson_count: int = 0
     cells_expected: int = 0
     cells_filled: int = 0
     avg_percentage: Optional[float] = None
+    avg_score: Optional[float] = None
     state: str = "empty"
+
+    @field_validator("bonus_max_score", mode="before")
+    @classmethod
+    def default_missing_bonus_max_score(cls, value: Optional[int]) -> int:
+        return ScoringPolicy.resolve_bonus_max_score(value)
 
     model_config = {"from_attributes": True}
 
 
 class CourseJournalMetricsResponse(BaseModel):
     class_avg_percentage: float
+    class_avg_score: float = 0.0
+    class_avg_max_score: float = 0.0
     attendance_rate: float
     periods_total: int
     periods_complete: int
@@ -63,7 +73,14 @@ class JournalStudentSummaryUpdate(BaseModel):
 
 class JournalExamMaxScoreUpdate(BaseModel):
     model_config = {"extra": "forbid"}
-    exam_max_score: int = Field(ge=0, le=100)
+    exam_max_score: Optional[int] = Field(default=None, ge=0, le=ScoringPolicy.EXAM_MAX_SCORE_LIMIT)
+    bonus_max_score: Optional[int] = Field(default=None, ge=0, le=ScoringPolicy.BONUS_MAX_SCORE_LIMIT)
+
+    @model_validator(mode="after")
+    def require_at_least_one_maximum(self) -> "JournalExamMaxScoreUpdate":
+        if self.exam_max_score is None and self.bonus_max_score is None:
+            raise ValueError("exam_max_score or bonus_max_score is required")
+        return self
 
 
 class JournalStudentSummaryResponse(BaseModel):
@@ -158,8 +175,10 @@ class ClassJournalResponse(BaseModel):
     period_end: date
     period_type: JournalPeriodType
     exam_max_score: int
+    bonus_max_score: int = ScoringPolicy.DEFAULT_BONUS_MAX_SCORE
     lesson_dates: List[date]
     students: List[ClassJournalStudentResponse]
     my_rank: int
     class_size: int
     class_avg_percentage: float
+    class_avg_score: float = 0.0

@@ -6,7 +6,7 @@ from typing import ClassVar
 from xml.sax.saxutils import escape
 from typing_extensions import Protocol
 import resvg_py
-from app.core.scoring import score_percentage
+from app.core.scoring import ScoringPolicy
 from app.telegram_bot.messages import TelegramMessageCatalog
 
 
@@ -66,7 +66,7 @@ class ExamResultSvgRenderer:
 
     def render(self, data: ExamResultCardData, language: str) -> str:
         period_label: str = self.localize_period_label(data.period_label, language)
-        percentage: str = f"{round(score_percentage(data.total_score, data.max_period_score))}%"
+        percentage: str = f"{round(ScoringPolicy.percentage(data.total_score, data.max_period_score))}%"
         attendance: str = self._catalog.render(
             "attendance_value", language, attended=str(data.attendance_count), total=str(data.total_lessons)
         )

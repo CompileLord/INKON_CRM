@@ -11,7 +11,7 @@ from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
-from app.core.scoring import score_percentage
+from app.core.scoring import ScoringPolicy
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
 
 
@@ -63,12 +63,15 @@ class JournalQueryService:
 
         summary_avg_stmt = select(
             JournalStudentSummary.journal_id,
-            func.avg(pct_expr)
+            func.avg(pct_expr),
+            func.avg(JournalStudentSummary.sum_score)
         ).filter(
             JournalStudentSummary.journal_id.in_(journal_ids)
         ).group_by(JournalStudentSummary.journal_id)
         summary_avg_res = await self.db.execute(summary_avg_stmt)
-        summary_avg_map = dict(summary_avg_res.all())
+        summary_avg_rows = list(summary_avg_res.all())
+        summary_avg_map = {row[0]: row[1] for row in summary_avg_rows}
+        summary_avg_score_map = {row[0]: row[2] for row in summary_avg_rows}
 
         today = date.today()
         results = []
@@ -79,6 +82,8 @@ class JournalQueryService:
             cells_filled = entry_counts_map.get(j.id, 0)
             raw_avg = summary_avg_map.get(j.id)
             avg_percentage = round(float(raw_avg), 1) if raw_avg is not None else None
+            raw_avg_score = summary_avg_score_map.get(j.id)
+            avg_score = round(float(raw_avg_score), 1) if raw_avg_score is not None else None
 
             if j.period_start > today:
                 state = "upcoming"
@@ -97,11 +102,13 @@ class JournalQueryService:
                 period_end=j.period_end,
                 period_type=j.period_type,
                 exam_max_score=j.exam_max_score,
+                bonus_max_score=j.bonus_max_score,
                 student_count=student_count,
                 lesson_count=lesson_count,
                 cells_expected=cells_expected,
                 cells_filled=cells_filled,
                 avg_percentage=avg_percentage,
+                avg_score=avg_score,
                 state=state,
             ))
         return results
@@ -129,12 +136,16 @@ class JournalQueryService:
         summary_totals_stmt = select(
             func.avg(pct_expr),
             func.sum(JournalStudentSummary.attendance_count),
-            func.sum(JournalStudentSummary.total_lessons)
+            func.sum(JournalStudentSummary.total_lessons),
+            func.avg(JournalStudentSummary.sum_score),
+            func.avg(JournalStudentSummary.max_period_score)
         ).filter(JournalStudentSummary.journal_id.in_(journal_ids))
         summary_res = await self.db.execute(summary_totals_stmt)
-        avg_pct, sum_att, sum_lessons = summary_res.first() or (0.0, 0, 0)
+        avg_pct, sum_att, sum_lessons, avg_score_raw, avg_max_score_raw = summary_res.first() or (0.0, 0, 0, None, None)
 
         class_avg_percentage = round(float(avg_pct), 1) if avg_pct is not None else 0.0
+        class_avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
+        class_avg_max_score = round(float(avg_max_score_raw), 1) if avg_max_score_raw is not None else 0.0
 
         attendance_rate = 0.0
         if sum_lessons and sum_lessons > 0 and sum_att is not None:
@@ -154,6 +165,8 @@ class JournalQueryService:
 
         return CourseJournalMetricsResponse(
             class_avg_percentage=class_avg_percentage,
+            class_avg_score=class_avg_score,
+            class_avg_max_score=class_avg_max_score,
             attendance_rate=attendance_rate,
             periods_total=periods_total,
             periods_complete=periods_complete,
@@ -336,7 +349,7 @@ class JournalQueryService:
                     "bonus_score": summary.bonus_score,
                     "sum_score": summary.sum_score,
                     "max_period_score": summary.max_period_score,
-                    "percentage": score_percentage(summary.sum_score, summary.max_period_score),
+                    "percentage": ScoringPolicy.percentage(summary.sum_score, summary.max_period_score),
                     "attendance_count": summary.attendance_count,
                     "total_lessons": summary.total_lessons,
                     "version": summary.version
@@ -360,6 +373,7 @@ class JournalQueryService:
             "period_end": journal.period_end,
             "period_type": journal.period_type,
             "exam_max_score": journal.exam_max_score,
+            "bonus_max_score": ScoringPolicy.resolve_bonus_max_score(journal.bonus_max_score),
             "lesson_dates": lesson_dates,
             "students": students_data
         }
@@ -379,18 +393,21 @@ class JournalQueryService:
             period_summaries = list(period_summaries_res.scalars().all())
 
             if period_summaries:
-                valid_sums = [score_percentage(s.sum_score, s.max_period_score) for s in period_summaries if s.max_period_score > 0]
+                valid_sums = [ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries if s.max_period_score > 0]
                 class_avg_percentage = round(sum(valid_sums) / len(valid_sums), 1) if valid_sums else 0.0
+                class_avg_score = round(sum(s.sum_score for s in period_summaries) / len(period_summaries), 1)
 
-                student_pcts = {s.student_id: score_percentage(s.sum_score, s.max_period_score) for s in period_summaries}
+                student_pcts = {s.student_id: ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries}
                 sorted_student_ids = sorted(student_pcts.keys(), key=lambda sid: student_pcts[sid], reverse=True)
                 my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
             else:
                 class_avg_percentage = 0.0
+                class_avg_score = 0.0
                 my_rank = 1
 
             result_dict["class_size"] = class_size
             result_dict["class_avg_percentage"] = class_avg_percentage
+            result_dict["class_avg_score"] = class_avg_score
             result_dict["my_rank"] = my_rank
 
         return result_dict

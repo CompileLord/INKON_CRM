@@ -30,7 +30,7 @@ from app.repositories.interfaces.course_progress_repository import (
     CourseProgressRepositoryInterface,
     CourseAccessRecord,
 )
-from app.core.scoring import score_percentage
+from app.core.scoring import ScoringPolicy
 
 router = APIRouter()
 
@@ -298,7 +298,7 @@ async def get_progress_chart(
         my_graded_pcts = []
         for j in journals:
             sum_score, max_score = summary_map.get((current_user.id, j.id), (0, 0))
-            pct = score_percentage(sum_score, max_score)
+            pct = ScoringPolicy.percentage(sum_score, max_score)
             my_percentages.append(pct)
             if max_score > 0:
                 my_graded_pcts.append(pct)
@@ -310,7 +310,7 @@ async def get_progress_chart(
         for j in journals:
             j_summaries = [s for s in summaries if s.journal_id == j.id and s.max_period_score > 0]
             if j_summaries:
-                j_pcts = [score_percentage(s.sum_score, s.max_period_score) for s in j_summaries]
+                j_pcts = [ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in j_summaries]
                 period_avg = round(sum(j_pcts) / len(j_pcts), 1)
                 class_avg_series.append(period_avg)
                 graded_class_avgs.append(period_avg)
@@ -326,7 +326,7 @@ async def get_progress_chart(
             for j in journals:
                 sum_score, max_score = summary_map.get((s_id, j.id), (0, 0))
                 if max_score > 0:
-                    s_pcts.append(score_percentage(sum_score, max_score))
+                    s_pcts.append(ScoringPolicy.percentage(sum_score, max_score))
             student_avgs[s_id] = sum(s_pcts) / len(s_pcts) if s_pcts else 0.0
 
         sorted_student_ids = sorted(student_avgs.keys(), key=lambda sid: student_avgs[sid], reverse=True)
@@ -359,7 +359,7 @@ async def get_progress_chart(
             sum_score, max_score = summary_map.get((student.id, j.id), (0, 0))
             scores.append(sum_score)
             max_scores.append(max_score)
-            percentages.append(score_percentage(sum_score, max_score))
+            percentages.append(ScoringPolicy.percentage(sum_score, max_score))
 
         avg = round(sum(scores) / len(journals), 2) if journals else 0.0
         avg_max = round(sum(max_scores) / len(journals), 2) if journals else 0.0

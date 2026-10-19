@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
-from app.core.scoring import ATTENDANCE_POINT_PER_LESSON, DEFAULT_JOURNAL_EXAM_MAX_SCORE, max_period_score
+from app.core.scoring import ScoringPolicy
 
 
 class SumCalculationService:
@@ -13,7 +13,8 @@ class SumCalculationService:
     async def recalculate(self, journal_id: int, student_id: int) -> None:
         journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
         journal = journal_result.scalars().first()
-        exam_max_score_val = journal.exam_max_score if journal else DEFAULT_JOURNAL_EXAM_MAX_SCORE
+        exam_max_score_val = journal.exam_max_score if journal else ScoringPolicy.DEFAULT_JOURNAL_EXAM_MAX_SCORE
+        bonus_max_score_val: int | None = journal.bonus_max_score if journal else None
 
         entries_query = select(JournalEntry).filter(
             JournalEntry.journal_id == journal_id,
@@ -50,10 +51,10 @@ class SumCalculationService:
             self.db.add(summary)
 
         summary.homework_score = daily_scores_sum
-        summary.attendance_score = attendance_count * ATTENDANCE_POINT_PER_LESSON
+        summary.attendance_score = attendance_count * ScoringPolicy.ATTENDANCE_POINT_PER_LESSON
         summary.attendance_count = attendance_count
         summary.total_lessons = total_lessons
-        summary.max_period_score = max_period_score(total_lessons, exam_max_score_val)
+        summary.max_period_score = ScoringPolicy.max_period_score(total_lessons, exam_max_score_val, bonus_max_score_val)
         summary.sum_score = summary.homework_score + summary.attendance_score + summary.exam_score + summary.bonus_score
 
         await self.db.flush()
@@ -67,6 +68,7 @@ class SumCalculationService:
             return
 
         exam_max_score_val = journal.exam_max_score
+        bonus_max_score_val: int | None = journal.bonus_max_score
 
         entries_query: Select[tuple[JournalEntry]] = select(JournalEntry).filter(JournalEntry.journal_id == journal_id)
         if student_ids is not None:
@@ -91,7 +93,7 @@ class SumCalculationService:
             student_entries = entries_by_student.get(student_id, [])
             homework_score = sum(e.score for e in student_entries)
             attendance_count = sum(1 for e in student_entries if e.attendance is True)
-            attendance_score = attendance_count * ATTENDANCE_POINT_PER_LESSON
+            attendance_score = attendance_count * ScoringPolicy.ATTENDANCE_POINT_PER_LESSON
             total_lessons = len(student_entries)
 
             summary = summaries_by_student.get(student_id)
@@ -116,7 +118,7 @@ class SumCalculationService:
             summary.attendance_score = attendance_score
             summary.attendance_count = attendance_count
             summary.total_lessons = total_lessons
-            summary.max_period_score = max_period_score(total_lessons, exam_max_score_val)
+            summary.max_period_score = ScoringPolicy.max_period_score(total_lessons, exam_max_score_val, bonus_max_score_val)
             summary.sum_score = homework_score + attendance_score + summary.exam_score + summary.bonus_score
 
         await self.db.flush()

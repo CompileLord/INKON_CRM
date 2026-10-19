@@ -14,7 +14,7 @@ from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.payment import PaymentMethod
 from app.core.security import hash_password
-from app.core.scoring import MAX_HOMEWORK_SCORE_PER_LESSON, ATTENDANCE_POINT_PER_LESSON
+from app.core.scoring import ScoringPolicy
 from app.services.enrollment_service import EnrollmentService
 from app.services.finance_service import FinanceService
 from app.services.sum_calculation_service import SumCalculationService
@@ -262,9 +262,9 @@ class DemoDataPopulator:
 
                 sample_student_entries: List[JournalEntry] = next(iter(entries_by_student.values()), [])
                 lesson_count: int = len(sample_student_entries)
-                hw_att_max: int = lesson_count * (MAX_HOMEWORK_SCORE_PER_LESSON + ATTENDANCE_POINT_PER_LESSON)
+                hw_att_max: int = lesson_count * (ScoringPolicy.MAX_HOMEWORK_SCORE_PER_LESSON + ScoringPolicy.ATTENDANCE_POINT_PER_LESSON)
 
-                target_exam_max: int = max(0, 100 - hw_att_max)
+                target_exam_max: int = max(0, 100 - hw_att_max - ScoringPolicy.DEFAULT_BONUS_MAX_SCORE)
                 journal.exam_max_score = target_exam_max
 
                 for student_id, student_entries in entries_by_student.items():

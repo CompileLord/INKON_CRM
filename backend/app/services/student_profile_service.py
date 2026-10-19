@@ -59,6 +59,8 @@ class StudentProfileService:
             total_lessons=total_lessons,
             period_summaries_count=raw_totals.summaries_count,
             periods_with_max_score_count=raw_totals.periods_with_max_score_count,
+            total_score=raw_totals.total_score,
+            total_max_score=raw_totals.total_max_score,
         )
 
     def build_course_performance(
@@ -110,6 +112,8 @@ class StudentProfileService:
             total_lessons=total_lessons,
             period_summaries_count=raw_course.summaries_count,
             periods_with_max_score_count=raw_course.periods_with_max_score_count,
+            total_score=raw_course.total_score,
+            total_max_score=raw_course.total_max_score,
         )
 
     async def get_student_profile_payload(

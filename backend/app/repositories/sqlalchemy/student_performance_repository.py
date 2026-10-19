@@ -8,7 +8,7 @@ from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from app.repositories.interfaces.user_repository import StudentCourseRawRecord, StudentTotalsRawRecord
 from collections import defaultdict
-from app.core.scoring import score_percentage
+from app.core.scoring import ScoringPolicy
 from app.models.course_schedule import CourseSchedule
 from app.schemas.schedule import CourseScheduleRuleDTO
 
@@ -44,13 +44,15 @@ class SQLAlchemyStudentPerformanceRepository:
             func.sum(JournalStudentSummary.attendance_count),
             func.sum(JournalStudentSummary.total_lessons),
             func.count(JournalStudentSummary.id),
-            func.count(case(((JournalStudentSummary.max_period_score > 0), 1)))
+            func.count(case(((JournalStudentSummary.max_period_score > 0), 1))),
+            func.coalesce(func.sum(JournalStudentSummary.sum_score), 0),
+            func.coalesce(func.sum(JournalStudentSummary.max_period_score), 0),
         ).filter(
             JournalStudentSummary.student_id == student_id
         )
 
         stats_result = await self.session.execute(stats_query)
-        avg_score_raw, attendance_count_raw, total_lessons_raw, summaries_count_raw, max_score_count_raw = stats_result.one()
+        avg_score_raw, attendance_count_raw, total_lessons_raw, summaries_count_raw, max_score_count_raw, total_score_raw, total_max_score_raw = stats_result.one()
 
         period_summaries_count = int(summaries_count_raw) if summaries_count_raw is not None else 0
         periods_with_max_score_count = int(max_score_count_raw) if max_score_count_raw is not None else 0
@@ -67,6 +69,8 @@ class SQLAlchemyStudentPerformanceRepository:
 
         totals = {
             "avg_percentage": legacy_avg_score,
+            "total_score": int(total_score_raw),
+            "total_max_score": int(total_max_score_raw),
             "attendance_percentage": legacy_attendance_percentage,
             "absences": absences,
             "total_lessons": total_lessons,
@@ -80,6 +84,8 @@ class SQLAlchemyStudentPerformanceRepository:
             total_lessons=total_lessons,
             summaries_count=period_summaries_count,
             periods_with_max_score_count=periods_with_max_score_count,
+            total_score=int(total_score_raw),
+            total_max_score=int(total_max_score_raw),
         )
 
         courses_data = []
@@ -111,14 +117,17 @@ class SQLAlchemyStudentPerformanceRepository:
                     case(
                         ((JournalStudentSummary.max_period_score > 0), (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score)
                     )
-                )
+                ),
+                func.sum(JournalStudentSummary.sum_score) * 1.0 / func.nullif(func.count(func.distinct(JournalStudentSummary.student_id)), 0)
             ).join(
                 Journal, JournalStudentSummary.journal_id == Journal.id
             ).filter(
                 Journal.course_id.in_(course_ids)
             ).group_by(Journal.course_id)
             class_avg_res = await self.session.execute(class_avg_query)
-            class_avg_map = {cid: round(float(avg_val), 1) for cid, avg_val in class_avg_res.all() if avg_val is not None}
+            class_avg_rows = list(class_avg_res.all())
+            class_avg_map = {cid: round(float(avg_val), 1) for cid, avg_val, _ in class_avg_rows if avg_val is not None}
+            class_avg_score_map = {cid: round(float(avg_total), 1) for cid, _, avg_total in class_avg_rows if avg_total is not None}
 
             student_course_query = select(
                 Journal.course_id,
@@ -130,7 +139,9 @@ class SQLAlchemyStudentPerformanceRepository:
                 func.sum(JournalStudentSummary.attendance_count),
                 func.sum(JournalStudentSummary.total_lessons),
                 func.count(JournalStudentSummary.id),
-                func.count(case(((JournalStudentSummary.max_period_score > 0), 1)))
+                func.count(case(((JournalStudentSummary.max_period_score > 0), 1))),
+                func.coalesce(func.sum(JournalStudentSummary.sum_score), 0),
+                func.coalesce(func.sum(JournalStudentSummary.max_period_score), 0),
             ).join(
                 Journal, JournalStudentSummary.journal_id == Journal.id
             ).filter(
@@ -139,7 +150,7 @@ class SQLAlchemyStudentPerformanceRepository:
             ).group_by(Journal.course_id)
             student_course_res = await self.session.execute(student_course_query)
             student_course_map = {}
-            for cid, avg_val, att_cnt, tot_les, s_cnt, p_graded in student_course_res.all():
+            for cid, avg_val, att_cnt, tot_les, s_cnt, p_graded, score_total, max_total in student_course_res.all():
                 att_int = int(att_cnt) if att_cnt is not None else 0
                 tot_int = int(tot_les) if tot_les is not None else 0
                 s_int = int(s_cnt) if s_cnt is not None else 0
@@ -149,6 +160,8 @@ class SQLAlchemyStudentPerformanceRepository:
                     "attendance_count": att_int,
                     "total_lessons": tot_int,
                     "periods_graded": p_int,
+                    "total_score": int(score_total),
+                    "total_max_score": int(max_total),
                 }
                 raw_courses[cid] = StudentCourseRawRecord(
                     avg_score_raw=float(avg_val) if avg_val is not None else None,
@@ -156,6 +169,8 @@ class SQLAlchemyStudentPerformanceRepository:
                     total_lessons=tot_int,
                     summaries_count=s_int,
                     periods_with_max_score_count=p_int,
+                    total_score=int(score_total),
+                    total_max_score=int(max_total),
                 )
 
             schedules_query = select(
@@ -208,6 +223,8 @@ class SQLAlchemyStudentPerformanceRepository:
                         "attendance_count": 0,
                         "total_lessons": 0,
                         "periods_graded": 0,
+                        "total_score": 0,
+                        "total_max_score": 0,
                     }
                 )
                 c_tot = st_info["total_lessons"]
@@ -220,6 +237,9 @@ class SQLAlchemyStudentPerformanceRepository:
                     "enrollment_status": enrollment.status.value if hasattr(enrollment.status, "value") else str(enrollment.status),
                     "bucket": bucket,
                     "my_avg_percentage": st_info["avg"],
+                    "my_total_score": st_info["total_score"],
+                    "my_total_max_score": st_info["total_max_score"],
+                    "class_avg_score": class_avg_score_map.get(course.id, 0.0),
                     "attendance_percentage": c_att_pct,
                     "absences": c_abs,
                     "periods_total": periods_total_map.get(course.id, 0),
@@ -294,7 +314,7 @@ class SQLAlchemyStudentPerformanceRepository:
             bonus_score = float(summary.bonus_score) if summary else 0.0
             sum_score = float(summary.sum_score) if summary else 0.0
             max_period_score = float(summary.max_period_score) if summary else 0.0
-            percentage = score_percentage(sum_score, max_period_score) if summary else 0.0
+            percentage = ScoringPolicy.percentage(sum_score, max_period_score) if summary else 0.0
             attendance_count = summary.attendance_count if summary else 0
             total_lessons = summary.total_lessons if summary else 0
 

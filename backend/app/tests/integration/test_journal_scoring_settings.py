@@ -6,7 +6,7 @@ from app.core.security import create_access_token
 from app.models.user import User
 from app.models.course import CourseExamType
 from app.models.journal import Journal
-from app.core.scoring import default_exam_max_score, max_period_score, MAX_BONUS_SCORE
+from app.core.scoring import ScoringPolicy
 
 
 from journal_test_support import _create_course
@@ -30,8 +30,8 @@ async def test_generated_journals_use_exam_weight_of_their_course_type(
 
     assert monthly_journals
     assert weekly_journals
-    assert {j.exam_max_score for j in monthly_journals} == {default_exam_max_score(CourseExamType.MONTHLY)}
-    assert {j.exam_max_score for j in weekly_journals} == {default_exam_max_score(CourseExamType.WEEKLY)}
+    assert {j.exam_max_score for j in monthly_journals} == {ScoringPolicy.default_exam_max_score(CourseExamType.MONTHLY)}
+    assert {j.exam_max_score for j in weekly_journals} == {ScoringPolicy.default_exam_max_score(CourseExamType.WEEKLY)}
 
 
 @pytest.mark.asyncio
@@ -61,7 +61,7 @@ async def test_summary_has_real_maximum_immediately_after_enrollment(
 
     assert summary["total_lessons"] > 0
     assert summary["sum_score"] == 0
-    assert summary["max_period_score"] == max_period_score(summary["total_lessons"], exam_weight)
+    assert summary["max_period_score"] == ScoringPolicy.max_period_score(summary["total_lessons"], exam_weight, 20)
     assert summary["percentage"] == 0.0
 
 
@@ -89,7 +89,7 @@ async def test_rejected_exam_weight_change_mutates_nothing(
 
     exam_resp = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
-        json={"exam_score": 60, "bonus_score": MAX_BONUS_SCORE, "version": summary["version"]},
+        json={"exam_score": 60, "bonus_score": ScoringPolicy.DEFAULT_BONUS_MAX_SCORE, "version": summary["version"]},
         headers=mentor_headers,
     )
     assert exam_resp.status_code == 200

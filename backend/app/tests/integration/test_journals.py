@@ -6,22 +6,22 @@ from app.core.security import create_access_token
 from app.models.user import User
 from app.models.course import Course, CourseStatus, CourseExamType
 from app.models.journal import Journal
-from app.core.scoring import default_exam_max_score, max_period_score, score_percentage
+from app.core.scoring import ScoringPolicy
 
 
 def test_scoring_rules_unit() -> None:
-    assert default_exam_max_score(CourseExamType.WEEKLY) == 70
-    assert default_exam_max_score(CourseExamType.MONTHLY) == 60
+    assert ScoringPolicy.default_exam_max_score(CourseExamType.WEEKLY) == 70
+    assert ScoringPolicy.default_exam_max_score(CourseExamType.MONTHLY) == 60
 
-    max_weekly = max_period_score(total_lessons=5, exam_max_score=70)
-    assert max_weekly == 100
-    assert score_percentage(100, max_weekly) == 100.0
+    max_weekly = ScoringPolicy.max_period_score(5, 70, 20)
+    assert max_weekly == 120
+    assert ScoringPolicy.percentage(120, max_weekly) == 100.0
 
-    max_monthly = max_period_score(total_lessons=12, exam_max_score=60)
-    assert max_monthly == 132
-    assert score_percentage(66, max_monthly) == 50.0
+    max_monthly = ScoringPolicy.max_period_score(12, 60, 20)
+    assert max_monthly == 152
+    assert ScoringPolicy.percentage(76, max_monthly) == 50.0
 
-    assert score_percentage(0, 0) == 0.0
+    assert ScoringPolicy.percentage(0, 0) == 0.0
 
 
 @pytest.mark.asyncio
@@ -103,8 +103,8 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     assert summary_data["attendance_score"] == 1
     assert summary_data["attendance_count"] == 1
     assert summary_data["sum_score"] == 5
-    assert summary_data["max_period_score"] == 76
-    assert summary_data["percentage"] == 6.58
+    assert summary_data["max_period_score"] == 96
+    assert summary_data["percentage"] == 5.21
 
     put_invalid_score = await client.put(
         f"/api/v1/journals/{journal_id}/entries",
@@ -169,7 +169,7 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
     assert patched_summary["exam_score"] == 70
     assert patched_summary["bonus_score"] == 15
     assert patched_summary["sum_score"] == 90
-    assert patched_summary["percentage"] == 118.42
+    assert patched_summary["percentage"] == 93.75
 
     patch_exceed_exam = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
@@ -180,7 +180,7 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
         },
         headers=mentor_headers
     )
-    assert patch_exceed_exam.status_code == 400
+    assert patch_exceed_exam.status_code == 422
 
     patch_exceed_bonus = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
@@ -191,7 +191,7 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
         },
         headers=mentor_headers
     )
-    assert patch_exceed_bonus.status_code == 400
+    assert patch_exceed_bonus.status_code == 422
 
     patch_conflict = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
@@ -222,7 +222,7 @@ async def test_journal_operations(client: AsyncClient, test_admin: User, test_me
 
     get_resp3 = await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)
     summary_data3 = get_resp3.json()["students"][0]["summary"]
-    assert summary_data3["max_period_score"] == 86
+    assert summary_data3["max_period_score"] == 106
 
     student_token = create_access_token(test_student.id, test_student.role)
     student_headers = {"Authorization": f"Bearer {student_token}"}
