@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCourseClassProgress, useCourseStaffProgress } from "../../lib/courses/hooks";
 import type { CourseStaffProgressResponse } from "../../lib/courses/types";
@@ -12,6 +12,7 @@ import {
   type StoredPeriodResult,
 } from "../../lib/journals/JournalProgressRules";
 import { formatNumber, formatPercentage, formatSchoolLessonDate, getSchoolCalendarDate } from "../../i18n/formatters";
+import { JournalChartPreference } from "../../lib/journals/JournalChartPreference";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { JournalNotice, JournalPanelMessage } from "./JournalWorkspaceStates";
@@ -19,6 +20,7 @@ import { JournalNotice, JournalPanelMessage } from "./JournalWorkspaceStates";
 interface JournalProgressViewProps {
   courseId: number;
   readOnlySelfStudentId?: number;
+  chartOnly?: boolean;
 }
 
 const SERIES_STROKE: readonly string[] = [
@@ -70,9 +72,10 @@ interface ProgressChartProps {
   visibleIds: Set<number>;
   showAverage: boolean;
   selfStudentId: number | null;
+  dense?: boolean;
 }
 
-const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage, selfStudentId }) => {
+const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage, selfStudentId, dense = false }) => {
   const { t } = useTranslation("journals");
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(640);
@@ -108,7 +111,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibl
   }, [dataSignature]);
 
   const compact: boolean = width < 520;
-  const height: number = compact ? 240 : 300;
+  const height: number = dense ? (compact ? 160 : 190) : compact ? 240 : 300;
   const marginLeft: number = compact ? 30 : 38;
   const marginRight: number = compact ? 16 : 24;
   const marginTop: number = 16;
@@ -502,7 +505,7 @@ const SkeletonBar: React.FC<{ className: string }> = ({ className }) => (
   <div className={`rounded-md bg-beige-dark motion-safe:animate-pulse ${className}`} />
 );
 
-export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId }) => {
+export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId, chartOnly = false }) => {
   const { t } = useTranslation("journals");
   const selfStudentId: number | null = readOnlySelfStudentId ?? null;
   const staffQuery = useCourseStaffProgress(courseId, selfStudentId === null);
@@ -511,6 +514,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
   const [sortOverride, setSortOverride] = useState<ProgressSort | null>(null);
+  const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readCollapsed());
 
   const data: CourseStaffProgressResponse | undefined = query.data;
   const rows: ProgressPeriodRow[] = useMemo(
@@ -526,6 +530,15 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     () => visibleOverride ?? JournalProgressRules.defaultVisibleIds(students, selfStudentId),
     [visibleOverride, students, selfStudentId],
   );
+
+  if (query.isLoading && chartOnly) {
+    return (
+      <div role="status" aria-busy="true" data-testid="journal-progress-skeleton" className="rounded-2xl border border-border bg-card p-4">
+        <span className="sr-only">{t("loading")}</span>
+        <SkeletonBar className="h-4 w-32" />
+      </div>
+    );
+  }
 
   if (query.isLoading) {
     return (
@@ -558,6 +571,11 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   }
 
   if (!data) return null;
+
+  if (chartOnly) {
+    const hasGradedData: boolean = started.some((_, periodIndex) => students.some((student) => student.results[periodIndex] !== null));
+    if (!hasGradedData) return null;
+  }
 
   if (data.periods.length === 0) {
     return <JournalPanelMessage tone="empty" title={t("progress.noPeriodsTitle")} body={t("progress.noPeriodsBody")} />;
@@ -749,6 +767,45 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
       </table>
     </div>
   );
+
+  if (chartOnly) {
+    const toggleCollapsed = (): void => {
+      const next: boolean = !collapsed;
+      setCollapsed(next);
+      JournalChartPreference.writeCollapsed(next);
+    };
+    return (
+      <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-2" data-testid="journal-progress" aria-label={t("progress.scope")}>
+        {query.isError && (
+          <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void query.refetch() }}>
+            {t("progress.refreshFailed")}
+          </JournalNotice>
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            onClick={toggleCollapsed}
+            data-testid="progress-collapse-toggle"
+            className="flex min-h-9 flex-1 items-center gap-2 text-left text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-11"
+          >
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out ${collapsed ? "-rotate-90" : ""}`}
+              aria-hidden="true"
+            />
+            {t("progress.scope")}
+          </button>
+          <InfoTooltip label={t("progress.infoLabel")}>{t("progress.scopeNote")}</InfoTooltip>
+        </div>
+        {!collapsed && (
+          <>
+            <ProgressChart periods={started} students={students} visibleIds={visibleIds} showAverage={showAverage} selfStudentId={selfStudentId} dense />
+            {legend}
+          </>
+        )}
+      </section>
+    );
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-3" data-testid="journal-progress">

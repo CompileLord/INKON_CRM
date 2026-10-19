@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from "./JournalScoreCell";
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
 import { JournalSaveMarker } from "./JournalSaveMarker";
+import { JournalSummaryCell } from "./JournalSummaryCell";
 import { formatNumber, formatPercentage } from "../../i18n/formatters";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -22,6 +23,8 @@ interface JournalStudentRowProps {
   focusedCellKey: string | null;
   focusFromKeyboard: boolean;
   editing: JournalRowEditing | null;
+  examMaximum: number;
+  atRisk?: boolean;
   isSelf?: boolean;
   markUnrecorded?: boolean;
   onCellFocus: (key: string, control: JournalCellControl) => void;
@@ -37,6 +40,8 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   focusedCellKey,
   focusFromKeyboard,
   editing,
+  examMaximum,
+  atRisk = false,
   isSelf = false,
   markUnrecorded = false,
   onCellFocus,
@@ -65,6 +70,15 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
             />
           )}
           <span className="min-w-0 break-words">{studentName}</span>
+          {atRisk && (
+            <span
+              data-testid="at-risk-marker"
+              role="img"
+              aria-label={t("atRisk.label")}
+              title={t("atRisk.tooltip")}
+              className="h-2 w-2 shrink-0 rounded-full bg-warning"
+            />
+          )}
           {isSelf && (
             <span className="shrink-0 rounded-full bg-info-surface px-2 text-xs font-semibold text-ink">{t("readOnly.you")}</span>
           )}
@@ -115,14 +129,45 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         );
       })}
 
-      <td className={`min-w-[96px] border-b border-l border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-ink group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
+      {[
+        { field: "exam_score" as const, value: summary ? summary.exam_score : 0 },
+        { field: "bonus_score" as const, value: summary ? summary.bonus_score : 0 },
+      ].map(({ field, value }, fieldIndex) => (
+        <td
+          key={field}
+          className={`border-b border-border px-2 py-2 text-center align-middle text-sm group-hover/row:bg-row-hover ${
+            fieldIndex === 0 ? "border-l" : ""
+          } ${isSelf ? "bg-beige" : ""}`}
+        >
+          {summary ? (
+            <JournalSummaryCell
+              studentName={studentName}
+              field={field}
+              value={value}
+              examMaximum={examMaximum}
+              editable={editing !== null}
+              onCommit={(committed) =>
+                editing?.onSummaryPair(student.student_id, {
+                  exam_score: field === "exam_score" ? committed : summary.exam_score,
+                  bonus_score: field === "bonus_score" ? committed : summary.bonus_score,
+                  version: summary.version,
+                })
+              }
+            />
+          ) : (
+            <span className="text-muted">—</span>
+          )}
+        </td>
+      ))}
+
+      <td className={`border-b border-l border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-ink group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
         <span className="inline-flex items-center gap-1.5">
           {summaryStatus && <JournalSaveMarker status={summaryStatus} className="relative" />}
           {summary ? formatNumber(summary.sum_score) : t("summary.unavailable")}
         </span>
       </td>
 
-      <td className={`min-w-[80px] border-b border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-muted group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
+      <td className={`border-b border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-muted group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
         {summary
           ? formatPercentage(summary.percentage)
           : "—"}

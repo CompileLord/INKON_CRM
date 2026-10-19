@@ -10,9 +10,10 @@ interface JournalPanelMessageProps {
   body?: string;
   retryLabel?: string;
   onRetry?: () => void;
+  children?: React.ReactNode;
 }
 
-export const JournalPanelMessage: React.FC<JournalPanelMessageProps> = ({ tone, title, body, retryLabel, onRetry }) => {
+export const JournalPanelMessage: React.FC<JournalPanelMessageProps> = ({ tone, title, body, retryLabel, onRetry, children }) => {
   const Icon = tone === "error" ? AlertCircle : Info;
   return (
     <div
@@ -27,6 +28,7 @@ export const JournalPanelMessage: React.FC<JournalPanelMessageProps> = ({ tone, 
           {retryLabel}
         </Button>
       )}
+      {children}
     </div>
   );
 };

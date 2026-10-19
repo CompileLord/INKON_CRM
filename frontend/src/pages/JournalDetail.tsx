@@ -1,27 +1,20 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Settings, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { useCourse, useCourseJournals } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
 import { resolveMediaUrl } from "../lib/users/media";
 import { useAuthStore } from "../store/authStore";
-import { isPathAllowed } from "../lib/auth/roleAccess";
 import { PersonAvatar } from "../components/ui/PersonAvatar";
-import { Button } from "../components/ui/Button";
 import { JournalProgressView } from "../components/journals/JournalProgressView";
 import { JournalGrid } from "../components/journals/JournalGrid";
-import { JournalSummaryView } from "../components/journals/JournalSummaryView";
+import { JournalPeriodMenu } from "../components/journals/JournalPeriodMenu";
 import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker";
-import { JournalWorkspaceTabs } from "../components/journals/JournalWorkspaceTabs";
-import { JournalViewSwitch } from "../components/journals/JournalViewSwitch";
-import { JournalLessonNavigator } from "../components/journals/JournalLessonNavigator";
 import { JournalPeriodTransition } from "../components/journals/JournalPeriodTransition";
-import { JournalLessonView } from "../components/journals/JournalLessonView";
 import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
-import { useDesktop } from "../components/shell/useDesktop";
 import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp";
 import { JournalRouteErrors } from "../components/journals/JournalRouteErrors";
 import { JournalSaveStatus } from "../components/journals/JournalSaveStatus";
@@ -32,7 +25,6 @@ import type { JournalRowEditing } from "../components/journals/JournalStudentRow
 import {
   JournalContextSkeleton,
   JournalGridSkeleton,
-  JournalLessonSkeleton,
   JournalNotice,
   JournalPanelMessage,
   JournalPeriodBarSkeleton,
@@ -64,16 +56,10 @@ function JournalDetailContent() {
   const queueStatus = useJournalQueueStatus();
   const navigationGuard = useJournalNavigationGuard(JournalWorkspaceSelection.changesJournalContext);
   const role = useAuthStore((state) => state.role);
-  const userId = useAuthStore((state) => state.userId);
-  const panelIdPrefix: string = useId();
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
   const [settingsJournalId, setSettingsJournalId] = useState<number | null>(null);
   const [settingsBusy, setSettingsBusy] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const isDesktop: boolean = useDesktop();
-  const anchorRef = useRef<{ studentId: number; control: string } | null>(null);
-  const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
-  const previousDesktopRef = useRef<boolean>(isDesktop);
 
   if (reviewOpen && queueStatus.conflicts.length === 0) setReviewOpen(false);
 
@@ -108,30 +94,7 @@ function JournalDetailContent() {
   const visibleStudentIds: Set<number> | null = JournalRosterFilter.visibleIds(orderedStudents, searchQuery);
   const isFiltering: boolean = visibleStudentIds !== null;
   const matchedCount: number = visibleStudentIds ? visibleStudentIds.size : orderedStudents.length;
-  const breakdownOpen: boolean =
-    route.view === "summary" &&
-    route.studentId !== null &&
-    orderedStudents.some((student) => student.student_id === route.studentId);
-  const rosterSearchVisible: boolean = orderedStudents.length > 0 && !breakdownOpen;
-  const selectedLessonForAnchor: string | undefined = route.lessonResolution.lesson;
-
-  useEffect(() => {
-    if (previousDesktopRef.current === isDesktop) return undefined;
-    previousDesktopRef.current = isDesktop;
-    const anchor = anchorRef.current;
-    if (!anchor || document.activeElement !== document.body) return undefined;
-    const frameId: number = requestAnimationFrame(() => {
-      const rowControl: string = anchor.control === "cell" ? "score" : anchor.control;
-      const gridScope: string = `[data-anchor="${anchor.studentId}:${selectedLessonForAnchor}"]`;
-      const target: HTMLElement | null = isDesktop
-        ? (document.querySelector<HTMLElement>(`${gridScope} [data-control="${rowControl}"]`) ??
-          document.querySelector<HTMLElement>(gridScope))
-        : document.querySelector<HTMLElement>(`[data-lesson-row="${anchor.studentId}"] [data-control="${rowControl}"]`);
-      (target ?? lessonHeadingRef.current ?? document.querySelector<HTMLElement>("h1"))?.focus();
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [isDesktop, selectedLessonForAnchor]);
-
+  const rosterSearchVisible: boolean = orderedStudents.length > 0;
   const isSwitchingPeriod: boolean = journalQuery.isPlaceholderData;
   const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden && !isSwitchingPeriod;
   const { applyEntryCommand, editSummary } = autosave;
@@ -207,17 +170,11 @@ function JournalDetailContent() {
 
   const periodLabel: string = journal?.period_label ?? selectedPeriod?.period_label ?? "";
   const lessonSelection = route.lessonResolution;
-  const gradebookStatusVisible: boolean = route.tab === "gradebook" || queueStatus.phase !== "idle";
-
-  const handleAnchor = (studentId: number, control: string): void => {
-    anchorRef.current = { studentId, control };
-  };
-
-  const profileHrefFor = (studentId: number): string | null =>
-    role !== null && isPathAllowed(role, `/students/${studentId}`, userId) ? `/students/${studentId}` : null;
+  const courseHasNoStudents: boolean = journal !== undefined && !isSwitchingPeriod && journal.students.length === 0;
+  const canManageRoster: boolean = role === "superadmin";
 
   const renderGradebookBody = () => {
-    if (journalQuery.isLoading) return isDesktop ? <JournalGridSkeleton /> : <JournalLessonSkeleton />;
+    if (journalQuery.isLoading) return <JournalGridSkeleton />;
     if (journalQuery.isError && !journal) {
       return (
         <JournalPanelMessage
@@ -237,15 +194,7 @@ function JournalDetailContent() {
     ) : null;
 
     let body: React.ReactNode;
-    if (journal.students.length === 0) {
-      body = (
-        <JournalPanelMessage
-          tone="empty"
-          title={t("table.noStudentsInCourse")}
-          body={t("table.noStudentsBody")}
-        />
-      );
-    } else if (isFiltering && matchedCount === 0) {
+    if (isFiltering && matchedCount === 0) {
       body = (
         <JournalPanelMessage
           tone="empty"
@@ -255,39 +204,8 @@ function JournalDetailContent() {
           onRetry={() => setSearchQuery("")}
         />
       );
-    } else if (route.view === "summary") {
-      body = (
-        <JournalSummaryView
-          key={journal.journal_id}
-          students={visibleStudentIds ? orderedStudents.filter((student) => visibleStudentIds.has(student.student_id)) : orderedStudents}
-          allStudents={orderedStudents}
-          lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
-          examMaximum={journal.exam_max_score}
-          periodLabel={periodLabel}
-          summaryStatus={autosave.summaryStatus}
-          onApplyPair={editing ? editing.onSummaryPair : null}
-          profileHrefFor={profileHrefFor}
-          openStudentId={route.studentId}
-          onOpenStudent={route.selectStudent}
-        />
-      );
     } else if (journal.lesson_dates.length === 0) {
       body = <JournalPanelMessage tone="empty" title={t("grid.noLessonsTitle")} body={t("grid.noLessonsBody")} />;
-    } else if (!isDesktop && lessonSelection.lesson) {
-      body = (
-        <JournalLessonView
-          students={orderedStudents}
-          visibleStudentIds={visibleStudentIds}
-          lessonDate={lessonSelection.lesson}
-          periodLabel={periodLabel}
-          cellStatus={autosave.cellStatus}
-          editing={editing}
-          searchQuery={searchQuery}
-          onClearSearch={() => setSearchQuery("")}
-          onAnchor={handleAnchor}
-          headingRef={lessonHeadingRef}
-        />
-      );
     } else {
       body = (
         <JournalGrid
@@ -296,12 +214,12 @@ function JournalDetailContent() {
           periodLabel={periodLabel}
           students={orderedStudents}
           visibleStudentIds={visibleStudentIds}
-          onAnchor={handleAnchor}
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
           selectedLesson={lessonSelection.lesson}
           cellStatus={autosave.cellStatus}
           summaryStatus={autosave.summaryStatus}
           editing={editing}
+          examMaximum={journal.exam_max_score}
           onSelectLesson={route.selectLesson}
         />
       );
@@ -315,7 +233,7 @@ function JournalDetailContent() {
   };
 
   return (
-    <div className="flex flex-col gap-2 lg:gap-6">
+    <div className="flex flex-col gap-3 lg:gap-4">
       <JournalDrainDialog guard={navigationGuard} onReview={() => setReviewOpen(true)} />
       <JournalConflictReview
         open={reviewOpen}
@@ -353,28 +271,6 @@ function JournalDetailContent() {
         <JournalPanelMessage tone="empty" title={t("workspace.noPeriodsTitle")} body={t("workspace.noPeriodsBody")} />
       ) : (
         <>
-          <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-start lg:gap-3">
-            <JournalPeriodPicker
-              periods={periods}
-              selectedPeriodId={selectedPeriod.id}
-              today={today}
-              onSelect={route.selectPeriod}
-              disabled={queueStatus.draining}
-            />
-            {editorsMounted && journal && (
-              <Button
-                type="button"
-                variant="secondary"
-                data-period-settings=""
-                onClick={() => setSettingsJournalId(journalId ?? null)}
-                className="w-full lg:w-auto"
-              >
-                <Settings className="h-4 w-4" aria-hidden="true" />
-                {t("workspace.periodSettings")}
-              </Button>
-            )}
-          </div>
-
           {route.notices.includes("period") && (
             <JournalNotice
               tone="info"
@@ -404,105 +300,64 @@ function JournalDetailContent() {
             </JournalNotice>
           )}
 
-          <JournalWorkspaceTabs selected={route.tab} onSelect={route.selectTab} idPrefix={panelIdPrefix} />
-
-          {route.tab === "gradebook" ? (
-            <section
-              role="tabpanel"
-              id={`${panelIdPrefix}-panel-gradebook`}
-              aria-labelledby={`${panelIdPrefix}-tab-gradebook`}
-              className="flex min-w-0 flex-col gap-2 lg:gap-4"
+          {courseHasNoStudents ? (
+            <JournalPanelMessage
+              tone="empty"
+              title={t("table.noStudentsInCourse")}
+              body={canManageRoster ? t("table.noStudentsAdminBody") : t("table.noStudentsBody")}
             >
-              {isDesktop ? (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-                  <JournalViewSwitch selected={route.view} onSelect={route.selectView} gridLabelKey="workspace.view.grid" />
-                  {route.view === "grid" && journal && (
-                    <JournalLessonNavigator
-                      lessonDates={journal.lesson_dates}
-                      selectedLesson={lessonSelection.lesson}
-                      today={today}
-                      onSelect={route.selectLesson}
-                    />
-                  )}
-                  {rosterSearchVisible && (
-                    <JournalRosterSearch
-                      query={searchQuery}
-                      onChange={setSearchQuery}
-                      matched={matchedCount}
-                      total={orderedStudents.length}
-                      filtering={isFiltering}
-                    />
-                  )}
-                  {editing && route.view === "grid" && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
-                  <div className="min-w-[14rem]">
-                    <JournalSaveStatus
-                      status={queueStatus}
-                      retryable={!queueStatus.forbidden}
-                      onRetry={() => void registry.retryAll()}
-                      onReview={() => setReviewOpen(true)}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <JournalViewSwitch selected={route.view} onSelect={route.selectView} gridLabelKey="workspace.view.lesson" />
-                  {(route.view === "grid" || queueStatus.phase !== "idle") && (
-                  <div
-                    data-testid="journal-lesson-band"
-                    className="sticky top-[calc(3.5rem+1px+env(safe-area-inset-top))] z-20 -mx-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border bg-cream px-4 py-1 [@media(max-height:500px)]:static"
-                  >
-                    {route.view === "grid" && journal && (
-                      <JournalLessonNavigator
-                        lessonDates={journal.lesson_dates}
-                        selectedLesson={lessonSelection.lesson}
-                        today={today}
-                        onSelect={route.selectLesson}
-                      />
-                    )}
-                    <JournalSaveStatus
-                      status={queueStatus}
-                      retryable={!queueStatus.forbidden}
-                      onRetry={() => void registry.retryAll()}
-                      onReview={() => setReviewOpen(true)}
-                    />
-                  </div>
-                  )}
-                  {rosterSearchVisible && (
-                    <JournalRosterSearch
-                      query={searchQuery}
-                      onChange={setSearchQuery}
-                      matched={matchedCount}
-                      total={orderedStudents.length}
-                      filtering={isFiltering}
-                    />
-                  )}
-                </>
+              {canManageRoster && (
+                <Link
+                  to={`/courses/${course.id}`}
+                  className="inline-flex min-h-11 items-center rounded-[10px] bg-maroon px-4 text-sm font-semibold text-on-primary hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[opacity,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                >
+                  {t("table.addStudents")}
+                </Link>
               )}
-              <JournalPeriodTransition
-                displayedJournalId={journal?.journal_id}
-                displayedPeriodStart={journal?.period_start}
-                switching={isSwitchingPeriod}
-              >
-                {renderGradebookBody()}
-              </JournalPeriodTransition>
-            </section>
+            </JournalPanelMessage>
           ) : (
-            <section
-              role="tabpanel"
-              id={`${panelIdPrefix}-panel-progress`}
-              aria-labelledby={`${panelIdPrefix}-tab-progress`}
-              className="flex min-w-0 flex-col gap-4"
-            >
-              {gradebookStatusVisible && queueStatus.phase !== "idle" && (
-                <JournalSaveStatus
-                  status={queueStatus}
-                  retryable={!queueStatus.forbidden}
-                  onRetry={() => void registry.retryAll()}
-                  onReview={() => setReviewOpen(true)}
+            <>
+              <div className="flex flex-wrap items-center gap-2" data-testid="journal-toolbar">
+                <JournalPeriodPicker
+                  periods={periods}
+                  selectedPeriodId={selectedPeriod.id}
+                  today={today}
+                  onSelect={route.selectPeriod}
+                  disabled={queueStatus.draining}
                 />
-              )}
-              <JournalProgressView courseId={courseId} />
-            </section>
+                {editorsMounted && journal && <JournalPeriodMenu onOpenSettings={() => setSettingsJournalId(journalId ?? null)} />}
+                {rosterSearchVisible && (
+                  <JournalRosterSearch
+                    query={searchQuery}
+                    onChange={setSearchQuery}
+                    matched={matchedCount}
+                    total={orderedStudents.length}
+                    filtering={isFiltering}
+                  />
+                )}
+                <div className="ml-auto flex items-center gap-2">
+                  <JournalSaveStatus
+                    status={queueStatus}
+                    retryable={!queueStatus.forbidden}
+                    onRetry={() => void registry.retryAll()}
+                    onReview={() => setReviewOpen(true)}
+                  />
+                  {editing && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
+                </div>
+              </div>
+
+              <JournalProgressView courseId={courseId} chartOnly />
+
+              <section className="flex min-w-0 flex-col gap-2 lg:gap-4" aria-label={t("workspace.tabs.gradebook")}>
+                <JournalPeriodTransition
+                  displayedJournalId={journal?.journal_id}
+                  displayedPeriodStart={journal?.period_start}
+                  switching={isSwitchingPeriod}
+                >
+                  {renderGradebookBody()}
+                </JournalPeriodTransition>
+              </section>
+            </>
           )}
         </>
       )}
@@ -524,7 +379,7 @@ function JournalDetailContent() {
           onBusyChange={setSettingsBusy}
           onReview={() => setReviewOpen(true)}
           onClose={() => setSettingsJournalId(null)}
-          returnFocusSelector="[data-period-settings]"
+          returnFocusSelector="[data-period-menu]"
         />
       )}
     </div>

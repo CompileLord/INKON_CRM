@@ -127,7 +127,7 @@ export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
   };
 
   return (
-    <div className="relative w-full min-w-0 lg:w-auto lg:min-w-[240px] lg:max-w-[420px]">
+    <div className="relative min-w-0 w-40 shrink-0">
       <button
         ref={triggerRef}
         type="button"
@@ -139,18 +139,10 @@ export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
         disabled={disabled}
         onClick={() => (open ? closeList(false) : openList())}
         onKeyDown={handleTriggerKeyDown}
-        className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-[10px] border border-control-border bg-card px-3 py-1.5 text-left hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 motion-safe:transition-colors motion-safe:duration-150"
+        className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] border border-control-border bg-card px-3 text-left hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 pointer-coarse:h-11 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
       >
-        <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="break-words text-sm font-semibold text-ink">{selected.period_label}</span>
-            <span className="rounded-full border border-info/30 bg-info-surface px-2 py-0.5 text-xs font-semibold text-info">
-              {timingLabelOf(selected)}
-            </span>
-          </span>
-          <span className="mt-0.5 block text-xs tabular-nums text-muted">{rangeOf(selected)}</span>
-        </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-muted ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+        <span className="min-w-0 truncate text-sm font-semibold text-ink">{selected.period_label}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted motion-safe:transition-transform motion-safe:duration-150 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
       {open && (
@@ -183,10 +175,9 @@ export const JournalPeriodPicker: React.FC<JournalPeriodPickerProps> = ({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block break-words text-sm font-semibold text-ink">{period.period_label}</span>
-                  <span className="block text-xs tabular-nums text-muted">{rangeOf(period)}</span>
-                </span>
-                <span className="shrink-0 rounded-full border border-info/30 bg-info-surface px-2 py-0.5 text-xs font-semibold text-info">
-                  {timingLabelOf(period)}
+                  <span className="block text-xs tabular-nums text-muted">
+                    {rangeOf(period)} · {timingLabelOf(period)}
+                  </span>
                 </span>
               </div>
             );

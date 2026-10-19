@@ -50,7 +50,7 @@ interface GridHarness {
   rerender: (students: JournalStudentResponse[], journalId?: number) => void;
 }
 
-function mountGrid(options: { editing?: boolean; students?: JournalStudentResponse[]; selectedLesson?: string } = {}): GridHarness {
+function mountGrid(options: { editing?: boolean; students?: JournalStudentResponse[]; selectedLesson?: string; examMaximum?: number } = {}): GridHarness {
   const onEntryCommand = vi.fn();
   const onSummaryPair = vi.fn();
   const onSelectLesson = vi.fn();
@@ -66,6 +66,7 @@ function mountGrid(options: { editing?: boolean; students?: JournalStudentRespon
       cellStatus={new Map()}
       summaryStatus={new Map()}
       editing={editing}
+      examMaximum={options.examMaximum ?? 24}
       onSelectLesson={onSelectLesson}
     />
   );
@@ -215,11 +216,70 @@ describe("JournalGrid keyboard", () => {
     search.remove();
   });
 
-  it("has no inline bonus or exam inputs so the paired editor is the only summary edit path", () => {
+  it("ends every period with Exam, Bonus, Total and % columns after the last lesson day", () => {
     mountGrid();
-    expect(screen.queryByRole("textbox", { name: /Bonus|Exam/ })).toBeNull();
-    expect(screen.queryByRole("columnheader", { name: /Bonus|Exam/ })).toBeNull();
-    expect(screen.getByRole("columnheader", { name: "Total" })).toBeDefined();
+    const names: string[] = screen.getAllByRole("columnheader").map((header) => header.textContent ?? "");
+    expect(names.slice(-4)).toEqual(["Exam", "Bonus", "Total", "%"]);
+    expect(names).toHaveLength(1 + DATES.length + 4);
+    expect(screen.getAllByRole("textbox", { name: /^Exam score for/ })).toHaveLength(STUDENTS.length);
+    expect(screen.getAllByRole("textbox", { name: /^Bonus score for/ })).toHaveLength(STUDENTS.length);
+  });
+
+  it("saves an edited exam score through the summary pair callback with the current version", () => {
+    const grid = mountGrid();
+    const exam = screen.getByRole("textbox", { name: "Exam score for Bahor Tester" });
+    fireEvent.change(exam, { target: { value: "17" } });
+    fireEvent.blur(exam);
+    expect(grid.onSummaryPair).toHaveBeenCalledWith(2, { exam_score: 17, bonus_score: 0, version: 1 });
+  });
+
+  it("saves an edited bonus score with the untouched exam score", () => {
+    const grid = mountGrid({ examMaximum: 50 });
+    const bonus = screen.getByRole("textbox", { name: "Bonus score for Anvar Tester" });
+    fireEvent.change(bonus, { target: { value: "2" } });
+    fireEvent.keyDown(bonus, { key: "Enter" });
+    expect(grid.onSummaryPair).toHaveBeenCalledWith(1, { exam_score: 0, bonus_score: 2, version: 1 });
+  });
+
+  it("keeps exam and bonus visible but not editable when the journal is read-only", () => {
+    mountGrid({ editing: false });
+    expect(screen.getAllByRole("columnheader").slice(-4).map((header) => header.textContent)).toEqual(["Exam", "Bonus", "Total", "%"]);
+    expect(screen.queryAllByRole("textbox")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /Bulk actions/ })).toBeNull();
+  });
+});
+
+describe("JournalGrid bulk column actions", () => {
+  const MIXED: JournalStudentResponse[] = [
+    student(1, "Anvar"),
+    { ...student(2, "Bahor", { [DATES[0]]: 4 }), entries: student(2, "Bahor", { [DATES[0]]: 4 }).entries.map((entry) => ({ ...entry, attendance: entry.score > 0 })) },
+    { ...student(3, "Chiroq"), entries: student(3, "Chiroq").entries.map((entry) => ({ ...entry, attendance: true })) },
+  ];
+
+  function openColumnMenu(date: string): void {
+    fireEvent.click(screen.getByRole("button", { name: `Bulk actions for ${formatSchoolLessonDate(date)}` }));
+  }
+
+  it("marks present only the cells that are not yet present, through the entry command path", () => {
+    const grid = mountGrid({ students: MIXED });
+    openColumnMenu(DATES[0]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mark all present" }));
+    expect(grid.onEntryCommand).toHaveBeenCalledTimes(1);
+    expect(grid.onEntryCommand).toHaveBeenCalledWith(1, DATES[0], { kind: "attendance", attended: true });
+  });
+
+  it("fills homework with 5 only for present students who have no score and never overwrites one", () => {
+    const grid = mountGrid({ students: MIXED });
+    openColumnMenu(DATES[0]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Fill homework with 5" }));
+    expect(grid.onEntryCommand.mock.calls).toEqual([[3, DATES[0], { kind: "score", score: 5 }]]);
+  });
+
+  it("does nothing for a column with no empty cells", () => {
+    const grid = mountGrid({ students: [MIXED[2]] });
+    openColumnMenu(DATES[0]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mark all present" }));
+    expect(grid.onEntryCommand).not.toHaveBeenCalled();
   });
 });
 
@@ -345,7 +405,7 @@ describe("JournalGrid structure", () => {
     const grid = mountGrid({ selectedLesson: DATES[1] });
     const headers = screen.getAllByRole("columnheader");
     expect(headers[2].getAttribute("aria-current")).toBe("date");
-    fireEvent.click(within(headers[3]).getByRole("button"));
+    fireEvent.click(within(headers[3]).getAllByRole("button")[0]);
     expect(grid.onSelectLesson).toHaveBeenCalledWith(DATES[2]);
   });
 

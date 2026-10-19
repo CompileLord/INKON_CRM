@@ -138,8 +138,8 @@ describe("JournalScoreCell overlays", () => {
     fireEvent.keyDown(choice("5"), { key: "ArrowLeft" });
     expect(document.activeElement).toBe(choice("4"));
     fireEvent.keyDown(choice("4"), { key: "Home" });
-    expect(document.activeElement).toBe(choice("0"));
-    fireEvent.keyDown(choice("0"), { key: "End" });
+    expect(document.activeElement).toBe(choice("1"));
+    fireEvent.keyDown(choice("1"), { key: "End" });
     expect(document.activeElement).toBe(choice("5"));
   });
 
@@ -151,23 +151,55 @@ describe("JournalScoreCell overlays", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("is a minimal popover: one row of six choices, no title, student, date, current-score line, help text or close button", () => {
+  it("is a minimal popover: one segmented row of five choices plus Clear, no title, student, date, current-score line, help text or close button", () => {
     const { onCommand } = renderCell({ score: 3, attendance: true });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     const menu = screen.getByRole("menu", { name: /Score for Aziza Rahimova, / });
-    expect(menu.textContent).toBe("012345");
+    expect(menu.textContent).toBe("12345Clear");
     const popover = menu.parentElement as HTMLElement;
-    expect(popover.textContent).toBe("012345");
+    expect(popover.textContent).toBe("12345Clear");
     expect(screen.queryByRole("dialog", { name: /Score for/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
     expect(screen.queryByText(/Current score/)).toBeNull();
     expect(screen.queryByText(/mark the student present/)).toBeNull();
-    screen.getAllByRole("menuitemradio").forEach((choice) => expect(choice.className).toContain("h-9"));
+    screen.getAllByRole("menuitemradio").forEach((choice) => expect(choice.className).toContain("h-8"));
     expect(screen.getByRole("menuitemradio", { name: "3" }).getAttribute("aria-checked")).toBe("true");
     fireEvent.pointerDown(document.body);
     fireEvent.mouseDown(document.body);
     expect(screen.queryByRole("menu")).toBeNull();
     expect(onCommand).not.toHaveBeenCalled();
+  });
+
+  it("offers scores 1 to 5 only and no 0 option", () => {
+    renderCell({ score: 0 });
+    fireEvent.click(screen.getByRole("button", { name: "—" }));
+    const choices: string[] = screen.getAllByRole("menuitemradio").map((choice) => choice.textContent ?? "");
+    expect(choices).toEqual(["1", "2", "3", "4", "5"]);
+    expect(screen.queryByRole("menuitemradio", { name: "0" })).toBeNull();
+  });
+
+  it("clears the score from the picker Clear control and from Backspace or Delete inside the picker", () => {
+    const { onCommand } = renderCell({ score: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Clear" }));
+    expect(onCommand).toHaveBeenLastCalledWith({ kind: "score", score: 0 });
+    expect(screen.queryByRole("menu")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    fireEvent.keyDown(screen.getByRole("menuitemradio", { name: "3" }), { key: "Backspace" });
+    expect(onCommand).toHaveBeenCalledTimes(2);
+    expect(onCommand).toHaveBeenLastCalledWith({ kind: "score", score: 0 });
+  });
+
+  it("does not treat the 0 key as a score but clears with Backspace and Delete", () => {
+    const { cell, onCommand } = renderCell({ score: 3 });
+    cell.focus();
+    fireEvent.keyDown(cell, { key: "0" });
+    expect(onCommand).not.toHaveBeenCalled();
+    fireEvent.keyDown(cell, { key: "Backspace" });
+    fireEvent.keyDown(cell, { key: "Delete" });
+    expect(onCommand).toHaveBeenCalledTimes(2);
+    expect(onCommand).toHaveBeenNthCalledWith(1, { kind: "score", score: 0 });
+    expect(onCommand).toHaveBeenNthCalledWith(2, { kind: "score", score: 0 });
   });
 
   it("applies the dirty-dismissal rule to the desktop comment editor and returns focus to the cell", async () => {

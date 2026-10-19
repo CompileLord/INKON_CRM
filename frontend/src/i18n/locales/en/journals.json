@@ -84,12 +84,16 @@
       "wholeNumber": "Enter a whole number",
       "aboveMaximum": "Max {{n}}"
     },
-    "noStudentsBody": "Students appear here once they are enrolled in this course.",
+    "noStudentsBody": "Students appear here once they are enrolled. Add them to the course roster to start grading.",
     "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
     "present": "Present",
     "absent": "Absent",
     "hasComment": "Has a comment",
-    "notRecorded": "Not recorded"
+    "notRecorded": "Not recorded",
+    "examCellLabel": "Exam score for {{name}}",
+    "bonusCellLabel": "Bonus score for {{name}}",
+    "addStudents": "Add students",
+    "noStudentsAdminBody": "Add students to the course roster to start grading."
   },
   "cellStatus": {
     "dirty": "Unsaved change",
@@ -151,12 +155,6 @@
       "gradebook": "Gradebook",
       "progress": "Progress"
     },
-    "viewLabel": "Gradebook view",
-    "view": {
-      "grid": "Grid",
-      "summary": "Summary",
-      "lesson": "Lesson"
-    },
     "lessonNav": {
       "label": "Lesson navigation",
       "previous": "Previous lesson",
@@ -175,7 +173,8 @@
     "periodsLoadFailed": "Could not load the journal periods",
     "progressLoadFailed": "Could not load progress",
     "noPeriodsTitle": "No journal periods yet",
-    "noPeriodsBody": "Periods are created for each week or month of the course. This course has none yet, so there is nothing to grade."
+    "noPeriodsBody": "Periods are created for each week or month of the course. This course has none yet, so there is nothing to grade.",
+    "periodMenuLabel": "Period options"
   },
   "grid": {
     "regionLabel": "Gradebook grid, {{period}}",
@@ -186,7 +185,7 @@
     "scrollHintLabel": "About horizontal scrolling"
   },
   "help": {
-    "button": "Keyboard help",
+    "button": "Keyboard shortcuts",
     "title": "Keyboard shortcuts",
     "arrows": "Move between cells",
     "grade": "Set the score and move down",
@@ -197,7 +196,7 @@
     "scope": "Shortcuts work when a cell is focused, not while typing in a field.",
     "keycap": {
       "arrows": "← ↑ → ↓",
-      "grade": "0–5",
+      "grade": "1–5",
       "attendance": "Space",
       "comment": "C",
       "clear": "Backspace",
@@ -206,19 +205,7 @@
     "scoreRule": "Scores 1–5 mark the student present. Marking absent resets the lesson score."
   },
   "summary": {
-    "listLabel": "Student totals, {{period}}",
-    "unavailable": "Unavailable",
-    "homework": "Homework",
-    "attendance": "Attendance",
-    "attendanceOf": "{{count}} of {{total}}",
-    "outOf": "{{value}} of {{max}}",
-    "ofMax": "of {{max}}",
-    "totalMax": "Total / max",
-    "actions": "Actions",
-    "editExamBonus": "Edit exam and bonus",
-    "editExamBonusFor": "Edit exam and bonus for {{name}}",
-    "openBreakdown": "Open breakdown for {{name}}",
-    "edit": "Edit"
+    "unavailable": "Unavailable"
   },
   "lesson": {
     "heading": "Lesson roster, {{period}}",
@@ -235,7 +222,8 @@
     "conflictLine": "This change conflicts with newer data. Use Review in the status line."
   },
   "picker": {
-    "title": "Score for {{name}}, {{date}}"
+    "title": "Score for {{name}}, {{date}}",
+    "clear": "Clear"
   },
   "comment": {
     "title": "Comment for {{name}}, {{date}}",
@@ -251,34 +239,6 @@
     "count": "{{matched}} of {{total}} students",
     "noMatchTitle": "No students match",
     "noMatchBody": "Nobody in this period's roster matches “{{query}}”. Clear the search to see everyone."
-  },
-  "breakdown": {
-    "back": "Back to summary",
-    "viewProfile": "View profile",
-    "period": "Period: {{period}}",
-    "lessons": "Lessons",
-    "noLessons": "There are no lessons in this period."
-  },
-  "calculation": {
-    "toggle": "How this total is calculated",
-    "sum": "Homework {{homework}} + attendance {{attendance}} + exam {{exam}} + bonus {{bonus}} = {{total}}",
-    "denominator": "Maximum {{max}} = {{lessons}} lessons × {{perLesson}} points + exam maximum {{examMax}}",
-    "denominatorServer": "Maximum {{max}}, as calculated by the server",
-    "percentage": "Percentage = {{total}} ÷ {{max}} = {{percentage}}",
-    "ruleHomework": "Homework: up to {{max}} points per lesson.",
-    "ruleAttendance": "Attendance: {{points}} point for each lesson attended.",
-    "ruleBonus": "Bonus: up to {{max}} points.",
-    "ruleOver100": "Bonus can push the percentage above 100%."
-  },
-  "summaryEditor": {
-    "title": "Edit exam and bonus: {{name}}",
-    "range": "Whole number from 0 to {{max}}",
-    "currentTotal": "Current total: {{sum}} of {{max}}",
-    "pairNote": "Both values are saved together.",
-    "apply": "Apply",
-    "discardPrompt": "You have unsaved changes to exam and bonus.",
-    "continueEditing": "Continue editing",
-    "discard": "Discard changes"
   },
   "periodSettings": {
     "title": "Period settings",
@@ -356,5 +316,14 @@
   },
   "readOnly": {
     "you": "You"
+  },
+  "atRisk": {
+    "label": "At risk",
+    "tooltip": "At risk: period result below 60% or 3 absences in a row"
+  },
+  "bulk": {
+    "menuLabel": "Bulk actions for {{date}}",
+    "markPresent": "Mark all present",
+    "fillHomework": "Fill homework with 5"
   }
 }

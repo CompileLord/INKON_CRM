@@ -2,10 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { ChevronsRight } from "lucide-react";
 import { InfoTooltip } from "../ui/InfoTooltip";
+import { JournalLessonColumnMenu } from "./JournalLessonColumnMenu";
 import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
 import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
-import { formatSchoolLessonDate, formatSchoolLessonWeekday } from "../../i18n/formatters";
+import { formatSchoolLessonDate, formatSchoolLessonWeekday, getSchoolCalendarDate } from "../../i18n/formatters";
+import { JournalAtRiskRules } from "../../lib/journals/JournalAtRiskRules";
+import { JournalBulkFill, type JournalBulkFillKind } from "../../lib/journals/JournalBulkFill";
 import { JournalStudentOrdering, useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
@@ -23,6 +26,7 @@ interface JournalGridProps {
   visibleStudentIds?: Set<number> | null;
   onAnchor?: (studentId: number, control: string) => void;
   readOnlySelfStudentId?: number | null;
+  examMaximum?: number;
 }
 
 interface GridFocus {
@@ -35,10 +39,12 @@ interface GridFocus {
 
 const STICKY_STUDENT_COLUMN_PX = 200;
 const LESSON_COLUMN_PX = 160;
-const TOTAL_COLUMN_PX = 96;
+const SUMMARY_FIELD_COLUMN_PX = 96;
+const TOTAL_COLUMN_PX = 80;
 const PERCENTAGE_COLUMN_PX = 80;
 const SHELL_HEADER_OFFSET = "calc(3.5rem + 1px + env(safe-area-inset-top))";
 const VISIBLE_EDGE_PADDING_PX = 8;
+const DEFAULT_EXAM_MAXIMUM = 100;
 
 function cellKeyOf(studentId: number, lessonDate: string): string {
   return `${studentId}:${lessonDate}`;
@@ -62,6 +68,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   visibleStudentIds = null,
   onAnchor,
   readOnlySelfStudentId = null,
+  examMaximum = DEFAULT_EXAM_MAXIMUM,
 }) => {
   const { t } = useTranslation("journals");
   const stableStudents: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
@@ -79,7 +86,11 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   const headerRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
   const viewport = useJournalGridViewport({ body: regionRef, header: headerStripRef, bar: scrollBarRef });
   const tableWidthPx: number =
-    STICKY_STUDENT_COLUMN_PX + lessonDates.length * LESSON_COLUMN_PX + TOTAL_COLUMN_PX + PERCENTAGE_COLUMN_PX;
+    STICKY_STUDENT_COLUMN_PX +
+    lessonDates.length * LESSON_COLUMN_PX +
+    2 * SUMMARY_FIELD_COLUMN_PX +
+    TOTAL_COLUMN_PX +
+    PERCENTAGE_COLUMN_PX;
 
   const defaultLesson: string | undefined =
     selectedLesson && lessonDates.includes(selectedLesson) ? selectedLesson : lessonDates[0];
@@ -138,6 +149,25 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     [students, lessonDates, journalId],
   );
 
+  const today: string = getSchoolCalendarDate();
+  const atRiskStudentIds: Set<number> = useMemo(
+    () =>
+      new Set(
+        students.filter((student) => JournalAtRiskRules.isAtRisk(student, lessonDates, today)).map((student) => student.student_id),
+      ),
+    [students, lessonDates, today],
+  );
+
+  const fillColumn = useCallback(
+    (kind: JournalBulkFillKind, lessonDate: string): void => {
+      if (!effectiveEditing) return;
+      JournalBulkFill.targetsFor(kind, students, lessonDate).forEach((target) =>
+        effectiveEditing.onEntryCommand(target.studentId, lessonDate, target.command),
+      );
+    },
+    [effectiveEditing, students],
+  );
+
   const showScrollCue: boolean = viewport.canScrollLeft || viewport.canScrollRight;
 
   return (
@@ -158,12 +188,14 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
           style={{ top: SHELL_HEADER_OFFSET }}
           className="sticky z-20 overflow-hidden rounded-t-2xl border border-b-0 border-border bg-beige"
         >
-          <table style={{ width: tableWidthPx, tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
+          <table style={{ width: tableWidthPx, minWidth: "100%", tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
             <colgroup>
               <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
               {lessonDates.map((date) => (
                 <col key={date} style={{ width: LESSON_COLUMN_PX }} />
               ))}
+              <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
+              <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: TOTAL_COLUMN_PX }} />
               <col style={{ width: PERCENTAGE_COLUMN_PX }} />
             </colgroup>
@@ -185,7 +217,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                     }}
                     scope="col"
                     aria-current={date === selectedLesson ? "date" : undefined}
-                    className={`border-b border-border p-0 text-center motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
+                    className={`relative border-b border-border p-0 text-center motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
                       date === selectedLesson ? "bg-info-surface text-ink" : "bg-beige text-ink"
                     }`}
                   >
@@ -197,8 +229,22 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                       <span className="text-xs text-muted">{formatSchoolLessonWeekday(date)}</span>
                       <span className="text-sm font-semibold tabular-nums">{formatSchoolLessonDate(date)}</span>
                     </button>
+                    {effectiveEditing && (
+                      <JournalLessonColumnMenu
+                        formattedDate={formatSchoolLessonDate(date)}
+                        onFill={(kind) => fillColumn(kind, date)}
+                      />
+                    )}
                   </th>
                 ))}
+
+                <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  {t("table.exam")}
+                </th>
+
+                <th scope="col" className="border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
+                  {t("table.bonus")}
+                </th>
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
                   {t("table.sum")}
@@ -222,12 +268,14 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
             viewport.overflows ? "" : "rounded-b-2xl border-b"
           }`}
         >
-          <table style={{ width: tableWidthPx, tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
+          <table style={{ width: tableWidthPx, minWidth: "100%", tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
             <colgroup>
               <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
               {lessonDates.map((date) => (
                 <col key={date} style={{ width: LESSON_COLUMN_PX }} />
               ))}
+              <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
+              <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: TOTAL_COLUMN_PX }} />
               <col style={{ width: PERCENTAGE_COLUMN_PX }} />
             </colgroup>
@@ -243,6 +291,8 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}
                   editing={effectiveEditing}
+                  examMaximum={examMaximum}
+                  atRisk={atRiskStudentIds.has(student.student_id)}
                   isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
                   markUnrecorded={readOnlySelfStudentId !== null}
                   onCellFocus={handleCellFocus}
