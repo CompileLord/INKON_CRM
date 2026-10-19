@@ -13,7 +13,7 @@ import * as courseHooks from "../lib/courses/hooks";
 import * as userHooks from "../lib/users/hooks";
 import * as auditHooks from "../lib/audit/hooks";
 import type { FinanceAnalyticsResponse, DebtItem } from "../lib/finance/types";
-import type { CourseResponse } from "../lib/courses/types";
+import type { CourseListItemResponse } from "../lib/courses/types";
 import type { User } from "../lib/users/types";
 import type { AuditEvent } from "../lib/audit/api";
 import type { Paginated } from "../lib/pagination";
@@ -166,7 +166,7 @@ const mockAnalytics: FinanceAnalyticsResponse = {
   debtors_preview: [],
 };
 
-const mockCoursesPaginated: Paginated<CourseResponse> = {
+const mockCoursesPaginated: Paginated<CourseListItemResponse> = {
   items: [],
   total: 8,
   page: 1,
@@ -262,6 +262,7 @@ describe("Superadmin Dashboard (/)", () => {
 
     vi.mocked(financeHooks.useFinanceAnalytics).mockReturnValue(mockSuccessResult(mockAnalytics));
     vi.mocked(courseHooks.useCourses).mockReturnValue(mockSuccessResult(mockCoursesPaginated));
+    vi.mocked(userHooks.useMentors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof userHooks.useMentors>);
     vi.mocked(userHooks.useStudents).mockReturnValue(mockSuccessResult(mockStudentsPaginated));
     vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(mockDebtsPaginated));
     vi.mocked(auditHooks.useAuditEvents).mockReturnValue(mockSuccessResult(mockAuditLogsPaginated));
@@ -422,7 +423,7 @@ describe("Superadmin Dashboard (/)", () => {
       net_receivable: "0.00",
       unpaid_students_count: 0,
     };
-    const zeroCourses: Paginated<CourseResponse> = {
+    const zeroCourses: Paginated<CourseListItemResponse> = {
       items: [],
       total: 0,
       page: 1,
@@ -461,8 +462,9 @@ describe("Superadmin Dashboard (/)", () => {
     expect(screen.getByText("students")).toBeTruthy();
     expect(screen.getByText("750.50 TJS")).toBeTruthy();
 
-    const retryCoursesBtn = screen.getByRole("button", { name: /Retry/ });
-    fireEvent.click(retryCoursesBtn);
+    const retryCoursesButtons: HTMLElement[] = screen.getAllByRole("button", { name: /Retry/ });
+    expect(retryCoursesButtons).toHaveLength(2);
+    fireEvent.click(retryCoursesButtons[0]);
     expect(refetchCourses).toHaveBeenCalledTimes(1);
   });
 

@@ -64,7 +64,7 @@
   "period": "Period",
   "month": "mo",
   "schedule": "Schedule",
-  "noSchedule": "No schedule set",
+  "noSchedule": "No schedule",
   "mentorHistory": "Mentor history",
   "noMentorHistory": "No mentor changes yet",
   "duplicate": "Duplicate",
@@ -209,7 +209,6 @@
   "paginationPrev": "Previous page",
   "paginationNext": "Next page",
   "paginationPage": "Page {{page}}",
-  "currentSortActive": "Current page order: {{sort}}",
   "tryChangeFilters": "Try changing filters",
   "allCourses": "All courses",
   "assignedMentor": "Teacher: {{name}}",
@@ -321,5 +320,16 @@
     "emptyStudentsHelp": "Enrolled students will appear here.",
     "noMatches": "No students match \"{{query}}\"",
     "resetSearch": "Clear search"
-  }
+  },
+  "weekdayShort": {
+    "0": "Mon",
+    "1": "Tue",
+    "2": "Wed",
+    "3": "Thu",
+    "4": "Fri",
+    "5": "Sat",
+    "6": "Sun"
+  },
+  "studentsCount_one": "{{count}} student",
+  "studentsCount_other": "{{count}} students"
 }

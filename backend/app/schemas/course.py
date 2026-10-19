@@ -88,6 +88,11 @@ class CourseResponse(BaseModel):
     updated_at: datetime
 
 
+class CourseListItemResponse(CourseResponse):
+    schedules: List[CourseScheduleResponse]
+    active_student_count: int
+
+
 class MentorMiniResponse(BaseModel):
     id: int
     first_name: str

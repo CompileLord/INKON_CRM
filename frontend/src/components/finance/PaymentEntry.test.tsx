@@ -110,7 +110,7 @@ describe("Payment entry form", () => {
     renderFinance("?tab=payments");
     const user = userEvent.setup({ advanceTimers: () => undefined });
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
-    expect((await screen.findByLabelText("Date")).textContent).toBe("11/01/2026");
+    expect((await screen.findByLabelText("Date")).textContent).toBe("01.11.2026");
   });
 
   it("submits a large exact amount without float conversion and the chosen Dushanbe day as an instant", async () => {

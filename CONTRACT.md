@@ -1184,6 +1184,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "schedules": array[],
+        "active_student_count": integer,
       }
     ],
     "total": integer,

@@ -64,7 +64,7 @@
   "period": "Давра",
   "month": "моҳ",
   "schedule": "Ҷадвал",
-  "noSchedule": "Ҷадвал муайян нашудааст",
+  "noSchedule": "Ҷадвал нест",
   "mentorHistory": "Таърихи омӯзгорон",
   "noMentorHistory": "Иваз кардани омӯзгор набудааст",
   "duplicate": "Нусхабардорӣ",
@@ -209,7 +209,6 @@
   "paginationPrev": "Саҳифаи қаблӣ",
   "paginationNext": "Саҳифаи навбатӣ",
   "paginationPage": "Саҳифаи {{page}}",
-  "currentSortActive": "Тартиб дар ин саҳифа: {{sort}}",
   "tryChangeFilters": "Кӯшиш кунед филтрҳоро иваз намоед",
   "allCourses": "Ҳамаи курсҳо",
   "assignedMentor": "Омӯзгор: {{name}}",
@@ -321,5 +320,16 @@
     "emptyStudentsHelp": "Донишҷӯёни қабулшуда дар ин ҷо пайдо мешаванд.",
     "noMatches": "Ягон донишҷӯ бо дархости «{{query}}» ёфт нашуд",
     "resetSearch": "Тоза кардани ҷустуҷӯ"
-  }
+  },
+  "weekdayShort": {
+    "0": "Дш",
+    "1": "Сш",
+    "2": "Чш",
+    "3": "Пш",
+    "4": "Ҷм",
+    "5": "Шб",
+    "6": "Яш"
+  },
+  "studentsCount_one": "{{count}} донишҷӯ",
+  "studentsCount_other": "{{count}} донишҷӯ"
 }

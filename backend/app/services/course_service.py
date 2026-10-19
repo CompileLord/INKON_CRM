@@ -12,7 +12,13 @@ from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.course import CourseCreate, CourseUpdate
+from app.schemas.course import (
+    CourseCreate,
+    CourseListItemResponse,
+    CourseResponse,
+    CourseScheduleResponse,
+    CourseUpdate,
+)
 from app.services.journal_generation_service import JournalGenerationService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
@@ -219,7 +225,7 @@ class CourseService:
         page_size: int,
         current_user: User
     ) -> dict:
-        query = select(Course).filter(Course.is_deleted == False)
+        query = select(Course).options(selectinload(Course.schedules)).filter(Course.is_deleted == False)
 
         if current_user.role == UserRole.MENTOR:
             query = query.filter(Course.mentor_id == current_user.id)
@@ -233,7 +239,23 @@ class CourseService:
         if status_filter:
             query = query.filter(Course.status == status_filter)
 
-        return await self.course_repo.get_paginated(query, page, page_size)
+        page_result: dict = await self.course_repo.get_paginated(query, page, page_size)
+        courses: List[Course] = page_result["items"]
+        student_counts: dict[int, int] = await self.course_repo.count_active_students_by_course(
+            [course.id for course in courses]
+        )
+        page_result["items"] = [
+            CourseListItemResponse(
+                **CourseResponse.model_validate(course, from_attributes=True).model_dump(),
+                schedules=[
+                    CourseScheduleResponse.model_validate(schedule, from_attributes=True)
+                    for schedule in course.schedules
+                ],
+                active_student_count=student_counts.get(course.id, 0),
+            )
+            for course in courses
+        ]
+        return page_result
 
     async def copy_course(self, new_course_data: CourseCreate, source_course_id: int, current_user: User) -> Course:
         from app.models.enrollment import Enrollment, EnrollmentStatus

@@ -176,5 +176,10 @@
   "paymentMethodDate": "Method / payment date",
   "viewPaymentReference": "View payment #{{id}}",
   "viewCourseDebts": "View course debts",
-  "viewStudentBalance": "View balance"
+  "viewStudentBalance": "View balance",
+  "todayLessons": "Today",
+  "noLessonsToday": "No lessons today",
+  "noLessonsTodayHelp": "Lessons scheduled for today will appear here.",
+  "todayLessonsLoadFailed": "Could not load today's lessons",
+  "todayLessonsUpdateFailed": "Failed to update today's lessons — showing cached data"
 }

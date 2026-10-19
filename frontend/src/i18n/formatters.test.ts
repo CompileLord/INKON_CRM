@@ -14,6 +14,7 @@ import {
   formatNumber,
   schoolCalendarDateToTimestamp,
   getSchoolMonthRange,
+  getSchoolWeekdayIndex,
 } from "./formatters";
 
 describe("formatters with timezone support", () => {
@@ -29,8 +30,7 @@ describe("formatters with timezone support", () => {
     expect(formattedRu).toContain("09:00");
 
     const formattedEn = formatSchoolLessonDateTime(sampleInstant, "en");
-    expect(formattedEn).toContain("10/12/2026");
-    expect(formattedEn).toMatch(/09:00|9:00\s*AM/i);
+    expect(formattedEn).toBe("12.10.2026 09:00");
 
     const formattedTg = formatSchoolLessonDateTime(sampleInstant, "tg");
     expect(formattedTg).toMatch(/12[./]10[./]2026/);
@@ -65,97 +65,28 @@ describe("formatters with timezone support", () => {
     expect(formatTime("09:15")).toBe("09:15");
   });
 
-  it("formats valid date-only strings and Date objects against Intl using default and explicit locales", () => {
-    const dateStr = "2026-06-15";
-    const parsedDate = new Date(dateStr);
-
-    const expectedDefault = new Intl.DateTimeFormat(getActiveLocale(), {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(parsedDate);
-    expect(formatDate(dateStr)).toBe(expectedDefault);
-
-    const expectedRu = new Intl.DateTimeFormat("ru-RU", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(parsedDate);
-    expect(formatDate(dateStr, "ru")).toBe(expectedRu);
-
-    const expectedEn = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(parsedDate);
-    expect(formatDate(dateStr, "en")).toBe(expectedEn);
-
-    const dateObj = new Date(2026, 5, 15);
-    const expectedFromObj = new Intl.DateTimeFormat("ru-RU", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(dateObj);
-    expect(formatDate(dateObj, "ru")).toBe(expectedFromObj);
+  it("formats dates as dd.MM.yyyy and times as 24h HH:mm in every locale", () => {
+    const instant: string = "2026-10-21T14:05:00Z";
+    for (const language of ["en", "ru", "tg"]) {
+      expect(formatDate(instant, language, "UTC")).toBe("21.10.2026");
+      expect(formatTime(instant, language, "UTC")).toBe("14:05");
+      expect(formatDateTime(instant, language, "UTC")).toBe("21.10.2026 14:05");
+      expect(formatDateTime(instant, language, "UTC")).not.toMatch(/AM|PM/i);
+    }
   });
 
-  it("formats valid default datetime and time against Intl without explicit timezone", () => {
-    const isoString = "2026-06-15T14:30:00Z";
-    const parsedDt = new Date(isoString);
-
-    const expectedDefaultDt = new Intl.DateTimeFormat(getActiveLocale(), {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(parsedDt);
-    expect(formatDateTime(isoString)).toBe(expectedDefaultDt);
-
-    const expectedRuDt = new Intl.DateTimeFormat("ru-RU", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(parsedDt);
-    expect(formatDateTime(isoString, "ru")).toBe(expectedRuDt);
-
-    const expectedDefaultTime = new Intl.DateTimeFormat(getActiveLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(parsedDt);
-    expect(formatTime(parsedDt)).toBe(expectedDefaultTime);
-
-    const expectedEnTime = new Intl.DateTimeFormat("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(parsedDt);
-    expect(formatTime(parsedDt, "en")).toBe(expectedEnTime);
+  it("formats afternoon and midnight hours in 24h form without AM/PM", () => {
+    expect(formatTime("2026-10-21T00:30:00Z", "en", "UTC")).toBe("00:30");
+    expect(formatTime("2026-10-21T23:59:00Z", "en", "UTC")).toBe("23:59");
+    expect(formatDateTime("2026-10-21T18:00:00Z", "en", "UTC")).toBe("21.10.2026 18:00");
   });
 
   it("handles explicit timezone parameter in base formatters", () => {
     const formattedNewYork = formatDateTime(sampleInstant, "en", "America/New_York");
-    const expectedNewYork = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/New_York",
-    }).format(new Date(sampleInstant));
-    expect(formattedNewYork).toBe(expectedNewYork);
+    expect(formattedNewYork).toBe("12.10.2026 00:00");
 
     const formattedDushanbe = formatDateTime(sampleInstant, "ru", "Asia/Dushanbe");
-    const expectedDushanbe = new Intl.DateTimeFormat("ru-RU", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Dushanbe",
-    }).format(new Date(sampleInstant));
-    expect(formattedDushanbe).toBe(expectedDushanbe);
+    expect(formattedDushanbe).toBe("12.10.2026 09:00");
 
     const formattedUtc = formatDate(sampleInstant, "ru", "UTC");
     const expectedUtc = new Intl.DateTimeFormat("ru-RU", {
@@ -276,5 +207,13 @@ describe("formatPercentage", () => {
     expect(formatPercentage(41.3, "ru")).toBe("41,3%");
     expect(formatPercentage(114.49, "ru")).toBe("114,49%");
     expect(formatPercentage(41.3, "tg")).toBe("41,3%");
+  });
+});
+
+describe("school weekday index", () => {
+  it("is Monday-first in Dushanbe time across the UTC midnight boundary", () => {
+    expect(getSchoolWeekdayIndex(new Date("2026-10-19T10:00:00Z"))).toBe(0);
+    expect(getSchoolWeekdayIndex(new Date("2026-10-18T20:00:00Z"))).toBe(0);
+    expect(getSchoolWeekdayIndex(new Date("2026-10-18T18:59:00Z"))).toBe(6);
   });
 });

@@ -176,5 +176,10 @@
   "paymentMethodDate": "Тарз / санаи пардохт",
   "viewPaymentReference": "Дидани пардохт №{{id}}",
   "viewCourseDebts": "Нишон додани қарзҳои курс",
-  "viewStudentBalance": "Нишон додани баланс"
+  "viewStudentBalance": "Нишон додани баланс",
+  "todayLessons": "Имрӯз",
+  "noLessonsToday": "Имрӯз дарс нест",
+  "noLessonsTodayHelp": "Дарсҳои имрӯза дар ин ҷо пайдо мешаванд.",
+  "todayLessonsLoadFailed": "Боркунии дарсҳои имрӯза ноком шуд",
+  "todayLessonsUpdateFailed": "Навсозии дарсҳои имрӯза ноком шуд — маълумоти захирашуда намоиш дода мешавад"
 }

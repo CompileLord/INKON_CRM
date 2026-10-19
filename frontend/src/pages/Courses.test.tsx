@@ -9,7 +9,7 @@ import { useAuthStore } from "../store/authStore";
 import * as courseHooks from "../lib/courses/hooks";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as userHooks from "../lib/users/hooks";
-import type { CourseResponse, PaginatedCourses } from "../lib/courses/types";
+import type { CourseListItemResponse, CourseResponse, PaginatedCourses } from "../lib/courses/types";
 import type { Paginated } from "../lib/pagination";
 import type { User } from "../lib/users/types";
 
@@ -198,7 +198,7 @@ function mockStaleErrorResult<TData>(data: TData, refetch = vi.fn()): UseQueryRe
   };
 }
 
-const sampleCourses: CourseResponse[] = [
+const sampleCourses: CourseListItemResponse[] = [
   {
     id: 1,
     title: "Python Fundamentals",
@@ -213,6 +213,8 @@ const sampleCourses: CourseResponse[] = [
     is_deleted: false,
     created_at: "2026-01-01T10:00:00Z",
     updated_at: "2026-01-01T10:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   },
   {
     id: 2,
@@ -228,6 +230,8 @@ const sampleCourses: CourseResponse[] = [
     is_deleted: false,
     created_at: "2026-02-01T10:00:00Z",
     updated_at: "2026-02-01T10:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   },
   {
     id: 3,
@@ -243,6 +247,8 @@ const sampleCourses: CourseResponse[] = [
     is_deleted: false,
     created_at: "2025-01-01T08:00:00Z",
     updated_at: "2025-01-01T08:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   },
 ];
 
@@ -350,10 +356,40 @@ describe("Courses page directory", () => {
     cleanup();
   });
 
+  describe("schedule and student count on course entries", () => {
+    it("shows schedule days with time range, student count and no sort echo line in grid and list views", () => {
+      const scheduled: CourseListItemResponse = {
+        ...sampleCourses[0],
+        schedules: [0, 2, 4].map((day) => ({ id: day + 1, course_id: 1, day_of_week: day, time_start: "14:00:00", time_end: "15:30:00" })),
+        active_student_count: 8,
+      };
+      const unscheduled: CourseListItemResponse = { ...sampleCourses[1], schedules: [], active_student_count: 1 };
+      vi.mocked(courseHooks.useCourses).mockReturnValue(
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
+          items: [scheduled, unscheduled],
+          total: 2,
+          page: 1,
+          page_size: 12,
+          total_pages: 1,
+        }),
+      );
+
+      for (const view of ["grid", "list"]) {
+        const { unmount } = renderCoursesPage({ initialUrl: `/courses?view=${view}` });
+        expect(screen.getByText("Mon, Wed, Fri · 14:00–15:30")).toBeTruthy();
+        expect(screen.getByText("No schedule")).toBeTruthy();
+        expect(screen.getByText("8 students")).toBeTruthy();
+        expect(screen.getByText("1 student")).toBeTruthy();
+        expect(screen.queryByText(/Current page order/)).toBeNull();
+        unmount();
+      }
+    });
+  });
+
   describe("URL parameter ownership & defaults", () => {
     it("defaults to status=all, page=1, empty search, newest sort, and grid desktop view", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -380,7 +416,7 @@ describe("Courses page directory", () => {
 
     it("gracefully falls back on invalid URL params", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -402,7 +438,7 @@ describe("Courses page directory", () => {
 
     it("falls back to page 1 when encountering malformed page parameter like 2abc or 2.5", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -431,7 +467,7 @@ describe("Courses page directory", () => {
 
     it("resets page to 1 when server status filter changes", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 2,
@@ -457,7 +493,7 @@ describe("Courses page directory", () => {
 
     it("preserves server page ownership when typing local search query", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 24,
           page: 2,
@@ -508,7 +544,7 @@ describe("Courses page directory", () => {
   describe("Scope honesty & current page pagination", () => {
     it("displays honest current page match count and retains pagination when search has 0 matches", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 24,
           page: 2,
@@ -533,7 +569,7 @@ describe("Courses page directory", () => {
 
     it("handles out of range page gracefully by offering return to page 1 while retaining pagination", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [],
           total: 12,
           page: 5,
@@ -558,7 +594,7 @@ describe("Courses page directory", () => {
 
     it("allows resetting search while keeping server page", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 24,
           page: 2,
@@ -586,7 +622,7 @@ describe("Courses page directory", () => {
   describe("Sorting & Decimal precision", () => {
     it("sorts by price using arbitrary-precision decimal strings without float corruption", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [
             sampleCourses[2],
             sampleCourses[0],
@@ -619,7 +655,7 @@ describe("Courses page directory", () => {
   describe("Domain correctness & school timezone", () => {
     it("formats course start and end dates with school timezone avoiding negative timezone shifts", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -630,15 +666,15 @@ describe("Courses page directory", () => {
 
       renderCoursesPage();
 
-      expect(screen.getByText(/01\/10\/2026/)).toBeTruthy();
-      expect(screen.getByText(/12\/31\/2026/)).toBeTruthy();
+      expect(screen.getByText(/10\.01\.2026/)).toBeTruthy();
+      expect(screen.getByText(/31\.12\.2026/)).toBeTruthy();
     });
   });
 
   describe("Role-specific presentation: superadmin vs mentor", () => {
     it("superadmin sees Create course button, bounded mentor lookup, and admin overflow menu", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -665,7 +701,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useDeleteCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -712,7 +748,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useDeleteCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -743,7 +779,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useDeleteCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -800,7 +836,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useDeleteCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -849,7 +885,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [targetCourse],
           total: 1,
           page: 2,
@@ -919,7 +955,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -962,7 +998,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1012,7 +1048,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -1080,7 +1116,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1122,7 +1158,7 @@ describe("Courses page directory", () => {
       } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1164,7 +1200,7 @@ describe("Courses page directory", () => {
 
     it("mentor sees assigned courses, secondary Open journal link, and NO admin controls or mentor fetch", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1202,7 +1238,7 @@ describe("Courses page directory", () => {
     });
 
     it("displays updating activity indicator on background refetch without blowing away loaded items", () => {
-      const staleData: Paginated<CourseResponse> = {
+      const staleData: Paginated<CourseListItemResponse> = {
         items: [sampleCourses[0]],
         total: 1,
         page: 1,
@@ -1221,7 +1257,7 @@ describe("Courses page directory", () => {
 
     it("renders loading skeleton while query is transitioning with isPlaceholderData", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockPlaceholderTransitionResult<Paginated<CourseResponse>>({
+        mockPlaceholderTransitionResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1246,7 +1282,7 @@ describe("Courses page directory", () => {
         role: "superadmin",
       });
 
-      expect(screen.getByText("Current page order: By price")).toBeTruthy();
+      expect(screen.queryByText(/Current page order/)).toBeNull();
       expect(screen.queryByText(/Found on this page/i)).toBeNull();
       unmount();
 
@@ -1255,7 +1291,7 @@ describe("Courses page directory", () => {
         role: "mentor",
       });
 
-      expect(screen.getByText("Current page order: Newest first")).toBeTruthy();
+      expect(screen.queryByText(/Current page order/)).toBeNull();
     });
 
     it("renders initial error state with functional Retry button", () => {
@@ -1303,7 +1339,7 @@ describe("Courses page directory", () => {
 
     it("displays genuine empty catalog state with role-specific guidance", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [],
           total: 0,
           page: 1,
@@ -1330,7 +1366,7 @@ describe("Courses page directory", () => {
   describe("Phone responsive presentation & Filters dialog", () => {
     it("renders divided rows and opens Filters bottom dialog with native radios on phone", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0], sampleCourses[1]],
           total: 2,
           page: 1,
@@ -1379,7 +1415,7 @@ describe("Courses page directory", () => {
 
     it("displays explicit active sort status on current page for custom sort, default sort, and alongside search", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -1392,28 +1428,24 @@ describe("Courses page directory", () => {
         initialUrl: "/courses?sort=price",
       });
 
-      let sortStatus = screen.getByRole("status");
-      expect(sortStatus.textContent).toContain("Current page order: By price");
+      expect(screen.queryByRole("status")).toBeNull();
       unmount();
 
       const { unmount: unmountDefault } = renderCoursesPage({
         initialUrl: "/courses",
       });
-      sortStatus = screen.getByRole("status");
-      expect(sortStatus.textContent).toContain("Current page order: Newest first");
+      expect(screen.queryByRole("status")).toBeNull();
       unmountDefault();
 
       renderCoursesPage({
         initialUrl: "/courses?q=Python",
       });
-      sortStatus = screen.getByRole("status");
-      expect(sortStatus.textContent).toContain("Current page order: Newest first");
-      expect(sortStatus.textContent).toContain("Found on this page: 1 of 3");
+      expect(screen.getByRole("status").textContent).toContain("Found on this page: 1 of 3");
     });
 
     it("renders phone primary title with text-base and leading-6 without clipping", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: [sampleCourses[0]],
           total: 1,
           page: 1,
@@ -1432,7 +1464,7 @@ describe("Courses page directory", () => {
 
     it("renders desktop list row title link with transition-colors and no unused transform motion", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -1455,7 +1487,7 @@ describe("Courses page directory", () => {
       localStorage.setItem("kitob_courses_view_preference", "list");
 
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,
@@ -1477,7 +1509,7 @@ describe("Courses page directory", () => {
 
     it("resets filters dialog open state when crossing breakpoint to tablet and returning to phone", () => {
       vi.mocked(courseHooks.useCourses).mockReturnValue(
-        mockSuccessResult<Paginated<CourseResponse>>({
+        mockSuccessResult<Paginated<CourseListItemResponse>>({
           items: sampleCourses,
           total: 3,
           page: 1,

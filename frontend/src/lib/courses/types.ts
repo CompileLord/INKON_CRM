@@ -85,7 +85,12 @@ export interface ListCoursesParams {
   page_size?: number;
 }
 
-export type PaginatedCourses = Paginated<CourseResponse>;
+export interface CourseListItemResponse extends CourseResponse {
+  schedules: CourseScheduleResponse[];
+  active_student_count: number;
+}
+
+export type PaginatedCourses = Paginated<CourseListItemResponse>;
 
 export interface CourseProgressPeriod {
   id: number;
