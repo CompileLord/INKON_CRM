@@ -45,14 +45,14 @@ import {
 import { useCreateUser, useUpdateUser } from "../../lib/users/hooks";
 import { resolveMediaUrl } from "../../lib/users/media";
 import { AuthApiError } from "../../lib/auth/errors";
-import type { User } from "../../lib/users/types";
+import type { User, UserCreateResponse } from "../../lib/users/types";
 
 interface StudentFormPanelProps {
   open: boolean;
   mode?: "create" | "edit";
   student?: User;
   onClose: () => void;
-  onSaved: (action: "created" | "updated", user?: User) => void;
+  onSaved: (action: "created" | "updated", user?: UserCreateResponse) => void;
   onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }
@@ -91,7 +91,7 @@ interface StudentFormPanelInnerProps {
   mode?: "create" | "edit";
   student?: User;
   onClose: () => void;
-  onSaved: (action: "created" | "updated", user?: User) => void;
+  onSaved: (action: "created" | "updated", user?: UserCreateResponse) => void;
   onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
 }

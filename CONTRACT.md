@@ -358,6 +358,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "date_of_birth?": string,
     "phone?": string,
     "parent_telegram_chat_id?": integer,
+    "parent_linked?": boolean,
+    "parent_link_code_expires_at?": string,
     "parent_phone?": string,
     "photo_path?": string,
     "thumbnail_path?": string,
@@ -366,6 +368,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "parent_link_code?": string,
   }
   ```
 - **422**: Validation Error
@@ -401,6 +404,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "date_of_birth?": string,
     "phone?": string,
     "parent_telegram_chat_id?": integer,
+    "parent_linked?": boolean,
+    "parent_link_code_expires_at?": string,
     "parent_phone?": string,
     "photo_path?": string,
     "thumbnail_path?": string,
@@ -440,6 +445,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "date_of_birth?": string,
     "phone?": string,
     "parent_telegram_chat_id?": integer,
+    "parent_linked?": boolean,
+    "parent_link_code_expires_at?": string,
     "parent_phone?": string,
     "photo_path?": string,
     "thumbnail_path?": string,
@@ -500,6 +507,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "date_of_birth?": string,
     "phone?": string,
     "parent_telegram_chat_id?": integer,
+    "parent_linked?": boolean,
+    "parent_link_code_expires_at?": string,
     "parent_phone?": string,
     "photo_path?": string,
     "thumbnail_path?": string,
@@ -579,6 +588,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "date_of_birth?": string,
     "phone?": string,
     "parent_telegram_chat_id?": integer,
+    "parent_linked?": boolean,
+    "parent_link_code_expires_at?": string,
     "parent_phone?": string,
     "photo_path?": string,
     "thumbnail_path?": string,
@@ -629,6 +640,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "date_of_birth?": string,
         "phone?": string,
         "parent_telegram_chat_id?": integer,
+        "parent_linked?": boolean,
+        "parent_link_code_expires_at?": string,
         "parent_phone?": string,
         "photo_path?": string,
         "thumbnail_path?": string,
@@ -643,6 +656,38 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "page": integer,
     "page_size": integer,
     "total_pages": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## POST /api/v1/students/{id}/telegram-link-code
+
+**Summary:** Generate Telegram Link Code
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **201**: Successful Response
+  ```json
+  {
+    "code": string,
+    "expires_at": string,
   }
   ```
 - **422**: Validation Error
@@ -679,6 +724,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "date_of_birth?": string,
       "phone?": string,
       "parent_telegram_chat_id?": integer,
+      "parent_linked?": boolean,
+      "parent_link_code_expires_at?": string,
       "parent_phone?": string,
       "photo_path?": string,
       "thumbnail_path?": string,
@@ -818,6 +865,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "date_of_birth?": string,
       "phone?": string,
       "parent_telegram_chat_id?": integer,
+      "parent_linked?": boolean,
+      "parent_link_code_expires_at?": string,
       "parent_phone?": string,
       "photo_path?": string,
       "thumbnail_path?": string,
@@ -926,6 +975,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "date_of_birth?": string,
         "phone?": string,
         "parent_telegram_chat_id?": integer,
+        "parent_linked?": boolean,
+        "parent_link_code_expires_at?": string,
         "parent_phone?": string,
         "photo_path?": string,
         "thumbnail_path?": string,
@@ -976,6 +1027,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "date_of_birth?": string,
       "phone?": string,
       "parent_telegram_chat_id?": integer,
+      "parent_linked?": boolean,
+      "parent_link_code_expires_at?": string,
       "parent_phone?": string,
       "photo_path?": string,
       "thumbnail_path?": string,
@@ -1062,6 +1115,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "date_of_birth?": string,
       "phone?": string,
       "parent_telegram_chat_id?": integer,
+      "parent_linked?": boolean,
+      "parent_link_code_expires_at?": string,
       "parent_phone?": string,
       "photo_path?": string,
       "thumbnail_path?": string,
@@ -3506,7 +3561,7 @@ Manually apply a student's wallet credit to a specific charge.
         "id": integer,
         "user_id?": integer,
         "recipient": string,
-        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
         "related_entity_id": integer,
         "notification_date": string,
         "status": "sent" | "failed",
@@ -3583,7 +3638,7 @@ Manually apply a student's wallet credit to a specific charge.
       {
         "id": integer,
         "recipient_name?": string,
-        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
         "notification_date": string,
         "status": "sent" | "failed",
         "attempts": integer,
@@ -3627,7 +3682,7 @@ Manually apply a student's wallet credit to a specific charge.
     "id": integer,
     "user_id?": integer,
     "recipient": string,
-    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
     "related_entity_id": integer,
     "notification_date": string,
     "status": "sent" | "failed",

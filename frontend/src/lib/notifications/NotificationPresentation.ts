@@ -1,7 +1,7 @@
 import { AuditPresentation, type AuditDayRelation } from "../audit/auditPresentation";
 import type { NotificationLogItem, NotificationType } from "./types";
 
-export type NotificationEventKind = "examResult" | "paymentTwoDays" | "paymentOneDay" | "generic";
+export type NotificationEventKind = "examResult" | "paymentTwoDays" | "paymentOneDay" | "telegramLockout" | "generic";
 
 export interface NotificationDayGroup {
   day: string;
@@ -14,6 +14,7 @@ export class NotificationPresentation {
       exam_result: "examResult",
       payment_reminder_2d: "paymentTwoDays",
       payment_reminder_1d: "paymentOneDay",
+      telegram_link_lockout: "telegramLockout",
     };
     return known[type as NotificationType] ?? "generic";
   }

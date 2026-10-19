@@ -21,6 +21,7 @@ const mockStudents: User[] = [
     date_of_birth: "2005-06-15",
     payment_day_of_month: 12,
     parent_telegram_chat_id: 12345,
+    parent_linked: true,
     is_deleted: false,
     must_set_password: false,
     created_at: "2026-01-10T10:00:00Z",
@@ -39,6 +40,7 @@ const mockStudents: User[] = [
     date_of_birth: null,
     payment_day_of_month: 25,
     parent_telegram_chat_id: null,
+    parent_linked: false,
     is_deleted: true,
     must_set_password: false,
     created_at: "2026-02-14T11:00:00Z",
@@ -91,6 +93,17 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
 }
 
 describe("StudentsTable", () => {
+  it("shows the parent-linked badge only for students whose parent has linked Telegram", () => {
+    renderTable();
+    const desktop = screen.getAllByText("Parent linked");
+    expect(desktop.length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Parent not linked").length).toBeGreaterThan(0);
+    const sarahRow = document.getElementById("student-row-101") as HTMLElement;
+    const johnRow = document.getElementById("student-row-102") as HTMLElement;
+    expect(within(sarahRow).getByText("Parent linked")).toBeTruthy();
+    expect(within(johnRow).getByText("Parent not linked")).toBeTruthy();
+  });
+
   it("renders desktop table with real link, phone tel, tabular payment day, and 44px menu button", async () => {
     const { props } = renderTable();
 

@@ -135,12 +135,14 @@ class OutboxService:
         first_name: str,
         temporary_password: str,
         correlation_key: Optional[str] = None,
+        parent_link_code: Optional[str] = None,
     ) -> OutboxEvent:
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
-        encrypted_payload = self._encryptor.encrypt(
-            json.dumps({"first_name": first_name, "temporary_password": temporary_password})
-        )
+        payload_fields: dict[str, str] = {"first_name": first_name, "temporary_password": temporary_password}
+        if parent_link_code is not None:
+            payload_fields["parent_link_code"] = parent_link_code
+        encrypted_payload = self._encryptor.encrypt(json.dumps(payload_fields))
         event = OutboxEvent(
             kind=OutboxEventKind.CREDENTIALS_EMAIL,
             status=OutboxEventStatus.PENDING,

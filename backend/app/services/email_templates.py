@@ -249,9 +249,13 @@ class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
         login_email: str,
         temporary_password: str,
         login_url: str,
+        parent_link_code: str | None = None,
+        bot_username: str | None = None,
         layout: BrandedEmailLayout | None = None,
     ) -> None:
         super().__init__(layout)
+        self._parent_link_code: str | None = parent_link_code
+        self._bot_username: str | None = bot_username
         self._first_name: str = first_name
         self._login_email: str = login_email
         self._temporary_password: str = temporary_password
@@ -269,12 +273,24 @@ class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
         return f"Добро пожаловать в KITOB, {self._first_name}!"
 
     def build_body_lines(self) -> tuple[str, ...]:
-        return ("Войдите с этими данными и при первом входе задайте новый пароль.",)
+        sign_in_line: str = "Войдите с этими данными и при первом входе задайте новый пароль."
+        if self._parent_link_code is None:
+            return (sign_in_line,)
+        bot_mention: str = f" @{self._bot_username}" if self._bot_username else ""
+        return (
+            sign_in_line,
+            f"Передайте код родителю, чтобы подключить уведомления в боте{bot_mention}.",
+        )
 
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]:
-        return (
+        rows: tuple[HighlightRow, ...] = (
             HighlightRow(label="Логин", value=self._login_email),
             HighlightRow(label="Пароль", value=self._temporary_password, letter_spaced=True),
+        )
+        if self._parent_link_code is None:
+            return rows
+        return rows + (
+            HighlightRow(label="Код для Telegram родителя", value=self._parent_link_code, letter_spaced=True),
         )
 
     def build_call_to_action(self) -> CallToAction | None:
@@ -369,6 +385,8 @@ class OutboxEmailTemplateFactory:
                 login_email=recipient_email,
                 temporary_password=details["temporary_password"],
                 login_url=self._login_url,
+                parent_link_code=details.get("parent_link_code"),
+                bot_username=settings.TELEGRAM_BOT_USERNAME,
             )
         if kind == OutboxEventKind.VERIFICATION_EMAIL:
             return VerificationCodeEmailTemplate(code=payload)

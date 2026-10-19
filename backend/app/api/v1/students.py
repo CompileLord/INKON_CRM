@@ -2,13 +2,14 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, get_student_profile_service
+from app.core.deps import get_db_session, get_current_user, get_student_profile_service, require_superadmin
 from app.models.user import User, UserRole
 from app.models.enrollment import Enrollment
 from app.models.course import Course
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, UserResponse
+from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, TelegramLinkCodeResponse, UserResponse
 from app.services.student_profile_service import StudentProfileService
+from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -36,6 +37,20 @@ async def get_students(
         search=search,
         mentor_id=mentor_id,
     )
+
+
+@router.post(
+    "/{id}/telegram-link-code",
+    response_model=TelegramLinkCodeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_telegram_link_code(
+    id: int,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db_session),
+) -> TelegramLinkCodeResponse:
+    issued_code: IssuedLinkCode = await TelegramLinkService(db).issue_code_for_student(id, current_user.id)
+    return TelegramLinkCodeResponse(code=issued_code.code, expires_at=issued_code.expires_at)
 
 
 @router.get("/me/profile", response_model=StudentProfileResponse)

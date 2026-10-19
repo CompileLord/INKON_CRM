@@ -2,21 +2,27 @@ from fastapi import APIRouter, Depends, status, File, UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_storage_service, require_superadmin, get_current_user
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate, UserResponse
+from app.schemas.user import UserCreate, UserCreateResponse, UserUpdate, UserSelfUpdate, UserResponse
+from app.services.telegram_link_service import IssuedLinkCode
 from app.services.storage_service import StorageService
 from app.services.user_service import UserService
 
 router = APIRouter()
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     payload: UserCreate,
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session)
-) -> User:
+) -> UserCreateResponse:
     user_service = UserService(db)
-    return await user_service.create_user(payload)
+    created_user: User
+    issued_link_code: IssuedLinkCode | None
+    created_user, issued_link_code = await user_service.create_user_with_link_code(payload)
+    response: UserCreateResponse = UserCreateResponse.model_validate(created_user, from_attributes=True)
+    response.parent_link_code = issued_link_code.code if issued_link_code else None
+    return response
 
 
 @router.get("/me", response_model=UserResponse)

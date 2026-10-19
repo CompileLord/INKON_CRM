@@ -11,11 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.user import User, UserRole
+from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
+from conftest import TestingSessionLocal
+import app.db.session as session_module
 
 
 class TelegramWebhookTestData:
     @staticmethod
-    def contact_update(phone_number: str, sender_id: int, update_id: int) -> dict[str, Any]:
+    def code_update(code_text: str, sender_id: int, update_id: int) -> dict[str, Any]:
         return {
             "update_id": update_id,
             "message": {
@@ -23,11 +26,7 @@ class TelegramWebhookTestData:
                 "date": int(datetime.now(timezone.utc).timestamp()),
                 "chat": {"id": sender_id, "type": "private", "first_name": "Guardian"},
                 "from": {"id": sender_id, "is_bot": False, "first_name": "Guardian"},
-                "contact": {
-                    "phone_number": phone_number,
-                    "first_name": "Guardian",
-                    "user_id": sender_id,
-                },
+                "text": code_text,
             },
         }
 
@@ -122,34 +121,30 @@ async def test_telegram_webhook_rejects_missing_or_wrong_secret_before_parsing(
 
 
 @pytest.mark.asyncio
-async def test_telegram_webhook_retries_processing_failure_without_duplicate_binding(
+async def test_telegram_webhook_retries_processing_failure_without_consuming_the_code(
     client: AsyncClient,
     db_session: AsyncSession,
     test_student: User,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    phone_number: str = "+992900000828"
     sender_id: int = 8280001
-    update: dict[str, Any] = TelegramWebhookTestData.contact_update(
-        phone_number,
-        sender_id,
-        8280002,
-    )
-    test_student.parent_phone = phone_number
-    test_student.parent_telegram_chat_id = None
-    db_session.add(test_student)
-    await db_session.commit()
+    async with TestingSessionLocal() as setup_session:
+        issued: IssuedLinkCode = await TelegramLinkService(setup_session).issue_code_for_student(test_student.id, None)
+        await TelegramLinkService(setup_session).set_language(sender_id, "ru")
+        await setup_session.commit()
+    update: dict[str, Any] = TelegramWebhookTestData.code_update(issued.code, sender_id, 8280002)
     replies: list[str] = []
 
     async def record_reply(message: Message, text: str, *args: Any, **kwargs: Any) -> None:
         replies.append(text)
 
     monkeypatch.setattr(Message, "answer", record_reply)
+    monkeypatch.setattr(session_module, "AsyncSessionLocal", TestingSessionLocal)
     commit_failure: ContactBindingAfterFlushFailure = ContactBindingAfterFlushFailure(
         test_student.id,
         sender_id,
-        f"controlled persistence failure {phone_number}",
+        f"controlled persistence failure {issued.code}",
     )
     event.listen(Session, "after_flush", commit_failure)
     caplog.set_level(logging.ERROR, logger="app.api.v1.telegram")
@@ -167,9 +162,10 @@ async def test_telegram_webhook_retries_processing_failure_without_duplicate_bin
         assert commit_failure.attempted
         assert failed_attempt.status_code == 503
         assert failed_attempt.json() == {"detail": "Telegram update processing failed"}
-        await db_session.refresh(test_student)
-        assert test_student.parent_telegram_chat_id is None
-        assert phone_number not in caplog.text
+        reloaded: User | None = await db_session.get(User, test_student.id, populate_existing=True)
+        assert reloaded is not None
+        assert reloaded.parent_telegram_chat_id is None
+        assert issued.code not in caplog.text
         assert "controlled persistence failure" not in caplog.text
 
         successful_retry = await client.post(
@@ -181,9 +177,10 @@ async def test_telegram_webhook_retries_processing_failure_without_duplicate_bin
         assert successful_retry.status_code == 200
         assert successful_retry.json() == {"status": "ok"}
         assert len(replies) == 1
-        assert "успешно" in replies[0].casefold()
-        await db_session.refresh(test_student)
-        assert test_student.parent_telegram_chat_id == sender_id
+        assert "Student One" in replies[0]
+        reloaded = await db_session.get(User, test_student.id, populate_existing=True)
+        assert reloaded is not None
+        assert reloaded.parent_telegram_chat_id == sender_id
         binding_count: int = await db_session.scalar(
             select(func.count(User.id)).where(
                 User.parent_telegram_chat_id == sender_id,

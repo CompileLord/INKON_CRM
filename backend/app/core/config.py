@@ -100,6 +100,7 @@ class Settings(BaseSettings):
     CRON_SECRET: Optional[str] = None
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_BOT_SECRET_TOKEN: str
+    TELEGRAM_BOT_USERNAME: Optional[str] = None
     TELEGRAM_WEBHOOK_URL: str = Field(
         default="http://localhost:8000/api/v1/telegram/webhook",
         validate_default=True,

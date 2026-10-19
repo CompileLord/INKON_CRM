@@ -7,14 +7,16 @@ import type {
   PaginatedUsers,
   StudentJournalPeriod,
   StudentProfileResponse,
+  TelegramLinkCode,
   User,
   UserCreate,
+  UserCreateResponse,
   UserSelfUpdate,
   UserUpdate,
 } from "./types";
 
-export function createUser(payload: UserCreate): Promise<User> {
-  return httpClient.post<User>("/users/", payload).then((res) => res.data);
+export function createUser(payload: UserCreate): Promise<UserCreateResponse> {
+  return httpClient.post<UserCreateResponse>("/users/", payload).then((res) => res.data);
 }
 
 export function updateUser(id: number, payload: UserUpdate): Promise<User> {
@@ -98,4 +100,10 @@ export function getMentorProfile(id: number): Promise<MentorProfileResponse> {
 
 export function getMentorAnalytics(id: number): Promise<MentorAnalyticsResponse> {
   return httpClient.get<MentorAnalyticsResponse>(`/mentors/${id}/analytics`).then((res) => res.data);
+}
+
+export function generateTelegramLinkCode(studentId: number): Promise<TelegramLinkCode> {
+  return httpClient
+    .post<TelegramLinkCode>(`/students/${studentId}/telegram-link-code`)
+    .then((res) => res.data);
 }

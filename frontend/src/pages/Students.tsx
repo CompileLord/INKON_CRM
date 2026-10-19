@@ -25,7 +25,7 @@ import {
   restoreStudentsScrollAndFocus,
 } from "../lib/users/returnContext";
 import { useAuthStore } from "../store/authStore";
-import type { PaginatedUsers, User } from "../lib/users/types";
+import type { PaginatedUsers, User, UserCreateResponse } from "../lib/users/types";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -255,7 +255,7 @@ export function Students() {
     });
   };
 
-  const handleSaved = (action: "created" | "updated", user?: User) => {
+  const handleSaved = (action: "created" | "updated", user?: UserCreateResponse) => {
     if (!isMountedRef.current || ownerRef.current !== currentOwner) return;
     if (action === "created") {
       if (user?.id) {
@@ -270,6 +270,7 @@ export function Students() {
         navigate(`/students/${user.id}`, {
           state: {
             createdStudentId: user.id,
+            createdParentLinkCode: user.parent_link_code ?? null,
             fromDirectory: {
               search: searchInput,
               page,

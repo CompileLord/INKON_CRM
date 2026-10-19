@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   createUser,
   deleteUser,
+  generateTelegramLinkCode,
   getCurrentUser,
   getMentorAnalytics,
   getMentorProfile,
@@ -119,6 +120,18 @@ export function useUploadAvatar(role: ListableRole) {
       queryClient.invalidateQueries({ queryKey: ["users", resourceFor(role)] });
       queryClient.invalidateQueries({ queryKey: ["users", resourceFor(role), "profile", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["users", "me"] });
+    },
+  });
+}
+
+export function useGenerateTelegramLinkCode() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (studentId: number) => generateTelegramLinkCode(studentId),
+    onSuccess: (_data, studentId) => {
+      queryClient.invalidateQueries({ queryKey: ["users", "students"] });
+      queryClient.invalidateQueries({ queryKey: ["users", "students", "profile", studentId] });
     },
   });
 }

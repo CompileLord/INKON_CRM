@@ -12,6 +12,7 @@ const {
   createUser,
   updateUser,
   deleteUser,
+  generateTelegramLinkCode,
   uploadAvatar,
   getStudents,
   getMentors,
@@ -73,6 +74,13 @@ describe("createUser", () => {
         role: "student",
       }),
     ).resolves.toEqual(sampleUser);
+  });
+});
+
+describe("generateTelegramLinkCode", () => {
+  it("posts to the student's telegram-link-code endpoint and returns the one-time code", async () => {
+    mock.onPost("/students/9/telegram-link-code").reply(201, { code: "12A345", expires_at: "2026-10-26T12:00:00Z" });
+    await expect(generateTelegramLinkCode(9)).resolves.toEqual({ code: "12A345", expires_at: "2026-10-26T12:00:00Z" });
   });
 });
 

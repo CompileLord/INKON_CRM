@@ -414,65 +414,6 @@ async def test_mentor_analytics_missing_state_and_access_boundaries(
 
 
 @pytest.mark.asyncio
-async def test_telegram_webhook_and_parent_binding(
-    client: AsyncClient,
-    db_session: AsyncSession,
-    test_student: User,
-    monkeypatch
-) -> None:
-    from aiogram import Bot
-    from app.core.config import settings
-    mock_call = AsyncMock(return_value=None)
-    monkeypatch.setattr(Bot, "__call__", mock_call)
-
-    test_student.phone = "+992900000000"
-    test_student.parent_phone = "+992900000001"
-    db_session.add(test_student)
-    await db_session.commit()
-
-    payload = {
-        "update_id": 12345,
-        "message": {
-            "message_id": 54321,
-            "date": 1441645532,
-            "chat": {
-                "id": 998877,
-                "type": "private",
-                "first_name": "Parent"
-            },
-            "from": {
-                "id": 998877,
-                "is_bot": False,
-                "first_name": "Parent"
-            },
-            "contact": {
-                "phone_number": "992900000000",
-                "first_name": "Parent",
-                "user_id": 998877
-            }
-        }
-    }
-
-    headers = {"X-Telegram-Bot-Api-Secret-Token": settings.TELEGRAM_BOT_SECRET_TOKEN}
-    response = await client.post("/api/v1/telegram/webhook", json=payload, headers=headers)
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-    await db_session.refresh(test_student)
-    assert test_student.parent_telegram_chat_id is None
-
-    payload["update_id"] = 12346
-    payload["message"]["message_id"] = 54322
-    payload["message"]["contact"]["phone_number"] = "992900000001"
-    response = await client.post("/api/v1/telegram/webhook", json=payload, headers=headers)
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-    await db_session.refresh(test_student)
-    assert test_student.parent_telegram_chat_id == 998877
-
-
-@pytest.mark.asyncio
 async def test_archive_expired_courses(db_session: AsyncSession, test_mentor: User) -> None:
     course = Course(
         title="Expired Physics",
