@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AlertCircle, AlertTriangle, BookOpen, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { CoursePagination } from "../components/courses/CoursePagination";
@@ -448,43 +449,35 @@ export function Courses() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[24px] md:text-[28px] font-semibold text-ink leading-[32px] md:leading-[36px] flex items-center gap-2.5">
-            <span>{t("title")}</span>
-            {showLoadingSkeleton ? (
-              <span
-                role="status"
-                aria-live="polite"
-                className="inline-flex items-center gap-1.5 text-xs font-normal text-muted"
-              >
-                <BrandActivityIndicator size={16} />
-                <span>{t("loading")}</span>
-              </span>
-            ) : coursesPage ? (
-              <span className="text-base md:text-lg font-normal text-muted tabular-nums">
-                ({coursesPage.total})
-              </span>
-            ) : null}
-          </h1>
-          <p className="mt-0.5 text-xs md:text-sm text-muted">{t("subtitle")}</p>
-        </div>
-
-        {isSuperAdmin ? (
-          <Button
-            ref={addCourseButtonRef}
-            variant="primary"
-            onClick={() => {
-              setEditingCourse(undefined);
-              setPanelOpen(true);
-            }}
-            className="min-h-[44px] min-w-[44px] font-semibold shadow-xs"
-          >
-            <Plus size={18} className="mr-1.5" />
-            {t("addCourse")}
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t("title")}
+        count={
+          showLoadingSkeleton ? (
+            <span role="status" aria-live="polite" className="inline-flex items-center gap-1.5 text-xs">
+              <BrandActivityIndicator size={16} />
+              <span>{t("loading")}</span>
+            </span>
+          ) : coursesPage ? (
+            `(${coursesPage.total})`
+          ) : undefined
+        }
+        actions={
+          isSuperAdmin ? (
+            <Button
+              ref={addCourseButtonRef}
+              variant="primary"
+              onClick={() => {
+                setEditingCourse(undefined);
+                setPanelOpen(true);
+              }}
+              className="min-h-[44px] min-w-[44px] font-semibold shadow-xs"
+            >
+              <Plus size={18} className="mr-1.5" />
+              {t("addCourse")}
+            </Button>
+          ) : undefined
+        }
+      />
 
       <CoursesToolbar
         search={search}

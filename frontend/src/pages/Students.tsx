@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
@@ -363,25 +364,21 @@ export function Students() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-ink sm:text-[28px]">{t("title")}</h1>
-          {isLoading && !isCurrentParamsMatchingLastGood ? (
-            <div className="h-6 w-10 animate-pulse rounded-full bg-beige" />
-          ) : typeof effectiveData?.total === "number" ? (
-            <span
-              title={t("table.total")}
-              aria-label={`${t("table.total")}: ${formatNumber(effectiveData.total, i18n.language)}`}
-              className="inline-flex min-h-6 items-center rounded-full bg-strip px-2.5 text-sm font-medium text-muted tabular-nums"
-            >
-              {formatNumber(effectiveData.total, i18n.language)}
+        <PageHeader
+          title={t("title")}
+          count={
+            <span className="inline-flex items-center gap-2">
+              {isLoading && !isCurrentParamsMatchingLastGood ? (
+                <span className="h-6 w-10 animate-pulse rounded-full bg-beige" />
+              ) : typeof effectiveData?.total === "number" ? (
+                <span title={t("table.total")} aria-label={`${t("table.total")}: ${formatNumber(effectiveData.total, i18n.language)}`}>
+                  {formatNumber(effectiveData.total, i18n.language)}
+                </span>
+              ) : null}
+              {isFetching && !isLoading && <BrandActivityIndicator size={18} />}
             </span>
-          ) : null}
-          {isFetching && !isLoading && (
-            <div className="flex items-center">
-              <BrandActivityIndicator size={18} />
-            </div>
-          )}
-        </div>
+          }
+        />
 
         <div className="flex items-center gap-3">
           <div className="relative min-w-0 flex-1 sm:max-w-[480px]">

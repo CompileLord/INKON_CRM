@@ -1,7 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Settings, Users } from "lucide-react";
+import { Settings, Users } from "lucide-react";
 import { useCourse, useCourseJournals } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
@@ -139,14 +140,7 @@ function JournalDetailContent() {
     [editorsMounted, settingsBusy, applyEntryCommand, editSummary],
   );
 
-  const backLink = (
-    <Link
-      to="/journals"
-      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[10px] text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <ArrowLeft size={16} aria-hidden="true" /> {t("backToJournals")}
-    </Link>
-  );
+  const backLink = <PageHeader backTo="/journals" backLabel={t("backToJournals")} />;
 
   if (courseId === undefined) {
     return (
@@ -334,11 +328,7 @@ function JournalDetailContent() {
         onRefetch={(conflictJournalId) => void registry.ownerFor(conflictJournalId).retryManual()}
       />
 
-      <header className="flex flex-col gap-1 lg:gap-2">
-        {backLink}
-        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
-          {course.title}
-        </h1>
+      <PageHeader backTo="/journals" backLabel={t("backToJournals")} title={course.title}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
           {mentorLine}
           {rosterCount !== undefined && (
@@ -348,7 +338,7 @@ function JournalDetailContent() {
             </span>
           )}
         </div>
-      </header>
+      </PageHeader>
 
       {periodsLoading ? (
         <JournalPeriodBarSkeleton />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -331,23 +332,21 @@ export function Mentors() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-ink sm:text-[28px]">{t("title")}</h1>
-          {isFetching && !isLoading && (
-            <div className="flex items-center">
-              <BrandActivityIndicator size={18} />
-            </div>
-          )}
-        </div>
-        {isLoading && !isCurrentParamsMatchingLastGood ? (
-          <div className="h-5 w-24 motion-safe:animate-pulse rounded-md bg-beige" />
-        ) : typeof effectiveData?.total === "number" ? (
-          <span className="text-sm text-muted tabular-nums">
-            {t("common:total")}: {formatNumber(effectiveData.total, i18n.language)}
+      <PageHeader
+        title={t("title")}
+        count={
+          <span className="inline-flex items-center gap-2">
+            {isLoading && !isCurrentParamsMatchingLastGood ? (
+              <span className="h-5 w-24 motion-safe:animate-pulse rounded-md bg-beige" />
+            ) : typeof effectiveData?.total === "number" ? (
+              <span>
+                {t("common:total")}: {formatNumber(effectiveData.total, i18n.language)}
+              </span>
+            ) : null}
+            {isFetching && !isLoading && <BrandActivityIndicator size={18} />}
           </span>
-        ) : null}
-      </div>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-auto sm:min-w-[320px] sm:max-w-[480px] sm:flex-1">

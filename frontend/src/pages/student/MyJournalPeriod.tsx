@@ -1,7 +1,8 @@
 import { useCallback, useId, useRef } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, CalendarDays, Eye } from "lucide-react";
+import { CalendarDays, Eye } from "lucide-react";
 import { useCourse, useCourseJournals } from "../../lib/courses/hooks";
 import { useScopedJournal } from "../../lib/journals/hooks";
 import { useJournalWorkspaceRoute } from "../../lib/journals/useJournalWorkspaceRoute";
@@ -65,15 +66,7 @@ export function MyJournalPeriod() {
   const lessonSelection = route.lessonResolution;
 
   const backHref: string = courseId !== undefined ? `/my/courses/${courseId}` : "/my/courses";
-  const backLink = (
-    <Link
-      to={backHref}
-      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[10px] text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
-    >
-      <ArrowLeft size={16} aria-hidden="true" />
-      {course ? course.title : t("backToCourses")}
-    </Link>
-  );
+  const backLink = <PageHeader backTo={backHref} backLabel={course ? course.title : t("backToCourses")} />;
 
   if (journalId === undefined) {
     return (
@@ -168,9 +161,7 @@ export function MyJournalPeriod() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        {backLink}
-        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">{journal.period_label}</h1>
+      <PageHeader backTo={backHref} backLabel={course ? course.title : t("backToCourses")} title={journal.period_label}>
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5 tabular-nums">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -182,7 +173,7 @@ export function MyJournalPeriod() {
             <InfoTooltip label={t("readOnlyInfoLabel")}>{t("readOnlyInfo")}</InfoTooltip>
           </span>
         </p>
-      </header>
+      </PageHeader>
 
       {periodsQuery.isLoading ? (
         <JournalPeriodBarSkeleton />

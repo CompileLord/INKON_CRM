@@ -26,11 +26,3 @@ export function primaryNavigation(role: Role, userId: number | null): Navigation
 export function matchesDestination(pathname: string, destination: string): boolean {
   return destination === "/" ? pathname === "/" : pathname === destination || pathname.startsWith(`${destination}/`);
 }
-export function routeContext(pathname: string, role: Role, userId: number | null): { key: string; parent: NavigationItem | null } {
-  const destinations = navigationFor(role, userId);
-  const current = destinations.find((item) => matchesDestination(pathname, item.to));
-  if (current) return { key: current.key, parent: current.key === "nav.ownProfile" ? destinations.find((item) => item.to === "/") ?? null : pathname === current.to ? null : current };
-  if (pathname.startsWith("/my/journal/")) return { key: "nav.journals", parent: destinations.find((item) => item.to === "/my/courses") ?? null };
-  if (pathname.startsWith("/students/") && role === "mentor") return { key: "nav.students", parent: destinations.find((item) => item.to === "/courses") ?? null };
-  return { key: "nav.home", parent: null };
-}

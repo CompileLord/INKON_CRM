@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { RefreshCw, ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuditEventRow } from "../components/audit/AuditEventRow";
@@ -100,18 +101,20 @@ export function Audit() {
 
   return (
     <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
-      <header className="flex items-start justify-between gap-4">
-        <h1 className="flex min-w-0 items-center gap-2 text-2xl font-semibold leading-8 text-ink sm:text-[1.75rem] sm:leading-9">
-          <ScrollText size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />
+      <PageHeader
+        titleIcon={<ScrollText size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        title={
           <span ref={headingRef} tabIndex={-1} className="focus-visible:outline-none">
             {t("audit:title")}
           </span>
-          <InfoTooltip label={t("audit:title")}>{t("audit:titleInfo")}</InfoTooltip>
-        </h1>
-        <Button variant="secondary" aria-label={t("audit:refresh")} title={t("audit:refresh")} onClick={() => void logs.refetch()} className="shrink-0 px-3">
-          <RefreshCw size={18} aria-hidden="true" className={logs.isFetching ? "motion-safe:animate-spin" : ""} />
-        </Button>
-      </header>
+        }
+        info={<InfoTooltip label={t("audit:title")}>{t("audit:titleInfo")}</InfoTooltip>}
+        actions={
+          <Button variant="secondary" aria-label={t("audit:refresh")} title={t("audit:refresh")} onClick={() => void logs.refetch()} className="shrink-0 px-3">
+            <RefreshCw size={18} aria-hidden="true" className={logs.isFetching ? "motion-safe:animate-spin" : ""} />
+          </Button>
+        }
+      />
       <AuditToolbar
         view={state}
         searchDraft={searchDraft}

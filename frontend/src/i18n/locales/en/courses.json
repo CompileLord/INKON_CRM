@@ -1,6 +1,5 @@
 {
   "title": "Courses & Groups",
-  "subtitle": "Course catalog, teacher assignments, and student rosters",
   "addCourse": "Create Course",
   "editCourse": "Edit Course",
   "searchPlaceholder": "Search course by title...",

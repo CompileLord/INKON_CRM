@@ -37,7 +37,6 @@
     "examLabel": "Exam"
   },
   "hubTitle": "Journals",
-  "hubSubtitle": "Each course has its own journal — attendance, scores, exam, and bonuses",
   "searchCoursePlaceholder": "Search course by title…",
   "loadFailedHub": "Failed to load journals",
   "filter": {

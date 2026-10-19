@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, BookOpen, Calendar, Clock, RotateCcw } from "lucide-react";
+import { BookOpen, Calendar, Clock, RotateCcw } from "lucide-react";
 import { useAuthStore, type AuthState } from "../store/authStore";
 import {
   useCopyCourse,
@@ -595,15 +596,7 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
   };
 
   const safeReturnUrl = getSafeCourseReturnUrl();
-  const backLink = (
-    <Link
-      to={safeReturnUrl}
-      className="inline-flex min-h-[44px] items-center gap-1.5 text-xs sm:text-sm font-medium text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon self-start"
-    >
-      <ArrowLeft size={16} />
-      <span>{t("backToCourses")}</span>
-    </Link>
-  );
+  const backLink = <PageHeader backTo={safeReturnUrl} backLabel={t("backToCourses")} />;
 
   const isAccessDenied =
     (error instanceof AuthApiError && error.status === 403) ||

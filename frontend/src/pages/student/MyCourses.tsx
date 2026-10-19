@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "../../components/PageHeader";
 import { useTranslation } from "react-i18next";
 import { BookOpen } from "lucide-react";
 import { useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
@@ -99,13 +100,11 @@ export function MyCourses() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
-          <BookOpen className="h-6 w-6 text-maroon dark:text-accent" aria-hidden="true" />
-          {t("myCoursesTitle")}
-        </h1>
-        <InfoTooltip label={t("coursesInfoLabel")}>{t("coursesInfo")}</InfoTooltip>
-      </div>
+      <PageHeader
+        titleIcon={<BookOpen className="h-6 w-6 text-maroon dark:text-accent" aria-hidden="true" />}
+        title={t("myCoursesTitle")}
+        info={<InfoTooltip label={t("coursesInfoLabel")}>{t("coursesInfo")}</InfoTooltip>}
+      />
       <StudentBucketTabs
         selected={bucket}
         activeCount={profile ? activeCourses.length : null}

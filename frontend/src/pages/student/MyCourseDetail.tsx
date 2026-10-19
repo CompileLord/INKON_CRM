@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Clock, Target, Trophy, UserX } from "lucide-react";
@@ -60,11 +61,7 @@ export function MyCourseDetail() {
   const course = courseQuery.data;
   const entry = profileQuery.data?.courses.find((candidate) => candidate.course.id === courseId);
   const listHref: string = entry?.bucket === "archive" ? "/my/courses?bucket=archive" : "/my/courses";
-  const backLink = (
-    <Link to="/my/courses" className="inline-flex min-h-11 w-fit items-center text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
-      {t("backToCourses")}
-    </Link>
-  );
+  const backLink = <PageHeader backTo="/my/courses" backLabel={t("backToCourses")} />;
 
   if (courseId === undefined) {
     return (
@@ -203,15 +200,7 @@ export function MyCourseDetail() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <nav aria-label={t("breadcrumbLabel")} className="flex flex-wrap items-center gap-1 text-sm text-muted">
-          <Link to={listHref} className="inline-flex min-h-11 items-center font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
-            {t("myCoursesTitle")}
-          </Link>
-          <ChevronRight className="h-4 w-4 max-sm:hidden" aria-hidden="true" />
-          <span aria-current="page" className="min-w-0 truncate max-sm:hidden">{course.title}</span>
-        </nav>
-        <h1 className="break-words text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">{course.title}</h1>
+      <PageHeader backTo={listHref} backLabel={t("myCoursesTitle")} title={course.title}>
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted" data-testid="course-meta">
           <span className="inline-flex items-center gap-1.5 tabular-nums">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -232,7 +221,7 @@ export function MyCourseDetail() {
             </span>
           )}
         </div>
-      </header>
+      </PageHeader>
 
       {renderStats()}
 

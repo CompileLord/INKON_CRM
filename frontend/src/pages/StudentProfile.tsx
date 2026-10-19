@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, CheckCircle2 } from "lucide-react";
+import { Pencil, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDeleteUser, useStudentProfile } from "../lib/users/hooks";
@@ -314,15 +315,7 @@ export function StudentProfile() {
     });
   };
 
-  const returnLink = (
-    <Link
-      to={returnTarget.to}
-      state={returnTarget.state}
-      className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-    >
-      <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
-    </Link>
-  );
+  const returnLink = <PageHeader backTo={returnTarget.to} backState={returnTarget.state} backLabel={t(returnTarget.labelKey)} />;
 
   const renderUnavailableProfile = (kind: ProfileUnavailableKind) => (
     <ProfileUnavailable
@@ -346,13 +339,7 @@ export function StudentProfile() {
           <BrandActivityIndicator size={22} aria-hidden="true" />
           <span>{t("common:loading")}</span>
         </div>
-        <Link
-          to={returnTarget.to}
-          state={returnTarget.state}
-          className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-        >
-          <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
-        </Link>
+        {returnLink}
         <div className="min-w-0 rounded-xl border border-border-warm bg-card p-4 motion-safe:animate-pulse">
           <div className="flex min-w-0 items-start gap-3">
             <div data-loading-avatar className="h-12 w-12 shrink-0 rounded-full bg-border-warm/70" />
@@ -385,13 +372,7 @@ export function StudentProfile() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link
-        to={returnTarget.to}
-        state={returnTarget.state}
-        className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-      >
-        <ArrowLeft size={16} /> {t(returnTarget.labelKey)}
-      </Link>
+      {returnLink}
 
       {hasTransientRefreshError && (
         <div role="alert" className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-border-warm bg-card p-3 text-sm text-muted">

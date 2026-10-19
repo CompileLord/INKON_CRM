@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DebtorsTab } from "../components/finance/DebtorsTab";
@@ -45,15 +46,15 @@ export function Finance() {
 
   return (
     <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold leading-8 text-ink sm:text-[1.75rem] sm:leading-9">{t("title")}</h1>
-        </div>
-        <Button className="w-full shrink-0 sm:w-auto" onClick={openGlobalPayment}>
-          <Plus size={18} aria-hidden="true" />
-          {t("acceptPayment")}
-        </Button>
-      </header>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <Button className="w-full shrink-0 sm:w-auto" onClick={openGlobalPayment}>
+            <Plus size={18} aria-hidden="true" />
+            {t("acceptPayment")}
+          </Button>
+        }
+      />
       <PaymentCompletion payment={recordedPayment} />
       <FinanceTabs selected={state.tab} onSelect={navigation.selectTab} />
       <div key={state.tab} role="tabpanel" className="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
