@@ -14,12 +14,8 @@ const PAGE_LEVEL_RULES: readonly string[] = ["page-max-width"];
 export const ALLOWLIST_CEILING: number = 31;
 
 const ALLOWLIST: readonly string[] = [
-  "components/courses/CourseFormPanel.tsx::native-date-input",
-  "components/courses/CourseFormPanel.tsx::native-select",
   "components/courses/CourseProgressPane.tsx::native-select",
   "components/courses/CourseRosterSection.tsx::native-select",
-  "components/courses/CoursesToolbar.tsx::native-select",
-  "components/courses/ScheduleEditor.tsx::native-select",
   "components/finance/FinanceTabs.tsx::role-tablist",
   "components/finance/OverviewSummary.tsx::native-date-input",
   "components/finance/PaymentDateRangePicker.tsx::native-date-input",

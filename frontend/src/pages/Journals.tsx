@@ -8,7 +8,7 @@ import { useMentors } from "../lib/users/hooks";
 import { parseSafePageParam } from "../lib/courses/returnContext";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
-import { CoursePagination } from "../components/courses/CoursePagination";
+import { Pagination as CoursePagination } from "../components/ui/Pagination";
 import { JournalListRow, JournalListRowSkeleton } from "../components/journals/JournalListRow";
 import type { JournalRowMentorState } from "../components/journals/JournalListRow";
 import { JournalsToolbar } from "../components/journals/JournalsToolbar";
