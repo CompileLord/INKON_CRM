@@ -16,6 +16,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 ### Allowed writes
 
+Scope correction (2026-10-19): WP-30 moves atomic notification persistence behind its existing repository interface. Fingerprint reservation must use that boundary rather than adding SQL to the service. The newer BE-3 image scheduling pipeline remains unchanged; this package owns the legacy document/exam notification path.
+
 | File | Snapshot location / intent |
 |---|---|
 | [backend/app/workers/tasks.py:87](../../../backend/app/workers/tasks.py) | Existing file, anchor line 87; only this WP’s stated behavior may change. |
@@ -23,6 +25,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/models/notification_log.py:10](../../../backend/app/models/notification_log.py) | Existing file, anchor line 10; only this WP’s stated behavior may change. |
 | [backend/alembic/versions/rwp31_exam_revision.py](../../../backend/alembic/versions/rwp31_exam_revision.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp31.py](../../../backend/app/tests/integration/test_remediation_wp31.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/repositories/interfaces/notification_log_repository.py` | Extend atomic reservation boundary for per-student revision fingerprints. |
+| `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Persist and compare delivery identity without journal/sibling collisions. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -49,6 +53,8 @@ Snapshot excerpt from `backend/app/workers/tasks.py`:
 
 1. Key exam notifications by student summary or explicit student+journal identity rather than journal alone.
 2. Persist a revision fingerprint including score/summary version and document identity; safely migrate/retire legacy idempotency identities without resending all history.
+3. Select the newest active document deterministically by upload timestamp and ID; deliver the matching student attachment. Preserve BE-3 score scheduling and its independent photo-delivery pipeline.
+4. Preserve the named `uq_notification_log` conflict interface and prior-image reads. Do not destructively rekey legacy history, collide journal IDs with summary IDs, or label ambiguous sibling history as proven delivery. Propose the precise cutover/baseline treatment before implementing it. Same revision replay, including across dates, must not create new deliveries.
 
 ## Tests to write BEFORE the fix
 

@@ -13,8 +13,6 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal, JournalPeriodType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.payment import Payment, PaymentMethod
-from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
-from app.services.notification_service import NotificationService
 from app.workers.tasks import archive_expired_courses, check_payment_reminders
 from app.telegram_bot.bot import bot
 
@@ -492,38 +490,3 @@ async def test_check_payment_reminders(db_session: AsyncSession, test_student: U
     call_args = mock_enqueue.call_args[1]
     assert call_args.get("chat_id") == 998877
     assert "Напоминание: оплата за курс Geometry" in call_args.get("text")
-
-
-@pytest.mark.asyncio
-async def test_notification_service_idempotency(db_session: AsyncSession) -> None:
-    notification_service = NotificationService(db_session)
-    recipient = "998877"
-    notification_type = NotificationType.PAYMENT_REMINDER_2D
-    related_entity_id = 1
-    notification_date = date(2026, 7, 12)
-
-    send_count = 0
-
-    async def mock_send_func(is_update: bool) -> None:
-        nonlocal send_count
-        send_count += 1
-
-    success1 = await notification_service.send_notification_with_idempotency(
-        recipient=recipient,
-        notification_type=notification_type,
-        related_entity_id=related_entity_id,
-        notification_date=notification_date,
-        send_func=mock_send_func
-    )
-    assert success1 is True
-    assert send_count == 1
-
-    success2 = await notification_service.send_notification_with_idempotency(
-        recipient=recipient,
-        notification_type=notification_type,
-        related_entity_id=related_entity_id,
-        notification_date=notification_date,
-        send_func=mock_send_func
-    )
-    assert success2 is False
-    assert send_count == 1

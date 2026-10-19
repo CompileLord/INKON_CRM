@@ -17,6 +17,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 
 ### Allowed writes
 
+Scope correction (2026-10-19): notification delivery SQL must live in the existing repository behind its interface; dependency wiring and current callers may change only to inject that interface. This preserves the repository/service boundary while adding atomic claims. The newer exam-result card delivery pipeline remains outside this package.
+
 | File | Snapshot location / intent |
 |---|---|
 | [backend/app/services/notification_service.py:120](../../../backend/app/services/notification_service.py) | Existing file, anchor line 120; only this WP’s stated behavior may change. |
@@ -27,6 +29,17 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/lib/notifications/types.ts:1](../../../frontend/src/lib/notifications/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp30.py](../../../backend/app/tests/integration/test_remediation_wp30.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/repositories/interfaces/notification_log_repository.py` | Extend existing notification persistence interface for atomic claims and delivery outcomes. |
+| `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Implement claim SQL and notification persistence. |
+| `backend/app/tests/integration/test_integrations_and_polish.py` | Adapt notification service construction to injected repository only; preserve behavioral assertions. |
+| `backend/app/tests/integration/test_notification_shell.py` | Replace obsolete `queued` invalid-status input with an invalid enum value; preserve 422, authorization and internal-field assertions. |
+| `backend/app/tests/integration/test_notification_delivery.py` | Move unchanged delivery test scenarios to satisfy the enforced 20 KB file limit. |
+| `backend/app/tests/integration/test_notification_recovery.py` | Move unchanged recovery test scenarios to satisfy the enforced 20 KB file limit. |
+| `backend/app/tests/integration/wp30_delivery_support.py` | Shared unchanged delivery fixture extracted for the test split. |
+| `backend/app/workers/settings.py` | Register bounded notification recovery task and 30-second cron only; abandoned claims and enqueue failures require an actual recovery path. |
+| `backend/app/core/deps.py` | Wire notification repository/service dependencies only. |
+| `backend/app/api/v1/notifications.py` | Inject notification service only. |
+| `backend/app/services/telegram_link_service.py` | Adapt existing notification service construction only. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

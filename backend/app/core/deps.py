@@ -205,3 +205,9 @@ def get_course_progress_service(
     repo: CourseProgressRepositoryInterface = Depends(get_course_progress_repository)
 ) -> CourseProgressService:
     return CourseProgressService(repo)
+
+
+def get_notification_service(db: AsyncSession = Depends(get_db_session)) -> "NotificationService":
+    from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
+    from app.services.notification_service import NotificationService
+    return NotificationService(SQLAlchemyNotificationLogRepository(db))
