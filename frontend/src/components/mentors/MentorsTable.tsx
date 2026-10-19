@@ -183,7 +183,7 @@ export function MentorsTable({
                             to={`/mentors/${mentor.id}`}
                             state={getMentorNavigationState(mentor.id)}
                             onClick={() => onMentorNavigate?.(mentor)}
-                            className="min-h-[44px] inline-flex items-center text-sm font-semibold text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
+                            className="min-h-[44px] inline-flex items-center text-sm font-semibold text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
                           >
                             {fullName}
                           </Link>
@@ -200,7 +200,7 @@ export function MentorsTable({
                       {mentor.phone ? (
                         <a
                           href={`tel:${mentor.phone}`}
-                          className="min-h-[44px] inline-flex items-center font-medium text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
+                          className="min-h-[44px] inline-flex items-center font-medium text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
                         >
                           {mentor.phone}
                         </a>
@@ -336,7 +336,7 @@ export function MentorsTable({
                       to={`/mentors/${mentor.id}`}
                       state={getMentorNavigationState(mentor.id)}
                       onClick={() => onMentorNavigate?.(mentor)}
-                      className="min-h-[44px] inline-flex items-center text-base font-semibold text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
+                      className="min-h-[44px] inline-flex items-center text-base font-semibold text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded break-words min-w-0 [overflow-wrap:anywhere]"
                     >
                       {fullName}
                     </Link>
@@ -344,14 +344,14 @@ export function MentorsTable({
                       {mentor.phone ? (
                         <a
                           href={`tel:${mentor.phone}`}
-                          className="min-h-[44px] inline-flex items-center text-muted hover:text-maroon tabular-nums break-words min-w-0 [overflow-wrap:anywhere]"
+                          className="min-h-[44px] inline-flex items-center text-muted hover:text-maroon-text tabular-nums break-words min-w-0 [overflow-wrap:anywhere]"
                         >
                           {mentor.phone}
                         </a>
                       ) : (
                         <a
                           href={`mailto:${mentor.email}`}
-                          className="min-h-[44px] inline-flex items-center text-muted hover:text-maroon break-words min-w-0 [overflow-wrap:anywhere]"
+                          className="min-h-[44px] inline-flex items-center text-muted hover:text-maroon-text break-words min-w-0 [overflow-wrap:anywhere]"
                         >
                           {mentor.email}
                         </a>

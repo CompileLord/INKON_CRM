@@ -109,7 +109,7 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
               aria-label={hasComment ? t("lesson.editCommentAria", { name: studentName }) : t("lesson.addCommentAria", { name: studentName })}
               className={`${ACTION_BUTTON_CLASS} relative w-11 px-0 sm:w-auto sm:px-3`}
             >
-              <MessageSquare className={`h-5 w-5 sm:h-4 sm:w-4 ${hasComment ? "fill-current text-maroon" : "text-muted"}`} aria-hidden="true" />
+              <MessageSquare className={`h-5 w-5 sm:h-4 sm:w-4 ${hasComment ? "fill-current text-maroon-text" : "text-muted"}`} aria-hidden="true" />
               {hasComment && <span data-testid="comment-dot" className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-maroon sm:hidden" aria-hidden="true" />}
               <span className="hidden sm:inline">{hasComment ? t("lesson.editComment") : t("lesson.addComment")}</span>
             </button>
@@ -126,7 +126,7 @@ export const JournalLessonRow: React.FC<JournalLessonRowProps> = React.memo(
             </span>
             <span className="tabular-nums text-ink">{t("lesson.scoreValue", { value: scoreText })}</span>
             {hasComment && (
-              <span className="inline-flex items-center gap-1 text-maroon" title={comment as string}>
+              <span className="inline-flex items-center gap-1 text-maroon-text" title={comment as string}>
                 <MessageSquare className="h-4 w-4 fill-current" aria-hidden="true" />
                 <span>{t("table.hasComment")}</span>
               </span>

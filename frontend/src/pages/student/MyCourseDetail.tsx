@@ -249,7 +249,7 @@ export function MyCourseDetail() {
               aria-expanded={descriptionOpen}
               aria-controls={descriptionId}
               onClick={() => setDescriptionOpen((open) => !open)}
-              className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
+              className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-semibold text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
             >
               {descriptionOpen ? t("showLess") : t("showMore")}
               <ChevronDown aria-hidden="true" className={`h-4 w-4 ${descriptionOpen ? "rotate-180" : ""}`} />

@@ -51,7 +51,7 @@ export function StudentCourseRow({ entry }: StudentCourseRowProps) {
         </div>
 
         <div className="flex flex-col min-w-0 flex-1">
-          <h3 className="text-sm sm:text-base font-semibold text-ink break-words group-hover:text-maroon">
+          <h3 className="text-sm sm:text-base font-semibold text-ink break-words group-hover:text-maroon-text">
             {course.title}
           </h3>
           <p className="text-xs text-muted mt-0.5 break-words">

@@ -79,7 +79,7 @@ export function JournalListRow({ course, mentorState, onNavigateOut }: JournalLi
           )}
         </div>
 
-        <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-maroon dark:text-accent md:inline-flex">
+        <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-maroon-text dark:text-accent md:inline-flex">
           {t("openJournal")}
         </span>
         <span className="flex h-11 w-11 shrink-0 items-center justify-center text-muted" aria-hidden="true">

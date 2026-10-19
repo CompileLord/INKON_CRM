@@ -74,7 +74,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border-warm bg-card p-8 sm:p-12 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-strip">
-        <BookOpen size={24} className="text-maroon" />
+        <BookOpen size={24} className="text-maroon-text" />
       </div>
       <p className="text-base font-semibold text-ink">
         {isSuperAdmin ? t("emptyCatalogAdmin") : t("emptyCatalogMentor")}

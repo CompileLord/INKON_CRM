@@ -49,7 +49,7 @@ export function Notifications() {
   return (
     <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6 pb-8">
       <PageHeader
-        titleIcon={<Bell size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        titleIcon={<Bell size={24} aria-hidden="true" className="shrink-0 text-maroon-text dark:text-accent" />}
         title={t("title")}
         info={<InfoTooltip label={t("title")}>{t(canSeeLog ? "titleInfoAdmin" : "titleInfo")}</InfoTooltip>}
       />

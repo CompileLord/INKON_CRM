@@ -66,7 +66,7 @@ export const JournalStudentBreakdown: React.FC<JournalStudentBreakdownProps> = (
           <Link
             to={profileHref}
             state={{ fromJournal: `${location.pathname}${location.search}` }}
-            className="inline-flex min-h-11 items-center rounded-[10px] px-3 text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 items-center rounded-[10px] px-3 text-sm font-semibold text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("breakdown.viewProfile")}
           </Link>
@@ -142,7 +142,7 @@ export const JournalStudentBreakdown: React.FC<JournalStudentBreakdownProps> = (
                   </div>
                   {hasComment && (
                     <p className="flex items-start gap-1.5 text-sm text-muted">
-                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 fill-current text-maroon" aria-hidden="true" />
+                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 fill-current text-maroon-text" aria-hidden="true" />
                       <span className="break-words">{entry?.comment}</span>
                     </p>
                   )}

@@ -388,7 +388,7 @@ export function StudentProfile() {
           className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-ink"
         >
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="shrink-0 text-maroon dark:text-accent" />
+            <CheckCircle2 size={18} className="shrink-0 text-maroon-text dark:text-accent" />
             <span>{t("form.createSuccess")}</span>
           </div>
           <button

@@ -100,7 +100,7 @@ export const MentorDashboard: React.FC = () => {
               {t("dashboard:needsGrading")}
             </h2>
             {queue && queue.length > 0 && (
-              <span className="inline-flex items-center rounded-full bg-strip px-2.5 py-0.5 text-xs font-semibold tabular-nums text-maroon border border-border-warm">
+              <span className="inline-flex items-center rounded-full bg-strip px-2.5 py-0.5 text-xs font-semibold tabular-nums text-maroon-text border border-border-warm">
                 {queue.length}
               </span>
             )}
@@ -159,12 +159,12 @@ export const MentorDashboard: React.FC = () => {
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="active-courses-heading" className="text-lg leading-[1.625rem] font-bold text-ink flex items-center gap-2">
-            <BookOpen size={18} className="text-maroon shrink-0" />
+            <BookOpen size={18} className="text-maroon-text shrink-0" />
             <span>{t("dashboard:myActiveCourses")}</span>
           </h2>
           <Link
             to="/journals"
-            className="inline-flex min-h-[44px] items-center gap-1 text-xs font-semibold text-maroon [@media(hover:hover)_and_(pointer:fine)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded px-1"
+            className="inline-flex min-h-[44px] items-center gap-1 text-xs font-semibold text-maroon-text [@media(hover:hover)_and_(pointer:fine)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded px-1"
           >
             <span>{t("journals:hubTitle")}</span>
             <ChevronRight size={14} />

@@ -53,7 +53,7 @@ export const MentorStatsStrip: React.FC = () => {
         <div className="grid grid-cols-2 divide-x divide-border-warm/60 md:contents">
           <div className="flex flex-col justify-center pr-3 md:pr-0 md:px-5">
             <div className="flex items-center gap-2">
-              <BookOpen size={16} className="text-maroon shrink-0" />
+              <BookOpen size={16} className="text-maroon-text shrink-0" />
               <span className={labelClass}>{t("journals:mentorStats.myCourses")}</span>
             </div>
             {coursesLoading && activeCoursesCount === undefined ? (
@@ -95,7 +95,7 @@ export const MentorStatsStrip: React.FC = () => {
 
           <div className="flex flex-col justify-center pl-3 md:pl-0 md:px-5">
             <div className="flex items-center gap-2">
-              <ClipboardCheck size={16} className="text-maroon shrink-0" />
+              <ClipboardCheck size={16} className="text-maroon-text shrink-0" />
               <span className={labelClass}>{t("journals:mentorStats.periodsNeedingGrading")}</span>
             </div>
             {queueLoading && needsGradingCount === undefined ? (
@@ -164,7 +164,7 @@ export const MentorStatsStrip: React.FC = () => {
           ) : (
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <Users size={16} className="text-maroon shrink-0" />
+                <Users size={16} className="text-maroon-text shrink-0" />
                 <span className={labelClass}>{t("journals:mentorStats.myStudents")}</span>
               </div>
               <p className={valueClass}>{activeStudentsCount}</p>

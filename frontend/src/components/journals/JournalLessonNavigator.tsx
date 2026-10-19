@@ -56,7 +56,7 @@ export const JournalLessonNavigator: React.FC<JournalLessonNavigatorProps> = ({
             <div className="text-sm font-semibold tabular-nums text-ink">
               {formatSchoolLessonWeekday(selectedLesson)}, {formatSchoolLessonDate(selectedLesson)}
             </div>
-            {selectedLesson === today && <div className="text-xs font-medium text-maroon">{t("workspace.lessonNav.today")}</div>}
+            {selectedLesson === today && <div className="text-xs font-medium text-maroon-text">{t("workspace.lessonNav.today")}</div>}
           </>
         ) : (
           <div className="text-sm text-muted">{t("workspace.lessonNav.none")}</div>

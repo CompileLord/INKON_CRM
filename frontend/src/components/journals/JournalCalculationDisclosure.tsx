@@ -23,7 +23,7 @@ export const JournalCalculationDisclosure: React.FC<JournalCalculationDisclosure
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((previous) => !previous)}
-        className="inline-flex min-h-11 w-fit items-center gap-1 rounded-[10px] px-2 text-sm font-medium text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rounded-[10px] px-2 text-sm font-medium text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {t("calculation.toggle")}
         <ChevronDown className={`h-4 w-4 ${open ? "rotate-180" : ""}`} aria-hidden="true" />

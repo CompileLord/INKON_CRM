@@ -180,7 +180,7 @@ export function EnrollStudentModal({
         <div className="rounded-xl border border-border-warm bg-strip p-3.5 flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-semibold text-ink break-words">{courseTitle}</span>
-            <span className="text-sm font-semibold tabular-nums text-maroon dark:text-accent">
+            <span className="text-sm font-semibold tabular-nums text-maroon-text dark:text-accent">
               {formatMoney(coursePrice)} {t("currencyPerMonth")}
             </span>
           </div>
@@ -356,7 +356,7 @@ export function EnrollStudentModal({
                       checked={isSelected}
                       disabled={isPendingOrSubmitting || isSubmittingRef.current}
                       onChange={() => handleSelectCandidate(candidate)}
-                      className="h-4 w-4 shrink-0 text-maroon accent-maroon focus:ring-0"
+                      className="h-4 w-4 shrink-0 text-maroon-text accent-maroon focus:ring-0"
                     />
 
                     <PersonAvatar

@@ -45,7 +45,7 @@ export function FinanceTabs({ selected, onSelect }: FinanceTabsProps) {
             onClick={() => onSelect(tab)}
             onKeyDown={(event) => moveSelection(event, tab)}
             className={`min-h-11 break-words border-b-2 px-2 py-2 text-center text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              isSelected ? "border-maroon text-maroon" : "border-transparent text-muted hover:text-ink"
+              isSelected ? "border-maroon text-maroon-text" : "border-transparent text-muted hover:text-ink"
             }`}
           >
             {t(`tabs.${tab}`)}

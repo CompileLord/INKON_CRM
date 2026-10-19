@@ -20,7 +20,7 @@ export function CoursesStatsStrip() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <BookOpen size={16} className="text-maroon" />
+          <BookOpen size={16} className="text-maroon-text" />
           <p className={labelClass}>Всего курсов</p>
         </div>
         <p className={valueClass}>{allPage?.total ?? "—"}</p>

@@ -13,7 +13,7 @@ export function CourseStatTile({ icon, label, value, hint, testId, toneClass = "
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-border-warm bg-card p-4" data-testid={testId}>
       <div className="flex items-center gap-1.5 text-xs text-muted">
-        <span aria-hidden="true" className="text-maroon dark:text-accent">{icon}</span>
+        <span aria-hidden="true" className="text-maroon-text dark:text-accent">{icon}</span>
         <span className="min-w-0 truncate">{label}</span>
         {hint}
       </div>

@@ -72,7 +72,7 @@ export function SingleThemeButton() {
       {isDark ? (
         <Sun size={18} className="text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
       ) : (
-        <Moon size={18} className="text-maroon group-hover:-rotate-12 transition-transform duration-300" />
+        <Moon size={18} className="text-maroon-text group-hover:-rotate-12 transition-transform duration-300" />
       )}
     </button>
   );

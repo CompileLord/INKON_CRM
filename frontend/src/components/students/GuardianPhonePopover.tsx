@@ -30,7 +30,7 @@ export function GuardianPhonePopover({ guardianPhone }: GuardianPhonePopoverProp
             <div className="text-xs text-label">{label}</div>
             <a
               href={`tel:${guardianPhone}`}
-              className="inline-flex min-h-11 items-center font-medium tabular-nums text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              className="inline-flex min-h-11 items-center font-medium tabular-nums text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
             >
               {guardianPhone}
             </a>

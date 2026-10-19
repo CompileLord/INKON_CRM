@@ -19,7 +19,7 @@ export function PaymentMethodRadios({ value, onChange }: PaymentMethodRadiosProp
           <label
             key={option}
             className={`flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border p-2 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
-              value === option ? "border-maroon bg-strip font-medium text-maroon" : "border-control-border bg-card text-ink hover:bg-strip"
+              value === option ? "border-maroon bg-strip font-medium text-maroon-text" : "border-control-border bg-card text-ink hover:bg-strip"
             }`}
           >
             <input type="radio" name="payment-method" value={option} checked={value === option} onChange={() => onChange(option)} className="sr-only" />

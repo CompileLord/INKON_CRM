@@ -112,7 +112,7 @@ export function StatsRow() {
             </div>
           ) : (
             <div>
-              <BookOpen size={20} className="text-maroon shrink-0" strokeWidth={2} aria-hidden="true" />
+              <BookOpen size={20} className="text-maroon-text shrink-0" strokeWidth={2} aria-hidden="true" />
               <p className="text-[28px] font-bold leading-none text-ink tabular-nums mt-2">
                 {coursesData?.total ?? 0}
               </p>

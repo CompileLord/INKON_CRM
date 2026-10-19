@@ -98,7 +98,7 @@ describe.each([["desktop", true], ["narrow", false]])("JournalSummaryView %s", (
     render(<Harness onApplyPair={vi.fn()} profile={false} />);
     const action = screen.getAllByRole("button", { name: /Edit exam and bonus for/ })[0];
     expect(action.textContent).toBe("Edit");
-    expect(action.className).toContain("text-maroon");
+    expect(action.className).toContain("text-maroon-text");
     expect(action.className).toContain("min-h-11");
     expect(action.className).not.toMatch(/\bborder\b/);
   });
@@ -106,7 +106,7 @@ describe.each([["desktop", true], ["narrow", false]])("JournalSummaryView %s", (
   it("gives student names a link affordance, with a chevron cue only on narrow rows", () => {
     render(<Harness onApplyPair={null} profile={false} />);
     const name = screen.getByRole("button", { name: "Open breakdown for Anvar Tester" });
-    expect(name.className).toContain("hover:text-maroon");
+    expect(name.className).toContain("hover:text-maroon-text");
     expect(name.className).toContain("hover:underline");
     expect(name.className).toContain("focus-visible:underline");
     expect(Boolean(name.querySelector("svg"))).toBe(!desktop);

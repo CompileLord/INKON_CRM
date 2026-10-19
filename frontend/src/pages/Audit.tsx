@@ -102,7 +102,7 @@ export function Audit() {
   return (
     <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
       <PageHeader
-        titleIcon={<ScrollText size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        titleIcon={<ScrollText size={24} aria-hidden="true" className="shrink-0 text-maroon-text dark:text-accent" />}
         title={
           <span ref={headingRef} tabIndex={-1} className="focus-visible:outline-none">
             {t("audit:title")}

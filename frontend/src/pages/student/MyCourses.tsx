@@ -101,7 +101,7 @@ export function MyCourses() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        titleIcon={<BookOpen className="h-6 w-6 text-maroon dark:text-accent" aria-hidden="true" />}
+        titleIcon={<BookOpen className="h-6 w-6 text-maroon-text dark:text-accent" aria-hidden="true" />}
         title={t("myCoursesTitle")}
         info={<InfoTooltip label={t("coursesInfoLabel")}>{t("coursesInfo")}</InfoTooltip>}
       />

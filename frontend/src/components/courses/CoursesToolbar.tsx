@@ -139,7 +139,7 @@ export function CoursesToolbar({
                 "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[8px] motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out",
                 FOCUS_RING,
                 view === "grid"
-                  ? "bg-card text-maroon font-semibold shadow-xs"
+                  ? "bg-card text-maroon-text font-semibold shadow-xs"
                   : "text-muted hover:text-ink",
               ].join(" ")}
             >
@@ -154,7 +154,7 @@ export function CoursesToolbar({
                 "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[8px] motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out",
                 FOCUS_RING,
                 view === "list"
-                  ? "bg-card text-maroon font-semibold shadow-xs"
+                  ? "bg-card text-maroon-text font-semibold shadow-xs"
                   : "text-muted hover:text-ink",
               ].join(" ")}
             >

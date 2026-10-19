@@ -32,7 +32,7 @@ function SoonestLessonCard({ course, nextLessonAt }: SoonestLessonCardProps) {
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl border border-border-warm bg-card">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-beige text-maroon">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-beige text-maroon-text">
             <Clock size={20} aria-hidden="true" />
           </div>
           <div>
@@ -297,7 +297,7 @@ export function StudentDashboard() {
                   <span className="text-2xl sm:text-3xl font-bold tabular-nums text-ink">
                     {totals ? formatNumber(totals.active_course_count, i18n.language) : t("metricUnavailable")}
                   </span>
-                  <span className="text-xs font-semibold text-maroon hover:underline">
+                  <span className="text-xs font-semibold text-maroon-text hover:underline">
                     {t("allCoursesLink")}
                   </span>
                 </div>
@@ -312,12 +312,12 @@ export function StudentDashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 id="courses-heading" className="text-base font-bold text-ink flex items-center gap-2">
-              <BookOpen size={18} className="text-maroon" aria-hidden="true" />
+              <BookOpen size={18} className="text-maroon-text" aria-hidden="true" />
               <span>{t("myCourses")}</span>
             </h2>
             <Link
               to="/my/courses"
-              className="text-xs font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded min-h-[44px] flex items-center"
+              className="text-xs font-semibold text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded min-h-[44px] flex items-center"
             >
               {t("allCoursesLink")}
             </Link>

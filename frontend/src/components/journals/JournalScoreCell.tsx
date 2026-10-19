@@ -164,7 +164,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         aria-haspopup="dialog"
         aria-expanded={commentOpen}
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
-          hasComment ? "text-maroon hover:bg-row-hover" : "text-muted hover:bg-row-hover hover:text-ink"
+          hasComment ? "text-maroon-text hover:bg-row-hover" : "text-muted hover:bg-row-hover hover:text-ink"
         }`}
         title={hasComment ? (comment as string) : t("table.addComment")}
         aria-label={

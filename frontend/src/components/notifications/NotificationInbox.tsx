@@ -45,7 +45,7 @@ function NotificationRow({ notification }: { notification: NotificationLogItem }
 
   return (
     <li data-testid="notification-item" data-unread={unread} className="flex items-start gap-3 px-4 py-3 motion-safe:transition-[background-color] motion-safe:duration-150 motion-safe:ease-out hover:bg-row-hover">
-      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-strip text-maroon dark:text-accent">
+      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-strip text-maroon-text dark:text-accent">
         <Icon size={20} />
       </span>
       <div className="min-w-0 flex-1">

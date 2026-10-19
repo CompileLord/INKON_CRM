@@ -304,7 +304,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                         ref={changeStudentButton}
                         type="button"
                         onClick={changeStudent}
-                        className="inline-flex min-h-11 shrink-0 items-center rounded-[10px] px-3 text-sm font-medium text-maroon hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                        className="inline-flex min-h-11 shrink-0 items-center rounded-[10px] px-3 text-sm font-medium text-maroon-text hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                       >
                         {t("finance:paymentModal.changeStudent")}
                       </button>

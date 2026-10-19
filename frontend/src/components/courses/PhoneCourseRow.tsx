@@ -71,7 +71,7 @@ export function PhoneCourseRow({
             to={`/courses/${course.id}`}
             onClick={handleLinkClick}
             onKeyDown={handleLinkKeyDown}
-            className="text-base font-semibold text-ink leading-6 break-words motion-safe:transition-[color,transform] motion-safe:duration-150 motion-safe:ease-out hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded-[10px]"
+            className="text-base font-semibold text-ink leading-6 break-words motion-safe:transition-[color,transform] motion-safe:duration-150 motion-safe:ease-out hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded-[10px]"
           >
             {course.title}
           </Link>
@@ -119,7 +119,7 @@ export function PhoneCourseRow({
               aria-label={`${t("openJournal")}: ${course.title}`}
               className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-[10px] bg-card border border-control-border text-ink hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
             >
-              <BookOpen size={14} className="text-maroon shrink-0" />
+              <BookOpen size={14} className="text-maroon-text shrink-0" />
               <span>{t("openJournal")}</span>
               <ArrowRight size={13} className="text-muted" />
             </Link>

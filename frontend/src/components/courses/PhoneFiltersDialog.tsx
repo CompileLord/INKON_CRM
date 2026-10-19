@@ -89,7 +89,7 @@ export function PhoneFiltersDialog({
                   className={[
                     "flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[10px] px-3.5 py-2.5 text-sm font-medium motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out focus-within:ring-2 focus-within:ring-maroon",
                     sort === "newest"
-                      ? "bg-beige text-maroon font-semibold"
+                      ? "bg-beige text-maroon-text font-semibold"
                       : "text-ink hover:bg-strip",
                   ].join(" ")}
                 >
@@ -104,7 +104,7 @@ export function PhoneFiltersDialog({
                     className="sr-only"
                   />
                   {sort === "newest" ? (
-                    <Check size={18} className="text-maroon shrink-0" />
+                    <Check size={18} className="text-maroon-text shrink-0" />
                   ) : null}
                 </label>
 
@@ -113,7 +113,7 @@ export function PhoneFiltersDialog({
                   className={[
                     "flex min-h-[44px] w-full cursor-pointer items-center justify-between rounded-[10px] px-3.5 py-2.5 text-sm font-medium motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out focus-within:ring-2 focus-within:ring-maroon",
                     sort === "price"
-                      ? "bg-beige text-maroon font-semibold"
+                      ? "bg-beige text-maroon-text font-semibold"
                       : "text-ink hover:bg-strip",
                   ].join(" ")}
                 >
@@ -128,7 +128,7 @@ export function PhoneFiltersDialog({
                     className="sr-only"
                   />
                   {sort === "price" ? (
-                    <Check size={18} className="text-maroon shrink-0" />
+                    <Check size={18} className="text-maroon-text shrink-0" />
                   ) : null}
                 </label>
               </fieldset>

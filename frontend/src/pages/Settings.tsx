@@ -56,7 +56,7 @@ export function Settings() {
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 pb-8">
       <PageHeader
-        titleIcon={<SettingsIcon size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        titleIcon={<SettingsIcon size={24} aria-hidden="true" className="shrink-0 text-maroon-text dark:text-accent" />}
         title={t("title")}
       />
 
@@ -89,7 +89,7 @@ export function Settings() {
 
         <div className={activeId === null ? "hidden" : "min-w-0"}>
           {!desktop && (
-            <Link to="?" className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-[10px] pr-3 text-sm font-medium text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
+            <Link to="?" className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-[10px] pr-3 text-sm font-medium text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent">
               <ChevronLeft size={18} aria-hidden="true" />
               {t("title")}
             </Link>

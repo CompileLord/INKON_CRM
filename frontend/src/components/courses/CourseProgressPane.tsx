@@ -496,7 +496,7 @@ export function CourseProgressPane({
                           <Link
                             to={`/students/${student.student_id}`}
                             onClick={handleStudentDeparture}
-                            className="min-h-[44px] min-w-0 flex-1 flex items-center text-sm font-medium text-ink hover:text-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out leading-snug break-words [overflow-wrap:anywhere] [word-break:break-word]"
+                            className="min-h-[44px] min-w-0 flex-1 flex items-center text-sm font-medium text-ink hover:text-maroon-text motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out leading-snug break-words [overflow-wrap:anywhere] [word-break:break-word]"
                           >
                             <span className="min-w-0 break-words [overflow-wrap:anywhere] [word-break:break-word]">
                               {student.first_name} {student.last_name}
@@ -609,7 +609,7 @@ export function CourseProgressPane({
                     <Link
                       to={`/students/${student.student_id}`}
                       onClick={handleStudentDeparture}
-                      className="flex min-h-[44px] items-center gap-3 min-w-0 flex-1 hover:text-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out break-words [overflow-wrap:anywhere] [word-break:break-word]"
+                      className="flex min-h-[44px] items-center gap-3 min-w-0 flex-1 hover:text-maroon-text motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out break-words [overflow-wrap:anywhere] [word-break:break-word]"
                     >
                       <div className="shrink-0">
                         <PersonAvatar

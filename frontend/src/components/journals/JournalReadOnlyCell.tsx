@@ -57,7 +57,7 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
         </span>
       )}
       {hasComment && (
-        <span title={comment as string} className="inline-flex text-maroon">
+        <span title={comment as string} className="inline-flex text-maroon-text">
           <MessageSquare className="h-4 w-4 fill-current" aria-hidden="true" />
           <span className="sr-only">{t("table.hasComment")}</span>
         </span>

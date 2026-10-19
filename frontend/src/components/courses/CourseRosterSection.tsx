@@ -325,7 +325,7 @@ export function CourseRosterSection({
     <div className="flex flex-col gap-4 rounded-2xl border border-border-warm bg-card p-4 sm:p-5 md:p-6 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-strip text-maroon dark:text-accent">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-strip text-maroon-text dark:text-accent">
             <Users size={18} />
           </div>
           <div className="flex items-center gap-2">
@@ -470,7 +470,7 @@ export function CourseRosterSection({
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-maroon dark:border-accent bg-beige/60 dark:bg-row-hover p-3.5"
         >
           <div className="flex items-center gap-2">
-            <AlertCircle size={18} className="text-maroon dark:text-accent shrink-0" />
+            <AlertCircle size={18} className="text-maroon-text dark:text-accent shrink-0" />
             <span className="text-sm font-medium text-ink">
               {t("students.hiddenEnrolledNotice")}
             </span>
@@ -686,7 +686,7 @@ export function CourseRosterSection({
                                 }
                               }}
                                onClick={handleStudentLinkClick}
-                              className="break-words text-base md:text-sm font-semibold text-ink hover:text-maroon dark:hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon min-h-[44px] flex items-center"
+                              className="break-words text-base md:text-sm font-semibold text-ink hover:text-maroon-text dark:hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon min-h-[44px] flex items-center"
                             >
                               {studentName}
                             </Link>
@@ -777,7 +777,7 @@ export function CourseRosterSection({
                                   }
                                 }}
                                 onClick={handleStudentLinkClick}
-                                className="break-words text-base md:text-sm font-semibold text-ink hover:text-maroon dark:hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon min-h-[44px] flex items-center"
+                                className="break-words text-base md:text-sm font-semibold text-ink hover:text-maroon-text dark:hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon min-h-[44px] flex items-center"
                               >
                                 {studentName}
                               </Link>

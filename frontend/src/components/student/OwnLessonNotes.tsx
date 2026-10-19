@@ -31,7 +31,7 @@ function LessonNote({ entry }: { entry: JournalEntryResponse }) {
           aria-expanded={open}
           aria-controls={textId}
           onClick={() => setOpen((current) => !current)}
-          className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-semibold text-maroon hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
+          className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-semibold text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent"
         >
           {open ? t("hideComment") : t("showComment")}
           <ChevronDown aria-hidden="true" className={`h-4 w-4 ${open ? "rotate-180" : ""}`} />
@@ -51,7 +51,7 @@ export function OwnLessonNotes({ entries }: OwnLessonNotesProps) {
   return (
     <section aria-labelledby="own-notes-heading" className="flex flex-col gap-2">
       <h2 id="own-notes-heading" className="flex items-center gap-2 text-lg font-semibold leading-7 text-ink">
-        <MessageSquare className="h-5 w-5 text-maroon dark:text-accent" aria-hidden="true" />
+        <MessageSquare className="h-5 w-5 text-maroon-text dark:text-accent" aria-hidden="true" />
         {t("ownNotesTitle")}
       </h2>
       <ul className="divide-y divide-border rounded-2xl border border-border-warm bg-card">

@@ -49,7 +49,7 @@ export const JournalWorkspaceTabs: React.FC<JournalWorkspaceTabsProps> = ({ sele
             onKeyDown={(event) => moveSelection(event, tab)}
             className={`-mb-px min-h-11 border-b-2 px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
               isSelected
-                ? "border-maroon text-maroon"
+                ? "border-maroon text-maroon-text"
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >

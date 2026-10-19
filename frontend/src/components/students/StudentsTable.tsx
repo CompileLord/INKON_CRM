@@ -100,7 +100,7 @@ export function StudentsTable({
           state={getStudentNavigationState(student.id)}
           onClick={() => onStudentNavigate?.(student)}
           title={fullName}
-          className="min-w-0 truncate rounded text-sm font-semibold text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
+          className="min-w-0 truncate rounded text-sm font-semibold text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
         >
           {fullName}
         </Link>
@@ -114,7 +114,7 @@ export function StudentsTable({
       {student.phone ? (
         <a
           href={`tel:${student.phone}`}
-          className="inline-flex min-h-11 items-center rounded text-sm font-medium tabular-nums text-ink hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
+          className="inline-flex min-h-11 items-center rounded text-sm font-medium tabular-nums text-ink hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
         >
           {student.phone}
         </a>

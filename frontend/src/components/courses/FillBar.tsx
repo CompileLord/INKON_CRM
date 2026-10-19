@@ -6,10 +6,10 @@ interface FillBarProps {
   heightClass?: string;
 }
 
-function getFillColor(rate: number): string {
-  if (rate > 95) return "#DC2626";
-  if (rate >= 70) return "#EA580C";
-  return "#16A34A";
+function getFillClass(rate: number): string {
+  if (rate > 95) return "bg-destructive";
+  if (rate >= 70) return "bg-accent";
+  return "bg-success";
 }
 
 export function FillBar({ rate, className = "", heightClass = "h-1.5" }: FillBarProps) {
@@ -24,8 +24,8 @@ export function FillBar({ rate, className = "", heightClass = "h-1.5" }: FillBar
   return (
     <div className={`overflow-hidden rounded-full bg-beige ${heightClass} ${className}`}>
       <div
-        className="h-full rounded-full transition-[width] duration-[400ms] ease-out motion-reduce:transition-none"
-        style={{ width: `${width}%`, backgroundColor: getFillColor(clamped) }}
+        className={`h-full rounded-full ${getFillClass(clamped)} transition-[width] duration-[400ms] ease-out motion-reduce:transition-none`}
+        style={{ width: `${width}%` }}
       />
     </div>
   );

@@ -219,7 +219,7 @@ function JournalsHub() {
       ) : isEmptyCatalog ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
-            <ClipboardList size={26} className="text-maroon dark:text-accent" aria-hidden="true" />
+            <ClipboardList size={26} className="text-maroon-text dark:text-accent" aria-hidden="true" />
           </div>
           <h2 className="text-base font-semibold text-ink">{t("hub.emptyCatalog.title")}</h2>
           <p className="max-w-md text-sm text-muted">{t("hub.emptyCatalog.body")}</p>
@@ -227,7 +227,7 @@ function JournalsHub() {
       ) : isNoMatch ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-14 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-strip">
-            <SearchX size={26} className="text-maroon dark:text-accent" aria-hidden="true" />
+            <SearchX size={26} className="text-maroon-text dark:text-accent" aria-hidden="true" />
           </div>
           <h2 className="text-base font-semibold text-ink">{t("hub.noMatch.title")}</h2>
           <p className="max-w-md text-sm text-muted">{t("hub.noMatch.body")}</p>

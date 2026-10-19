@@ -104,7 +104,7 @@ export function ListboxPicker({ label, icon, options, value, onChange, layout = 
                     className="flex min-h-11 w-full items-center justify-between gap-3 rounded-[10px] px-3 text-left text-sm text-ink hover:bg-row-hover focus-visible:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className={`${isField ? "min-w-0 break-words" : "tabular-nums"} ${option.muted ? "text-muted" : ""}`}>{option.label}</span>
-                    {isSelected && <Check size={16} aria-hidden="true" className="text-maroon" />}
+                    {isSelected && <Check size={16} aria-hidden="true" className="text-maroon-text" />}
                   </button>
                 );
               })}

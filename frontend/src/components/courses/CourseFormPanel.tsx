@@ -571,7 +571,7 @@ function CourseFormPanelInner({
                     type="button"
                     onClick={() => refetchMentors()}
                     disabled={areCourseFieldsLocked}
-                    className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon dark:text-accent underline hover:no-underline motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                    className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon-text dark:text-accent underline hover:no-underline motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                   >
                     {t("common:retry")}
                   </button>
@@ -610,7 +610,7 @@ function CourseFormPanelInner({
                         type="button"
                         onClick={() => void refetchMentors()}
                         disabled={mentorsLoading || mentorsFetching || isSubmittingRef.current || isLocked}
-                        className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon dark:text-accent underline hover:no-underline disabled:opacity-50 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                        className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon-text dark:text-accent underline hover:no-underline disabled:opacity-50 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                       >
                         {t("common:retry")}
                       </button>
@@ -622,7 +622,7 @@ function CourseFormPanelInner({
                       type="button"
                       onClick={() => setMentorPage((prev) => prev + 1)}
                       disabled={mentorsLoading || mentorsFetching || isSubmittingRef.current || isLocked}
-                      className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon dark:text-accent hover:underline self-start touch-manipulation disabled:opacity-50 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                      className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon-text dark:text-accent hover:underline self-start touch-manipulation disabled:opacity-50 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                     >
                       {mentorsLoading || mentorsFetching ? t("form.mentorsLoading") : t("form.mentorsLoadMore")}
                     </button>
@@ -737,7 +737,7 @@ function CourseFormPanelInner({
                       type="button"
                       onClick={() => refetchSchedule()}
                       disabled={areCourseFieldsLocked}
-                      className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon dark:text-accent underline motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                      className="min-h-11 inline-flex items-center text-xs font-semibold text-maroon-text dark:text-accent underline motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                     >
                       {t("form.scheduleRetry")}
                     </button>

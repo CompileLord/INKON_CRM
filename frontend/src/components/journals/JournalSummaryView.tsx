@@ -109,7 +109,7 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
         data-summary-edit={student.student_id}
         onClick={() => setEditingStudentId(student.student_id)}
         aria-label={t("summary.editExamBonusFor", { name: `${student.first_name} ${student.last_name}` })}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-maroon hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-maroon-text hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
       >
         <Pencil className="h-4 w-4" aria-hidden="true" />
         <span>{t("summary.edit")}</span>
@@ -122,12 +122,12 @@ export const JournalSummaryView: React.FC<JournalSummaryViewProps> = ({
       data-summary-open={student.student_id}
       onClick={() => openBreakdown(student.student_id)}
       aria-label={t("summary.openBreakdown", { name: `${student.first_name} ${student.last_name}` })}
-      className="group inline-flex min-h-11 min-w-0 items-center gap-1 rounded-[10px] px-1 text-left text-base font-semibold text-ink underline-offset-4 hover:text-maroon hover:underline focus-visible:text-maroon focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group inline-flex min-h-11 min-w-0 items-center gap-1 rounded-[10px] px-1 text-left text-base font-semibold text-ink underline-offset-4 hover:text-maroon-text hover:underline focus-visible:text-maroon-text focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="min-w-0 break-words">
         {student.first_name} {student.last_name}
       </span>
-      {withChevron && <ChevronRight className="h-4 w-4 shrink-0 text-maroon" aria-hidden="true" />}
+      {withChevron && <ChevronRight className="h-4 w-4 shrink-0 text-maroon-text" aria-hidden="true" />}
     </button>
   );
 

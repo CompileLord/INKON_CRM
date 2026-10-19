@@ -26,7 +26,7 @@ export const GradingQueueRow: React.FC<GradingQueueRowProps> = ({ item }) => {
           {t("journals:period.completion", { marked: item.cells_filled, total: item.cells_expected })}
         </span>
         {item.is_current && (
-          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-strip text-maroon border border-border-warm">
+          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-strip text-maroon-text border border-border-warm">
             {t("journals:period.current")}
           </span>
         )}

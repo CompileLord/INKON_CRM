@@ -306,7 +306,7 @@ describe("Course balance action", () => {
     const action = within(balances).getByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" });
     expect(action.textContent).toBe("Pay");
     expect(action.className).toContain("min-h-11");
-    expect(action.className).toContain("text-maroon");
+    expect(action.className).toContain("text-maroon-text");
     expect(action.className).not.toMatch(/(^|\s)border(\s|$)/);
     expect(action.className).not.toContain("bg-card");
     expect(within(balances).queryByText("Accept Payment")).toBeNull();
