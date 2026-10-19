@@ -16,6 +16,6 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | UX-5b | Admin list pages | kitob/ux-5b | in progress | |
 | UX-5c | Detail pages | kitob/ux-5c | in progress | |
 | UX-5d | Mentor and student experience | kitob/ux-5d | in progress | |
-| FIN-1a | Debt reminders backend (Codex gpt-6.1-sol) | kitob/fin-1a-debt-reminders | in progress | |
+| FIN-1a | Debt reminders backend | kitob/fin-1a-debt-reminders | in progress | Codex hit quota mid-task; continued by Sonnet fallback |
 | FIN-1b | Debt reminders UI | — | pending | needs FIN-1a, UX-5b |
 | QA-1 | Full regression | — | pending | needs all |
