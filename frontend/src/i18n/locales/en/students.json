@@ -165,5 +165,20 @@
     "rowNoData": "No grades recorded yet",
     "coursesLabel": "Progress by course",
     "unavailable": "Progress summary is unavailable"
+  },
+  "parentLink": {
+    "linked": "Parent linked",
+    "notLinked": "Parent not linked",
+    "linkedInfo": "A parent has linked a Telegram chat to this student.",
+    "notLinkedInfo": "No parent Telegram chat is linked yet.",
+    "generate": "Generate code",
+    "regenerate": "New code",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "codeLabel": "Parent link code",
+    "codeExpires": "Valid until {{date}}",
+    "codeHint": "Shown once. Give it to the parent to type in the Telegram bot.",
+    "codeError": "Could not generate the code. Please try again.",
+    "copyError": "Could not copy the code. Select it and copy manually."
   }
 }

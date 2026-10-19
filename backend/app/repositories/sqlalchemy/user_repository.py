@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,35 +60,6 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         )
         result: Result[tuple[User]] = await self.session.execute(query)
         return result.scalars().first()
-
-    async def get_guardian_binding_candidates(
-        self,
-        normalized_phone_values: Sequence[str],
-    ) -> list[User]:
-        if not normalized_phone_values:
-            return []
-        query: Select[tuple[User]] = (
-            select(User)
-            .where(
-                User.role == UserRole.STUDENT,
-                User.parent_phone.in_(normalized_phone_values),
-                User.is_deleted.is_(False),
-            )
-            .order_by(User.id)
-            .with_for_update()
-        )
-        result: Result[tuple[User]] = await self.session.execute(query)
-        students: list[User] = list(result.scalars().all())
-        return students
-
-    async def update_guardian_bindings(
-        self,
-        students: Sequence[User],
-        telegram_chat_id: int,
-    ) -> None:
-        for student in students:
-            student.parent_telegram_chat_id = telegram_chat_id
-        await self.session.flush()
 
     async def get_students_list(
         self,

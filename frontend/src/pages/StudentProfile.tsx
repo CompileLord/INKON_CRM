@@ -449,7 +449,7 @@ export function StudentProfile() {
           )}
         </div>
         <div className="pl-[60px]">
-          <StudentProfileMeta user={user} />
+          <StudentProfileMeta user={user} canManageParentLink={role === "superadmin"} />
         </div>
       </div>
 

@@ -45,6 +45,8 @@ export interface User {
   date_of_birth: string | null;
   phone: string | null;
   parent_telegram_chat_id: number | null;
+  parent_linked?: boolean;
+  parent_link_code_expires_at?: string | null;
   parent_phone: string | null;
   photo_path: string | null;
   thumbnail_path: string | null;
@@ -54,6 +56,11 @@ export interface User {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface TelegramLinkCode {
+  code: string;
+  expires_at: string;
 }
 
 export type PaginatedUsers<T = User> = Paginated<T>;

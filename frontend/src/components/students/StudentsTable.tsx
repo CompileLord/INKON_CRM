@@ -11,6 +11,7 @@ import { StudentRowMenu } from "./StudentRowMenu";
 import { GuardianPhonePopover } from "./GuardianPhonePopover";
 import { PaymentDayChip } from "./PaymentDayChip";
 import { StudentStatusPill } from "./StudentStatusPill";
+import { ParentLinkBadge } from "./ParentLinkBadge";
 import { formatDate, formatNumber } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { User } from "../../lib/users/types";
@@ -105,6 +106,7 @@ export function StudentsTable({
           {fullName}
         </Link>
         <StudentStatusPill isDeleted={student.is_deleted} />
+        <ParentLinkBadge linked={student.parent_linked === true} />
       </div>
     );
   };

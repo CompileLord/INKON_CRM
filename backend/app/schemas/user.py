@@ -46,6 +46,8 @@ class UserResponse(BaseModel):
     date_of_birth: Optional[date] = None
     phone: Optional[str] = None
     parent_telegram_chat_id: Optional[int] = None
+    parent_linked: bool = False
+    parent_link_code_expires_at: Optional[datetime] = None
     parent_phone: Optional[str] = None
     photo_path: Optional[str] = None
     thumbnail_path: Optional[str] = None
@@ -180,3 +182,8 @@ class MentorAnalyticsResponse(BaseModel):
     average_student_score_summary_count: int
 
 
+
+
+class TelegramLinkCodeResponse(BaseModel):
+    code: str
+    expires_at: datetime
