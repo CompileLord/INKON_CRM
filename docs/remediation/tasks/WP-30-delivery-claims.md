@@ -32,6 +32,10 @@ Scope correction (2026-10-19): notification delivery SQL must live in the existi
 | `backend/app/repositories/interfaces/notification_log_repository.py` | Extend existing notification persistence interface for atomic claims and delivery outcomes. |
 | `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Implement claim SQL and notification persistence. |
 | `backend/app/tests/integration/test_integrations_and_polish.py` | Adapt notification service construction to injected repository only; preserve behavioral assertions. |
+| `backend/app/tests/integration/test_notification_shell.py` | Replace obsolete `queued` invalid-status input with an invalid enum value; preserve 422, authorization and internal-field assertions. |
+| `backend/app/tests/integration/test_notification_delivery.py` | Move unchanged delivery test scenarios to satisfy the enforced 20 KB file limit. |
+| `backend/app/tests/integration/test_notification_recovery.py` | Move unchanged recovery test scenarios to satisfy the enforced 20 KB file limit. |
+| `backend/app/tests/integration/wp30_delivery_support.py` | Shared unchanged delivery fixture extracted for the test split. |
 | `backend/app/workers/settings.py` | Register bounded notification recovery task and 30-second cron only; abandoned claims and enqueue failures require an actual recovery path. |
 | `backend/app/core/deps.py` | Wire notification repository/service dependencies only. |
 | `backend/app/api/v1/notifications.py` | Inject notification service only. |
