@@ -152,7 +152,7 @@ describe("payment recording reliability", () => {
     await pickDate(user, "2026-10-11");
     expect(mock.history.post).toHaveLength(0);
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(screen.getByLabelText("Date").textContent).toBe("10/11/2026");
+    expect(screen.getByLabelText("Date").textContent).toBe("11.10.2026");
   });
 
   it("rejects zero and invalid money without sending a payment", async () => {

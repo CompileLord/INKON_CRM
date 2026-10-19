@@ -21,43 +21,55 @@ export function getActiveLocale(lng?: string): string {
   return mapped === "tg-TJ" && !isLocaleSupportedByIntl(mapped) ? TAJIK_FALLBACK_LOCALE : mapped;
 }
 
+const NUMERIC_DATE_LOCALE = "ru-RU";
+
+function readDateParts(d: Date, timeZone: string | undefined, withTime: boolean): Record<string, string> {
+  const parts: Intl.DateTimeFormatPart[] = new Intl.DateTimeFormat(NUMERIC_DATE_LOCALE, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" as const } : {}),
+    ...(timeZone ? { timeZone } : {}),
+  }).formatToParts(d);
+  const collected: Record<string, string> = {};
+  for (const part of parts) {
+    collected[part.type] = part.value;
+  }
+  return collected;
+}
+
+function formatClock(d: Date, timeZone: string | undefined): string {
+  const parts: Record<string, string> = readDateParts(d, timeZone, true);
+  return `${parts.hour}:${parts.minute}`;
+}
+
 export function formatDate(
   date: string | Date | null | undefined,
-  lng?: string,
+  _lng?: string,
   timeZone?: string
 ): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
-  return new Intl.DateTimeFormat(getActiveLocale(lng), {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    ...(timeZone ? { timeZone } : {}),
-  }).format(d);
+  const parts: Record<string, string> = readDateParts(d, timeZone, false);
+  return `${parts.day}.${parts.month}.${parts.year}`;
 }
 
 export function formatDateTime(
   date: string | Date | null | undefined,
-  lng?: string,
+  _lng?: string,
   timeZone?: string
 ): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
-  return new Intl.DateTimeFormat(getActiveLocale(lng), {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    ...(timeZone ? { timeZone } : {}),
-  }).format(d);
+  const parts: Record<string, string> = readDateParts(d, timeZone, true);
+  return `${parts.day}.${parts.month}.${parts.year} ${parts.hour}:${parts.minute}`;
 }
 
 export function formatTime(
   date: string | Date | null | undefined,
-  lng?: string,
+  _lng?: string,
   timeZone?: string
 ): string {
   if (!date) return "";
@@ -66,11 +78,7 @@ export function formatTime(
   }
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
-  return new Intl.DateTimeFormat(getActiveLocale(lng), {
-    hour: "2-digit",
-    minute: "2-digit",
-    ...(timeZone ? { timeZone } : {}),
-  }).format(d);
+  return formatClock(d, timeZone);
 }
 
 export function formatSchoolLessonDateTime(
@@ -103,6 +111,10 @@ function getSchoolWeekdayIndexMondayFirst(date: Date): number {
   const [year, month, day] = getSchoolCalendarDate(date).split("-").map(Number);
   const sundayFirstIndex = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   return (sundayFirstIndex + 6) % 7;
+}
+
+export function getSchoolWeekdayIndex(date: Date = new Date()): number {
+  return getSchoolWeekdayIndexMondayFirst(date);
 }
 
 export function formatSchoolLessonWeekday(
