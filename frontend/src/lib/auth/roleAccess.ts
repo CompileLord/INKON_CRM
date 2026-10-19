@@ -27,6 +27,8 @@ export const NAV_ACCESS: Record<Role, NavKey[]> = {
   accountant: ["dashboard", "finance", "settings"],
 };
 
+const KNOWN_TOP_LEVEL_SEGMENTS: readonly string[] = ["students", "mentors", "courses", "journals", "finance", "audit", "settings", "notifications", "my"];
+
 export function isPathAllowed(
   role: Role,
   pathname: string,
@@ -38,6 +40,8 @@ export function isPathAllowed(
   if (segments.length === 0) return true;
 
   const topLevel = segments[0];
+
+  if (!KNOWN_TOP_LEVEL_SEGMENTS.includes(topLevel)) return true;
 
   if (topLevel === "settings" || topLevel === "notifications" || topLevel === "my") {
     return true;

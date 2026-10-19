@@ -55,7 +55,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, rowHref, rowMen
             {Array.from({ length: skeletonRowCount }, (_, rowIndex) => (
               <tr key={rowIndex} className="border-b border-border last:border-b-0">
                 {Array.from({ length: columnCount }, (_, columnIndex) => (
-                  <td key={columnIndex} className="px-4 py-3"><div className="h-4 w-full max-w-40 rounded bg-strip motion-safe:animate-pulse" /></td>
+                  <td key={columnIndex} className="px-4 py-3"><div className="h-4 w-full max-w-40 rounded bg-border motion-safe:animate-pulse" /></td>
                 ))}
               </tr>
             ))}
