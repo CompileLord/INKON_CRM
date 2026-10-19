@@ -121,12 +121,12 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       data-anchor={`${studentId}:${lessonDate}`}
       onFocus={(event) => onFocus(controlOf(event.target))}
       onKeyDown={handleKeyDown}
-      className={`relative group/cell flex items-center justify-center gap-1 rounded-[10px] p-1 outline-none scroll-ml-[216px] scroll-mt-36 scroll-mb-8 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
+      className={`relative group/cell flex items-center justify-center gap-0.5 rounded-[10px] p-0.5 outline-none scroll-ml-[216px] scroll-mt-36 scroll-mb-8 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
       aria-label={t("table.scoreCellLabel", { name: studentName, date: formattedDate })}
     >
       {status && <JournalSaveMarker status={status} className="absolute -top-1.5 -right-1.5" />}
 
-      <label className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[10px] hover:bg-row-hover">
+      <label className="relative flex h-9 w-9 pointer-coarse:h-11 pointer-coarse:w-11 shrink-0 cursor-pointer items-center justify-center rounded-[10px] hover:bg-row-hover">
         <input
           type="checkbox"
           data-control="attendance"
@@ -147,10 +147,12 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         onClick={() => setPopoverOpen((previous) => !previous)}
         aria-haspopup="menu"
         aria-expanded={popoverOpen}
-        className={`flex h-11 min-w-11 shrink-0 items-center justify-center rounded-[10px] border px-2 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
-          score > 0
-            ? "border-control-border bg-card font-semibold text-ink hover:bg-row-hover"
-            : "border-border bg-card text-muted hover:bg-beige hover:text-ink"
+        className={`flex h-9 min-w-9 pointer-coarse:h-11 pointer-coarse:min-w-11 shrink-0 items-center justify-center rounded-[10px] px-1.5 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
+          !attendance && score === 0
+            ? "border border-transparent text-muted/60 hover:bg-row-hover"
+            : score > 0
+              ? "border border-control-border bg-card font-semibold text-ink hover:bg-row-hover"
+              : "border border-border bg-card text-muted hover:bg-beige hover:text-ink"
         }`}
       >
         {score > 0 ? score : "—"}
@@ -163,8 +165,10 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         onClick={openCommentEditor}
         aria-haspopup="dialog"
         aria-expanded={commentOpen}
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
-          hasComment ? "text-maroon-text hover:bg-row-hover" : "text-muted hover:bg-row-hover hover:text-ink"
+        className={`flex h-9 w-8 pointer-coarse:h-11 pointer-coarse:w-11 shrink-0 items-center justify-center rounded-[10px] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform,opacity] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
+          hasComment
+            ? "text-maroon-text hover:bg-row-hover"
+            : "text-muted opacity-0 hover:bg-row-hover hover:text-ink group-hover/cell:opacity-100 group-focus-within/cell:opacity-100 pointer-coarse:opacity-100"
         }`}
         title={hasComment ? (comment as string) : t("table.addComment")}
         aria-label={
@@ -181,7 +185,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
           studentName={studentName}
           formattedDate={formattedDate}
           score={score}
-          anchorRef={cellRef}
+          anchorRef={scoreButtonRef}
           onChoose={(chosen) => {
             onCommand({ kind: "score", score: chosen });
             JournalMotion.settle(scoreButtonRef.current);

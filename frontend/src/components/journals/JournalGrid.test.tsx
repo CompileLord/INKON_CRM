@@ -371,7 +371,7 @@ describe("JournalGrid structure", () => {
     const tables = document.querySelectorAll("table");
     expect(tables).toHaveLength(2);
     expect(widths(tables[0])).toEqual(widths(tables[1]));
-    expect(widths(tables[0])[1]).toBe("160px");
+    expect(widths(tables[0])[1]).toBe("128px");
     expect((tables[0] as HTMLElement).style.tableLayout).toBe("fixed");
   });
 
@@ -392,13 +392,49 @@ describe("JournalGrid structure", () => {
     expect(header.scrollLeft).toBe(80);
   });
 
-  it("gives every lesson column at least 160px so three 44px controls fit", () => {
+  it("keeps lesson columns compact at 128px with a checkbox, score box and comment control", () => {
     mountGrid();
-    expect((document.querySelector("col:nth-child(2)") as HTMLElement).style.width).toBe("160px");
+    expect((document.querySelector("col:nth-child(2)") as HTMLElement).style.width).toBe("128px");
     const cell = cellOf("Anvar", DATES[0]);
     const targets = [within(cell).getByRole("checkbox").closest("label"), ...within(cell).getAllByRole("button")];
     expect(targets).toHaveLength(3);
-    targets.forEach((target) => expect(target?.className).toMatch(/h-11/));
+    targets.forEach((target) => expect(target?.className).toMatch(/pointer-coarse:h-11/));
+  });
+
+  it("shows the comment icon only on hover or focus unless a comment exists, where it stays visible and filled", () => {
+    const withComment: JournalStudentResponse = {
+      ...student(1, "Anvar"),
+      entries: student(1, "Anvar").entries.map((entry, index) => (index === 0 ? { ...entry, comment: "Late", has_comment: true } : entry)),
+    };
+    mountGrid({ students: [withComment] });
+    const quiet = within(cellOf("Anvar", DATES[1])).getByRole("button", { name: /Add comment/ });
+    expect(quiet.className).toContain("opacity-0");
+    expect(quiet.className).toContain("group-hover/cell:opacity-100");
+    expect(quiet.className).toContain("group-focus-within/cell:opacity-100");
+    expect(quiet.className).toContain("focus-visible:opacity-100");
+    expect(quiet.getAttribute("tabindex")).toBeDefined();
+    const filled = within(cellOf("Anvar", DATES[0])).getByRole("button", { name: /Comment for/ });
+    expect(filled.className).not.toContain("opacity-0");
+  });
+
+  it("renders the score of an absent student muted without a bordered box and keeps it clickable", () => {
+    mountGrid();
+    const absent = within(cellOf("Anvar", DATES[0])).getByRole("button", { name: "—" });
+    expect(absent.className).toContain("border-transparent");
+    expect(absent.className).toContain("text-muted");
+    fireEvent.click(absent);
+    expect(screen.getByRole("menu")).toBeDefined();
+  });
+
+  it("seals the sticky student column with an opaque background and a separator in header and body", () => {
+    mountGrid();
+    const headerCell = screen.getByRole("columnheader", { name: "Students" });
+    const bodyCell = screen.getByRole("rowheader", { name: /Anvar Tester/ });
+    [headerCell, bodyCell].forEach((cell) => {
+      expect(cell.className).toMatch(/\bbg-(card|beige)\b/);
+      expect(cell.className).toContain("shadow-[1px_0_0_0_var(--color-border)]");
+      expect(cell.className).toMatch(/\bz-(20|30)\b/);
+    });
   });
 
   it("marks the selected lesson column and lets a header select a lesson", () => {

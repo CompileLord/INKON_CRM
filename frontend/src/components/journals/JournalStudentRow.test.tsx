@@ -80,6 +80,9 @@ describe("JournalStudentRow totals", () => {
     render(<table><tbody><JournalStudentRow {...props} atRisk student={student} /></tbody></table>);
     const marker: HTMLElement = screen.getByTestId("at-risk-marker");
     expect(marker.getAttribute("title")).toBe("At risk: period result below 60% or 3 absences in a row");
+    expect(marker.querySelector("svg")).not.toBeNull();
+    expect(marker.className).toContain("text-warning");
+    expect(screen.getByRole("rowheader").querySelector('[style*="background"]')).toBeNull();
   });
 
   it("shows the server total and percentage", () => {

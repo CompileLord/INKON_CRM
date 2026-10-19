@@ -38,7 +38,7 @@ interface GridFocus {
 }
 
 const STICKY_STUDENT_COLUMN_PX = 200;
-const LESSON_COLUMN_PX = 160;
+const LESSON_COLUMN_PX = 128;
 const SUMMARY_FIELD_COLUMN_PX = 96;
 const TOTAL_COLUMN_PX = 80;
 const PERCENTAGE_COLUMN_PX = 80;
@@ -203,7 +203,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 z-30 border-b border-r border-border bg-beige px-4 py-3 text-left text-sm font-semibold text-ink"
+                  className="sticky left-0 z-30 border-b border-r border-border bg-beige bg-clip-padding px-4 py-3 shadow-[1px_0_0_0_var(--color-border)] text-left text-sm font-semibold text-ink"
                 >
                   {t("table.students")}
                 </th>
