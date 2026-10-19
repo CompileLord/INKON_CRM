@@ -6,11 +6,12 @@ import { formatMoney } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import { AdminCourseMenu } from "./AdminCourseMenu";
-import type { CourseResponse } from "../../lib/courses/types";
+import { CourseScheduleLine } from "./CourseScheduleLine";
+import type { CourseListItemResponse, CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 interface CourseListRowProps {
-  course: CourseResponse;
+  course: CourseListItemResponse;
   mentor?: User;
   isSuperAdmin: boolean;
   isMentor: boolean;
@@ -85,6 +86,13 @@ export function CourseListRow({
           <span className="break-words min-w-0">{mentorName}</span>
         </div>
       ) : null}
+
+      <div className="hidden w-44 shrink-0 flex-col gap-1 md:flex">
+        <CourseScheduleLine schedules={course.schedules} />
+        <span className="pl-5 text-xs text-nav tabular-nums">
+          {t("studentsCount", { count: course.active_student_count })}
+        </span>
+      </div>
 
       <span className="hidden shrink-0 rounded-md bg-strip px-2.5 py-1 text-xs text-nav tabular-nums sm:inline-flex">
         {formatSchoolLessonDate(course.start_date, i18n.language)} –{" "}

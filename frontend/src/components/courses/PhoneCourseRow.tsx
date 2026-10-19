@@ -6,11 +6,12 @@ import { formatMoney } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import { AdminCourseMenu } from "./AdminCourseMenu";
-import type { CourseResponse } from "../../lib/courses/types";
+import { CourseScheduleLine } from "./CourseScheduleLine";
+import type { CourseListItemResponse, CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 interface PhoneCourseRowProps {
-  course: CourseResponse;
+  course: CourseListItemResponse;
   mentor?: User;
   isSuperAdmin: boolean;
   isMentor: boolean;
@@ -103,6 +104,12 @@ export function PhoneCourseRow({
           <span className="text-border">·</span>
           <span>{t(`examTypeLabel.${course.exam_type}`)}</span>
         </div>
+
+        <CourseScheduleLine schedules={course.schedules} />
+
+        <span className="text-xs text-nav tabular-nums">
+          {t("studentsCount", { count: course.active_student_count })}
+        </span>
 
         <div className="mt-0.5">
           <span className="text-xs font-bold tabular-nums text-ink">

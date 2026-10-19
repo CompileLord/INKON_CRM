@@ -64,7 +64,7 @@
   "period": "Период",
   "month": "мес",
   "schedule": "Расписание",
-  "noSchedule": "Расписание не задано",
+  "noSchedule": "Нет расписания",
   "mentorHistory": "История менторов",
   "noMentorHistory": "Смен ментора не было",
   "duplicate": "Дублировать",
@@ -209,7 +209,6 @@
   "paginationPrev": "Предыдущая страница",
   "paginationNext": "Следующая страница",
   "paginationPage": "Страница {{page}}",
-  "currentSortActive": "Порядок на этой странице: {{sort}}",
   "tryChangeFilters": "Попробуйте изменить фильтры",
   "allCourses": "Все курсы",
   "assignedMentor": "Преподаватель: {{name}}",
@@ -321,5 +320,18 @@
     "emptyStudentsHelp": "Зачисленные студенты появятся здесь.",
     "noMatches": "Нет студентов по запросу «{{query}}»",
     "resetSearch": "Сбросить поиск"
-  }
+  },
+  "weekdayShort": {
+    "0": "Пн",
+    "1": "Вт",
+    "2": "Ср",
+    "3": "Чт",
+    "4": "Пт",
+    "5": "Сб",
+    "6": "Вс"
+  },
+  "studentsCount_one": "{{count}} студент",
+  "studentsCount_few": "{{count}} студента",
+  "studentsCount_many": "{{count}} студентов",
+  "studentsCount_other": "{{count}} студента"
 }

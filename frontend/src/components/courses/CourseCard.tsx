@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Calendar, BookOpen, User as UserIcon } from "lucide-react";
+import { ArrowRight, Calendar, BookOpen, User as UserIcon, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMoney } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import { AdminCourseMenu } from "./AdminCourseMenu";
-import type { CourseResponse } from "../../lib/courses/types";
+import { CourseScheduleLine } from "./CourseScheduleLine";
+import type { CourseListItemResponse, CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 interface CourseCardProps {
-  course: CourseResponse;
+  course: CourseListItemResponse;
   mentor?: User;
   isSuperAdmin: boolean;
   isMentor: boolean;
@@ -103,6 +104,13 @@ export function CourseCard({
               {formatSchoolLessonDate(course.start_date, i18n.language)} –{" "}
               {formatSchoolLessonDate(course.end_date, i18n.language)}
             </span>
+          </div>
+
+          <CourseScheduleLine schedules={course.schedules} />
+
+          <div className="flex items-center gap-1.5 text-xs text-nav tabular-nums">
+            <Users size={13} className="shrink-0" aria-hidden="true" />
+            <span>{t("studentsCount", { count: course.active_student_count })}</span>
           </div>
         </div>
 

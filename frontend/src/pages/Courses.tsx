@@ -503,28 +503,21 @@ export function Courses() {
         </div>
       ) : null}
 
-      {!isHardError ? (
+      {!isHardError && search.trim() ? (
         <div
           role="status"
           className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted tabular-nums"
         >
-          <span>
-            {t("currentSortActive", {
-              sort: t(`sort.${sort}`),
-            })}
-          </span>
-          {search.trim() ? (
-            showLoadingSkeleton || !coursesPage ? (
-              <span className="inline-block h-4 w-28 rounded-[10px] bg-strip motion-safe:animate-pulse" />
-            ) : (
-              <span>
-                {t("searchPageScope", {
-                  count: filtered.length,
-                  total: coursesPage.items.length,
-                })}
-              </span>
-            )
-          ) : null}
+          {showLoadingSkeleton || !coursesPage ? (
+            <span className="inline-block h-4 w-28 rounded-[10px] bg-strip motion-safe:animate-pulse" />
+          ) : (
+            <span>
+              {t("searchPageScope", {
+                count: filtered.length,
+                total: coursesPage.items.length,
+              })}
+            </span>
+          )}
         </div>
       ) : null}
 
@@ -568,6 +561,8 @@ export function Courses() {
                         <div className="h-4 w-1/2 rounded-[10px] bg-strip" />
                       ) : null}
                       <div className="h-4 w-2/3 rounded-[10px] bg-strip" />
+                      <div className="h-4 w-3/5 rounded-[10px] bg-strip" />
+                      <div className="h-4 w-1/3 rounded-[10px] bg-strip" />
                     </div>
                     <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
                       <div className="h-5 w-28 rounded-[10px] bg-strip" />
@@ -602,6 +597,10 @@ export function Courses() {
                       <div className="h-4 w-32 rounded-[10px] bg-strip" />
                     </div>
                   ) : null}
+                  <div className="hidden w-44 shrink-0 flex-col gap-1 md:flex">
+                    <div className="h-4 w-36 rounded-[10px] bg-strip" />
+                    <div className="h-4 w-16 rounded-[10px] bg-strip" />
+                  </div>
                   <div className="hidden sm:inline-flex">
                     <div className="h-5 w-32 rounded-[10px] bg-strip" />
                   </div>

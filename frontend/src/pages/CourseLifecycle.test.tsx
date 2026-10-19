@@ -9,7 +9,7 @@ import { useAuthStore } from "../store/authStore";
 import * as courseHooks from "../lib/courses/hooks";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as userHooks from "../lib/users/hooks";
-import type { CourseResponse } from "../lib/courses/types";
+import type { CourseListItemResponse } from "../lib/courses/types";
 import type { Paginated } from "../lib/pagination";
 import type { User } from "../lib/users/types";
 
@@ -80,7 +80,7 @@ function mockSuccessResult<TData>(data: TData): UseQueryResult<TData, Error> {
   };
 }
 
-const sampleCourses: CourseResponse[] = [
+const sampleCourses: CourseListItemResponse[] = [
   {
     id: 1,
     title: "Python Fundamentals",
@@ -95,6 +95,8 @@ const sampleCourses: CourseResponse[] = [
     is_deleted: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   },
   {
     id: 2,
@@ -110,10 +112,12 @@ const sampleCourses: CourseResponse[] = [
     is_deleted: false,
     created_at: "2026-01-02T00:00:00Z",
     updated_at: "2026-01-02T00:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   },
 ];
 
-const paginatedCourses: Paginated<CourseResponse> = {
+const paginatedCourses: Paginated<CourseListItemResponse> = {
   items: sampleCourses,
   total: 2,
   page: 1,
