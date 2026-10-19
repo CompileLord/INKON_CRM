@@ -985,6 +985,7 @@ describe("CourseProfile Component", () => {
 
       const backLink = screen.getByRole("link", { name: "Back to courses" });
       expect(backLink.getAttribute("href")).toBe("/courses?page=2&sort=price");
+      expect(document.querySelectorAll("[data-page-back]")).toHaveLength(1);
     });
 
     it("outbound Open journal link carries course journal path", () => {

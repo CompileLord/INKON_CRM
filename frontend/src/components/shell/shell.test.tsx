@@ -186,14 +186,17 @@ describe("shared shell lifecycle", () => {
   });
 });
 
-describe("detail route header", () => {
-  it("names the section without exposing the route identifier", () => {
+describe("top bar", () => {
+  const routes: string[] = ["/my/courses", "/my/courses/7", "/my/journal/5"];
+  it.each(routes)("renders only the action buttons and no page title or back link on %s", (route: string) => {
     useAuthStore.setState({ status: "authenticated", userId: 42, role: "student", mustSetPassword: false });
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/my/courses/7"]}><Routes><Route element={<AppLayout/>}><Route path="/my/courses/:courseId" element={<h1>Course fixture</h1>}/></Route></Routes></MemoryRouter></QueryClientProvider>);
-    const header = screen.getByRole("banner");
-    expect(within(header).getByText("My Courses")).toBeTruthy();
-    expect(header.textContent).not.toMatch(/\b7\b/);
-    expect(header.textContent).not.toContain("·");
+    const client: QueryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[route]}><Routes><Route element={<AppLayout/>}><Route path="*" element={<h1>Fixture</h1>}/></Route></Routes></MemoryRouter></QueryClientProvider>);
+    const header: HTMLElement = screen.getByRole("banner");
+    expect(within(header).queryAllByRole("link")).toHaveLength(0);
+    expect(within(header).queryAllByRole("heading")).toHaveLength(0);
+    expect(within(header).queryByText("My Courses")).toBeNull();
+    expect(within(header).queryByText("Journals")).toBeNull();
+    expect(within(header).getAllByRole("button").length).toBeGreaterThan(0);
   });
 });

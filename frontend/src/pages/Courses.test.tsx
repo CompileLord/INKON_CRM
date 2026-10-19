@@ -374,7 +374,8 @@ describe("Courses page directory", () => {
 
       const heading = screen.getByRole("heading", { level: 1 });
       expect(heading.textContent).toContain("Courses & Groups");
-      expect(heading.textContent).toContain("(3)");
+      expect(screen.getByText("(3)").className).toContain("tabular-nums");
+      expect(screen.queryByText(/Course catalog/)).toBeNull();
     });
 
     it("gracefully falls back on invalid URL params", () => {

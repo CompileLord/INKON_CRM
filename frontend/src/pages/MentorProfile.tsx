@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteUser, useMentorAnalytics, useMentorProfile } from "../lib/users/hooks";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
@@ -127,7 +128,7 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
       if (live()) { deleteLockRef.current = false; setPendingDelete(false); }
     }
   };
-  const backLink = <Link to={back.to} state={back.state} className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-nav hover:text-ink motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"><ArrowLeft size={16} />{t(back.label)}</Link>;
+  const backLink = <PageHeader backTo={back.to} backState={back.state} backLabel={t(back.label)} />;
   const renderUnavailableProfile = (kind: ProfileUnavailableKind) => <ProfileUnavailable kind={kind} title={t(`profileState.${kind}Title`)} description={t(`profileState.${kind}Body`)} returnLink={backLink} retryLabel={t("common:retry")} onRetry={() => profileQuery.refetch()} />;
   if (id === undefined) return renderUnavailableProfile("notFound");
   if (!authorized) return renderUnavailableProfile("forbidden");

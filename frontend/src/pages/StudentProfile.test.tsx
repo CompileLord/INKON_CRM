@@ -276,6 +276,7 @@ describe("StudentProfile Component", () => {
     const backLink = screen.getByRole("link", { name: /Back to Students/i });
     expect(backLink).toBeDefined();
     expect(backLink.getAttribute("href")).toBe("/students");
+    expect(document.querySelectorAll("[data-page-back]")).toHaveLength(1);
 
     const editBtn = screen.getByRole("button", { name: /^Edit$/i });
     expect(editBtn).toBeDefined();

@@ -1,4 +1,5 @@
 import { Bell, Building2, ChevronLeft, ChevronRight, Palette, Settings as SettingsIcon, User as UserIcon } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -54,12 +55,10 @@ export function Settings() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 pb-8">
-      <header>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold leading-8 text-ink sm:text-[1.75rem] sm:leading-9">
-          <SettingsIcon size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />
-          {t("title")}
-        </h1>
-      </header>
+      <PageHeader
+        titleIcon={<SettingsIcon size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        title={t("title")}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
         <nav aria-label={t("navLabel")} className={activeId === null ? "block" : "hidden lg:block"}>

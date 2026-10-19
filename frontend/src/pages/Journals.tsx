@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { AlertCircle, AlertTriangle, ClipboardList, SearchX } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -157,10 +158,7 @@ function JournalsHub() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-[24px] font-semibold leading-8 text-ink md:text-[28px] md:leading-9">{t("hubTitle")}</h1>
-        <p className="mt-0.5 text-sm text-muted">{t("hubSubtitle")}</p>
-      </div>
+      <PageHeader title={t("hubTitle")} />
 
       {isTrulyEmptyCatalog ? null : (
         <JournalsToolbar

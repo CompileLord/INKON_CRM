@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { Bell } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -47,13 +48,11 @@ export function Notifications() {
 
   return (
     <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6 pb-8">
-      <header>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold leading-8 text-ink sm:text-[1.75rem] sm:leading-9">
-          <Bell size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />
-          <span>{t("title")}</span>
-          <InfoTooltip label={t("title")}>{t(canSeeLog ? "titleInfoAdmin" : "titleInfo")}</InfoTooltip>
-        </h1>
-      </header>
+      <PageHeader
+        titleIcon={<Bell size={24} aria-hidden="true" className="shrink-0 text-maroon dark:text-accent" />}
+        title={t("title")}
+        info={<InfoTooltip label={t("title")}>{t(canSeeLog ? "titleInfoAdmin" : "titleInfo")}</InfoTooltip>}
+      />
 
       {canSeeLog && (
         <div role="tablist" aria-label={t("title")} className="inline-flex w-fit max-w-full rounded-[10px] border border-control-border bg-strip p-1">
