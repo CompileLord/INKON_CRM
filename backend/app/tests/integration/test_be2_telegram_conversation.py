@@ -143,6 +143,23 @@ class TestBotConversation:
         assert (await reload_student(test_student.id)).parent_telegram_chat_id is None
 
     @pytest.mark.asyncio
+    async def test_global_failure_bound_defaults_to_twenty_per_hour(
+        self, conversation: TelegramConversation, test_student: User
+    ) -> None:
+        assert TelegramAttemptLimiter.global_limit == 20
+        assert TelegramAttemptLimiter.window_seconds == 3600
+        issued: IssuedLinkCode = await issue_code(test_student.id)
+        wrong_code: str = "00000Z" if issued.code != "00000Z" else "00000Y"
+        for chat_id in (1000, 1001, 1002, 1003):
+            await conversation.press_language(chat_id, "en")
+            for _ in range(TelegramAttemptLimiter.chat_limit):
+                await conversation.send_text(chat_id, wrong_code)
+        await conversation.press_language(1004, "en")
+        await conversation.send_text(1004, issued.code)
+        assert conversation.session.texts_for(1004)[-1] == TelegramMessageCatalog().render("locked", "en")
+        assert (await reload_student(test_student.id)).parent_telegram_chat_id is None
+
+    @pytest.mark.asyncio
     async def test_group_chats_are_ignored(self, conversation: TelegramConversation, test_student: User) -> None:
         issued: IssuedLinkCode = await issue_code(test_student.id)
         await conversation.send_text(-900, "/start", chat_type="group")

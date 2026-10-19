@@ -21,7 +21,7 @@ return 0
 
 class TelegramAttemptLimiter:
     chat_limit: ClassVar[int] = 5
-    global_limit: ClassVar[int] = 60
+    global_limit: ClassVar[int] = 20
     window_seconds: ClassVar[int] = 3600
 
     def __init__(self) -> None:
