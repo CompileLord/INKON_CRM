@@ -220,10 +220,10 @@ async def test_worker_sends_login_and_password_then_purges_payload(db_session: A
     assert len(recorder.sent_messages) == 1
     message: dict[str, str] = recorder.sent_messages[0]
     assert message["to"] == user.email
-    assert f"Login: {user.email}" in message["body"]
-    assert f"Temporary password: {temporary_password}" in message["body"]
+    assert f"Логин: {user.email}" in message["body"]
+    assert f"Пароль: {temporary_password}" in message["body"]
     assert "Farrukh" in message["body"]
-    assert "choose a new password" in message["body"]
+    assert "задайте новый пароль" in message["body"]
     await db_session.refresh(event)
     assert event.status == OutboxEventStatus.DELIVERED
     assert event.encrypted_payload is None

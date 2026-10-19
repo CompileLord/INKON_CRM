@@ -21,6 +21,18 @@ LOGIN_EMAIL: str = "student@example.com"
 TEMPORARY_PASSWORD: str = "493027"
 
 
+TAJIK_LETTER_PATTERN: re.Pattern[str] = re.compile("[ӣӯқғҳҷӢӮҚҒҲҶ]")
+LOGO_TAG_PATTERN: re.Pattern[str] = re.compile(r"<img[^>]*>")
+HIDDEN_PREHEADER_PATTERN: re.Pattern[str] = re.compile(r"<div style=\"display:none[^>]*>.*?</div>")
+TAG_PATTERN: re.Pattern[str] = re.compile(r"<[^>]+>")
+
+
+def visible_text_after_logo(html_body: str) -> str:
+    after_logo: str = LOGO_TAG_PATTERN.split(html_body, maxsplit=1)[1]
+    without_preheader: str = HIDDEN_PREHEADER_PATTERN.sub("", after_logo)
+    return " ".join(TAG_PATTERN.sub(" ", without_preheader).split())
+
+
 def render_credentials(first_name: str = "Farrukh") -> RenderedEmail:
     return CredentialsEmailTemplate(
         first_name=first_name,
@@ -42,18 +54,23 @@ def test_credentials_html_carries_logo_login_password_and_button_url() -> None:
     assert "IMKON" not in rendered.html_body
 
 
-def test_credentials_html_has_russian_tajik_and_english_sections() -> None:
+def test_credentials_html_is_russian_only_without_language_tag() -> None:
     rendered: RenderedEmail = render_credentials()
 
-    for expected_text in (
-        "Добро пожаловать в KITOB",
-        "при первом входе выберите новый пароль",
-        "Хуш омадед ба KITOB",
-        "пароли нав интихоб кунед",
-        "Welcome to KITOB",
-        "choose a new password the first time you sign in",
-    ):
-        assert expected_text in rendered.html_body
+    assert '<html lang="ru">' in rendered.html_body
+    assert "Добро пожаловать в KITOB" in rendered.html_body
+    assert "задайте новый пароль" in rendered.html_body
+    for forbidden_text in ("РУССКИЙ", "ТОҶИКӢ", "ENGLISH", "Welcome", "Temporary password", "Log in", "Хуш омадед"):
+        assert forbidden_text not in rendered.html_body
+        assert forbidden_text not in rendered.plain_text
+    assert not TAJIK_LETTER_PATTERN.search(rendered.html_body + rendered.plain_text)
+
+
+def test_credentials_credentials_come_first_after_logo_in_html() -> None:
+    rendered: RenderedEmail = render_credentials()
+
+    text_after_logo: str = visible_text_after_logo(rendered.html_body)
+    assert text_after_logo.startswith(f"Логин {LOGIN_EMAIL} Пароль {TEMPORARY_PASSWORD}")
 
 
 def test_credentials_html_escapes_injected_first_name() -> None:
@@ -76,22 +93,27 @@ def test_credentials_html_escapes_injected_login_and_url() -> None:
     assert "<script>1" not in rendered.html_body
 
 
-def test_credentials_plain_text_carries_the_same_facts() -> None:
+def test_credentials_plain_text_starts_with_login_and_password() -> None:
     rendered: RenderedEmail = render_credentials()
 
-    assert f"Login: {LOGIN_EMAIL}" in rendered.plain_text
-    assert f"Temporary password: {TEMPORARY_PASSWORD}" in rendered.plain_text
+    plain_lines: list[str] = rendered.plain_text.splitlines()
+    assert plain_lines[0] == f"Логин: {LOGIN_EMAIL}"
+    assert plain_lines[1] == f"Пароль: {TEMPORARY_PASSWORD}"
     assert LOGIN_URL in rendered.plain_text
     assert "Farrukh" in rendered.plain_text
-    assert "Добро пожаловать в KITOB" in rendered.plain_text
-    assert "Хуш омадед ба KITOB" in rendered.plain_text
-    assert "choose a new password" in rendered.plain_text
 
 
-def test_credentials_subject_is_trilingual_and_branded() -> None:
+def test_credentials_subject_is_short_russian() -> None:
     rendered: RenderedEmail = render_credentials()
 
-    assert rendered.subject == "KITOB — Ваши данные для входа / Маълумоти воридшавӣ / Your login details"
+    assert rendered.subject == "Ваши данные для входа в KITOB"
+
+
+def test_credentials_preheader_is_hidden_and_does_not_repeat_password() -> None:
+    rendered: RenderedEmail = render_credentials()
+
+    assert "mso-hide:all;\">Логин и пароль для входа в KITOB</div>" in rendered.html_body
+    assert rendered.html_body.count(TEMPORARY_PASSWORD) == 1
 
 
 def test_credentials_rendering_attaches_logo_png_under_size_budget() -> None:
@@ -105,26 +127,32 @@ def test_credentials_rendering_attaches_logo_png_under_size_budget() -> None:
 
 
 @pytest.mark.parametrize(
-    ("template_class", "plain_prefix", "tajik_heading"),
+    ("template_class", "label", "subject"),
     [
-        (VerificationCodeEmailTemplate, "Your verification code:", "Рамзи тасдиқи шумо"),
-        (PasswordResetEmailTemplate, "Your password reset code:", "Рамз барои барқарор кардани парол"),
+        (VerificationCodeEmailTemplate, "Код подтверждения", "123456 — код подтверждения KITOB"),
+        (PasswordResetEmailTemplate, "Код для сброса пароля", "123456 — код для сброса пароля KITOB"),
     ],
 )
-def test_code_templates_render_code_in_html_and_plain_text(
+def test_code_templates_put_code_first_in_russian_only(
     template_class: type[VerificationCodeEmailTemplate] | type[PasswordResetEmailTemplate],
-    plain_prefix: str,
-    tajik_heading: str,
+    label: str,
+    subject: str,
 ) -> None:
     rendered: RenderedEmail = template_class(code="123456").render()
 
-    assert "123456" in rendered.html_body
-    assert f"{plain_prefix} 123456" in rendered.plain_text
+    assert rendered.subject == subject
     assert f"cid:{LOGO_CONTENT_ID}" in rendered.html_body
-    assert tajik_heading in rendered.html_body
-    assert tajik_heading in rendered.plain_text
-    assert rendered.subject.startswith("KITOB")
-    assert "IMKON" not in rendered.html_body + rendered.plain_text + rendered.subject
+    assert '<html lang="ru">' in rendered.html_body
+    assert visible_text_after_logo(rendered.html_body).startswith(f"{label} 123456 ")
+    assert rendered.plain_text.splitlines()[0] == f"{label}: 123456"
+    assert f">{label}: 123456</div>" in rendered.html_body
+    assert "Код действует 10 минут." in rendered.html_body
+    assert "Код действует 10 минут." in rendered.plain_text
+    combined_copy: str = rendered.html_body + rendered.plain_text + rendered.subject
+    for forbidden_text in ("РУССКИЙ", "ТОҶИКӢ", "ENGLISH", "Your ", "Do not share", "Рамз"):
+        assert forbidden_text not in combined_copy
+    assert not TAJIK_LETTER_PATTERN.search(combined_copy)
+    assert "IMKON" not in combined_copy
 
 
 def test_code_template_escapes_code_value() -> None:

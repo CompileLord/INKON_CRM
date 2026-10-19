@@ -552,7 +552,7 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
     processed = await worker.run_once(session_factory)
     assert processed >= 1
     assert len(delivered_bodies) == 1
-    assert "Your password reset code:" in delivered_bodies[0]
+    assert "Код для сброса пароля:" in delivered_bodies[0]
 
     async with session_factory() as session:
         res = await session.execute(
