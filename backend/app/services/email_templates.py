@@ -40,13 +40,6 @@ class RenderedEmail:
 
 
 @dataclass(frozen=True)
-class LanguageSection:
-    language_tag: str
-    heading: str
-    paragraphs: tuple[str, ...]
-
-
-@dataclass(frozen=True)
 class HighlightRow:
     label: str
     value: str
@@ -84,13 +77,19 @@ class BrandedEmailLayout:
 
     def render_html(
         self,
-        sections: tuple[LanguageSection, ...],
+        preheader: str,
         highlight_rows: tuple[HighlightRow, ...],
+        heading: str,
+        body_lines: tuple[str, ...],
         call_to_action: CallToAction | None,
         footer_lines: tuple[str, ...],
     ) -> str:
-        section_markup: str = self._render_sections(sections)
+        preheader_markup: str = (
+            '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;'
+            f'mso-hide:all;">{html.escape(preheader)}</div>'
+        )
         highlight_markup: str = self._render_highlight(highlight_rows)
+        message_markup: str = self._render_message(heading, body_lines)
         action_markup: str = self._render_call_to_action(call_to_action)
         footer_markup: str = "".join(
             f'<p style="margin:0 0 4px 0;font-size:12px;line-height:18px;color:{MUTED_COLOR};">'
@@ -105,6 +104,7 @@ class BrandedEmailLayout:
             '<meta name="supported-color-schemes" content="light only">'
             "<title>KITOB</title></head>"
             f'<body style="margin:0;padding:0;background-color:{CANVAS_COLOR};" bgcolor="{CANVAS_COLOR}">'
+            f"{preheader_markup}"
             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
             f'bgcolor="{CANVAS_COLOR}" style="background-color:{CANVAS_COLOR};">'
             '<tr><td align="center" style="padding:24px 12px;">'
@@ -116,9 +116,9 @@ class BrandedEmailLayout:
             'style="display:block;border:0;outline:none;text-decoration:none;width:170px;height:85px;'
             'border-radius:8px;">'
             "</td></tr>"
-            f'<tr><td bgcolor="{CARD_COLOR}" style="background-color:{CARD_COLOR};padding:8px 28px 28px 28px;'
+            f'<tr><td bgcolor="{CARD_COLOR}" style="background-color:{CARD_COLOR};padding:24px 28px 28px 28px;'
             f'border-left:1px solid {BORDER_COLOR};border-right:1px solid {BORDER_COLOR};color:{INK_COLOR};">'
-            f"{section_markup}{highlight_markup}{action_markup}"
+            f"{highlight_markup}{message_markup}{action_markup}"
             "</td></tr>"
             f'<tr><td bgcolor="{STRIP_COLOR}" align="center" style="background-color:{STRIP_COLOR};'
             f"padding:16px 28px;border:1px solid {BORDER_COLOR};border-radius:0 0 12px 12px;"
@@ -126,27 +126,17 @@ class BrandedEmailLayout:
             "</table></td></tr></table></body></html>"
         )
 
-    def _render_sections(self, sections: tuple[LanguageSection, ...]) -> str:
-        rendered_sections: list[str] = []
-        for index, section in enumerate(sections):
-            divider: str = (
-                "" if index == 0 else f"border-top:1px solid {BORDER_COLOR};"
-            )
-            paragraphs: str = "".join(
-                f'<p style="margin:0 0 8px 0;font-size:15px;line-height:23px;color:{INK_COLOR};">'
-                f"{html.escape(paragraph)}</p>"
-                for paragraph in section.paragraphs
-            )
-            rendered_sections.append(
-                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
-                f'style="{divider}"><tr><td style="padding:20px 0 12px 0;">'
-                f'<p style="margin:0 0 6px 0;font-size:11px;line-height:14px;font-weight:700;'
-                f'letter-spacing:1.5px;color:{BRAND_BLUE};">{html.escape(section.language_tag)}</p>'
-                f'<h1 style="margin:0 0 10px 0;font-size:21px;line-height:28px;font-weight:700;'
-                f'color:{BRAND_NAVY};">{html.escape(section.heading)}</h1>'
-                f"{paragraphs}</td></tr></table>"
-            )
-        return "".join(rendered_sections)
+    def _render_message(self, heading: str, body_lines: tuple[str, ...]) -> str:
+        paragraphs: str = "".join(
+            f'<p style="margin:0 0 8px 0;font-size:15px;line-height:23px;color:{INK_COLOR};">'
+            f"{html.escape(line)}</p>"
+            for line in body_lines
+        )
+        return (
+            f'<h1 style="margin:0 0 10px 0;font-size:20px;line-height:28px;font-weight:700;'
+            f'color:{BRAND_NAVY};">{html.escape(heading)}</h1>'
+            f'<div style="margin:0 0 16px 0;">{paragraphs}</div>'
+        )
 
     def _render_highlight(self, rows: tuple[HighlightRow, ...]) -> str:
         if not rows:
@@ -204,8 +194,15 @@ class BaseBrandedEmailTemplate(ABC):
     @abstractmethod
     def subject(self) -> str: ...
 
+    @property
     @abstractmethod
-    def build_sections(self) -> tuple[LanguageSection, ...]: ...
+    def preheader(self) -> str: ...
+
+    @abstractmethod
+    def build_heading(self) -> str: ...
+
+    @abstractmethod
+    def build_body_lines(self) -> tuple[str, ...]: ...
 
     @abstractmethod
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]: ...
@@ -214,15 +211,24 @@ class BaseBrandedEmailTemplate(ABC):
     def build_call_to_action(self) -> CallToAction | None: ...
 
     @abstractmethod
-    def build_plain_text(self) -> str: ...
-
-    @abstractmethod
     def build_footer_lines(self) -> tuple[str, ...]: ...
+
+    def build_plain_text(self) -> str:
+        highlight_lines: list[str] = [f"{row.label}: {row.value}" for row in self.build_highlight_rows()]
+        message_lines: list[str] = [self.build_heading(), *self.build_body_lines()]
+        call_to_action: CallToAction | None = self.build_call_to_action()
+        blocks: list[str] = ["\n".join(highlight_lines), "\n".join(message_lines)]
+        if call_to_action is not None:
+            blocks.append(f"{call_to_action.label}: {call_to_action.url}")
+        blocks.append("KITOB — Educational Center")
+        return "\n\n".join(blocks)
 
     def render(self) -> RenderedEmail:
         html_body: str = self._layout.render_html(
-            sections=self.build_sections(),
+            preheader=self.preheader,
             highlight_rows=self.build_highlight_rows(),
+            heading=self.build_heading(),
+            body_lines=self.build_body_lines(),
             call_to_action=self.build_call_to_action(),
             footer_lines=self.build_footer_lines(),
         )
@@ -235,7 +241,7 @@ class BaseBrandedEmailTemplate(ABC):
 
 
 class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
-    SUBJECT: str = "KITOB — Ваши данные для входа / Маълумоти воридшавӣ / Your login details"
+    SUBJECT: str = "Ваши данные для входа в KITOB"
 
     def __init__(
         self,
@@ -255,157 +261,100 @@ class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
     def subject(self) -> str:
         return self.SUBJECT
 
-    def _copy(self) -> tuple[tuple[str, str, str, str], ...]:
-        name: str = self._first_name
-        return (
-            (
-                "РУССКИЙ",
-                "Добро пожаловать в KITOB",
-                f"Здравствуйте, {name}! Для вас создан аккаунт в KITOB.",
-                "Войдите с данными ниже и при первом входе выберите новый пароль.",
-            ),
-            (
-                "ТОҶИКӢ",
-                "Хуш омадед ба KITOB",
-                f"Салом, {name}! Барои шумо дар KITOB ҳисоб сохта шуд.",
-                "Бо маълумоти зерин ворид шавед ва ҳангоми воридшавии аввал пароли нав интихоб кунед.",
-            ),
-            (
-                "ENGLISH",
-                "Welcome to KITOB",
-                f"Hello, {name}! An account has been created for you in KITOB.",
-                "Log in with the details below and choose a new password the first time you sign in.",
-            ),
-        )
+    @property
+    def preheader(self) -> str:
+        return "Логин и пароль для входа в KITOB"
 
-    def build_sections(self) -> tuple[LanguageSection, ...]:
-        return tuple(
-            LanguageSection(
-                language_tag=tag,
-                heading=heading,
-                paragraphs=(greeting_line, instruction),
-            )
-            for tag, heading, greeting_line, instruction in self._copy()
-        )
+    def build_heading(self) -> str:
+        return f"Добро пожаловать в KITOB, {self._first_name}!"
+
+    def build_body_lines(self) -> tuple[str, ...]:
+        return ("Войдите с этими данными и при первом входе задайте новый пароль.",)
 
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]:
         return (
-            HighlightRow(label="Логин / Login", value=self._login_email),
-            HighlightRow(
-                label="Временный пароль / Пароли муваққатӣ / Temporary password",
-                value=self._temporary_password,
-                letter_spaced=True,
-            ),
+            HighlightRow(label="Логин", value=self._login_email),
+            HighlightRow(label="Пароль", value=self._temporary_password, letter_spaced=True),
         )
 
     def build_call_to_action(self) -> CallToAction | None:
-        return CallToAction(label="Войти · Ворид шудан · Log in", url=self._login_url)
+        return CallToAction(label="Войти", url=self._login_url)
 
     def build_footer_lines(self) -> tuple[str, ...]:
         return (
             "KITOB — Educational Center",
-            "Если вы не ожидали это письмо, просто проигнорируйте его. / "
-            "Агар шумо ин мактубро интизор набудед, онро нодида гиред. / "
-            "If you did not expect this email, you can ignore it.",
-        )
-
-    def build_plain_text(self) -> str:
-        sections: list[str] = [
-            f"{heading}\n{greeting_line}\n{instruction}"
-            for _, heading, greeting_line, instruction in self._copy()
-        ]
-        credentials: str = (
-            f"Login: {self._login_email}\n"
-            f"Temporary password: {self._temporary_password}\n"
-            "(Логин / Временный пароль / Пароли муваққатӣ)"
-        )
-        return (
-            "\n\n".join(sections)
-            + f"\n\n{credentials}\n\nLog in / Войти / Ворид шудан: {self._login_url}\n\n"
-            "KITOB — Educational Center"
+            "Если вы не ожидали это письмо, просто проигнорируйте его.",
         )
 
 
 class CodeEmailTemplate(BaseBrandedEmailTemplate, ABC):
+    EXPIRY_LINE: str = "Код действует 10 минут."
+    SHARING_WARNING: str = "Никому не сообщайте этот код."
+
     def __init__(self, code: str, layout: BrandedEmailLayout | None = None) -> None:
         super().__init__(layout)
         self._code: str = code
 
+    @property
     @abstractmethod
-    def copy_by_language(self) -> tuple[tuple[str, str, str, str], ...]: ...
+    def subject_suffix(self) -> str: ...
 
     @property
     @abstractmethod
-    def plain_code_line(self) -> str: ...
+    def code_label(self) -> str: ...
 
-    def build_sections(self) -> tuple[LanguageSection, ...]:
-        return tuple(
-            LanguageSection(
-                language_tag=tag,
-                heading=heading,
-                paragraphs=(description, warning),
-            )
-            for tag, heading, description, warning in self.copy_by_language()
-        )
+    @abstractmethod
+    def build_heading(self) -> str: ...
+
+    @property
+    def subject(self) -> str:
+        return f"{self._code} — {self.subject_suffix}"
+
+    @property
+    def preheader(self) -> str:
+        return f"{self.code_label}: {self._code}"
+
+    def build_body_lines(self) -> tuple[str, ...]:
+        return (self.SHARING_WARNING, self.EXPIRY_LINE)
 
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]:
-        return (HighlightRow(label="Код / Рамз / Code", value=self._code, letter_spaced=True),)
+        return (HighlightRow(label=self.code_label, value=self._code, letter_spaced=True),)
 
     def build_call_to_action(self) -> CallToAction | None:
         return None
 
     def build_footer_lines(self) -> tuple[str, ...]:
-        return (
-            "KITOB — Educational Center",
-            "Если это были не вы, проигнорируйте письмо. / "
-            "Агар ин шумо набудед, мактубро нодида гиред. / "
-            "If this was not you, ignore this email.",
-        )
-
-    def build_plain_text(self) -> str:
-        sections: list[str] = [
-            f"{heading}\n{description}\n{warning}"
-            for _, heading, description, warning in self.copy_by_language()
-        ]
-        return "\n\n".join(sections) + f"\n\n{self.plain_code_line}: {self._code}\n\nKITOB — Educational Center"
+        return ("KITOB — Educational Center", "Если это были не вы, проигнорируйте письмо.")
 
 
 class VerificationCodeEmailTemplate(CodeEmailTemplate):
-    SUBJECT: str = "KITOB — Код подтверждения / Рамзи тасдиқ / Verification code"
+    SUBJECT: str = "Код подтверждения KITOB"
 
     @property
-    def subject(self) -> str:
-        return self.SUBJECT
+    def subject_suffix(self) -> str:
+        return "код подтверждения KITOB"
 
     @property
-    def plain_code_line(self) -> str:
-        return "Your verification code"
+    def code_label(self) -> str:
+        return "Код подтверждения"
 
-    def copy_by_language(self) -> tuple[tuple[str, str, str, str], ...]:
-        return (
-            ("РУССКИЙ", "Ваш код подтверждения", "Введите этот код в KITOB, чтобы подтвердить вход.", "Никому не сообщайте этот код."),
-            ("ТОҶИКӢ", "Рамзи тасдиқи шумо", "Ин рамзро барои тасдиқи воридшавӣ ба KITOB ворид кунед.", "Ин рамзро ба ҳеҷ кас надиҳед."),
-            ("ENGLISH", "Your verification code", "Enter this code in KITOB to confirm your sign-in.", "Do not share this code with anyone."),
-        )
+    def build_heading(self) -> str:
+        return "Подтвердите вход в KITOB"
 
 
 class PasswordResetEmailTemplate(CodeEmailTemplate):
-    SUBJECT: str = "KITOB — Сброс пароля / Барқарорсозии парол / Password reset"
+    SUBJECT: str = "Код для сброса пароля KITOB"
 
     @property
-    def subject(self) -> str:
-        return self.SUBJECT
+    def subject_suffix(self) -> str:
+        return "код для сброса пароля KITOB"
 
     @property
-    def plain_code_line(self) -> str:
-        return "Your password reset code"
+    def code_label(self) -> str:
+        return "Код для сброса пароля"
 
-    def copy_by_language(self) -> tuple[tuple[str, str, str, str], ...]:
-        return (
-            ("РУССКИЙ", "Код для сброса пароля", "Введите этот код в KITOB, чтобы задать новый пароль.", "Никому не сообщайте этот код."),
-            ("ТОҶИКӢ", "Рамз барои барқарор кардани парол", "Ин рамзро дар KITOB ворид кунед, то пароли нав таъин намоед.", "Ин рамзро ба ҳеҷ кас надиҳед."),
-            ("ENGLISH", "Password reset code", "Enter this code in KITOB to set a new password.", "Do not share this code with anyone."),
-        )
+    def build_heading(self) -> str:
+        return "Сброс пароля в KITOB"
 
 
 class OutboxEmailTemplateFactory:
