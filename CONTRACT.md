@@ -368,6 +368,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "is_deleted": boolean,
     "created_at": string,
     "updated_at": string,
+    "parent_link_code?": string,
   }
   ```
 - **422**: Validation Error
@@ -3558,7 +3559,7 @@ Manually apply a student's wallet credit to a specific charge.
         "id": integer,
         "user_id?": integer,
         "recipient": string,
-        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
         "related_entity_id": integer,
         "notification_date": string,
         "status": "sent" | "failed",
@@ -3635,7 +3636,7 @@ Manually apply a student's wallet credit to a specific charge.
       {
         "id": integer,
         "recipient_name?": string,
-        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
         "notification_date": string,
         "status": "sent" | "failed",
         "attempts": integer,
@@ -3679,7 +3680,7 @@ Manually apply a student's wallet credit to a specific charge.
     "id": integer,
     "user_id?": integer,
     "recipient": string,
-    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result",
+    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
     "related_entity_id": integer,
     "notification_date": string,
     "status": "sent" | "failed",

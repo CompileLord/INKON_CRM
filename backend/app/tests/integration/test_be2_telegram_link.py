@@ -98,7 +98,7 @@ class TestLinkService:
         assert issued.code not in rows[0].code_hash
         assert rows[0].used_at is None
         lifetime: timedelta = rows[0].expires_at - datetime.now(timezone.utc)
-        assert timedelta(days=6, hours=23) < lifetime <= timedelta(days=7)
+        assert timedelta(hours=71, minutes=59) < lifetime <= timedelta(hours=72)
         assert (await reload_student(test_student.id)).parent_link_code_expires_at == rows[0].expires_at
 
     @pytest.mark.asyncio
@@ -400,3 +400,111 @@ class TestEndpoints:
         assert mentor_response.json()["parent_link_code_expires_at"] is None
         rows: list[TelegramLinkCode] = list((await db_session.execute(select(TelegramLinkCode))).scalars())
         assert [row.student_id for row in rows] == [student_response.json()["id"]]
+
+
+class TestRegistrationDelivery:
+    @pytest.mark.asyncio
+    async def test_create_response_carries_a_code_that_links_and_reads_never_do(
+        self, client: AsyncClient, test_admin: User, conversation: TelegramConversation
+    ) -> None:
+        created = await client.post(
+            "/api/v1/users/",
+            headers=admin_headers(test_admin),
+            json={"email": "delivered@example.com", "first_name": "Del", "last_name": "Ivered", "role": "student"},
+        )
+        body: dict[str, Any] = created.json()
+        code: str = body["parent_link_code"]
+        assert TelegramLinkCodeGenerator().normalize(code) == code
+        listing = await client.get("/api/v1/students/", headers=admin_headers(test_admin))
+        profile = await client.get(f"/api/v1/students/{body['id']}/profile", headers=admin_headers(test_admin))
+        patched = await client.patch(
+            f"/api/v1/users/{body['id']}", headers=admin_headers(test_admin), json={"first_name": "Dell"}
+        )
+        for read in (listing, profile, patched):
+            assert '"parent_link_code"' not in read.text
+            assert code not in read.text
+        await conversation.press_language(600, "en")
+        await conversation.send_text(600, code)
+        assert (await reload_student(body["id"])).parent_telegram_chat_id == 600
+
+    @pytest.mark.asyncio
+    async def test_mentor_creation_has_no_link_code(self, client: AsyncClient, test_admin: User) -> None:
+        created = await client.post(
+            "/api/v1/users/",
+            headers=admin_headers(test_admin),
+            json={"email": "m2@example.com", "first_name": "M", "last_name": "Two", "role": "mentor"},
+        )
+        assert created.json()["parent_link_code"] is None
+
+    @pytest.mark.asyncio
+    async def test_credentials_email_contains_code_row_and_bot_hint(
+        self, client: AsyncClient, test_admin: User, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import json
+        from app.core.config import settings
+        from app.models.outbox_event import OutboxEvent, OutboxEventKind
+        from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
+        from app.services.outbox_service import OutboxPayloadEncryptor
+
+        monkeypatch.setattr(settings, "TELEGRAM_BOT_USERNAME", "kitob_test_bot")
+        created = await client.post(
+            "/api/v1/users/",
+            headers=admin_headers(test_admin),
+            json={"email": "mailed@example.com", "first_name": "Mail", "last_name": "Ed", "role": "student"},
+        )
+        code: str = created.json()["parent_link_code"]
+        event: OutboxEvent = (
+            await db_session.execute(select(OutboxEvent).where(OutboxEvent.kind == OutboxEventKind.CREDENTIALS_EMAIL))
+        ).scalars().one()
+        assert event.encrypted_payload is not None
+        payload: str = OutboxPayloadEncryptor(settings.JWT_SECRET_KEY).decrypt(event.encrypted_payload)
+        assert json.loads(payload)["parent_link_code"] == code
+        rendered: RenderedEmail = OutboxEmailTemplateFactory().create(event.kind, event.recipient_email, payload).render()
+        assert "Код для Telegram родителя" in rendered.html_body
+        assert rendered.html_body.count(code) == 1
+        assert "Передайте код родителю, чтобы подключить уведомления в боте @kitob_test_bot." in rendered.html_body
+        assert code in rendered.plain_text
+
+    def test_email_without_code_is_unchanged(self) -> None:
+        from app.services.email_templates import CredentialsEmailTemplate, RenderedEmail
+
+        rendered: RenderedEmail = CredentialsEmailTemplate("A", "a@example.com", "123456", "https://x.example").render()
+        assert "Telegram" not in rendered.html_body
+
+
+class TestSecurityBound:
+    def test_expected_guesses_against_a_thousand_active_codes_stay_bounded(self) -> None:
+        code_space: int = 10 ** 5 * len(TelegramLinkCodeGenerator.letter_alphabet) * 6
+        validity_hours: float = TelegramLinkService.code_lifetime.total_seconds() / 3600
+        expected_hits: float = TelegramAttemptLimiter.global_limit * validity_hours * 1000 / code_space
+        assert code_space == 14_400_000
+        assert validity_hours <= 72
+        assert expected_hits < 0.5
+
+
+class TestGlobalLockoutNotification:
+    @pytest.mark.asyncio
+    async def test_trip_notifies_each_admin_once_per_window_and_audits(
+        self,
+        conversation: TelegramConversation,
+        test_admin: User,
+        test_student: User,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from app.models.notification_log import NotificationLog, NotificationType
+
+        monkeypatch.setattr(TelegramAttemptLimiter, "global_limit", 1)
+        await conversation.press_language(610, "en")
+        await conversation.send_text(610, "00000Z")
+        for chat_id in (611, 612, 613):
+            await conversation.press_language(chat_id, "en")
+            await conversation.send_text(chat_id, "00000Z")
+        async with TestingSessionLocal() as db:
+            notifications: list[NotificationLog] = list(
+                (await db.execute(select(NotificationLog).where(NotificationLog.type == NotificationType.TELEGRAM_LINK_LOCKOUT))).scalars()
+            )
+            audits: list[AuditLog] = list(
+                (await db.execute(select(AuditLog).where(AuditLog.field_name == "global_failed_attempt_limit"))).scalars()
+            )
+        assert [notification.user_id for notification in notifications] == [test_admin.id]
+        assert len(audits) == 1

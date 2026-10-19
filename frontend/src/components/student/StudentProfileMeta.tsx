@@ -9,12 +9,13 @@ import type { User } from "../../lib/users/types";
 interface StudentProfileMetaProps {
   user: User;
   canManageParentLink?: boolean;
+  initialLinkCode?: string | null;
 }
 
 const META_LINK_CLASS: string =
   "inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 rounded text-nav hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out";
 
-export function StudentProfileMeta({ user, canManageParentLink = false }: StudentProfileMetaProps) {
+export function StudentProfileMeta({ user, canManageParentLink = false, initialLinkCode = null }: StudentProfileMetaProps) {
   const { t, i18n } = useTranslation("students");
 
   return (
@@ -45,7 +46,10 @@ export function StudentProfileMeta({ user, canManageParentLink = false }: Studen
       ) : null}
       <ParentLinkBadge linked={user.parent_linked === true} />
       {canManageParentLink ? (
-        <TelegramLinkCodeAction studentId={user.id} activeCodeExpiresAt={user.parent_link_code_expires_at ?? null} />
+        <TelegramLinkCodeAction
+          studentId={user.id} activeCodeExpiresAt={user.parent_link_code_expires_at ?? null}
+          initialCode={initialLinkCode}
+        />
       ) : null}
     </div>
   );

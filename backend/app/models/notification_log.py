@@ -11,6 +11,7 @@ class NotificationType(str, Enum):
     PAYMENT_REMINDER_2D = "payment_reminder_2d"
     PAYMENT_REMINDER_1D = "payment_reminder_1d"
     EXAM_RESULT = "exam_result"
+    TELEGRAM_LINK_LOCKOUT = "telegram_link_lockout"
 
 
 class NotificationStatus(str, Enum):

@@ -58,6 +58,10 @@ export interface User {
   updated_at: string;
 }
 
+export interface UserCreateResponse extends User {
+  parent_link_code?: string | null;
+}
+
 export interface TelegramLinkCode {
   code: string;
   expires_at: string;

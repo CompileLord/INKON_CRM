@@ -72,6 +72,9 @@ async def receive_code(message: types.Message) -> None:
         return
     limiter: TelegramAttemptLimiter = TelegramAttemptLimiter()
     decision: AttemptDecision = await limiter.reserve_attempt(chat_id)
+    if decision is AttemptDecision.GLOBALLY_LOCKED:
+        async with open_session() as db:
+            await TelegramLinkService(db).report_global_lockout()
     if decision is not AttemptDecision.ALLOWED:
         await message.answer(catalog.render("locked", language))
         return

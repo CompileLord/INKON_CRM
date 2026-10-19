@@ -36,6 +36,9 @@ class UserRepository(BaseRepository[User], Protocol):
     async def get_by_email_for_update(self, email: str) -> Optional[User]:
         ...
 
+    async def get_active_superadmins(self) -> List[User]:
+        ...
+
     async def get_students_list(
         self,
         page: int = 1,

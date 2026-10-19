@@ -9,12 +9,15 @@ import type { TelegramLinkCode } from "../../lib/users/types";
 interface TelegramLinkCodeActionProps {
   studentId: number;
   activeCodeExpiresAt: string | null;
+  initialCode?: string | null;
 }
 
-export function TelegramLinkCodeAction({ studentId, activeCodeExpiresAt }: TelegramLinkCodeActionProps) {
+export function TelegramLinkCodeAction({ studentId, activeCodeExpiresAt, initialCode = null }: TelegramLinkCodeActionProps) {
   const { t, i18n } = useTranslation("students");
   const generateCode = useGenerateTelegramLinkCode();
-  const [issued, setIssued] = useState<TelegramLinkCode | null>(null);
+  const [issued, setIssued] = useState<TelegramLinkCode | null>(
+    initialCode ? { code: initialCode, expires_at: activeCodeExpiresAt ?? "" } : null,
+  );
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   const handleGenerate = (): void => {
@@ -32,7 +35,7 @@ export function TelegramLinkCodeAction({ studentId, activeCodeExpiresAt }: Teleg
     }
   };
 
-  const expiresAt: string | null = issued?.expires_at ?? activeCodeExpiresAt;
+  const expiresAt: string | null = issued?.expires_at || activeCodeExpiresAt;
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">

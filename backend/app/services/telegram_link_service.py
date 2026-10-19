@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import ClassVar
 from fastapi import HTTPException, status
@@ -16,7 +16,9 @@ from app.repositories.sqlalchemy.telegram_link_repository import (
     SQLAlchemyTelegramLinkCodeRepository,
 )
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.models.notification_log import NotificationType
 from app.services.audit_service import AuditService
+from app.services.notification_service import NotificationService
 
 
 @dataclass(frozen=True)
@@ -38,7 +40,7 @@ class LinkResult:
 
 
 class TelegramLinkService:
-    code_lifetime: ClassVar[timedelta] = timedelta(days=7)
+    code_lifetime: ClassVar[timedelta] = timedelta(hours=72)
     supported_languages: ClassVar[tuple[str, ...]] = ("tg", "ru", "en")
     audit_entity_type: ClassVar[str] = "student_telegram_link"
 
@@ -84,6 +86,36 @@ class TelegramLinkService:
         )
         await self.db.flush()
         return IssuedLinkCode(code=code, expires_at=expires_at)
+
+    async def report_global_lockout(self) -> bool:
+        now: datetime = datetime.now(timezone.utc)
+        window_bucket: int = int(now.timestamp()) // 3600
+        today: date = now.date()
+        notification_service: NotificationService = NotificationService(self.db)
+        created_any: bool = False
+        for administrator in await self.user_repository.get_active_superadmins():
+            async def deliver_nothing(is_update: bool) -> None:
+                return None
+
+            created: bool = await notification_service.send_notification_with_idempotency(
+                recipient=administrator.email,
+                notification_type=NotificationType.TELEGRAM_LINK_LOCKOUT,
+                related_entity_id=window_bucket,
+                notification_date=today,
+                send_func=deliver_nothing,
+                user_id=administrator.id,
+            )
+            created_any = created_any or created
+        if created_any:
+            await self.audit_service.log(
+                None,
+                "update",
+                self.audit_entity_type,
+                0,
+                {"global_failed_attempt_limit": (None, str(window_bucket))},
+            )
+            await self.db.commit()
+        return created_any
 
     async def get_language(self, chat_id: int) -> str | None:
         return await self.preference_repository.get_language(chat_id)

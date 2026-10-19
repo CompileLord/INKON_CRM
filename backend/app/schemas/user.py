@@ -58,6 +58,11 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
+
+class UserCreateResponse(UserResponse):
+    parent_link_code: Optional[str] = None
+
+
 from app.schemas.course import CourseResponse, StaffGradingProvenance, StaffGradingState
 
 

@@ -161,7 +161,7 @@ class AuthService:
     async def revoke_all_user_tokens(self, user_id: int) -> None:
         await self.token_repo.revoke_all_for_user(user_id)
 
-    async def issue_temporary_credentials(self, user: User) -> None:
+    async def issue_temporary_credentials(self, user: User, parent_link_code: Optional[str] = None) -> None:
         temporary_password: str = self.temporary_password_generator.generate()
         user.password_hash = await self.password_work_service.hash(temporary_password)
         user.must_set_password = True
@@ -173,6 +173,7 @@ class AuthService:
             first_name=user.first_name,
             temporary_password=temporary_password,
             correlation_key=f"credentials:{user.email}",
+            parent_link_code=parent_link_code,
         )
 
     async def generate_verification_code(self, email: str) -> str:

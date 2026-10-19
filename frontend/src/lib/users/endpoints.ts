@@ -10,12 +10,13 @@ import type {
   TelegramLinkCode,
   User,
   UserCreate,
+  UserCreateResponse,
   UserSelfUpdate,
   UserUpdate,
 } from "./types";
 
-export function createUser(payload: UserCreate): Promise<User> {
-  return httpClient.post<User>("/users/", payload).then((res) => res.data);
+export function createUser(payload: UserCreate): Promise<UserCreateResponse> {
+  return httpClient.post<UserCreateResponse>("/users/", payload).then((res) => res.data);
 }
 
 export function updateUser(id: number, payload: UserUpdate): Promise<User> {

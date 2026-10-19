@@ -61,6 +61,15 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         result: Result[tuple[User]] = await self.session.execute(query)
         return result.scalars().first()
 
+    async def get_active_superadmins(self) -> list[User]:
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(User.role == UserRole.SUPERADMIN, User.is_deleted.is_(False))
+            .order_by(User.id)
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
+        return list(result.scalars().all())
+
     async def get_students_list(
         self,
         page: int = 1,

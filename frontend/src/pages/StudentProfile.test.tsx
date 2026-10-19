@@ -1296,6 +1296,18 @@ describe("StudentProfile Component", () => {
     expect(screen.getByText(/This student is not currently enrolled in any course/i)).toBeDefined();
   });
 
+  it("shows the one-time parent link code from creation state with a copy action, then drops it from history state", async () => {
+    renderStudentProfile([
+      {
+        pathname: "/students/42",
+        state: { createdStudentId: 42, createdParentLinkCode: "12A345" },
+      },
+    ]);
+
+    expect(screen.getByLabelText("Parent link code").textContent).toBe("12A345");
+    expect(screen.getByRole("button", { name: "Copy code" })).toBeDefined();
+  });
+
   it("renders creation banner when createdStudentId is passed in location state and dismisses it", async () => {
     const user = userEvent.setup();
     renderStudentProfile([

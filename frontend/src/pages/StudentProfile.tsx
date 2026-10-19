@@ -108,6 +108,12 @@ export function StudentProfile() {
     const locState = location.state as { createdStudentId?: number } | null;
     return Boolean(role === "superadmin" && numericId && locState?.createdStudentId === numericId);
   });
+  const [createdParentLinkCode, setCreatedParentLinkCode] = useState<string | null>(() => {
+    const locState = location.state as { createdStudentId?: number; createdParentLinkCode?: string | null } | null;
+    return role === "superadmin" && numericId && locState?.createdStudentId === numericId
+      ? locState.createdParentLinkCode ?? null
+      : null;
+  });
   const previousProfileIdRef = useRef(numericId);
   const previousOwnerKeyRef = useRef(ownerKey);
 
@@ -129,17 +135,20 @@ export function StudentProfile() {
     if (previousProfileIdRef.current !== numericId) {
       previousProfileIdRef.current = numericId;
       setCreatedFeedbackVisible(false);
+      setCreatedParentLinkCode(null);
     }
   }, [numericId]);
 
   useEffect(() => {
     const locState = location.state as {
       createdStudentId?: number;
+      createdParentLinkCode?: string | null;
       fromDirectory?: { studentId?: number; search?: string; page?: number; pageSize?: number };
     } | null;
     if (numericId && locState?.createdStudentId === numericId) {
       const nextState = { ...locState };
       delete nextState.createdStudentId;
+      delete nextState.createdParentLinkCode;
       navigate(location.pathname, { replace: true, state: nextState });
       const timer = window.setTimeout(() => {
         setCreatedFeedbackVisible(false);
@@ -449,7 +458,7 @@ export function StudentProfile() {
           )}
         </div>
         <div className="pl-[60px]">
-          <StudentProfileMeta user={user} canManageParentLink={role === "superadmin"} />
+          <StudentProfileMeta user={user} canManageParentLink={role === "superadmin"} initialLinkCode={createdParentLinkCode} />
         </div>
       </div>
 

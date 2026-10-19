@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Award, Bell, BellOff, CalendarClock, Check, CheckCheck, Wallet } from "lucide-react";
+import { Award, Bell, BellOff, CalendarClock, Check, CheckCheck, Wallet, ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "../../lib/notifications/hooks";
@@ -12,6 +12,7 @@ const EVENT_ICONS: Record<NotificationEventKind, typeof Bell> = {
   examResult: Award,
   paymentTwoDays: CalendarClock,
   paymentOneDay: Wallet,
+  telegramLockout: ShieldAlert,
   generic: Bell,
 };
 

@@ -23,6 +23,10 @@
       "title": "Payment reminder",
       "body": "Your payment is due tomorrow."
     },
+    "telegramLockout": {
+      "title": "Parent link attempts paused",
+      "body": "Too many wrong parent codes were entered in the Telegram bot. Linking is paused for an hour."
+    },
     "generic": {
       "title": "Notification",
       "body": "You have a new message."

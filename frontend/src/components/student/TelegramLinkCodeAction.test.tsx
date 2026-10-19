@@ -46,6 +46,19 @@ describe("TelegramLinkCodeAction", () => {
     expect(await screen.findByRole("button", { name: "Copied" })).toBeTruthy();
   });
 
+  it("shows a code handed over from student creation immediately", () => {
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <I18nextProvider i18n={i18n}>
+          <TelegramLinkCodeAction studentId={7} activeCodeExpiresAt={null} initialCode="99Z999" />
+        </I18nextProvider>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByLabelText("Parent link code").textContent).toBe("99Z999");
+    expect(screen.getByRole("button", { name: "Copy code" })).toBeTruthy();
+  });
+
   it("offers a new code when one is already active and never shows a code on load", () => {
     renderAction("2026-10-26T12:00:00Z");
     expect(screen.getByRole("button", { name: "New code" })).toBeTruthy();

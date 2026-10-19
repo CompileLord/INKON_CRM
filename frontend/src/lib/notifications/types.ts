@@ -1,6 +1,6 @@
 import type { Paginated } from "../pagination";
 
-export type NotificationType = "payment_reminder_2d" | "payment_reminder_1d" | "exam_result";
+export type NotificationType = "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout";
 export type NotificationStatus = "sent" | "failed";
 
 export interface NotificationLogItem {

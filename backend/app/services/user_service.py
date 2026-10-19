@@ -11,7 +11,7 @@ from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
 from app.services.storage_lifecycle_service import StorageLifecycleService
-from app.services.telegram_link_service import TelegramLinkService
+from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
 from app.services.storage_service import StorageService, get_storage_service
 
 
@@ -72,6 +72,11 @@ class UserService:
         self.storage_service: StorageService = storage or get_storage_service()
 
     async def create_user(self, user_create: UserCreate) -> User:
+        created_user: User
+        created_user, _ = await self.create_user_with_link_code(user_create)
+        return created_user
+
+    async def create_user_with_link_code(self, user_create: UserCreate) -> tuple[User, IssuedLinkCode | None]:
         existing_user = await self.user_repo.get_by_email(user_create.email)
         if existing_user:
             raise HTTPException(
@@ -99,14 +104,18 @@ class UserService:
         )
         created_user = await self.user_repo.create(user)
 
+        issued_link_code: IssuedLinkCode | None = None
         if created_user.role == UserRole.STUDENT:
-            await TelegramLinkService(self.db).issue_code(created_user, None)
+            issued_link_code = await TelegramLinkService(self.db).issue_code(created_user, None)
 
         auth_service = AuthService(self.db)
-        await auth_service.issue_temporary_credentials(created_user)
+        await auth_service.issue_temporary_credentials(
+            created_user,
+            issued_link_code.code if issued_link_code else None,
+        )
         await self.db.refresh(created_user)
 
-        return created_user
+        return created_user, issued_link_code
 
     async def update_user(self, user_id: int, user_update: UserUpdate) -> User:
         user = await self.user_repo.get_by_id(user_id)
