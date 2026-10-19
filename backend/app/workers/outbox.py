@@ -5,8 +5,10 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Set
 
+from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
+from app.core import redis as redis_module
 from app.core.config import settings
 from app.core.redis import redis_client
 from app.core.security import verify_password
@@ -16,7 +18,7 @@ from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.email_service import EmailDeliveryError, EmailService, SMTP_SOCKET_TIMEOUT_SECONDS
 from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
-from app.services.outbox_service import OutboxPayloadEncryptor
+from app.services.outbox_service import NotificationIntentPayload, OutboxPayloadEncryptor
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,11 @@ OUTBOX_WORKER_MIN_LEASE_REMAINING_SECONDS = max(12.0, SMTP_SOCKET_TIMEOUT_SECOND
 
 
 class OutboxWorkerManager:
+    notification_tasks: dict[OutboxEventKind, str] = {
+        OutboxEventKind.EXAM_RESULT_NOTIFICATION: "send_exam_result_notification_task",
+        OutboxEventKind.DOCUMENT_NOTIFICATION: "send_student_document_notification_task",
+    }
+
     def __init__(
         self,
         database_url: str,
@@ -64,6 +71,48 @@ class OutboxWorkerManager:
             300,
         )
         return now + timedelta(seconds=backoff_seconds)
+
+    async def dispatch_notification(
+        self,
+        event: OutboxEvent,
+        plaintext: str,
+        lease_owner: str,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> bool:
+        session: AsyncSession
+        async with session_factory() as session:
+            repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(session)
+            if not await repository.is_lease_valid(event.id, lease_owner, datetime.now(timezone.utc)):
+                return False
+
+        send_error: str | None = None
+        try:
+            payload: NotificationIntentPayload = NotificationIntentPayload.model_validate_json(plaintext)
+            producer: ArqRedis = await redis_module.get_arq_pool()
+            await producer.enqueue_job(
+                self.notification_tasks[event.kind],
+                payload.student_id,
+                payload.journal_id,
+                _job_id=f"outbox-notification:{event.id}",
+            )
+        except Exception as error:
+            send_error = type(error).__name__
+
+        settled_at: datetime = datetime.now(timezone.utc)
+        async with session_factory() as session:
+            repository = SQLAlchemyOutboxRepository(session)
+            if send_error is None:
+                await repository.mark_delivered(event.id, lease_owner, settled_at)
+            else:
+                await repository.mark_failed(
+                    event.id,
+                    lease_owner,
+                    send_error,
+                    self.compute_next_attempt_at(event.attempt_count, settled_at),
+                    settled_at,
+                )
+            await session.commit()
+        return True
 
     async def check_verification_state(
         self,
@@ -142,7 +191,7 @@ class OutboxWorkerManager:
                 await session.commit()
             return True
 
-        if (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
+        if event.kind not in self.notification_tasks and (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
             async with session_factory() as session:
                 repo = SQLAlchemyOutboxRepository(session)
                 await repo.mark_expired(event.id, lease_owner, "event_exceeded_maximum_queue_age", now)
@@ -181,6 +230,9 @@ class OutboxWorkerManager:
                 )
                 await session.commit()
             return True
+
+        if event.kind in self.notification_tasks:
+            return await self.dispatch_notification(event, code, lease_owner, session_factory)
 
         async with session_factory() as session:
             is_valid, invalidate_reason = await self.check_verification_state(event, code, session)
