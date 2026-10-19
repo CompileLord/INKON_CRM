@@ -148,7 +148,7 @@ describe("JournalLessonView rows", () => {
     expect(menu.className).toContain("flex");
     expect(row.contains(menu)).toBe(true);
     expect(within(menu).queryByRole("button", { name: "Close" })).toBeNull();
-    expect(menu.textContent).toBe("12345Clear");
+    expect(menu.textContent).toBe("12345");
     fireEvent.click(within(menu).getByRole("menuitemradio", { name: "2" }));
     expect(view.onEntryCommand).toHaveBeenCalledWith(1, LESSON, { kind: "score", score: 2 });
     expect(within(row).queryByRole("menu")).toBeNull();

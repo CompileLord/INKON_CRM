@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "../../i18n";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalScoreCell } from "./JournalScoreCell";
@@ -155,9 +155,9 @@ describe("JournalScoreCell overlays", () => {
     const { onCommand } = renderCell({ score: 3, attendance: true });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     const menu = screen.getByRole("menu", { name: /Score for Aziza Rahimova, / });
-    expect(menu.textContent).toBe("12345Clear");
+    expect(menu.textContent).toBe("12345");
     const popover = menu.parentElement as HTMLElement;
-    expect(popover.textContent).toBe("12345Clear");
+    expect(popover.textContent).toBe("12345");
     expect(screen.queryByRole("dialog", { name: /Score for/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
     expect(screen.queryByText(/Current score/)).toBeNull();
@@ -188,6 +188,19 @@ describe("JournalScoreCell overlays", () => {
     fireEvent.keyDown(screen.getByRole("menuitemradio", { name: "3" }), { key: "Backspace" });
     expect(onCommand).toHaveBeenCalledTimes(2);
     expect(onCommand).toHaveBeenLastCalledWith({ kind: "score", score: 0 });
+  });
+
+  it("keeps the clear control inside the picker as an icon-only button with an accessible name", () => {
+    renderCell({ score: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    const menu = screen.getByRole("menu", { name: /Score for/ });
+    const clear = within(menu).getByRole("menuitem", { name: "Clear" });
+    expect(menu.contains(clear)).toBe(true);
+    expect(clear.textContent).toBe("");
+    expect(clear.querySelector("svg")).not.toBeNull();
+    expect(clear.getAttribute("title")).toBe("Clear");
+    expect(clear.className).toContain("h-8");
+    expect((menu.parentElement as HTMLElement).style.width).toBe("max-content");
   });
 
   it("does not treat the 0 key as a score but clears with Backspace and Delete", () => {

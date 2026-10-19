@@ -1,16 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Eraser } from "lucide-react";
 import { JournalAnchoredOverlay } from "./JournalAnchoredOverlay";
-
-class PickerWidths {
-  static readonly FINE_POINTER_PX: number = 236;
-  static readonly COARSE_POINTER_PX: number = 300;
-
-  static forPointer(): number {
-    const isCoarse: boolean = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches === true;
-    return isCoarse ? PickerWidths.COARSE_POINTER_PX : PickerWidths.FINE_POINTER_PX;
-  }
-}
 
 export type ScorePickerCloseReason = "escape" | "outside" | "choose";
 
@@ -76,7 +67,7 @@ export const JournalScoreChoices: React.FC<JournalScoreChoicesProps> = ({
   const sizeClass: string = size === "touch" ? "h-11 min-w-11 text-base" : "h-8 min-w-8 text-sm pointer-coarse:h-11 pointer-coarse:min-w-11";
 
   return (
-    <div role="menu" aria-label={ariaLabel} onKeyDown={handleKeyDown} className="flex items-center gap-1">
+    <div role="menu" aria-label={ariaLabel} onKeyDown={handleKeyDown} className="flex w-max items-center gap-1">
       <div className="flex gap-0.5 rounded-full bg-strip p-0.5">
         {SCORE_OPTIONS.map((option, index) => {
           const isSelected: boolean = score === option;
@@ -99,14 +90,17 @@ export const JournalScoreChoices: React.FC<JournalScoreChoicesProps> = ({
           );
         })}
       </div>
+      <span aria-hidden="true" className="h-5 w-px shrink-0 bg-border" />
       <button
         type="button"
         role="menuitem"
         data-control="clear-score"
+        aria-label={t("picker.clear")}
+        title={t("picker.clear")}
         onClick={onClear}
-        className="flex h-8 shrink-0 items-center justify-center rounded-full px-2 text-xs font-medium text-muted hover:bg-row-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-11 motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+        className={`flex shrink-0 items-center justify-center rounded-full text-muted hover:bg-row-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${sizeClass}`}
       >
-        {t("picker.clear")}
+        <Eraser className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );
@@ -133,7 +127,6 @@ export const JournalScorePicker: React.FC<JournalScorePickerProps> = ({
   return (
     <JournalAnchoredOverlay
       anchorRef={anchorRef}
-      width={PickerWidths.forPointer()}
       role="none"
       className="p-1"
       onClose={(reason) => onClose(reason)}

@@ -4,7 +4,7 @@ import { JournalMotion } from "../../lib/journals/JournalMotion";
 
 interface JournalAnchoredOverlayProps {
   anchorRef: React.RefObject<HTMLElement | null>;
-  width: number;
+  width?: number;
   role: "menu" | "dialog" | "none";
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   ariaLabel?: string;
@@ -50,10 +50,11 @@ export const JournalAnchoredOverlay: React.FC<JournalAnchoredOverlayProps> = ({
       top = Math.max(VIEWPORT_MARGIN_PX, anchorBounds.top - overlayHeight - ANCHOR_GAP_PX);
       placedBelow = false;
     }
-    const centered: number = anchorBounds.left + anchorBounds.width / 2 - width / 2;
+    const overlayWidth: number = width ?? overlayRef.current?.offsetWidth ?? 0;
+    const centered: number = anchorBounds.left + anchorBounds.width / 2 - overlayWidth / 2;
     const left: number = Math.min(
       Math.max(VIEWPORT_MARGIN_PX, centered),
-      window.innerWidth - width - VIEWPORT_MARGIN_PX,
+      window.innerWidth - overlayWidth - VIEWPORT_MARGIN_PX,
     );
     const originX: number = Math.round(anchorBounds.left + anchorBounds.width / 2 - left);
     setPosition({ top, left, origin: `${originX}px ${placedBelow ? "top" : "bottom"}` });
@@ -114,7 +115,7 @@ export const JournalAnchoredOverlay: React.FC<JournalAnchoredOverlayProps> = ({
         position: "fixed",
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
-        width,
+        width: width ?? "max-content",
         visibility: position ? "visible" : "hidden",
       }}
       className={`z-50 rounded-2xl border border-border bg-card text-ink shadow-lg ${className}`}
