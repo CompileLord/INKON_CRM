@@ -9,7 +9,7 @@ import { useAuthStore } from "../store/authStore";
 import * as courseHooks from "../lib/courses/hooks";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as userHooks from "../lib/users/hooks";
-import type { CourseListItemResponse, CourseResponse, PaginatedCourses } from "../lib/courses/types";
+import type { CourseListItemResponse, PaginatedCourses } from "../lib/courses/types";
 import type { Paginated } from "../lib/pagination";
 import type { User } from "../lib/users/types";
 
@@ -874,7 +874,7 @@ describe("Courses page directory", () => {
 
     it("opens duplicate confirmation, fetches real schedule, and creates copy with copy suffix", async () => {
       sessionStorage.removeItem("kitob_course_list_last_url");
-      const targetCourse: CourseResponse = {
+      const targetCourse: CourseListItemResponse = {
         ...sampleCourses[0],
         title: "Schedule precision audit",
       };

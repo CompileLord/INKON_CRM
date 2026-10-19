@@ -8,7 +8,7 @@ import { Journals } from "./Journals";
 import { useAuthStore } from "../store/authStore";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as userEndpoints from "../lib/users/endpoints";
-import type { CourseResponse, ListCoursesParams, PaginatedCourses } from "../lib/courses/types";
+import type { CourseListItemResponse, ListCoursesParams, PaginatedCourses } from "../lib/courses/types";
 import type { PaginatedUsers, User } from "../lib/users/types";
 
 vi.mock("../lib/courses/endpoints", async (importOriginal) => {
@@ -21,7 +21,7 @@ vi.mock("../lib/users/endpoints", async (importOriginal) => {
   return { ...actual, getMentors: vi.fn(), getMentorProfile: vi.fn() };
 });
 
-function buildCourse(id: number, overrides: Partial<CourseResponse> = {}): CourseResponse {
+function buildCourse(id: number, overrides: Partial<CourseListItemResponse> = {}): CourseListItemResponse {
   return {
     id,
     title: `Course ${id}`,
@@ -36,6 +36,8 @@ function buildCourse(id: number, overrides: Partial<CourseResponse> = {}): Cours
     is_deleted: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    schedules: [],
+    active_student_count: 0,
     ...overrides,
   };
 }
@@ -61,7 +63,7 @@ function buildMentor(id: number, firstName: string, lastName: string): User {
   };
 }
 
-function pageOf(items: CourseResponse[], overrides: Partial<PaginatedCourses> = {}): PaginatedCourses {
+function pageOf(items: CourseListItemResponse[], overrides: Partial<PaginatedCourses> = {}): PaginatedCourses {
   return { items, total: items.length, page: 1, page_size: 20, total_pages: 1, ...overrides };
 }
 
