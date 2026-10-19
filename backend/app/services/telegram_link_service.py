@@ -1,3 +1,4 @@
+from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
@@ -91,7 +92,7 @@ class TelegramLinkService:
         now: datetime = datetime.now(timezone.utc)
         window_bucket: int = int(now.timestamp()) // 3600
         today: date = now.date()
-        notification_service: NotificationService = NotificationService(self.db)
+        notification_service: NotificationService = NotificationService(SQLAlchemyNotificationLogRepository(self.db))
         created_any: bool = False
         for administrator in await self.user_repository.get_active_superadmins():
             async def deliver_nothing(is_update: bool) -> None:

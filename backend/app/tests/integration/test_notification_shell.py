@@ -100,7 +100,7 @@ async def test_delivery_log_is_superadmin_only_filterable_and_hides_internal_fie
     failed = await client.get("/api/v1/notifications/delivery-log", headers=headers, params={"status": "failed"})
     assert failed.json()["total"] == 1
     assert failed.json()["items"][0]["status"] == "failed"
-    invalid = await client.get("/api/v1/notifications/delivery-log", headers=headers, params={"status": "queued"})
+    invalid = await client.get("/api/v1/notifications/delivery-log", headers=headers, params={"status": "invalid-status"})
     assert invalid.status_code == 422
 
 

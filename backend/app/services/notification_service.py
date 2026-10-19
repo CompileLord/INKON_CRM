@@ -1,111 +1,208 @@
-from datetime import date, datetime, timezone
-from typing import Callable, Awaitable, Optional
-from fastapi import HTTPException, status
-from sqlalchemy import select, func, update
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
+import secrets
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Awaitable, Callable
 from arq import Retry
-from app.models.user import User
-from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
-from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from fastapi import HTTPException, status
+from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
+from app.repositories.interfaces.notification_log_repository import NotificationClaim, NotificationLogRepository
 
 
 class NotificationService:
-    def __init__(self, db: AsyncSession) -> None:
-        self.db = db
-        self.repo = SQLAlchemyNotificationLogRepository(db)
+    maximum_attempts: int = 3
+    lease_seconds: int = 90
+    send_timeout_seconds: int = 30
 
-    async def get_user_notifications(self, user_id: int, page: int = 1, page_size: int = 20) -> dict:
-        total_stmt = select(func.count()).select_from(NotificationLog).filter(NotificationLog.user_id == user_id)
-        total_res = await self.db.execute(total_stmt)
-        total = total_res.scalar() or 0
+    def __init__(self, repository: NotificationLogRepository) -> None:
+        self.repo: NotificationLogRepository = repository
 
-        offset = (page - 1) * page_size
-        stmt = (
-            select(NotificationLog)
-            .filter(NotificationLog.user_id == user_id)
-            .order_by(NotificationLog.notification_date.desc(), NotificationLog.id.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
-        res = await self.db.execute(stmt)
-        items = list(res.scalars().all())
-
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-
+    async def get_user_notifications(self, user_id: int, page: int = 1, page_size: int = 20) -> dict[str, Any]:
+        items: list[NotificationLog]
+        total: int
+        items, total = await self.repo.user_page(user_id, page, page_size)
         return {
             "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": total_pages,
+            "total_pages": max(1, (total + page_size - 1) // page_size),
         }
 
     async def get_unread_count(self, user_id: int) -> int:
-        stmt = select(func.count()).select_from(NotificationLog).filter(
-            NotificationLog.user_id == user_id,
-            NotificationLog.read_at.is_(None)
-        )
-        res = await self.db.execute(stmt)
-        return res.scalar() or 0
+        return await self.repo.unread_count(user_id)
 
     async def mark_as_read(self, notification_id: int, user_id: int) -> NotificationLog:
-        stmt = select(NotificationLog).filter(NotificationLog.id == notification_id)
-        res = await self.db.execute(stmt)
-        log = res.scalars().first()
-        if not log:
+        log: NotificationLog | None = await self.repo.get_by_id(notification_id)
+        if log is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
         if log.user_id != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-
         if log.read_at is None:
             log.read_at = datetime.now(timezone.utc)
-            await self.db.commit()
-            await self.db.refresh(log)
+            await self.repo.commit()
         return log
 
     async def mark_all_as_read(self, user_id: int) -> int:
-        statement = (
-            update(NotificationLog)
-            .where(NotificationLog.user_id == user_id, NotificationLog.read_at.is_(None))
-            .values(read_at=datetime.now(timezone.utc))
-        )
-        result = await self.db.execute(statement)
-        await self.db.commit()
-        return result.rowcount or 0
+        count: int = await self.repo.mark_all_read(user_id, datetime.now(timezone.utc))
+        await self.repo.commit()
+        return count
 
-    async def get_delivery_log(self, page: int, page_size: int, delivery_status: Optional[NotificationStatus]) -> dict:
-        conditions = [NotificationLog.status == delivery_status.value] if delivery_status is not None else []
-        total_result = await self.db.execute(select(func.count()).select_from(NotificationLog).filter(*conditions))
-        total: int = total_result.scalar() or 0
-        statement = (
-            select(NotificationLog, User.first_name, User.last_name)
-            .outerjoin(User, User.id == NotificationLog.user_id)
-            .filter(*conditions)
-            .order_by(NotificationLog.notification_date.desc(), NotificationLog.id.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        rows = (await self.db.execute(statement)).all()
-        items: list[dict] = [
-            {
-                "id": log.id,
-                "recipient_name": f"{first_name} {last_name}".strip() if first_name is not None else None,
-                "type": log.type,
-                "notification_date": log.notification_date,
-                "status": log.status,
-                "attempts": log.attempts,
-                "sent_at": log.sent_at,
-            }
-            for log, first_name, last_name in rows
-        ]
+    async def get_delivery_log(
+        self, page: int, page_size: int, delivery_status: NotificationStatus | None
+    ) -> dict[str, Any]:
+        items: list[dict[str, Any]]
+        total: int
+        items, total = await self.repo.delivery_page(page, page_size, delivery_status)
         return {
             "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": (total + page_size - 1) // page_size if total > 0 else 1,
+            "total_pages": max(1, (total + page_size - 1) // page_size),
         }
+
+    async def reserve_notification(
+        self,
+        recipient: str,
+        notification_type: NotificationType,
+        related_entity_id: int,
+        notification_date: date,
+        user_id: int | None,
+        score: int | None,
+        revision_requested: bool,
+        delivery_text: str | None = None,
+    ) -> NotificationLog | None:
+        log: NotificationLog = await self.repo.lock_or_create(
+            recipient, notification_type, related_entity_id, notification_date, user_id, score
+        )
+        log.revision = log.revision or 1
+        now: datetime = datetime.now(timezone.utc)
+        if (
+            (log.delivery_state or log.status) == NotificationStatus.INFLIGHT
+            and log.lease_expires_at is not None
+            and log.lease_expires_at > now
+        ):
+            return None
+        changed_score: bool = score is not None and log.delivery_score != score
+        legacy_same_score: bool = log.delivery_score is None and log.error_message == f"score:{score}"
+        if (log.delivery_state or log.status) == NotificationStatus.SENT:
+            if not revision_requested or (score is not None and (not changed_score or legacy_same_score)):
+                return None
+        if changed_score or ((log.delivery_state or log.status) == NotificationStatus.SENT and revision_requested):
+            log.revision += 1
+            log.delivery_score = score
+            log.attempts = 0
+        if log.attempts >= self.maximum_attempts:
+            log.status = NotificationStatus.FAILED
+            log.delivery_state = NotificationStatus.FAILED
+            log.claim_token = None
+            log.lease_expires_at = None
+            return None
+        if log.is_terminal and not changed_score:
+            return None
+        if user_id is not None and log.user_id is None:
+            log.user_id = user_id
+        log.delivery_state = NotificationStatus.QUEUED
+        log.status = NotificationStatus.FAILED
+        log.claim_token = None
+        log.lease_expires_at = None
+        log.is_terminal = False
+        log.delivery_text = delivery_text
+        await self.repo.update(log)
+        return log
+
+    async def queue_notification(
+        self,
+        recipient: str,
+        notification_type: NotificationType,
+        related_entity_id: int,
+        notification_date: date,
+        enqueue_func: Callable[[int, int], Awaitable[None]],
+        score_val: int | None = None,
+        user_id: int | None = None,
+        revision_requested: bool = False,
+        delivery_text: str | None = None,
+    ) -> bool:
+        log: NotificationLog | None = await self.reserve_notification(
+            recipient,
+            notification_type,
+            related_entity_id,
+            notification_date,
+            user_id,
+            score_val,
+            revision_requested,
+            delivery_text,
+        )
+        notification_id: int | None = log.id if log is not None else None
+        revision: int | None = log.revision if log is not None else None
+        await self.repo.commit()
+        if notification_id is None or revision is None:
+            return False
+        await enqueue_func(notification_id, revision)
+        return True
+
+    async def claim_notification(self, notification_id: int, revision: int) -> NotificationClaim | None:
+        now: datetime = datetime.now(timezone.utc)
+        claim: NotificationClaim | None = await self.repo.claim(
+            notification_id,
+            revision,
+            secrets.token_hex(24),
+            now,
+            now + timedelta(seconds=self.lease_seconds),
+            self.maximum_attempts,
+        )
+        await self.repo.commit()
+        return claim
+
+    async def finalize_notification(self, claim: NotificationClaim, error: str | None, terminal: bool = False) -> bool:
+        finalized: bool = await self.repo.finalize(claim, error, datetime.now(timezone.utc), terminal)
+        await self.repo.commit()
+        return finalized
+
+    async def deliver_notification(
+        self, notification_id: int, revision: int, send_func: Callable[[bool], Awaitable[None]]
+    ) -> bool:
+        claim: NotificationClaim | None = await self.claim_notification(notification_id, revision)
+        if claim is None:
+            return False
+        return await self.send_claim(claim, send_func)
+
+    async def deliver_queued_notification(
+        self, notification_id: int, revision: int, sender: Callable[[int, str], Awaitable[Any]]
+    ) -> bool:
+        claim: NotificationClaim | None = await self.claim_notification(notification_id, revision)
+        if claim is None:
+            return False
+
+        source_available: bool = await self.repo.has_valid_reminder_source(notification_id)
+        await self.repo.commit()
+        if not source_available:
+            await self.finalize_notification(claim, "source_unavailable", terminal=True)
+            return False
+
+        async def send(is_update: bool) -> None:
+            if claim.delivery_text is None:
+                raise ValueError("Queued notification has no delivery text")
+            await sender(int(claim.recipient), claim.delivery_text)
+
+        return await self.send_claim(claim, send)
+
+    async def send_claim(self, claim: NotificationClaim, send_func: Callable[[bool], Awaitable[None]]) -> bool:
+        try:
+            async with asyncio.timeout(self.send_timeout_seconds):
+                await send_func(claim.is_update)
+        except Exception as error:
+            terminal: bool = isinstance(error, (TelegramForbiddenError, TelegramBadRequest))
+            finalized: bool = await self.finalize_notification(claim, type(error).__name__, terminal)
+            if (
+                finalized
+                and claim.attempts < self.maximum_attempts
+                and not isinstance(error, (TelegramForbiddenError, TelegramBadRequest))
+            ):
+                raise Retry(defer=5 * claim.attempts) from error
+            return False
+        return await self.finalize_notification(claim, None)
 
     async def send_notification_with_idempotency(
         self,
@@ -114,67 +211,50 @@ class NotificationService:
         related_entity_id: int,
         notification_date: date,
         send_func: Callable[[bool], Awaitable[None]],
-        check_revision_func: Optional[Callable[[], Awaitable[bool]]] = None,
-        score_val: Optional[int] = None,
-        user_id: Optional[int] = None
+        check_revision_func: Callable[[], Awaitable[bool]] | None = None,
+        score_val: int | None = None,
+        user_id: int | None = None,
     ) -> bool:
-        query = select(NotificationLog).filter(
-            NotificationLog.recipient == recipient,
-            NotificationLog.type == notification_type,
-            NotificationLog.related_entity_id == related_entity_id,
-            NotificationLog.notification_date == notification_date
+        revision_requested: bool = await check_revision_func() if check_revision_func is not None else False
+        log: NotificationLog | None = await self.reserve_notification(
+            recipient, notification_type, related_entity_id, notification_date, user_id, score_val, revision_requested
         )
-        result = await self.db.execute(query)
-        log = result.scalars().first()
-
-        is_update = False
-        if log:
-            if user_id is not None and log.user_id is None:
-                log.user_id = user_id
-            if log.status == NotificationStatus.SENT:
-                if check_revision_func:
-                    is_revised = await check_revision_func()
-                    if not is_revised:
-                        return False
-                    is_update = True
-                else:
-                    return False
-            elif log.attempts >= 3:
-                return False
-
-            log.attempts += 1
-            await self.db.commit()
-        else:
-            log = NotificationLog(
-                user_id=user_id,
-                recipient=recipient,
-                type=notification_type,
-                related_entity_id=related_entity_id,
-                notification_date=notification_date,
-                status=NotificationStatus.FAILED,
-                attempts=1
-            )
-            self.db.add(log)
-            try:
-                await self.db.commit()
-            except IntegrityError:
-                await self.db.rollback()
-                return False
-
-        try:
-            await send_func(is_update)
-            log.status = NotificationStatus.SENT
-            log.sent_at = datetime.now(timezone.utc)
-            if score_val is not None:
-                log.error_message = f"score:{score_val}"
-            else:
-                log.error_message = None
-            await self.db.commit()
-            return True
-        except Exception as e:
-            log.status = NotificationStatus.FAILED
-            log.error_message = str(e)
-            await self.db.commit()
-            if log.attempts < 3:
-                raise Retry(defer=5 * log.attempts)
+        notification_id: int | None = log.id if log is not None else None
+        revision: int | None = log.revision if log is not None else None
+        await self.repo.commit()
+        if notification_id is None or revision is None:
             return False
+        return await self.deliver_notification(notification_id, revision, send_func)
+
+    async def reject_notification(self, notification_id: int, revision: int, reason: str) -> bool:
+        claim: NotificationClaim | None = await self.claim_notification(notification_id, revision)
+        if claim is None:
+            return False
+        return await self.finalize_notification(claim, reason, terminal=True)
+
+    async def recover_deliveries(
+        self, enqueue_func: Callable[[str, dict[str, Any]], Awaitable[None]], limit: int = 100
+    ) -> int:
+        rows: list[NotificationLog] = await self.repo.recoverable(
+            datetime.now(timezone.utc), limit, self.maximum_attempts
+        )
+        jobs: list[tuple[str, dict[str, Any]]] = []
+        log: NotificationLog
+        for log in rows:
+            payload: dict[str, Any] = {
+                "notification_id": log.id,
+                "revision": log.revision or 1,
+                "_job_id": f"notification:{log.id}:{log.revision}:recovery:{log.attempts}",
+            }
+            if log.delivery_text is not None:
+                payload.update(chat_id=int(log.recipient), text=log.delivery_text)
+                jobs.append(("send_telegram_message", payload))
+            else:
+                payload.update(student_id=log.user_id, journal_id=log.related_entity_id)
+                jobs.append(("send_exam_result_notification_task", payload))
+        await self.repo.commit()
+        job_name: str
+        payload: dict[str, Any]
+        for job_name, payload in jobs:
+            await enqueue_func(job_name, payload)
+        return len(jobs)

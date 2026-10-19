@@ -1,11 +1,22 @@
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel
+from typing import Any
+from pydantic import BaseModel, Field, model_validator
+from app.models.notification_log import NotificationLog
 from app.models.notification_log import NotificationStatus, NotificationType
 
 
 class NotificationResponse(BaseModel):
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="before")
+    @classmethod
+    def project_delivery_status(cls, value: Any) -> Any:
+        if isinstance(value, NotificationLog):
+            fields: dict[str, Any] = {name: getattr(value, name) for name in cls.model_fields}
+            fields["status"] = value.delivery_state or value.status
+            return fields
+        return value
 
     id: int
     user_id: Optional[int] = None
@@ -13,7 +24,9 @@ class NotificationResponse(BaseModel):
     type: NotificationType
     related_entity_id: int
     notification_date: date
-    status: NotificationStatus
+    status: NotificationStatus = Field(
+        description="Sent confirms provider success. Delivery is at least once: a crash after sending but before finalization can cause a duplicate after lease recovery."
+    )
     attempts: int = 0
     sent_at: Optional[datetime] = None
     read_at: Optional[datetime] = None
@@ -32,6 +45,8 @@ class DeliveryLogResponse(BaseModel):
     recipient_name: Optional[str] = None
     type: NotificationType
     notification_date: date
-    status: NotificationStatus
+    status: NotificationStatus = Field(
+        description="Sent confirms provider success. Delivery is at least once: a crash after sending but before finalization can cause a duplicate after lease recovery."
+    )
     attempts: int
     sent_at: Optional[datetime] = None
