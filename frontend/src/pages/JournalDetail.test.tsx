@@ -695,6 +695,7 @@ describe("single-screen journal page", () => {
   it("shows Exam and Bonus as the last editable columns before Total and %, and saves an exam edit through the summary endpoint", async () => {
     updateSummaryMock.mockImplementation(async (journalId, studentId, payload) => ({
       ...(buildJournal(journalId).students[0].summary as NonNullable<JournalDetailResponse["students"][number]["summary"]>),
+      journal_id: journalId,
       student_id: studentId,
       exam_score: payload.exam_score,
       bonus_score: payload.bonus_score,
