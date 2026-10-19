@@ -1,6 +1,6 @@
 import { useCallback, useId, useRef } from "react";
 import { PageHeader } from "../../components/PageHeader";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CalendarDays, Eye } from "lucide-react";
 import { useCourse, useCourseJournals } from "../../lib/courses/hooks";

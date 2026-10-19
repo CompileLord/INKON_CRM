@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
 import { PageHeader } from "../../components/PageHeader";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Clock, Target, Trophy, UserX } from "lucide-react";
+import { CalendarCheck, CalendarDays, ChevronDown, Clock, Target, Trophy, UserX } from "lucide-react";
 import { useCourse, useCourseSchedule } from "../../lib/courses/hooks";
 import { useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
 import { useAuthStore } from "../../store/authStore";
