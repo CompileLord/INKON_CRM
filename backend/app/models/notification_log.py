@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.user import User
@@ -15,6 +15,8 @@ class NotificationType(str, Enum):
 
 
 class NotificationStatus(str, Enum):
+    QUEUED = "queued"
+    INFLIGHT = "inflight"
     SENT = "sent"
     FAILED = "failed"
 
@@ -38,5 +40,13 @@ class NotificationLog(Base):
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    delivery_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    delivery_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_terminal: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False, server_default="false")
+    revision: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=1, server_default="1")
+    delivery_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    claim_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[Optional[User]] = relationship("User")
