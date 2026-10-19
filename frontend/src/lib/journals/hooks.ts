@@ -49,6 +49,7 @@ export function useUpdateJournalExamMaxScore(journalId: number | undefined, cour
           return {
             ...old,
             exam_max_score: data.journal.exam_max_score,
+            bonus_max_score: data.journal.bonus_max_score,
             students: old.students.map((student) => {
               const summaryMatch: JournalStudentSummaryResponse | undefined = data.summaries.find(
                 (summary) => summary.student_id === student.student_id,

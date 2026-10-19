@@ -25,6 +25,7 @@ interface JournalStudentRowProps {
   focusFromKeyboard: boolean;
   editing: JournalRowEditing | null;
   examMaximum: number;
+  bonusMaximum?: number;
   atRisk?: boolean;
   isSelf?: boolean;
   markUnrecorded?: boolean;
@@ -42,6 +43,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   focusFromKeyboard,
   editing,
   examMaximum,
+  bonusMaximum,
   atRisk = false,
   isSelf = false,
   markUnrecorded = false,
@@ -141,6 +143,8 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
               field={field}
               value={value}
               examMaximum={examMaximum}
+              bonusMaximum={bonusMaximum}
+              rejected={summaryStatus === "error"}
               editable={editing !== null}
               onCommit={(committed) =>
                 editing?.onSummaryPair(student.student_id, {

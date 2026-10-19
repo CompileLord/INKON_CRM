@@ -157,6 +157,8 @@ export interface StudentCourseProgressChartResponse {
 
 export interface CourseJournalMetricsResponse {
   class_avg_percentage: number;
+  class_avg_score?: number;
+  class_avg_max_score?: number;
   attendance_rate: number;
   periods_total: number;
   periods_complete: number;
@@ -175,10 +177,12 @@ export interface JournalPeriod {
   period_end: string;
   period_type: JournalPeriodType;
   exam_max_score?: number;
+  bonus_max_score?: number;
   student_count?: number;
   lesson_count?: number;
   cells_expected?: number;
   cells_filled?: number;
   avg_percentage?: number | null;
+  avg_score?: number | null;
   state?: "upcoming" | "empty" | "partial" | "complete";
 }

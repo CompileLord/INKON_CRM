@@ -7,6 +7,7 @@ export type ExamMaximumVerdict =
 
 export type PeriodSettingsFailure =
   | { kind: "belowExistingScore"; highestExamScore: number }
+  | { kind: "belowExistingBonus"; highestBonusScore: number }
   | { kind: "outOfRange" }
   | { kind: "forbidden" }
   | { kind: "notFound" }
@@ -33,7 +34,18 @@ export class JournalPeriodSettingsRules {
     return examScores.length === 0 ? null : Math.max(...examScores);
   }
 
-  static classifyFailure(error: unknown, requestedMaximum: number, highestExamScore: number | null): PeriodSettingsFailure {
+  static highestBonusScore(students: JournalStudentResponse[]): number | null {
+    const bonusScores: number[] = students.flatMap((student) => (student.summary ? [student.summary.bonus_score] : []));
+    return bonusScores.length === 0 ? null : Math.max(...bonusScores);
+  }
+
+  static classifyFailure(
+    error: unknown,
+    requestedMaximum: number,
+    highestExamScore: number | null,
+    requestedBonusMaximum: number | null = null,
+    highestBonusScore: number | null = null,
+  ): PeriodSettingsFailure {
     if (error instanceof NetworkError) return { kind: "offline" };
     if (!(error instanceof AuthApiError)) return { kind: "unexpected" };
     if (error.status === 403) return { kind: "forbidden" };
@@ -41,6 +53,9 @@ export class JournalPeriodSettingsRules {
     if (error.status === 400 || error.status === 422) {
       if (highestExamScore !== null && highestExamScore > requestedMaximum) {
         return { kind: "belowExistingScore", highestExamScore };
+      }
+      if (requestedBonusMaximum !== null && highestBonusScore !== null && highestBonusScore > requestedBonusMaximum) {
+        return { kind: "belowExistingBonus", highestBonusScore };
       }
       return { kind: "outOfRange" };
     }
