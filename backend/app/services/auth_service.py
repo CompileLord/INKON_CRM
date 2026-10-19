@@ -11,8 +11,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     hash_token,
-    hash_password,
-    verify_password,
+    PasswordWorkService,
 )
 from app.core.redis import redis_client
 from app.core.temporary_passwords import TemporaryPasswordGenerator
@@ -34,6 +33,7 @@ from app.services.outbox_service import OutboxService
 
 class AuthService:
     def __init__(self, db: AsyncSession) -> None:
+        self.password_work_service: PasswordWorkService = PasswordWorkService()
         self.db = db
         self.user_repo = SQLAlchemyUserRepository(db)
         self.token_repo = SQLAlchemyRefreshTokenRepository(db)
@@ -50,7 +50,7 @@ class AuthService:
                 detail="Invalid email or password"
             )
 
-        if not user.password_hash or not verify_password(password, user.password_hash):
+        if not user.password_hash or not await self.password_work_service.verify(password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
@@ -163,7 +163,7 @@ class AuthService:
 
     async def issue_temporary_credentials(self, user: User) -> None:
         temporary_password: str = self.temporary_password_generator.generate()
-        user.password_hash = hash_password(temporary_password)
+        user.password_hash = await self.password_work_service.hash(temporary_password)
         user.must_set_password = True
         user.auth_version += 1
         await self.user_repo.update(user)
@@ -239,7 +239,7 @@ class AuthService:
                 detail="User not found"
             )
 
-        user.password_hash = hash_password(new_password)
+        user.password_hash = await self.password_work_service.hash(new_password)
         user.must_set_password = False
         user.auth_version += 1
         await self.user_repo.update(user)
@@ -342,7 +342,7 @@ class AuthService:
                 detail="Invalid or expired reset token"
             )
 
-        user.password_hash = hash_password(new_password)
+        user.password_hash = await self.password_work_service.hash(new_password)
         user.auth_version += 1
         await self.user_repo.update(user)
 

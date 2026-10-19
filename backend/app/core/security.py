@@ -1,3 +1,8 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from threading import BoundedSemaphore
+from typing import Callable, TypeVar
+from fastapi import HTTPException
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -135,15 +140,81 @@ class PasswordResetPrincipal:
         return cls(subject_id=subject_id, auth_version=auth_version)
 
 
+PasswordResult = TypeVar("PasswordResult")
+
+
+class PasswordWorkService:
+    maximum_workers: ClassVar[int] = 2
+    maximum_waiters: ClassVar[int] = 64
+    maximum_wait_seconds: ClassVar[float] = 5.0
+    waiter_slots: ClassVar[BoundedSemaphore] = BoundedSemaphore(maximum_waiters)
+    worker_slots: ClassVar[BoundedSemaphore] = BoundedSemaphore(maximum_workers)
+    worker_pool: ClassVar[ThreadPoolExecutor] = ThreadPoolExecutor(
+        max_workers=maximum_workers, thread_name_prefix="password",
+    )
+
+    async def hash(self, password: str) -> str:
+        return await self._execute(hash_password, password)
+
+    async def verify(self, password: str, encoded_password: str) -> bool:
+        return await self._execute(verify_password, password, encoded_password)
+
+    async def _execute(
+        self, operation: Callable[..., PasswordResult], *arguments: str,
+    ) -> PasswordResult:
+        await self._acquire_worker_slot()
+        try:
+            loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+            worker: asyncio.Future[PasswordResult] = loop.run_in_executor(
+                self.worker_pool, operation, *arguments,
+            )
+        except BaseException:
+            self.worker_slots.release()
+            raise
+        worker.add_done_callback(self._release_worker_slot)
+        return await asyncio.shield(worker)
+
+    async def _acquire_worker_slot(self) -> None:
+        if self.worker_slots.acquire(blocking=False):
+            return
+        if not self.waiter_slots.acquire(blocking=False):
+            raise self._overloaded()
+        try:
+            loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+            deadline: float = loop.time() + self.maximum_wait_seconds
+            while True:
+                remaining: float = deadline - loop.time()
+                if remaining <= 0:
+                    raise self._overloaded()
+                if self.worker_slots.acquire(blocking=False):
+                    return
+                await asyncio.sleep(min(0.01, remaining))
+        finally:
+            self.waiter_slots.release()
+
+    @staticmethod
+    def _overloaded() -> HTTPException:
+        return HTTPException(
+            status_code=503, detail="Password service is busy; retry later",
+            headers={"Retry-After": "1"},
+        )
+
+    @classmethod
+    def _release_worker_slot(cls, worker: asyncio.Future[PasswordResult]) -> None:
+        cls.worker_slots.release()
+        if not worker.cancelled():
+            worker.exception()
+
+
 def hash_password(password: str) -> str:
-    pwd_bytes = password.encode("utf-8")
-    salt = bcrypt.gensalt(rounds=12)
+    pwd_bytes: bytes = password.encode("utf-8")
+    salt: bytes = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    pwd_bytes = plain_password.encode("utf-8")
-    hashed_bytes = hashed_password.encode("utf-8")
+    pwd_bytes: bytes = plain_password.encode("utf-8")
+    hashed_bytes: bytes = hashed_password.encode("utf-8")
     try:
         return bcrypt.checkpw(pwd_bytes, hashed_bytes)
     except ValueError:
