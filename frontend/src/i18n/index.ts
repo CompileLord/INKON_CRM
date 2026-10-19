@@ -19,6 +19,7 @@ import ruNotifications from "./locales/ru/notifications.json";
 import ruValidation from "./locales/ru/validation.json";
 
 import ruStudent from "./locales/ru/student.json";
+import ruUi from "./locales/ru/ui.json";
 
 // English
 import enCommon from "./locales/en/common.json";
@@ -36,6 +37,7 @@ import enSettings from "./locales/en/settings.json";
 import enNotifications from "./locales/en/notifications.json";
 import enValidation from "./locales/en/validation.json";
 import enStudent from "./locales/en/student.json";
+import enUi from "./locales/en/ui.json";
 
 // Tajik
 import tgCommon from "./locales/tg/common.json";
@@ -53,6 +55,7 @@ import tgSettings from "./locales/tg/settings.json";
 import tgNotifications from "./locales/tg/notifications.json";
 import tgValidation from "./locales/tg/validation.json";
 import tgStudent from "./locales/tg/student.json";
+import tgUi from "./locales/tg/ui.json";
 
 export const defaultNS = "common";
 export const resources = {
@@ -72,6 +75,7 @@ export const resources = {
     notifications: ruNotifications,
     validation: ruValidation,
     student: ruStudent,
+    ui: ruUi,
   },
   en: {
     common: enCommon,
@@ -89,6 +93,7 @@ export const resources = {
     notifications: enNotifications,
     validation: enValidation,
     student: enStudent,
+    ui: enUi,
   },
   tg: {
     common: tgCommon,
@@ -106,6 +111,7 @@ export const resources = {
     notifications: tgNotifications,
     validation: tgValidation,
     student: tgStudent,
+    ui: tgUi,
   },
 } as const;
 

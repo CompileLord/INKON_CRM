@@ -20,6 +20,9 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 import { RoleGuard } from "./components/auth/RoleGuard";
 import { GuestRoute } from "./components/auth/GuestRoute";
 import { SetPasswordRoute } from "./components/auth/SetPasswordRoute";
+import { NotFound } from "./pages/NotFound";
+import { RouteError } from "./pages/RouteError";
+import { DevUi } from "./pages/dev/DevUi";
 import { bootstrapAuth } from "./lib/authBootstrap";
 
 import { MyCourses } from "./pages/student/MyCourses";
@@ -27,6 +30,7 @@ import { MyCourseDetail } from "./pages/student/MyCourseDetail";
 import { MyJournalPeriod } from "./pages/student/MyJournalPeriod";
 
 const router = createBrowserRouter([
+  ...(import.meta.env.DEV ? [{ path: "/dev/ui", element: <DevUi /> }] : []),
   {
     path: "/login",
     element: (
@@ -57,22 +61,28 @@ const router = createBrowserRouter([
             path: "/",
             element: <AppLayout />,
             children: [
-              { index: true, element: <Dashboard /> },
-              { path: "my/courses", element: <MyCourses /> },
-              { path: "my/courses/:courseId", element: <MyCourseDetail /> },
-              { path: "my/journal/:journalId", element: <MyJournalPeriod /> },
-              { path: "students", element: <Students /> },
-              { path: "students/:id", element: <StudentProfile /> },
-              { path: "mentors", element: <Mentors /> },
-              { path: "mentors/:id", element: <MentorProfile /> },
-              { path: "courses", element: <Courses /> },
-              { path: "courses/:id", element: <CourseProfile /> },
-              { path: "journals", element: <Journals /> },
-              { path: "journals/:id", element: <JournalDetail /> },
-              { path: "finance", element: <Finance /> },
-              { path: "audit", element: <Audit /> },
-              { path: "settings", element: <Settings /> },
-              { path: "notifications", element: <Notifications /> },
+              {
+                errorElement: <RouteError />,
+                children: [
+                  { index: true, element: <Dashboard /> },
+                  { path: "my/courses", element: <MyCourses /> },
+                  { path: "my/courses/:courseId", element: <MyCourseDetail /> },
+                  { path: "my/journal/:journalId", element: <MyJournalPeriod /> },
+                  { path: "students", element: <Students /> },
+                  { path: "students/:id", element: <StudentProfile /> },
+                  { path: "mentors", element: <Mentors /> },
+                  { path: "mentors/:id", element: <MentorProfile /> },
+                  { path: "courses", element: <Courses /> },
+                  { path: "courses/:id", element: <CourseProfile /> },
+                  { path: "journals", element: <Journals /> },
+                  { path: "journals/:id", element: <JournalDetail /> },
+                  { path: "finance", element: <Finance /> },
+                  { path: "audit", element: <Audit /> },
+                  { path: "settings", element: <Settings /> },
+                  { path: "notifications", element: <Notifications /> },
+                  { path: "*", element: <NotFound /> },
+                ],
+              },
             ],
           },
         ],
