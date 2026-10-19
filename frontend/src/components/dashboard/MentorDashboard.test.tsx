@@ -8,7 +8,7 @@ import { MentorDashboard } from "./MentorDashboard";
 import * as courseHooks from "../../lib/courses/hooks";
 import * as journalHooks from "../../lib/journals/hooks";
 import * as userHooks from "../../lib/users/hooks";
-import type { CourseResponse, PaginatedCourses } from "../../lib/courses/types";
+import type { CourseListItemResponse, PaginatedCourses } from "../../lib/courses/types";
 import type { GradingQueueItemResponse } from "../../lib/journals/types";
 import type { MentorProfileResponse, User } from "../../lib/users/types";
 
@@ -56,7 +56,7 @@ function mentorProfileContractMetadata(avgScore: number): Pick<
     avg_score_undefined_ratio_count: 0,
     avg_score_defined_ratios_mean: avgScore,
   };
-}function mockCourse(id: number, title: string, exam_type: "weekly" | "monthly" = "monthly"): CourseResponse {
+}function mockCourse(id: number, title: string, exam_type: "weekly" | "monthly" = "monthly"): CourseListItemResponse {
   return {
     id,
     title,
@@ -71,10 +71,12 @@ function mentorProfileContractMetadata(avgScore: number): Pick<
     is_deleted: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    schedules: [],
+    active_student_count: 0,
   };
 }
 
-function mockPaginatedCourses(items: CourseResponse[]): PaginatedCourses {
+function mockPaginatedCourses(items: CourseListItemResponse[]): PaginatedCourses {
   return {
     items,
     total: items.length,
@@ -210,6 +212,7 @@ describe("MentorDashboard Invariant Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     i18n.changeLanguage("en");
+    vi.mocked(userHooks.useMentors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof userHooks.useMentors>);
   });
 
   afterEach(() => {
@@ -644,6 +647,7 @@ describe("independent retained-empty pane audit", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage("en");
+    vi.mocked(userHooks.useMentors).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof userHooks.useMentors>);
     vi.mocked(userHooks.useMyMentorProfile).mockReturnValue(mockSuccessResult<MentorProfileResponse>({
         ...mentorProfileContractMetadata(0),
       user: mockMentorUser, active_courses: [], active_students_count: 0, avg_score: 0,

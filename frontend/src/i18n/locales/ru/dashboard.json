@@ -178,5 +178,10 @@
   "paymentMethodDate": "Способ / дата оплаты",
   "viewPaymentReference": "Посмотреть оплату №{{id}}",
   "viewCourseDebts": "Показать долги по курсу",
-  "viewStudentBalance": "Показать баланс"
+  "viewStudentBalance": "Показать баланс",
+  "todayLessons": "Сегодня",
+  "noLessonsToday": "Сегодня занятий нет",
+  "noLessonsTodayHelp": "Занятия, запланированные на сегодня, появятся здесь.",
+  "todayLessonsLoadFailed": "Не удалось загрузить сегодняшние занятия",
+  "todayLessonsUpdateFailed": "Не удалось обновить занятия на сегодня — показаны сохранённые данные"
 }

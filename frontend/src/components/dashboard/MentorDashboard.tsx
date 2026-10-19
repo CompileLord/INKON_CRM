@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, AlertCircle, RefreshCw, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { TodayLessons } from "./TodayLessons";
 import { MentorStatsStrip } from "../mentor/MentorStatsStrip";
 import { GradingQueueRow } from "../mentor/GradingQueueRow";
 import { useMentorGradingQueue } from "../../lib/journals/hooks";
@@ -89,6 +90,8 @@ export const MentorDashboard: React.FC = () => {
       </div>
 
       <MentorStatsStrip />
+
+      <TodayLessons showMentor={false} />
 
       <section
         aria-labelledby="grading-queue-heading"
