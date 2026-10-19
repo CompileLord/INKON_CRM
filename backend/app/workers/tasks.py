@@ -162,6 +162,12 @@ async def send_exam_result_notification_task(ctx, student_id: int, journal_id: i
         )
 
 
+async def deliver_due_exam_results(ctx) -> int:
+    from app.workers.exam_result_delivery import AiogramExamResultPhotoSender, ExamResultDeliveryWorker
+    worker: ExamResultDeliveryWorker = ExamResultDeliveryWorker(AsyncSessionLocal, AiogramExamResultPhotoSender(bot))
+    return await worker.run_once()
+
+
 async def send_student_document_notification_task(ctx, student_id: int, journal_id: int) -> None:
     await send_exam_result_notification_task(ctx, student_id, journal_id)
 

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from types import TracebackType
 from fastapi import HTTPException, status
@@ -15,9 +15,8 @@ from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.core.config import settings
-from app.models.outbox_event import OutboxEventKind
-from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
-from app.services.outbox_service import OutboxService
+from app.repositories.sqlalchemy.exam_result_notification_repository import SQLAlchemyExamResultNotificationRepository
+from app.services.exam_result_scheduling_service import ExamResultSchedulingService
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import MAX_BONUS_SCORE, EXAM_MAX_SCORE_LIMIT, score_percentage
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
@@ -683,6 +682,7 @@ class JournalService:
                 detail="Conflict: The summary has been updated by another user. Please refresh and try again."
             )
 
+        previous_exam_score: int = summary.exam_score
         summary.exam_score = exam_score
         summary.bonus_score = bonus_score
 
@@ -698,12 +698,16 @@ class JournalService:
         sum_service = SumCalculationService(self.db)
         await sum_service.recalculate(journal_id, student_id)
 
-        outbox_service: OutboxService = OutboxService(SQLAlchemyOutboxRepository(self.db), settings.JWT_SECRET_KEY)
-        await outbox_service.enqueue_notification(
-            OutboxEventKind.EXAM_RESULT_NOTIFICATION,
+        scheduling_service: ExamResultSchedulingService = ExamResultSchedulingService(
+            SQLAlchemyExamResultNotificationRepository(self.db),
+            settings.EXAM_RESULT_NOTIFICATION_DELAY_SECONDS,
+        )
+        await scheduling_service.register_exam_score_edit(
             student_id,
             journal_id,
-            f"exam-result:{journal_id}:{student_id}:{summary.version}",
+            previous_exam_score,
+            exam_score,
+            datetime.now(timezone.utc),
         )
 
         await self.db.refresh(summary)

@@ -10,6 +10,7 @@ from app.workers.tasks import (
     send_student_document_notification_task,
     archive_expired_courses,
     check_payment_reminders,
+    deliver_due_exam_results,
     send_email
 )
 
@@ -53,11 +54,13 @@ class WorkerSettings:
         send_telegram_message,
         send_exam_result_notification_task,
         send_student_document_notification_task,
+        deliver_due_exam_results,
         send_email
     ]
     cron_jobs = [
         cron(archive_expired_courses, hour=20, minute=0),
-        cron(check_payment_reminders, hour=4, minute=0)
+        cron(check_payment_reminders, hour=4, minute=0),
+        cron(deliver_due_exam_results, second={0, 30}, run_at_startup=False)
     ]
     on_startup = outbox_worker_startup
     on_shutdown = outbox_worker_shutdown

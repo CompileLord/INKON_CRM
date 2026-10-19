@@ -44,6 +44,46 @@ class TelegramMessageCatalog:
             "ru": "Привязка студента {student_name} перенесена на другой чат. В этот чат уведомления больше приходить не будут.",
             "en": "The link for {student_name} was moved to another chat. This chat will no longer receive updates.",
         },
+        "exam_card_title": {
+            "tg": "Натиҷаи имтиҳон",
+            "ru": "Результат экзамена",
+            "en": "Exam result",
+        },
+        "exam_score_label": {
+            "tg": "Имтиҳон",
+            "ru": "Экзамен",
+            "en": "Exam",
+        },
+        "period_total_label": {
+            "tg": "Холи умумии давра",
+            "ru": "Итог периода",
+            "en": "Period total",
+        },
+        "attendance_label": {
+            "tg": "Ҳузур",
+            "ru": "Посещаемость",
+            "en": "Attendance",
+        },
+        "attendance_value": {
+            "tg": "{attended} аз {total} дарс",
+            "ru": "{attended} из {total} занятий",
+            "en": "{attended} of {total} lessons",
+        },
+        "period_week": {
+            "tg": "Ҳафтаи {number}",
+            "ru": "Неделя {number}",
+            "en": "Week {number}",
+        },
+        "period_month": {
+            "tg": "Моҳи {number}",
+            "ru": "Месяц {number}",
+            "en": "Month {number}",
+        },
+        "exam_caption": {
+            "tg": "Натиҷаи имтиҳони {student_name}: {course_title}, {period_label}.",
+            "ru": "Результат экзамена {student_name}: {course_title}, {period_label}.",
+            "en": "Exam result for {student_name}: {course_title}, {period_label}.",
+        },
     }
 
     def resolve_language(self, language: str | None) -> str:
