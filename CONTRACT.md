@@ -737,6 +737,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     },
     "totals": {
       "avg_percentage": number,
+      "total_score?": integer,
+      "total_max_score?": integer,
       "attendance_percentage": number,
       "absences": integer,
       "total_lessons": integer,
@@ -763,6 +765,9 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "enrollment_status": string,
         "bucket": string,
         "my_avg_percentage": number,
+        "my_total_score?": integer,
+        "my_total_max_score?": integer,
+        "class_avg_score?": number,
         "attendance_percentage": number,
         "absences": integer,
         "periods_total": integer,
@@ -791,6 +796,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "total_lessons?": integer,
       "period_summaries_count?": integer,
       "periods_with_max_score_count?": integer,
+      "total_score?": integer,
+      "total_max_score?": integer,
     },
   }
   ```
@@ -878,6 +885,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     },
     "totals": {
       "avg_percentage": number,
+      "total_score?": integer,
+      "total_max_score?": integer,
       "attendance_percentage": number,
       "absences": integer,
       "total_lessons": integer,
@@ -904,6 +913,9 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "enrollment_status": string,
         "bucket": string,
         "my_avg_percentage": number,
+        "my_total_score?": integer,
+        "my_total_max_score?": integer,
+        "class_avg_score?": number,
         "attendance_percentage": number,
         "absences": integer,
         "periods_total": integer,
@@ -932,6 +944,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "total_lessons?": integer,
       "period_summaries_count?": integer,
       "periods_with_max_score_count?": integer,
+      "total_score?": integer,
+      "total_max_score?": integer,
     },
   }
   ```
@@ -1663,11 +1677,13 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "period_end": string,
       "period_type": "week" | "month",
       "exam_max_score": integer,
+      "bonus_max_score?": integer,
       "student_count?": integer,
       "lesson_count?": integer,
       "cells_expected?": integer,
       "cells_filled?": integer,
       "avg_percentage?": number,
+      "avg_score?": number,
       "state?": string,
     }
   ]
@@ -1701,6 +1717,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
   ```json
   {
     "class_avg_percentage": number,
+    "class_avg_score?": number,
+    "class_avg_max_score?": number,
     "attendance_rate": number,
     "periods_total": integer,
     "periods_complete": integer,
@@ -2199,6 +2217,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "period_end": string,
     "period_type": "week" | "month",
     "exam_max_score": integer,
+    "bonus_max_score?": integer,
     "lesson_dates": array[string],
     "students": [
       {
@@ -2214,6 +2233,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "my_rank": integer,
     "class_size": integer,
     "class_avg_percentage": number,
+    "class_avg_score?": number,
   }
   ```
 - **422**: Validation Error
@@ -2375,7 +2395,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Request Body (JSON):**
 ```json
 {
-  "exam_max_score": integer,
+  "exam_max_score?": integer,
+  "bonus_max_score?": integer,
 }
 ```
 
@@ -2391,11 +2412,13 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "period_end": string,
       "period_type": "week" | "month",
       "exam_max_score": integer,
+      "bonus_max_score?": integer,
       "student_count?": integer,
       "lesson_count?": integer,
       "cells_expected?": integer,
       "cells_filled?": integer,
       "avg_percentage?": number,
+      "avg_score?": number,
       "state?": string,
     },
     "summaries": [

@@ -55,3 +55,27 @@ describe("JournalPeriodSettingsRules.classifyFailure", () => {
     expect(JournalPeriodSettingsRules.classifyFailure(new Error("x"), 40, 60).kind).toBe("unexpected");
   });
 });
+
+describe("JournalPeriodSettingsRules bonus maximum", () => {
+  const student = (bonusScore: number | null): JournalStudentResponse => ({
+    student_id: 1,
+    first_name: "A",
+    last_name: "B",
+    email: "a@b.c",
+    color_hex: "",
+    entries: [],
+    summary: bonusScore === null ? null : ({ bonus_score: bonusScore } as NonNullable<JournalStudentResponse["summary"]>),
+  });
+
+  it("finds the highest stored bonus", () => {
+    expect(JournalPeriodSettingsRules.highestBonusScore([student(4), student(18), student(null)])).toBe(18);
+    expect(JournalPeriodSettingsRules.highestBonusScore([])).toBeNull();
+  });
+
+  it("names the bonus constraint when a rejected request is below an existing bonus", () => {
+    expect(
+      JournalPeriodSettingsRules.classifyFailure(new AuthApiError(400, "x"), 70, 10, 10, 18),
+    ).toEqual({ kind: "belowExistingBonus", highestBonusScore: 18 });
+    expect(JournalPeriodSettingsRules.classifyFailure(new AuthApiError(400, "x"), 70, 10, 30, 18)).toEqual({ kind: "outOfRange" });
+  });
+});

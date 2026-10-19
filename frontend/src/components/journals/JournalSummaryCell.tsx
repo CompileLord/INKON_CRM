@@ -7,6 +7,8 @@ interface JournalSummaryCellProps {
   field: JournalSummaryField;
   value: number;
   examMaximum: number;
+  bonusMaximum?: number;
+  rejected?: boolean;
   editable: boolean;
   onCommit: (value: number) => void;
 }
@@ -16,6 +18,8 @@ export const JournalSummaryCell: React.FC<JournalSummaryCellProps> = ({
   field,
   value,
   examMaximum,
+  bonusMaximum,
+  rejected = false,
   editable,
   onCommit,
 }) => {
@@ -37,8 +41,10 @@ export const JournalSummaryCell: React.FC<JournalSummaryCellProps> = ({
       : t("table.summaryInvalid.wholeNumber");
 
   const text: string = draft ?? String(value);
-  const verdict = JournalSummaryCommands.judgeInput(text, field, examMaximum);
-  const invalid: boolean = draft !== null && !verdict.valid;
+  const verdict = JournalSummaryCommands.judgeInput(text, field, examMaximum, bonusMaximum);
+  const invalid: boolean = (draft !== null && !verdict.valid) || rejected;
+  const invalidTitle: string | undefined =
+    draft !== null && !verdict.valid ? invalidMessage(verdict) : rejected ? t("table.summaryInvalid.rejected") : undefined;
 
   const commit = (): void => {
     if (draft === null) return;
@@ -54,7 +60,7 @@ export const JournalSummaryCell: React.FC<JournalSummaryCellProps> = ({
       data-control={field === "exam_score" ? "exam" : "bonus"}
       aria-label={label}
       aria-invalid={invalid}
-      title={invalid && !verdict.valid ? invalidMessage(verdict) : undefined}
+      title={invalidTitle}
       value={text}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}

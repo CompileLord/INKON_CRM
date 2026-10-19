@@ -14,6 +14,7 @@ class Journal(Base):
     __tablename__ = "journals"
     __table_args__ = (
         CheckConstraint("exam_max_score >= 0 AND exam_max_score <= 100", name="check_exam_max_score_range"),
+        CheckConstraint("bonus_max_score IS NULL OR (bonus_max_score >= 0 AND bonus_max_score <= 100)", name="check_bonus_max_score_range"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -24,5 +25,6 @@ class Journal(Base):
     period_type: Mapped[JournalPeriodType] = mapped_column(String(20), nullable=False)
     exam_max_score: Mapped[int] = mapped_column(Integer, default=70, server_default="70", nullable=False)
 
-    course: Mapped["Course"] = relationship("Course")
+    bonus_max_score: Mapped[int | None] = mapped_column(Integer, default=20, server_default="20", nullable=True)
 
+    course: Mapped["Course"] = relationship("Course")

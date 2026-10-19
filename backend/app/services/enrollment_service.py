@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.scoring import max_period_score
+from app.core.scoring import ScoringPolicy
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.schemas.enrollment import (
     CourseRosterItemResponse,
@@ -170,7 +170,7 @@ class EnrollmentService:
                 exam_score=0,
                 bonus_score=0,
                 sum_score=0,
-                max_period_score=max_period_score(len(lesson_dates), journal.exam_max_score),
+                max_period_score=ScoringPolicy.max_period_score(len(lesson_dates), journal.exam_max_score, journal.bonus_max_score),
                 attendance_count=0,
                 total_lessons=len(lesson_dates),
                 version=1

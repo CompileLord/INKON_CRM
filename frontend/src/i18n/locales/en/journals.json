@@ -82,7 +82,8 @@
     "commentSave": "Save",
     "summaryInvalid": {
       "wholeNumber": "Enter a whole number",
-      "aboveMaximum": "Max {{n}}"
+      "aboveMaximum": "Max {{n}}",
+      "rejected": "The server rejected this value"
     },
     "noStudentsBody": "Students appear here once they are enrolled. Add them to the course roster to start grading.",
     "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
@@ -239,40 +240,6 @@
     "count": "{{matched}} of {{total}} students",
     "noMatchTitle": "No students match",
     "noMatchBody": "Nobody in this period's roster matches “{{query}}”. Clear the search to see everyone."
-  },
-  "periodSettings": {
-    "title": "Period settings",
-    "course": "Course",
-    "period": "Period",
-    "currentMaximum": "Current exam maximum",
-    "inputLabel": "Exam maximum",
-    "range": "Whole number from {{min}} to {{max}}",
-    "explanation": "Changing the exam maximum recalculates the grading denominator of this period for every student. Exam scores cannot exceed it.",
-    "highestScore": "Highest existing exam score: {{score}}",
-    "save": "Save",
-    "saving": "Saving…",
-    "checking": "Saving pending grades first…",
-    "invalid": {
-      "empty": "Enter a whole number from {{min}} to {{max}}.",
-      "notWholeNumber": "Use digits only, without decimals or signs.",
-      "outOfRange": "The exam maximum must be between {{min}} and {{max}}."
-    },
-    "blocked": {
-      "failed": "Pending grades could not be saved, so the exam maximum was not changed. Your value is kept.",
-      "conflict": "Some grades conflict with newer data on the server, so the exam maximum was not changed. Review them, then save again.",
-      "unavailable": "Saving is not possible right now, so the exam maximum was not changed. Your value is kept."
-    },
-    "errors": {
-      "belowExistingScore": "Cannot lower the exam maximum to {{requested}}: the highest existing exam score is {{score}}. Choose {{score}} or more.",
-      "outOfRange": "The server rejected this value. Use a whole number from {{min}} to {{max}}.",
-      "forbidden": "You no longer have permission to change this period.",
-      "notFound": "This period no longer exists. Reload the journal.",
-      "offline": "No connection to the server. Check your connection and try again.",
-      "unexpected": "The exam maximum could not be changed. Try again."
-    },
-    "discardPrompt": "You have an unsaved exam maximum.",
-    "continueEditing": "Continue editing",
-    "discard": "Discard changes"
   },
   "progress": {
     "scope": "Whole course, all periods",

@@ -97,3 +97,16 @@ describe("JournalSummaryCommands.judgeInput", () => {
     });
   });
 });
+
+describe("JournalSummaryCommands bonus maximum", () => {
+  it("accepts a bonus up to the journal's own maximum and rejects above it", () => {
+    expect(JournalSummaryCommands.judgeInput("35", "bonus_score", 70, 35)).toEqual({ valid: true, value: 35 });
+    expect(JournalSummaryCommands.judgeInput("36", "bonus_score", 70, 35)).toEqual({ valid: false, reason: "aboveMaximum", maximum: 35 });
+    expect(JournalSummaryCommands.judgeInput("21", "bonus_score", 70)).toEqual({ valid: false, reason: "aboveMaximum", maximum: 20 });
+  });
+
+  it("applies the bonus maximum to pairs", () => {
+    expect(JournalSummaryCommands.judgePair("30", "10", 70, 35).isValid).toBe(true);
+    expect(JournalSummaryCommands.judgePair("30", "10", 70, 20).isValid).toBe(false);
+  });
+});

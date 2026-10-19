@@ -27,6 +27,7 @@ interface JournalGridProps {
   onAnchor?: (studentId: number, control: string) => void;
   readOnlySelfStudentId?: number | null;
   examMaximum?: number;
+  bonusMaximum?: number;
 }
 
 interface GridFocus {
@@ -69,6 +70,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   onAnchor,
   readOnlySelfStudentId = null,
   examMaximum = DEFAULT_EXAM_MAXIMUM,
+  bonusMaximum,
 }) => {
   const { t } = useTranslation("journals");
   const stableStudents: JournalStudentResponse[] = useStableStudentOrder(journalId, serverOrderedStudents);
@@ -292,6 +294,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   focusFromKeyboard={focusFromKeyboard}
                   editing={effectiveEditing}
                   examMaximum={examMaximum}
+                  bonusMaximum={bonusMaximum}
                   atRisk={atRiskStudentIds.has(student.student_id)}
                   isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
                   markUnrecorded={readOnlySelfStudentId !== null}

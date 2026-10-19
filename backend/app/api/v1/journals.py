@@ -84,6 +84,7 @@ async def update_exam_max_score(
         return await journal_service.update_exam_max_score(
             journal_id=id,
             exam_max_score=payload.exam_max_score,
+            bonus_max_score=payload.bonus_max_score,
             current_user=current_user
         )
 

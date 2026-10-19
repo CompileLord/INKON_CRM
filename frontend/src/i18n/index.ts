@@ -11,6 +11,7 @@ import ruMentors from "./locales/ru/mentors.json";
 import ruCourses from "./locales/ru/courses.json";
 import ruEnrollments from "./locales/ru/enrollments.json";
 import ruJournals from "./locales/ru/journals.json";
+import ruJournalPeriodSettings from "./locales/ru/journalPeriodSettings.json";
 import ruFinance from "./locales/ru/finance.json";
 import ruDocuments from "./locales/ru/documents.json";
 import ruAudit from "./locales/ru/audit.json";
@@ -30,6 +31,7 @@ import enMentors from "./locales/en/mentors.json";
 import enCourses from "./locales/en/courses.json";
 import enEnrollments from "./locales/en/enrollments.json";
 import enJournals from "./locales/en/journals.json";
+import enJournalPeriodSettings from "./locales/en/journalPeriodSettings.json";
 import enFinance from "./locales/en/finance.json";
 import enDocuments from "./locales/en/documents.json";
 import enAudit from "./locales/en/audit.json";
@@ -48,6 +50,7 @@ import tgMentors from "./locales/tg/mentors.json";
 import tgCourses from "./locales/tg/courses.json";
 import tgEnrollments from "./locales/tg/enrollments.json";
 import tgJournals from "./locales/tg/journals.json";
+import tgJournalPeriodSettings from "./locales/tg/journalPeriodSettings.json";
 import tgFinance from "./locales/tg/finance.json";
 import tgDocuments from "./locales/tg/documents.json";
 import tgAudit from "./locales/tg/audit.json";
@@ -68,6 +71,7 @@ export const resources = {
     courses: ruCourses,
     enrollments: ruEnrollments,
     journals: ruJournals,
+    journalPeriodSettings: ruJournalPeriodSettings,
     finance: ruFinance,
     documents: ruDocuments,
     audit: ruAudit,
@@ -86,6 +90,7 @@ export const resources = {
     courses: enCourses,
     enrollments: enEnrollments,
     journals: enJournals,
+    journalPeriodSettings: enJournalPeriodSettings,
     finance: enFinance,
     documents: enDocuments,
     audit: enAudit,
@@ -104,6 +109,7 @@ export const resources = {
     courses: tgCourses,
     enrollments: tgEnrollments,
     journals: tgJournals,
+    journalPeriodSettings: tgJournalPeriodSettings,
     finance: tgFinance,
     documents: tgDocuments,
     audit: tgAudit,

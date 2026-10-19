@@ -75,10 +75,13 @@ class DisposableMigrationDatabase:
             await connection.close()
 
     def upgrade(self, revision: str) -> subprocess.CompletedProcess[str]:
+        return self.run_alembic("upgrade", revision)
+
+    def run_alembic(self, direction: str, revision: str) -> subprocess.CompletedProcess[str]:
         command_environment: dict[str, str] = os.environ.copy()
         command_environment["DATABASE_URL"] = self.database_url.render_as_string(hide_password=False)
         return subprocess.run(
-            ["alembic", "upgrade", revision],
+            ["alembic", direction, revision],
             cwd=self.backend_root,
             env=command_environment,
             capture_output=True,
@@ -216,7 +219,7 @@ async def test_pre_scoring_revision_upgrade_preserves_derived_scores_and_constra
             "exam_score": 60,
             "bonus_score": 20,
             "sum_score": 91,
-            "max_period_score": 120,
+            "max_period_score": 140,
         }
         assert await database.fetchval("SELECT exam_max_score FROM journals") == 60
         assert await database.fetchval("SELECT version_num FROM alembic_version") == database.head_revision
@@ -230,9 +233,10 @@ async def test_pre_scoring_revision_upgrade_preserves_derived_scores_and_constra
         assert constraint_names == {"check_bonus_score_range", "check_exam_max_score_range"}
 
         assert await database.check_constraint_rejects(
-            "UPDATE journal_student_summaries SET bonus_score = 21 WHERE id = $1",
+            "UPDATE journal_student_summaries SET bonus_score = 101 WHERE id = $1",
             summary_id,
         )
+        assert await database.check_constraint_rejects("UPDATE journals SET bonus_max_score = 101")
         assert await database.check_constraint_rejects("UPDATE journals SET exam_max_score = 101")
 
 
@@ -283,7 +287,7 @@ async def test_scoring_migration_failure_rolls_back_and_can_be_recovered() -> No
             "exam_score": 60,
             "bonus_score": 0,
             "sum_score": 72,
-            "max_period_score": 120,
+            "max_period_score": 140,
         }
 
 
@@ -307,3 +311,32 @@ def test_migration_database_rejects_non_disposable_targets_before_connecting(
 
     with pytest.raises(RuntimeError, match="dedicated loopback test database"):
         DisposableMigrationDatabase("/tmp/unused-migration-root")
+
+
+@pytest.mark.asyncio
+async def test_bonus_maximum_migration_recomputes_stored_period_maximum_without_clipping_bonuses() -> None:
+    backend_root: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+    async with DisposableMigrationDatabase(backend_root) as database:
+        prior_upgrade: subprocess.CompletedProcess[str] = database.upgrade("rwp30_delivery_claims")
+        assert prior_upgrade.returncode == 0, prior_upgrade.stdout + prior_upgrade.stderr
+        summary_id: int = await MigrationFixtureWriter(database).create_scoring_fixture(invalid_bonus_score=20)
+        await database.execute("UPDATE journal_student_summaries SET max_period_score = 120 WHERE id = $1", summary_id)
+
+        head_upgrade: subprocess.CompletedProcess[str] = database.upgrade("head")
+
+        assert head_upgrade.returncode == 0, head_upgrade.stdout + head_upgrade.stderr
+        assert await database.fetchval("SELECT bonus_max_score FROM journals") == 20
+        migrated_maximum: int = await database.fetchval(
+            "SELECT max_period_score FROM journal_student_summaries WHERE id = $1", summary_id
+        )
+        assert migrated_maximum == 10 * 6 + 70 + 20
+        assert await database.fetchval(
+            "SELECT bonus_score FROM journal_student_summaries WHERE id = $1", summary_id
+        ) == 20
+        assert await database.compare_models() == []
+
+        downgrade: subprocess.CompletedProcess[str] = database.run_alembic("downgrade", "rwp30_delivery_claims")
+        assert downgrade.returncode == 0, downgrade.stdout + downgrade.stderr
+        assert await database.fetchval(
+            "SELECT max_period_score FROM journal_student_summaries WHERE id = $1", summary_id
+        ) == 10 * 6 + 70

@@ -81,6 +81,8 @@ class StudentPerformanceTotalsResponse(BaseModel):
     total_lessons: int = 0
     period_summaries_count: int = 0
     periods_with_max_score_count: int = 0
+    total_score: int = 0
+    total_max_score: int = 0
 
 
 class StudentCoursePerformanceResponse(BaseModel):
@@ -98,11 +100,15 @@ class StudentCoursePerformanceResponse(BaseModel):
     total_lessons: int = 0
     period_summaries_count: int = 0
     periods_with_max_score_count: int = 0
+    total_score: int = 0
+    total_max_score: int = 0
 
 
 class StudentTotalsResponse(BaseModel):
     model_config = {"extra": "forbid"}
     avg_percentage: float
+    total_score: int = 0
+    total_max_score: int = 0
     attendance_percentage: float
     absences: int
     total_lessons: int
@@ -116,6 +122,9 @@ class StudentCourseProfileResponse(BaseModel):
     enrollment_status: str
     bucket: str
     my_avg_percentage: float
+    my_total_score: int = 0
+    my_total_max_score: int = 0
+    class_avg_score: float = 0.0
     attendance_percentage: float
     absences: int
     periods_total: int

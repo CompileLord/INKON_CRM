@@ -23,7 +23,8 @@ export interface JournalStudentSummaryUpdate {
 }
 
 export interface JournalExamMaxScoreUpdate {
-  exam_max_score: number;
+  exam_max_score?: number;
+  bonus_max_score?: number;
 }
 
 export interface JournalStudentSummaryResponse {
@@ -87,11 +88,13 @@ export interface JournalDetailResponse {
   period_end: string;
   period_type: JournalPeriodType;
   exam_max_score: number;
+  bonus_max_score?: number;
   lesson_dates: string[];
   students: JournalStudentResponse[];
   my_rank?: number;
   class_size?: number;
   class_avg_percentage?: number;
+  class_avg_score?: number;
 }
 
 export interface JournalEntryStateResponse {
@@ -125,6 +128,7 @@ export interface JournalExamMaxScoreUpdateResponse {
     period_end: string;
     period_type: JournalPeriodType;
     exam_max_score: number;
+    bonus_max_score?: number;
   };
   summaries: JournalStudentSummaryResponse[];
 }

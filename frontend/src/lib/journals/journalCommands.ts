@@ -92,18 +92,28 @@ export class JournalEntryCommands {
 export class JournalSummaryCommands {
   static readonly MAXIMUM_BONUS_SCORE: number = JournalScoringRules.MAXIMUM_BONUS_SCORE;
 
-  static judgeInput(rawInput: string, field: JournalSummaryField, examMaximum: number): SummaryInputVerdict {
+  static judgeInput(
+    rawInput: string,
+    field: JournalSummaryField,
+    examMaximum: number,
+    bonusMaximum: number = JournalSummaryCommands.MAXIMUM_BONUS_SCORE,
+  ): SummaryInputVerdict {
     const trimmedInput: string = rawInput.trim();
     if (trimmedInput.length === 0) return { valid: false, reason: "empty" };
     if (!/^\d{1,9}$/.test(trimmedInput)) return { valid: false, reason: "notWholeNumber" };
     const parsedValue: number = Number(trimmedInput);
-    const maximum: number = field === "exam_score" ? examMaximum : JournalSummaryCommands.MAXIMUM_BONUS_SCORE;
+    const maximum: number = field === "exam_score" ? examMaximum : bonusMaximum;
     if (parsedValue > maximum) return { valid: false, reason: "aboveMaximum", maximum };
     return { valid: true, value: parsedValue };
   }
 
-  static judgePair(bonusText: string, examText: string, examMaximum: number): SummaryPairVerdict {
-    const bonus: SummaryInputVerdict = JournalSummaryCommands.judgeInput(bonusText, "bonus_score", examMaximum);
+  static judgePair(
+    bonusText: string,
+    examText: string,
+    examMaximum: number,
+    bonusMaximum: number = JournalSummaryCommands.MAXIMUM_BONUS_SCORE,
+  ): SummaryPairVerdict {
+    const bonus: SummaryInputVerdict = JournalSummaryCommands.judgeInput(bonusText, "bonus_score", examMaximum, bonusMaximum);
     const exam: SummaryInputVerdict = JournalSummaryCommands.judgeInput(examText, "exam_score", examMaximum);
     return { bonus, exam, isValid: bonus.valid && exam.valid };
   }

@@ -126,6 +126,7 @@ export function MyJournalPeriod() {
         summaryStatus={NO_SUMMARY_STATUS}
         editing={null}
         examMaximum={journal.exam_max_score}
+        bonusMaximum={journal.bonus_max_score}
         onSelectLesson={route.selectLesson}
         readOnlySelfStudentId={userId}
       />

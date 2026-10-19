@@ -61,6 +61,41 @@ describe("JournalStudentRow totals", () => {
     expect(exam.getAttribute("aria-invalid")).toBe("true");
   });
 
+  it("validates the bonus against the journal's own bonus maximum", () => {
+    const onSummaryPair = vi.fn();
+    render(
+      <table>
+        <tbody>
+          <JournalStudentRow {...props} bonusMaximum={35} editing={{ onEntryCommand: vi.fn(), onSummaryPair }} student={student} />
+        </tbody>
+      </table>,
+    );
+    const bonus = screen.getByRole("textbox", { name: "Bonus score for Student One" });
+    fireEvent.change(bonus, { target: { value: "30" } });
+    fireEvent.keyDown(bonus, { key: "Enter" });
+    expect(onSummaryPair).toHaveBeenCalledWith(1, { exam_score: 3, bonus_score: 30, version: 1 });
+    fireEvent.change(bonus, { target: { value: "36" } });
+    fireEvent.keyDown(bonus, { key: "Enter" });
+    expect(onSummaryPair).toHaveBeenCalledTimes(1);
+    expect(bonus.getAttribute("aria-invalid")).toBe("true");
+    expect(bonus.getAttribute("title")).toBe("Max 35");
+  });
+
+  it("flags both inputs inline with the server rejection message when the summary save failed", () => {
+    render(
+      <table>
+        <tbody>
+          <JournalStudentRow {...props} summaryStatus="error" student={student} />
+        </tbody>
+      </table>,
+    );
+    for (const name of ["Exam score for Student One", "Bonus score for Student One"]) {
+      const input = screen.getByRole("textbox", { name });
+      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(input.getAttribute("title")).toBe("The server rejected this value");
+    }
+  });
+
   it("shows exam and bonus as plain numbers when the period is read-only", () => {
     render(
       <table>

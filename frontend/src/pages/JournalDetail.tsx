@@ -37,6 +37,8 @@ import { useJournalAutosave } from "../lib/journals/useJournalAutosave";
 import { useUpdateJournalExamMaxScore } from "../lib/journals/hooks";
 import { JournalWorkspaceSelection } from "../lib/journals/JournalWorkspaceSelection";
 import { JournalPeriodSettingsRules } from "../lib/journals/JournalPeriodSettingsRules";
+import { JournalScoringRules } from "../lib/journals/JournalScoringRules";
+import type { JournalExamMaxScoreUpdate } from "../lib/journals/types";
 import { JournalRosterFilter } from "../lib/journals/JournalRosterFilter";
 import { useStableStudentOrder } from "../lib/journals/JournalStudentOrdering";
 import { useJournalWorkspaceRoute } from "../lib/journals/useJournalWorkspaceRoute";
@@ -220,6 +222,7 @@ function JournalDetailContent() {
           summaryStatus={autosave.summaryStatus}
           editing={editing}
           examMaximum={journal.exam_max_score}
+          bonusMaximum={journal.bonus_max_score}
           onSelectLesson={route.selectLesson}
         />
       );
@@ -371,10 +374,17 @@ function JournalDetailContent() {
           periodStart={journal.period_start}
           periodEnd={journal.period_end}
           currentMaximum={journal.exam_max_score}
+          currentBonusMaximum={journal.bonus_max_score ?? JournalScoringRules.DEFAULT_BONUS_MAXIMUM}
           highestExamScore={JournalPeriodSettingsRules.highestExamScore(journal.students)}
+          highestBonusScore={JournalPeriodSettingsRules.highestBonusScore(journal.students)}
           drain={() => registry.drainAll()}
-          submit={async (examMaximum: number) => {
-            await updateExamMaxScore.mutateAsync({ exam_max_score: examMaximum });
+          submit={async (examMaximum: number, bonusMaximum: number) => {
+            const payload: JournalExamMaxScoreUpdate = {};
+            if (examMaximum !== journal.exam_max_score) payload.exam_max_score = examMaximum;
+            if (bonusMaximum !== (journal.bonus_max_score ?? JournalScoringRules.DEFAULT_BONUS_MAXIMUM)) {
+              payload.bonus_max_score = bonusMaximum;
+            }
+            await updateExamMaxScore.mutateAsync(payload);
           }}
           onBusyChange={setSettingsBusy}
           onReview={() => setReviewOpen(true)}

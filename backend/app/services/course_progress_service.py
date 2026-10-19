@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-from app.core.scoring import score_percentage
+from app.core.scoring import ScoringPolicy
 from app.repositories.interfaces.course_progress_repository import (
     CourseProgressRepositoryInterface,
     CourseProgressSnapshot,
@@ -60,7 +60,7 @@ class CourseProgressService:
                     )
                 else:
                     if summary.max_period_score > 0:
-                        percentage: Optional[float] = score_percentage(
+                        percentage: Optional[float] = ScoringPolicy.percentage(
                             summary.sum_score,
                             summary.max_period_score
                         )

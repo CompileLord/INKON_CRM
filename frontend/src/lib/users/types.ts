@@ -99,6 +99,8 @@ export interface StudentPerformanceTotals {
   total_lessons: number;
   period_summaries_count: number;
   periods_with_max_score_count: number;
+  total_score?: number;
+  total_max_score?: number;
 }
 
 export interface StudentCoursePerformance {
@@ -115,10 +117,14 @@ export interface StudentCoursePerformance {
   total_lessons: number;
   period_summaries_count: number;
   periods_with_max_score_count: number;
+  total_score?: number;
+  total_max_score?: number;
 }
 
 export interface StudentTotals {
   avg_percentage: number;
+  total_score?: number;
+  total_max_score?: number;
   attendance_percentage: number;
   absences: number;
   total_lessons: number;
@@ -131,6 +137,9 @@ export interface StudentCourseProfile {
   enrollment_status: "active" | "withdrawn" | "completed";
   bucket: "active" | "archive";
   my_avg_percentage: number;
+  my_total_score?: number;
+  my_total_max_score?: number;
+  class_avg_score?: number;
   attendance_percentage: number;
   absences: number;
   periods_total: number;
