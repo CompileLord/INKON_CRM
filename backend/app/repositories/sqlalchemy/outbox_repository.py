@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from typing import Optional, Sequence
 from sqlalchemy import cast, case, literal, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.engine import Result
+from sqlalchemy.sql.dml import Update
 from app.models.outbox_event import OutboxEvent, OutboxEventStatus
 
 
@@ -45,7 +47,6 @@ class SQLAlchemyOutboxRepository:
                 status=OutboxEventStatus.CLAIMED,
                 lease_owner=lease_owner,
                 lease_expires_at=lease_expires_at,
-                attempt_count=OutboxEvent.attempt_count + 1,
             )
             .returning(OutboxEvent)
         )
@@ -53,6 +54,37 @@ class SQLAlchemyOutboxRepository:
         result = await self._session.execute(statement)
         await self._session.flush()
         return result.scalars().all()
+
+    async def begin_attempt(
+        self, event_id: int, lease_owner: str, now: datetime, minimum_remaining_seconds: float,
+    ) -> int | None:
+        statement: Update = (
+            update(OutboxEvent)
+            .where(
+                OutboxEvent.id == event_id,
+                OutboxEvent.status == OutboxEventStatus.CLAIMED,
+                OutboxEvent.lease_owner == lease_owner,
+                OutboxEvent.lease_expires_at > now + timedelta(seconds=minimum_remaining_seconds),
+                OutboxEvent.attempt_count < OutboxEvent.max_attempts,
+            )
+            .values(attempt_count=OutboxEvent.attempt_count + 1)
+            .returning(OutboxEvent.attempt_count)
+        )
+        result: Result = await self._session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def release_claim(self, event_id: int, lease_owner: str) -> bool:
+        statement: Update = (
+            update(OutboxEvent)
+            .where(
+                OutboxEvent.id == event_id,
+                OutboxEvent.status == OutboxEventStatus.CLAIMED,
+                OutboxEvent.lease_owner == lease_owner,
+            )
+            .values(status=OutboxEventStatus.PENDING, lease_owner=None, lease_expires_at=None)
+        )
+        result: Result = await self._session.execute(statement)
+        return (result.rowcount or 0) > 0
 
     async def is_lease_valid(
         self,
