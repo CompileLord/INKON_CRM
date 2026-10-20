@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { AlertCircle, CheckCircle2, FileText, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteDocument, useDocuments, useUploadDocument } from "../../lib/documents/hooks";
 import { downloadDocument } from "../../lib/documents/download";
 import type { DocumentItem } from "../../lib/documents/types";
 import { useAuthStore } from "../../store/authStore";
-import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { EmptyState } from "../ui/EmptyState";
+import { ErrorState } from "../ui/ErrorState";
 import { Pagination } from "../ui/Pagination";
+import { SectionCard } from "../ui/SectionCard";
 import { DocumentUploadPolicy } from "./documentRules";
 import { DocumentListHeader, DocumentRow, DocumentSkeletonRows } from "./DocumentRow";
 import { DocumentUploadStatus, type DocumentUploadState } from "./DocumentUploadStatus";
@@ -151,28 +152,26 @@ function DocumentsWorkspace({ ownerType, ownerId, canManage, ownerName }: { owne
   const showList: boolean = !isLoading && !isError && documents.length > 0;
   const showEmpty: boolean = !isLoading && !isError && documents.length === 0;
 
+  const uploadAction = canManage ? (
+    <>
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept={DocumentUploadPolicy.pickerAccept} tabIndex={-1} aria-hidden="true" />
+      <Button type="button" variant="secondary" disabled={uploadState.phase === "uploading"} onClick={reselectFile}>{t("uploadDoc")}</Button>
+    </>
+  ) : undefined;
+  const noticeClassName: string = "flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-strip px-3 py-2 text-sm";
+
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-ink"><FileText size={20} className="shrink-0 text-nav" />{t("title")}</h2>
-          <p className="mt-1 text-xs text-muted [overflow-wrap:anywhere]">{resolvedOwnerName ? t("subtitleNamed", { owner: resolvedOwnerName }) : t("subtitle")}</p>
-        </div>
-        {canManage && <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept={DocumentUploadPolicy.pickerAccept} tabIndex={-1} aria-hidden="true" />
-          <Button type="button" disabled={uploadState.phase === "uploading"} onClick={reselectFile}><Upload size={16} />{t("uploadDoc")}</Button>
-          <p id="documents-upload-help" className="max-w-xs text-xs text-muted sm:text-right">{t("uploadHelp")}</p>
-        </div>}
-      </div>
+    <SectionCard title={t("title")} actions={uploadAction}>
+      {canManage && <p id="documents-upload-help" className="text-xs text-muted">{t("uploadHelp")}</p>}
 
       {canManage && <DocumentUploadStatus state={uploadState} ownerName={resolvedOwnerName} onRetry={retryUpload} onReselect={reselectFile} onDismiss={() => setUploadState({ phase: "idle" })} />}
 
-      {deleteNotice && <div role="status" className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-ink">
-        <span className="flex min-w-0 items-center gap-2"><CheckCircle2 size={16} className="shrink-0 text-success" />{t("deleteSuccess")}</span>
+      {deleteNotice && <div role="status" className={`${noticeClassName} text-ink`}>
+        <span className="min-w-0">{t("deleteSuccess")}</span>
         <Button variant="secondary" onClick={() => setDeleteNotice(false)}>{t("common:close")}</Button>
       </div>}
 
-      {failedDownload && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-3 text-sm text-destructive">
+      {failedDownload && <div role="alert" className={`${noticeClassName} text-destructive`}>
         <p className="min-w-0 flex-1 [overflow-wrap:anywhere]">{t("downloadErrorNamed", { filename: failedDownload.file_name })}</p>
         <div className="flex gap-2">
           <Button variant="primary" disabled={downloadingId !== null} onClick={() => void startDownload(failedDownload)}>{t("common:retry")}</Button>
@@ -180,26 +179,18 @@ function DocumentsWorkspace({ ownerType, ownerId, canManage, ownerName }: { owne
         </div>
       </div>}
 
-      {isLoading && <div role="status" aria-busy="true" className="rounded-2xl border border-border-warm bg-card">
-        <div className="flex items-center gap-2 px-4 pt-4 text-sm text-muted"><BrandActivityIndicator size={20} />{t("loadingDocs")}</div>
+      {isLoading && <div role="status" aria-busy="true">
+        <span className="sr-only">{t("loadingDocs")}</span>
         <DocumentListHeader />
         <ul className="divide-y divide-border"><DocumentSkeletonRows /></ul>
       </div>}
 
-      {!isLoading && isError && <div role="alert" className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card p-6 text-center">
-        <AlertCircle className="text-destructive" size={24} />
-        <p className="text-sm text-muted">{t("loadError")}</p>
-        <Button variant="secondary" onClick={() => void refetch()}>{t("common:retry")}</Button>
-      </div>}
+      {!isLoading && isError && <ErrorState message={t("loadError")} onRetry={() => void refetch()} />}
 
-      {showEmpty && <div className="flex flex-col items-center gap-2 rounded-2xl border border-border-warm bg-card p-8 text-center">
-        <FileText className="text-muted" size={32} />
-        <p className="text-sm font-semibold text-ink">{t("noDocs")}</p>
-        <p className="max-w-md text-xs text-muted">{canManage ? t("emptyHelpManage") : t("emptyHelpReadOnly")}</p>
-      </div>}
+      {showEmpty && <EmptyState title={t("noDocs")} description={canManage ? t("emptyHelpManage") : t("emptyHelpReadOnly")} />}
 
       {showList && <div className="flex min-w-0 flex-col gap-4">
-        <div className="rounded-2xl border border-border-warm bg-card">
+        <div>
           <DocumentListHeader />
           <ul className="divide-y divide-border">
             {documents.map(document => <DocumentRow key={document.id} document={document} canManage={canManage} downloading={downloadingId === document.id} downloadLocked={downloadingId !== null} onDownload={item => void startDownload(item)} onDelete={(item, trigger) => { deleteTriggerRef.current = trigger; setDeleteError(undefined); setDeleteTarget(item); }} />)}
@@ -218,6 +209,6 @@ function DocumentsWorkspace({ ownerType, ownerId, canManage, ownerName }: { owne
         onConfirm={() => void confirmDelete()}
         onCancel={() => { setDeleteTarget(null); setDeleteError(undefined); }}
       />
-    </div>
+    </SectionCard>
   );
 }
