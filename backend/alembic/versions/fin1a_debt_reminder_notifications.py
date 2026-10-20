@@ -31,6 +31,15 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    connection: sa.engine.Connection = op.get_bind()
+    connection.execute(sa.text("LOCK TABLE debt_reminder_notifications IN ACCESS EXCLUSIVE MODE"))
+    pending_count: int = connection.scalar(
+        sa.text("SELECT count(*) FROM debt_reminder_notifications WHERE status IN ('pending', 'claimed')")
+    ) or 0
+    if pending_count > 0:
+        raise RuntimeError(
+            f"Cannot downgrade debt_reminder_notifications: {pending_count} pending or claimed notification(s) remain unprocessed"
+        )
     op.drop_index("ix_debt_reminders_status_due", table_name="debt_reminder_notifications")
     op.drop_index("ix_debt_reminders_student_created", table_name="debt_reminder_notifications")
     op.drop_table("debt_reminder_notifications")
