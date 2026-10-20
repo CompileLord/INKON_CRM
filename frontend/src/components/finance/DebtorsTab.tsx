@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useDebts } from "../../lib/finance/hooks";
+import { useDebts, useQueueDebtReminders } from "../../lib/finance/hooks";
 import { FinanceUrlState, type DebtorsViewState } from "../../lib/finance/urlState";
 import type { DebtItem, PaymentItem } from "../../lib/finance/types";
 import { CourseBalanceIdentity } from "../../lib/finance/courseBalanceIdentity";
-import { formatNumber } from "../../i18n/formatters";
+import { formatDateTime, formatNumber } from "../../i18n/formatters";
+import { DebtReminders } from "../../lib/finance/debtReminders";
+import type { DebtReminderResult } from "../../lib/finance/types";
+import { AuthApiError } from "../../lib/auth/errors";
 import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
@@ -43,6 +46,10 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
   const handledPaymentId = useRef<number | null>(null);
   const [search, setSearch] = useState<string>("");
   const [expandedRows, setExpandedRows] = useState<ReadonlySet<string>>(new Set());
+  const [reminderFeedback, setReminderFeedback] = useState<{ message: string; failed: boolean } | null>(null);
+  const [bulkRunning, setBulkRunning] = useState<boolean>(false);
+  const [remindingIds, setRemindingIds] = useState<ReadonlySet<number>>(new Set());
+  const queueReminders = useQueueDebtReminders();
   const announcementRef = useRef<HTMLParagraphElement>(null);
 
   const debts = useDebts(view.page, PAGE_SIZE, FinanceUrlState.debtFilters(view));
@@ -84,7 +91,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     if (key === null || debts.data.items.some((debt) => rowKeyOf(debt) === key)) return;
     const rows: NodeListOf<HTMLElement> | undefined = sectionRef.current?.querySelectorAll<HTMLElement>("[data-row-key]");
     const target: HTMLElement | undefined = rows && rows.length > 0 ? rows[Math.min(pendingRowIndex.current, rows.length - 1)] : undefined;
-    const focusable: HTMLElement | null | undefined = target?.querySelector<HTMLElement>("button, a");
+    const focusable: HTMLElement | null | undefined = target?.querySelector<HTMLElement>("button:not(:disabled), a");
     (focusable ?? headingRef.current)?.focus();
   }, [recordedPayment, debts.data, debts.isFetching]);
 
@@ -93,6 +100,56 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     pendingRowIndex.current = Math.max(0, visible.findIndex((candidate) => rowKeyOf(candidate) === rowKeyOf(debt)));
     onAcceptPayment(debt);
   };
+
+  const sendReminders = async (studentIds: number[], single: DebtItem | null): Promise<void> => {
+    setReminderFeedback(null);
+    setRemindingIds(new Set(studentIds));
+    setBulkRunning(single === null);
+    try {
+      const response = await queueReminders.mutateAsync(studentIds);
+      setReminderFeedback({ message: describeReminders(response.results, single), failed: false });
+    } catch (error) {
+      const policyDisabled: boolean = error instanceof AuthApiError && error.status === 409;
+      setReminderFeedback({ message: t(policyDisabled ? "finance:reminders.disabled" : "finance:reminders.failed"), failed: true });
+    } finally {
+      setRemindingIds(new Set());
+      setBulkRunning(false);
+    }
+  };
+
+  const describeReminders = (results: DebtReminderResult[], single: DebtItem | null): string => {
+    const first: DebtReminderResult | undefined = results[0];
+    if (!single || !first) {
+      const tally = DebtReminders.tally(results);
+      return t("finance:reminders.bulkResult", { queued: formatNumber(tally.queued, i18n.language), skipped: formatNumber(tally.skipped, i18n.language) });
+    }
+    const student: string = `${single.student.first_name} ${single.student.last_name}`;
+    const outcomeKeys: Record<DebtReminderResult["outcome"], string> = {
+      queued: "queuedOne",
+      recently_reminded: "recentlyReminded",
+      no_parent_chat: "noParentChat",
+      no_debt: "noDebt",
+      not_found: "notFound",
+    };
+    return t(`finance:reminders.${outcomeKeys[first.outcome]}`, { student, when: formatDateTime(first.next_allowed_at, i18n.language) });
+  };
+
+  const eligibleIds: number[] = DebtReminders.eligibleStudentIds(visible);
+
+  const bulkAction = (
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="secondary"
+        disabled={eligibleIds.length === 0}
+        loading={bulkRunning}
+        aria-describedby={eligibleIds.length === 0 ? "debtors-bulk-remind-reason" : undefined}
+        onClick={() => void sendReminders(eligibleIds, null)}
+      >
+        {t("finance:reminders.bulk", { count: formatNumber(eligibleIds.length, i18n.language) })}
+      </Button>
+      {eligibleIds.length === 0 && debts.data && loaded.length > 0 && <p id="debtors-bulk-remind-reason" className="text-xs text-muted">{t("finance:reminders.bulkNone")}</p>}
+    </div>
+  );
 
   const toggleDetails = (rowKey: string): void => {
     setExpandedRows((current) => {
@@ -116,6 +173,8 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
         onToggleDetails={toggleDetails}
         onAcceptPayment={acceptPayment}
         extraAction={renderRowAction?.(debt)}
+        onRemind={(target: DebtItem) => void sendReminders([target.student.id], target)}
+        isReminding={!bulkRunning && remindingIds.has(debt.student.id)}
       />
     );
   });
@@ -139,8 +198,11 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     <div ref={sectionRef} role="region" aria-labelledby="finance-debtors-heading">
       <SectionCard title={t("finance:debtors.title")} actions={summary}>
         <span id="finance-debtors-heading" ref={headingRef} tabIndex={-1} className="sr-only focus-visible:outline-none">{t("finance:debtors.title")}</span>
-        <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} trailingAction={toolbarAction} />
+        <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} trailingAction={<>{toolbarAction}{bulkAction}</>} />
         <p role="status" ref={announcementRef} className="sr-only" />
+        {reminderFeedback && (
+          <p role="status" className={["text-sm", reminderFeedback.failed ? "text-destructive" : "text-ink"].join(" ")}>{reminderFeedback.message}</p>
+        )}
         {debts.isPending ? (
           <div role="status" aria-busy="true">
             <span className="sr-only">{t("finance:courseBalances.loading")}</span>
