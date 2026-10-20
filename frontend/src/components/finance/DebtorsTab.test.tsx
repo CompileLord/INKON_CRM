@@ -255,7 +255,7 @@ describe("Debtors rows", () => {
     );
     await screen.findByText("Anisa Karimova");
     expect(screen.getByRole("button", { name: "Slot Anisa" })).toBeTruthy();
-    expect(document.querySelector("[data-debtors-toolbar-action]")?.textContent).toBe("Bulk slot");
+    expect(document.querySelector("[data-debtors-toolbar-action]")?.firstElementChild?.textContent).toBe("Bulk slot");
   });
 });
 

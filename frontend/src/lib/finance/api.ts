@@ -5,6 +5,7 @@ import type {
   AllocationCreatePayload,
   ChargeItem,
   DebtItem,
+  DebtReminderResponse,
   DiscountCreatePayload,
   FinanceAnalyticsResponse,
   LedgerEntryItem,
@@ -84,6 +85,11 @@ export async function fetchDebts(
   if (filters.enrollmentStatus) params.append("enrollment_status", filters.enrollmentStatus);
 
   const response = await httpClient.get(`/finance/debts/?${params.toString()}`);
+  return response.data;
+}
+
+export async function queueDebtReminders(studentIds: number[]): Promise<DebtReminderResponse> {
+  const response = await httpClient.post("/finance/debts/reminders", { student_ids: studentIds });
   return response.data;
 }
 

@@ -249,7 +249,7 @@ export function registerCourseProfileHooks(): void {
     vi.mocked(courseHooks.useCourseJournalMetrics).mockReturnValue(mockSuccessResult(mockMetrics));
     vi.mocked(enrollmentHooks.useCourseEnrollmentsCount).mockReturnValue(mockSuccessResult(15));
     vi.mocked(courseHooks.useCourseMentorHistory).mockReturnValue(mockSuccessResult([]));
-    vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult({ labels: [], datasets: [] }));
+    vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult({ labels: [], periods: [], datasets: [], class_avg_series: [], class_eligible_counts: [] }));
     vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
       mockSuccessResult({
         course_id: 42,
