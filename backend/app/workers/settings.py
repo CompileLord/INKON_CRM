@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import timezone as datetime_timezone
 from arq import cron, func
 from arq.connections import RedisSettings
 from app.core.config import settings
@@ -48,6 +49,7 @@ async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
+    timezone: datetime_timezone = datetime_timezone.utc
     redis_settings: RedisSettings = RedisConnectionConfiguration.from_url(
         settings.REDIS_URL
     ).create_arq_settings()
