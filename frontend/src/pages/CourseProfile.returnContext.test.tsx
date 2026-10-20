@@ -84,16 +84,23 @@ describe("CourseProfile Component", () => {
     it("retains progress search when toggling between tabs", () => {
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({
-          labels: ["Period 1", "Total"],
+          labels: ["Period 1"],
+          periods: [{ id: 5, period_label: "Period 1" }],
           datasets: [
             {
               student_id: 1,
               name: "Alice Wonderland",
               color_hex: "#10b981",
-              scores: [85, 85],
-              percentages: [85, 85],
+              scores: [85],
+              max_scores: [100],
+              percentages: [85],
+              grading_states: ["graded"],
+              graded_periods_count: 1,
+              eligible_periods_count: 1,
             },
           ],
+          class_avg_series: [85],
+          class_eligible_counts: [1],
         }),
       );
       vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
@@ -199,16 +206,23 @@ describe("CourseProfile Component", () => {
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({
-          labels: ["Period 5", "Total"],
+          labels: ["Period 5"],
+          periods: [{ id: 5, period_label: "Period 5" }],
           datasets: [
             {
               student_id: 1,
               name: "Zalina Student",
               color_hex: "#10b981",
-              scores: [90, 90],
-              percentages: [90, 90],
+              scores: [90],
+              max_scores: [100],
+              percentages: [90],
+              grading_states: ["graded"],
+              graded_periods_count: 1,
+              eligible_periods_count: 1,
             },
           ],
+          class_avg_series: [90],
+          class_eligible_counts: [1],
         }),
       );
       vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
