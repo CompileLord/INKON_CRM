@@ -1761,6 +1761,10 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "period_label": string,
         "period_start": string,
         "period_end": string,
+        "class_avg_score?": number,
+        "class_avg_max_score?": number,
+        "class_avg_percentage?": number,
+        "graded_count?": integer,
       }
     ],
     "students": [
@@ -1809,6 +1813,10 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "period_label": string,
         "period_start": string,
         "period_end": string,
+        "class_avg_score?": number,
+        "class_avg_max_score?": number,
+        "class_avg_percentage?": number,
+        "graded_count?": integer,
       }
     ],
     "students": [
@@ -1888,35 +1896,6 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     ],
   }
   ```
-
-**Role-dependent response:** The live OpenAPI response is `StaffChartResponse | StudentChartResponse`.
-The generated example above shows the staff branch; the generator currently selects the first union branch and omits null alternatives.
-All `scores`, `max_scores`, `percentages`, `my_series`, and `class_avg_series` elements are `number | null`.
-Each series retains one slot per ordered period plus a trailing average. `grading_states` and `my_grading_states` contain one entry per period, without a trailing entry: `missing | ungraded | unknown | graded | upcoming`.
-
-Student branch:
-```json
-{
-  "periods": [{"id": integer, "period_label": string}],
-  "my_series": [number | null],
-  "class_avg_series": [number | null],
-  "my_grading_states": ["missing | ungraded | unknown | graded | upcoming"],
-  "my_graded_periods_count": integer,
-  "my_eligible_periods_count": integer,
-  "class_eligible_counts": [integer],
-  "my_rank": integer | null,
-  "class_size": integer
-}
-```
-
-Only nondeleted active enrollments of nondeleted students contribute to class means and ranks.
-An authorized historical student retains their own series but has no class rank.
-A started summary explicitly marked graded contributes to `graded_periods_count`, including zero scores and zero maxima.
-A percentage additionally requires a positive maximum; missing, untouched, unknown, future and zero-maximum ratios are null.
-Student averages use eligible period ratios; the trailing class average uses the unrounded means of eligible active students.
-Means and percentages round only for presentation. Ranks sort unrounded means descending, then student ID ascending; students without an eligible ratio have null rank.
-`class_eligible_counts` has one entry per period and counts eligible active student ratios.
-Student responses contain no peer identities or datasets.
 
 ---
 

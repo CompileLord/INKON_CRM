@@ -122,6 +122,10 @@ export interface StaffProgressPeriod {
   period_label: string;
   period_start: string;
   period_end: string;
+  class_avg_score?: number | null;
+  class_avg_max_score?: number | null;
+  class_avg_percentage?: number | null;
+  graded_count?: number | null;
 }
 
 export interface StaffProgressPeriodResult {

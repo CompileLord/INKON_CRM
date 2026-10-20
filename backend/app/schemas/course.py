@@ -119,6 +119,10 @@ class StaffProgressPeriod(BaseModel):
     period_label: str
     period_start: date
     period_end: date
+    class_avg_score: Optional[float] = None
+    class_avg_max_score: Optional[float] = None
+    class_avg_percentage: Optional[float] = Field(None, description="Average percentage over stored summaries with positive max_period_score")
+    graded_count: Optional[int] = Field(None, description="Number of enrolled students with a stored period summary, including zero scores")
 
 
 class StaffProgressPeriodResult(BaseModel):
