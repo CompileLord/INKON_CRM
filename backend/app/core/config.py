@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from pydantic import BeforeValidator, Field, ValidationError, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
+from app.db.connection_policy import DatabaseConnectionPolicy
 
 
 def parse_cors_origins(value: Union[str, List[str]]) -> List[str]:
@@ -21,12 +22,13 @@ def parse_cors_origins(value: Union[str, List[str]]) -> List[str]:
     return value
 
 
-class Settings(BaseSettings):
+class Settings(BaseSettings, DatabaseConnectionPolicy):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        hide_input_in_errors=True,
     )
 
     def __init__(self, **values: Any) -> None:
