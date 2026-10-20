@@ -1,75 +1,90 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader } from "../components/PageHeader";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDeleteUser, useMentorAnalytics, useMentorProfile } from "../lib/users/hooks";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
 import type { User } from "../lib/users/types";
-import { formatNumber } from "../i18n/formatters";
 import { useAuthStore } from "../store/authStore";
 import { mentorLocationState, mentorProfileTab, mentorReturnTarget, type MentorProfileTab } from "../lib/mentors/mentorNavigation";
-import { ProfileTabs } from "../components/profile/ProfileTabs";
-import { MentorIdentity } from "../components/mentors/MentorIdentity";
-import { MentorCourses } from "../components/mentors/MentorCourses";
-import { MentorPerformance } from "../components/mentors/MentorPerformance";
-import { MentorFormPanel } from "../components/mentors/MentorFormPanel";
-import { DocumentsTab } from "../components/documents/DocumentsTab";
-import { ProfileUnavailable, classifyProfileFailure, type ProfileUnavailableKind } from "../components/profile/ProfileUnavailable";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { BrandActivityIndicator } from "../components/ui/BrandActivityIndicator";
+import { PageContainer } from "../components/ui/PageContainer";
+import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
+import { AccountAccessDialog } from "../components/profile/AccountAccessDialog";
+import { ProfileBackLink } from "../components/profile/ProfileBackLink";
+import { ProfileSkeleton, ProfileState } from "../components/profile/ProfileState";
+import { classifyProfileFailure, type ProfileUnavailableKind } from "../components/profile/ProfileUnavailable";
+import { MentorCourses } from "../components/mentors/MentorCourses";
+import { MentorFormPanel } from "../components/mentors/MentorFormPanel";
+import { MentorPerformance } from "../components/mentors/MentorPerformance";
+import { MentorProfileHeader } from "../components/mentors/MentorProfileHeader";
+import { MentorSummary } from "../components/mentors/MentorSummary";
+import { DocumentsTab } from "../components/documents/DocumentsTab";
+
+const TAB_IDS: readonly MentorProfileTab[] = ["courses", "performance", "documents"];
+const PROFILE_ID_PREFIX: string = "mentor";
 
 export function MentorProfile() {
   const { id } = useParams<{ id: string }>();
-  const role = useAuthStore(state => state.role);
-  const userId = useAuthStore(state => state.userId);
-  const numericId = id && /^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0 ? Number(id) : undefined;
+  const role = useAuthStore((state) => state.role);
+  const userId = useAuthStore((state) => state.userId);
+  const numericId: number | undefined = id && /^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0 ? Number(id) : undefined;
   return <MentorProfileWorkspace key={`${role}:${userId}:${numericId}`} id={numericId} role={role} userId={userId} />;
 }
 
 function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; role: string | null; userId: number | null }) {
-  const { t, i18n } = useTranslation(["mentors", "common"]);
+  const { t } = useTranslation(["mentorProfile", "mentors", "common"]);
   const location = useLocation();
   const navigate = useNavigate();
-  const authorized = id !== undefined && userId !== null && userId > 0 && (role === "superadmin" || (role === "mentor" && userId === id));
+  const isSuperAdmin: boolean = role === "superadmin";
+  const authorized: boolean = id !== undefined && userId !== null && userId > 0 && (isSuperAdmin || (role === "mentor" && userId === id));
   const profileQuery = useMentorProfile(authorized ? id : undefined);
   const analyticsQuery = useMentorAnalytics(authorized ? id : undefined);
   const deleteUser = useDeleteUser("mentor");
   const back = mentorReturnTarget(role, userId, location.state);
-  const [activeTab, setActiveTab] = useState<MentorProfileTab>(() => mentorProfileTab(location.state));
+  const [queryTab, selectTab] = useTabParam(TAB_IDS, mentorProfileTab(location.state));
+  const activeTab: MentorProfileTab = queryTab as MentorProfileTab;
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleteError, setDeleteError] = useState<string | undefined>();
-  const [pendingDelete, setPendingDelete] = useState(false);
-  const [notice, setNotice] = useState<string | null>(() => role === "superadmin" && id && mentorLocationState(location.state).createdMentorId === id ? t("form.createSuccess") : null);
+  const [pendingDelete, setPendingDelete] = useState<boolean>(false);
+  const [isAccessOpen, setIsAccessOpen] = useState<boolean>(false);
+  const [notice, setNotice] = useState<string | null>(() => (isSuperAdmin && id && mentorLocationState(location.state).createdMentorId === id ? t("mentors:form.createSuccess") : null));
   const triggerRef = useRef<HTMLElement | null>(null);
-  const generationRef = useRef(0);
-  const [ownerGeneration, setOwnerGeneration] = useState(0);
-  const operationRef = useRef(0);
-  const mountedRef = useRef(true);
-  const deleteLockRef = useRef(false);
-  const isLive = (generation: number) => {
+  const generationRef = useRef<number>(0);
+  const [ownerGeneration, setOwnerGeneration] = useState<number>(0);
+  const operationRef = useRef<number>(0);
+  const mountedRef = useRef<boolean>(true);
+  const deleteLockRef = useRef<boolean>(false);
+
+  const isLive = (generation: number): boolean => {
     const current = useAuthStore.getState();
     return mountedRef.current && generationRef.current === generation && current.role === role && current.userId === userId;
   };
+
   useEffect(() => {
     mountedRef.current = true;
     const unsubscribe = useAuthStore.subscribe((current, previous) => {
-      if (current.role !== previous.role || current.userId !== previous.userId) {
-        generationRef.current++;
-        setOwnerGeneration(generationRef.current);
-        setEditUser(null);
-        setDeleteTarget(null);
-        setDeleteError(undefined);
-        setPendingDelete(false);
-        deleteLockRef.current = false;
-        setNotice(null);
-        setActiveTab("courses");
-      }
+      if (current.role === previous.role && current.userId === previous.userId) return;
+      generationRef.current++;
+      setOwnerGeneration(generationRef.current);
+      setEditUser(null);
+      setDeleteTarget(null);
+      setDeleteError(undefined);
+      setPendingDelete(false);
+      setIsAccessOpen(false);
+      deleteLockRef.current = false;
+      setNotice(null);
+      selectTab("courses");
     });
-    return () => { mountedRef.current = false; operationRef.current++; unsubscribe(); };
+    return () => {
+      mountedRef.current = false;
+      operationRef.current++;
+      unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const state = mentorLocationState(location.state);
   useEffect(() => {
     if (state.createdMentorId === id && id !== undefined) {
@@ -77,10 +92,12 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
       delete next.createdMentorId;
       navigate(`${location.pathname}${location.search}`, { replace: true, state: next });
     }
-  }, [state.createdMentorId, id, navigate, location.pathname, location.search]);
-  const transientError = profileQuery.isError && (profileQuery.error instanceof NetworkError || (profileQuery.error instanceof AuthApiError && profileQuery.error.status >= 500 && profileQuery.error.status <= 599));
+  }, [state.createdMentorId, id, navigate, location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const transientError: boolean = profileQuery.isError && (profileQuery.error instanceof NetworkError || (profileQuery.error instanceof AuthApiError && profileQuery.error.status >= 500 && profileQuery.error.status <= 599));
   const queriedProfile = profileQuery.data;
-  const profile = authorized && queriedProfile?.user.id === id && queriedProfile.user.role === "mentor" && (!profileQuery.isError || transientError) ? queriedProfile : undefined;
+  const profile = authorized && queriedProfile?.user.id === id && queriedProfile?.user.role === "mentor" && (!profileQuery.isError || transientError) ? queriedProfile : undefined;
+
   useEffect(() => {
     if (!profileQuery.isError || transientError) return;
     generationRef.current++;
@@ -91,31 +108,28 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
     setDeleteTarget(null);
     setDeleteError(undefined);
     setPendingDelete(false);
+    setIsAccessOpen(false);
     setNotice(null);
-    setActiveTab("courses");
+    selectTab("courses");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileQuery.isError, transientError, profileQuery.error]);
-  const restoreFocus = (generation: number) => requestAnimationFrame(() => {
-    if (!isLive(generation)) return;
-    const trigger = triggerRef.current;
-    const target = trigger?.isConnected && trigger.getClientRects().length > 0 ? trigger : document.querySelector<HTMLElement>("h1");
-    if (target) { if (target.tagName === "H1") target.tabIndex = -1; target.focus(); }
-  });
-  const saved = (_action: "created" | "updated", updated?: User) => {
-    if (!updated || updated.id !== id || !isLive(ownerGeneration)) return;
-    setEditUser(null);
-    setNotice(t("form.updateSuccess"));
-    profileQuery.refetch();
-    analyticsQuery.refetch();
-    restoreFocus(ownerGeneration);
+
+  const restoreFocus = (generation: number): void => {
+    requestAnimationFrame(() => {
+      if (!isLive(generation)) return;
+      const trigger: HTMLElement | null = triggerRef.current;
+      const target: HTMLElement | null = trigger?.isConnected && trigger.getClientRects().length > 0 ? trigger : document.querySelector<HTMLElement>("h1");
+      if (!target) return;
+      if (target.tagName === "H1") target.tabIndex = -1;
+      target.focus();
+    });
   };
-  const photoSaved = (updated?: User) => {
-    if (updated?.id === id && isLive(ownerGeneration)) profileQuery.refetch();
-  };
-  const confirmDelete = async () => {
-    if (!deleteTarget || role !== "superadmin" || deleteLockRef.current || !isLive(ownerGeneration)) return;
-    const generation = generationRef.current;
-    const operation = ++operationRef.current;
-    const live = () => isLive(generation) && operationRef.current === operation;
+
+  const confirmDelete = async (): Promise<void> => {
+    if (!deleteTarget || !isSuperAdmin || deleteLockRef.current || !isLive(ownerGeneration)) return;
+    const generation: number = generationRef.current;
+    const operation: number = ++operationRef.current;
+    const live = (): boolean => isLive(generation) && operationRef.current === operation;
     deleteLockRef.current = true;
     setPendingDelete(true);
     setDeleteError(undefined);
@@ -123,48 +137,120 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
       await deleteUser.mutateAsync(deleteTarget.id);
       if (live()) navigate(back.to, { state: back.state });
     } catch {
-      if (live()) setDeleteError(t("form.deleteAccountError"));
+      if (live()) setDeleteError(t("mentors:form.deleteAccountError"));
     } finally {
-      if (live()) { deleteLockRef.current = false; setPendingDelete(false); }
+      if (live()) {
+        deleteLockRef.current = false;
+        setPendingDelete(false);
+      }
     }
   };
-  const backLink = <PageHeader backTo={back.to} backState={back.state} backLabel={t(back.label)} />;
-  const renderUnavailableProfile = (kind: ProfileUnavailableKind) => <ProfileUnavailable kind={kind} title={t(`profileState.${kind}Title`)} description={t(`profileState.${kind}Body`)} returnLink={backLink} retryLabel={t("common:retry")} onRetry={() => profileQuery.refetch()} />;
-  if (id === undefined) return renderUnavailableProfile("notFound");
-  if (!authorized) return renderUnavailableProfile("forbidden");
-  if (profileQuery.isLoading) return <div role="status" aria-busy="true" className="flex min-w-0 flex-col gap-4">
-    {backLink}<div className="flex items-center gap-2 text-sm text-muted"><BrandActivityIndicator size={20} />{t("common:loading")}</div>
-    <div className="rounded-2xl border border-border-warm bg-card p-4 md:p-5 motion-safe:animate-pulse">
-      <div className="flex min-w-0 items-start gap-3 md:gap-4"><div data-loading-avatar className="h-12 w-12 shrink-0 rounded-full bg-beige md:h-16 md:w-16" /><div className="min-w-0 flex-1"><div className="h-8 w-full max-w-48 rounded bg-beige md:h-9" /><div className="mt-1 hidden h-11 w-full max-w-64 rounded bg-beige md:block" /></div>{role === "superadmin" && <div className="h-11 w-11 shrink-0 rounded-[10px] bg-beige" />}</div>
-      <div className="mt-2 h-11 w-full max-w-64 rounded bg-beige md:hidden" />
-      <div className="mt-1 h-11 w-full max-w-40 rounded bg-beige" />
-      {role === "superadmin" && <div className="mt-1 h-11 w-full max-w-40 rounded bg-beige" />}
-    </div>
-    <div className="grid grid-cols-3 gap-2 rounded-2xl bg-strip p-3 motion-safe:animate-pulse">{[0, 1, 2].map(item => <div key={item} className="min-w-0"><div className="h-8 rounded bg-beige" /><div className="mt-2 h-8 rounded bg-beige" /></div>)}</div>
-    <div className="flex gap-2 motion-safe:animate-pulse">{[0, 1, 2].map(item => <div key={item} className="h-11 min-w-0 flex-1 rounded-[10px] bg-beige" />)}</div>
-    <div className="h-32 rounded-2xl border border-border bg-card motion-safe:animate-pulse" />
-  </div>;
-  if (!profile) return renderUnavailableProfile(classifyProfileFailure(profileQuery.isError ? profileQuery.error : undefined));
-  const score = profile.avg_score_defined_ratios_mean;
-  const number = (value: number) => formatNumber(value, i18n.language, { maximumFractionDigits: 1 });
-  const summary = [{ label: "profile.activeCourses", value: number(profile.active_courses.length) }, { label: "profile.activeStudents", value: number(profile.active_students_count) }, { label: "profile.rawNormalized", value: score === null || score === undefined ? t("profile.missingValue") : number(score), unavailable: score === null || score === undefined }];
-  return <div className="flex min-w-0 flex-col gap-4">
-    <div className="flex items-center justify-between gap-3">{backLink}{profileQuery.isFetching && <div role="status"><BrandActivityIndicator size={20} /><span className="sr-only">{t("common:loading")}</span></div>}</div>
-    {transientError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-muted"><p className="min-w-0 flex-1">{t("profile.refreshError")}</p><Button variant="secondary" onClick={() => profileQuery.refetch()}>{t("common:retry")}</Button></div>}
-    {notice && <div role="status" className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-ink"><span className="flex min-w-0 items-center gap-2"><CheckCircle2 size={16} className="shrink-0 text-success" />{notice}</span><Button variant="secondary" onClick={() => setNotice(null)}>{t("common:close")}</Button></div>}
-    <MentorIdentity key={`${id}:${role}:${userId}:${ownerGeneration}`} user={profile.user} administrator={role === "superadmin"} onEdit={trigger => { if (!isLive(ownerGeneration)) return; triggerRef.current = trigger ?? null; setEditUser(profile.user); }} onDelete={trigger => { if (!isLive(ownerGeneration)) return; triggerRef.current = trigger ?? null; setDeleteError(undefined); setDeleteTarget(profile.user); }} />
-    <div data-profile-summary className="grid grid-cols-3 gap-2 rounded-2xl bg-strip p-3">{summary.map(metric => <div key={metric.label} className="min-w-0 [overflow-wrap:anywhere]"><p className="text-xs font-medium leading-[1.5] text-muted">{t(metric.label)}</p><p className="mt-1 text-2xl font-semibold leading-[1.333333] text-ink tabular-nums">{metric.unavailable ? <><span aria-hidden="true">{metric.value}</span><span className="sr-only">{t("profile.scoreUnavailable")}</span></> : metric.value}</p></div>)}</div>
-    <ProfileTabs<MentorProfileTab> key={ownerGeneration} tabs={[{ id: "courses", label: t("tabs.courses") }, { id: "performance", label: t("tabs.performance") }, { id: "documents", label: t("tabs.documents") }]} activeTab={activeTab} onTabChange={tab => { if (!isLive(ownerGeneration)) return; setActiveTab(tab); navigate(`${location.pathname}${location.search}`, { replace: true, state: { ...mentorLocationState(location.state), profileTab: tab } }); }} ariaLabel={t("profile.tabsLabel")} />
-    <div role="tabpanel" id="profile-tabpanel-courses" aria-labelledby="profile-tab-courses" hidden={activeTab !== "courses"}>
-      <MentorCourses courses={profile.active_courses} />
-    </div>
-    <div role="tabpanel" id="profile-tabpanel-performance" aria-labelledby="profile-tab-performance" hidden={activeTab !== "performance"}>
-      {activeTab === "performance" && <MentorPerformance profile={profile} analytics={analyticsQuery.data} loading={analyticsQuery.isLoading} failed={analyticsQuery.isError} onRetry={() => analyticsQuery.refetch()} />}
-    </div>
-    <div role="tabpanel" id="profile-tabpanel-documents" aria-labelledby="profile-tab-documents" hidden={activeTab !== "documents"}>
-      {activeTab === "documents" && <DocumentsTab key={`${id}:${role}:${userId}:${ownerGeneration}`} ownerType="mentor" ownerId={profile.user.id} canManage={role === "superadmin"} ownerName={`${profile.user.first_name} ${profile.user.last_name}`} />}
-    </div>
-    <MentorFormPanel open={editUser !== null && role === "superadmin"} mode="edit" mentor={editUser ?? undefined} onClose={() => { if (!isLive(ownerGeneration)) return; setEditUser(null); restoreFocus(ownerGeneration); }} onSaved={saved} onAvatarSaved={photoSaved} finalFocus={triggerRef} />
-    <ConfirmDialog open={deleteTarget !== null && role === "superadmin"} title={t("deleteConfirmTitle")} message={deleteTarget ? t("deleteConfirmMessage", { name: `${deleteTarget.first_name} ${deleteTarget.last_name}` }) : ""} pending={pendingDelete} errorMessage={deleteError} confirmVariant="destructive" onConfirm={confirmDelete} onCancel={() => { if (!isLive(ownerGeneration)) return; setDeleteTarget(null); setDeleteError(undefined); restoreFocus(ownerGeneration); }} finalFocus={triggerRef} />
-  </div>;
+
+  const backLink = <ProfileBackLink to={back.to} state={back.state} label={t(`mentors:${back.label}`)} />;
+  const unavailable = (kind: ProfileUnavailableKind) => (
+    <ProfileState stateName={kind} backLink={backLink} title={t(`state.${kind}Title`)} message={t(`state.${kind}Body`)} onRetry={kind === "failed" ? () => profileQuery.refetch() : undefined} />
+  );
+  if (id === undefined) return unavailable("notFound");
+  if (!authorized) return unavailable("forbidden");
+  if (profileQuery.isLoading) return <ProfileSkeleton backLink={backLink} hasStats />;
+  if (!profile) return unavailable(classifyProfileFailure(profileQuery.isError ? profileQuery.error : undefined));
+
+  const tabs: TabDefinition[] = [
+    { id: "courses", label: t("tabs.courses") },
+    { id: "performance", label: t("tabs.performance") },
+    { id: "documents", label: t("tabs.documents") },
+  ];
+
+  return (
+    <PageContainer>
+      {backLink}
+      {transientError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-muted">
+          <p className="min-w-0 flex-1">{t("state.refreshError")}</p>
+          <Button variant="secondary" onClick={() => profileQuery.refetch()}>{t("common:retry")}</Button>
+        </div>
+      )}
+      {notice && (
+        <div role="status" className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 text-sm text-ink">
+          <span className="min-w-0">{notice}</span>
+          <Button variant="secondary" onClick={() => setNotice(null)}>{t("common:close")}</Button>
+        </div>
+      )}
+
+      <MentorProfileHeader
+        user={profile.user}
+        isSuperAdmin={isSuperAdmin}
+        onEdit={(trigger: HTMLElement | null) => {
+          if (!isLive(ownerGeneration)) return;
+          triggerRef.current = trigger;
+          setEditUser(profile.user);
+        }}
+        onDelete={(trigger: HTMLElement | null) => {
+          if (!isLive(ownerGeneration)) return;
+          triggerRef.current = trigger;
+          setDeleteError(undefined);
+          setDeleteTarget(profile.user);
+        }}
+        onOpenAccess={() => setIsAccessOpen(true)}
+      />
+
+      <MentorSummary profile={profile} />
+
+      <Tabs tabs={tabs} value={activeTab} onChange={(tab: string) => { if (isLive(ownerGeneration)) selectTab(tab); }} ariaLabel={t("tabs.label")} idPrefix={PROFILE_ID_PREFIX} />
+
+      <div role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTab)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTab)} className="min-w-0">
+        {activeTab === "courses" && <MentorCourses courses={profile.active_courses} />}
+        {activeTab === "performance" && <MentorPerformance profile={profile} analytics={analyticsQuery.data} loading={analyticsQuery.isLoading} failed={analyticsQuery.isError} onRetry={() => analyticsQuery.refetch()} />}
+        {activeTab === "documents" && <DocumentsTab key={`${id}:${role}:${userId}:${ownerGeneration}`} ownerType="mentor" ownerId={profile.user.id} canManage={isSuperAdmin} ownerName={`${profile.user.first_name} ${profile.user.last_name}`} />}
+      </div>
+
+      <AccountAccessDialog
+        key={`${id}:${role}:${userId}:${ownerGeneration}`}
+        open={isAccessOpen && isSuperAdmin}
+        rawPassword={profile.user.raw_password}
+        onClose={() => setIsAccessOpen(false)}
+        labels={{ title: t("access.title"), password: t("access.password"), show: t("access.show"), hide: t("access.hide"), unavailable: t("access.unavailable") }}
+      />
+
+      <MentorFormPanel
+        open={editUser !== null && isSuperAdmin}
+        mode="edit"
+        mentor={editUser ?? undefined}
+        onClose={() => {
+          if (!isLive(ownerGeneration)) return;
+          setEditUser(null);
+          restoreFocus(ownerGeneration);
+        }}
+        onSaved={(_action: "created" | "updated", updated?: User) => {
+          if (!updated || updated.id !== id || !isLive(ownerGeneration)) return;
+          setEditUser(null);
+          setNotice(t("mentors:form.updateSuccess"));
+          profileQuery.refetch();
+          analyticsQuery.refetch();
+          restoreFocus(ownerGeneration);
+        }}
+        onAvatarSaved={(updated?: User) => {
+          if (updated?.id === id && isLive(ownerGeneration)) profileQuery.refetch();
+        }}
+        finalFocus={triggerRef}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null && isSuperAdmin}
+        title={t("mentors:deleteConfirmTitle")}
+        message={deleteTarget ? t("mentors:deleteConfirmMessage", { name: `${deleteTarget.first_name} ${deleteTarget.last_name}` }) : ""}
+        pending={pendingDelete}
+        errorMessage={deleteError}
+        confirmVariant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!isLive(ownerGeneration)) return;
+          setDeleteTarget(null);
+          setDeleteError(undefined);
+          restoreFocus(ownerGeneration);
+        }}
+        finalFocus={triggerRef}
+      />
+    </PageContainer>
+  );
 }

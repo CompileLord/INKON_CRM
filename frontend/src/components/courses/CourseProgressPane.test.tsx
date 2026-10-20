@@ -75,9 +75,27 @@ const mockStaffData: CourseStaffProgressResponse = {
   ],
 };
 
+function mockProgress(overrides: Record<string, unknown>) {
+  vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
+    data: mockStaffData,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    ...overrides,
+  } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+}
+
+function studentNames(): string[] {
+  return Array.from(document.querySelectorAll("table tbody tr")).map((row) => row.querySelector("a")?.textContent ?? "");
+}
+
 describe("CourseProgressPane Component", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await i18n.changeLanguage("en");
+    useAuthStore.setState({ role: "superadmin", userId: 1 });
+    mockProgress({});
   });
 
   afterEach(() => {
@@ -85,456 +103,137 @@ describe("CourseProgressPane Component", () => {
     sessionStorage.clear();
   });
 
-  it("renders matching geometry skeletons while loading and fires onReady when resolved", () => {
+  it("renders a row skeleton while loading and fires onReady only when resolved", () => {
     const onReadySpy = vi.fn();
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
+    mockProgress({ data: undefined, isLoading: true });
     const { rerender } = wrap(<CourseProgressPane courseId={10} onReady={onReadySpy} />);
-
-    expect(screen.getAllByTestId("brand-activity-indicator").length).toBeGreaterThan(0);
+    expect(document.querySelector("[data-progress-state='loading']")?.getAttribute("aria-busy")).toBe("true");
     expect(onReadySpy).not.toHaveBeenCalled();
 
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <CourseProgressPane courseId={10} onReady={onReadySpy} />
-        </MemoryRouter>
-      </I18nextProvider>,
-    );
-
-    expect(onReadySpy).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
+    mockProgress({});
+    rerender(<I18nextProvider i18n={i18n}><MemoryRouter><CourseProgressPane courseId={10} onReady={onReadySpy} /></MemoryRouter></I18nextProvider>);
+    expect(onReadySpy).toHaveBeenCalled();
+    expect(document.querySelector("[data-progress-state='loading']")).toBeNull();
   });
 
-  it("renders error container with working 44px retry button on initial query failure", () => {
-    const refetchSpy = vi.fn();
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error: new Error("500 internal server error"),
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
+  it("shows an error state with a working retry on the initial failure", () => {
+    const refetch = vi.fn();
+    mockProgress({ data: undefined, isError: true, refetch });
     wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getByText(i18n.t("courses:progress.loadError"))).toBeDefined();
-    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
-    expect(retryBtn.className).toContain("min-h-[44px]");
-    expect(retryBtn.className).toContain("min-w-[44px]");
-
-    fireEvent.click(retryBtn);
-    expect(refetchSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Couldn't load the results")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("renders empty state with guidance when no periods are configured", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: { course_id: 10, periods: [], students: [] },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+  it("keeps the loaded table and shows a retry banner when a refetch fails", () => {
+    const refetch = vi.fn();
+    mockProgress({ isError: true, refetch });
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't load the results");
+    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
 
+  it("explains an empty period list and links staff to the journal", () => {
+    mockProgress({ data: { course_id: 10, periods: [], students: [] } });
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(screen.getByText("No journal periods yet")).toBeDefined();
+    expect(screen.getByText("Set up periods in the journal to track results.")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Open journal" }).getAttribute("href")).toContain("/journals/10");
+  });
+
+  it("explains an empty period list to a student without a journal link", () => {
+    useAuthStore.setState({ role: "student", userId: 5 });
+    mockProgress({ data: { course_id: 10, periods: [], students: [] } });
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(screen.getByText("Results appear here once lessons are graded.")).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Open journal" })).toBeNull();
+  });
+
+  it("explains an empty cohort when periods exist but nobody is enrolled", () => {
+    mockProgress({ data: { ...mockStaffData, students: [] } });
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(screen.getByText("No students in this course yet")).toBeDefined();
+  });
+
+  it("shows scores first as score over maximum with a muted percentage and no summary column", () => {
+    wrap(<CourseProgressPane courseId={10} />);
+    const headers = Array.from(document.querySelectorAll("table thead th")).map((header) => header.textContent);
+    expect(headers).toEqual(["Student", "Week 1", "Week 2"]);
+    const firstRow = Array.from(document.querySelectorAll("table tbody tr")).find((row) => row.textContent?.includes("Farrukh")) as HTMLElement;
+    const cells = Array.from(firstRow.querySelectorAll("td")).map((cell) => cell.textContent);
+    expect(cells[1]).toBe("80 / 10080%");
+    expect(cells[2]).toBe("95 / 10095%");
+    expect(firstRow.querySelector("td:nth-child(2) .text-muted")?.textContent).toBe("80%");
+    expect(document.body.textContent).not.toContain("Summary");
+  });
+
+  it("keeps a stored zero as 0 / 100, a missing result as a dash and hides percentages above 100 or without a maximum", () => {
+    wrap(<CourseProgressPane courseId={10} />);
+    const rowFor = (name: string) => Array.from(document.querySelectorAll("table tbody tr")).find((row) => row.textContent?.includes(name)) as HTMLElement;
+    const anisa = Array.from(rowFor("Anisa").querySelectorAll("td")).map((cell) => cell.textContent);
+    expect(anisa[1]).toBe("0 / 1000%");
+    expect(anisa[2]).toBe("—");
+    const zara = Array.from(rowFor("Zara").querySelectorAll("td")).map((cell) => cell.textContent);
+    expect(zara[1]).toBe("110 / 100");
+    expect(zara[2]).toBe("—");
+    expect(document.body.textContent).not.toMatch(/1[1-9]\d%/);
+  });
+
+  it("translates the period names in Russian and Tajik", async () => {
+    await i18n.changeLanguage("ru");
     const { unmount } = wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getByText(i18n.t("courses:progress.emptyPeriods"))).toBeDefined();
-    expect(screen.getByText(i18n.t("courses:progress.emptyPeriodsHelpStaff"))).toBeDefined();
-    const journalLink = screen.getByRole("link", { name: i18n.t("courses:openJournal") });
-    expect(journalLink.getAttribute("href")).toBe("/journals/10");
-
+    expect(Array.from(document.querySelectorAll("table thead th")).map((header) => header.textContent)).toEqual(["Студент", "Неделя 1", "Неделя 2"]);
     unmount();
-    useAuthStore.setState({ role: "student" });
-    wrap(<CourseProgressPane courseId={10} />);
-    expect(screen.getByText(i18n.t("courses:progress.emptyPeriodsHelp"))).toBeDefined();
-    expect(screen.queryByRole("link", { name: i18n.t("courses:openJournal") })).toBeNull();
-    useAuthStore.setState({ role: "superadmin" });
-  });
-
-  it("renders empty state when periods exist but no students are enrolled", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: {
-        course_id: 10,
-        periods: [{ id: 1, period_label: "Week 1", period_start: "2026-09-01", period_end: "2026-09-07" }],
-        students: [],
-      },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getByText(i18n.t("courses:progress.emptyStudents"))).toBeDefined();
-    expect(screen.getByText(i18n.t("courses:progress.emptyStudentsHelp"))).toBeDefined();
-  });
-
-  it("retains empty periods guidance and displays error banner with working retry button on refetch failure", () => {
-    const refetchSpy = vi.fn();
-    const emptyPeriodsData: CourseStaffProgressResponse = {
-      course_id: 10,
-      periods: [],
-      students: [],
-    };
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: emptyPeriodsData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getByText(i18n.t("courses:progress.emptyPeriods"))).toBeDefined();
-    expect(screen.queryByRole("alert")).toBeNull();
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: emptyPeriodsData,
-      isLoading: false,
-      isError: true,
-      error: new Error("Refetch error"),
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <CourseProgressPane courseId={10} />
-        </MemoryRouter>
-      </I18nextProvider>,
-    );
-
-    const alert = screen.getByRole("alert");
-    expect(alert).toBeDefined();
-    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
-    expect(screen.getByText(i18n.t("courses:progress.emptyPeriods"))).toBeDefined();
-
-    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
-    expect(retryBtn.className).toContain("min-h-[44px]");
-    expect(retryBtn.className).toContain("min-w-[44px]");
-    fireEvent.click(retryBtn);
-    expect(refetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("retains empty cohort guidance and displays error banner with working retry button on refetch failure", () => {
-    const refetchSpy = vi.fn();
-    const emptyStudentsData: CourseStaffProgressResponse = {
-      course_id: 10,
-      periods: [{ id: 1, period_label: "Week 1", period_start: "2026-09-01", period_end: "2026-09-07" }],
-      students: [],
-    };
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: emptyStudentsData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getByText(i18n.t("courses:progress.emptyStudents"))).toBeDefined();
-    expect(screen.queryByRole("alert")).toBeNull();
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: emptyStudentsData,
-      isLoading: false,
-      isError: true,
-      error: new Error("Refetch error"),
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <CourseProgressPane courseId={10} />
-        </MemoryRouter>
-      </I18nextProvider>,
-    );
-
-    const alert = screen.getByRole("alert");
-    expect(alert).toBeDefined();
-    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
-    expect(screen.getByText(i18n.t("courses:progress.emptyStudents"))).toBeDefined();
-
-    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
-    expect(retryBtn.className).toContain("min-h-[44px]");
-    expect(retryBtn.className).toContain("min-w-[44px]");
-    fireEvent.click(retryBtn);
-    expect(refetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("retains loaded table and displays error banner with working retry button on refetch failure", () => {
-    const refetchSpy = vi.fn();
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    const { rerender } = wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("alert")).toBeNull();
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: true,
-      error: new Error("Refetch error"),
-      refetch: refetchSpy,
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <CourseProgressPane courseId={10} />
-        </MemoryRouter>
-      </I18nextProvider>,
-    );
-
-    const alert = screen.getByRole("alert");
-    expect(alert).toBeDefined();
-    expect(alert.textContent).toContain(i18n.t("courses:progress.loadError"));
-    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
-
-    const retryBtn = screen.getByRole("button", { name: i18n.t("common:retry") });
-    expect(retryBtn.className).toContain("min-h-[44px]");
-    expect(retryBtn.className).toContain("min-w-[44px]");
-    fireEvent.click(retryBtn);
-    expect(refetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders empty search state with working reset button when search yields no matches", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} />);
-
-    const searchInput = screen.getByPlaceholderText(i18n.t("courses:progress.searchPlaceholder"));
-    fireEvent.change(searchInput, { target: { value: "Nonexistent" } });
-
-    expect(
-      screen.getByText(i18n.t("courses:progress.noMatches", { query: "Nonexistent" })),
-    ).toBeDefined();
-
-    const resetBtn = screen.getByRole("button", { name: i18n.t("courses:progress.resetSearch") });
-    fireEvent.click(resetBtn);
-
-    expect(searchInput.getAttribute("value")).toBe("");
-    expect(screen.getAllByText("Farrukh Saidov").length).toBeGreaterThan(0);
-  });
-
-  it("renders desktop table with sticky opaque identity column, local overflow region, and tabular numbers", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} />);
-
-    const region = screen.getByRole("region", {
-      name: i18n.t("courses:progress.tableRegionLabel"),
-    });
-    expect(region).toBeDefined();
-    expect(region.getAttribute("tabindex")).toBe("0");
-
-    const identityHeader = screen.getByRole("columnheader", {
-      name: i18n.t("courses:progress.student"),
-    });
-    expect(identityHeader.className).toContain("sticky");
-    expect(identityHeader.className).toContain("w-60");
-    expect(identityHeader.className).toContain("bg-card");
-
-    const summaryHeader = screen.getByRole("columnheader", {
-      name: i18n.t("courses:progress.summary"),
-    });
-    expect(summaryHeader.className).toContain("min-w-[112px]");
-
-    const summaryCells = screen.getAllByTitle(i18n.t("courses:progress.summaryUnavailable"));
-    expect(summaryCells.length).toBe(3);
-    summaryCells.forEach((cell) => {
-      expect(cell.textContent).toContain("—");
-    });
-  });
-
-  it("strictly enforces score semantics: stored 0 displays 0%, missing displays dash, >100 unclamped, nonpositive denominator unavailable", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} />);
-
-    expect(screen.getAllByText("0%").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("0 / 100").length).toBeGreaterThan(0);
-
-    expect(screen.getAllByText("110%").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("110 / 100").length).toBeGreaterThan(0);
-
-    expect(screen.getByText(i18n.t("courses:progress.provenanceNotice"))).toBeDefined();
-
-    expect(screen.getAllByText("50 / 0").length).toBeGreaterThan(0);
-  });
-
-  it("renders period selector before search and sort on phone, inputs at 48px, and wraps names", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} />);
-
-    const searchInput = screen.getByLabelText(i18n.t("courses:progress.searchLabel"));
-    expect(searchInput.className).toContain("min-h-[48px]");
-
-    const sortSelect = screen.getByLabelText(i18n.t("courses:progress.sortLabel"));
-    expect(sortSelect.className).toContain("min-h-[48px]");
-
-    const phonePeriodSelect = screen.getByLabelText(i18n.t("courses:progress.selectPeriod"));
-    expect(phonePeriodSelect.className).toContain("min-h-[48px]");
-
-    const periodContainer = phonePeriodSelect.closest("div");
-    const searchContainer = searchInput.closest("div.border-b");
-    expect(periodContainer).toBeDefined();
-    expect(searchContainer).toBeDefined();
-
-    if (periodContainer && searchContainer) {
-      expect(
-        periodContainer.compareDocumentPosition(searchContainer) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-    }
-
-    const studentLinks = screen.getAllByRole("link", { name: /Farrukh Saidov/ });
-    studentLinks.forEach((link) => {
-      expect(link.className).not.toContain("truncate");
-      expect(link.className).toContain("break-words");
-      expect(link.className).toContain("min-h-[44px]");
-    });
-  });
-
-  it("updates sort order when active language changes", async () => {
-    const localeTestData: CourseStaffProgressResponse = {
-      course_id: 10,
-      periods: [{ id: 1, period_label: "Week 1", period_start: "2026-09-01", period_end: "2026-09-07" }],
-      students: [
-        {
-          student_id: 1,
-          first_name: "Ёқуб",
-          last_name: "Валиев",
-          period_results: [],
-          grading_provenance: "unknown",
-        },
-        {
-          student_id: 2,
-          first_name: "Алишер",
-          last_name: "Самадов",
-          period_results: [],
-          grading_provenance: "unknown",
-        },
-      ],
-    };
-
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: localeTestData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
     await i18n.changeLanguage("tg");
-    const { rerender } = wrap(<CourseProgressPane courseId={10} sortOption="name_asc" />);
-
-    let rows = screen.getAllByRole("row").slice(1);
-    expect(rows[0].textContent).toContain("Алишер");
-
-    await i18n.changeLanguage("en");
-    rerender(
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
-          <CourseProgressPane courseId={10} sortOption="name_asc" />
-        </MemoryRouter>
-      </I18nextProvider>,
-    );
-
-    rows = screen.getAllByRole("row").slice(1);
-    expect(rows[0].textContent).toContain("Алишер");
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(Array.from(document.querySelectorAll("table thead th")).map((header) => header.textContent)).toEqual(["Донишҷӯ", "Ҳафтаи 1", "Ҳафтаи 2"]);
   });
 
-  it("sorts by score placing missing results strictly after graded values with tie-breaking", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
-
-    wrap(<CourseProgressPane courseId={10} sortOption="score_desc" selectedPeriodId={2} />);
-
-    const rows = screen.getAllByRole("row").slice(1);
-    expect(rows[0].textContent).toContain("Farrukh Saidov");
-    expect(rows[1].textContent).toContain("Anisa Nazarova");
-    expect(rows[2].textContent).toContain("Zara Karimova");
+  it("sorts by the selected period with the highest score first and stable ties", () => {
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(studentNames()).toEqual(["Farrukh Saidov", "Anisa Nazarova", "Zara Karimova"]);
   });
 
-  it("records return context when navigating to student profile", () => {
-    vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({
-      data: mockStaffData,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
+  it("filters by name and offers a working reset when nothing matches", () => {
+    const onSearch = vi.fn();
+    wrap(<CourseProgressPane courseId={10} searchQuery="zzz" onSearchQueryChange={onSearch} />);
+    expect(screen.getByText("No students match “zzz”")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(onSearch).toHaveBeenCalledWith("");
+  });
 
-    wrap(<CourseProgressPane courseId={10} searchQuery="Farrukh" sortOption="name_asc" selectedPeriodId={1} />);
+  it("shows the filtered count and filters case-insensitively", () => {
+    wrap(<CourseProgressPane courseId={10} searchQuery="FARR" />);
+    expect(screen.getByText("1 of 3 students")).toBeDefined();
+    expect(studentNames()).toEqual(["Farrukh Saidov"]);
+  });
 
-    const studentLinks = screen.getAllByRole("link", { name: /Farrukh Saidov/ });
-    expect(studentLinks[0].getAttribute("href")).toBe("/students/101");
+  it("uses the shared pickers instead of native selects", () => {
+    wrap(<CourseProgressPane courseId={10} />);
+    expect(document.querySelector("select")).toBeNull();
+    expect(screen.getByRole("button", { name: "Period" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Order" })).toBeDefined();
+    expect(screen.getByRole("searchbox")).toBeDefined();
+  });
 
-    fireEvent.click(studentLinks[0]);
+  it("records the return context and links each student to the profile", () => {
+    const recordSpy = vi.spyOn(returnContext, "recordCourseDetailNavigation");
+    wrap(<CourseProgressPane courseId={10} />);
+    const link = screen.getAllByRole("link", { name: "Farrukh Saidov" })[0];
+    expect(link.getAttribute("href")).toBe("/students/101");
+    fireEvent.click(link);
+    expect(recordSpy).toHaveBeenCalledWith(10, expect.objectContaining({ tab: "progress", periodId: 2 }));
+  });
 
-    const saved = returnContext.getSavedCourseDetailContext(10);
-    expect(saved).not.toBeNull();
-    expect(saved?.tab).toBe("progress");
-    expect(saved?.periodId).toBe(1);
-    expect(saved?.search).toBe("Farrukh");
-    expect(saved?.sort).toBe("name_asc");
+  it("reports a period choice to the page and renders the phone list for that period", () => {
+    const onPeriod = vi.fn();
+    wrap(<CourseProgressPane courseId={10} selectedPeriodId={1} onSelectedPeriodIdChange={onPeriod} />);
+    const phoneList = document.querySelector("ul") as HTMLElement;
+    expect(phoneList.textContent).toContain("80 / 100");
+    fireEvent.click(screen.getByRole("button", { name: "Period" }));
+    fireEvent.click(screen.getByRole("option", { name: "Week 2" }));
+    expect(onPeriod).toHaveBeenCalledWith(2);
   });
 });

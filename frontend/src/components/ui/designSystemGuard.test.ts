@@ -11,13 +11,11 @@ const RULES: Readonly<Record<string, RegExp>> = {
 
 const PAGE_LEVEL_RULES: readonly string[] = ["page-max-width"];
 
-export const ALLOWLIST_CEILING: number = 26;
+export const ALLOWLIST_CEILING: number = 19;
 
 const ALLOWLIST: readonly string[] = [
   "components/courses/CourseFormPanel.tsx::native-date-input",
   "components/courses/CourseFormPanel.tsx::native-select",
-  "components/courses/CourseProgressPane.tsx::native-select",
-  "components/courses/CourseRosterSection.tsx::native-select",
   "components/courses/CoursesToolbar.tsx::native-select",
   "components/courses/ScheduleEditor.tsx::native-select",
   "components/finance/FinanceTabs.tsx::role-tablist",
@@ -25,20 +23,15 @@ const ALLOWLIST: readonly string[] = [
   "components/finance/PaymentDateRangePicker.tsx::native-date-input",
   "components/finance/SchoolDatePicker.tsx::native-date-input",
   "components/mentors/MentorFormPanel.tsx::native-date-input",
-  "components/profile/ProfileTabs.tsx::role-tablist",
   "components/students/StudentFormPanel.tsx::native-date-input",
   "pages/Audit.tsx::page-max-width",
-  "pages/CourseProfile.tsx::page-max-width",
-  "pages/CourseProfile.tsx::role-tablist",
   "pages/Finance.tsx::page-max-width",
   "pages/Journals.tsx::page-max-width",
-  "pages/MentorProfile.tsx::page-max-width",
   "pages/Mentors.tsx::native-select",
   "pages/Mentors.tsx::page-max-width",
   "pages/Notifications.tsx::page-max-width",
   "pages/Notifications.tsx::role-tablist",
   "pages/Settings.tsx::page-max-width",
-  "pages/StudentProfile.tsx::page-max-width",
   "pages/Students.tsx::page-max-width",
 ];
 
