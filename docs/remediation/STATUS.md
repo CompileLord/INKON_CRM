@@ -1,6 +1,6 @@
 # Remediation progress
 
-Sole execution record: one concise row per package with actual checks, gaps and external evidence. Task files hold scope/acceptance. Orchestrator updates and serializes integration. Unrun/failing required gates block acceptance. Frontend is separately owned; no PR, push, deployment or operational data changes.
+Sole execution record; task files hold scope. Orchestrator serializes updates/integration. Unrun/failing gates block acceptance. Frontend separately owned; no PR/push/deployment or operational data changes.
 
 Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outside Git). Current Python3.12 disposable pods: `root-audit-pod`, `wp30-sol-pod`. One suite per pod; never ordinary `imkon_db`/`imkon_redis`.
 
@@ -38,7 +38,7 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-30 | done | master | 2026-10-19 | Python3.12 baseline988 pass; candidate1020 pass478.42s; independent32 pass9.98s; merged-tree38 pass15.63s; 42 affected pass after AST-identical test split, collection1020; stale-owner mutation caught/restored; migration/old-image reads pass | PASS code4a5eb95, merge587d2c6. Atomic claims, finite bounded recovery, source checks; at-least-once transport and drain-before-worker-owner-switch required. Frontend owner must add queued/inflight types and translated DeliveryLog states; frontend checks excluded. Evidence wp30-sol/ and root-audit/wp30-*. |
 | WP-31 | done | master | 2026-10-20 | Python3.12 baseline1088 pass; candidate1096 pass502.45s; focused78 pass; independent8 pass6.41s; identity mutation caught/restored; migration replay/previous-image reads pass | PASS code7ed3131, merge874c46e; merged backend byte-identical to tested candidate. Separate sibling/document revisions and cross-date dedup; conservative cutover observations preserve history. Drain pending work before worker owner switch; previous-image recovery unsupported. Evidence wp31-sol/ and root-audit/wp31-*. |
 | WP-32 | in_progress | remediation/wp-32-ledger-reminders | 2026-10-20 | Baseline1096; focused54 pass; root policy10 pass; allocation mutation caught/restored | /root/wp32_resume; SQL 51/501/5001→2/3/21 at10/100/1000; latency variable. Full held for WP33 sync; notify_debts awaits FIN1a. logs wp32-sol/, root-audit/wp32-*.log. |
-| WP-33 | in_progress | remediation/wp-33-grading-state | 2026-10-20 | Explicit grading implementation; backend baseline1096 pass reused | Executor /root/wp31_preflight; corrected extracted-consumer scope; evidence wp33-sol/. |
+| WP-33 | done | master | 2026-10-20 | Full1103 pass645.87s/5 warnings; focused75 pass; root7 pass; grading mutation caught/restored; migration replay/old-image reads pass | PASS code6d5aaa6 mergebd1d301; backend byte-identical to full-tested candidate. Explicit zero/unknown grading; SQL ranks/aggregates; client rank0 handoff pending separate frontend owner. logs wp33-sol/, root-audit/wp33-*.log. |
 | WP-34 | todo | — | — | Not run | Awaiting dependencies/audit. |
 | WP-35 | todo | — | — | Not run | Awaiting dependencies/audit. |
 | WP-36 | done | master | 2026-10-18 | Executor backend 874 pass/7 fail vs baseline 865 pass/same 7 fail (six Alembic multiple-heads, test_avatar_upload_and_thumbnail); targeted 9 pass; ruff pass; 5 mutations caught, 6 of 9 tests red on baseline | PASS commit dc3018d; shared/exclusive advisory month locks, sorted order, held to commit. Gaps: no throughput/deadlock-rate measurements; the 7 failures pre-date WP-36 (multiple Alembic heads introduced by WP-25 + main credentials migration, fix in progress). Logs wp36-sol/. |
@@ -71,4 +71,4 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-63 | todo | — | — | Not run | Awaiting dependencies/audit. |
 | WP-64 | todo | — | — | Not run | Awaiting dependencies/audit. |
 
-38/64 packages accepted; 26 remain. Historical gaps remain for final re-audit. WP-32/33 active in disjoint worktrees; WP-31 full1096 pass reused as their unchanged backend baseline. Corrected disposable Python3.12 baseline1088 pass; WP-31 full1096 pass. Frontend separately owned. No PR, push, deployment or ordinary-service changes.
+39/64 accepted; 25 remain. Historical gaps require final re-audit. WP32 awaits WP33 sync/full and FIN1a debt policy. WP31 full1096 reused baseline; WP33 full1103 pass. Frontend separately owned; no main/push/deployment or ordinary-service changes.
