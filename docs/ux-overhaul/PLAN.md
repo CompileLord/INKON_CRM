@@ -47,6 +47,7 @@ Guard tests fail when a page outside `components/ui` defines its own `role="tabl
 | FE-R34 | Synchronize course chart contracts | WP-34 backend, UX-5c/UX-5d | Role-specific nullable chart types, endpoint union and contract fixtures; details below. |
 | FE-R35 | Bound journal autosave batches and comments | WP-35 backend candidate, UX-2/UX-5d | Queue batches of at most 250 unique cells, 1000-code-point comments, preserved drafts/retries; release prerequisite. |
 | FE-R40 | Migrate student history consumers to bounded APIs | WP-40 backend contract, FE-R34, UX-5c/UX-5d | Coordinate paging and bounded summaries before endpoint retirement; details below. |
+| FE-R41 | Student-visible mentor card | WP-41 backend, UX-5c/UX-5d | Narrow student identity/course response union; retain full authorized staff profile. Details below. |
 | QA-1 | Full regression | all | Full screenshot pass (same matrix as the 2026-10-19 audit) compared against the audit set, live Telegram walk-through (link, relink, lockout, exam card, debt reminder), full backend and frontend gates on `master`. |
 
 ## Gates for every task
@@ -91,3 +92,9 @@ WP-40 is not implemented; finalize the backend contract and consumer behavior to
 - Test tied-date page boundaries without duplicates/skips, filter changes and cursor reset, denied course filters, loading/error/retry/empty/loaded states, summary correctness when the relevant period is outside page one, and bounded requests independent of lifetime history size. Retire legacy callers only after all consumers are migrated.
 
 For these tasks run the existing frontend gates, `npx tsc --noEmit`, touched-locale parity and relevant contract/queue tests. Verify light/dark/mobile for visible changes. `frontend/src/lib/` is broadly gitignored: inspect actual changes and explicitly stage intended files. Do not claim backend deployment, frontend completion or an unrun gate from this handoff.
+
+### FE-R41 — Student-visible mentor card
+
+WP-41 backend is in progress. Synchronize `frontend/src/lib/users/types.ts`, mentor endpoint/hook typings and `frontend/src/pages/MentorProfile.tsx` with the finalized role response union. Students receive only public mentor identity (id, first/last name, photo/thumbnail paths) and minimal authorized enrolled-course identities; private contact, DOB, parent fields, unrelated courses and mentor-wide aggregates are absent. Staff retains its authorized existing response. Narrow by the actual role/response shape; do not manufacture missing values or add optional private fields back to student cards. Test staff/student fixtures, populated-private-field omission, unrelated-course exclusion, non-enrolled denial and all loading/error/empty states. Wait for the audited backend contract before implementation.
+
+FIN-1b integration note: WP-32's disabled `notify_debts` policy rejects manual reminder requests with HTTP409 before queue/audit writes. Use the existing error envelope and translated actionable feedback; do not show a queued/sent result for a disabled request. `notify_payments` remains independent. Backend policy work is still in progress.

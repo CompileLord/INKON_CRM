@@ -22,4 +22,5 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | FE-R34 | Course chart contract synchronization | — | pending | WP34 backend integrated9a2afe9; frontend owner: role union, nullable series/rank and metadata. Exact scope/tests in PLAN.md; frontend checks not run. |
 | FE-R35 | Autosave batching and comment limits | — | pending | Release prerequisite for WP35 backend candidate (1173 tests passed): <=250 unique cells/request, <=1000 Unicode code points/comment; preserve drafts/conflicts/retries. Not implemented; see PLAN.md. |
 | FE-R40 | Bounded student history consumers | — | blocked | Await WP40 backend contract and coordinated paging/summary semantics; include MyCourses and useStudentProgressSeries callers. No implementation or checks; see PLAN.md. |
+| FE-R41 | Student-visible mentor card | — | blocked | Await audited WP41 role-specific contract; public identity and enrolled course projection only. Frontend owner; scope/tests in PLAN.md. |
 | QA-1 | Full regression | — | pending | needs all |
