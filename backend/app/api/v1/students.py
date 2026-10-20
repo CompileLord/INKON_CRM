@@ -1,8 +1,8 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, get_student_profile_service, require_superadmin
+from app.core.deps import get_db_session, get_current_user, get_student_journal_history_service, get_student_profile_service, require_superadmin
 from app.models.user import User, UserRole
 from app.models.enrollment import Enrollment
 from app.models.course import Course
@@ -11,6 +11,9 @@ from app.schemas.user import StudentProfileResponse, StudentJournalPeriodRespons
 from app.services.student_profile_service import StudentProfileService
 from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
 from app.services.user_service import UserService
+
+from app.schemas.student_journal_history import StudentJournalHistoryPage, StudentJournalHistoryQuery
+from app.services.student_journal_history_service import StudentJournalHistoryService
 
 router = APIRouter()
 
@@ -75,19 +78,27 @@ async def get_my_profile(
     }
 
 
-@router.get("/me/journals", response_model=List[StudentJournalPeriodResponse])
-async def get_my_journals(
-    course_id: Optional[int] = None,
+@router.get("/me/journals/page", response_model=StudentJournalHistoryPage)
+async def get_my_journal_page(
+    query: Annotated[StudentJournalHistoryQuery, Query()],
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> List[dict]:
+    history_service: StudentJournalHistoryService = Depends(get_student_journal_history_service),
+) -> StudentJournalHistoryPage:
     if current_user.role != UserRole.STUDENT:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Current user is not a student"
-        )
-    user_repo = SQLAlchemyUserRepository(db)
-    return await user_repo.get_student_journals(student_id=current_user.id, course_id=course_id)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current user is not a student")
+    return await history_service.page(current_user.id, query)
+
+
+@router.get("/me/journals", response_model=List[StudentJournalPeriodResponse],
+    responses={409: {"description": "History exceeds 100 periods; use the cursor-paged history endpoint"}})
+async def get_my_journals(
+    course_id: Annotated[int | None, Query(gt=0)] = None,
+    current_user: User = Depends(get_current_user),
+    history_service: StudentJournalHistoryService = Depends(get_student_journal_history_service),
+) -> list[dict]:
+    if current_user.role != UserRole.STUDENT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current user is not a student")
+    return await history_service.legacy(current_user.id, course_id)
 
 
 @router.get("/{id}/profile", response_model=StudentProfileResponse)

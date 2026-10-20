@@ -346,6 +346,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 }
 ```
 
+**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Legacy response phone strings remain readable without rewriting stored values.
+
 **Responses:**
 - **201**: Successful Response
   ```json
@@ -433,6 +435,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 }
 ```
 
+**Phone input:** Nullable `phone` uses strict `^\+[1-9][0-9]{1,14}$` validation (mandatory plus, 2–15 ASCII digits, nonzero first digit); noncanonical inputs return 422. Omitting `phone` preserves its stored value, including legacy representations; explicit null clears it. This self-update does not permit guardian destination fields.
+
 **Responses:**
 - **200**: Successful Response
   ```json
@@ -494,6 +498,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
   "payment_day_of_month?": integer,
 }
 ```
+
+**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them. Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads.
 
 **Responses:**
 - **200**: Successful Response
@@ -804,6 +810,65 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## GET /api/v1/students/me/journals/page
+
+**Summary:** Get My Journal Page
+
+**Parameters:**
+- `page_size` [query]
+- `course_id` [query]
+- `started_only` [query]
+- `cursor` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "journal_id": integer,
+        "course_id": integer,
+        "course_title": string,
+        "period_label": string,
+        "period_start": string,
+        "period_end": string,
+        "homework_score?": number,
+        "attendance_score?": number,
+        "exam_score?": number,
+        "bonus_score?": number,
+        "sum_score": number,
+        "max_period_score": number,
+        "percentage": number,
+        "attendance_count": integer,
+        "total_lessons": integer,
+        "state": string,
+      }
+    ],
+    "next_cursor": string,
+    "has_upcoming_periods": boolean,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+**History bounds:** `page_size` defaults to 20 and must be between 1 and 100. `course_id`, when provided, must name a nondeleted enrollment belonging to the authenticated student; otherwise the response is 403. Unknown query fields and malformed, modified, cross-student or cross-filter cursors return 422.
+`next_cursor` is `string | null`; null means the bounded traversal has no remaining page. Cursors bind the student, course filter, started-only setting and date cutoff. Pages sort by `period_start DESC, journal_id DESC`. `started_only=true` freezes the school-date cutoff across pages. `has_upcoming_periods` reports whether an eligible period starts after the current school date, without returning future history; ownership and the course filter apply to this flag.
+The legacy `/students/me/journals` array preserves complete responses for at most 100 periods and returns 409 on overflow; it never silently truncates. Clients must migrate navigation and chart windows before releasing histories exceeding that limit. Course-wide totals come from existing profile aggregates, not a partial history page.
+
+---
+
 ## GET /api/v1/students/me/journals
 
 **Summary:** Get My Journals
@@ -835,6 +900,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     }
   ]
   ```
+- **409**: History exceeds 100 periods; use the cursor-paged history endpoint
 - **422**: Validation Error
   ```json
   {
@@ -1117,7 +1183,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 - `id` [path] *(required)*
 
 **Responses:**
-- **200**: Successful Response
+- **200**: Successful Response (mentor owner or superadmin)
   ```json
   {
     "user": {
@@ -1169,6 +1235,28 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "avg_score_defined_ratios_mean": number,
   }
   ```
+- **200**: Student mentor card (alternative response)
+  ```json
+  {
+    "user": {
+      "id": integer,
+      "first_name": string,
+      "last_name": string,
+      "photo_path?": string | null,
+      "thumbnail_path?": string | null
+    },
+    "active_courses": [
+      {
+        "id": integer,
+        "title": string,
+        "photo_path?": string | null
+      }
+    ]
+  }
+  ```
+
+  Students receive only public mentor identity and course identity for their nondeleted enrollments on nondeleted courses belonging to this nondeleted mentor. Historical enrollment statuses remain eligible. The `active_courses` name is retained for caller compatibility; it does not impose an active enrollment or course status filter. No contact, DOB, parent, account metadata, full course details or mentor-wide statistics are returned. The response union is `MentorProfileResponse | StudentMentorCardResponse`; the staff response above is unchanged. Students without an eligible relationship, unrelated mentors and accountants receive 403.
+
 - **422**: Validation Error
   ```json
   {
@@ -2367,6 +2455,7 @@ Student responses contain no peer identities or datasets.
     ],
   }
   ```
+- **413**: Autosave request body exceeds 4194304 bytes
 - **422**: Validation Error
   ```json
   {
@@ -2381,6 +2470,14 @@ Student responses contain no peer identities or datasets.
     ],
   }
   ```
+
+
+**Autosave bounds:** The request remains a top-level JSON array with 0–250 entries. Empty arrays are accepted as no-ops.
+Every normalized `(student_id, lesson_date)` pair must be unique; identical and conflicting duplicate keys both return 422 before service work.
+Each optional nullable comment is limited to 1000 Unicode code points; longer comments return 422 without truncation.
+Actual HTTP request bodies exceeding 4,194,304 bytes return 413 before JSON decoding, including chunked requests or misleading Content-Length headers.
+Only this PUT route is capped; document and image upload limits are unchanged.
+Accepted batches retain existing partial-conflict, optimistic-version and idempotent retry behavior.
 
 ---
 
@@ -3867,6 +3964,8 @@ Manually apply a student's wallet credit to a specific charge.
   "notify_debts?": boolean,
 }
 ```
+
+**Input keys:** Only `org_name`, `notify_payments` and `notify_debts` are accepted (`additionalProperties: false`). Any unknown key returns 422 for the whole request without applying its other fields.
 
 **Responses:**
 - **200**: Successful Response

@@ -218,3 +218,12 @@ def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "De
     from app.services.audit_service import AuditService
     from app.services.debt_reminder_service import DebtReminderService
     return DebtReminderService(SQLAlchemyDebtReminderRepository(db), AuditService(db))
+
+
+def get_student_journal_history_service(db: AsyncSession = Depends(get_db_session)) -> "StudentJournalHistoryService":
+    from app.core.config import settings
+    from app.repositories.sqlalchemy.student_journal_history_repository import SQLAlchemyStudentJournalHistoryRepository
+    from app.services.student_journal_history_cursor import StudentJournalHistoryCursorCodec
+    from app.services.student_journal_history_service import StudentJournalHistoryService
+
+    return StudentJournalHistoryService(SQLAlchemyStudentJournalHistoryRepository(db), StudentJournalHistoryCursorCodec(settings.JWT_SECRET_KEY))

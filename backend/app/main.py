@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
+from app.core.journal_body_limit import JournalBodyLimitMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.students import router as students_router
@@ -50,6 +51,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(JournalBodyLimitMiddleware, api_prefix=settings.API_V1_STR)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 if settings.BACKEND_CORS_ORIGINS:
