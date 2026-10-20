@@ -25,5 +25,5 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | FE-R41 | Student-visible mentor card | — | blocked | Await audited WP41 role-specific contract; public identity and enrolled course projection only. Frontend owner; scope/tests in PLAN.md. |
 | FE-R49 | Canonical phones and strict settings | — | blocked | Await integrated WP49 contract; legacy prefills and request validation need frontend owner changes. Scope/tests in PLAN.md; no frontend checks. |
 | UX-6a | Student full class journal (read-only) backend | kitob/ux-6a-student-journal-api | accepted | merged; GET /journals/{id}/class relaxed for enrolled students; classmate comments/contacts redacted; write-route guard test (all 3 write routes 403 for students); 92 targeted tests passed on disposable pod; CONTRACT.md zero diff; full backend suite not run |
-| UX-6b | Student dashboard as course cards + read-only journal | — | pending | needs UX-6a |
+| UX-6b | Student dashboard as course cards + read-only journal | kitob/ux-6b-student-journal | accepted | merged; master build 0, vitest 184 files / 1727 passed; own-comment popover, at-risk marker own row only, old journal route removed; dark theme of comment dialog not re-shot |
 | QA-1 | Full regression | — | pending | needs all |
