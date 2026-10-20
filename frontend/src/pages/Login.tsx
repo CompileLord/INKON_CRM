@@ -114,9 +114,6 @@ export function Login() {
           <h1 className="text-2xl font-semibold leading-8 text-ink lg:text-[28px] lg:leading-9">
             {t("auth:loginTitle")}
           </h1>
-          <p className="mt-2 text-base leading-6 text-muted">
-            {t("auth:loginSubtitle")}
-          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">

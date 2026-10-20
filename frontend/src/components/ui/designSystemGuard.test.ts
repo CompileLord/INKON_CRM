@@ -11,7 +11,7 @@ const RULES: Readonly<Record<string, RegExp>> = {
 
 const PAGE_LEVEL_RULES: readonly string[] = ["page-max-width"];
 
-export const ALLOWLIST_CEILING: number = 31;
+export const ALLOWLIST_CEILING: number = 12;
 
 const ALLOWLIST: readonly string[] = [
   "components/courses/CourseProgressPane.tsx::native-select",
