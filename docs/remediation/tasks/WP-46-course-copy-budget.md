@@ -22,12 +22,13 @@ Reports are provenance links, not required reading for execution; the relevant p
 |---|---|
 | [backend/app/services/course_service.py:234](../../../backend/app/services/course_service.py) | Existing file, anchor line 234; only this WP’s stated behavior may change. |
 | [backend/app/services/enrollment_service.py:90](../../../backend/app/services/enrollment_service.py) | Existing file, anchor line 90; only this WP’s stated behavior may change. |
-| [backend/app/core/schedule_utils.py:6](../../../backend/app/core/schedule_utils.py) | Existing file, anchor line 6; only this WP’s stated behavior may change. |
+| [backend/app/core/schedule_utils.py:6](../../../backend/app/core/schedule_utils.py) | NEW: class-based typed lesson-date and bounded copy plan extracted from enrollment service; preserve existing date semantics. |
 | [backend/app/repositories/interfaces/course_repository.py:7](../../../backend/app/repositories/interfaces/course_repository.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/repositories/interfaces/user_repository.py:7](../../../backend/app/repositories/interfaces/user_repository.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/core/deps.py:14](../../../backend/app/core/deps.py) | Existing file, anchor line 14; only this WP’s stated behavior may change. |
 | [backend/app/api/v1/courses.py:24](../../../backend/app/api/v1/courses.py) | Existing file, anchor line 24; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp46.py](../../../backend/app/tests/integration/test_remediation_wp46.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `CONTRACT.md` | Regenerate and preserve prior manual notes; document bounded synchronous copy rejection and skip semantics. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -60,7 +61,7 @@ Snapshot excerpt from `backend/app/services/course_service.py`:
 ## Step-by-step change
 
 1. Compute destination lesson dates once and pass typed precomputed inputs through enrollment. Inject the existing course/user protocols so this path can be characterized without concrete constructors.
-2. Establish a documented synchronous roster/duration/row budget and reject oversized copies before destination mutation; preserve current transaction behavior and define existing skipped-enrollment handling explicitly.
+2. Establish a documented synchronous roster/duration/row budget and reject oversized copies before destination mutation. Initial conservative ceilings: 100 active source enrollments, 366 inclusive days, 20000 estimated materialized rows; measure representative boundaries before retaining or lowering these limits. Count all source active/nondeleted enrollments conservatively before per-user eligibility. Preserve inactive/missing/nonstudent skips, but propagate unexpected enrollment errors so the API transaction rolls back rather than silently returning a partial copy. Validate source existence before creating a destination. No new idempotency contract is implied; retry must not duplicate child rows within an enrollment.
 3. Do not introduce a multi-commit background-copy product in this PR. If required by measured real workloads, stop and propose a separate resumable-copy WP.
 
 ## Tests to write BEFORE the fix
