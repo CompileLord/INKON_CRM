@@ -211,3 +211,10 @@ def get_notification_service(db: AsyncSession = Depends(get_db_session)) -> "Not
     from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
     from app.services.notification_service import NotificationService
     return NotificationService(SQLAlchemyNotificationLogRepository(db))
+
+
+def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "DebtReminderService":
+    from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
+    from app.services.audit_service import AuditService
+    from app.services.debt_reminder_service import DebtReminderService
+    return DebtReminderService(SQLAlchemyDebtReminderRepository(db), AuditService(db))

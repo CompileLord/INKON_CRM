@@ -3249,12 +3249,55 @@ Manually apply a student's wallet credit to a specific charge.
         "total_paid": string,
         "debt": string,
         "overdue_days": integer,
+        "parent_telegram_linked": boolean,
+        "last_reminder_at": string,
       }
     ],
     "total": integer,
     "page": integer,
     "page_size": integer,
     "total_pages": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## POST /api/v1/finance/debts/reminders
+
+**Summary:** Queue Debt Reminders
+
+**Request Body (JSON):**
+```json
+{
+  "student_ids": array[integer],
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "results": [
+      {
+        "student_id": integer,
+        "outcome": "queued" | "no_parent_chat" | "no_debt" | "recently_reminded" | "not_found",
+        "next_allowed_at": string,
+      }
+    ],
   }
   ```
 - **422**: Validation Error
