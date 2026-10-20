@@ -13,6 +13,7 @@ class OrgSettingsResponse(BaseModel):
 
 
 class OrgSettingsUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
     org_name: Optional[str] = Field(None, min_length=1, max_length=255)
     notify_payments: Optional[bool] = None
     notify_debts: Optional[bool] = None

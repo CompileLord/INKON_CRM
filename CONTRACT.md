@@ -346,6 +346,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 }
 ```
 
+**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Legacy response phone strings remain readable without rewriting stored values.
+
 **Responses:**
 - **201**: Successful Response
   ```json
@@ -433,6 +435,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 }
 ```
 
+**Phone input:** Nullable `phone` uses strict `^\+[1-9][0-9]{1,14}$` validation (mandatory plus, 2–15 ASCII digits, nonzero first digit); noncanonical inputs return 422. Omitting `phone` preserves its stored value, including legacy representations; explicit null clears it. This self-update does not permit guardian destination fields.
+
 **Responses:**
 - **200**: Successful Response
   ```json
@@ -494,6 +498,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
   "payment_day_of_month?": integer,
 }
 ```
+
+**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them. Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads.
 
 **Responses:**
 - **200**: Successful Response
@@ -3958,6 +3964,8 @@ Manually apply a student's wallet credit to a specific charge.
   "notify_debts?": boolean,
 }
 ```
+
+**Input keys:** Only `org_name`, `notify_payments` and `notify_debts` are accepted (`additionalProperties: false`). Any unknown key returns 422 for the whole request without applying its other fields.
 
 **Responses:**
 - **200**: Successful Response
