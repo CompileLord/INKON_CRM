@@ -25,7 +25,15 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/core/config.py:7](../../../backend/app/core/config.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/workers/settings.py:15](../../../backend/app/workers/settings.py) | Existing file, anchor line 15; only this WP’s stated behavior may change. |
 | [.github/workflows/deploy-backend.yml:140](../../../.github/workflows/deploy-backend.yml) | Existing file, anchor line 140; only this WP’s stated behavior may change. |
-| [backend/scripts/gcp_deploy.sh:11](../../../backend/scripts/gcp_deploy.sh) | Existing file, anchor line 11; only this WP’s stated behavior may change. |
+| `deploy/docker-compose.prod.yml` | Current Compose topology and explicit process/connection ceilings. |
+| `deploy/backend.env.example` | Nonsecret production budget and deadline examples. |
+| `deploy/deploy.sh` | Validate the declared topology/budget before deployment; do not deploy. |
+| `docs/deploy/RUNBOOK.md` | Budget calculation, overlap and maintenance policy. |
+| `backend/app/workers/outbox.py` | Configure its existing bounded pool and deadlines; preserve delivery behavior. |
+| `backend/app/core/resource_lifecycle.py` | NEW if needed: narrow cancellation-safe process resource ownership. |
+| `backend/app/db/connection_policy.py` | NEW: typed pool/deadline and deployment budget policy. |
+| `backend/app/tests/integration/test_remediation_wp43_lifecycle.py` | NEW: bounded lifecycle/concurrency regression module. |
+| `backend/app/tests/integration/test_remediation_wp43_database.py` | NEW: disposable PostgreSQL deadline/recovery regressions. |
 | [backend/.env.example:1](../../../backend/.env.example) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp43.py](../../../backend/app/tests/integration/test_remediation_wp43.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
@@ -60,6 +68,10 @@ Snapshot excerpt from `backend/app/core/redis.py`:
 2. Make pool size/overflow and query/lock/idle transaction deadlines explicit from a total DB budget including workers and overlapping revisions. Align local and CI deployment instance limits.
 3. Use separate maintenance deadlines; never compensate for long transaction holds by blindly enlarging pools.
 
+Current-source correction (2026-10-20): the GCP script no longer exists. Production uses one Uvicorn process and one ARQ worker in VPS Compose. Preserve already accepted TLS, outbox ownership, storage-intent deadlines and cleanup behavior. Serialize changes to main.py after the audited WP35 backend candidate; frontend completion is independent of this shared-file ordering.
+
+Budget validation must include main pools for every API/worker process, worker outbox and cleanup engines, storage-intent engines, revision overlap, maintenance and administration reserve. State configured ceilings separately from actual connections. Reject inconsistent settings before opening resources; do not query or reconfigure ordinary PostgreSQL. Preserve Alembic NullPool and give migration commands a separate explicit deadline policy without editing historical migrations. Keep compatibility entry points used by current callers; avoid unrelated sanitizer or repository refactors. Cleanup must survive cancellation and individual close failures without leaving a failed-startup background task running. No topology or deadline value is accepted merely from arithmetic: exercise supported workloads and report any limitation.
+
 ## Tests to write BEFORE the fix
 
 - Concurrent cold initialization produces one pool; partial startup/cancellation releases resources. Controlled lock wait times out with rollback and subsequent requests succeed.
@@ -91,7 +103,7 @@ npx tsc --noEmit
 Also run the targeted tests described here. Configure test storage/temp output and service targets **before imports**; the original fixture drops a PostgreSQL schema and flushes application-configured Redis. Never run it against ordinary shared services. Record exact commands, exit codes, baseline failures and new failures in this WP’s concise STATUS.md row. No test result in this plan is an executed remediation result. Do not claim success from historical onboarding. Existing unrelated frontend/typecheck failures must be recorded and escalated, not silently fixed outside scope.
 
 
-Performance / operational evidence: Measure checkout wait/hold, idle-in-transaction sessions, p95/p99 at 1/2/5 instances with revision overlap; 150/300 are potential ceilings, not observed use.
+Performance / operational evidence: For current Compose topology, measure checkout wait/hold, idle-in-transaction sessions, connection counts and p95/p99 under one API plus one worker, then synthetic two-revision overlap. Repeat matched trials at fixed concurrency. The historical 1/2/5 Cloud Run instance profile is obsolete; any additional scaling profile must be explicitly configured and validated against the same total budget. Use disposable services only; no deployment or observed-production-use claim.
 
 Use equal datasets, hardware, concurrency and warm/cold conditions, repeat trials and record variance. Source-derived counts are not latency measurements. A hypothesis can be resolved by measured no-action evidence; retain the benchmark and residual decision instead of inventing an optimization win.
 
