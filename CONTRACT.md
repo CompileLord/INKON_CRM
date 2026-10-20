@@ -2389,6 +2389,7 @@ Student responses contain no peer identities or datasets.
     ],
   }
   ```
+- **413**: Autosave request body exceeds 4194304 bytes
 - **422**: Validation Error
   ```json
   {
@@ -2403,6 +2404,14 @@ Student responses contain no peer identities or datasets.
     ],
   }
   ```
+
+
+**Autosave bounds:** The request remains a top-level JSON array with 0–250 entries. Empty arrays are accepted as no-ops.
+Every normalized `(student_id, lesson_date)` pair must be unique; identical and conflicting duplicate keys both return 422 before service work.
+Each optional nullable comment is limited to 1000 Unicode code points; longer comments return 422 without truncation.
+Actual HTTP request bodies exceeding 4,194,304 bytes return 413 before JSON decoding, including chunked requests or misleading Content-Length headers.
+Only this PUT route is capped; document and image upload limits are unchanged.
+Accepted batches retain existing partial-conflict, optimistic-version and idempotent retry behavior.
 
 ---
 
