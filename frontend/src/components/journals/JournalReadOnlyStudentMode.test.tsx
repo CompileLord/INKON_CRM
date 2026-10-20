@@ -71,6 +71,19 @@ describe("journal grid in student read-only mode", () => {
     expect(document.querySelectorAll("input, [data-control]")).toHaveLength(0);
   });
 
+  it("shows the at-risk marker only on the own row, never on classmates", () => {
+    mountGrid(CLASS_ROSTER, 3);
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(within(rows[0]).getAllByLabelText(/at risk/i)).toHaveLength(1);
+    expect(within(rows[1]).queryByLabelText(/at risk/i)).toBeNull();
+    expect(within(rows[2]).queryByLabelText(/at risk/i)).toBeNull();
+  });
+
+  it("keeps the at-risk marker on every row for staff", () => {
+    mountGrid(CLASS_ROSTER, null);
+    expect(screen.getAllByLabelText(/at risk/i)).toHaveLength(3);
+  });
+
   it("keeps staff order and no highlight without a self student", () => {
     mountGrid(CLASS_ROSTER, null);
     expect(screen.getAllByRole("row")[1].textContent).toContain("Anvar");

@@ -127,6 +127,7 @@
     "schedule": "Ҷадвал",
     "noNextLesson": "Дарси наздик нест",
     "attendanceValue": "Ҳузур {{value}}",
-    "openJournal": "Кушодани журнал"
+    "openJournal": "Кушодани журнал",
+    "scoreUnavailable": "Хол —"
   }
 }

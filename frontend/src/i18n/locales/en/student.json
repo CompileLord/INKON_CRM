@@ -127,6 +127,7 @@
     "schedule": "Schedule",
     "noNextLesson": "No upcoming lesson",
     "attendanceValue": "Attendance {{value}}",
-    "openJournal": "Open journal"
+    "openJournal": "Open journal",
+    "scoreUnavailable": "Score —"
   }
 }

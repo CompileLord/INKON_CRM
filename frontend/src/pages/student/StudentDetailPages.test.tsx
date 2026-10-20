@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import i18n from "../../i18n";
 import { MyCourseDetail } from "./MyCourseDetail";
-import { MyJournalPeriod } from "./MyJournalPeriod";
 import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 import type { JournalDetailResponse, JournalStudentResponse } from "../../lib/journals/types";
 
@@ -66,14 +65,6 @@ function renderCourse(path = "/my/courses/4") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes><Route path="/my/courses/:courseId" element={<MyCourseDetail />} /></Routes>
-    </MemoryRouter>,
-  );
-}
-
-function renderPeriod() {
-  return render(
-    <MemoryRouter initialEntries={["/my/journal/16"]}>
-      <Routes><Route path="/my/journal/:journalId" element={<MyJournalPeriod />} /></Routes>
     </MemoryRouter>,
   );
 }
@@ -143,39 +134,5 @@ describe("student course page", () => {
     renderCourse("/my/courses/abc");
     expect(screen.getByText("Курс не найден")).toBeTruthy();
     expect(screen.getAllByRole("link")).toHaveLength(1);
-  });
-});
-
-describe("student journal period page", () => {
-  it("shows only the own lessons and the own summary, never a classmate", () => {
-    renderPeriod();
-    const text: string = document.body.textContent ?? "";
-    for (const name of ["Shahnoza", "Nozima", "Private note"]) expect(text).not.toContain(name);
-    expect(screen.getAllByTestId("lesson-score")).toHaveLength(1);
-    expect(screen.getByText("Не отмечено")).toBeTruthy();
-    expect(screen.getByText("Keep going")).toBeTruthy();
-  });
-
-  it("leads with the score over the maximum and formats dates as dd.MM.yyyy", () => {
-    renderPeriod();
-    expect(screen.getByTestId("period-total").textContent).toContain("86/ 117");
-    expect(screen.getByText("29.08.2026 – 31.08.2026")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Неделя 5");
-    expect(document.body.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-  });
-
-  it("has no tab bar, no rank and no editing control", () => {
-    const { container } = renderPeriod();
-    expect(container.querySelectorAll("[role='tablist']")).toHaveLength(0);
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(document.body.textContent).not.toMatch(/9 из 9/);
-  });
-
-  it("offers a retry when the period fails to load", () => {
-    const refetch = vi.fn();
-    state.scopedJournal = { data: undefined, isLoading: false, isError: true, error: new Error("x"), isPlaceholderData: false, refetch };
-    renderPeriod();
-    fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
-    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

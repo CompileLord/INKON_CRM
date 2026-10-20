@@ -187,7 +187,7 @@ describe("shared shell lifecycle", () => {
 });
 
 describe("top bar", () => {
-  const routes: string[] = ["/my/courses", "/my/courses/7", "/my/journal/5"];
+  const routes: string[] = ["/my/courses", "/my/courses/7", "/my/courses/7/journal"];
   it.each(routes)("renders only the action buttons and no page title or back link on %s", (route: string) => {
     useAuthStore.setState({ status: "authenticated", userId: 42, role: "student", mustSetPassword: false });
     const client: QueryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

@@ -127,6 +127,7 @@
     "schedule": "Расписание",
     "noNextLesson": "Нет ближайшего занятия",
     "attendanceValue": "Посещаемость {{value}}",
-    "openJournal": "Открыть журнал"
+    "openJournal": "Открыть журнал",
+    "scoreUnavailable": "Баллы —"
   }
 }

@@ -72,6 +72,13 @@ describe("StudentDashboard", () => {
     expect(within(cards[1]).getByText("No upcoming lesson")).toBeTruthy();
   });
 
+  it("labels a missing score instead of showing a bare dash", () => {
+    const entry: StudentCourseProfile = { ...courseEntry(1, "Physics", null), my_total_score: undefined, my_total_max_score: undefined };
+    state.profile = profile([entry]);
+    renderDashboard();
+    expect(screen.getByTestId("course-card-score").textContent).toBe("Score —");
+  });
+
   it("shows a skeleton with the card geometry while loading", () => {
     state.profile = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() };
     renderDashboard();
