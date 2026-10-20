@@ -97,22 +97,41 @@ export interface CourseProgressPeriod {
   period_label: string;
 }
 
-/** One score per journal in period order, plus a trailing course average. */
+export type CourseChartGradingState = "missing" | "ungraded" | "unknown" | "graded" | "upcoming";
+
 export interface CourseProgressChartDataset {
   student_id: number;
   name: string;
   color_hex: string;
-  scores: number[];
-  max_scores?: number[];
-  percentages?: number[];
+  scores: (number | null)[];
+  max_scores: (number | null)[];
+  percentages: (number | null)[];
+  grading_states: CourseChartGradingState[];
+  graded_periods_count: number;
+  eligible_periods_count: number;
 }
 
-/** `labels` is one entry per journal (`period_label`) plus a trailing "Average". */
-export interface CourseProgressChartResponse {
+export interface StaffCourseProgressChartResponse {
   labels: string[];
-  periods?: CourseProgressPeriod[];
+  periods: CourseProgressPeriod[];
   datasets: CourseProgressChartDataset[];
+  class_avg_series: (number | null)[];
+  class_eligible_counts: number[];
 }
+
+export interface StudentCourseProgressChartResponse {
+  periods: CourseProgressPeriod[];
+  my_series: (number | null)[];
+  class_avg_series: (number | null)[];
+  my_grading_states: CourseChartGradingState[];
+  my_graded_periods_count: number;
+  my_eligible_periods_count: number;
+  class_eligible_counts: number[];
+  my_rank: number | null;
+  class_size: number;
+}
+
+export type CourseProgressChartResponse = StaffCourseProgressChartResponse | StudentCourseProgressChartResponse;
 
 export type StaffGradingState = "missing" | "unknown";
 export type StaffGradingProvenance = "unknown";
@@ -150,14 +169,6 @@ export interface CourseStaffProgressResponse {
   students: StaffProgressStudent[];
 }
 
-
-export interface StudentCourseProgressChartResponse {
-  periods: CourseProgressPeriod[];
-  my_series: number[];
-  class_avg_series: number[];
-  my_rank: number;
-  class_size: number;
-}
 
 export interface CourseJournalMetricsResponse {
   class_avg_percentage: number;
