@@ -41,6 +41,9 @@ class NotificationLog(Base):
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    revision_fingerprint: Mapped[Optional[str]] = mapped_column(String(35), nullable=True)
+    source_journal_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     delivery_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     delivery_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_terminal: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False, server_default="false")
@@ -50,3 +53,14 @@ class NotificationLog(Base):
     lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[Optional[User]] = relationship("User")
+
+
+class ExamNotificationBaseline(Base):
+    __tablename__ = "exam_notification_baselines"
+
+    recipient: Mapped[str] = mapped_column(String(255), primary_key=True)
+    summary_id: Mapped[int] = mapped_column(
+        ForeignKey("journal_student_summaries.id", ondelete="CASCADE"), primary_key=True
+    )
+    observed_fingerprint: Mapped[Optional[str]] = mapped_column(String(35), nullable=True)
+    observed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

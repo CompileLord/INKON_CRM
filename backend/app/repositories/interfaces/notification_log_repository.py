@@ -36,6 +36,10 @@ class NotificationLogRepository(BaseRepository[NotificationLog], Protocol):
         user_id: int | None,
         score: int | None,
     ) -> NotificationLog: ...
+    async def lock_exam_identity(self, recipient: str, summary_id: int) -> str | None: ...
+    async def lock_exam_log(
+        self, recipient: str, summary_id: int, notification_date: date, user_id: int, score: int
+    ) -> NotificationLog: ...
     async def claim(
         self,
         notification_id: int,

@@ -24,7 +24,7 @@ from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.document import Document, DocumentOwnerType
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
-from app.services.notification_service import NotificationService
+from app.services.notification_service import ExamNotificationFingerprint, NotificationService
 from app.services.email_service import EmailService
 from app.services.email_templates import RenderedEmail, VerificationCodeEmailTemplate
 from app.services.storage_service import STREAM_CHUNK_SIZE, StorageService, get_storage_service
@@ -131,11 +131,16 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
             Document.owner_id == student_id,
             Document.journal_id == journal_id,
             Document.is_deleted == False,
-        )
+        ).order_by(Document.uploaded_at.desc(), Document.id.desc()).limit(1)
         doc_res: Result[tuple[Document]] = await db.execute(doc_stmt)
         document: Document | None = doc_res.scalars().first()
 
         notification_service: NotificationService = NotificationService(SQLAlchemyNotificationLogRepository(db))
+        fingerprint: str = ExamNotificationFingerprint.build((
+            summary.version, summary.sum_score, summary.max_period_score, summary.attendance_count,
+            summary.total_lessons, journal.period_label, course.title,
+            document.id if document is not None else 0, document.file_path if document is not None else "",
+        ))
         recipient: str = str(student.parent_telegram_chat_id)
         notification_date: date = date.today()
         if notification_id is not None:
@@ -144,27 +149,19 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
                 return
             if (
                 recovered_log.user_id != student_id
-                or recovered_log.related_entity_id != journal_id
+                or (recovered_log.source_journal_id if recovered_log.source_journal_id is not None else recovered_log.related_entity_id) != journal_id
+                or (recovered_log.source_journal_id is not None and recovered_log.related_entity_id != -summary.id)
                 or recovered_log.type != NotificationType.EXAM_RESULT
             ):
                 return
             notification_date = recovered_log.notification_date
-            if recovered_log.recipient != recipient or recovered_log.delivery_score != summary.sum_score:
+            if (
+                recovered_log.recipient != recipient
+                or recovered_log.delivery_score != summary.sum_score
+                or (recovered_log.revision_fingerprint is not None and recovered_log.revision_fingerprint != fingerprint)
+            ):
                 await notification_service.reject_notification(notification_id, revision, "source_changed")
                 return
-
-        async def check_revision_func() -> bool:
-            log_stmt: Select[tuple[NotificationLog]] = select(NotificationLog).filter(
-                NotificationLog.recipient == recipient,
-                NotificationLog.type == NotificationType.EXAM_RESULT,
-                NotificationLog.related_entity_id == journal_id,
-                NotificationLog.notification_date == notification_date,
-            )
-            log_res: Result[tuple[NotificationLog]] = await db.execute(log_stmt)
-            existing_log: NotificationLog | None = log_res.scalars().first()
-            if existing_log and existing_log.error_message != f"score:{summary.sum_score}":
-                return True
-            return False
 
         async def send_func(is_update: bool) -> None:
             prefix: str = "[Обновлено] " if is_update else ""
@@ -191,15 +188,8 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
             await notification_service.deliver_notification(notification_id, revision, send_func)
             return
 
-        await notification_service.send_notification_with_idempotency(
-            recipient=recipient,
-            notification_type=NotificationType.EXAM_RESULT,
-            related_entity_id=journal_id,
-            notification_date=notification_date,
-            send_func=send_func,
-            check_revision_func=check_revision_func,
-            score_val=summary.sum_score,
-            user_id=student.id,
+        await notification_service.send_exam_revision(
+            recipient, summary.id, journal_id, student_id, summary.sum_score, fingerprint, notification_date, send_func
         )
 
 
