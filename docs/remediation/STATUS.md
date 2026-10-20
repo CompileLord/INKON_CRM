@@ -37,38 +37,38 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-29 | done | master | 2026-10-18 | Executor backend 909 pass; independent full 907 pass/2 fail (two WP-11 env cases fail on unmodified master in this runner); independent targeted WP-29/WP-13 20 pass; single Alembic head e029a01b34e5; migration replay pass; queue-age exemption mutation caught after audit-requested test | PASS; exam-result and document intents written in the business transaction, stable job IDs, retry after Redis failure, shared producer closed on shutdown. Scope revision: outbox model, repository-free migration rwp29, workers/settings, approved replacement of one WP-13 test. logs wp29-sol/. |
 | WP-30 | done | master | 2026-10-19 | Python3.12 baseline988 pass; candidate1020 pass478.42s; independent32 pass9.98s; merged-tree38 pass15.63s; 42 affected pass after AST-identical test split, collection1020; stale-owner mutation caught/restored; migration/old-image reads pass | PASS code4a5eb95, merge587d2c6. Atomic claims, finite bounded recovery, source checks; at-least-once transport and drain-before-worker-owner-switch required. Frontend owner must add queued/inflight types and translated DeliveryLog states; frontend checks excluded. Evidence wp30-sol/ and root-audit/wp30-*. |
 | WP-31 | done | master | 2026-10-20 | Python3.12 baseline1088 pass; candidate1096 pass502.45s; focused78 pass; independent8 pass6.41s; identity mutation caught/restored; migration replay/previous-image reads pass | PASS code7ed3131, merge874c46e; merged backend byte-identical to tested candidate. Separate sibling/document revisions and cross-date dedup; conservative cutover observations preserve history. Drain pending work before worker owner switch; previous-image recovery unsupported. Evidence wp31-sol/ and root-audit/wp31-*. |
-| WP-32 | in_progress | remediation/wp-32-ledger-reminders | 2026-10-20 | Baseline1096; focused54 pass; root policy10 pass; allocation mutation caught/restored | /root/wp32_resume; SQL 51/501/5001→2/3/21 at10/100/1000; latency variable. Full held for WP33 sync; notify_debts awaits FIN1a. logs wp32-sol/, root-audit/wp32-*.log. |
+| WP-32 | in_progress | remediation/wp-32-ledger-reminders | 2026-10-20 | Baseline1096; focused54 pass; root policy10 pass; allocation mutation caught/restored | /root/wp32_resume; SQL 51/501/5001→2/3/21 at10/100/1000; latency variable. Combined full running; notify_debts awaits FIN1a. logs wp32-sol/, root-audit/wp32-*.log. |
 | WP-33 | done | master | 2026-10-20 | Full1103 pass645.87s/5 warnings; focused75 pass; root7 pass; grading mutation caught/restored; migration replay/old-image reads pass | PASS code6d5aaa6 mergebd1d301; backend byte-identical to full-tested candidate. Explicit zero/unknown grading; SQL ranks/aggregates; client rank0 handoff pending separate frontend owner. logs wp33-sol/, root-audit/wp33-*.log. |
 | WP-34 | in_progress | remediation/wp-34-course-progress | 2026-10-20 | Baseline1103 reused | /root/wp31_preflight; chart cohort/linear grouping; logs wp34-sol/. |
-| WP-35 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-35 | todo | — | — | Not run | Pending. |
 | WP-36 | done | master | 2026-10-18 | Executor backend 874 pass/7 fail vs baseline 865 pass/same 7 fail (six Alembic multiple-heads, test_avatar_upload_and_thumbnail); targeted 9 pass; ruff pass; 5 mutations caught, 6 of 9 tests red on baseline | PASS commit dc3018d; shared/exclusive advisory month locks, sorted order, held to commit. Gaps: no throughput/deadlock-rate measurements; the 7 failures pre-date WP-36 (multiple Alembic heads introduced by WP-25 + main credentials migration, fix in progress). Logs wp36-sol/. |
-| WP-37 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-37 | todo | — | — | Not run | Pending. |
 | WP-38 | done | remediation/wp-38-seed-identities | 2026-10-15 | Independent Python3.12 365 pass (235.85s), critical 4 pass (4.81s); restored seed/reset/critical 41 pass; all three mapping mutations caught | PASS generated IDs with offset/default sequences, repeated guarded seed, finance/photo references and subsequent API creation. Logs wp13-recovery/wp38-root-*.log. Source/test bytes matched executed copy. |
-| WP-39 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-40 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-41 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-39 | todo | — | — | Not run | Pending. |
+| WP-40 | todo | — | — | Not run | Pending. |
+| WP-41 | todo | — | — | Not run | Pending. |
 | WP-42 | done | remediation/wp-42-migration-gates | 2026-10-15 | Python3.12 integrated backend 411 pass (204.87s); independent migration/deploy/critical 32 pass (15.46s), restored9 pass (8.07s); both CI-target and migration-failure mutations caught | PASS after correction; nine trials verified. Unchanged 1M migration mean100.23±5.44s, WAL1.818GB, 4M updates; no speedup claim. Logs wp14-recovery/evidence/wp42-*. Requires configured self-hosted migration-network runner; real deployment/network not exercised. |
-| WP-43 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-44 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-45 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-46 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-43 | todo | — | — | Not run | Pending. |
+| WP-44 | todo | — | — | Not run | Pending. |
+| WP-45 | todo | — | — | Not run | Pending. |
+| WP-46 | todo | — | — | Not run | Pending. |
 | WP-47 | done | remediation/wp-47-provisioning-secrets | 2026-10-15 | Integrated Python3.12 backend 430 pass (199.01s); independent restored provisioning/critical 23 pass (6.63s, three PTY warns); both mutations caught | PASS after correction: real fresh PostgreSQL smoke, actual stdin/FD password persistence and non-echoing terminal verified. Secret outside PGDATA; no real provisioning. Evidence wp13-recovery/wp47-*.log. |
-| WP-48 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-49 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-50 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-51 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-52 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-53 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-54 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-55 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-56 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-57 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-58 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-48 | todo | — | — | Not run | Pending. |
+| WP-49 | todo | — | — | Not run | Pending. |
+| WP-50 | todo | — | — | Not run | Pending. |
+| WP-51 | todo | — | — | Not run | Pending. |
+| WP-52 | todo | — | — | Not run | Pending. |
+| WP-53 | todo | — | — | Not run | Pending. |
+| WP-54 | todo | — | — | Not run | Pending. |
+| WP-55 | todo | — | — | Not run | Pending. |
+| WP-56 | todo | — | — | Not run | Pending. |
+| WP-57 | todo | — | — | Not run | Pending. |
+| WP-58 | todo | — | — | Not run | Pending. |
 | WP-59 | done | main | 2026-10-18 | Pod full backend before 2 fail/732 pass, after 2 fail/734 pass (same two failures: test_avatar_upload_and_thumbnail, wp11 alembic online init); new WP-59 tests 2 pass; Ruff pass | PASS commit 7783942 (one stray line removed). Unrelated pod failures uninvestigated; no mutation check (not required). logs wp59-sol/. |
 | WP-60 | done | master | 2026-10-19 | Executor backend 921 pass/3 fail; independent full 921 pass/3 fail (two WP-11 env cases fail on unmodified master in this runner, WP-26 avatar order-dependent, passes alone); independent targeted WP-60+WP-26 pass; offload, cancellation and queue-capacity mutations caught | PASS after one audit FAIL (fail-fast 503 rejected 28/30 burst logins; fixed with 64-waiter/5s bounded queue). 2 bcrypt workers; burst-30 90 successes/0 503; mean p95 login 263/1380/4009ms at c1/10/30 (warm in-process ASGI). Residual: workers/outbox.py still verifies synchronously (out of scope). logs wp60-sol/. |
 | WP-61 | done | master | 2026-10-18 | Executor backend 913 pass/1 fail (baseline 886/14); targeted 14 pass; independent targeted 14 pass, wp26+wp61 33 pass; independent full 911 pass/3 fail (wp11 x2 fail on unmodified master in this runner, wp26 order-dependent leftover storage, passes alone); OR->AND dimension mutation caught | PASS; bounded read, dimension/pixel limits before decode, two-slot cancellation-safe worker, one encoded thumbnail. Synthetic 3 trials: resizes 24->12, decoded pixels halved, health p95 ~51->~18-24ms. logs wp61-sol/. |
 | WP-62 | todo | — | 2026-10-19 | Not run | User approved retention policy: application audit logs 7 days; deleted profiles/uploads 30-day recovery then remove/anonymize; encrypted rolling backups 30 days with deletion replay on restore; analytics caches 10 minutes plus deletion invalidation. No automatic financial/ledger deletion until accountant sets period. Implementation and operational evidence pending. No deletion implemented yet. |
-| WP-63 | todo | — | — | Not run | Awaiting dependencies/audit. |
-| WP-64 | todo | — | — | Not run | Awaiting dependencies/audit. |
+| WP-63 | todo | — | — | Not run | Pending. |
+| WP-64 | todo | — | — | Not run | Pending. |
 
 39/64 accepted; 25 remain. Historical gaps require final re-audit. WP32 awaits WP33 sync/full and FIN1a debt policy. WP31 full1096 reused baseline; WP33 full1103 pass. Frontend separately owned; no main/push/deployment or ordinary-service changes.
