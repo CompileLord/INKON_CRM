@@ -1,6 +1,6 @@
 # Remediation progress
 
-This is the only execution record: one concise row per package, actual check results, unresolved blockers and evidence pointers. Required commands and acceptance criteria stay in the existing task files. No separate result, baseline, audit, handoff or progress Markdown reports are created. The orchestrator alone updates this file; branch integration is serial. A failing or unrun required gate cannot be marked done. Frontend is separately owned; no push, deployment or operational data changes are authorized.
+Sole execution record: one concise row per package with actual checks, gaps and external evidence. Task files hold scope/acceptance. Orchestrator updates and serializes integration. Unrun/failing required gates block acceptance. Frontend is separately owned; no PR, push, deployment or operational data changes.
 
 Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outside Git). Current Python3.12 disposable pods: `root-audit-pod`, `wp30-sol-pod`. One suite per pod; never ordinary `imkon_db`/`imkon_redis`.
 
@@ -36,7 +36,7 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-28 | done | remediation/wp-28-webhook-errors | 2026-10-15 | Independent backend 363 pass (195.18s); restored webhook/critical 11 pass (5.39s); four status/logging mutations caught; diff check clean | PASS; malformed JSON/UTF-8 400, invalid schema 422, processing failure 503, real rollback/retry preserves one binding. earlier executor storage-override failure resolved. |
 | WP-29 | done | master | 2026-10-18 | Executor backend 909 pass; independent full 907 pass/2 fail (two WP-11 env cases fail on unmodified master in this runner); independent targeted WP-29/WP-13 20 pass; single Alembic head e029a01b34e5; migration replay pass; queue-age exemption mutation caught after audit-requested test | PASS; exam-result and document intents written in the business transaction, stable job IDs, retry after Redis failure, shared producer closed on shutdown. Scope revision: outbox model, repository-free migration rwp29, workers/settings, approved replacement of one WP-13 test. logs wp29-sol/. |
 | WP-30 | done | master | 2026-10-19 | Python3.12 baseline988 pass; candidate1020 pass478.42s; independent32 pass9.98s; merged-tree38 pass15.63s; 42 affected pass after AST-identical test split, collection1020; stale-owner mutation caught/restored; migration/old-image reads pass | PASS code4a5eb95, merge587d2c6. Atomic claims, finite bounded recovery, source checks; at-least-once transport and drain-before-worker-owner-switch required. Frontend owner must add queued/inflight types and translated DeliveryLog states; frontend checks excluded. Evidence wp30-sol/ and root-audit/wp30-*. |
-| WP-31 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
+| WP-31 | in_progress | remediation/wp-31-exam-notification-identity | 2026-10-20 | Current-master baseline running; implementation started | Sibling/document identities; executor /root/wp31_preflight, evidence wp31-sol/. |
 | WP-32 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
 | WP-33 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
 | WP-34 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
@@ -71,4 +71,4 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-63 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
 | WP-64 | todo | — | — | Not run | Awaiting dependency-ready execution and independent audit. |
 
-37/64 packages recorded accepted; 27 remain. Historical gaps remain for final re-audit. WP-30 is accepted; WP-31 is the next dependency-ready package. Corrected disposable Python3.12 master baseline pass988 tests; ordinary services remain excluded. Frontend work is separately owned. No PR, push or deployment.
+37/64 packages recorded accepted; 27 remain. Historical gaps remain for final re-audit. WP-31 active from5f31641; current-master disposable baseline running. Corrected disposable Python3.12 master baseline pass988 tests; ordinary services remain excluded. Frontend work is separately owned. No PR, push or deployment.
