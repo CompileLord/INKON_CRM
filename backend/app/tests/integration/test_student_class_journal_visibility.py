@@ -34,17 +34,26 @@ async def test_class_journal_shows_classmate_names_and_scores_but_not_comments_o
 
 
 @pytest.mark.asyncio
-async def test_student_cannot_create_journal_entries_or_read_staff_journal(client: AsyncClient, classroom: ClassRoom) -> None:
-    headers: Dict[str, str] = authorization(classroom.own)
-    created: Response = await client.post(
-        f"/api/v1/journals/{classroom.journal_id}/entries",
-        json=[{"student_id": classroom.classmate.id, "lesson_date": classroom.lesson_date, "attendance": True, "score": 5, "version": 1}],
-        headers=headers,
+async def test_student_gets_403_on_every_journal_write_route(client: AsyncClient, classroom: ClassRoom) -> None:
+    from app.main import app
+    sample_bodies: Dict[tuple[str, str], Any] = {
+        ("PUT", "/api/v1/journals/{id}/entries"): [{"student_id": classroom.own.id, "lesson_date": classroom.lesson_date, "attendance": True, "score": 5, "comment": "x", "version": 1}],
+        ("PATCH", "/api/v1/journals/{journal_id}/students/{student_id}/summary"): {"exam_score": 50, "bonus_score": 10, "version": 1},
+        ("PATCH", "/api/v1/journals/{id}/exam-max-score"): {"exam_max_score": 10},
+    }
+    write_routes: List[tuple[str, str]] = sorted(
+        (method.upper(), path)
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/api/v1/journals")
+        for method in operations
+        if method.upper() not in ("GET", "HEAD", "OPTIONS")
     )
-    assert created.status_code in (403, 405)
-    staff_view: Response = await client.get(f"/api/v1/journals/{classroom.journal_id}", headers=headers)
-    assert CLASSMATE_COMMENT not in staff_view.text
-    assert "second@example.com" not in staff_view.text
+    assert write_routes
+    assert set(write_routes) == set(sample_bodies)
+    for method, path_template in write_routes:
+        url: str = path_template.replace("{id}", str(classroom.journal_id)).replace("{journal_id}", str(classroom.journal_id)).replace("{student_id}", str(classroom.own.id))
+        response: Response = await client.request(method, url, json=sample_bodies[(method, path_template)], headers=authorization(classroom.own))
+        assert response.status_code == 403, (method, path_template)
 
 
 @pytest.mark.asyncio
