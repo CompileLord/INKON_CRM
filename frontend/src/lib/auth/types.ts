@@ -12,6 +12,11 @@ export interface RefreshRequest {
   refresh_token: string;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface SetPasswordRequest {
   new_password: string;
 }
@@ -49,8 +54,9 @@ export interface PasswordResetVerifyResponse {
   [key: string]: unknown;
 }
 
-/** password-reset/request's response has no declared shape either. */
-export type PasswordResetRequestResponse = Record<string, unknown>;
+export interface PasswordResetRequestResponse {
+  message: "If the email exists, a reset code has been sent.";
+}
 
 export interface ValidationErrorItem {
   loc: (string | number)[];

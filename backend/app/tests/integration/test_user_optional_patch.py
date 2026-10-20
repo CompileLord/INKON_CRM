@@ -26,9 +26,16 @@ async def test_admin_explicit_null_clears_optional_fields_and_preserves_required
         json={"phone": None, "date_of_birth": None, "parent_phone": None,
               "parent_telegram_chat_id": None, "payment_day_of_month": None},
     )
+    assert response.status_code == 422
+    response = await client.patch(
+        f"/api/v1/users/{test_student.id}",
+        headers={"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"},
+        json={"phone": None, "date_of_birth": None,
+              "parent_telegram_chat_id": None, "payment_day_of_month": None},
+    )
     assert response.status_code == 200
     await db_session.refresh(test_student)
-    for field in ("phone", "date_of_birth", "parent_phone", "parent_telegram_chat_id", "payment_day_of_month"):
+    for field in ("phone", "date_of_birth", "parent_telegram_chat_id", "payment_day_of_month"):
         assert response.json()[field] is None
         assert getattr(test_student, field) is None
     assert (test_student.first_name, test_student.last_name, test_student.email) == original_identity

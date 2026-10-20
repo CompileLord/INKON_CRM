@@ -58,8 +58,31 @@ export interface User {
   updated_at: string;
 }
 
+export type PasswordSmsDestination = 'student_phone' | 'parent_phone';
+
 export interface UserCreateResponse extends User {
   parent_link_code?: string | null;
+  password_sms_destination?: PasswordSmsDestination | null;
+}
+
+export interface PasswordSmsResendResponse {
+  destination: PasswordSmsDestination;
+}
+
+export type PasswordSmsDeliveryStatus = 'pending' | 'claimed' | 'delivered' | 'failed' | 'expired';
+
+export interface PasswordSmsDelivery {
+  id: number;
+  user_id: number | null;
+  status: PasswordSmsDeliveryStatus;
+  masked_phone: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  last_error: string | null;
+  provider_message_id: string | null;
+  provider_status: "pending" | "queued" | "accepted" | "sent" | "delivered" | null;
+  created_at: string;
+  delivered_at: string | null;
 }
 
 export interface TelegramLinkCode {

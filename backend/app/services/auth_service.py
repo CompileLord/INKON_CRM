@@ -15,6 +15,7 @@ from app.core.security import (
 )
 from app.core.redis import redis_client
 from app.core.temporary_passwords import TemporaryPasswordGenerator
+from app.core.student_passwords import PendingStudentPasswordHasher
 from app.core.verification_codes import (
     ChallengeBackendUnavailable,
     ChallengeOutcome,
@@ -29,6 +30,9 @@ from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxReposi
 from app.schemas.auth import TokenPair
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxService
+from app.services.sms.messages import PasswordSmsReason
+from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
+from app.services.student_password_sms_service import StudentPasswordSmsService
 
 
 class AuthService:
@@ -45,16 +49,34 @@ class AuthService:
     async def login(self, email: str, password: str) -> TokenPair:
         user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
+            await self.password_work_service.hash("invalid-login-placeholder")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
 
-        if not user.password_hash or not await self.password_work_service.verify(password, user.password_hash):
+        current_password_matches: bool = bool(user.password_hash) and await self.password_work_service.verify(
+            password, user.password_hash
+        )
+        pending_password_matches: bool = (
+            user.pending_password_hash is not None
+            and user.pending_password_expires_at is not None
+            and user.pending_password_expires_at > datetime.now(timezone.utc)
+            and PendingStudentPasswordHasher(settings.JWT_SECRET_KEY).verify(user.id, password, user.pending_password_hash)
+        )
+        if not current_password_matches and not pending_password_matches:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
+        if pending_password_matches and not current_password_matches:
+            user.password_hash = await self.password_work_service.hash(password)
+            user.pending_password_hash = None
+            user.pending_password_expires_at = None
+            user.must_set_password = False
+            user.auth_version += 1
+            await self.user_repo.update(user)
+            await self.revoke_all_user_tokens(user.id)
 
         scope = "must_set_password" if user.must_set_password else None
         access_token = create_access_token(
@@ -240,6 +262,8 @@ class AuthService:
                 detail="User not found"
             )
 
+        user.pending_password_hash = None
+        user.pending_password_expires_at = None
         user.password_hash = await self.password_work_service.hash(new_password)
         user.must_set_password = False
         user.auth_version += 1
@@ -260,9 +284,50 @@ class AuthService:
             must_set_password=False
         )
 
+    async def change_password(self, user_id: int, current_password: str, new_password: str) -> TokenPair:
+        if len(new_password) < 8 or not any(char.isdigit() for char in new_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters and contain at least 1 digit"
+            )
+        user = await self.user_repo.get_by_id_for_update(user_id)
+        if not user or user.is_deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        if not user.password_hash or not await self.password_work_service.verify(
+            current_password, user.password_hash
+        ):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password")
+        return await self._replace_password(user, new_password)
+
+    async def _replace_password(self, user: User, new_password: str) -> TokenPair:
+        user.pending_password_hash = None
+        user.pending_password_expires_at = None
+        user.password_hash = await self.password_work_service.hash(new_password)
+        user.must_set_password = False
+        user.auth_version += 1
+        await self.user_repo.update(user)
+        await self.revoke_all_user_tokens(user.id)
+        access_token = create_access_token(user.id, user.role, auth_version=user.auth_version)
+        refresh_token = await self._issue_refresh_token(user)
+        return TokenPair(access_token=access_token, refresh_token=refresh_token, must_set_password=False)
+
     async def password_reset_request(self, email: str) -> None:
         user = await self.user_repo.get_by_email(email)
         if not user or user.is_deleted:
+            return
+
+        sms_service: StudentPasswordSmsService = StudentPasswordSmsServiceFactory.create(self.db)
+        if sms_service.resolve_destination(user) is not None:
+            locked_user: User | None = await self.user_repo.get_by_id_for_update(user.id)
+            if locked_user is None or locked_user.is_deleted:
+                return
+            try:
+                await sms_service.issue_password(
+                    locked_user, PasswordSmsReason.RESET, None, enforce_rate_limits=True
+                )
+            except HTTPException as error:
+                if error.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
+                    raise
             return
 
         code = str(secrets.randbelow(900000) + 100000)
@@ -343,6 +408,8 @@ class AuthService:
                 detail="Invalid or expired reset token"
             )
 
+        user.pending_password_hash = None
+        user.pending_password_expires_at = None
         user.password_hash = await self.password_work_service.hash(new_password)
         user.auth_version += 1
         await self.user_repo.update(user)

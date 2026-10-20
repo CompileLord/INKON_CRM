@@ -262,6 +262,7 @@ async def test_recovery_routes_real_journal_and_rejects_changed_document(
     await tasks.send_exam_result_notification_task({}, **payload)
     assert sender.await_count == 0
     log: NotificationLog = (await db_session.execute(select(NotificationLog))).scalar_one()
+    await db_session.refresh(log)
     assert log.error_message == "source_changed"
     assert log.is_terminal is True
     await tasks.send_exam_result_notification_task({}, test_student.id, journal.id)

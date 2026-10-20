@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
+from fastapi.exceptions import RequestValidationError
+from app.core.credential_validation import CredentialValidationErrorHandler
 from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.students import router as students_router
@@ -51,6 +53,7 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_exception_handler(RequestValidationError, CredentialValidationErrorHandler())
 
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
