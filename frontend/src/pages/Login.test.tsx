@@ -73,7 +73,7 @@ describe("Login page integration", () => {
 
     expect(screen.queryByRole("link", { name: /activate account/i })).toBeNull();
     expect(document.querySelector('a[href="/verify-email"]')).toBeNull();
-    const hint = screen.getByText("New user? Enter the 6-digit password we sent to your email.");
+    const hint = screen.getByText("New student? Enter the 6-character code from the SMS.");
     expect(hint.className).toContain("text-muted");
   });
 
