@@ -159,7 +159,8 @@ class EnrollmentService:
                     attendance=False,
                     score=0,
                     comment=None,
-                    version=1
+                    version=1,
+                    is_graded=False,
                 ))
 
             summaries_to_add.append(JournalStudentSummary(
@@ -173,7 +174,8 @@ class EnrollmentService:
                 max_period_score=ScoringPolicy.max_period_score(len(lesson_dates), journal.exam_max_score, journal.bonus_max_score),
                 attendance_count=0,
                 total_lessons=len(lesson_dates),
-                version=1
+                version=1,
+                is_graded=False,
             ))
 
         try:

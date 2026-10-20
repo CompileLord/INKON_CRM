@@ -192,6 +192,29 @@ export interface DebtItem {
   total_paid: string;
   debt: string;
   overdue_days: number;
+  parent_telegram_linked?: boolean;
+  last_reminder_at?: string | null;
+}
+
+export type DebtReminderOutcome =
+  | "queued"
+  | "no_parent_chat"
+  | "no_debt"
+  | "recently_reminded"
+  | "not_found";
+
+export interface DebtReminderRequest {
+  student_ids: number[];
+}
+
+export interface DebtReminderResult {
+  student_id: number;
+  outcome: DebtReminderOutcome;
+  next_allowed_at: string | null;
+}
+
+export interface DebtReminderResponse {
+  results: DebtReminderResult[];
 }
 
 export interface DebtorPreview {

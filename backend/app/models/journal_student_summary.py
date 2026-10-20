@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -21,6 +21,7 @@ class JournalStudentSummary(Base):
     max_period_score: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     attendance_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     total_lessons: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    is_graded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
 
     __mapper_args__ = {

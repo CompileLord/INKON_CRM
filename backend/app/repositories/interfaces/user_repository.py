@@ -14,6 +14,8 @@ class StudentTotalsRawRecord:
     periods_with_max_score_count: int
     total_score: int = 0
     total_max_score: int = 0
+    graded_summaries_count: int = 0
+    unknown_summaries_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,8 @@ class StudentCourseRawRecord:
     periods_with_max_score_count: int
     total_score: int = 0
     total_max_score: int = 0
+    graded_summaries_count: int = 0
+    unknown_summaries_count: int = 0
 
 
 class UserRepository(BaseRepository[User], Protocol):

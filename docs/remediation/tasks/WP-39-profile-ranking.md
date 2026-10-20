@@ -19,6 +19,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | File | Snapshot location / intent |
 |---|---|
 | [backend/app/repositories/sqlalchemy/user_repository.py:182](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Existing file, anchor line 182; only this WP’s stated behavior may change. |
+| `backend/app/repositories/sqlalchemy/student_performance_repository.py` | Current extracted ranking implementation; preserve accepted WP33 grading/rank policy. |
 | [backend/app/tests/integration/test_remediation_wp39.py](../../../backend/app/tests/integration/test_remediation_wp39.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
@@ -41,6 +42,8 @@ Snapshot excerpt from `backend/app/repositories/sqlalchemy/user_repository.py`:
 188:                             (JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
 189:                             else_=0.0
 ```
+
+Current-source correction (2026-10-20): WP33 already replaced per-course queries with a partitioned SQL window query in student_performance_repository.py. Verify that implementation with regression/measurement evidence first; do not add a redundant optimization or change its unranked-0 and deterministic tie policies. A test-only/no-action result is valid when measured behavior meets the task.
 
 ## Step-by-step change
 

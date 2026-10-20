@@ -24,6 +24,7 @@ class JournalEntry(Base):
     attendance: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     score: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_graded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
 
     __mapper_args__ = {

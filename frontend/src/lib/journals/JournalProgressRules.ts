@@ -16,6 +16,8 @@ export interface ProgressPeriodRow {
   storedCount: number;
   unavailableCount: number;
   averagePercentage: number | null;
+  averageScore: number | null;
+  maxScore: number | null;
   upcoming: boolean;
 }
 
@@ -38,22 +40,7 @@ export interface ChartCoordinate {
   y: number;
 }
 
-export type ProgressSortKey = { kind: "period"; index: number } | { kind: "average" } | { kind: "trend" };
-
-export interface ProgressSort {
-  key: ProgressSortKey;
-  direction: "desc" | "asc";
-}
-
-export type TrendDirection = "up" | "down" | "flat";
-
-export interface ProgressTrend {
-  direction: TrendDirection;
-  magnitude: number;
-}
-
 export class JournalProgressRules {
-  static readonly REFERENCE_PERCENTAGE: number = 100;
   static readonly SERIES_SLOT_COUNT: number = 8;
   static readonly DEFAULT_VISIBLE_STUDENTS: number = 6;
   static readonly TOGGLE_ALL_THRESHOLD: number = 6;
@@ -77,12 +64,15 @@ export class JournalProgressRules {
         return result ? [result] : [];
       });
       const percentageSum: number = stored.reduce((total, result) => total + result.percentage, 0);
+      const scoreSum: number = stored.reduce((total, result) => total + result.score, 0);
       return {
         period,
         rosterCount: data.students.length,
         storedCount: stored.length,
         unavailableCount: data.students.length - stored.length,
         averagePercentage: stored.length === 0 ? null : percentageSum / stored.length,
+        averageScore: stored.length === 0 ? null : scoreSum / stored.length,
+        maxScore: stored.length === 0 ? null : Math.max(...stored.map((result) => result.maxScore)),
         upcoming: period.period_start > today,
       };
     });
@@ -136,8 +126,37 @@ export class JournalProgressRules {
     return [...pinned, ...students.filter((student) => student.studentId !== pinnedStudentId)];
   }
 
-  static domainMaximum(values: (number | null)[]): number {
-    return Math.max(JournalProgressRules.REFERENCE_PERCENTAGE, ...values.filter((value): value is number => value !== null));
+  static readonly NICE_STEPS: readonly number[] = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000];
+  static readonly MAXIMUM_TICK_INTERVALS: number = 5;
+
+  static scoreTicks(values: (number | null)[]): number[] {
+    const highest: number = Math.max(1, ...values.filter((value): value is number => value !== null));
+    const step: number =
+      JournalProgressRules.NICE_STEPS.find((candidate) => highest / candidate <= JournalProgressRules.MAXIMUM_TICK_INTERVALS) ??
+      JournalProgressRules.NICE_STEPS[JournalProgressRules.NICE_STEPS.length - 1];
+    const intervals: number = Math.ceil(highest / step);
+    return Array.from({ length: intervals + 1 }, (_, index) => index * step);
+  }
+
+  static stepPath(coordinates: ChartCoordinate[], minimumX: number = -Infinity, maximumX: number = Infinity): string {
+    if (coordinates.length === 0) return "";
+    const midpointX = (left: ChartCoordinate, right: ChartCoordinate): number => (left.x + right.x) / 2;
+    const first: ChartCoordinate = coordinates[0];
+    const last: ChartCoordinate = coordinates[coordinates.length - 1];
+    const leadingX: number = Math.max(minimumX, coordinates.length > 1 ? first.x - (coordinates[1].x - first.x) / 2 : first.x - 12);
+    const trailingX: number = Math.min(maximumX, coordinates.length > 1 ? last.x + (last.x - coordinates[coordinates.length - 2].x) / 2 : last.x + 12);
+    let path: string = `M${leadingX},${first.y}`;
+    coordinates.forEach((coordinate, index) => {
+      const next: ChartCoordinate | undefined = coordinates[index + 1];
+      const edgeX: number = next ? midpointX(coordinate, next) : trailingX;
+      path += `H${edgeX}`;
+      if (next) path += `V${next.y}`;
+    });
+    return path;
+  }
+
+  static onlyStudent(students: ProgressChartStudent[], studentId: number): ProgressChartStudent[] {
+    return students.filter((student) => student.studentId === studentId).map((student) => ({ ...student, slot: 0, dashVariant: 0 }));
   }
 
   static lineRuns(values: (number | null)[]): ProgressLineVertex[][] {
@@ -187,41 +206,5 @@ export class JournalProgressRules {
       path += `C${from.x + third},${from.y + tangents[index] * third},${to.x - third},${to.y - tangents[index + 1] * third},${to.x},${to.y}`;
     }
     return path;
-  }
-
-  static averageOf(values: (number | null)[]): number | null {
-    const present: number[] = values.filter((value): value is number => value !== null);
-    return present.length === 0 ? null : present.reduce((total, value) => total + value, 0) / present.length;
-  }
-
-  static trendOf(values: (number | null)[]): ProgressTrend | null {
-    const present: number[] = values.filter((value): value is number => value !== null);
-    if (present.length < 2) return null;
-    const change: number = Math.round(present[present.length - 1] - present[0]);
-    return { direction: change > 0 ? "up" : change < 0 ? "down" : "flat", magnitude: Math.abs(change) };
-  }
-
-  static signedTrend(trend: ProgressTrend | null): number | null {
-    if (trend === null) return null;
-    return trend.direction === "down" ? -trend.magnitude : trend.magnitude;
-  }
-
-  static sortValue(student: ProgressChartStudent, key: ProgressSortKey): number | null {
-    const values: (number | null)[] = student.results.map((result) => (result ? result.percentage : null));
-    if (key.kind === "period") return values[key.index] ?? null;
-    if (key.kind === "average") return JournalProgressRules.averageOf(values);
-    return JournalProgressRules.signedTrend(JournalProgressRules.trendOf(values));
-  }
-
-  static sortStudents(students: ProgressChartStudent[], sort: ProgressSort): ProgressChartStudent[] {
-    const factor: number = sort.direction === "desc" ? -1 : 1;
-    return [...students].sort((first, second) => {
-      const firstValue: number | null = JournalProgressRules.sortValue(first, sort.key);
-      const secondValue: number | null = JournalProgressRules.sortValue(second, sort.key);
-      if (firstValue === null && secondValue === null) return first.name.localeCompare(second.name);
-      if (firstValue === null) return 1;
-      if (secondValue === null) return -1;
-      return (firstValue - secondValue) * factor || first.name.localeCompare(second.name);
-    });
   }
 }

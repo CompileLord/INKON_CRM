@@ -11,7 +11,7 @@ const RULES: Readonly<Record<string, RegExp>> = {
 
 const PAGE_LEVEL_RULES: readonly string[] = ["page-max-width"];
 
-export const ALLOWLIST_CEILING: number = 24;
+export const ALLOWLIST_CEILING: number = 19;
 
 const ALLOWLIST: readonly string[] = [
   "components/courses/CourseFormPanel.tsx::native-date-input",
@@ -22,9 +22,7 @@ const ALLOWLIST: readonly string[] = [
   "components/finance/OverviewSummary.tsx::native-date-input",
   "components/finance/PaymentDateRangePicker.tsx::native-date-input",
   "components/finance/SchoolDatePicker.tsx::native-date-input",
-  "components/journals/JournalWorkspaceTabs.tsx::role-tablist",
   "components/mentors/MentorFormPanel.tsx::native-date-input",
-  "components/student/StudentBucketTabs.tsx::role-tablist",
   "components/students/StudentFormPanel.tsx::native-date-input",
   "pages/Audit.tsx::page-max-width",
   "pages/Finance.tsx::page-max-width",
@@ -35,9 +33,6 @@ const ALLOWLIST: readonly string[] = [
   "pages/Notifications.tsx::role-tablist",
   "pages/Settings.tsx::page-max-width",
   "pages/Students.tsx::page-max-width",
-  "pages/student/MyCourseDetail.tsx::page-max-width",
-  "pages/student/MyCourses.tsx::page-max-width",
-  "pages/student/MyJournalPeriod.tsx::page-max-width",
 ];
 
 class SourceScanner {

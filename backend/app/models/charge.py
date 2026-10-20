@@ -2,7 +2,7 @@ from datetime import date
 from enum import Enum
 from decimal import Decimal
 from typing import Optional, List
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String, Date, Index
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String, Date, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, SoftDeleteMixin
 
@@ -27,6 +27,13 @@ class Charge(Base, SoftDeleteMixin):
         Index("idx_charges_student_due_date", "student_id", "due_date"),
         Index("idx_charges_enrollment", "enrollment_id"),
         Index("idx_charges_due_date", "due_date"),
+        Index(
+            "uq_charges_active_tuition_installment",
+            "enrollment_id",
+            "sequence_no",
+            unique=True,
+            postgresql_where=text("is_deleted = false AND type = 'tuition' AND status != 'cancelled'"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

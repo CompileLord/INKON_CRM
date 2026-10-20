@@ -183,7 +183,7 @@ async def test_api_filters_and_projects_queued_and_inflight_states(
     assert (
         await service.queue_notification(
             "998877",
-            NotificationType.PAYMENT_REMINDER_1D,
+            NotificationType.EXAM_RESULT,
             42,
             DeliveryFixture.notification_date,
             enqueue,
@@ -250,7 +250,7 @@ async def test_actual_reminder_enqueue_does_not_record_delivery(
 async def test_notification_service_idempotency(db_session: AsyncSession) -> None:
     notification_service = NotificationService(SQLAlchemyNotificationLogRepository(db_session))
     recipient = "998877"
-    notification_type = NotificationType.PAYMENT_REMINDER_2D
+    notification_type = NotificationType.EXAM_RESULT
     related_entity_id = 1
     notification_date = date(2026, 7, 12)
 
