@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -68,13 +68,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function pickDate(user: ReturnType<typeof userEvent.setup>, day: string) {
-  await user.click(screen.getByLabelText("Date"));
-  const input = await waitFor(() => { const node = document.querySelector<HTMLInputElement>("input[type=date]"); if (!node) throw new Error("no date input"); return node; });
-  await user.clear(input);
-  await user.type(input, day);
-  await user.click(screen.getByRole("button", { name: "Apply" }));
-  await waitFor(() => expect(document.querySelector("input[type=date]")).toBeNull());
+async function pickDate(_user: ReturnType<typeof userEvent.setup>, day: string) {
+  const input = screen.getByLabelText("Date");
+  const [year, month, dayOfMonth] = day.split("-");
+  fireEvent.change(input, { target: { value: `${dayOfMonth}.${month}.${year}` } });
+  fireEvent.blur(input);
+  await waitFor(() => expect((screen.getByLabelText("Date") as HTMLInputElement).value).toBe(`${dayOfMonth}.${month}.${year}`));
 }
 
 async function chooseStudentAndCourse(user: ReturnType<typeof userEvent.setup>) {
@@ -110,7 +109,7 @@ describe("Payment entry form", () => {
     renderFinance("?tab=payments");
     const user = userEvent.setup({ advanceTimers: () => undefined });
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
-    expect((await screen.findByLabelText("Date")).textContent).toBe("01.11.2026");
+    expect(((await screen.findByLabelText("Date")) as HTMLInputElement).value).toBe("01.11.2026");
   });
 
   it("submits a large exact amount without float conversion and the chosen Dushanbe day as an instant", async () => {

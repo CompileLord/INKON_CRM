@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -93,31 +94,32 @@ beforeEach(async () => {
   mock.onGet(debtsUrl).reply(200, listing([]));
   mock.onGet(paymentsUrl).reply(200, listing(REGISTRY));
 });
+function typeDate(label: string, typedValue: string): void {
+  const input: HTMLElement = screen.getByLabelText(label);
+  fireEvent.change(input, { target: { value: typedValue } });
+  fireEvent.blur(input);
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
 describe("Payments registry layout", () => {
-  it("renders a seven-column table at 960px of content width and a divided list below it", async () => {
-    stubContainerWidth(960);
+  it("renders a six-column table with the Details action column and no width switching", async () => {
     renderPayments();
-    expect(await screen.findByRole("table")).toBeTruthy();
+    await screen.findByText("Dilnoza Rustamova");
+    expect(screen.getByRole("table")).toBeTruthy();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
       "Student", "Allocation", "Cash received", "Method and date", "Status", "Details",
     ]);
-    cleanup();
-    stubContainerWidth(959);
-    renderPayments();
-    await screen.findByText("Dilnoza Rustamova");
-    expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(REGISTRY.length);
+    expect(screen.getAllByRole("button", { name: /^Details for/ }).length).toBeGreaterThanOrEqual(REGISTRY.length);
   });
 
   it("summarises allocations as none, one course title or the distinct course count", async () => {
     stubContainerWidth(1200);
     renderPayments();
-    await screen.findByRole("table");
+    await screen.findByText("Dilnoza Rustamova");
     const rowOf = (name: string) => screen.getByText(name).closest("tr") as HTMLElement;
     expect(within(rowOf("Zara Nazarova")).getByText("No allocation")).toBeTruthy();
     expect(within(rowOf("Dilnoza Rustamova")).getByText("Python Advanced")).toBeTruthy();
@@ -128,7 +130,7 @@ describe("Payments registry layout", () => {
   it("keeps voided and refunded visible beside the original cash and shows nothing loud for ordinary payments", async () => {
     stubContainerWidth(1200);
     renderPayments();
-    await screen.findByRole("table");
+    await screen.findByText("Dilnoza Rustamova");
     const voidedRow = screen.getByText("Bahrom Qodirov").closest("tr") as HTMLElement;
     expect(within(voidedRow).getByText("900.25 TJS")).toBeTruthy();
     expect(within(voidedRow).getByText("Voided").closest("[title]")?.getAttribute("title")).toBe("This payment was voided.");
@@ -143,7 +145,7 @@ describe("Payments registry layout", () => {
   it("identifies students by name, falls back to Unknown student and never uses the student ID as identity", async () => {
     stubContainerWidth(1200);
     renderPayments();
-    await screen.findByRole("table");
+    await screen.findByText("Dilnoza Rustamova");
     expect(screen.getByText("Unknown student")).toBeTruthy();
     expect(screen.queryByText(/Student #/)).toBeNull();
     expect(screen.queryByText(/Payment #/)).toBeNull();
@@ -163,7 +165,7 @@ describe("Payments registry layout", () => {
   it("loads names from the payments list only and never requests a profile per row", async () => {
     stubContainerWidth(1200);
     renderPayments();
-    await screen.findByRole("table");
+    await screen.findByText("Dilnoza Rustamova");
     expect(mock.history.get.filter((request) => /\/students\//.test(request.url ?? ""))).toEqual([]);
   });
 });
@@ -196,8 +198,9 @@ describe("Payments filters and URL state", () => {
     await screen.findByText("Dilnoza Rustamova");
     await userEvent.click(screen.getByRole("button", { name: /^Date/ }));
     const from = await screen.findByLabelText("From");
-    await userEvent.type(from, "2026-10-05");
-    await userEvent.type(screen.getByLabelText("To"), "2026-10-06");
+    expect(from).toBeTruthy();
+    typeDate("From", "05.10.2026");
+    typeDate("To", "06.10.2026");
     await userEvent.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(location()).toContain("pfrom=2026-10-05&pto=2026-10-06"));
     expect(location()).toContain("from=2026-09-01&to=2026-09-30");
@@ -214,8 +217,9 @@ describe("Payments filters and URL state", () => {
     await screen.findByText("Dilnoza Rustamova");
     const before = paymentRequests().length;
     await userEvent.click(screen.getByRole("button", { name: /^Date/ }));
-    await userEvent.type(await screen.findByLabelText("From"), "2026-10-20");
-    await userEvent.type(screen.getByLabelText("To"), "2026-10-01");
+    await screen.findByLabelText("From");
+    typeDate("From", "20.10.2026");
+    typeDate("To", "01.10.2026");
     await userEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(paymentRequests()).toHaveLength(before);
@@ -267,7 +271,7 @@ describe("Payments registry states", () => {
   it("reserves skeleton rows while loading", async () => {
     mock.onGet(paymentsUrl).reply(() => new Promise(() => undefined));
     renderPayments();
-    const loading = await screen.findByText("Loading payments");
-    expect(loading.closest("[aria-busy='true']")).toBeTruthy();
+    await waitFor(() => expect(document.querySelector("[data-table-state='loading'][aria-busy='true']")).not.toBeNull());
+    expect(document.querySelectorAll("[data-table-state='loading'] tr")).toHaveLength(6);
   });
 });

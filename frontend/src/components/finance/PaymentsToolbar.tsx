@@ -1,4 +1,3 @@
-import { Banknote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentMethod } from "../../lib/finance/types";
 import { FinanceUrlState, type PaymentsViewState } from "../../lib/finance/urlState";
@@ -45,7 +44,7 @@ export function PaymentsToolbar({ view, courseLabel, studentLabel, onChangeFilte
   const removeLabel = (filter: string): string => t("finance:debtorsTab.removeFilter", { filter });
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border px-4 py-3">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <PaymentStudentFilter
           studentName={studentLabel}
@@ -53,7 +52,7 @@ export function PaymentsToolbar({ view, courseLabel, studentLabel, onChangeFilte
         />
         <ListboxPicker
           label={t("finance:paymentsTab.methodLabel")}
-          icon={<Banknote size={16} />}
+          icon={null}
           options={methodOptions}
           value={view.method ?? ""}
           onChange={(value) => onChangeFilters({ method: value === "" ? null : (value as PaymentMethod) })}
@@ -73,7 +72,7 @@ export function PaymentsToolbar({ view, courseLabel, studentLabel, onChangeFilte
           <button
             type="button"
             onClick={() => onChangeFilters(CLEARED_FILTERS)}
-            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("finance:debtorsTab.clearFilters")}
           </button>
