@@ -26,6 +26,26 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/repositories/sqlalchemy/payment_repository.py:9](../../../backend/app/repositories/sqlalchemy/payment_repository.py) | Existing file, anchor line 9; only this WP’s stated behavior may change. |
 | [backend/app/repositories/interfaces/payment_repository.py:7](../../../backend/app/repositories/interfaces/payment_repository.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp32.py](../../../backend/app/tests/integration/test_remediation_wp32.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/services/payment_reminder_service.py` | Class-based upcoming reminder workflow and batch transaction ownership. |
+| `backend/app/services/payment_reminder_messages.py` | Separate upcoming-reminder catalog with ru/en/tg templates; avoids concurrent FIN1a catalog ownership. |
+| `backend/app/repositories/interfaces/payment_reminder_repository.py` | Typed candidates, cursor and reminder persistence Protocol. |
+| `backend/app/repositories/sqlalchemy/payment_reminder_repository.py` | Bounded due-ledger batch selection and INSERT SELECT persistence. |
+| `backend/app/repositories/sqlalchemy/charge_balance_query.py` | Shared active-allocation charge-balance SQL expression. |
+| `backend/app/services/notification_service.py` | Enforce policy/current balance before queue, claim and send; refresh stale amount text. |
+| `backend/app/repositories/interfaces/notification_log_repository.py` | Typed policy/current reminder-source boundary. |
+| `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Atomic current policy, source ownership and ledger checks. |
+| `backend/app/tests/integration/test_integrations_and_polish.py` | Adapt only retired-Payment reminder fixtures to current ledger obligations. |
+| `backend/app/tests/integration/test_notification_delivery.py` | Adapt reminder ledger fixtures and synthetic API projection row; preserve assertions. |
+| `backend/app/tests/integration/wp30_delivery_support.py` | Provide genuine ledger obligation in reminder fixture. |
+| `backend/app/tests/integration/wp32_reminder_support.py` | Bounded typed reminder test fixtures if required. |
+| `backend/app/tests/integration/test_remediation_wp32_policy.py` | Separate policy/delivery regression tests if needed for 20 KB cap. |
+| `backend/app/tests/integration/test_remediation_wp32_performance.py` | Measured batch/query-count/RSS tests if needed for 20 KB cap. |
+| `backend/app/tests/integration/test_notification_recovery.py` | Update only durable reminder send-text assertion to the current ledger amount/content; preserve recovery and deduplication checks. |
+| `backend/app/services/debt_reminder_service.py` | Honor notify_debts before queueing the merged FIN1a workflow. |
+| `backend/app/repositories/interfaces/debt_reminder_repository.py` | Narrow organization policy repository boundary. |
+| `backend/app/repositories/sqlalchemy/debt_reminder_repository.py` | Read current debt notification policy. |
+| `backend/app/repositories/sqlalchemy/debt_reminder_delivery_repository.py` | Enforce debt policy atomically at claim and send-start, including recovered work. |
+| `backend/app/workers/debt_reminder_delivery.py` | Only if needed for truthful disabled-policy handling immediately before delivery. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -53,6 +73,8 @@ Snapshot excerpt from `backend/app/workers/tasks.py`:
 215:                         )
 216:                     ).filter(
 ```
+
+Scope correction (2026-10-20): both existing 1d/2d types are upcoming payment reminders and use `notify_payments`. Do not arbitrarily map one to debts or conjoin switches. The separate unmerged FIN1a manual-debt pipeline owns the `notify_debts` call sites; BUS-18 closure requires that contribution after ownership/integration is resolved. Implement the disjoint upcoming portion now; do not mark both switches closed prematurely. Batch persistence must scale with batches, and delivery must use the current balance after intervening payment/refund, not stale queued text.
 
 ## Step-by-step change
 
@@ -113,3 +135,7 @@ Complete prerequisites first and start from their merged result. Do not require 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
 Use branch `remediation/wp-32-ledger-reminders` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
+
+### FIN1a integration correction (2026-10-20)
+
+FIN1a is now merged, including its migration-chain repair. BUS18 debt policy is reachable and belongs to this package. Reject a disabled manual queue request as a whole with existing HTTP 409 conflict semantics before queue/audit writes; never report queued or invent a per-student outcome. Keep repositories free of HTTP exceptions. Disabled pending work must not be claimed or marked sent; recovery and re-enable preserve finite leases/retries and honest state. Check notify_debts atomically at send-start, independently of notify_payments. Tests cover queue, disable after claim, stale recovery, re-enable and switch independence; no frontend or schema change is needed for this existing error-envelope behavior.

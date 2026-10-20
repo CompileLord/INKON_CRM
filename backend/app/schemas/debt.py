@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
@@ -26,3 +27,5 @@ class DebtResponse(BaseModel):
     total_paid: Decimal
     debt: Decimal
     overdue_days: int
+    parent_telegram_linked: bool
+    last_reminder_at: Optional[datetime]

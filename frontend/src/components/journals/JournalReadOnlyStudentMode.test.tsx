@@ -1,9 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { createRef } from "react";
 import i18n from "../../i18n";
 import { JournalGrid } from "./JournalGrid";
-import { JournalLessonView } from "./JournalLessonView";
 import type { JournalStudentResponse } from "../../lib/journals/types";
 import { JournalProgressRules } from "../../lib/journals/JournalProgressRules";
 
@@ -83,31 +81,6 @@ describe("journal grid in student read-only mode", () => {
     mountGrid([student(1, "Anvar", null, false), student(3, "Chiroq")], 3);
     expect(screen.getAllByTestId("not-recorded-cell").length).toBe(DATES.length);
     expect(screen.getAllByText("Not recorded").length).toBe(DATES.length);
-  });
-});
-
-describe("lesson view in student read-only mode", () => {
-  it("pins and marks the own row and offers no editing buttons", () => {
-    render(
-      <JournalLessonView
-        students={CLASS_ROSTER}
-        visibleStudentIds={null}
-        lessonDate={DATES[0]}
-        periodLabel="Month"
-        cellStatus={new Map()}
-        editing={{ onEntryCommand: noop, onSummaryPair: noop }}
-        searchQuery=""
-        onClearSearch={noop}
-        onAnchor={noop}
-        headingRef={createRef<HTMLHeadingElement>()}
-        readOnlySelfStudentId={2}
-      />,
-    );
-    const items = screen.getAllByRole("listitem");
-    expect(items[0].getAttribute("data-lesson-row")).toBe("2");
-    expect(items[0].getAttribute("data-self")).toBe("true");
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(document.querySelectorAll("[data-control]")).toHaveLength(0);
   });
 });
 

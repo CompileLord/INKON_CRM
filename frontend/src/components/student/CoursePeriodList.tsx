@@ -1,70 +1,52 @@
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight } from "lucide-react";
 import type { StudentJournalPeriod } from "../../lib/users/types";
 import { StudentPeriodOrdering } from "../../lib/students/StudentPeriodOrdering";
-import { ScoreBand } from "../../lib/students/ScoreBand";
-import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
+import { formatSchoolLessonDate } from "../../i18n/formatters";
+import { ListRow } from "../ui/ListRow";
+import { usePeriodName } from "../ui/periodName";
+import { ScoreFraction } from "./ScoreFraction";
 
 interface CoursePeriodListProps {
   periods: StudentJournalPeriod[];
 }
 
 export function CoursePeriodList({ periods }: CoursePeriodListProps) {
-  const { t, i18n } = useTranslation("student");
+  const { t } = useTranslation("student");
+  const periodName: (label: string) => string = usePeriodName();
   const ordered: StudentJournalPeriod[] = StudentPeriodOrdering.order(periods);
-  const latestId: number | undefined = ordered.find((period) => period.state !== "upcoming")?.journal_id;
 
   return (
-    <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border-warm bg-card" data-testid="period-list">
-      {ordered.map((period) => {
+    <ul className="flex flex-col" data-testid="period-list">
+      {ordered.map((period: StudentJournalPeriod) => {
         const upcoming: boolean = period.state === "upcoming";
-        const band = ScoreBand.of(period.percentage);
-        const range: string = `${formatSchoolLessonDate(period.period_start, i18n.language)} – ${formatSchoolLessonDate(period.period_end, i18n.language)}`;
+        const inProgress: boolean = period.state === "in_progress";
         const content = (
-          <>
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className={`break-words text-sm font-semibold ${upcoming ? "text-muted" : "text-ink"}`}>{period.period_label}</span>
-                {period.journal_id === latestId && (
-                  <span className="rounded-full bg-info-surface px-2 text-xs font-semibold text-ink" data-testid="latest-period-chip">
-                    {t("latestBadge")}
-                  </span>
-                )}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <span className="flex min-w-0 flex-col">
+              <span className={`break-words text-sm font-medium ${upcoming ? "text-muted" : "text-ink"}`}>{periodName(period.period_label)}</span>
+              <span className="text-sm tabular-nums text-muted">
+                {formatSchoolLessonDate(period.period_start)} – {formatSchoolLessonDate(period.period_end)}
               </span>
-              <span className="text-xs tabular-nums text-muted">{range}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-2">
+            <span className="text-sm" data-testid={upcoming || inProgress ? undefined : "period-score"}>
               {upcoming ? (
-                <span className="rounded-full bg-strip px-2.5 py-1 text-xs font-medium text-muted">{t("state.upcoming")}</span>
-              ) : period.state === "in_progress" ? (
-                <span className="rounded-full bg-strip px-2.5 py-1 text-xs font-medium text-muted">{t("state.in_progress")}</span>
+                <span className="text-muted">{t("state.upcoming")}</span>
+              ) : inProgress ? (
+                <span className="text-muted">{t("state.in_progress")}</span>
               ) : (
-                <span
-                  className={`rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums ${band.chipClass}`}
-                  data-testid="period-score-chip"
-                  data-band={band.name}
-                >
-                  {formatNumber(period.percentage, i18n.language, { maximumFractionDigits: 0 })}%
-                </span>
+                <ScoreFraction score={period.sum_score} maximum={period.max_period_score} />
               )}
-              {!upcoming && <ChevronRight aria-hidden="true" className="h-5 w-5 text-muted" />}
             </span>
-          </>
+          </div>
         );
         return (
           <li key={period.journal_id}>
             {upcoming ? (
-              <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-3" data-testid="period-row-upcoming">
-                {content}
+              <div className="rounded-[10px] px-3 py-2" data-testid="period-row-upcoming">
+                <div className="py-1">{content}</div>
               </div>
             ) : (
-              <Link
-                to={`/my/journal/${period.journal_id}`}
-                className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-              >
-                {content}
-              </Link>
+              <ListRow to={`/my/journal/${period.journal_id}`}>{content}</ListRow>
             )}
           </li>
         );

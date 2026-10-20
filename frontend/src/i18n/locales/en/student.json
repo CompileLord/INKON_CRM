@@ -1,7 +1,7 @@
 {
   "activeCoursesSummary": "{{count}} active courses",
   "activeStudent": "Active Student",
-  "average": "Average score",
+  "average": "My points",
   "attendance": "Attendance",
   "absences": "Absences",
   "ofLessons": "of {{total}} lessons",
@@ -20,7 +20,7 @@
   "archiveSegment": "Archive",
   "noArchivedTitle": "Nothing archived yet.",
   "noArchivedBody": "Courses appear here when they finish.",
-  "myAverage": "My score",
+  "myAverage": "My points",
   "periodsCount": "{{graded}} of {{total}} periods",
   "status": {
     "completed": "Completed",
@@ -73,7 +73,7 @@
   "mentorUnavailable": "Mentor information unavailable",
   "openCourse": "Open",
   "latestPeriodResult": "Latest available period",
-  "studentDashboard": "Student Dashboard",
+  "studentDashboard": "Student dashboard",
   "noAvailablePeriodsTitle": "No periods available yet",
   "noAvailablePeriodsBody": "Your course periods will appear here when they are created.",
   "coursesRefreshError": "Failed to load courses data",
@@ -120,5 +120,6 @@
   "showComment": "Show comment",
   "hideComment": "Hide comment",
   "scoreInfoLabel": "Average of your finished periods",
-  "scoreInfo": "The average of your finished periods. It matches the Average column in the class table; upcoming periods are not counted."
+  "scoreInfo": "The average of your finished periods. It matches the Average column in the class table; upcoming periods are not counted.",
+  "lessonsTitle": "Lessons"
 }

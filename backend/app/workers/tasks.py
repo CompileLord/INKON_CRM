@@ -24,7 +24,7 @@ from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.document import Document, DocumentOwnerType
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
-from app.services.notification_service import NotificationService
+from app.services.notification_service import ExamNotificationFingerprint, NotificationService
 from app.services.email_service import EmailService
 from app.services.email_templates import RenderedEmail, VerificationCodeEmailTemplate
 from app.services.storage_service import STREAM_CHUNK_SIZE, StorageService, get_storage_service
@@ -131,11 +131,16 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
             Document.owner_id == student_id,
             Document.journal_id == journal_id,
             Document.is_deleted == False,
-        )
+        ).order_by(Document.uploaded_at.desc(), Document.id.desc()).limit(1)
         doc_res: Result[tuple[Document]] = await db.execute(doc_stmt)
         document: Document | None = doc_res.scalars().first()
 
         notification_service: NotificationService = NotificationService(SQLAlchemyNotificationLogRepository(db))
+        fingerprint: str = ExamNotificationFingerprint.build((
+            summary.version, summary.sum_score, summary.max_period_score, summary.attendance_count,
+            summary.total_lessons, journal.period_label, course.title,
+            document.id if document is not None else 0, document.file_path if document is not None else "",
+        ))
         recipient: str = str(student.parent_telegram_chat_id)
         notification_date: date = date.today()
         if notification_id is not None:
@@ -144,27 +149,19 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
                 return
             if (
                 recovered_log.user_id != student_id
-                or recovered_log.related_entity_id != journal_id
+                or (recovered_log.source_journal_id if recovered_log.source_journal_id is not None else recovered_log.related_entity_id) != journal_id
+                or (recovered_log.source_journal_id is not None and recovered_log.related_entity_id != -summary.id)
                 or recovered_log.type != NotificationType.EXAM_RESULT
             ):
                 return
             notification_date = recovered_log.notification_date
-            if recovered_log.recipient != recipient or recovered_log.delivery_score != summary.sum_score:
+            if (
+                recovered_log.recipient != recipient
+                or recovered_log.delivery_score != summary.sum_score
+                or (recovered_log.revision_fingerprint is not None and recovered_log.revision_fingerprint != fingerprint)
+            ):
                 await notification_service.reject_notification(notification_id, revision, "source_changed")
                 return
-
-        async def check_revision_func() -> bool:
-            log_stmt: Select[tuple[NotificationLog]] = select(NotificationLog).filter(
-                NotificationLog.recipient == recipient,
-                NotificationLog.type == NotificationType.EXAM_RESULT,
-                NotificationLog.related_entity_id == journal_id,
-                NotificationLog.notification_date == notification_date,
-            )
-            log_res: Result[tuple[NotificationLog]] = await db.execute(log_stmt)
-            existing_log: NotificationLog | None = log_res.scalars().first()
-            if existing_log and existing_log.error_message != f"score:{summary.sum_score}":
-                return True
-            return False
 
         async def send_func(is_update: bool) -> None:
             prefix: str = "[Обновлено] " if is_update else ""
@@ -191,15 +188,8 @@ async def send_exam_result_notification_task(ctx: dict[str, Any] | None, student
             await notification_service.deliver_notification(notification_id, revision, send_func)
             return
 
-        await notification_service.send_notification_with_idempotency(
-            recipient=recipient,
-            notification_type=NotificationType.EXAM_RESULT,
-            related_entity_id=journal_id,
-            notification_date=notification_date,
-            send_func=send_func,
-            check_revision_func=check_revision_func,
-            score_val=summary.sum_score,
-            user_id=student.id,
+        await notification_service.send_exam_revision(
+            recipient, summary.id, journal_id, student_id, summary.sum_score, fingerprint, notification_date, send_func
         )
 
 
@@ -228,111 +218,17 @@ async def archive_expired_courses(ctx) -> None:
 
 
 async def check_payment_reminders(ctx: dict[str, Any] | None) -> None:
+    from app.core.redis import enqueue_job
+    from app.repositories.sqlalchemy.payment_reminder_repository import SQLAlchemyPaymentReminderRepository
+    from app.services.payment_reminder_service import PaymentReminderService
+
+    async def enqueue(job_name: str, payload: dict[str, Any]) -> None:
+        await enqueue_job(job_name, **payload)
+
     db: AsyncSession
     async with AsyncSessionLocal() as db:
-        students_stmt: Select[tuple[User]] = select(User).filter(
-            User.role == UserRole.STUDENT,
-            User.parent_telegram_chat_id.isnot(None),
-            User.payment_day_of_month.isnot(None),
-            User.is_deleted == False
-        )
-        students_res: Result[tuple[User]] = await db.execute(students_stmt)
-        students: Sequence[User] = students_res.scalars().all()
-
-        tz: zoneinfo.ZoneInfo = zoneinfo.ZoneInfo(settings.TIMEZONE)
-        now_in_tz: datetime = datetime.now(tz)
-        today_date: date = now_in_tz.date()
-
-        student: User
-        for student in students:
-            try:
-                payment_day: int | None = student.payment_day_of_month
-                due_this_month: date = date(today_date.year, today_date.month, payment_day)
-
-                if today_date.month == 12:
-                    due_next_month: date = date(today_date.year + 1, 1, payment_day)
-                else:
-                    due_next_month = date(today_date.year, today_date.month + 1, payment_day)
-
-                if today_date.month == 1:
-                    due_prev_month: date = date(today_date.year - 1, 12, payment_day)
-                else:
-                    due_prev_month = date(today_date.year, today_date.month - 1, payment_day)
-
-                if due_this_month >= today_date:
-                    next_due_date: date = due_this_month
-                    prev_due_date: date = due_prev_month
-                else:
-                    next_due_date = due_next_month
-                    prev_due_date = due_this_month
-
-                diff_days: int = (next_due_date - today_date).days
-                if diff_days not in (1, 2):
-                    continue
-
-                enroll_stmt: Select[tuple[Enrollment]] = select(Enrollment).options(
-                    joinedload(Enrollment.course)
-                ).filter(
-                    Enrollment.student_id == student.id,
-                    Enrollment.status == EnrollmentStatus.ACTIVE,
-                    Enrollment.is_deleted == False
-                )
-                enroll_res: Result[tuple[Enrollment]] = await db.execute(enroll_stmt)
-                enrollments: Sequence[Enrollment] = enroll_res.scalars().all()
-
-                start_dt: datetime = datetime.combine(prev_due_date, datetime.min.time()).replace(tzinfo=tz)
-                end_dt: datetime = datetime.combine(next_due_date, datetime.max.time()).replace(tzinfo=tz)
-
-                enroll: Enrollment
-                for enroll in enrollments:
-                    pay_stmt: Select[tuple[Decimal]] = select(
-                        func.coalesce(
-                            func.sum(
-                                Payment.amount * (Decimal("1.0") - cast(Payment.discount_percent, Numeric) / Decimal("100.0"))
-                            ),
-                            Decimal("0.0")
-                        )
-                    ).filter(
-                        Payment.student_id == student.id,
-                        Payment.course_id == enroll.course_id,
-                        Payment.paid_at >= start_dt,
-                        Payment.paid_at <= end_dt
-                    )
-                    pay_res: Result[tuple[Decimal]] = await db.execute(pay_stmt)
-                    total_paid: Decimal = pay_res.scalar() or Decimal("0.0")
-
-                    if total_paid < enroll.price_at_enrollment:
-                        recipient: str = str(student.parent_telegram_chat_id)
-                        notif_type: NotificationType = (
-                            NotificationType.PAYMENT_REMINDER_2D
-                            if diff_days == 2
-                            else NotificationType.PAYMENT_REMINDER_1D
-                        )
-                        
-                        notification_service: NotificationService = NotificationService(SQLAlchemyNotificationLogRepository(db))
-
-                        due_date_str: str = next_due_date.strftime("%Y-%m-%d")
-                        if diff_days == 2:
-                            text: str = f"Напоминание: оплата за курс {enroll.course.title} для {student.first_name} {student.last_name} через 2 дня (дата: {due_date_str})"
-                        else:
-                            text = f"Напоминание: оплата за курс {enroll.course.title} для {student.first_name} {student.last_name} через 1 день (дата: {due_date_str})"
-
-                        async def enqueue_notification(notification_id: int, revision: int) -> None:
-                            from app.core.redis import enqueue_job
-                            await enqueue_job("send_telegram_message", chat_id=student.parent_telegram_chat_id, text=text, notification_id=notification_id, revision=revision, _job_id=f"notification:{notification_id}:{revision}:initial")
-
-                        await notification_service.queue_notification(
-                            recipient=recipient,
-                            notification_type=notif_type,
-                            related_entity_id=enroll.id,
-                            notification_date=today_date,
-                            enqueue_func=enqueue_notification,
-                            delivery_text=text,
-                            revision_requested=False,
-                            user_id=student.id
-                        )
-            except Exception as e:
-                logger.error(f"Error checking reminders for student {student.id}: {e}")
+        service: PaymentReminderService = PaymentReminderService(SQLAlchemyPaymentReminderRepository(db), enqueue)
+        await service.run(datetime.now(zoneinfo.ZoneInfo(settings.TIMEZONE)).date())
 
 
 async def recover_notification_deliveries(ctx: dict[str, Any] | None) -> int:

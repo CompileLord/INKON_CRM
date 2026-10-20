@@ -89,9 +89,42 @@ describe("JournalProgressRules", () => {
     expect(students[17].dashVariant).toBe(2);
   });
 
-  it("extends the domain beyond 100 and never below it", () => {
-    expect(JournalProgressRules.domainMaximum([10, null, 50])).toBe(100);
-    expect(JournalProgressRules.domainMaximum([10, 114.49, null])).toBe(114.49);
+  it("picks round score ticks that always cover the highest value, whatever the period maximum is", () => {
+    expect(JournalProgressRules.scoreTicks([10, null, 50])).toEqual([0, 10, 20, 30, 40, 50]);
+    expect(JournalProgressRules.scoreTicks([117, 86])).toEqual([0, 25, 50, 75, 100, 125]);
+    expect(JournalProgressRules.scoreTicks([600])).toEqual([0, 200, 400, 600]);
+    expect(JournalProgressRules.scoreTicks([null])).toEqual([0, 1]);
+    expect(JournalProgressRules.scoreTicks([123]).at(-1)).toBeGreaterThanOrEqual(123);
+  });
+
+  it("reports the average score and the per-period maximum next to the average percentage", () => {
+    const [first, second] = JournalProgressRules.buildPeriodRows(data, "2026-12-31");
+    expect(first).toMatchObject({ averageScore: 6, maxScore: 24 });
+    expect(second).toMatchObject({ averageScore: null, maxScore: null });
+  });
+
+  it("keeps the highest stored maximum of a period so a differing maximum per period is preserved", () => {
+    const differing: CourseStaffProgressResponse = {
+      ...data,
+      students: [{ student_id: 1, first_name: "A", last_name: "B", grading_provenance: "unknown", period_results: [result(1, 50, 117, 43), result(2, 30, 70, 43)] }],
+    };
+    expect(JournalProgressRules.buildPeriodRows(differing, "2026-12-31").map((row) => row.maxScore)).toEqual([117, 70]);
+  });
+
+  it("draws a step line that holds each value across its period and jumps at the midpoints", () => {
+    const path = JournalProgressRules.stepPath([{ x: 0, y: 10 }, { x: 20, y: 40 }, { x: 40, y: 40 }]);
+    expect(path).toBe("M-10,10H10V40H30V40H50");
+    expect(JournalProgressRules.stepPath([{ x: 0, y: 10 }, { x: 20, y: 40 }, { x: 40, y: 40 }], 0, 40)).toBe("M0,10H10V40H30V40H40");
+    expect(JournalProgressRules.stepPath([])).toBe("");
+    expect(JournalProgressRules.stepPath([{ x: 5, y: 7 }])).toBe("M-7,7H17");
+  });
+
+  it("keeps a single student with the first palette slot for a read-only view of one's own results", () => {
+    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(data, "2026-12-31"));
+    const only = JournalProgressRules.onlyStudent(JournalProgressRules.chartStudents(data, rows), 1);
+    expect(only).toHaveLength(1);
+    expect(only[0]).toMatchObject({ studentId: 1, slot: 0, dashVariant: 0 });
+    expect(JournalProgressRules.onlyStudent(JournalProgressRules.chartStudents(data, rows), 99)).toEqual([]);
   });
 
   it("breaks lines at missing values", () => {
@@ -110,28 +143,5 @@ describe("JournalProgressRules", () => {
     expect(Number(flat[4])).toBeCloseTo(20, 5);
     expect(JournalProgressRules.monotonePath([{ x: 5, y: 7 }])).toBe("M5,7");
     expect(JournalProgressRules.monotonePath([])).toBe("");
-  });
-
-  it("computes a trend from the first to the last stored value and ignores a single value", () => {
-    expect(JournalProgressRules.trendOf([75, null, 114])).toEqual({ direction: "up", magnitude: 39 });
-    expect(JournalProgressRules.trendOf([80, 50, 59])).toEqual({ direction: "down", magnitude: 21 });
-    expect(JournalProgressRules.trendOf([50, 70, 50.4])).toEqual({ direction: "flat", magnitude: 0 });
-    expect(JournalProgressRules.trendOf([null, 40, null])).toBeNull();
-    expect(JournalProgressRules.signedTrend({ direction: "down", magnitude: 21 })).toBe(-21);
-  });
-
-  it("averages only present values", () => {
-    expect(JournalProgressRules.averageOf([10, null, 20])).toBe(15);
-    expect(JournalProgressRules.averageOf([null])).toBeNull();
-  });
-
-  it("sorts students by a period, the average or the trend with missing values last in both directions", () => {
-    const rows = JournalProgressRules.startedRows(JournalProgressRules.buildPeriodRows(data, "2026-12-31"));
-    const students = JournalProgressRules.chartStudents(data, rows);
-    const names = (sort: Parameters<typeof JournalProgressRules.sortStudents>[1]) => JournalProgressRules.sortStudents(students, sort).map((student) => student.name);
-    expect(names({ key: { kind: "period", index: 0 }, direction: "desc" })).toEqual(["Bob Y", "Ann X", "Cy Z"]);
-    expect(names({ key: { kind: "period", index: 0 }, direction: "asc" })).toEqual(["Ann X", "Bob Y", "Cy Z"]);
-    expect(names({ key: { kind: "average" }, direction: "desc" })).toEqual(["Bob Y", "Ann X", "Cy Z"]);
-    expect(names({ key: { kind: "trend" }, direction: "desc" })[2]).toBe("Cy Z");
   });
 });

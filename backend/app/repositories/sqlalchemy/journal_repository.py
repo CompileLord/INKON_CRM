@@ -1,4 +1,6 @@
-from sqlalchemy import Numeric, case, cast, func, select
+from datetime import date
+from typing import Optional
+from sqlalchemy import case, func, select
 from sqlalchemy.engine import Result, Row
 from sqlalchemy.sql import Select, ColumnElement
 from sqlalchemy.sql.selectable import Subquery
@@ -14,34 +16,34 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         super().__init__(Journal, session)
 
     async def get_class_statistics(self, journal_id: int, student_id: int) -> JournalClassStatistics:
-        percentage: ColumnElement = case(
-            (
-                JournalStudentSummary.max_period_score > 0,
-                func.round(cast(
-                    JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
-                    Numeric,
-                ), 2),
-            ),
-            else_=0,
+        eligible: tuple[ColumnElement, ...] = (
+            JournalStudentSummary.journal_id == journal_id,
+            JournalStudentSummary.is_graded.is_(True),
+            Journal.period_start <= date.today(),
         )
-        ranked_students: Subquery = select(
-            JournalStudentSummary.student_id,
-            func.row_number().over(
-                order_by=(percentage.desc(), JournalStudentSummary.student_id.asc()),
-            ).label("student_rank"),
-        ).where(JournalStudentSummary.journal_id == journal_id).subquery()
-        statistics_query: Select = select(
-            func.avg(case((JournalStudentSummary.max_period_score > 0, percentage))),
+        averages_result: Result = await self.session.execute(select(
+            func.avg(case((
+                JournalStudentSummary.max_period_score > 0,
+                JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
+            ))),
             func.avg(JournalStudentSummary.sum_score),
-            func.count(JournalStudentSummary.id),
-            select(ranked_students.c.student_rank)
-            .where(ranked_students.c.student_id == student_id)
-            .scalar_subquery(),
-        ).where(JournalStudentSummary.journal_id == journal_id)
-        statistics_result: Result = await self.session.execute(statistics_query)
-        statistics: Row = statistics_result.one()
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(*eligible))
+        averages: Row = averages_result.one()
+        ranked_students: Subquery = select(
+            JournalStudentSummary.student_id.label("student_id"),
+            func.row_number().over(order_by=(
+                (JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).desc(),
+                JournalStudentSummary.student_id.asc(),
+            )).label("student_rank"),
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(
+            *eligible, JournalStudentSummary.max_period_score > 0,
+        ).subquery()
+        rank_result: Result = await self.session.execute(
+            select(ranked_students.c.student_rank).where(ranked_students.c.student_id == student_id)
+        )
+        student_rank: Optional[int] = rank_result.scalar_one_or_none()
         return JournalClassStatistics(
-            average_percentage=round(float(statistics[0] or 0.0), 1),
-            average_score=round(float(statistics[1] or 0.0), 1),
-            student_rank=int(statistics[3]) if statistics[3] is not None else int(statistics[2]) + 1,
+            average_percentage=round(float(averages[0]), 1) if averages[0] is not None else 0.0,
+            average_score=round(float(averages[1]), 1) if averages[1] is not None else 0.0,
+            student_rank=int(student_rank) if student_rank is not None else 0,
         )

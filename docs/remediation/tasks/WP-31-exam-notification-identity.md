@@ -25,6 +25,7 @@ Scope correction (2026-10-19): WP-30 moves atomic notification persistence behin
 | [backend/app/models/notification_log.py:10](../../../backend/app/models/notification_log.py) | Existing file, anchor line 10; only this WP’s stated behavior may change. |
 | [backend/alembic/versions/rwp31_exam_revision.py](../../../backend/alembic/versions/rwp31_exam_revision.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp31.py](../../../backend/app/tests/integration/test_remediation_wp31.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/tests/integration/test_remediation_wp31_migration.py` | Migration/cutover tests extracted to keep every file below the enforced 20 KB limit. |
 | `backend/app/repositories/interfaces/notification_log_repository.py` | Extend atomic reservation boundary for per-student revision fingerprints. |
 | `backend/app/repositories/sqlalchemy/notification_log_repository.py` | Persist and compare delivery identity without journal/sibling collisions. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |

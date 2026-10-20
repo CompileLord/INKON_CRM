@@ -1,4 +1,5 @@
-from sqlalchemy import Select, select
+from typing import Any
+from sqlalchemy import Select, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
@@ -8,96 +9,47 @@ from app.core.scoring import ScoringPolicy
 
 class SumCalculationService:
     def __init__(self, db: AsyncSession) -> None:
-        self.db = db
+        self.db: AsyncSession = db
 
     async def recalculate(self, journal_id: int, student_id: int) -> None:
-        journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
-        journal = journal_result.scalars().first()
-        exam_max_score_val = journal.exam_max_score if journal else ScoringPolicy.DEFAULT_JOURNAL_EXAM_MAX_SCORE
-        bonus_max_score_val: int | None = journal.bonus_max_score if journal else None
-
-        entries_query = select(JournalEntry).filter(
-            JournalEntry.journal_id == journal_id,
-            JournalEntry.student_id == student_id
-        )
-        entries_result = await self.db.execute(entries_query)
-        entries = list(entries_result.scalars().all())
-
-        daily_scores_sum = sum(e.score for e in entries)
-        attendance_count = sum(1 for e in entries if e.attendance is True)
-        total_lessons = len(entries)
-
-        summary_query = select(JournalStudentSummary).filter(
-            JournalStudentSummary.journal_id == journal_id,
-            JournalStudentSummary.student_id == student_id
-        )
-        summary_result = await self.db.execute(summary_query)
-        summary = summary_result.scalars().first()
-
-        if not summary:
-            summary = JournalStudentSummary(
-                journal_id=journal_id,
-                student_id=student_id,
-                homework_score=0,
-                attendance_score=0,
-                exam_score=0,
-                bonus_score=0,
-                sum_score=0,
-                max_period_score=0,
-                attendance_count=0,
-                total_lessons=0,
-                version=1
-            )
-            self.db.add(summary)
-
-        summary.homework_score = daily_scores_sum
-        summary.attendance_score = attendance_count * ScoringPolicy.ATTENDANCE_POINT_PER_LESSON
-        summary.attendance_count = attendance_count
-        summary.total_lessons = total_lessons
-        summary.max_period_score = ScoringPolicy.max_period_score(total_lessons, exam_max_score_val, bonus_max_score_val)
-        summary.sum_score = summary.homework_score + summary.attendance_score + summary.exam_score + summary.bonus_score
-
-        await self.db.flush()
+        await self.recalculate_journal(journal_id, {student_id})
 
     async def recalculate_journal(self, journal_id: int, student_ids: set[int] | None = None) -> None:
         if student_ids is not None and not student_ids:
             return
-        journal_result = await self.db.execute(select(Journal).filter(Journal.id == journal_id))
-        journal = journal_result.scalars().first()
-        if not journal:
+        journal: Journal | None = await self.db.get(Journal, journal_id)
+        if journal is None:
             return
-
-        exam_max_score_val = journal.exam_max_score
-        bonus_max_score_val: int | None = journal.bonus_max_score
-
-        entries_query: Select[tuple[JournalEntry]] = select(JournalEntry).filter(JournalEntry.journal_id == journal_id)
+        entries_query: Select[Any] = (
+            select(
+                JournalEntry.student_id,
+                func.sum(JournalEntry.score),
+                func.sum(case((JournalEntry.attendance.is_(True), 1), else_=0)),
+                func.count(JournalEntry.id),
+                func.count(JournalEntry.id).filter(JournalEntry.is_graded.is_(True)),
+                func.count(JournalEntry.id).filter(JournalEntry.is_graded.is_(None)),
+            )
+            .where(JournalEntry.journal_id == journal_id)
+            .group_by(JournalEntry.student_id)
+        )
+        summaries_query: Select[tuple[JournalStudentSummary]] = select(JournalStudentSummary).where(
+            JournalStudentSummary.journal_id == journal_id
+        )
         if student_ids is not None:
-            entries_query = entries_query.filter(JournalEntry.student_id.in_(student_ids))
-        entries_result = await self.db.execute(entries_query)
-        entries = list(entries_result.scalars().all())
-
-        entries_by_student: dict[int, list[JournalEntry]] = {}
-        for entry in entries:
-            entries_by_student.setdefault(entry.student_id, []).append(entry)
-
-        summaries_query: Select[tuple[JournalStudentSummary]] = select(JournalStudentSummary).filter(JournalStudentSummary.journal_id == journal_id)
-        if student_ids is not None:
-            summaries_query = summaries_query.filter(JournalStudentSummary.student_id.in_(student_ids))
-        summaries_result = await self.db.execute(summaries_query)
-        summaries = list(summaries_result.scalars().all())
-        summaries_by_student: dict[int, JournalStudentSummary] = {s.student_id: s for s in summaries}
-
-        all_student_ids = set(entries_by_student.keys()) | set(summaries_by_student.keys())
-
+            entries_query = entries_query.where(JournalEntry.student_id.in_(student_ids))
+            summaries_query = summaries_query.where(JournalStudentSummary.student_id.in_(student_ids))
+        aggregates: dict[int, tuple[int, int, int, int, int]] = {
+            student_id: (int(score or 0), int(attendance or 0), lessons, graded, unknown)
+            for student_id, score, attendance, lessons, graded, unknown in (await self.db.execute(entries_query)).all()
+        }
+        summaries: dict[int, JournalStudentSummary] = {
+            summary.student_id: summary for summary in (await self.db.execute(summaries_query)).scalars()
+        }
+        all_student_ids: set[int] = set(aggregates) | set(summaries) | (student_ids or set())
+        student_id: int
         for student_id in all_student_ids:
-            student_entries = entries_by_student.get(student_id, [])
-            homework_score = sum(e.score for e in student_entries)
-            attendance_count = sum(1 for e in student_entries if e.attendance is True)
-            attendance_score = attendance_count * ScoringPolicy.ATTENDANCE_POINT_PER_LESSON
-            total_lessons = len(student_entries)
-
-            summary = summaries_by_student.get(student_id)
-            if not summary:
+            summary: JournalStudentSummary | None = summaries.get(student_id)
+            if summary is None:
                 summary = JournalStudentSummary(
                     journal_id=journal_id,
                     student_id=student_id,
@@ -109,16 +61,23 @@ class SumCalculationService:
                     max_period_score=0,
                     attendance_count=0,
                     total_lessons=0,
-                    version=1
+                    is_graded=False,
                 )
                 self.db.add(summary)
-                summaries_by_student[student_id] = summary
-
-            summary.homework_score = homework_score
-            summary.attendance_score = attendance_score
-            summary.attendance_count = attendance_count
-            summary.total_lessons = total_lessons
-            summary.max_period_score = ScoringPolicy.max_period_score(total_lessons, exam_max_score_val, bonus_max_score_val)
-            summary.sum_score = homework_score + attendance_score + summary.exam_score + summary.bonus_score
-
+            score: int
+            attendance: int
+            lessons: int
+            graded: int
+            unknown: int
+            score, attendance, lessons, graded, unknown = aggregates.get(student_id, (0, 0, 0, 0, 0))
+            if summary.is_graded is not True:
+                summary.is_graded = True if graded else None if unknown or summary.is_graded is None else False
+            summary.homework_score = score
+            summary.attendance_score = attendance * ScoringPolicy.ATTENDANCE_POINT_PER_LESSON
+            summary.attendance_count = attendance
+            summary.total_lessons = lessons
+            summary.max_period_score = ScoringPolicy.max_period_score(
+                lessons, journal.exam_max_score, journal.bonus_max_score
+            )
+            summary.sum_score = score + summary.attendance_score + summary.exam_score + summary.bonus_score
         await self.db.flush()

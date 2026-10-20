@@ -5,7 +5,8 @@ import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { JournalSummaryCell } from "./JournalSummaryCell";
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
+import { WholePercent } from "../../lib/students/WholePercent";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
@@ -160,17 +161,21 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         </td>
       ))}
 
-      <td className={`border-b border-l border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-ink group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
+      <td className={`border-b border-l border-border px-2 py-2 text-center align-middle text-sm tabular-nums group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`} data-testid="total-cell">
         <span className="inline-flex items-center gap-1.5">
           {summaryStatus && <JournalSaveMarker status={summaryStatus} className="relative" />}
-          {summary ? formatNumber(summary.sum_score) : t("summary.unavailable")}
+          {summary ? (
+            <span className="flex flex-col items-center leading-5">
+              <span>
+                <span className="font-semibold text-ink">{formatNumber(summary.sum_score)}</span>
+                {summary.max_period_score > 0 && <span className="text-muted"> / {formatNumber(summary.max_period_score)}</span>}
+              </span>
+              {summary.max_period_score > 0 && <span className="text-xs text-muted" data-testid="total-percentage">{WholePercent.format(summary.percentage)}</span>}
+            </span>
+          ) : (
+            <span className="text-muted">{t("summary.unavailable")}</span>
+          )}
         </span>
-      </td>
-
-      <td className={`border-b border-border px-2 py-2 text-center align-middle text-sm font-semibold tabular-nums text-muted group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`}>
-        {summary
-          ? formatPercentage(summary.percentage)
-          : "—"}
       </td>
     </tr>
   );

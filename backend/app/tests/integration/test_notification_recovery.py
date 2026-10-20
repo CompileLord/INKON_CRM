@@ -69,7 +69,10 @@ async def test_durable_sweep_recovers_enqueue_failure(
     sender: AsyncMock = AsyncMock()
     monkeypatch.setattr(tasks.bot, "send_message", sender)
     await tasks.send_telegram_message({}, first_payload["chat_id"], first_payload["text"], queued.id, queued.revision)
-    sender.assert_awaited_once_with(998877, "durable message")
+    sender.assert_awaited_once()
+    assert sender.call_args.args[0] == 998877
+    assert "Delivery course" in sender.call_args.args[1]
+    assert "100.00" in sender.call_args.args[1]
     assert await tasks.recover_notification_deliveries({}) == 0
 
 

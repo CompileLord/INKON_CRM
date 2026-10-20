@@ -348,10 +348,10 @@ async def test_student_class_statistics_handle_missing_and_unscored_summaries(
     if summary_state == "missing_self":
         assert body["students"][0]["summary"] is None
         assert body["class_avg_score"] == 2.5
-        assert body["my_rank"] == 3
+        assert body["my_rank"] == 0
     else:
         assert body["class_avg_percentage"] == 0.0
-        assert body["my_rank"] == 1
+        assert body["my_rank"] == 0
         assert body["class_avg_score"] == (0.0 if summary_state == "empty" else 3.3)
     progress: Response = await client.get(f"/api/v1/courses/{classroom.course_id}/class-progress", headers=authorization(classroom.own))
     period: Dict[str, Any] = next(period for period in progress.json()["periods"] if period["id"] == classroom.journal_id)
