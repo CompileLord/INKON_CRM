@@ -86,7 +86,11 @@ class Settings(BaseSettings):
     SMS_PASSWORD_PHONE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
 
     SMS_PASSWORD_PHONE_DAILY_LIMIT: int = Field(default=10, gt=0)
-    SMS_API_KEY: Optional[str] = None
+    SMS_PASSWORD_IP_LIMIT: int = Field(default=100, gt=0)
+    SMS_PASSWORD_IP_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    SMS_PASSWORD_GLOBAL_DAILY_LIMIT: int = Field(default=1000, gt=0)
+    SMS_PASSWORD_PENDING_TTL_SECONDS: int = Field(default=600, gt=0, le=3600)
+    SMS_API_KEY: Optional[str] = Field(default=None, repr=False, exclude=True)
     SMS_BASE_URL: str = "https://api.payomchi.tj/api/v1"
     SMS_SENDER_ID: str = "KitobCRM"
     SMS_REQUEST_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0)

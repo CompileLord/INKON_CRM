@@ -343,7 +343,7 @@ async def test_alembic_parent_head_downgrade_parent_head_preserves_existing_char
         for direction, revision in (("upgrade", "head"), ("downgrade", "rwp33_grading_state"), ("upgrade", "head")):
             result = database.run_alembic(direction, revision)
             assert result.returncode == 0, result.stdout + result.stderr
-            expected_revision: str = "rwp33_grading_state" if direction == "downgrade" else "rwp37_installment_identity"
+            expected_revision: str = "rwp33_grading_state" if direction == "downgrade" else database.head_revision
             assert await database.fetchval("SELECT version_num FROM alembic_version") == expected_revision
             assert await database.fetchval("SELECT jsonb_agg(to_jsonb(record) ORDER BY id) FROM charges record") == before
             index_exists: bool = await database.fetchval("SELECT to_regclass($1) IS NOT NULL", InstallmentFixture.index_name)

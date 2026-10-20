@@ -15,6 +15,7 @@ from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkServi
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.sms.messages import PasswordSmsReason
+from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
 from app.services.student_password_sms_service import PasswordSmsDestination, StudentPasswordSmsService
 from app.services.storage_service import StorageService, get_storage_service
 
@@ -123,7 +124,7 @@ class UserService:
 
         destination: PasswordSmsDestination | None = None
         if created_user.role == UserRole.STUDENT:
-            destination = await StudentPasswordSmsService(self.db).issue_password(
+            destination = await StudentPasswordSmsServiceFactory.create(self.db).issue_password(
                 created_user, PasswordSmsReason.INITIAL, actor_id, enforce_rate_limits=False
             )
         else:
@@ -133,7 +134,7 @@ class UserService:
         return created_user, issued_link_code, destination
 
     async def update_user(self, user_id: int, user_update: UserUpdate) -> User:
-        user = await self.user_repo.get_by_id(user_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -146,21 +147,15 @@ class UserService:
                 detail="Payment day of month can only be set for students"
             )
 
-        if user_update.email and user_update.email != user.email:
-            existing_user = await self.user_repo.get_by_email(user_update.email)
+        email_changed: bool = bool(user_update.email and user_update.email != user.email)
+        if email_changed:
+            existing_user: User | None = await self.user_repo.get_by_email(user_update.email)
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="User with this email already exists"
                 )
             user.email = user_update.email
-            email_change_sms_service: StudentPasswordSmsService = StudentPasswordSmsService(self.db)
-            if email_change_sms_service.resolve_destination(user) is not None:
-                await email_change_sms_service.issue_password(
-                    user, PasswordSmsReason.RESET, None, enforce_rate_limits=False
-                )
-            else:
-                await AuthService(self.db).issue_temporary_credentials(user)
 
         if user_update.first_name is not None:
             user.first_name = user_update.first_name
@@ -170,11 +165,14 @@ class UserService:
         if "payment_day_of_month" in user_update.model_fields_set:
             user.payment_day_of_month = user_update.payment_day_of_month
 
-        if user.role == UserRole.STUDENT and not (user.phone or user.parent_phone):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="A student requires a phone or a parent phone",
-            )
+        if email_changed:
+            email_change_sms_service: StudentPasswordSmsService = StudentPasswordSmsServiceFactory.create(self.db)
+            if email_change_sms_service.resolve_destination(user) is not None:
+                await email_change_sms_service.issue_password(
+                    user, PasswordSmsReason.RESET, None, enforce_rate_limits=False
+                )
+            else:
+                await AuthService(self.db).issue_temporary_credentials(user)
 
         updated_user = await self.user_repo.update(user)
         await self.db.refresh(updated_user)
@@ -184,7 +182,7 @@ class UserService:
         user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted or user.role != UserRole.STUDENT:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
-        return await StudentPasswordSmsService(self.db).issue_password(
+        return await StudentPasswordSmsServiceFactory.create(self.db).issue_password(
             user, PasswordSmsReason.RESET, actor_id, enforce_rate_limits=True
         )
 
@@ -200,7 +198,7 @@ class UserService:
         return list(events)
 
     async def update_own_profile(self, user_id: int, user_update: UserSelfUpdate) -> User:
-        user = await self.user_repo.get_by_id(user_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -218,6 +216,7 @@ class UserService:
         return updated_user
 
     def apply_optional_profile_fields(self, user: User, user_update: UserUpdate | UserSelfUpdate) -> None:
+        previous_destination_phone: str | None = user.phone or user.parent_phone
         if "date_of_birth" in user_update.model_fields_set:
             user.date_of_birth = user_update.date_of_birth
         if "phone" in user_update.model_fields_set:
@@ -231,6 +230,14 @@ class UserService:
             ):
                 user.parent_telegram_chat_id = None
             user.parent_phone = user_update.parent_phone
+        if user.role == UserRole.STUDENT and not (user.phone or user.parent_phone):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A student requires a phone or a parent phone",
+            )
+        if previous_destination_phone != (user.phone or user.parent_phone):
+            user.pending_password_hash = None
+            user.pending_password_expires_at = None
 
     async def delete_user(self, user_id: int, current_user_id: int) -> bool:
         if user_id == current_user_id:

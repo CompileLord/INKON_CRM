@@ -1,19 +1,16 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional, Protocol
 
 from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.security import PasswordWorkService
-from app.core.student_passwords import StudentPasswordCodeGenerator
+from app.core.student_passwords import PendingStudentPasswordHasher, StudentPasswordCodeGenerator
 from app.models.user import User, UserRole
-from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
-from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
-from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.repositories.interfaces.user_repository import UserRepository
 from app.core.config import settings
-from app.services.audit_service import AuditService
 from app.services.outbox_service import OutboxService
 from app.services.sms.messages import PasswordSmsReason
 
@@ -38,22 +35,30 @@ class StudentPasswordSmsDestinationResolver:
         return None
 
 
+class PasswordSmsAudit(Protocol):
+    async def log(
+        self, user_id: Optional[int], action: str, entity_type: str, entity_id: int,
+        changes: dict[str, Any],
+    ) -> None: ...
+
+
 class StudentPasswordSmsService:
     def __init__(
         self,
-        db: AsyncSession,
+        user_repository: UserRepository,
+        outbox_service: OutboxService,
+        audit_service: PasswordSmsAudit,
         limiter: Optional[PasswordSmsRateLimiter] = None,
         code_generator: Optional[StudentPasswordCodeGenerator] = None,
     ) -> None:
-        self._db: AsyncSession = db
         self._limiter: PasswordSmsRateLimiter = limiter or PasswordSmsRateLimiter()
         self._code_generator: StudentPasswordCodeGenerator = code_generator or StudentPasswordCodeGenerator()
         self._destination_resolver: StudentPasswordSmsDestinationResolver = StudentPasswordSmsDestinationResolver()
         self._password_work_service: PasswordWorkService = PasswordWorkService()
-        self._user_repository: SQLAlchemyUserRepository = SQLAlchemyUserRepository(db)
-        self._token_repository: SQLAlchemyRefreshTokenRepository = SQLAlchemyRefreshTokenRepository(db)
-        self._outbox_service: OutboxService = OutboxService(SQLAlchemyOutboxRepository(db), settings.JWT_SECRET_KEY)
-        self._audit_service: AuditService = AuditService(db)
+        self._pending_password_hasher: PendingStudentPasswordHasher = PendingStudentPasswordHasher(settings.JWT_SECRET_KEY)
+        self._user_repository: UserRepository = user_repository
+        self._outbox_service: OutboxService = outbox_service
+        self._audit_service: PasswordSmsAudit = audit_service
 
     def resolve_destination(self, user: User) -> Optional[PasswordSmsDestination]:
         if user.role != UserRole.STUDENT:
@@ -77,20 +82,22 @@ class StudentPasswordSmsService:
         enforce_rate_limits: bool,
     ) -> PasswordSmsDestination:
         destination: PasswordSmsDestination = self.require_destination(user)
-        if enforce_rate_limits:
-            await self._limiter.consume_budgets(user.id, destination.phone)
+        await self._limiter.consume_budgets(user.id, destination.phone, enforce_cooldown=enforce_rate_limits)
         code: str = self._code_generator.generate()
-        user.password_hash = await self._password_work_service.hash(code)
-        user.must_set_password = True
-        user.auth_version += 1
+        if reason == PasswordSmsReason.INITIAL:
+            user.password_hash = await self._password_work_service.hash(code)
+            user.must_set_password = False
+        else:
+            user.pending_password_hash = self._pending_password_hasher.hash(user.id, code)
+            user.pending_password_expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.SMS_PASSWORD_PENDING_TTL_SECONDS)
         await self._user_repository.update(user)
-        await self._token_repository.revoke_all_for_user(user.id)
         await self._outbox_service.enqueue_student_password_sms(
             recipient_phone=destination.phone,
             target_user_id=user.id,
             code=code,
             reason=reason.value,
             language=None,
+            expires_at=user.pending_password_expires_at if reason == PasswordSmsReason.RESET else None,
         )
         await self._audit_service.log(
             actor_id,

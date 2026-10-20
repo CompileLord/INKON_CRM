@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -57,3 +57,7 @@ class ChangePasswordRequest(BaseModel):
     model_config = {"extra": "forbid"}
     current_password: str = Field(min_length=1)
     new_password: str = Field(min_length=8)
+
+
+class PasswordResetRequestResponse(BaseModel):
+    message: Literal["If the email exists, a reset code has been sent."]

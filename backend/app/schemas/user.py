@@ -3,7 +3,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from app.models.user import UserRole
 
-E164_PATTERN: str = r"^\+[1-9]\d{7,14}$"
+E164_PATTERN: str = r"^\+[1-9][0-9]{7,14}$"
 
 
 class UserCreate(BaseModel):
@@ -85,7 +85,7 @@ class PasswordSmsDeliveryResponse(BaseModel):
     max_attempts: int
     last_error: Optional[str] = None
     provider_message_id: Optional[str] = None
-    provider_status: Optional[str] = None
+    provider_status: Optional[Literal["pending", "queued", "accepted", "sent", "delivered"]] = None
     created_at: datetime
     delivered_at: Optional[datetime] = None
 

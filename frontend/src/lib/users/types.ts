@@ -80,7 +80,7 @@ export interface PasswordSmsDelivery {
   max_attempts: number;
   last_error: string | null;
   provider_message_id: string | null;
-  provider_status: string | null;
+  provider_status: "pending" | "queued" | "accepted" | "sent" | "delivered" | null;
   created_at: string;
   delivered_at: string | null;
 }

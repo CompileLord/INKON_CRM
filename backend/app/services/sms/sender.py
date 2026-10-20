@@ -26,7 +26,7 @@ class SmsSender(Protocol):
 
 
 class ProviderPhoneFormatter:
-    E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9]\d{7,14}$")
+    E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9][0-9]{7,14}$")
 
     def to_provider_digits(self, phone_e164: str) -> str:
         if not self.E164_PATTERN.fullmatch(phone_e164):
@@ -36,6 +36,7 @@ class ProviderPhoneFormatter:
 
 class PayomchiSmsSender:
     REJECTED_STATUSES: frozenset[str] = frozenset({"failed", "rejected"})
+    ACCEPTED_STATUSES: frozenset[str] = frozenset({"pending", "queued", "accepted", "sent", "delivered"})
 
     def __init__(
         self,
@@ -92,19 +93,27 @@ class PayomchiSmsSender:
             )
         except httpx.HTTPError as error:
             raise SmsDeliveryError(f"transport_{type(error).__name__}", retryable=True) from None
-        return self._interpret(response)
+        return self._interpret(response, message)
 
-    def _interpret(self, response: httpx.Response) -> SmsSendResult:
+    def _interpret(self, response: httpx.Response, message: str) -> SmsSendResult:
         if response.status_code >= 500 or response.status_code == 429:
             raise SmsDeliveryError(f"provider_http_{response.status_code}", retryable=True)
         if response.status_code not in (200, 201):
             raise SmsDeliveryError(f"provider_http_{response.status_code}", retryable=False)
         try:
             body: dict[str, object] = response.json()
-            provider_status: str = str(body["status"])
-            provider_message_id: str = str(body["id"])
+            provider_status: object = body["status"]
+            provider_message_id: object = body["id"]
         except (ValueError, KeyError, TypeError):
             raise SmsDeliveryError("provider_response_malformed", retryable=True) from None
+        if not isinstance(provider_status, str) or not isinstance(provider_message_id, str):
+            raise SmsDeliveryError("provider_response_malformed", retryable=True)
         if provider_status in self.REJECTED_STATUSES:
             raise SmsDeliveryError(f"provider_status_{provider_status}", retryable=False)
+        if provider_status not in self.ACCEPTED_STATUSES or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", provider_message_id):
+            raise SmsDeliveryError("provider_response_malformed", retryable=True)
+        sensitive_values: list[str] = re.findall(r"\b[0-9A-Z]{6}\b", message)
+        sensitive_values.append(self._api_key or "")
+        if any(value and value in provider_message_id for value in sensitive_values):
+            raise SmsDeliveryError("provider_response_malformed", retryable=True)
         return SmsSendResult(provider_message_id=provider_message_id, status=provider_status)

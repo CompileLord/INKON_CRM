@@ -264,6 +264,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 **Summary:** Password Reset Request
 
+Students receive a pending SMS password with a short expiration (ten minutes by default). Their current password and sessions remain valid until the SMS password is used at login.
+
 **Request Body (JSON):**
 ```json
 {
@@ -274,7 +276,9 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Responses:**
 - **200**: Successful Response
   ```json
-  object
+  {
+    "message": string,
+  }
   ```
 - **422**: Validation Error
   ```json
@@ -450,7 +454,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
       "max_attempts": integer,
       "last_error?": string,
       "provider_message_id?": string,
-      "provider_status?": string,
+      "provider_status?": "pending" | "queued" | "accepted" | "sent" | "delivered",
       "created_at": string,
       "delivered_at?": string,
     }

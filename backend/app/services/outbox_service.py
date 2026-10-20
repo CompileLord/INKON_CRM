@@ -164,6 +164,7 @@ class OutboxService:
         code: str,
         reason: str,
         language: Optional[str],
+        expires_at: Optional[datetime] = None,
     ) -> OutboxEvent:
         now: datetime = datetime.now(timezone.utc)
         payload_fields: dict[str, Optional[str]] = {"code": code, "reason": reason, "language": language}
@@ -178,7 +179,7 @@ class OutboxService:
             correlation_key=f"password-sms:{target_user_id}",
             max_attempts=6,
             next_attempt_at=now,
-            expires_at=now + timedelta(seconds=STUDENT_PASSWORD_SMS_TTL_SECONDS),
+            expires_at=expires_at or now + timedelta(seconds=STUDENT_PASSWORD_SMS_TTL_SECONDS),
         )
         return await self._repository.enqueue(event)
 

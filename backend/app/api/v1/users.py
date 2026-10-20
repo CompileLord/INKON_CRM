@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, Query, status, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, Query, status, File, UploadFile, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.rate_limiter import get_client_ip
+from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.deps import get_db_session, get_storage_service, require_superadmin, get_current_user
 from app.models.user import User, UserRole
 from app.models.outbox_event import OutboxEvent, OutboxEventStatus
@@ -15,10 +17,13 @@ router = APIRouter()
 @router.post("/", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     payload: UserCreate,
+    request: Request,
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session)
 ) -> UserCreateResponse:
-    user_service = UserService(db)
+    if payload.role == UserRole.STUDENT:
+        await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
+    user_service: UserService = UserService(db)
     created_user: User
     issued_link_code: IssuedLinkCode | None
     destination: PasswordSmsDestination | None
@@ -50,9 +55,11 @@ async def list_password_sms_deliveries(
 @router.post("/{id}/resend-password-sms", response_model=PasswordSmsResendResponse)
 async def resend_password_sms(
     id: int,
+    request: Request,
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session),
 ) -> PasswordSmsResendResponse:
+    await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
     destination: PasswordSmsDestination = await UserService(db).resend_password_sms(id, current_user.id)
     return PasswordSmsResendResponse(destination=destination.kind.value)
 
@@ -78,10 +85,13 @@ async def update_own_profile(
 async def update_user(
     id: int,
     payload: UserUpdate,
+    request: Request,
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session)
 ) -> User:
     user_service = UserService(db)
+    if payload.email:
+        await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
     return await user_service.update_user(id, payload)
 
 
