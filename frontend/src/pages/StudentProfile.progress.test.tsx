@@ -12,7 +12,7 @@ import { mockProfileResponse, staffProgressFixture, renderStudentProfile, regist
 registerStudentProfileHooks();
 
 describe("StudentProfile Component", () => {
-  it("moves tab focus with arrows and activates panes with Enter and Space", async () => {
+  it("moves selection and focus together with arrows, Home and End and reflects the tab in the URL", async () => {
     const user = userEvent.setup();
     renderStudentProfile();
 
@@ -26,28 +26,28 @@ describe("StudentProfile Component", () => {
 
     coursesTab.focus();
     await user.keyboard("{ArrowRight}");
-
-    expect(coursesTab.getAttribute("aria-selected")).toBe("true");
-    expect(performanceTab.getAttribute("aria-selected")).toBe("false");
-    expect(document.activeElement).toBe(performanceTab);
-    expect(screen.getByRole("tabpanel", { name: /Courses/i })).toBeDefined();
-
-    await user.keyboard("{Enter}");
     expect(performanceTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(performanceTab);
     expect(screen.getByRole("tabpanel", { name: /Progress/i })).toBeDefined();
 
     await user.keyboard("{End}");
-    expect(performanceTab.getAttribute("aria-selected")).toBe("true");
-    expect(document.activeElement).toBe(documentsTab);
-    await user.keyboard(" ");
     expect(documentsTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(documentsTab);
     expect(screen.getByRole("tabpanel", { name: /Documents/i })).toBeDefined();
 
     await user.keyboard("{Home}");
-    expect(document.activeElement).toBe(coursesTab);
-    expect(documentsTab.getAttribute("aria-selected")).toBe("true");
-    await user.keyboard(" ");
     expect(coursesTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(coursesTab);
+  });
+
+  it("stores the selected tab in the tab query parameter and restores it on direct entry", () => {
+    renderStudentProfile(["/students/42?tab=documents"]);
+    expect(screen.getByRole("tab", { name: /Documents/i }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("falls back to the history-state tab only when no tab parameter is present", () => {
+    renderStudentProfile([{ pathname: "/students/42", state: { profileTab: "performance" } }]);
+    expect(screen.getByRole("tab", { name: /Progress/i }).getAttribute("aria-selected")).toBe("true");
   });
 
   it("keeps the selected tab in the profile history entry through a course round trip", async () => {
@@ -55,62 +55,30 @@ describe("StudentProfile Component", () => {
     renderStudentProfile();
 
     await user.click(screen.getByRole("tab", { name: /Progress/i }));
-    await user.click(screen.getByRole("link", { name: "Advanced Mathematics" }));
+    await user.click(screen.getByRole("link", { name: /Advanced Mathematics/ }));
     await user.click(screen.getByRole("button", { name: "Return to profile" }));
 
     expect(screen.getByRole("tab", { name: /Progress/i }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("tabpanel", { name: /Progress/i })).toBeDefined();
   });
 
-  it("never substitutes legacy aggregate defaults for absent provenance data", () => {
-    const profileWithoutPerformance: StudentProfileResponse = {
-      ...mockProfileResponse,
-      avg_score: 87.5,
-      absences: 2,
-      total_lessons: 24,
-      performance: undefined,
-    };
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
-      return {
-        data: profileWithoutPerformance,
-        isLoading: false,
-        isError: false,
-        refetch: vi.fn(),
-      } as unknown as ReturnType<typeof userHooks.useStudentProfile>;
-    });
-
+  it("never substitutes legacy aggregate defaults for absent performance data", () => {
+    const profileWithoutPerformance: StudentProfileResponse = { ...mockProfileResponse, avg_score: 87.5, absences: 2, total_lessons: 24, performance: undefined };
+    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: profileWithoutPerformance, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
     renderStudentProfile();
-
-    expect(screen.getByText("Score unavailable", { selector: ".sr-only" }).parentElement?.querySelector('[aria-hidden="true"]')?.textContent).toBe("—");
-    expect(screen.getAllByText("Attendance unavailable")).toHaveLength(2);
+    const tile = screen.getByText("Attendance").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
     expect(screen.queryByText("87.5")).toBeNull();
     expect(screen.queryByText("24")).toBeNull();
   });
 
-  it("preserves a genuine stored zero as an unverified raw score", () => {
-    const basePerformance = mockProfileResponse.performance;
-    if (!basePerformance) throw new Error("The test fixture must include performance totals");
-    const zeroScoreProfile: StudentProfileResponse = {
-      ...mockProfileResponse,
-      performance: {
-        ...basePerformance,
-        raw_avg_percentage: 0,
-        grading_state: "unknown",
-      },
-    };
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
-      return {
-        data: zeroScoreProfile,
-        isLoading: false,
-        isError: false,
-        refetch: vi.fn(),
-      } as unknown as ReturnType<typeof userHooks.useStudentProfile>;
-    });
-
+  it("preserves a genuine zero score as 0 over the maximum", () => {
+    const zeroScoreProfile: StudentProfileResponse = { ...mockProfileResponse, courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: 0, my_total_max_score: 400 })) };
+    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: zeroScoreProfile, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
     renderStudentProfile();
-
-    expect(screen.getByText("0.0")).toBeDefined();
-    expect(screen.queryByText("Score unavailable")).toBeNull();
+    const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain("0 / 400");
+    expect(tile.querySelector("[data-stat-missing]")).toBeNull();
   });
 
   it("keeps the method notes in one info tooltip beside the Progress heading instead of a visible block", async () => {
@@ -119,15 +87,12 @@ describe("StudentProfile Component", () => {
     await user.click(screen.getByRole("tab", { name: "Progress" }));
 
     expect(await screen.findByRole("heading", { name: "Progress" })).toBeDefined();
-    expect(screen.queryByText(/All recorded student period summaries across all courses/i)).toBeNull();
-    expect(screen.queryByText(/Stored period total lessons/i)).toBeNull();
+    expect(screen.queryByText(/The percentage is the share of the maximum/i)).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "How progress is measured" }));
+    await user.click(screen.getByRole("button", { name: /Points add up homework/ }));
     const tooltip = await screen.findByRole("tooltip");
-    expect(tooltip.textContent).toContain("All recorded student period summaries across all courses");
-    expect(tooltip.textContent).toContain("Stored period total lessons");
-    expect(tooltip.textContent).toContain("Stored without explicit assessment provenance");
-    expect(tooltip.textContent).toContain("Period summaries recorded (status unknown)");
+    expect(tooltip.textContent).toContain("The percentage is the share of the maximum");
+    expect(document.querySelectorAll("[data-info-tooltip], [role='tooltip']")).toHaveLength(1);
   });
 
   it("draws one smooth line per course by period for staff and lists compact per-course rows", async () => {
@@ -150,9 +115,10 @@ describe("StudentProfile Component", () => {
     const rows = screen.getAllByTestId("course-progress-row");
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain("Advanced Mathematics");
-    expect(rows[0].textContent).toContain("90.0");
-    expect(rows[0].textContent).toContain("95%");
-    expect(rows[0].textContent).toContain("1 of 12");
+    expect(rows[0].textContent).toContain("340 / 400");
+    expect(rows[0].textContent).toContain("85%");
+    expect(rows[0].textContent).toContain("95% attendance");
+    expect(rows[0].textContent).toContain("1 of 12 missed");
     expect(screen.queryByText(/Recorded period summaries for this course/i)).toBeNull();
   });
 
@@ -207,7 +173,7 @@ describe("StudentProfile Component", () => {
     renderStudentProfile();
     await user.click(screen.getByRole("tab", { name: "Progress" }));
     expect(await screen.findByText("Not enough graded periods")).toBeDefined();
-    expect(screen.getByText(/at least two graded periods/i)).toBeDefined();
+    expect(screen.getByText(/two graded periods/i)).toBeDefined();
     expect(screen.queryByTestId("student-progress-chart")).toBeNull();
     expect(screen.getAllByTestId("course-progress-row")).toHaveLength(2);
   });
@@ -218,7 +184,7 @@ describe("StudentProfile Component", () => {
     renderStudentProfile();
     await user.click(screen.getByRole("tab", { name: "Progress" }));
     expect(screen.getByTestId("progress-chart-skeleton")).toBeDefined();
-    expect(await screen.findByText("Could not load the progress chart")).toBeDefined();
+    expect(await screen.findByText("Couldn't load the progress chart")).toBeDefined();
 
     failing.mockImplementation(async (courseId: number) => staffProgressFixture(courseId));
     await user.click(screen.getByRole("button", { name: "Retry" }));

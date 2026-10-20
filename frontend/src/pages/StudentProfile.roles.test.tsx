@@ -16,10 +16,10 @@ describe("StudentProfile Component", () => {
     expect(screen.queryByRole("button", { name: /^Edit$/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Student actions/i })).toBeNull();
 
-    const mathLink = screen.getByRole("link", { name: "Advanced Mathematics" });
+    const mathLink = screen.getByRole("link", { name: /Advanced Mathematics/ });
     expect(mathLink.getAttribute("href")).toBe("/courses/101");
 
-    expect(screen.queryByRole("link", { name: "English Literature" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /English Literature/ })).toBeNull();
     expect(screen.getAllByText("English Literature")).toHaveLength(1);
 
     const backLink = screen.getByRole("link", { name: /Back to Dashboard/i });
@@ -82,10 +82,10 @@ describe("StudentProfile Component", () => {
     expect(backLink).toBeDefined();
     expect(backLink.getAttribute("href")).toBe("/my/courses");
 
-    const mathLink = screen.getByRole("link", { name: "Advanced Mathematics" });
+    const mathLink = screen.getByRole("link", { name: /Advanced Mathematics/ });
     expect(mathLink.getAttribute("href")).toBe("/my/courses/101");
 
-    const englishLink = screen.getByRole("link", { name: "English Literature" });
+    const englishLink = screen.getByRole("link", { name: /English Literature/ });
     expect(englishLink.getAttribute("href")).toBe("/my/courses/102");
   });
 
@@ -99,9 +99,10 @@ describe("StudentProfile Component", () => {
     const user = userEvent.setup();
     renderStudentProfile();
 
-    await user.click(screen.getByRole("button", { name: "Account Access" }));
+    await user.click(screen.getByRole("button", { name: "Student actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Account access" }));
 
-    expect(await screen.findByText(/Password credentials are not stored in plaintext/i)).toBeDefined();
+    expect(await screen.findByText(/The password isn't stored in readable form/i)).toBeDefined();
   });
 
   it("resets a revealed password to masked when the account access popover is closed and reopened", async () => {
@@ -114,8 +115,11 @@ describe("StudentProfile Component", () => {
 
     renderStudentProfile();
 
-    const trigger = screen.getByRole("button", { name: "Account Access" });
-    await user.click(trigger);
+    const openAccess = async (): Promise<void> => {
+      await user.click(screen.getByRole("button", { name: "Student actions" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Account access" }));
+    };
+    await openAccess();
     expect(await screen.findByText("••••••••")).toBeDefined();
     expect(screen.queryByText("InitialPassword123!")).toBeNull();
 
@@ -124,7 +128,7 @@ describe("StudentProfile Component", () => {
 
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByText("InitialPassword123!")).toBeNull());
-    await user.click(trigger);
+    await openAccess();
     expect(await screen.findByText("••••••••")).toBeDefined();
     expect(screen.queryByText("InitialPassword123!")).toBeNull();
   });
@@ -132,6 +136,7 @@ describe("StudentProfile Component", () => {
   it("hides account access from non-superadmin roles", () => {
     useAuthStore.setState({ role: "mentor", userId: 7 });
     renderStudentProfile();
-    expect(screen.queryByRole("button", { name: "Account Access" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Student actions" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Account access" })).toBeNull();
   });
 });

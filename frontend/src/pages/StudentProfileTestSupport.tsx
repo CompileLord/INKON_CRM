@@ -11,6 +11,7 @@ import * as userHooks from "../lib/users/hooks";
 import * as userEndpoints from "../lib/users/endpoints";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as documentEndpoints from "../lib/documents/endpoints";
+import * as financeApi from "../lib/finance/api";
 import type { StudentJournalPeriod, StudentProfileResponse, User } from "../lib/users/types";
 import type { CourseStaffProgressResponse } from "../lib/courses/types";
 
@@ -83,6 +84,8 @@ export const mockProfileResponse: StudentProfileResponse = {
       enrollment_status: "active",
       bucket: "active",
       my_avg_percentage: 90,
+      my_total_score: 340,
+      my_total_max_score: 400,
       attendance_percentage: 95,
       absences: 1,
       periods_total: 4,
@@ -126,6 +129,8 @@ export const mockProfileResponse: StudentProfileResponse = {
       enrollment_status: "active",
       bucket: "archive",
       my_avg_percentage: 85,
+      my_total_score: 170,
+      my_total_max_score: 200,
       attendance_percentage: 88,
       absences: 1,
       periods_total: 2,
@@ -241,7 +246,8 @@ export function registerStudentProfileHooks(): void {
     await i18n.changeLanguage("en");
     useAuthStore.setState({ role: "superadmin", userId: 1 });
     vi.spyOn(courseEndpoints, "getCourseStaffProgress").mockImplementation(async (courseId: number) => staffProgressFixture(courseId));
-    vi.spyOn(userEndpoints, "getMyStudentJournals").mockResolvedValue(ownJournalsFixture);
+    vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "900.00", total_settled: "650.00", net_receivable: "250.00", credit_balance: "0.00", days_overdue: 3 });
+  vi.spyOn(userEndpoints, "getMyStudentJournals").mockResolvedValue(ownJournalsFixture);
     vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
     vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
       return {

@@ -22,7 +22,7 @@ describe("StudentProfile Component", () => {
     await act(async () => { await queryClient.invalidateQueries({ queryKey: ["users", "students", "profile", 42] }); });
     expect(screen.getByRole("heading", { name: "Rustam Karimov" })).toBeDefined();
     expect(screen.getByRole("tab", { name: "Progress" }).getAttribute("aria-selected")).toBe("true");
-    expect((await screen.findByRole("alert")).textContent).toContain(i18n.t("students:profileRefreshError"));
+    expect((await screen.findByRole("alert")).textContent).toContain(i18n.t("studentProfile:state.refreshError"));
     await user.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
     expect(getProfile).toHaveBeenCalledTimes(3);
@@ -40,10 +40,10 @@ describe("StudentProfile Component", () => {
     expect(screen.queryByRole("heading", { name: "Rustam Karimov" })).toBeNull();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.queryByRole("tab")).toBeNull();
-    expect(screen.queryByText(i18n.t("students:profileRefreshError"))).toBeNull();
+    expect(screen.queryByText(i18n.t("studentProfile:state.refreshError"))).toBeNull();
     const expectedKind = status === 404 ? "notFound" : "forbidden";
-    expect(screen.getByRole("heading", { name: i18n.t(`students:profileState.${expectedKind}Title`) })).toBeDefined();
-    expect(screen.getByText(i18n.t(`students:profileState.${expectedKind}Body`))).toBeDefined();
+    expect(screen.getByRole("heading", { name: i18n.t(`studentProfile:state.${expectedKind}Title`) })).toBeDefined();
+    expect(screen.getByText(i18n.t(`studentProfile:state.${expectedKind}Body`))).toBeDefined();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
     expect(screen.queryByText("Rustam Karimov")).toBeNull();
     expect(screen.getAllByRole("link").length).toBeGreaterThan(0);
@@ -51,7 +51,7 @@ describe("StudentProfile Component", () => {
 
   it("shows a distinct not-found state without Retry for an invalid profile id", () => {
     renderStudentProfile(["/students/abc"]);
-    expect(screen.getByRole("heading", { name: i18n.t("students:profileState.notFoundTitle") })).toBeDefined();
+    expect(screen.getByRole("heading", { name: i18n.t("studentProfile:state.notFoundTitle") })).toBeDefined();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 
@@ -60,7 +60,7 @@ describe("StudentProfile Component", () => {
     const getProfile = vi.spyOn(userEndpoints, "getStudentProfile").mockRejectedValueOnce(new AuthApiError(503, "Unavailable")).mockResolvedValue(mockProfileResponse);
     const user = userEvent.setup();
     renderStudentProfile();
-    expect(await screen.findByRole("heading", { name: i18n.t("students:profileState.failedTitle") })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: i18n.t("studentProfile:state.failedTitle") })).toBeDefined();
     expect(screen.getAllByRole("link").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByRole("heading", { name: "Rustam Karimov" });
@@ -107,7 +107,7 @@ describe("StudentProfile Component", () => {
     expect(screen.queryByRole("dialog", { name: "Edit Student" })).toBeNull();
     expect(screen.getByRole("tab", { name: "Progress" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("heading", { name: "Rustam Karimov" })).toBeDefined();
-    expect(screen.getByRole("alert").textContent).toContain(i18n.t("students:profileRefreshError"));
+    expect(screen.getByRole("alert").textContent).toContain(i18n.t("studentProfile:state.refreshError"));
   });
 
   it("renders error state with functional retry button", async () => {
@@ -147,8 +147,8 @@ describe("StudentProfile Component", () => {
 
     renderStudentProfile();
 
-    expect(screen.getByText(/No courses found/i)).toBeDefined();
-    expect(screen.getByText(/This student is not currently enrolled in any course/i)).toBeDefined();
+    expect(screen.getByText("No courses")).toBeDefined();
+    expect(screen.getByText(/This student isn't enrolled in any course/i)).toBeDefined();
   });
 
   it("shows the one-time parent link code from creation state with a copy action, then drops it from history state", async () => {

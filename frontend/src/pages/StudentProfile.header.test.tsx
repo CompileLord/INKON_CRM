@@ -1,200 +1,165 @@
 import { describe, expect, it, vi } from "vitest";
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18n from "../i18n";
 import { formatNumber } from "../i18n/formatters";
 import * as userHooks from "../lib/users/hooks";
+import * as financeApi from "../lib/finance/api";
+import { useAuthStore } from "../store/authStore";
 import { mockStudentUser, mockProfileResponse, renderStudentProfile, registerStudentProfileHooks } from "./StudentProfileTestSupport";
 
 registerStudentProfileHooks();
 
+function mockProfile(overrides: Partial<typeof mockProfileResponse>): void {
+  vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({
+    data: { ...mockProfileResponse, ...overrides },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
+}
+
 describe("StudentProfile Component", () => {
-  it("renders superadmin identity row, summary strip, and authorized course links", () => {
+  it("renders one compact header with the contact line, one primary action and course links", () => {
     renderStudentProfile();
 
-    expect(screen.getAllByText("Rustam Karimov").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("student42@example.com").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /\+992900000042/ }).getAttribute("href")).toBe("tel:+992900000042");
-    expect(screen.queryByText("+992900000043")).toBeNull();
-    expect(screen.queryByText(/Guardian phone:/i)).toBeNull();
-    expect(screen.queryByText(/Parent phone:/i)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Rustam Karimov" })).toBeDefined();
+    const header = document.querySelector("[data-entity-header]") as HTMLElement;
+    const contacts = Array.from(header.querySelectorAll("p > span > span:not([aria-hidden])")).map((node) => node.textContent);
+    expect(contacts).toEqual(["student42@example.com", "+992900000042", "Parent: +992900000043", "15.05.2007"]);
+    expect(document.querySelectorAll("[data-entity-header]")).toHaveLength(1);
 
     const backLink = screen.getByRole("link", { name: /Back to Students/i });
-    expect(backLink).toBeDefined();
     expect(backLink.getAttribute("href")).toBe("/students");
     expect(document.querySelectorAll("[data-page-back]")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Edit$/i })).toHaveLength(1);
 
-    const editBtn = screen.getByRole("button", { name: /^Edit$/i });
-    expect(editBtn).toBeDefined();
-
-    expect(screen.getByText("87.5")).toBeDefined();
-    expect(screen.getByText("Average")).toBeDefined();
-    expect(screen.queryByText(/unverified/i)).toBeNull();
-
-    const mathLink = screen.getByRole("link", { name: "Advanced Mathematics" });
-    expect(mathLink.getAttribute("href")).toBe("/courses/101");
-
-    const englishLink = screen.getByRole("link", { name: "English Literature" });
-    expect(englishLink.getAttribute("href")).toBe("/courses/102");
+    expect(screen.getByRole("link", { name: /Advanced Mathematics/ }).getAttribute("href")).toBe("/courses/101");
+    expect(screen.getByRole("link", { name: /English Literature/ }).getAttribute("href")).toBe("/courses/102");
   });
 
-  it.each([
-    [0, "0.0"],
-    [87.5, "87.5"],
-    [123.456, "123.5"],
-  ])("shows the stored raw score %s with one localized decimal", (rawAverage, expected) => {
-    const response = { ...mockProfileResponse, performance: { ...mockProfileResponse.performance!, raw_avg_percentage: rawAverage } };
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({
-      data: response,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-    renderStudentProfile();
-    expect(screen.getByText(expected)).toBeDefined();
-    expect(screen.getByText("Average")).toBeDefined();
-  });
-
-  it("preserves a stored zero when the recorded maximum-score count is zero", () => {
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({
-      data: {
-        ...mockProfileResponse,
-        performance: { ...mockProfileResponse.performance!, raw_avg_percentage: 0, periods_with_max_score_count: 0, period_summaries_count: 1 },
-      },
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-    renderStudentProfile();
-    expect(screen.getByText("0.0")).toBeDefined();
-    expect(screen.getByText("Average")).toBeDefined();
-  });
-
-  it.each(["en", "ru", "tg"] as const)("localizes profile metrics and translated values for locale %s", async (locale) => {
+  it("keeps the other actions inside one overflow menu", async () => {
     const user = userEvent.setup();
-    const response = {
-      ...mockProfileResponse,
-      performance: { ...mockProfileResponse.performance!, raw_avg_percentage: 1234.5, absences: 0, total_lessons: 0, attendance_denominator: 0 },
-    };
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({
-      data: response,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
+    renderStudentProfile();
+    await user.click(screen.getByRole("button", { name: "Student actions" }));
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["Account access", "Delete student"]);
+  });
+
+  it("shows exactly three distinct stat tiles in one group for a superadmin", async () => {
+    renderStudentProfile();
+    const group = document.querySelector("[data-profile-summary] [data-stat-group]") as HTMLElement;
+    expect(group.querySelectorAll("[data-stat-tile]")).toHaveLength(3);
+    const labels = Array.from(group.querySelectorAll("dt")).map((node) => node.textContent);
+    expect(new Set(labels).size).toBe(3);
+    await waitFor(() => expect(group.textContent).toContain("Debt"));
+  });
+
+  it("shows the points of the active courses as score over maximum with the percentage muted", () => {
+    renderStudentProfile();
+    const group = document.querySelector("[data-stat-group]") as HTMLElement;
+    const tile = within(group).getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain("340 / 400");
+    expect(tile.textContent).toContain("85%");
+    expect(tile.textContent).not.toContain("170");
+  });
+
+  it("shows attendance with the missed lessons as its hint", () => {
+    renderStudentProfile();
+    const tile = screen.getByText("Attendance").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain("92%");
+    expect(tile.textContent).toContain("2 of 24 missed");
+  });
+
+  it("marks attendance as missing when the stored attendance denominator is zero", () => {
+    mockProfile({ performance: { ...mockProfileResponse.performance!, attendance_denominator: 0, attendance_percentage: 91.6 } });
+    renderStudentProfile();
+    const tile = screen.getByText("Attendance").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).not.toContain("92%");
+    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
+  });
+
+  it("marks the points as missing when no active course has a recorded maximum", () => {
+    mockProfile({ courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: undefined, my_total_max_score: undefined })) });
+    renderStudentProfile();
+    const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
+  });
+
+  it("never shows a percentage above 100 next to the points", () => {
+    mockProfile({ courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: 130, my_total_max_score: 100 })) });
+    renderStudentProfile();
+    const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain("130 / 100");
+    expect(tile.textContent).not.toMatch(/1\d\d%/);
+  });
+
+  it("shows the debt with money formatting and the overdue days", async () => {
+    renderStudentProfile();
+    const tile = (await screen.findByText("Debt")).closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain("250.00 TJS");
+    expect(tile.textContent).toContain("3 days overdue");
+  });
+
+  it("shows an overpayment as credit and a settled account as a zero balance", async () => {
+    vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "0", total_settled: "0", net_receivable: "0.00", credit_balance: "75.50", days_overdue: 0 });
+    renderStudentProfile();
+    const creditTile = (await screen.findByText("Overpaid")).closest("[data-stat-tile]") as HTMLElement;
+    expect(creditTile.textContent).toContain("75.50 TJS");
+    cleanup();
+    vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "0", total_settled: "0", net_receivable: "0.00", credit_balance: "0.00", days_overdue: 0 });
+    renderStudentProfile();
+    const balanceTile = (await screen.findByText("Balance")).closest("[data-stat-tile]") as HTMLElement;
+    await waitFor(() => expect(balanceTile.textContent).toContain("0.00 TJS"));
+  });
+
+  it("hides the balance tile and never requests the balance for a mentor", () => {
+    useAuthStore.setState({ role: "mentor", userId: 7 });
+    renderStudentProfile();
+    const group = document.querySelector("[data-stat-group]") as HTMLElement;
+    expect(group.querySelectorAll("[data-stat-tile]")).toHaveLength(2);
+    expect(financeApi.fetchStudentBalance).not.toHaveBeenCalled();
+  });
+
+  it.each(["en", "ru", "tg"] as const)("localizes the stat labels and numbers for %s", async (locale) => {
     await i18n.changeLanguage(locale);
     renderStudentProfile();
-    const localizedScore = formatNumber(1234.5, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/\u00a0/g, " ");
-    expect(screen.getAllByText((_content, element) => element?.tagName === "P" && (element.textContent ?? "").replace(/\u00a0/g, " ") === localizedScore).length).toBeGreaterThan(0);
-    const absencesLabel = i18n.t("students:stats.absencesOf", { lng: locale, absences: formatNumber(0, locale), total: formatNumber(0, locale) });
-    expect(screen.getAllByText(absencesLabel).length).toBeGreaterThan(0);
-    const currencySuffix = i18n.t("students:currencyTjs", { lng: locale });
-    expect(screen.getAllByText((_content, element) => element?.tagName === "SPAN" && (element.textContent ?? "").includes(currencySuffix)).length).toBeGreaterThan(0);
-    expect(screen.getByText(i18n.t("students:stats.attendance", { lng: locale })).closest("div")?.parentElement?.textContent).toContain(i18n.t("students:attendanceUnavailable", { lng: locale }));
-    await user.click(screen.getByRole("tab", { name: i18n.t("students:performanceTab", { lng: locale }) }));
-    expect(await screen.findByRole("heading", { name: i18n.t("students:progress.title", { lng: locale }) })).toBeDefined();
+    const group = document.querySelector("[data-stat-group]") as HTMLElement;
+    expect(group.textContent).toContain(i18n.t("studentProfile:stats.score", { lng: locale }));
+    expect(group.textContent).toContain(i18n.t("studentProfile:stats.attendance", { lng: locale }));
+    expect(group.textContent).toContain(i18n.t("studentProfile:stats.absencesOf", { lng: locale, absences: formatNumber(2, locale), total: formatNumber(24, locale) }));
     await i18n.changeLanguage("en");
   });
 
-  it("uses unavailable labels when the profile has no stored performance contract", () => {
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({
-      data: { ...mockProfileResponse, performance: null },
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-    renderStudentProfile();
-    expect(screen.getByText("Score unavailable", { selector: ".sr-only" }).parentElement?.querySelector('[aria-hidden="true"]')?.textContent).toBe("—");
-    expect(screen.getAllByText("Attendance unavailable").length).toBeGreaterThan(0);
-  });
-
-  it.each(["en", "ru", "tg"] as const)("distinguishes compact missing score from true zero and bonus scores in %s", async (locale) => {
-    await i18n.changeLanguage(locale);
-    for (const rawAverage of [null, 0, 123.456]) {
-      vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: { ...mockProfileResponse, performance: { ...mockProfileResponse.performance!, raw_avg_percentage: rawAverage } }, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-      renderStudentProfile();
-      if (rawAverage === null) {
-        const missingValue = screen.getByText(i18n.t("students:scoreUnavailable"), { selector: ".sr-only" }).parentElement?.querySelector('[aria-hidden="true"]');
-        expect(missingValue?.textContent).toBe(i18n.t("students:missingScoreValue"));
-        expect(missingValue?.textContent).not.toBe(formatNumber(0, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
-      } else {
-        const expectedScore = formatNumber(rawAverage, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-        expect(screen.getByText(expectedScore)).toBeDefined();
-        expect(screen.queryByText(i18n.t("students:scoreUnavailable"), { selector: ".sr-only" })).toBeNull();
-      }
-      expect(screen.getByText(i18n.t("students:stats.average"))).toBeDefined();
-      cleanup();
-    }
-  });
-
-  it("handles contextual edit trigger opening StudentFormPanel", async () => {
+  it("opens the edit panel from the primary action", async () => {
     const user = userEvent.setup();
     renderStudentProfile();
-
-    const editBtn = screen.getByRole("button", { name: /^Edit$/i });
-    await user.click(editBtn);
-
+    await user.click(screen.getByRole("button", { name: /^Edit$/i }));
     expect(screen.getByRole("dialog")).toBeDefined();
   });
 
-  it("shows the guardian phone only in the header popover and renders one compact meta line", async () => {
-    const user = userEvent.setup();
+  it("shows the guardian phone as plain text in the contact line", () => {
     renderStudentProfile();
-    expect(screen.queryByText("+992900000043")).toBeNull();
-    const trigger = screen.getByRole("button", { name: "Guardian phone" });
-    await user.click(trigger);
-    const guardianLink = await screen.findByRole("link", { name: "+992900000043" });
-    expect(guardianLink.getAttribute("href")).toBe("tel:+992900000043");
-    expect(screen.getByRole("link", { name: /student42@example.com/ }).getAttribute("href")).toBe("mailto:student42@example.com");
+    expect(screen.getByText("Parent: +992900000043")).toBeDefined();
   });
 
-  it("shows the archived pill beside the name only when the student is not active", () => {
+  it("shows the archived badge beside the name only when the student is not active", () => {
     renderStudentProfile();
-    expect(screen.getByRole("heading", { name: "Rustam Karimov" }).parentElement?.textContent).not.toContain("Archived");
+    expect(document.querySelector("[data-entity-header] [data-badge-status='archived']")).toBeNull();
     cleanup();
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: { ...mockProfileResponse, user: { ...mockStudentUser, is_deleted: true } }, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
+    mockProfile({ user: { ...mockStudentUser, is_deleted: true } });
     renderStudentProfile();
-    expect(screen.getByRole("heading", { name: "Rustam Karimov" }).parentElement?.textContent).toContain("Archived");
+    expect(document.querySelector("[data-entity-header] [data-badge-status='archived']")).not.toBeNull();
   });
 
-  it("renders three stat tiles with the average provenance in an info tooltip and absences as a ratio", async () => {
-    const user = userEvent.setup();
-    renderStudentProfile();
-    const tiles = document.querySelector("[data-profile-summary]") as HTMLElement;
-    expect(tiles.children).toHaveLength(3);
-    expect(tiles.textContent).toContain("Average");
-    expect(tiles.textContent).toContain("92%");
-    expect(tiles.textContent).toContain("2 of 24");
-    expect(tiles.textContent).not.toContain("/100");
-    expect(tiles.textContent).not.toContain("unverified");
-
-    await user.click(screen.getByRole("button", { name: "Average" }));
-    expect((await screen.findByRole("tooltip")).textContent).toContain("unverified");
-  });
-
-  it("marks attendance unavailable when the stored attendance denominator is zero", () => {
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: { ...mockProfileResponse, performance: { ...mockProfileResponse.performance!, attendance_denominator: 0, attendance_percentage: 91.6 } }, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-    renderStudentProfile();
-    const tiles = document.querySelector("[data-profile-summary]") as HTMLElement;
-    expect(tiles.textContent).not.toContain("92%");
-    expect(screen.getByText("Attendance unavailable", { selector: ".sr-only" })).toBeDefined();
-  });
-
-  it("renders loading state skeleton with matching geometry", () => {
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
-      return {
-        data: undefined,
-        isLoading: true,
-        isError: false,
-        refetch: vi.fn(),
-      } as unknown as ReturnType<typeof userHooks.useStudentProfile>;
-    });
-
+  it("renders the loading skeleton with the header, tile and tab geometry", () => {
+    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
     renderStudentProfile();
     expect(screen.getByRole("status").getAttribute("aria-busy")).toBe("true");
-    expect(screen.getByText(i18n.t("common:loading"))).toBeDefined();
+    expect(document.querySelector("[data-loading-header]")).not.toBeNull();
+    expect(document.querySelector("[data-loading-tabs]")).not.toBeNull();
+    expect(document.querySelectorAll("[data-loading-header] ~ div > div").length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Rustam Karimov" })).toBeNull();
     expect(screen.queryByRole("tab")).toBeNull();
-    expect(screen.queryByRole("link", { name: "Advanced Mathematics" })).toBeNull();
   });
 });
