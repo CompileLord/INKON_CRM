@@ -57,7 +57,8 @@ describe("StudentCourseJournal", () => {
     expect(screen.getByText("Anvar Tester")).toBeTruthy();
     expect(screen.getByText("Bahor Tester")).toBeTruthy();
     expect(document.querySelectorAll("input, textarea, [data-control]")).toHaveLength(0);
-    expect(screen.queryByRole("button", { name: /settings|comment/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /settings/i })).toBeNull();
+    expect(screen.getAllByRole("button", { name: /read comment/i })).toHaveLength(1);
     expect(get.mock.calls.some((call) => String(call[0]) === "/journals/5/class")).toBe(true);
     expect(get.mock.calls.some((call) => String(call[0]) === "/journals/5")).toBe(false);
     writes.forEach((write) => expect(write).not.toHaveBeenCalled());

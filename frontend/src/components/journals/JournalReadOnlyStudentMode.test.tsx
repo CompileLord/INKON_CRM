@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import i18n from "../../i18n";
 import { JournalGrid } from "./JournalGrid";
 import type { JournalStudentResponse } from "../../lib/journals/types";
@@ -112,5 +112,26 @@ describe("progress selection for a student", () => {
 
   it("pins the own student first and keeps the rest in order", () => {
     expect(JournalProgressRules.pinFirst(students, 4).map((item) => item.studentId).slice(0, 4)).toEqual([4, 1, 2, 3]);
+  });
+});
+
+describe("own comment in the read-only grid", () => {
+  it("opens the own comment in a keyboard-reachable dialog, never rendering classmate text, with no write", async () => {
+    const { httpClient } = await import("../../lib/auth/httpClient");
+    const writes = [vi.spyOn(httpClient, "put"), vi.spyOn(httpClient, "patch"), vi.spyOn(httpClient, "post")];
+    mountGrid(CLASS_ROSTER, 3);
+    const trigger: HTMLElement = screen.getByRole("button", { name: /read comment/i });
+    expect(trigger.tagName).toBe("BUTTON");
+    expect(screen.getAllByRole("button", { name: /read comment/i })).toHaveLength(1);
+    expect(document.body.textContent).not.toContain("own note");
+    fireEvent.click(trigger);
+    expect((await screen.findByTestId("own-comment-text")).textContent).toBe("own note");
+    writes.forEach((write) => expect(write).not.toHaveBeenCalled());
+  });
+
+  it("never renders a classmate comment or its trigger", () => {
+    mountGrid([student(1, "Anvar", "secret classmate note"), student(3, "Chiroq", null)], 3);
+    expect(screen.queryByRole("button", { name: /read comment/i })).toBeNull();
+    expect(document.body.textContent).not.toContain("secret classmate note");
   });
 });

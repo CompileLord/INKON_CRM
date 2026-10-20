@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Minus, MessageSquare } from "lucide-react";
+import { Modal } from "../ui/Modal";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
@@ -26,6 +27,7 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
 }) => {
   const { t } = useTranslation("journals");
   const hasComment: boolean = Boolean(comment && comment.trim().length > 0);
+  const [commentOpen, setCommentOpen] = useState<boolean>(false);
   const formattedDate: string = formatSchoolLessonDate(lessonDate);
 
   return (
@@ -57,10 +59,19 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
         </span>
       )}
       {hasComment && (
-        <span title={comment as string} className="inline-flex text-maroon-text">
-          <MessageSquare className="h-4 w-4 fill-current" aria-hidden="true" />
-          <span className="sr-only">{t("table.hasComment")}</span>
-        </span>
+        <>
+          <button
+            type="button"
+            aria-label={t("table.openComment", { date: formattedDate })}
+            onClick={() => setCommentOpen(true)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] text-maroon-text hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+          >
+            <MessageSquare className="h-4 w-4 fill-current" aria-hidden="true" />
+          </button>
+          <Modal open={commentOpen} onClose={() => setCommentOpen(false)} title={t("table.commentDialogTitle", { date: formattedDate })}>
+            <p data-testid="own-comment-text" className="select-text whitespace-pre-wrap break-words text-sm text-ink">{comment}</p>
+          </Modal>
+        </>
       )}
     </div>
   );
