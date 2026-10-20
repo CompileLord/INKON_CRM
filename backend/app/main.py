@@ -6,6 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
 from fastapi.exceptions import RequestValidationError
 from app.core.credential_validation import CredentialValidationErrorHandler
+from app.core.journal_body_limit import JournalBodyLimitMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.students import router as students_router
@@ -25,19 +26,11 @@ from app.api.v1.system import router as system_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.telegram_bot.bot import bot
+    from app.core.resource_lifecycle import ProcessResources
     try:
         yield
     finally:
-        try:
-            await bot.session.close()
-        finally:
-            from app.core.redis import close_arq_pool
-            try:
-                await close_arq_pool()
-            finally:
-                from app.db.storage_intent_session import storage_intent_sessions
-                await storage_intent_sessions.close()
+        await ProcessResources.close()
 
 
 is_prod = settings.ENVIRONMENT == "production"
@@ -52,6 +45,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(JournalBodyLimitMiddleware, api_prefix=settings.API_V1_STR)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_exception_handler(RequestValidationError, CredentialValidationErrorHandler())
 

@@ -8,6 +8,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.schemas.common import CanonicalPhonePolicy
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
 from app.services.storage_lifecycle_service import StorageLifecycleService
@@ -225,7 +226,7 @@ class UserService:
             user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
         if "parent_phone" in user_update.model_fields_set:
             if (
-                user_update.parent_phone != user.parent_phone
+                not CanonicalPhonePolicy.are_equivalent(user.parent_phone, user_update.parent_phone)
                 and "parent_telegram_chat_id" not in user_update.model_fields_set
             ):
                 user.parent_telegram_chat_id = None

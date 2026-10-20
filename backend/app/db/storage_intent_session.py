@@ -7,7 +7,7 @@ class StorageIntentSessions:
     def __init__(self, database_url: str) -> None:
         self.engine: AsyncEngine = create_async_engine(
             database_url, pool_size=1, max_overflow=0, pool_timeout=5, pool_pre_ping=True,
-            connect_args={'server_settings': {'statement_timeout': '5000', 'lock_timeout': '1000'}},
+            connect_args={'server_settings': {'statement_timeout': '5000', 'lock_timeout': '1000', 'idle_in_transaction_session_timeout': str(settings.DB_IDLE_TRANSACTION_TIMEOUT_MS)}},
         )
         self.factory: async_sessionmaker[AsyncSession] = async_sessionmaker(self.engine, expire_on_commit=False)
 

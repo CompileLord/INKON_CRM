@@ -369,9 +369,7 @@ class OutboxWorkerManager:
     async def start(self) -> None:
         self._engine = create_async_engine(
             self.database_url,
-            pool_pre_ping=True,
-            pool_size=2,
-            max_overflow=2,
+            **settings.main_engine_options(outbox=True),
         )
         self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False)
         self._stop_event = asyncio.Event()

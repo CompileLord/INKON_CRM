@@ -4,6 +4,12 @@ x-backend-service: &backend-service
   image: ghcr.io/compilelord/inkon_crm-api:${IMAGE_TAG:?IMAGE_TAG must be set}
   env_file: /etc/imkon/backend.env
   restart: unless-stopped
+  deploy:
+    replicas: 1
+  environment:
+    DB_API_PROCESSES: "1"
+    DB_WORKER_PROCESSES: "1"
+    DB_REVISION_OVERLAP: "2"
   networks:
     - internal
     - edge
@@ -49,6 +55,7 @@ services:
 
   db:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "max_connections=100"]
     restart: unless-stopped
     env_file: /etc/imkon/backend.env
     volumes:

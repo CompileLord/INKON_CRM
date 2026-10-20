@@ -63,8 +63,9 @@ class TestStudentPasswordCodeGenerator:
 
 
 class TestProviderPhoneFormatter:
-    def test_plus_is_stripped_leaving_digits_only(self) -> None:
-        assert ProviderPhoneFormatter().to_provider_digits("+992900000001") == "992900000001"
+    @pytest.mark.parametrize("phone", ["+12", "+1234567", "+992900000001", "+123456789012345"])
+    def test_plus_is_stripped_leaving_digits_only(self, phone: str) -> None:
+        assert ProviderPhoneFormatter().to_provider_digits(phone) == phone[1:]
 
     @pytest.mark.parametrize("bad_phone", ["992900000001", "+99290000000a", "+992 900", '+9929"},{"x"', "+0123456789", "+992٩٠٠٠٠٠٠٠١", ""])
     def test_non_e164_is_rejected(self, bad_phone: str) -> None:
