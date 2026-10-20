@@ -84,6 +84,16 @@ class TelegramMessageCatalog:
             "ru": "Результат экзамена {student_name}: {course_title}, {period_label}.",
             "en": "Exam result for {student_name}: {course_title}, {period_label}.",
         },
+        "debt_currency": {
+            "tg": "сомонӣ",
+            "ru": "сомони",
+            "en": "TJS",
+        },
+        "debt_reminder": {
+            "tg": "Падар ё модари гиромӣ! Ёдрас мекунем: қарзи таҳсили {student_name} {amount} {currency} аст.\n\n{courses}\n\nЛутфан барои пардохт ба бухгалтерияи марказ муроҷиат кунед.",
+            "ru": "Уважаемый родитель! Напоминаем о задолженности за обучение {student_name}: {amount} {currency}.\n\n{courses}\n\nПожалуйста, свяжитесь с бухгалтерией центра для оплаты.",
+            "en": "Dear parent, this is a reminder about the tuition debt of {student_name}: {amount} {currency}.\n\n{courses}\n\nPlease contact the center's accounting office to pay.",
+        },
     }
 
     def resolve_language(self, language: str | None) -> str:
