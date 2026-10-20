@@ -19,7 +19,6 @@ const ALLOWLIST: readonly string[] = [
   "components/journals/JournalWorkspaceTabs.tsx::role-tablist",
   "components/profile/ProfileTabs.tsx::role-tablist",
   "components/student/StudentBucketTabs.tsx::role-tablist",
-  "pages/Audit.tsx::page-max-width",
   "pages/CourseProfile.tsx::page-max-width",
   "pages/CourseProfile.tsx::role-tablist",
   "pages/MentorProfile.tsx::page-max-width",
