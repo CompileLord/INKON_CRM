@@ -99,10 +99,12 @@ Primary risks are semantic drift, migration/client incompatibility and larger sh
 
 ## Dependencies and execution order
 
-Functional prerequisites: WP-40.
+Functional prerequisites: WP-39.
+
+Execution-order correction (2026-10-20): prioritize this independent privacy fix before WP-40. It needs no paged-history API. Its new mentor card schemas are disjoint from history schemas; contract generation is serialized. WP-40 must start from this accepted backend result and preserve the card/Protocol additions. Frontend client synchronization remains a separate-owner handoff.
 
 Required shared-file / migration ordering:
-- WP-40 → WP-41: `backend/app/schemas/user.py`, `frontend/src/lib/users/types.ts`, `CONTRACT.md`, `frontend/src/lib/users/hooks.ts`, `frontend/src/lib/users/endpoints.ts`, `frontend/src/pages/student/MyCourseDetail.tsx`, `frontend/src/components/dashboard/StudentDashboard.tsx`.
+- WP-41 → WP-40: `backend/app/schemas/user.py`, `frontend/src/lib/users/types.ts`, `CONTRACT.md`, `frontend/src/lib/users/hooks.ts`, `frontend/src/lib/users/endpoints.ts`, `frontend/src/pages/student/MyCourseDetail.tsx`, `frontend/src/components/dashboard/StudentDashboard.tsx`.
 
 Complete prerequisites first and start from their merged result. Do not require reading their WP files: their IDs, required interfaces/behavior and shared-file order are given here. Stop if the prerequisite result is absent. Parallel work is allowed only with disjoint source files and no dependency; STATUS row integration is serialized.
 
