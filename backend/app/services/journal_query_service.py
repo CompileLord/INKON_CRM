@@ -12,6 +12,8 @@ from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.core.scoring import ScoringPolicy
+from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository
+from app.repositories.sqlalchemy.journal_repository import SQLAlchemyJournalRepository
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
 
 
@@ -27,8 +29,9 @@ def get_lesson_dates(period_start: date, period_end: date, schedules: List[Cours
 
 
 class JournalQueryService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, journal_repository: JournalRepository | None = None) -> None:
         self.db: AsyncSession = db
+        self.journal_repository: JournalRepository = journal_repository or SQLAlchemyJournalRepository(db)
 
     async def get_course_journals_aggregated(self, course_id: int) -> List[JournalResponse]:
         journals_stmt = select(Journal).filter(Journal.course_id == course_id).order_by(Journal.period_start.asc())
@@ -213,26 +216,22 @@ class JournalQueryService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions"
             )
-        payload: dict = await self.get_journal(journal_id, current_user, include_classmates=True)
-        classmates_view: List[dict] = []
-        for student_record in payload["students"]:
-            is_self: bool = student_record["student_id"] == current_user.id
-            entries_view: List[dict] = [
-                entry if is_self else {**entry, "comment": None, "has_comment": False}
-                for entry in student_record["entries"]
-            ]
-            classmates_view.append({
+        payload: dict = await self.get_journal(journal_id, current_user)
+        students_view: List[dict] = [
+            {
                 "student_id": student_record["student_id"],
                 "first_name": student_record["first_name"],
                 "last_name": student_record["last_name"],
                 "color_hex": student_record["color_hex"],
-                "is_self": is_self,
-                "entries": entries_view,
+                "is_self": True,
+                "entries": student_record["entries"],
                 "summary": student_record["summary"],
-            })
-        return {**payload, "students": classmates_view}
+            }
+            for student_record in payload["students"]
+        ]
+        return {**payload, "students": students_view}
 
-    async def get_journal(self, journal_id: int, current_user: User, include_classmates: bool = False) -> dict:
+    async def get_journal(self, journal_id: int, current_user: User) -> dict:
         journal = await self.db.get(Journal, journal_id)
         if not journal:
             raise HTTPException(
@@ -281,7 +280,7 @@ class JournalQueryService:
 
         lesson_dates = get_lesson_dates(journal.period_start, journal.period_end, schedules)
 
-        if current_user.role == UserRole.STUDENT and not include_classmates:
+        if current_user.role == UserRole.STUDENT:
             students_query = select(User, Enrollment.color_hex).join(Enrollment, Enrollment.student_id == User.id).filter(
                 User.id == current_user.id,
                 Enrollment.course_id == course.id,
@@ -386,28 +385,11 @@ class JournalQueryService:
             class_size_res = await self.db.execute(all_course_enrollments_query)
             class_size = class_size_res.scalar() or 0
 
-            period_summaries_query = select(JournalStudentSummary).filter(
-                JournalStudentSummary.journal_id == journal_id
-            )
-            period_summaries_res = await self.db.execute(period_summaries_query)
-            period_summaries = list(period_summaries_res.scalars().all())
-
-            if period_summaries:
-                valid_sums = [ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries if s.max_period_score > 0]
-                class_avg_percentage = round(sum(valid_sums) / len(valid_sums), 1) if valid_sums else 0.0
-                class_avg_score = round(sum(s.sum_score for s in period_summaries) / len(period_summaries), 1)
-
-                student_pcts = {s.student_id: ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries}
-                sorted_student_ids = sorted(student_pcts.keys(), key=lambda sid: student_pcts[sid], reverse=True)
-                my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
-            else:
-                class_avg_percentage = 0.0
-                class_avg_score = 0.0
-                my_rank = 1
+            statistics: JournalClassStatistics = await self.journal_repository.get_class_statistics(journal_id, current_user.id)
 
             result_dict["class_size"] = class_size
-            result_dict["class_avg_percentage"] = class_avg_percentage
-            result_dict["class_avg_score"] = class_avg_score
-            result_dict["my_rank"] = my_rank
+            result_dict["class_avg_percentage"] = statistics.average_percentage
+            result_dict["class_avg_score"] = statistics.average_score
+            result_dict["my_rank"] = statistics.student_rank
 
         return result_dict

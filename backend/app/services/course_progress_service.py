@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Dict, List, Optional, Tuple
 from app.core.scoring import ScoringPolicy
 from app.repositories.interfaces.course_progress_repository import (
@@ -22,7 +23,12 @@ class CourseProgressService:
         return self._build_progress_response(course_id, snapshot)
 
     async def get_student_class_progress(self, course_id: int, student_id: int) -> CourseStaffProgressResponse:
-        snapshot = await self.repo.get_course_progress_snapshot(course_id, always_include_student_id=student_id)
+        snapshot: CourseProgressSnapshot = await self.repo.get_course_progress_snapshot(course_id, always_include_student_id=student_id)
+        snapshot = replace(
+            snapshot,
+            students=[student for student in snapshot.students if student.student_id == student_id],
+            summaries=[summary for summary in snapshot.summaries if summary.student_id == student_id],
+        )
         return self._build_progress_response(course_id, snapshot)
 
     def _build_progress_response(self, course_id: int, snapshot: CourseProgressSnapshot) -> CourseStaffProgressResponse:
