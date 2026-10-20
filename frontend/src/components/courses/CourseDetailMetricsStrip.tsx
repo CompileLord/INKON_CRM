@@ -29,7 +29,7 @@ export function CourseDetailMetricsStrip({
   const { t, i18n } = useTranslation("courseDetail");
   const { t: tCommon } = useTranslation("common");
 
-  const hasGradedPeriods: boolean = journalMetrics !== undefined && journalMetrics.periods_complete > 0;
+  const hasGradedPeriods: boolean = journalMetrics !== undefined && (journalMetrics.periods_complete > 0 || (journalMetrics.class_avg_max_score ?? 0) > 0);
   const isEnrollmentsPending: boolean = isEnrollmentsLoading && enrollmentsTotal === undefined;
   const isMetricsPending: boolean = isMetricsLoading && journalMetrics === undefined;
 
