@@ -43,7 +43,7 @@ describe("StudentProfile Component", () => {
     renderStudentProfile();
     await user.click(screen.getByRole("button", { name: "Student actions" }));
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual(["Account access", "Delete student"]);
+    expect(items.map((item) => item.textContent)).toEqual(["Password SMS", "Delete student"]);
   });
 
   it("shows exactly three distinct stat tiles in one group for a superadmin", async () => {

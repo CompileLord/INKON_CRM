@@ -13,6 +13,8 @@ import {
   getMyStudentProfile,
   getStudentProfile,
   getStudents,
+  listPasswordSmsDeliveries,
+  resendPasswordSms,
   updateOwnProfile,
   updateUser,
   uploadAvatar,
@@ -202,5 +204,28 @@ export function useMyMentorProfile() {
   return useQuery({
     queryKey: ["users", "mentors", "profile", "me"],
     queryFn: () => getMyMentorProfile(),
+  });
+}
+
+export function passwordSmsDeliveriesQueryKey(userId: number) {
+  return ["users", "password-sms-deliveries", userId] as const;
+}
+
+export function usePasswordSmsDeliveries(userId: number, enabled: boolean = true) {
+  return useQuery({
+    queryKey: passwordSmsDeliveriesQueryKey(userId),
+    queryFn: () => listPasswordSmsDeliveries(userId),
+    enabled,
+  });
+}
+
+export function useResendPasswordSms(userId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => resendPasswordSms(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: passwordSmsDeliveriesQueryKey(userId) });
+    },
   });
 }

@@ -1,5 +1,6 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import type { StudentFormValues } from "../../lib/studentFormSchema";
 
 interface StudentContactFieldsProps {
@@ -21,8 +22,9 @@ export function StudentContactFields({ register, errors }: StudentContactFieldsP
   return (
     <>
           <div className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-ink border-b border-border pb-2">
+            <h3 className="flex items-center gap-1 text-base font-semibold text-ink border-b border-border pb-2">
               {t("form.sectionContacts")}
+              <InfoTooltip label={t("form.contactsInfoLabel")}>{t("form.contactsInfo")}</InfoTooltip>
             </h3>
 
             <div className="flex flex-col gap-1.5">

@@ -177,3 +177,24 @@ export function describeAuthError(err: unknown, wrongCredentialsMessage: string)
   if (err instanceof NetworkError) return "Сервер недоступен, попробуйте позже";
   return "Что-то пошло не так. Попробуйте ещё раз.";
 }
+
+export type ChangePasswordErrorField = "currentPassword" | "newPassword";
+
+export interface ChangePasswordErrorMapping {
+  field: ChangePasswordErrorField | null;
+  messageKey: string;
+  params?: Record<string, unknown>;
+}
+
+export function mapChangePasswordError(err: unknown): ChangePasswordErrorMapping {
+  if (err instanceof AuthApiError) {
+    if (err.status === 401) return { field: "currentPassword", messageKey: "settings:security.currentPasswordWrong" };
+    if (err.status === 400) return { field: "newPassword", messageKey: "auth:passwordPolicyError" };
+    if (err.status === 422) return { field: "newPassword", messageKey: "validation:passwordMinLength", params: { min: 8 } };
+    if (err.status === 429) return { field: null, messageKey: "auth:rateLimited" };
+    if (err.status >= 500) return { field: null, messageKey: "auth:serverError" };
+    return { field: null, messageKey: "auth:genericError" };
+  }
+  if (err instanceof NetworkError) return { field: null, messageKey: "auth:networkError" };
+  return { field: null, messageKey: "auth:genericError" };
+}
