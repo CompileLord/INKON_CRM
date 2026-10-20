@@ -374,7 +374,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Create User
 
-**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Students must supply at least one of `phone` or `parent_phone`; omitting both or setting both to null returns 422. Legacy response phone strings remain readable without rewriting stored values.
+**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Students must supply at least one of `phone` or `parent_phone`; omitting both or setting both to null returns 422. Legacy response phone strings remain readable without rewriting stored values. A student whose only supplied phones have fewer than 8 digits cannot receive the password SMS and returns 422 with a `phone` or `parent_phone` field error before anything is persisted; a deliverable parent phone is used when the student phone is too short.
 
 **Request Body (JSON):**
 ```json
@@ -602,7 +602,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Update User
 
-**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them only if a student retains at least one contact phone (otherwise 422). Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads.
+**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them only if a student retains at least one contact phone (otherwise 422). Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads. A student whose only supplied phones have fewer than 8 digits cannot receive the password SMS and returns 422 with a `phone` or `parent_phone` field error before anything is persisted; a deliverable parent phone is used when the student phone is too short.
 
 **Parameters:**
 - `id` [path] *(required)*

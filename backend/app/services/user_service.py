@@ -17,7 +17,7 @@ from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventSta
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.sms.messages import PasswordSmsReason
 from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
-from app.services.student_password_sms_service import PasswordSmsDestination, StudentPasswordSmsService
+from app.services.student_password_sms_service import PasswordSmsDestination, StudentPasswordSmsDestinationResolver, StudentPasswordSmsService
 from app.services.storage_service import StorageService, get_storage_service
 
 
@@ -92,6 +92,8 @@ class UserService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Student needs a phone or parent phone to receive the password SMS",
             )
+        if user_create.role == UserRole.STUDENT:
+            StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user_create.phone, user_create.parent_phone)
         existing_user = await self.user_repo.get_by_email(user_create.email)
         if existing_user:
             raise HTTPException(
@@ -236,6 +238,8 @@ class UserService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="A student requires a phone or a parent phone",
             )
+        if user.role == UserRole.STUDENT and ("phone" in user_update.model_fields_set or "parent_phone" in user_update.model_fields_set):
+            StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user.phone, user.parent_phone)
         if previous_destination_phone != (user.phone or user.parent_phone):
             user.pending_password_hash = None
             user.pending_password_expires_at = None
