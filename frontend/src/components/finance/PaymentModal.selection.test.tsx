@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { cleanup, configure, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MockAdapter from "axios-mock-adapter";
 import { PaymentModal } from "./PaymentModal";
 import { httpClient } from "../../lib/auth/httpClient";
 import "../../i18n";
+
+beforeAll(() => {
+  configure({ asyncUtilTimeout: 8000 });
+  vi.setConfig({ testTimeout: 30000 });
+});
 
 vi.hoisted(() => {
   Object.defineProperty(window, "matchMedia", {

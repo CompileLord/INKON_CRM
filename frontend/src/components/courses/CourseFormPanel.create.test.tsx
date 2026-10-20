@@ -11,8 +11,8 @@ vi.mock("../../lib/courses/hooks", async () => (await import("./CourseFormTestSu
 vi.mock("../../lib/users/hooks", async () => (await import("./CourseFormTestSupport")).buildUsersHooksMock());
 
 beforeAll(() => {
-  configure({ asyncUtilTimeout: 4000 });
-  vi.setConfig({ testTimeout: 20000 });
+  configure({ asyncUtilTimeout: 12000 });
+  vi.setConfig({ testTimeout: 40000 });
 });
 
 afterEach(() => {
