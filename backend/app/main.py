@@ -24,19 +24,11 @@ from app.api.v1.system import router as system_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.telegram_bot.bot import bot
+    from app.core.resource_lifecycle import ProcessResources
     try:
         yield
     finally:
-        try:
-            await bot.session.close()
-        finally:
-            from app.core.redis import close_arq_pool
-            try:
-                await close_arq_pool()
-            finally:
-                from app.db.storage_intent_session import storage_intent_sessions
-                await storage_intent_sessions.close()
+        await ProcessResources.close()
 
 
 is_prod = settings.ENVIRONMENT == "production"

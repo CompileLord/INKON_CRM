@@ -65,6 +65,9 @@ export IMAGE_TAG="$RELEASE_TAG"
 log "Pulling images for $RELEASE_TAG"
 compose pull api worker caddy db redis
 
+log "Validating database connection budget and topology"
+compose run --rm --no-deps --entrypoint python api -m app.db.connection_policy
+
 log "Starting data services"
 compose up -d --wait db redis
 
