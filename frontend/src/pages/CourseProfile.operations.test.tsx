@@ -68,7 +68,7 @@ describe("CourseProfile Component", () => {
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeDefined();
-        expect(screen.getByText(i18n.t("courses:courseCopyMissingSchedule"))).toBeDefined();
+        expect(screen.getByText(i18n.t("courseDetail:duplicate.missingSchedule"))).toBeDefined();
       });
 
       expect(courseHooks.useCopyCourse().mutateAsync).not.toHaveBeenCalled();
@@ -213,7 +213,7 @@ describe("CourseProfile Component", () => {
         await waitFor(() => {
           expect(mutateCopyAsync).toHaveBeenCalledTimes(1);
           expect(screen.getByRole("dialog")).toBeDefined();
-          expect(screen.getByText(i18n.t("courses:courseCopyError"))).toBeDefined();
+          expect(screen.getByText(i18n.t("courseDetail:duplicate.error"))).toBeDefined();
         });
 
         expect(screen.queryByText(/raw_copy_sentinel/i)).toBeNull();
@@ -258,7 +258,7 @@ describe("CourseProfile Component", () => {
         await waitFor(() => {
           expect(mutateDeleteAsync).toHaveBeenCalledTimes(1);
           expect(screen.getByRole("dialog")).toBeDefined();
-          expect(screen.getByText(i18n.t("courses:courseDeleteError"))).toBeDefined();
+          expect(screen.getByText(i18n.t("courseDetail:delete.error"))).toBeDefined();
         });
 
         expect(screen.queryByText(/raw_delete_sentinel/i)).toBeNull();

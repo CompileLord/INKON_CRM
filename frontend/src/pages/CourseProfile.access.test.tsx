@@ -72,7 +72,7 @@ describe("CourseProfile Component", () => {
       const actionsMenuTriggers = screen.queryAllByRole("button", { name: "Course actions: Frontend Development Mastery" });
       expect(actionsMenuTriggers.length).toBe(0);
       expect(screen.queryByRole("button", { name: "Mentor assignment history" })).toBeNull();
-      expect(screen.getAllByRole("link", { name: "Go to journal" }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("link", { name: "Open journal" }).length).toBeGreaterThan(0);
     });
 
     it("displays translated access denied message on 403 error without leaking course identity", () => {
@@ -83,8 +83,8 @@ describe("CourseProfile Component", () => {
       renderCourseProfile();
 
       expect(screen.queryByText("Frontend Development Mastery")).toBeNull();
-      expect(screen.getByText("Access denied")).toBeDefined();
-      expect(screen.getByText("You do not have permission to view this course.")).toBeDefined();
+      expect(screen.getByText("No access")).toBeDefined();
+      expect(screen.getByText("You can't view this course.")).toBeDefined();
       expect(screen.getByRole("link", { name: "Back to courses" })).toBeDefined();
     });
 
@@ -110,15 +110,15 @@ describe("CourseProfile Component", () => {
 
       const overviewTab = screen.getByRole("tab", { name: "Overview" });
       const studentsTab = screen.getByRole("tab", { name: "Students" });
-      const progressTab = screen.getByRole("tab", { name: "Progress" });
+      const progressTab = screen.getByRole("tab", { name: "Performance" });
 
       expect(overviewTab.getAttribute("aria-selected")).toBe("true");
       expect(studentsTab.getAttribute("aria-selected")).toBe("false");
       expect(progressTab.getAttribute("aria-selected")).toBe("false");
 
       const panel = screen.getByRole("tabpanel");
-      expect(panel.id).toBe("tabpanel-overview");
-      expect(panel.getAttribute("aria-labelledby")).toBe("tab-overview");
+      expect(panel.id).toBe("course-panel-overview");
+      expect(panel.getAttribute("aria-labelledby")).toBe("course-tab-overview");
     });
 
     it("isolates inactive panes by not mounting roster or progress chart in overview", () => {
@@ -154,7 +154,7 @@ describe("CourseProfile Component", () => {
       fireEvent.keyDown(studentsTab, { key: "End" });
       expect(getLocation().search).toContain("tab=progress");
 
-      const progressTab = screen.getByRole("tab", { name: "Progress" });
+      const progressTab = screen.getByRole("tab", { name: "Performance" });
       fireEvent.keyDown(progressTab, { key: "Home" });
       expect(getLocation().search).toBe("");
     });

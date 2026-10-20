@@ -63,7 +63,7 @@ describe("CourseProfile Component", () => {
     it("outbound Open journal link carries course journal path", () => {
       renderCourseProfile();
 
-      const journalLinks = screen.getAllByRole("link", { name: "Go to journal" });
+      const journalLinks = screen.getAllByRole("link", { name: "Open journal" });
       expect(journalLinks[0].getAttribute("href")).toBe("/journals/42");
     });
 
@@ -72,7 +72,7 @@ describe("CourseProfile Component", () => {
 
       expect(returnContext.getSavedCourseDetailContext(42)).toBeNull();
 
-      const journalLink = screen.getByRole("link", { name: "Go to journal" });
+      const journalLink = screen.getByRole("link", { name: "Open journal" });
       fireEvent.click(journalLink);
 
       const saved = returnContext.getSavedCourseDetailContext(42);
@@ -118,17 +118,17 @@ describe("CourseProfile Component", () => {
 
       renderCourseProfile(["/courses/42?tab=progress"]);
 
-      const searchInput = screen.getByRole("textbox");
+      const searchInput = screen.getByRole("searchbox");
       fireEvent.change(searchInput, { target: { value: "Alice" } });
       expect(searchInput.getAttribute("value")).toBe("Alice");
 
       const overviewTab = screen.getByRole("tab", { name: "Overview" });
       fireEvent.click(overviewTab);
 
-      const progressTab = screen.getByRole("tab", { name: "Progress" });
+      const progressTab = screen.getByRole("tab", { name: "Performance" });
       fireEvent.click(progressTab);
 
-      const restoredInput = screen.getByRole("textbox");
+      const restoredInput = screen.getByRole("searchbox");
       expect(restoredInput.getAttribute("value")).toBe("Alice");
     });
 
@@ -159,8 +159,8 @@ describe("CourseProfile Component", () => {
       renderCourseProfile();
 
       expect(screen.queryByText("Frontend Development Mastery")).toBeNull();
-      expect(screen.getByText("Access denied")).toBeDefined();
-      expect(screen.getByText("You do not have permission to view this course.")).toBeDefined();
+      expect(screen.getByText("No access")).toBeDefined();
+      expect(screen.getByText("You can't view this course.")).toBeDefined();
     });
 
     it("retains cached course and renders inline error banner with retry on ordinary network error", () => {
@@ -277,8 +277,8 @@ describe("CourseProfile Component", () => {
 
       await waitFor(() => {
         expect(screen.getByDisplayValue("Alice")).toBeDefined();
-        const sortSelect = screen.getByLabelText(i18n.t("courses:progress.sortLabel")) as HTMLSelectElement;
-        expect(sortSelect.value).toBe("score_asc");
+        const sortPicker = screen.getByRole("button", { name: i18n.t("courseDetail:progress.sortLabel") });
+        expect(sortPicker.textContent).toContain(i18n.t("courseDetail:progress.sort.score_asc"));
       });
     });
 

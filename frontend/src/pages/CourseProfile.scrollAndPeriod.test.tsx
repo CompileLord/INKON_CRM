@@ -171,9 +171,9 @@ describe("CourseProfile Component", () => {
 
       expect(screen.getAllByText("Frontend Development Mastery").length).toBeGreaterThan(0);
       expect(screen.getAllByText("Alice Smith").length).toBeGreaterThan(0);
-      expect(screen.getByPlaceholderText(i18n.t("courses:searchStudent"))).toBeDefined();
+      expect(screen.getByPlaceholderText(i18n.t("courseDetail:progress.searchPlaceholder"))).toBeDefined();
 
-      expect(screen.getByText(i18n.t("courses:journalsLoadError"))).toBeDefined();
+      expect(screen.getByText(i18n.t("courseDetail:journalsLoadError"))).toBeDefined();
 
       const retryButtons = screen.getAllByRole("button", { name: i18n.t("common:retry") });
       const metadataRetryBtn = retryButtons[0];
