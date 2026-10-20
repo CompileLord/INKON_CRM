@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Any, Sequence, cast as typing_cast
-from sqlalchemy import Row, String, and_, cast, exists, false, func, or_, select, update
+from sqlalchemy import Row, String, and_, case, cast, exists, false, func, or_, select, update
 from sqlalchemy.engine import CursorResult, Result
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql import Select
@@ -12,12 +12,15 @@ from app.models.enrollment import Enrollment
 from app.models.course import Course
 from app.repositories.interfaces.notification_log_repository import NotificationClaim, NotificationLogRepository
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
+from app.repositories.sqlalchemy.charge_balance_query import ChargeBalanceQuery
+from app.repositories.interfaces.payment_reminder_repository import PaymentReminderSource, ReminderDeliveryContext
 
 
 class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationLog], NotificationLogRepository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(NotificationLog, session)
         self._session: AsyncSession = session
+        self._reminder_query: ChargeBalanceQuery = ChargeBalanceQuery()
 
     async def commit(self) -> None:
         await self._session.commit()
@@ -196,6 +199,14 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
             ),
         )
         await self._session.execute(
+            update(NotificationLog).where(
+                NotificationLog.id == notification_id,
+                func.coalesce(NotificationLog.revision, 1) == revision,
+                eligible,
+                ~self._reminder_query.owned_notification_source(),
+            ).values(status=NotificationStatus.FAILED, delivery_state=NotificationStatus.FAILED, is_terminal=True, error_message="source_unavailable", claim_token=None, lease_expires_at=None)
+        )
+        await self._session.execute(
             update(NotificationLog)
             .where(
                 NotificationLog.id == notification_id,
@@ -217,6 +228,7 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
                 func.coalesce(NotificationLog.revision, 1) == revision,
                 eligible,
                 NotificationLog.attempts < maximum_attempts,
+                self._reminder_query.eligible_notification(),
                 func.coalesce(NotificationLog.is_terminal, false()).is_(False),
             )
             .values(
@@ -306,6 +318,7 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
                     select(NotificationLog)
                     .where(
                         eligible,
+                        self._reminder_query.eligible_notification(),
                         NotificationLog.attempts < maximum_attempts,
                         func.coalesce(NotificationLog.is_terminal, false()).is_(False),
                         or_(
@@ -324,28 +337,17 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
         return rows
 
     async def has_valid_reminder_source(self, notification_id: int) -> bool:
-        valid_source: ColumnElement[bool] = exists().where(
-            User.id == NotificationLog.user_id,
-            User.is_deleted.is_(False),
-            cast(User.parent_telegram_chat_id, String) == NotificationLog.recipient,
-            Enrollment.id == NotificationLog.related_entity_id,
-            Enrollment.student_id == User.id,
-            Enrollment.is_deleted.is_(False),
-            Course.id == Enrollment.course_id,
-            Course.is_deleted.is_(False),
-        )
-        return (
-            await self._session.execute(
-                select(
-                    exists().where(
-                        NotificationLog.id == notification_id,
-                        or_(
-                            NotificationLog.type.not_in(
-                                [NotificationType.PAYMENT_REMINDER_1D, NotificationType.PAYMENT_REMINDER_2D]
-                            ),
-                            valid_source,
-                        ),
-                    )
-                )
-            )
-        ).scalar_one()
+        return (await self._session.execute(select(exists().where(NotificationLog.id == notification_id, self._reminder_query.eligible_notification())))).scalar_one()
+
+    async def can_queue_reminder(self, recipient: str, notification_type: NotificationType, enrollment_id: int, notification_date: date, user_id: int | None) -> bool:
+        return (await self._session.execute(select(self._reminder_query.source_for_identity(recipient, notification_type, enrollment_id, notification_date, user_id).exists()))).scalar_one()
+
+    async def reminder_delivery_context(self, notification_id: int) -> ReminderDeliveryContext:
+        balances: Any = self._reminder_query.balances().subquery()
+        offset: Any = case((NotificationLog.type == NotificationType.PAYMENT_REMINDER_1D, 1), else_=2)
+        statement: Any = select(NotificationLog.type.label("notification_type"), NotificationLog.notification_date, self._reminder_query.payment_notifications_enabled().label("enabled"), self._reminder_query.owned_notification_source().label("owned"), balances).select_from(NotificationLog).outerjoin(balances, and_(NotificationLog.type.in_(self._reminder_query.reminder_types), balances.c.enrollment_id == NotificationLog.related_entity_id, balances.c.student_id == NotificationLog.user_id, cast(balances.c.chat_id, String) == NotificationLog.recipient, balances.c.due_date == NotificationLog.notification_date + offset)).where(NotificationLog.id == notification_id)
+        row: Row[Any] = (await self._session.execute(statement)).one()
+        source: PaymentReminderSource | None = None
+        if row.enrollment_id is not None:
+            source = PaymentReminderSource(row.enrollment_id, row.student_id, row.chat_id, f"{row.first_name} {row.last_name}".strip(), row.course_title, row.due_date, row.balance, row.language)
+        return ReminderDeliveryContext(row.notification_type in self._reminder_query.reminder_types, row.enabled, row.owned, source, row.notification_date)

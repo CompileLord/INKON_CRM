@@ -4,6 +4,7 @@ from typing import Any
 from typing_extensions import Protocol
 from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
 from app.repositories.interfaces.base_repository import BaseRepository
+from app.repositories.interfaces.payment_reminder_repository import ReminderDeliveryContext
 
 
 @dataclass(frozen=True)
@@ -54,3 +55,6 @@ class NotificationLogRepository(BaseRepository[NotificationLog], Protocol):
     async def recoverable(self, now: datetime, limit: int, maximum_attempts: int) -> list[NotificationLog]: ...
 
     async def has_valid_reminder_source(self, notification_id: int) -> bool: ...
+
+    async def can_queue_reminder(self, recipient: str, notification_type: NotificationType, enrollment_id: int, notification_date: date, user_id: int | None) -> bool: ...
+    async def reminder_delivery_context(self, notification_id: int) -> ReminderDeliveryContext: ...

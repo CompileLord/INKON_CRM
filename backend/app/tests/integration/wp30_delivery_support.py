@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
@@ -79,6 +79,7 @@ class DeliveryFixture:
         from decimal import Decimal
         from app.models.course import Course, CourseExamType, CourseStatus
         from app.models.enrollment import Enrollment, EnrollmentStatus
+        from app.models.charge import Charge
 
         test_student.payment_day_of_month = 21
         test_student.parent_telegram_chat_id = 998877
@@ -103,6 +104,9 @@ class DeliveryFixture:
             status=EnrollmentStatus.ACTIVE,
         )
         db_session.add(enrollment)
+        await db_session.flush()
+        charge: Charge = Charge(student_id=test_student.id, enrollment_id=enrollment.id, sequence_no=1, amount=Decimal("100.00"), due_date=cls.notification_date + timedelta(days=1))
+        db_session.add(charge)
         await db_session.commit()
 
         return enrollment

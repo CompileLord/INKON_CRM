@@ -8,6 +8,8 @@ from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from fastapi import HTTPException, status
 from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
 from app.repositories.interfaces.notification_log_repository import NotificationClaim, NotificationLogRepository
+from app.repositories.interfaces.payment_reminder_repository import ReminderDeliveryContext
+from app.services.payment_reminder_messages import PaymentReminderMessages
 
 
 class ExamNotificationFingerprint:
@@ -84,6 +86,10 @@ class NotificationService:
         summary_id: int | None = None,
         source_journal_id: int | None = None,
     ) -> NotificationLog | None:
+        if notification_type in (NotificationType.PAYMENT_REMINDER_1D, NotificationType.PAYMENT_REMINDER_2D):
+            allowed: bool = await self.repo.can_queue_reminder(recipient, notification_type, related_entity_id, notification_date, user_id)
+            if not allowed:
+                return None
         log: NotificationLog
         if summary_id is not None:
             if user_id is None or score is None or revision_fingerprint is None:
@@ -206,16 +212,22 @@ class NotificationService:
         if claim is None:
             return False
 
-        source_available: bool = await self.repo.has_valid_reminder_source(notification_id)
+        context: ReminderDeliveryContext = await self.repo.reminder_delivery_context(notification_id)
         await self.repo.commit()
-        if not source_available:
-            await self.finalize_notification(claim, "source_unavailable", terminal=True)
-            return False
+        text: str | None = claim.delivery_text
+        if context.is_reminder:
+            if not context.enabled:
+                await self.finalize_notification(claim, "notification_disabled")
+                return False
+            if context.source is None:
+                await self.finalize_notification(claim, "source_unavailable" if not context.owned else "balance_settled", terminal=not context.owned)
+                return False
+            text = PaymentReminderMessages().render(context.source, context.notification_date)
 
         async def send(is_update: bool) -> None:
-            if claim.delivery_text is None:
+            if text is None:
                 raise ValueError("Queued notification has no delivery text")
-            await sender(int(claim.recipient), claim.delivery_text)
+            await sender(int(claim.recipient), text)
 
         return await self.send_claim(claim, send)
 
