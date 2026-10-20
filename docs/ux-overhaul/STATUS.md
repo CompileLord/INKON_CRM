@@ -19,4 +19,7 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | FIN-1a | Debt reminders backend | kitob/fin-1a-debt-reminders | in progress | Codex hit quota mid-task; continued by Sonnet fallback |
 | BE-4 | Student endpoints scoped to the caller (privacy) | kitob/be-4-student-privacy | in progress | found in UX-5d: class-progress and class journal return classmates to students |
 | FIN-1b | Debt reminders UI | — | pending | needs FIN-1a, UX-5b |
+| FE-R34 | Course chart contract synchronization | — | pending | WP34 backend integrated9a2afe9; frontend owner: role union, nullable series/rank and metadata. Exact scope/tests in PLAN.md; frontend checks not run. |
+| FE-R35 | Autosave batching and comment limits | — | pending | Release prerequisite for WP35 backend candidate (1173 tests passed): <=250 unique cells/request, <=1000 Unicode code points/comment; preserve drafts/conflicts/retries. Not implemented; see PLAN.md. |
+| FE-R40 | Bounded student history consumers | — | blocked | Await WP40 backend contract and coordinated paging/summary semantics; include MyCourses and useStudentProgressSeries callers. No implementation or checks; see PLAN.md. |
 | QA-1 | Full regression | — | pending | needs all |
