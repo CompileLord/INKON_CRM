@@ -64,7 +64,8 @@
     "stateComplete": "Завершен",
     "stateUnavailable": "Недоступно",
     "latest": "Последний",
-    "upcoming": "Предстоящий"
+    "upcoming": "Предстоящий",
+    "past": "Завершён"
   },
   "table": {
     "students": "Студенты",

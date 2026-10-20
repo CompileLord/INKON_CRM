@@ -1,32 +1,33 @@
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { StudentCourseProfile } from "../../lib/users/types";
 import { EmptyState } from "../ui/EmptyState";
-import { SectionCard } from "../ui/SectionCard";
-import { StudentCourseListRow } from "./StudentCourseListRow";
-
-const DASHBOARD_COURSE_LIMIT: number = 3;
+import { StudentCourseCard } from "./StudentCourseCard";
 
 interface StudentDashboardCoursesProps {
   activeCourses: StudentCourseProfile[];
+  isLoading: boolean;
 }
 
-export function StudentDashboardCourses({ activeCourses }: StudentDashboardCoursesProps) {
-  const { t } = useTranslation("student");
+const SKELETON_CARD_COUNT: number = 2;
+
+export function StudentDashboardCourses({ activeCourses, isLoading }: StudentDashboardCoursesProps) {
+  const { t } = useTranslation(["student", "common"]);
+  if (isLoading) {
+    return (
+      <div role="status" aria-busy="true" data-testid="student-courses-skeleton" className="grid gap-4 md:grid-cols-2">
+        <span className="sr-only">{t("common:loading")}</span>
+        {Array.from({ length: SKELETON_CARD_COUNT }, (_: unknown, index: number) => (
+          <div key={index} className="h-64 rounded-2xl border border-border bg-card motion-safe:animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+  if (activeCourses.length === 0) return <EmptyState title={t("student:noCoursesTitle")} description={t("student:noCoursesBody")} />;
   return (
-    <SectionCard
-      title={t("myCourses")}
-      actions={<Link to="/my/courses" className="text-sm font-medium text-maroon-text hover:underline">{t("allCoursesLink")}</Link>}
-    >
-      {activeCourses.length === 0 ? (
-        <EmptyState title={t("noCoursesTitle")} description={t("noCoursesBody")} />
-      ) : (
-        <div className="flex flex-col">
-          {activeCourses.slice(0, DASHBOARD_COURSE_LIMIT).map((entry: StudentCourseProfile) => (
-            <StudentCourseListRow key={entry.course.id} entry={entry} />
-          ))}
-        </div>
-      )}
-    </SectionCard>
+    <div className="grid gap-4 md:grid-cols-2" data-testid="student-course-cards">
+      {activeCourses.map((entry: StudentCourseProfile) => (
+        <StudentCourseCard key={entry.course.id} entry={entry} />
+      ))}
+    </div>
   );
 }

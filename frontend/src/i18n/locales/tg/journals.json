@@ -62,7 +62,8 @@
     "stateComplete": "Анҷом ёфт",
     "stateUnavailable": "Дастнорас",
     "latest": "Охирин",
-    "upcoming": "Оянда"
+    "upcoming": "Оянда",
+    "past": "Анҷомёфта"
   },
   "table": {
     "students": "Донишҷӯён",

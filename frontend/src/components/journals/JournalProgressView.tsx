@@ -15,9 +15,10 @@ import { JournalProgressLegend } from "./JournalProgressLegend";
 interface JournalProgressViewProps {
   courseId: number;
   readOnlySelfStudentId?: number;
+  collapsedByDefault?: boolean;
 }
 
-export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId }) => {
+export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId, collapsedByDefault = false }) => {
   const { t } = useTranslation(["journals", "common"]);
   const selfStudentId: number | null = readOnlySelfStudentId ?? null;
   const staffQuery = useCourseStaffProgress(courseId, selfStudentId === null);
@@ -26,7 +27,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
   const [showMaximum, setShowMaximum] = useState<boolean>(true);
-  const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readCollapsed());
+  const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readStored() ?? collapsedByDefault);
 
   const data: CourseStaffProgressResponse | undefined = query.data;
   const rows: ProgressPeriodRow[] = useMemo(() => (data ? JournalProgressRules.buildPeriodRows(data, getSchoolCalendarDate()) : []), [data]);

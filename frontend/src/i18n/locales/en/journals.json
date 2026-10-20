@@ -62,7 +62,8 @@
     "stateComplete": "Complete",
     "stateUnavailable": "Unavailable",
     "latest": "Latest",
-    "upcoming": "Upcoming"
+    "upcoming": "Upcoming",
+    "past": "Done"
   },
   "table": {
     "students": "Students",

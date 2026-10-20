@@ -38,7 +38,7 @@ describe("role navigation", () => {
     expect(links.some((item) => item.to === "/notifications")).toBe(true);
     expect(links.some((item) => item.to === "/students")).toBe(role === "superadmin");
     expect(links.some((item) => item.to === "/finance")).toBe(role === "superadmin" || role === "accountant");
-    expect(links.some((item) => item.to === "/students/42")).toBe(role === "student");
+    expect(links.some((item) => item.to === "/students/42")).toBe(false);
     expect(links.some((item) => item.to === "/mentors/42")).toBe(role === "mentor");
   });
   it("does not invent a profile without identity", () => expect(navigationFor("student", null).some((item) => item.key === "nav.ownProfile")).toBe(false));

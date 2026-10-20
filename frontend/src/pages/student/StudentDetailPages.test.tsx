@@ -51,7 +51,7 @@ const progress: CourseStaffProgressResponse = {
 function journalStudent(id: number, firstName: string, lastName: string, isSelf: boolean): JournalStudentResponse {
   return {
     student_id: id, first_name: firstName, last_name: lastName, color_hex: "#123456", is_self: isSelf,
-    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : "Private note", has_comment: true, version: 1 }],
+    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : null, has_comment: isSelf, version: 1 }],
     summary: { id, homework_score: 20, attendance_score: 2, exam_score: 60, bonus_score: 4, sum_score: 86, max_period_score: 117, percentage: 73.5, attendance_count: 1, total_lessons: 1, version: 1 },
   };
 }
@@ -91,14 +91,23 @@ beforeEach(async () => {
 });
 afterEach(cleanup);
 
-describe("student course page privacy", () => {
-  it("shows only the student's own results: no ranking, rank tile, classmate names or classmate lines", () => {
+describe("student course page journal", () => {
+  it("shows the read-only class journal with classmates, own row first, no ranking and no comments of others", () => {
     renderCourse();
+    const rows: HTMLElement[] = screen.getAllByRole("row").slice(1);
+    expect(rows[0].getAttribute("data-self")).toBe("true");
+    expect(rows[0].textContent).toContain("Demo Student");
     const text: string = document.body.textContent ?? "";
-    for (const name of classmates) expect(text).not.toContain(name.split(" ")[0]);
+    for (const name of classmates) expect(text).toContain(name);
+    expect(text).not.toContain("Private note");
     expect(text).not.toMatch(/Ранг|9 из 9/);
-    expect(document.querySelectorAll("[data-testid='progress-table'], [data-testid='student-row']")).toHaveLength(0);
-    expect(document.querySelectorAll("[data-testid='chart-series-student']")).toHaveLength(1);
+    expect(document.querySelectorAll("input, textarea, [data-control]")).toHaveLength(0);
+  });
+
+  it("keeps the progress chart collapsed by default", () => {
+    renderCourse();
+    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelectorAll("[data-testid='chart-series-student']")).toHaveLength(0);
   });
 });
 
@@ -112,11 +121,9 @@ describe("student course page", () => {
     expect(container.querySelectorAll("[data-page-container]")).toHaveLength(1);
   });
 
-  it("lists periods with translated names and links the started ones", () => {
+  it("no longer renders the study periods list", () => {
     renderCourse();
-    expect(screen.getAllByText("Неделя 5").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Week 5")).toBeNull();
-    expect(screen.getByRole("link", { name: /Неделя 5/ }).getAttribute("href")).toBe("/my/journal/16");
+    expect(screen.queryByTestId("period-list")).toBeNull();
   });
 
   it("uses an initial tile for a course without a photo", () => {

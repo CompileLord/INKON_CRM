@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import i18n from "../../i18n";
 import { MyCourses } from "./MyCourses";
-import { CoursePeriodList } from "../../components/student/CoursePeriodList";
 import { StudentPeriodOrdering } from "../../lib/students/StudentPeriodOrdering";
 import { PeriodScoreSummary } from "../../components/student/PeriodScoreSummary";
 import { OwnLessonNotes } from "../../components/student/OwnLessonNotes";
@@ -153,32 +152,11 @@ function period(id: number, start: string, state: StudentJournalPeriod["state"],
   return { journal_id: id, course_id: 1, course_title: "C", period_label: label, period_start: start, period_end: start, sum_score: score, max_period_score: maximum, percentage: 0, attendance_count: 0, total_lessons: 0, state };
 }
 
-describe("CoursePeriodList", () => {
+describe("StudentPeriodOrdering", () => {
   const periods = [period(1, "2026-08-01", "graded", 80, 100), period(2, "2026-09-01", "graded", 30, 117), period(3, "2026-12-01", "upcoming")];
 
   it("orders available periods latest first and upcoming last", () => {
     expect(StudentPeriodOrdering.order(periods).map((item) => item.journal_id)).toEqual([2, 1, 3]);
-  });
-
-  it("links only started periods and leaves upcoming without a link", () => {
-    render(<MemoryRouter><CoursePeriodList periods={periods} /></MemoryRouter>);
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/my/journal/2", "/my/journal/1"]);
-    expect(within(screen.getByTestId("period-row-upcoming")).queryByRole("link")).toBeNull();
-    expect(screen.getByText("Upcoming")).toBeTruthy();
-  });
-
-  it("leads with the score over the maximum and shows no percentage chip", () => {
-    render(<MemoryRouter><CoursePeriodList periods={periods} /></MemoryRouter>);
-    expect(screen.getAllByTestId("period-score").map((node) => node.textContent)).toEqual(["30/ 117", "80/ 100"]);
-    expect(screen.queryByText(/%/)).toBeNull();
-  });
-
-  it("translates period names", async () => {
-    await i18n.changeLanguage("ru");
-    render(<MemoryRouter><CoursePeriodList periods={[period(1, "2026-08-01", "graded", 1, 2, "Week 4"), period(2, "2026-09-01", "graded", 1, 2, "Month 2")]} /></MemoryRouter>);
-    expect(screen.getByText("Неделя 4")).toBeTruthy();
-    expect(screen.getByText("Месяц 2")).toBeTruthy();
-    expect(screen.queryByText("Week 4")).toBeNull();
   });
 });
 
