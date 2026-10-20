@@ -36,7 +36,7 @@ class StudentProfileService:
 
         raw_avg_percentage = (
             round(float(raw_totals.avg_score_raw), 2)
-            if (raw_totals.avg_score_raw is not None and raw_totals.periods_with_max_score_count > 0)
+            if (raw_totals.avg_score_raw is not None and raw_totals.graded_summaries_count > 0)
             else None
         )
         truthful_attendance_percentage = (
@@ -89,7 +89,7 @@ class StudentProfileService:
         absences = total_lessons - attended_lessons
         raw_avg_percentage = (
             round(float(raw_course.avg_score_raw), 2)
-            if (raw_course.avg_score_raw is not None and raw_course.periods_with_max_score_count > 0)
+            if (raw_course.avg_score_raw is not None and raw_course.graded_summaries_count > 0)
             else None
         )
         truthful_attendance_percentage = (
