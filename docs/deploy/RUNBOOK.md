@@ -17,7 +17,7 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 - Staging deploys automatically after `CI` and `Build Image` succeed on `main`.
 - Production deploys when a `v*` tag is pushed to a commit that passed CI on `main`, after reviewer approval. It can also be started with the `Deploy Backend` workflow (`workflow_dispatch`, environment and full SHA).
-- On the VPS `deploy.sh <sha>` pulls the images, writes `/var/backups/imkon/pre-<sha>.dump`, runs `alembic upgrade head`, restarts `api` and `worker`, polls `/health` for 60 seconds and, on failure, restarts the previous release. Current and previous release SHAs are in `/var/lib/imkon/current_release` and `/var/lib/imkon/previous_release`.
+- On the VPS `deploy.sh <sha>` pulls the images, writes `/var/backups/imkon/pre-<sha>.dump`, runs `alembic upgrade head`, restarts `api` and `worker`, waits for API and worker container health, polls `/health` for 60 seconds and, on any startup or health failure, restarts the previous release. Current and previous release SHAs are in `/var/lib/imkon/current_release` and `/var/lib/imkon/previous_release`.
 - Production runs `deploy.sh --register-webhook` afterwards to register the Telegram webhook.
 
 ## 3. Roll back
@@ -27,17 +27,19 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 ## 4. Restore
 
-1. Stop writers: `cd /opt/imkon/deploy && IMAGE_TAG=$(cat /var/lib/imkon/current_release) docker compose -f docker-compose.prod.yml stop api worker`.
+1. Stop writers: `cd /opt/imkon/deploy && export IMAGE_TAG=$(cat /var/lib/imkon/current_release) && docker compose -f docker-compose.prod.yml stop api worker`.
 2. Pick a dump from `/var/backups/imkon` or fetch one with `restic restore latest --tag db --target /tmp/restore` (source `/etc/imkon/backup.env`).
 3. `docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' < <dump>`.
-4. Restore documents if needed: `restic restore latest --tag storage --target /`, then `chown -R 10001:10001 /var/lib/imkon/storage`.
+4. Restore documents if needed: `restic restore latest --tag storage --target /tmp/storage-restore`, then as root run `tar -xpf /tmp/storage-restore/storage.tar -C /var/lib/imkon/storage` and `chown -R 10001:10001 /var/lib/imkon/storage`. Older storage snapshots contain the original `/var/lib/imkon/storage` tree rather than `storage.tar`; restore those to `/` as before.
 5. Start `api worker` again and check `/health`.
+
+Nightly storage backups run `tar` in a one-off API container as UID/GID `10001:10001`, streaming `storage.tar` to restic under the `storage` tag. This reads app-owned 0600 uploads without granting the host `deploy` user filesystem access or widening upload permissions. The backup fails if either the archive command or restic fails.
 
 The monthly `imkon-restore-check.service` (`deploy/restore_check.sh`) restores the latest off-site dump into a throwaway Postgres container and runs `alembic current` plus a row count. Run it manually after any backup change: `sudo systemctl start imkon-restore-check.service`.
 
 ## 5. Rotate secrets
 
-Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
+Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. `JWT_SECRET_KEY` also encrypts pending outbox payloads: drain the outbox completely and stop writers before rotating it, or pending payloads become unreadable. A separate encryption key is planned for a later package. Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
 
 ## 6. Renew the Telegram webhook
 
