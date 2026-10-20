@@ -120,5 +120,6 @@
   "showComment": "Show comment",
   "hideComment": "Hide comment",
   "scoreInfoLabel": "Average of your finished periods",
-  "scoreInfo": "The average of your finished periods. It matches the Average column in the class table; upcoming periods are not counted."
+  "scoreInfo": "The average of your finished periods. It matches the Average column in the class table; upcoming periods are not counted.",
+  "lessonsTitle": "Lessons"
 }
