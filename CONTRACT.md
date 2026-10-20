@@ -1117,7 +1117,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 - `id` [path] *(required)*
 
 **Responses:**
-- **200**: Successful Response
+- **200**: Successful Response (mentor owner or superadmin)
   ```json
   {
     "user": {
@@ -1169,6 +1169,28 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "avg_score_defined_ratios_mean": number,
   }
   ```
+- **200**: Student mentor card (alternative response)
+  ```json
+  {
+    "user": {
+      "id": integer,
+      "first_name": string,
+      "last_name": string,
+      "photo_path?": string | null,
+      "thumbnail_path?": string | null
+    },
+    "active_courses": [
+      {
+        "id": integer,
+        "title": string,
+        "photo_path?": string | null
+      }
+    ]
+  }
+  ```
+
+  Students receive only public mentor identity and course identity for their nondeleted enrollments on nondeleted courses belonging to this nondeleted mentor. Historical enrollment statuses remain eligible. The `active_courses` name is retained for caller compatibility; it does not impose an active enrollment or course status filter. No contact, DOB, parent, account metadata, full course details or mentor-wide statistics are returned. The response union is `MentorProfileResponse | StudentMentorCardResponse`; the staff response above is unchanged. Students without an eligible relationship, unrelated mentors and accountants receive 403.
+
 - **422**: Validation Error
   ```json
   {

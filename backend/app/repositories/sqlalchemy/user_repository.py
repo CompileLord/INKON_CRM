@@ -125,6 +125,24 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
     ) -> List[Dict[str, Any]]:
         return await SQLAlchemyStudentPerformanceRepository(self.session).get_student_journals(student_id, course_id)
 
+    async def get_student_visible_mentor_courses(self, mentor_id: int, student_id: int) -> list[Course]:
+        statement: Select[tuple[Course]] = (
+            select(Course)
+            .join(Enrollment, Enrollment.course_id == Course.id)
+            .join(User, User.id == Course.mentor_id)
+            .where(
+                Course.mentor_id == mentor_id,
+                Course.is_deleted.is_(False),
+                User.is_deleted.is_(False),
+                User.role == UserRole.MENTOR,
+                Enrollment.student_id == student_id,
+                Enrollment.is_deleted.is_(False),
+            )
+            .order_by(Course.id)
+        )
+        result: Result[tuple[Course]] = await self.session.execute(statement)
+        return list(result.scalars().all())
+
     async def get_mentor_profile_stats(self, mentor_id: int) -> Dict[str, Any]:
         courses_query = select(Course).filter(
             Course.mentor_id == mentor_id,
