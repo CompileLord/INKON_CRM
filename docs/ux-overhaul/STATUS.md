@@ -24,6 +24,6 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | FE-R40 | Bounded student history consumers | — | blocked | Audited candidate49487ba; full backend gate pending. Migrate actual detail/dashboard/progress consumers to bounded paging; PLAN.md has exact contract. No frontend checks. |
 | FE-R41 | Student-visible mentor card | — | blocked | Await audited WP41 role-specific contract; public identity and enrolled course projection only. Frontend owner; scope/tests in PLAN.md. |
 | FE-R49 | Canonical phones and strict settings | — | blocked | Await integrated WP49 contract; legacy prefills and request validation need frontend owner changes. Scope/tests in PLAN.md; no frontend checks. |
-| UX-6a | Student full class journal (read-only) backend | kitob/ux-6a-student-journal-api | in progress | user decision 2026-10-20: students see all classmates scores; supersedes BE-4 privacy and removed ranking rule; other students comments hidden |
+| UX-6a | Student full class journal (read-only) backend | kitob/ux-6a-student-journal-api | accepted | merged; GET /journals/{id}/class relaxed for enrolled students; classmate comments/contacts redacted; write-route guard test (all 3 write routes 403 for students); 92 targeted tests passed on disposable pod; CONTRACT.md zero diff; full backend suite not run |
 | UX-6b | Student dashboard as course cards + read-only journal | — | pending | needs UX-6a |
 | QA-1 | Full regression | — | pending | needs all |
