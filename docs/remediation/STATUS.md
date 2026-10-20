@@ -1,8 +1,8 @@
 # Remediation progress
 
-Sole execution record; task files hold scope. Orchestrator serializes updates/integration. Unrun/failing gates block acceptance. Frontend separately owned; no PR/push/deployment or operational data changes.
+Sole record; failed/unrun gates block acceptance. Frontend separately owned; no push/deploy/operational changes.
 
-Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outside Git). Current Python3.12 disposable pods: `root-audit-pod`, `wp30-sol-pod`. One suite per pod; never ordinary `imkon_db`/`imkon_redis`.
+Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-audit-pod/wp30-sol-pod; one suite per pod.
 
 | WP | Status | Branch / PR | Date (UTC) | Tests run and result | Notes / evidence |
 |---|---|---|---|---|---|
@@ -40,11 +40,11 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-32 | in_progress | master | 2026-10-20 | Full1125 pass674.24s/5 warnings; focused51; root10; allocation mutation caught/restored | Upcoming scope PASS codef77365f merge04e2893; merged backend matches full candidate. SQL51/501/5001→2/3/21. BUS18 notify_debts awaits FIN1a; not accepted complete. logs wp32-sol/, root-audit/wp32-*.log. |
 | WP-33 | done | master | 2026-10-20 | Full1103 pass645.87s/5 warnings; focused75 pass; root7 pass; grading mutation caught/restored; migration replay/old-image reads pass | PASS code6d5aaa6 mergebd1d301; backend byte-identical to full-tested candidate. Explicit zero/unknown grading; SQL ranks/aggregates; client rank0 handoff pending separate frontend owner. logs wp33-sol/, root-audit/wp33-*.log. |
 | WP-34 | in_progress | master | 2026-10-20 | Full1108 pass601.27s; focused35; root5; cohort mutation caught/restored; merged WP32/34 integration31 pass | Backend PASS code9a2afe9 merge3a2fe90. Client nullable series/rank/metadata types + endpoint union/validation pending separate owner. Reads3276000→31200; larger payload/timing noise. logs wp34-sol/, root-audit/wp34-*, wp32-wp34-integration.log. |
-| WP-35 | in_progress | remediation/wp-35-autosave-bounds | 2026-10-20 | Scope preflight | /root/wp31_preflight; backend bounds and client handoff. |
+| WP-35 | in_progress | remediation/wp-35-autosave-bounds | 2026-10-20 | Focused74 pass38.53s; red7 fail/1 pass | Benchmark/root audit pending; frontend batching owner pending. logs wp35-sol/. |
 | WP-36 | done | master | 2026-10-18 | Executor backend 874 pass/7 fail vs baseline 865 pass/same 7 fail (six Alembic multiple-heads, test_avatar_upload_and_thumbnail); targeted 9 pass; ruff pass; 5 mutations caught, 6 of 9 tests red on baseline | PASS commit dc3018d; shared/exclusive advisory month locks, sorted order, held to commit. Gaps: no throughput/deadlock-rate measurements; the 7 failures pre-date WP-36 (multiple Alembic heads introduced by WP-25 + main credentials migration, fix in progress). Logs wp36-sol/. |
-| WP-37 | in_progress | remediation/wp-37-installment-identity | 2026-10-20 | Read-only preflight | /root/wp37_preflight; tests await disposable runtime. |
+| WP-37 | in_progress | remediation/wp-37-installment-identity | 2026-10-20 | Focused12/root12 pass; mutation caught/restored; migration replay pass | Combined full running. logs wp37-sol/, root-audit/wp37-*. |
 | WP-38 | done | remediation/wp-38-seed-identities | 2026-10-15 | Independent Python3.12 365 pass (235.85s), critical 4 pass (4.81s); restored seed/reset/critical 41 pass; all three mapping mutations caught | PASS generated IDs with offset/default sequences, repeated guarded seed, finance/photo references and subsequent API creation. Logs wp13-recovery/wp38-root-*.log. Source/test bytes matched executed copy. |
-| WP-39 | in_progress | remediation/wp-39-profile-ranking | 2026-10-20 | Read-only/test preflight | /root/wp32_resume; verify WP33 partitioned query; await runtime. |
+| WP-39 | in_progress | remediation/wp-39-profile-ranking | 2026-10-20 | Focused6/root6 pass; partition mutation caught/restored | SQL8/17/107→8/8/8; combined full running. logs wp39-sol/, root-audit/wp39-*. |
 | WP-40 | todo | — | — | — | Pending. |
 | WP-41 | todo | — | — | — | Pending. |
 | WP-42 | done | remediation/wp-42-migration-gates | 2026-10-15 | Python3.12 integrated backend 411 pass (204.87s); independent migration/deploy/critical 32 pass (15.46s), restored9 pass (8.07s); both CI-target and migration-failure mutations caught | PASS after correction; nine trials verified. Unchanged 1M migration mean100.23±5.44s, WAL1.818GB, 4M updates; no speedup claim. Logs wp14-recovery/evidence/wp42-*. Requires configured self-hosted migration-network runner; real deployment/network not exercised. |
