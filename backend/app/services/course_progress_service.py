@@ -39,6 +39,10 @@ class CourseProgressService:
                 period_label=p.period_label,
                 period_start=p.period_start,
                 period_end=p.period_end,
+                class_avg_score=p.class_avg_score,
+                class_avg_max_score=p.class_avg_max_score,
+                class_avg_percentage=p.class_avg_percentage,
+                graded_count=p.graded_count,
             )
             for p in snapshot.periods
         ]

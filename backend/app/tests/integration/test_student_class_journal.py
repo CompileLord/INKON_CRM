@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, Response
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, event, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token, hash_password
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -109,8 +109,13 @@ async def classroom(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint", ["journal", "progress"])
 async def test_student_json_contains_no_classmate_identity_or_feedback(
-    client: AsyncClient, classroom: ClassRoom, endpoint: str,
+    client: AsyncClient, classroom: ClassRoom, endpoint: str, db_session: AsyncSession,
 ) -> None:
+    if endpoint == "progress":
+        db_session.add(JournalStudentSummary(
+            journal_id=classroom.journal_id, student_id=classroom.outsider.id, sum_score=999, max_period_score=120,
+        ))
+        await db_session.commit()
     url: str = (
         f"/api/v1/journals/{classroom.journal_id}/class"
         if endpoint == "journal"
@@ -122,7 +127,18 @@ async def test_student_json_contains_no_classmate_identity_or_feedback(
     )
     assert login_response.status_code == 200
     student_headers: Dict[str, str] = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-    response: Response = await client.get(url, headers=student_headers)
+    aggregate_queries: List[str] = []
+
+    def record_aggregate_query(connection: Any, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool) -> None:
+        if "group by" in statement.lower() and "journal_student_summaries" in statement.lower():
+            aggregate_queries.append(statement)
+
+    from app.tests.conftest import test_engine
+    event.listen(test_engine.sync_engine, "before_cursor_execute", record_aggregate_query)
+    try:
+        response: Response = await client.get(url, headers=student_headers)
+    finally:
+        event.remove(test_engine.sync_engine, "before_cursor_execute", record_aggregate_query)
     assert response.status_code == 200
     body: Dict[str, Any] = response.json()
     serialized: str = json.dumps(body, ensure_ascii=False)
@@ -139,7 +155,29 @@ async def test_student_json_contains_no_classmate_identity_or_feedback(
         assert body["students"][0]["is_self"] is True
         assert body["class_size"] == 3
     else:
+        assert len(body["periods"]) > 1
+        assert len(aggregate_queries) == 1
         assert any(result["score"] is not None for result in body["students"][0]["period_results"])
+        expected_averages: Any = (await db_session.execute(
+            select(
+                JournalStudentSummary.journal_id,
+                func.avg(JournalStudentSummary.sum_score),
+                func.avg(JournalStudentSummary.max_period_score),
+                func.avg(JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score),
+                func.count(JournalStudentSummary.id),
+            ).join(Journal).join(Enrollment, Enrollment.student_id == JournalStudentSummary.student_id)
+            .where(Journal.course_id == classroom.course_id, Enrollment.course_id == classroom.course_id)
+            .group_by(JournalStudentSummary.journal_id)
+        )).all()
+        for expected in expected_averages:
+            period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == expected[0])
+            assert period["class_avg_score"] == pytest.approx(float(expected[1]))
+            assert period["class_avg_max_score"] == pytest.approx(float(expected[2]))
+            assert period["class_avg_percentage"] == pytest.approx(float(expected[3]))
+            assert period["graded_count"] == expected[4] == 3
+        scored_period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == classroom.journal_id)
+        own_result: Dict[str, Any] = body["students"][0]["period_results"][0]
+        assert scored_period["class_avg_score"] != own_result["score"]
 
 
 @pytest.mark.asyncio
@@ -178,6 +216,7 @@ async def test_staff_endpoints_keep_all_students_and_comments(
     client: AsyncClient, classroom: ClassRoom, test_mentor: User, test_admin: User,
 ) -> None:
     expected_ids: set[int] = {classroom.own.id, classroom.classmate.id, classroom.second_classmate.id}
+    student_progress: Response = await client.get(f"/api/v1/courses/{classroom.course_id}/class-progress", headers=authorization(classroom.own))
     for staff in (test_mentor, test_admin):
         journal_response: Response = await client.get(f"/api/v1/journals/{classroom.journal_id}", headers=authorization(staff))
         progress_response: Response = await client.get(f"/api/v1/courses/{classroom.course_id}/staff-progress", headers=authorization(staff))
@@ -186,6 +225,7 @@ async def test_staff_endpoints_keep_all_students_and_comments(
             assert {record["student_id"] for record in response.json()["students"]} == expected_ids
         assert CLASSMATE_COMMENT in journal_response.text
         assert "Second private feedback" in journal_response.text
+        assert progress_response.json()["periods"] == student_progress.json()["periods"]
 
 
 @pytest.mark.asyncio
@@ -313,3 +353,16 @@ async def test_student_class_statistics_handle_missing_and_unscored_summaries(
         assert body["class_avg_percentage"] == 0.0
         assert body["my_rank"] == 1
         assert body["class_avg_score"] == (0.0 if summary_state == "empty" else 3.3)
+    progress: Response = await client.get(f"/api/v1/courses/{classroom.course_id}/class-progress", headers=authorization(classroom.own))
+    period: Dict[str, Any] = next(period for period in progress.json()["periods"] if period["id"] == classroom.journal_id)
+    if summary_state == "empty":
+        assert period["graded_count"] == 0
+        assert all(period[field] is None for field in ("class_avg_score", "class_avg_max_score", "class_avg_percentage"))
+    elif summary_state == "zero_maximum":
+        assert period["graded_count"] == 3
+        assert period["class_avg_score"] == pytest.approx(10 / 3)
+        assert period["class_avg_max_score"] == 0
+        assert period["class_avg_percentage"] is None
+    else:
+        assert period["graded_count"] == 2
+        assert period["class_avg_score"] == 2.5

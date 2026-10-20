@@ -1761,6 +1761,10 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "period_label": string,
         "period_start": string,
         "period_end": string,
+        "class_avg_score?": number,
+        "class_avg_max_score?": number,
+        "class_avg_percentage?": number,
+        "graded_count?": integer,
       }
     ],
     "students": [
@@ -1809,6 +1813,10 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
         "period_label": string,
         "period_start": string,
         "period_end": string,
+        "class_avg_score?": number,
+        "class_avg_max_score?": number,
+        "class_avg_percentage?": number,
+        "graded_count?": integer,
       }
     ],
     "students": [

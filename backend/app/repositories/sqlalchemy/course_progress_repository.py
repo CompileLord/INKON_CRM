@@ -1,5 +1,7 @@
-from typing import List, Optional
-from sqlalchemy import or_, select
+from typing import Dict, List, Optional
+from sqlalchemy import case, func, or_, select
+from sqlalchemy.engine import Result, Row
+from sqlalchemy.sql import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.course import Course
@@ -83,17 +85,38 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
                     )
                 )
 
-        periods = [
-            ProgressPeriodRecord(
-                id=j.id,
-                period_label=j.period_label,
-                period_start=j.period_start,
-                period_end=j.period_end,
+        journal_ids: List[int] = [journal.id for journal in journals]
+        aggregates_by_journal: Dict[int, Row] = {}
+        if journal_ids:
+            enrolled_student_ids: Select = select(Enrollment.student_id).join(
+                User, Enrollment.student_id == User.id,
+            ).where(
+                Enrollment.course_id == course_id,
+                Enrollment.is_deleted == False,
+                User.role == UserRole.STUDENT,
+                User.is_deleted == False,
             )
-            for j in journals
+            aggregates_query: Select = select(
+                JournalStudentSummary.journal_id,
+                func.avg(JournalStudentSummary.sum_score).label("class_avg_score"),
+                func.avg(JournalStudentSummary.max_period_score).label("class_avg_max_score"),
+                func.avg(case((
+                    JournalStudentSummary.max_period_score > 0,
+                    JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
+                ))).label("class_avg_percentage"),
+                func.count(JournalStudentSummary.id).label("graded_count"),
+            ).where(
+                JournalStudentSummary.journal_id.in_(journal_ids),
+                JournalStudentSummary.student_id.in_(enrolled_student_ids),
+            ).group_by(JournalStudentSummary.journal_id)
+            aggregates_result: Result = await self.session.execute(aggregates_query)
+            aggregates_by_journal = {row.journal_id: row for row in aggregates_result.all()}
+
+        periods: List[ProgressPeriodRecord] = [
+            self._build_period_record(journal, aggregates_by_journal.get(journal.id))
+            for journal in journals
         ]
 
-        journal_ids = [j.id for j in journals]
         summaries: List[ProgressSummaryRecord] = []
 
         if journal_ids and student_ids:
@@ -117,4 +140,26 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             periods=periods,
             students=students,
             summaries=summaries
+        )
+
+    @staticmethod
+    def _build_period_record(journal: Journal, aggregate: Optional[Row]) -> ProgressPeriodRecord:
+        if aggregate is None:
+            return ProgressPeriodRecord(
+                id=journal.id,
+                period_label=journal.period_label,
+                period_start=journal.period_start,
+                period_end=journal.period_end,
+            )
+        return ProgressPeriodRecord(
+            id=journal.id,
+            period_label=journal.period_label,
+            period_start=journal.period_start,
+            period_end=journal.period_end,
+            class_avg_score=float(aggregate.class_avg_score),
+            class_avg_max_score=float(aggregate.class_avg_max_score),
+            class_avg_percentage=(
+                float(aggregate.class_avg_percentage) if aggregate.class_avg_percentage is not None else None
+            ),
+            graded_count=int(aggregate.graded_count),
         )
