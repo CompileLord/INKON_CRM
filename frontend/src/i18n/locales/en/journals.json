@@ -206,7 +206,9 @@
     "cancelConsequence": "Cancel discards your unsaved comment changes.",
     "discardPrompt": "You have unsaved comment changes.",
     "continueEditing": "Continue editing",
-    "discard": "Discard comment changes"
+    "discard": "Discard comment changes",
+    "counter": "{{count}} / {{max}}",
+    "tooLong": "Comment is too long. Shorten it to {{max}} characters or fewer to save."
   },
   "search": {
     "label": "Search students in this period",
