@@ -14,13 +14,14 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | SC-1 | Score-first backend | kitob/sc-1-score-backend | accepted | merged 0efe09f; migration 5c1b0a7e9d21 after rwp30; backend 1088 passed (Codex, disposable pod); master build 0, vitest 1666 passed; dev DB migrated; exam 0 still means not graded |
 | UX-5a | Design system primitives | kitob/ux-5a-design-system | accepted | 76d3395, d1adb2b; merged 7e0157f; master build 0, vitest 1653 passed; guard allowlist 31 entries to burn down in UX-5b/c/d |
 | UX-5b | Admin list pages | kitob/ux-5b | in progress | |
-| UX-5c | Detail pages | kitob/ux-5c | in progress | |
+| UX-5c | Detail pages | kitob/ux-5c | accepted | merged 3c70ac7; build 0; screenshots desktop light/dark + mobile reviewed; full vitest on master had load-only failures (5, incl. PaymentEntry, JournalDetail.singleScreen) that pass in isolation: flaky timeouts, to investigate in QA-1; student Progress/Documents tabs and parent-link popover not screenshotted |
 | UX-5d | Mentor and student experience | kitob/ux-5d | accepted | merged 6a256c0 after audit fix ba71c11; master build 0, vitest 1656 passed; follow-up: use BE-4 class averages in student chart |
 | FIN-1a | Debt reminders backend | kitob/fin-1a-debt-reminders | accepted | merged 4fd209f (incl. 9d785dd bulk-query fix); backend 1124 passed + 2 env failures; migration rechained after rwp37 (812f4ba), single head, local DB upgraded |
-| BE-4 | Student endpoints scoped to the caller (privacy) | kitob/be-4-student-privacy | in progress | 583e099 privacy; audit: class-progress lost class averages, fix in progress (Codex quota → Sonnet) |
+| BE-4 | Student endpoints scoped to the caller (privacy) | kitob/be-4-student-privacy | accepted | merged into master; targeted backend 26+9 passed on disposable pod, contract regenerated (87 endpoints); full backend suite and frontend gates not rerun; student my_rank is 0 when ungraded (master rule) |
 | FIN-1b | Debt reminders UI | — | pending | needs FIN-1a, UX-5b |
 | FE-R34 | Course chart contract synchronization | — | pending | WP34 backend integrated9a2afe9; frontend owner: role union, nullable series/rank and metadata. Exact scope/tests in PLAN.md; frontend checks not run. |
 | FE-R35 | Autosave batching and comment limits | — | pending | Release prerequisite for WP35 backend candidate (1173 tests passed): <=250 unique cells/request, <=1000 Unicode code points/comment; preserve drafts/conflicts/retries. Not implemented; see PLAN.md. |
-| FE-R40 | Bounded student history consumers | — | blocked | Await WP40 backend contract and coordinated paging/summary semantics; include MyCourses and useStudentProgressSeries callers. No implementation or checks; see PLAN.md. |
+| FE-R40 | Bounded student history consumers | — | blocked | Audited candidate49487ba; full backend gate pending. Migrate actual detail/dashboard/progress consumers to bounded paging; PLAN.md has exact contract. No frontend checks. |
 | FE-R41 | Student-visible mentor card | — | blocked | Await audited WP41 role-specific contract; public identity and enrolled course projection only. Frontend owner; scope/tests in PLAN.md. |
+| FE-R49 | Canonical phones and strict settings | — | blocked | Await integrated WP49 contract; legacy prefills and request validation need frontend owner changes. Scope/tests in PLAN.md; no frontend checks. |
 | QA-1 | Full regression | — | pending | needs all |

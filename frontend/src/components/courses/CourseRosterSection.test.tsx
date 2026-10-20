@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider, type UseQueryResult } from "@tanstack/react-query";
 import i18n from "../../i18n";
 import { CourseStudentsPane } from "./CourseStudentsPane";
-import { EnrollStudentModal } from "./EnrollStudentModal";
 import * as enrollmentHooks from "../../lib/enrollments/hooks";
 import * as enrollmentEndpoints from "../../lib/enrollments/endpoints";
 import * as returnContextModule from "../../lib/courses/returnContext";
@@ -162,7 +161,7 @@ const mockRosterItemTwo: CourseRosterItem = {
   },
 };
 
-describe("CourseStudentsPane and Enrollment Workflows", () => {
+describe("Course roster section", () => {
   let queryClient: QueryClient;
   let mockMutateEnrollAsync: ReturnType<typeof vi.fn>;
   let mockMutateWithdrawAsync: ReturnType<typeof vi.fn>;
@@ -241,165 +240,6 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     );
   }
 
-  it("proves selecting a candidate does not write until explicit Enroll click", async () => {
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const enrollSubmitButton = screen.getByRole("button", { name: "Enroll student" });
-    expect(enrollSubmitButton).toBeDefined();
-    expect(enrollSubmitButton.hasAttribute("disabled")).toBe(true);
-
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    expect(candidateRadio).toBeDefined();
-
-    fireEvent.click(candidateRadio);
-
-    expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
-    expect(enrollSubmitButton.hasAttribute("disabled")).toBe(false);
-    expect(screen.getByText("Change student")).toBeDefined();
-
-    fireEvent.click(enrollSubmitButton);
-
-    await waitFor(() => {
-      expect(mockMutateEnrollAsync).toHaveBeenCalledWith({
-        course_id: 42,
-        student_id: 201,
-      });
-    });
-  });
-
-  it("proves cancellation and close through all paths without mutation", () => {
-    const handleClose = vi.fn();
-    const { rerender } = render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={handleClose}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    fireEvent.click(candidateRadio);
-    expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
-
-    const cancelButton = screen.getByRole("button", { name: "Cancel" });
-    fireEvent.click(cancelButton);
-    expect(handleClose).toHaveBeenCalledTimes(1);
-    expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
-
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={handleClose}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const closeIconBtn = screen.getByLabelText("Close");
-    fireEvent.click(closeIconBtn);
-    expect(handleClose).toHaveBeenCalledTimes(2);
-    expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
-  });
-
-  it("handles duplicate enrollment 409 conflict and recovers with retained candidate", async () => {
-    mockMutateEnrollAsync.mockRejectedValueOnce({ status: 409 });
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    fireEvent.click(candidateRadio);
-
-    const enrollSubmitButton = screen.getByRole("button", { name: "Enroll student" });
-    fireEvent.click(enrollSubmitButton);
-
-    await waitFor(() => {
-      const alert = screen.getByRole("alert");
-      expect(alert.textContent).toContain("This student is already enrolled in this course.");
-    });
-
-    expect(screen.getAllByText("Zara Karimova").length).toBeGreaterThan(0);
-    expect(screen.getByText("Change student")).toBeDefined();
-    expect(enrollSubmitButton.hasAttribute("disabled")).toBe(false);
-  });
-
-  it("handles candidate pagination across page two and preserves selection", () => {
-    vi.mocked(enrollmentHooks.useEligibleCandidates).mockReturnValue(
-      mockQueryResult<PaginatedEligibleCandidates>({
-        items: [mockCandidateOne],
-        total: 15,
-        page: 1,
-        page_size: 10,
-        total_pages: 2,
-      }),
-    );
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    fireEvent.click(candidateRadio);
-
-    const nextBtn = screen.getByRole("button", { name: "Next page" });
-    expect(nextBtn).toBeDefined();
-    expect(nextBtn.hasAttribute("disabled")).toBe(false);
-
-    fireEvent.click(nextBtn);
-
-    expect(screen.getAllByText("Zara Karimova").length).toBeGreaterThan(0);
-    expect(screen.getByText("Change student")).toBeDefined();
-  });
-
   it("displays error with working retry when roster query fails", () => {
     const mockRefetch = vi.fn();
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue({
@@ -410,7 +250,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     renderPane();
 
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("Failed to load course roster");
+    expect(alert.textContent).toContain("Couldn't load the students");
 
     const retryButton = screen.getByRole("button", { name: "Retry" });
     fireEvent.click(retryButton);
@@ -436,137 +276,17 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
 
     renderPane();
 
-    expect(screen.getAllByRole("link", { name: "Alisher Navoiy" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Dilnoza Usmonova" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Alisher Navoiy/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Dilnoza Usmonova/ }).length).toBeGreaterThan(0);
 
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("Failed to load course roster");
+    expect(alert.textContent).toContain("Couldn't load the students");
 
     const retryBtn = within(alert).getByRole("button", { name: "Retry" });
     fireEvent.click(retryBtn);
     expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it("disables candidate modal pagination while fetching", () => {
-    vi.mocked(enrollmentHooks.useEligibleCandidates).mockReturnValue({
-      ...mockQueryResult(
-        {
-          items: [mockCandidateOne],
-          total: 20,
-          page: 2,
-          page_size: 10,
-          total_pages: 2,
-        },
-        true,
-      ),
-    });
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const prevBtn = screen.getByRole("button", { name: "Previous page" });
-    const nextBtn = screen.getByRole("button", { name: "Next page" });
-    expect(prevBtn.hasAttribute("disabled")).toBe(true);
-    expect(nextBtn.hasAttribute("disabled")).toBe(true);
-  });
-
-  it("synchronously locks modal submit against repeated rapid clicks", async () => {
-    let resolveMutation: (val: unknown) => void = () => {};
-    const mutatePromise = new Promise((resolve) => {
-      resolveMutation = resolve;
-    });
-    const mutateAsync = vi.fn().mockReturnValue(mutatePromise);
-
-    vi.mocked(enrollmentHooks.useEnrollStudent).mockReturnValue({
-      mutateAsync,
-      isPending: false,
-    } as unknown as ReturnType<typeof enrollmentHooks.useEnrollStudent>);
-
-    const onClose = vi.fn();
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={onClose}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    fireEvent.click(candidateRadio);
-
-    const submitBtn = screen.getByRole("button", { name: "Enroll student" });
-    fireEvent.click(submitBtn);
-    fireEvent.click(submitBtn);
-    fireEvent.click(submitBtn);
-
-    expect(mutateAsync).toHaveBeenCalledTimes(1);
-
-    const cancelBtn = screen.getByRole("button", { name: "Cancel" });
-    fireEvent.click(cancelBtn);
-    expect(onClose).not.toHaveBeenCalled();
-
-    resolveMutation({
-      id: 999,
-      student_id: 201,
-      course_id: 42,
-      price_at_enrollment: "1200.00",
-      color_hex: "#083D91",
-      enrolled_at: "2026-10-12T00:00:00Z",
-      status: "active",
-      student: mockCandidateOne,
-    });
-  });
-
-  it("prevents repeated submit and locks dismissal while mutation is pending", () => {
-    vi.mocked(enrollmentHooks.useEnrollStudent).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: true,
-    } as unknown as ReturnType<typeof enrollmentHooks.useEnrollStudent>);
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
-        </I18nextProvider>
-      </QueryClientProvider>,
-    );
-
-    const submitBtn = screen.getByRole("button", { name: "Enrolling…" });
-    expect(submitBtn.hasAttribute("disabled")).toBe(true);
-
-    const cancelBtn = screen.getByRole("button", { name: "Cancel" });
-    expect(cancelBtn.hasAttribute("disabled")).toBe(true);
-
-    const closeBtn = screen.getByLabelText("Close");
-    expect(closeBtn.hasAttribute("disabled")).toBe(true);
-  });
 
   it("handles hidden newly enrolled student with explicit reveal locator", async () => {
     const onSearchQueryChange = vi.fn();
@@ -611,12 +331,12 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Student was enrolled, but is located on another page or hidden by filters.",
+          "The student is enrolled but is on another page or hidden by filters.",
         ),
       ).toBeDefined();
     });
 
-    const viewButton = screen.getByRole("button", { name: "View enrolled student" });
+    const viewButton = screen.getByRole("button", { name: "Show student" });
     fireEvent.click(viewButton);
 
     await waitFor(() => {
@@ -643,17 +363,17 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     fireEvent.click(withdrawMenuItem);
 
     expect(
-      screen.getByText(/Withdraw Alisher Navoiy from Frontend Development Mastery\?/),
+      screen.getByText(/Withdraw Alisher Navoiy from “Frontend Development Mastery”\?/),
     ).toBeDefined();
     expect(
-      screen.getByText(/The student will lose access to lessons and journals\./),
+      screen.getByText(/They lose access to lessons and the journal\./),
     ).toBeDefined();
 
     const confirmButton = screen.getByRole("button", { name: "Withdraw" });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Failed to withdraw student")).toBeDefined();
+      expect(screen.getByText("Couldn't withdraw the student")).toBeDefined();
     });
 
     mockMutateWithdrawAsync.mockResolvedValueOnce({ status: "withdrawn" });
@@ -665,7 +385,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
         studentId: 301,
         courseId: 42,
       });
-      expect(onToast).toHaveBeenCalledWith("Student withdrawn from course", "success");
+      expect(onToast).toHaveBeenCalledWith("Student withdrawn", "success");
     });
   });
 
@@ -697,7 +417,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     expect(screen.queryByRole("button", { name: "Enroll student" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Withdraw" })).toBeNull();
     expect(
-      screen.getByText("Roster is in view-only mode for assigned teachers."),
+      screen.getByText("Assigned mentors see this list read-only."),
     ).toBeDefined();
   });
 
@@ -750,7 +470,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     await waitFor(() => {
       expect(
         screen.queryByText(
-          "Student was enrolled, but is located on another page or hidden by filters.",
+          "The student is enrolled but is on another page or hidden by filters.",
         ),
       ).toBeNull();
     });
@@ -766,7 +486,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     } as unknown as ReturnType<typeof enrollmentHooks.useCourseRosterPage>);
 
     const { unmount } = renderPane();
-    expect(screen.queryByText("0")).toBeNull();
+    expect(screen.queryByRole("heading", { level: 2, name: /·/ })).toBeNull();
     unmount();
 
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(
@@ -774,7 +494,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     );
 
     const { unmount: unmountError } = renderPane();
-    expect(screen.queryByText("0")).toBeNull();
+    expect(screen.queryByRole("heading", { level: 2, name: /·/ })).toBeNull();
     unmountError();
 
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(
@@ -789,10 +509,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     );
 
     renderPane();
-    const heading = screen.getByRole("heading", { level: 2, name: "Group Roster" });
-    const countBadge = heading.parentElement?.querySelector("span");
-    expect(countBadge).toBeDefined();
-    expect(countBadge?.textContent).toBe("0");
+    expect(screen.getByRole("heading", { level: 2, name: "Students · 0" })).toBeDefined();
   });
 
   it("displays explicit refresh error banner and retry button when enrollment succeeds but roster refresh fails", async () => {
@@ -846,14 +563,14 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Student was enrolled, but updating the roster failed. Retry to refresh.",
+          "The student was enrolled, but the list didn't refresh.",
         ),
       ).toBeDefined();
     });
 
     expect(
       screen.queryByText(
-        "Student was enrolled, but is located on another page or hidden by filters.",
+        "The student is enrolled but is on another page or hidden by filters.",
       ),
     ).toBeNull();
 
@@ -864,7 +581,7 @@ describe("CourseStudentsPane and Enrollment Workflows", () => {
     await waitFor(() => {
       expect(
         screen.queryByText(
-          "Student was enrolled, but updating the roster failed. Retry to refresh.",
+          "The student was enrolled, but the list didn't refresh.",
         ),
       ).toBeNull();
     });

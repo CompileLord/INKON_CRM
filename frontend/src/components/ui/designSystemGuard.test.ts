@@ -11,16 +11,9 @@ const RULES: Readonly<Record<string, RegExp>> = {
 
 const PAGE_LEVEL_RULES: readonly string[] = ["page-max-width"];
 
-export const ALLOWLIST_CEILING: number = 7;
+export const ALLOWLIST_CEILING: number = 0;
 
 const ALLOWLIST: readonly string[] = [
-  "components/courses/CourseProgressPane.tsx::native-select",
-  "components/courses/CourseRosterSection.tsx::native-select",
-  "components/profile/ProfileTabs.tsx::role-tablist",
-  "pages/CourseProfile.tsx::page-max-width",
-  "pages/CourseProfile.tsx::role-tablist",
-  "pages/MentorProfile.tsx::page-max-width",
-  "pages/StudentProfile.tsx::page-max-width",
 ];
 
 class SourceScanner {

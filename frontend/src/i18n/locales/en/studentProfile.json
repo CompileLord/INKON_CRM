@@ -1,0 +1,72 @@
+{
+  "tabs": {
+    "label": "Student sections",
+    "courses": "Courses",
+    "progress": "Progress",
+    "documents": "Documents"
+  },
+  "header": {
+    "actions": "Student actions",
+    "edit": "Edit",
+    "access": "Account access",
+    "delete": "Delete student",
+    "parentPhone": "Parent: {{phone}}"
+  },
+  "parentLink": {
+    "label": "Parent in Telegram",
+    "title": "Parent link",
+    "linkedHelp": "A parent has linked a Telegram chat to this student. A new code replaces the old one.",
+    "notLinkedHelp": "Create a code and give it to the parent to enter in the Telegram bot."
+  },
+  "access": {
+    "title": "Account access",
+    "password": "Password",
+    "show": "Show password",
+    "hide": "Hide password",
+    "unavailable": "The password isn't stored in readable form and can't be shown."
+  },
+  "stats": {
+    "score": "Points, active courses",
+    "attendance": "Attendance",
+    "absencesOf": "{{absences}} of {{total}} missed",
+    "currency": "TJS",
+    "debt": "Debt",
+    "credit": "Overpaid",
+    "balance": "Balance",
+    "overdueDays_one": "{{formatted}} day overdue",
+    "overdueDays_other": "{{formatted}} days overdue"
+  },
+  "courses": {
+    "empty": "This student isn't enrolled in any course.",
+    "emptyTitle": "No courses",
+    "emptyStudent": "You aren't enrolled in any course.",
+    "periodsGraded": "{{graded}} of {{total}} periods graded"
+  },
+  "courseStatus": {
+    "withdrawn": "Withdrawn"
+  },
+  "progress": {
+    "title": "Progress",
+    "method": "Points add up homework, attendance, exam and bonus for each graded period. The percentage is the share of the maximum.",
+    "chartLabel": "Progress by period",
+    "chartHint": "Use the left and right arrow keys to inspect periods.",
+    "chartEntry": "{{name}}: {{value}}",
+    "chartNoValues": "No graded results for this period",
+    "emptyTitle": "Not enough graded periods",
+    "emptyBody": "The chart appears once a course has two graded periods.",
+    "errorTitle": "Couldn't load the progress chart",
+    "errorBody": "Period results couldn't be loaded. Try again.",
+    "rowNoData": "No grades yet",
+    "coursesLabel": "Progress by course",
+    "attendanceShort": "{{value}}% attendance"
+  },
+  "state": {
+    "forbiddenTitle": "No access to this profile",
+    "forbiddenBody": "Your account can't view this profile.",
+    "notFoundTitle": "Profile not found",
+    "notFoundBody": "This profile doesn't exist or was removed.",
+    "failedTitle": "Couldn't load the profile",
+    "failedBody": "Check your connection and try again.",
+    "refreshError": "Couldn't refresh the profile. Showing the last loaded data."
+  }
+}

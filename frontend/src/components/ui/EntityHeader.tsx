@@ -21,10 +21,10 @@ export function EntityHeader({ avatar, name, status, meta = [], primaryAction, m
           {status}
         </div>
         {meta.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted max-sm:flex-col max-sm:items-start">
             {meta.map((item, index) => (
               <span key={`${index}-${item}`} className="flex items-center gap-2">
-                {index > 0 && <span aria-hidden="true">·</span>}
+                {index > 0 && <span aria-hidden="true" className="max-sm:hidden">·</span>}
                 <span>{item}</span>
               </span>
             ))}

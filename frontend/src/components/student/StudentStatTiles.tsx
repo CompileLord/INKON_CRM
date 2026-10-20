@@ -1,79 +1,53 @@
-import type { ReactNode } from "react";
-import { CalendarX2, Gauge, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { InfoTooltip } from "../ui/InfoTooltip";
+import { StatGroup, StatTile } from "../ui/StatGroup";
+import { ScoreFormat } from "../profile/ScoreFormat";
 import { formatNumber } from "../../i18n/formatters";
-import type { StudentPerformanceTotals } from "../../lib/users/types";
+import { compareMoney, formatMoney } from "../../lib/money";
+import { useStudentBalance } from "../../lib/finance/hooks";
+import { ActiveCourseScores } from "./ActiveCourseScores";
+import type { StudentCourseProfile, StudentPerformanceTotals } from "../../lib/users/types";
 
 interface StudentStatTilesProps {
+  studentId: number;
+  courses: StudentCourseProfile[];
   performance: StudentPerformanceTotals | null | undefined;
+  showBalance: boolean;
 }
 
-interface StatTileProps {
-  icon: ReactNode;
-  label: string;
-  info?: ReactNode;
-  children: ReactNode;
+function BalanceTile({ studentId }: { studentId: number }) {
+  const { t, i18n } = useTranslation("studentProfile");
+  const { data: balance } = useStudentBalance(studentId);
+  const suffix: string = t("stats.currency");
+  const isDebt: boolean = balance !== undefined && compareMoney(balance.net_receivable, "0") > 0;
+  const isCredit: boolean = balance !== undefined && !isDebt && compareMoney(balance.credit_balance, "0") > 0;
+  const label: string = isDebt ? t("stats.debt") : isCredit ? t("stats.credit") : t("stats.balance");
+  const amount: string | null = balance === undefined ? null : formatMoney(isDebt ? balance.net_receivable : isCredit ? balance.credit_balance : "0", { suffix });
+  const overdue: string | undefined = isDebt && balance !== undefined && balance.days_overdue > 0 ? t("stats.overdueDays", { count: balance.days_overdue, formatted: formatNumber(balance.days_overdue, i18n.language) }) : undefined;
+  return <StatTile label={label} value={amount} hint={overdue} />;
 }
 
-function StatTile({ icon, label, info, children }: StatTileProps) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-strip p-2.5 sm:p-3">
-      <div className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted">
-        <span aria-hidden="true" className="hidden shrink-0 sm:inline-flex">{icon}</span>
-        <span className="truncate">{label}</span>
-        {info}
-      </div>
-      <p className="text-xl font-semibold leading-7 text-ink tabular-nums [overflow-wrap:anywhere] sm:text-2xl">{children}</p>
-    </div>
-  );
-}
-
-export function StudentStatTiles({ performance }: StudentStatTilesProps) {
-  const { t, i18n } = useTranslation("students");
-  const storedScore: number | null | undefined = performance?.raw_avg_percentage;
-  const hasAttendanceBasis: boolean = performance !== null && performance !== undefined && performance.attendance_denominator > 0;
-  const attendancePercentage: number | null | undefined = hasAttendanceBasis ? performance?.attendance_percentage : null;
+export function StudentStatTiles({ studentId, courses, performance, showBalance }: StudentStatTilesProps) {
+  const { t, i18n } = useTranslation("studentProfile");
+  const totals: { score: number; max: number } | null = ActiveCourseScores.totals(courses);
+  const hasAttendance: boolean = performance !== null && performance !== undefined && performance.attendance_denominator > 0 && performance.attendance_percentage !== null;
+  const attendanceValue: string | null = hasAttendance && performance?.attendance_percentage != null
+    ? `${formatNumber(performance.attendance_percentage, i18n.language, { maximumFractionDigits: 0 })}%`
+    : null;
+  const absencesHint: string | undefined = performance && performance.attendance_denominator > 0
+    ? t("stats.absencesOf", { absences: formatNumber(performance.absences, i18n.language), total: formatNumber(performance.total_lessons, i18n.language) })
+    : undefined;
 
   return (
-    <div data-profile-summary className="grid grid-cols-3 gap-2">
-      <StatTile
-        icon={<Gauge size={14} />}
-        label={t("stats.average")}
-        info={<InfoTooltip label={t("stats.average")}>{t("stats.averageInfo")}</InfoTooltip>}
-      >
-        {storedScore === null || storedScore === undefined ? (
-          <>
-            <span aria-hidden="true">{t("missingScoreValue")}</span>
-            <span className="sr-only">{t("scoreUnavailable")}</span>
-          </>
-        ) : (
-          formatNumber(storedScore, i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-        )}
-      </StatTile>
-      <StatTile icon={<UserCheck size={14} />} label={t("stats.attendance")}>
-        {attendancePercentage === null || attendancePercentage === undefined ? (
-          <>
-            <span aria-hidden="true">{t("missingScoreValue")}</span>
-            <span className="sr-only">{t("attendanceUnavailable")}</span>
-          </>
-        ) : (
-          `${formatNumber(attendancePercentage, i18n.language, { maximumFractionDigits: 0 })}%`
-        )}
-      </StatTile>
-      <StatTile icon={<CalendarX2 size={14} />} label={t("stats.absences")}>
-        {performance ? (
-          t("stats.absencesOf", {
-            absences: formatNumber(performance.absences, i18n.language),
-            total: formatNumber(performance.total_lessons, i18n.language),
-          })
-        ) : (
-          <>
-            <span aria-hidden="true">{t("missingScoreValue")}</span>
-            <span className="sr-only">{t("attendanceUnavailable")}</span>
-          </>
-        )}
-      </StatTile>
+    <div data-profile-summary>
+      <StatGroup>
+        <StatTile
+          label={t("stats.score")}
+          value={totals ? ScoreFormat.ratio(totals.score, totals.max, i18n.language) : null}
+          hint={totals ? ScoreFormat.percentHint(totals.score, totals.max, i18n.language) ?? undefined : undefined}
+        />
+        <StatTile label={t("stats.attendance")} value={attendanceValue} hint={absencesHint} />
+        {showBalance ? <BalanceTile studentId={studentId} /> : null}
+      </StatGroup>
     </div>
   );
 }

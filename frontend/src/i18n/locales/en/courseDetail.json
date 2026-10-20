@@ -1,0 +1,143 @@
+{
+  "backToCourses": "Back to courses",
+  "loadError": "Couldn't load the course",
+  "notFound": "Course not found",
+  "notFoundHelp": "This course doesn't exist or was removed.",
+  "accessDenied": "No access",
+  "accessDeniedHelp": "You can't view this course.",
+  "journalsLoadError": "Couldn't load the journal periods",
+  "periodNotFoundHelp": "That period wasn't found, so the latest one is shown.",
+  "updating": "Updating…",
+  "updated": "Course updated",
+  "openJournal": "Open journal",
+  "perMonth": "TJS / month",
+  "examType": {
+    "weekly": "Weekly exams",
+    "monthly": "Monthly exams"
+  },
+  "actions": {
+    "label": "Course actions",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "delete": "Delete"
+  },
+  "tabs": {
+    "label": "Course sections",
+    "overview": "Overview",
+    "students": "Students",
+    "performance": "Performance"
+  },
+  "metrics": {
+    "label": "Course figures",
+    "students": "Students",
+    "classAverage": "Class average",
+    "attendance": "Attendance",
+    "studentsError": "Couldn't load",
+    "figuresError": "Couldn't load"
+  },
+  "overview": {
+    "title": "About the course",
+    "schedule": "Schedule",
+    "noSchedule": "No schedule yet",
+    "scheduleLoadError": "Couldn't load the schedule",
+    "description": "Description",
+    "noDescription": "No description"
+  },
+  "history": {
+    "title": "Mentor changes",
+    "show": "Show",
+    "hide": "Hide",
+    "toggleLabel": "Mentor assignment history",
+    "loadError": "Couldn't load the mentor history",
+    "empty": "The mentor hasn't changed",
+    "since": "since {{start}}"
+  },
+  "duplicate": {
+    "title": "Duplicate course",
+    "message": "Create a copy of “{{title}}” with its schedule, price, mentor and active enrollments?",
+    "suffix": "copy",
+    "error": "Couldn't copy the course",
+    "missingSchedule": "This course has no schedule, so it can't be copied."
+  },
+  "delete": {
+    "title": "Delete course",
+    "message": "Delete “{{title}}”? The course is hidden from the catalog; student accounts are kept.",
+    "error": "Couldn't delete the course"
+  },
+  "weekdayShort": {
+    "0": "Mon",
+    "1": "Tue",
+    "2": "Wed",
+    "3": "Thu",
+    "4": "Fri",
+    "5": "Sat",
+    "6": "Sun"
+  },
+  "students": {
+    "title": "Students",
+    "actions": "Student actions",
+    "dismiss": "Dismiss",
+    "empty": "No students enrolled yet",
+    "emptyAdminHelp": "Enroll students to start the group.",
+    "emptyMentorHelp": "Students enrolled by the administrator will appear here.",
+    "enroll": "Enroll student",
+    "enrolledToast": "Student enrolled",
+    "hiddenNotice": "The student is enrolled but is on another page or hidden by filters.",
+    "loadError": "Couldn't load the students",
+    "noMatches": "No students match “{{query}}”",
+    "noMatchesHelp": "Change the search or reset the filters.",
+    "readOnly": "Assigned mentors see this list read-only.",
+    "refreshError": "The student was enrolled, but the list didn't refresh.",
+    "resetFilter": "Reset filter",
+    "resetSearch": "Clear search",
+    "searchPlaceholder": "Search by name or email",
+    "showEnrolled": "Show student",
+    "sort": {
+      "enrolled_desc": "Newest first",
+      "enrolled_asc": "Oldest first",
+      "name_asc": "Name A–Z",
+      "name_desc": "Name Z–A",
+      "price_desc": "Price, high to low",
+      "price_asc": "Price, low to high"
+    },
+    "sortLabel": "Order",
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "withdrawn": "Withdrawn",
+      "completed": "Completed"
+    },
+    "statusLabel": "Status",
+    "withdraw": "Withdraw",
+    "withdrawConfirm": "Withdraw",
+    "withdrawError": "Couldn't withdraw the student",
+    "withdrawMessage": "Withdraw {{name}} from “{{course}}”? They lose access to lessons and the journal. Their account is kept.",
+    "withdrawSuccess": "Student withdrawn",
+    "withdrawTitle": "Withdraw student"
+  },
+  "progress": {
+    "emptyPeriods": "No journal periods yet",
+    "emptyPeriodsHelp": "Results appear here once lessons are graded.",
+    "emptyPeriodsStaff": "Set up periods in the journal to track results.",
+    "emptyStudents": "No students in this course yet",
+    "emptyStudentsHelp": "Enrolled students will appear here.",
+    "filteredCount": "{{shown}} of {{total}} students",
+    "loadError": "Couldn't load the results",
+    "noMatches": "No students match “{{query}}”",
+    "periodLabel": "Period",
+    "resetSearch": "Clear search",
+    "searchLabel": "Search students by name",
+    "searchPlaceholder": "Search students",
+    "sort": {
+      "score_desc": "Highest score",
+      "score_asc": "Lowest score",
+      "name_asc": "Name A–Z",
+      "name_desc": "Name Z–A"
+    },
+    "sortLabel": "Order",
+    "student": "Student",
+    "studentsCount_one": "{{formatted}} student",
+    "studentsCount_other": "{{formatted}} students",
+    "tableLabel": "Student results by period"
+  }
+}

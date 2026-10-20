@@ -1,18 +1,12 @@
 import { useTranslation } from "react-i18next";
+import { Badge } from "../ui/Badge";
 import type { EnrollmentStatus } from "../../lib/enrollments/types";
-
-const STATUS_STYLE: Record<EnrollmentStatus, string> = {
-  active: "bg-success-surface text-success",
-  withdrawn: "bg-danger-surface text-destructive",
-  completed: "bg-info-surface text-info",
-};
 
 export function EnrollmentStatusBadge({ status }: { status: EnrollmentStatus }) {
   const { t } = useTranslation("enrollments");
-  const className = STATUS_STYLE[status];
-
+  if (status === "active" || status === "completed") return <Badge status={status} />;
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${className}`}>
+    <span data-badge-status="withdrawn" className="inline-flex items-center whitespace-nowrap rounded-full bg-strip px-2.5 py-0.5 text-xs font-medium text-muted">
       {t(`status.${status}`)}
     </span>
   );
