@@ -151,7 +151,7 @@ describe("Students page", () => {
       expect(screen.getByRole("heading", { name: "Nodir Yusupov" })).toBeDefined();
     });
     navigate("/students/11");
-    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/Student created\. Login details/)).toBeNull());
   });
 
   it("handles student deletion with enrollment withdrawal and confirmation dialog", async () => {
