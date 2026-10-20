@@ -4,7 +4,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db_session, require_accountant, require_superadmin
+from app.core.deps import get_db_session, get_debt_reminder_service, require_accountant, require_superadmin
 from app.models.user import User
 from app.models.payment import PaymentMethod
 from app.models.charge import ChargeStatus
@@ -12,6 +12,8 @@ from app.models.enrollment import EnrollmentStatus
 from app.models.ledger import LedgerEntry
 from app.schemas.payment import PaymentCreate
 from app.schemas.debt import DebtResponse
+from app.schemas.debt_reminder import DebtReminderRequest, DebtReminderResponse
+from app.services.debt_reminder_service import DebtReminderService
 from app.schemas.common import PaginatedResponse
 from app.schemas.ledger import (
     AdjustmentCreatePayload,
@@ -241,9 +243,8 @@ async def get_debts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(require_accountant),
-    db: AsyncSession = Depends(get_db_session),
+    reminder_service: DebtReminderService = Depends(get_debt_reminder_service),
 ) -> dict:
-    finance_service = FinanceService(db)
     filters = {}
     if course_id is not None:
         filters["course_id"] = course_id
@@ -255,7 +256,16 @@ async def get_debts(
         filters["overdue_days"] = overdue_days
     if enrollment_status is not None:
         filters["status"] = enrollment_status
-    return await finance_service.get_debts(filters, page, page_size)
+    return await reminder_service.list_debts(filters, page, page_size)
+
+
+@router.post("/debts/reminders", response_model=DebtReminderResponse)
+async def queue_debt_reminders(
+    payload: DebtReminderRequest,
+    current_user: User = Depends(require_accountant),
+    reminder_service: DebtReminderService = Depends(get_debt_reminder_service),
+) -> DebtReminderResponse:
+    return await reminder_service.queue(payload.student_ids, current_user.id)
 
 
 @router.get("/analytics/", response_model=DetailedAnalyticsResponse)

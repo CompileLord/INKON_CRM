@@ -19,9 +19,11 @@ from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatu
 from app.models.notification_log import NotificationLog
 from app.models.audit_log import AuditLog, AuditAction
 from app.models.exam_result_notification import ExamResultNotification, ExamResultNotificationStatus
+from app.models.debt_reminder_notification import DebtReminderNotification
 from app.models.telegram_link import TelegramLinkCode, TelegramChatPreference
 
 __all__ = [
+    "DebtReminderNotification",
     "StorageIntent",
     "CacheGeneration",
     "User",
