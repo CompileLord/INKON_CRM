@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock
 from typing import Any
+from httpx import AsyncClient, Response
+from app.models.debt_reminder_notification import DebtReminderNotification
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -217,3 +219,128 @@ async def test_recovery_does_not_enqueue_disabled_or_paid_rows(
     monkeypatch.setattr("app.core.redis.enqueue_job", enqueue)
     assert await tasks.recover_notification_deliveries({}) == 0
     enqueue.assert_not_awaited()
+
+
+class DebtPolicyFixture:
+    @staticmethod
+    async def preference(enabled: bool, payments_enabled: bool = True) -> None:
+        from conftest import TestingSessionLocal
+        session: AsyncSession
+        async with TestingSessionLocal() as session:
+            settings: OrgSettings | None = await session.get(OrgSettings, 1)
+            if settings is None:
+                session.add(OrgSettings(id=1, org_name="Synthetic", notify_debts=enabled, notify_payments=payments_enabled))
+            else:
+                settings.notify_debts = enabled
+                settings.notify_payments = payments_enabled
+            await session.commit()
+
+    @staticmethod
+    async def prepare(mentor: User) -> int:
+        from datetime import date
+        from app.tests.integration.debt_reminder_support import add_debt, create_student
+        student_id: int = await create_student("wp32-debt-policy@example.test", 991100, "en")
+        await add_debt(student_id, mentor.id, "Python", "25.00", date(2026, 1, 1))
+        return student_id
+
+
+@pytest.mark.asyncio
+async def test_disabled_debt_policy_prevents_manual_queue_and_audit(
+    client: AsyncClient, test_mentor: User, test_accountant: User,
+) -> None:
+    from app.models.audit_log import AuditLog
+    from app.tests.integration.debt_reminder_support import all_reminders, bearer
+    from conftest import TestingSessionLocal
+    student_id: int = await DebtPolicyFixture.prepare(test_mentor)
+    await DebtPolicyFixture.preference(False)
+    response: Response = await client.post("/api/v1/finance/debts/reminders", json={"student_ids": [student_id]}, headers=bearer(test_accountant))
+    assert response.status_code == 409
+    assert await all_reminders() == []
+    session: AsyncSession
+    async with TestingSessionLocal() as session:
+        assert await session.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.entity_type == "debt_reminder")) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("recover_claim", [False, True])
+async def test_disabled_debt_policy_blocks_claim_and_recovery(
+    test_mentor: User, test_accountant: User, recover_claim: bool,
+) -> None:
+    from datetime import datetime, timedelta, timezone
+    from app.repositories.sqlalchemy.debt_reminder_delivery_repository import SQLAlchemyDebtReminderDeliveryRepository
+    from app.tests.integration.debt_reminder_support import MutableClock, RecordingSender, all_reminders
+    from app.tests.integration.test_fin1a_debt_reminder_delivery import queue_reminder
+    from app.workers.debt_reminder_delivery import DebtReminderDeliveryWorker
+    from conftest import TestingSessionLocal
+    moment: datetime = datetime(2026, 3, 10, tzinfo=timezone.utc)
+    student_id: int = await DebtPolicyFixture.prepare(test_mentor)
+    await queue_reminder(student_id, test_accountant, moment)
+    if recover_claim:
+        session: AsyncSession
+        async with TestingSessionLocal() as session:
+            assert len(await SQLAlchemyDebtReminderDeliveryRepository(session).claim_due_batch("old", moment)) == 1
+            await session.commit()
+    await DebtPolicyFixture.preference(False)
+    sender: RecordingSender = RecordingSender()
+    assert await DebtReminderDeliveryWorker(TestingSessionLocal, sender, MutableClock(moment + timedelta(minutes=10))).run_once() == 0
+    assert sender.messages == []
+    row: DebtReminderNotification = (await all_reminders())[0]
+    assert row.status != "sent"
+    assert row.attempt_count == int(recover_claim)
+    await DebtPolicyFixture.preference(True, False)
+    assert await DebtReminderDeliveryWorker(TestingSessionLocal, sender, MutableClock(moment + timedelta(minutes=11))).run_once() == 1
+    assert len(sender.messages) == 1
+    row = (await all_reminders())[0]
+    assert row.status == "sent"
+    assert row.attempt_count == int(recover_claim) + 1
+
+
+@pytest.mark.asyncio
+async def test_disabling_debt_policy_after_claim_blocks_transport(
+    test_mentor: User, test_accountant: User, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import datetime, timezone
+    from app.repositories.sqlalchemy.debt_reminder_delivery_repository import SQLAlchemyDebtReminderDeliveryRepository
+    from app.tests.integration.debt_reminder_support import MutableClock, RecordingSender, all_reminders
+    from app.tests.integration.test_fin1a_debt_reminder_delivery import queue_reminder
+    from app.workers.debt_reminder_delivery import DebtReminderDeliveryWorker
+    from conftest import TestingSessionLocal
+    moment: datetime = datetime(2026, 3, 10, tzinfo=timezone.utc)
+    student_id: int = await DebtPolicyFixture.prepare(test_mentor)
+    await queue_reminder(student_id, test_accountant, moment)
+    session: AsyncSession
+    async with TestingSessionLocal() as session:
+        claimed: Any = await SQLAlchemyDebtReminderDeliveryRepository(session).claim_due_batch("claimed", moment)
+        await session.commit()
+    original: Any = SQLAlchemyDebtReminderDeliveryRepository.mark_send_started
+
+    async def disable_before_send_start(repository: Any, notification_id: int, owner: str, now: datetime) -> bool:
+        await DebtPolicyFixture.preference(False)
+        return await original(repository, notification_id, owner, now)
+
+    monkeypatch.setattr(SQLAlchemyDebtReminderDeliveryRepository, "mark_send_started", disable_before_send_start)
+    sender: RecordingSender = RecordingSender()
+    await DebtReminderDeliveryWorker(TestingSessionLocal, sender, MutableClock(moment)).deliver(claimed[0], "claimed")
+    assert sender.messages == []
+    row: DebtReminderNotification = (await all_reminders())[0]
+    assert row.status != "sent"
+    assert row.send_started_at is None
+
+
+@pytest.mark.asyncio
+async def test_manual_debt_reminders_ignore_payment_switch(
+    test_mentor: User, test_accountant: User,
+) -> None:
+    from datetime import datetime, timezone
+    from app.tests.integration.debt_reminder_support import MutableClock, RecordingSender, all_reminders
+    from app.tests.integration.test_fin1a_debt_reminder_delivery import queue_reminder
+    from app.workers.debt_reminder_delivery import DebtReminderDeliveryWorker
+    from conftest import TestingSessionLocal
+    moment: datetime = datetime(2026, 3, 10, tzinfo=timezone.utc)
+    student_id: int = await DebtPolicyFixture.prepare(test_mentor)
+    await DebtPolicyFixture.preference(True, False)
+    await queue_reminder(student_id, test_accountant, moment)
+    sender: RecordingSender = RecordingSender()
+    assert await DebtReminderDeliveryWorker(TestingSessionLocal, sender, MutableClock(moment)).run_once() == 1
+    assert len(sender.messages) == 1
+    assert (await all_reminders())[0].status == "sent"

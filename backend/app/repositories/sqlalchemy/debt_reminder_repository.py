@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.org_settings import OrgSettings
 from app.models.course import Course
 from app.models.debt_reminder_notification import DebtReminderNotification
 from app.models.enrollment import Enrollment
@@ -17,6 +18,10 @@ class SQLAlchemyDebtReminderRepository:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session: AsyncSession = session
+
+    async def notifications_enabled(self) -> bool:
+        enabled: bool | None = await self._session.scalar(select(OrgSettings.notify_debts).where(OrgSettings.id == 1))
+        return enabled is not False
 
     async def commit(self) -> None:
         await self._session.commit()
