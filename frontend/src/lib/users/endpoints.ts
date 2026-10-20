@@ -5,6 +5,8 @@ import type {
   MentorAnalyticsResponse,
   MentorProfileResponse,
   PaginatedUsers,
+  PasswordSmsDelivery,
+  PasswordSmsResendResponse,
   StudentJournalPeriod,
   StudentProfileResponse,
   TelegramLinkCode,
@@ -14,6 +16,8 @@ import type {
   UserSelfUpdate,
   UserUpdate,
 } from "./types";
+
+const PASSWORD_SMS_DELIVERY_STATUSES: string[] = ["pending", "claimed", "delivered", "failed", "expired"];
 
 export function createUser(payload: UserCreate): Promise<UserCreateResponse> {
   return httpClient.post<UserCreateResponse>("/users/", payload).then((res) => res.data);
@@ -105,5 +109,20 @@ export function getMentorAnalytics(id: number): Promise<MentorAnalyticsResponse>
 export function generateTelegramLinkCode(studentId: number): Promise<TelegramLinkCode> {
   return httpClient
     .post<TelegramLinkCode>(`/students/${studentId}/telegram-link-code`)
+    .then((res) => res.data);
+}
+
+export function resendPasswordSms(userId: number): Promise<PasswordSmsResendResponse> {
+  return httpClient
+    .post<PasswordSmsResendResponse>(`/users/${userId}/resend-password-sms`)
+    .then((res) => res.data);
+}
+
+export function listPasswordSmsDeliveries(userId: number): Promise<PasswordSmsDelivery[]> {
+  return httpClient
+    .get<PasswordSmsDelivery[]>("/users/password-sms-deliveries", {
+      params: { user_id: userId, status: PASSWORD_SMS_DELIVERY_STATUSES },
+      paramsSerializer: { indexes: null },
+    })
     .then((res) => res.data);
 }
