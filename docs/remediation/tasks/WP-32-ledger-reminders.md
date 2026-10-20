@@ -40,6 +40,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | `backend/app/tests/integration/wp32_reminder_support.py` | Bounded typed reminder test fixtures if required. |
 | `backend/app/tests/integration/test_remediation_wp32_policy.py` | Separate policy/delivery regression tests if needed for 20 KB cap. |
 | `backend/app/tests/integration/test_remediation_wp32_performance.py` | Measured batch/query-count/RSS tests if needed for 20 KB cap. |
+| `backend/app/tests/integration/test_notification_recovery.py` | Update only durable reminder send-text assertion to the current ledger amount/content; preserve recovery and deduplication checks. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

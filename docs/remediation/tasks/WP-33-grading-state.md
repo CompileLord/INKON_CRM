@@ -32,6 +32,14 @@ Reports are provenance links, not required reading for execution; the relevant p
 | `backend/app/services/student_profile_service.py` | Project internal explicit grading evidence without changing public types. |
 | `backend/app/repositories/interfaces/user_repository.py` | Internal proven/unknown summary counts in raw DTOs. |
 | `backend/app/tests/integration/test_remediation_wp33_migration.py` | Audit-proof backfill, unknown-state, additive replay and old-image compatibility tests under the 20 KB cap. |
+| `backend/app/tests/integration/test_student_profile_contract.py` | Set proven-grade fixtures explicitly; retain unknown-history assertions with unavailable grade aggregates. |
+| `backend/app/tests/integration/test_remediation_wp21.py` | Assert one explicit grading-transition audit while preserving race/version/rollback assertions. |
+| `backend/app/tests/integration/test_student_profile_history_contract.py` | Split existing profile contract tests below the enforced 20 KB cap. |
+| `backend/app/tests/integration/test_remediation_wp21_replay.py` | Split existing WP21 replay tests below the enforced 20 KB cap. |
+| `backend/app/tests/integration/test_student_cabinet_backend.py` | Change untouched-student rank expectation to unranked 0; preserve authorization/roster assertions. |
+| `backend/app/tests/integration/test_student_cabinet_journals.py` | Extract existing journal cabinet tests below 20 KB; preserve collected cases. |
+| `backend/app/tests/integration/test_integrations_and_polish.py` | Only two mentor grading fixtures/valid-ratio means, after WP32 explicitly releases file ownership; preserve population/auth/unknown-provenance assertions. |
+| `backend/app/tests/integration/test_mentor_grading_contract.py` | Extract the two mentor grading fixture tests after serialized ownership transfer; keep each file below 20 KB. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
