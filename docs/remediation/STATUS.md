@@ -70,10 +70,10 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-62 | todo | — | 2026-10-19 | Not run | User approved retention policy: application audit logs 7 days; deleted profiles/uploads 30-day recovery then remove/anonymize; encrypted rolling backups 30 days with deletion replay on restore; analytics caches 10 minutes plus deletion invalidation. No automatic financial/ledger deletion until accountant sets period. Implementation and operational evidence pending. No deletion implemented yet. |
 | WP-63 | todo | — | — | — | Pending. |
 | WP-64 | todo | — | — | — | Pending. |
-| WP-65 | in_progress | kitob/prod-1-access-uploads | 2026-10-21 | Running | Audit 2026-10-21: mentor document scope, bounded uploads, worker-loop render, uncollected/weak tests. |
-| WP-66 | in_progress | kitob/prod-2-delivery | 2026-10-21 | Running | Audit: attempts only on transport, SMTP deadline, archive timezone, downgrade drain guards, migration timeouts. |
+| WP-65 | done | master | 2026-10-21 | targeted 56 pass; full 1201 pass, residual fails match base (wp11/25/37 env) | PASS def63dd, merged f0d7684. Mentor docs limited to active-enrolment students; 5 mutations caught. Fixes 3/4 left to WP-41/49. wp20 lease fix not mutated. |
+| WP-66 | in_progress | kitob/prod-2-delivery | 2026-10-21 | c65a273 audited; targeted 47 pass; awaits master merge (SMS dispatcher must adopt begin_attempt/release_claim) | Audit: attempts only on transport, SMTP deadline, archive timezone, downgrade drain guards, migration timeouts. |
 | WP-67 | done | master | 2026-10-21 | deploy regression 21 pass (rerun by orchestrator); 8 mutations caught; bash -n 14 files | PASS 3078682/0577497/f92e34b. Real GitHub/VPS not exercised. ARQ check uses default 1h interval (→WP-68). |
 | WP-68 | todo | — | — | — | Audit: production TESTING/CORS guards, separate outbox key, uniform resend-code, short ARQ health interval. After WP-66. |
 | WP-69 | todo | — | — | — | Audit: payment idempotency, ordered copy locks, debtor cache, SQL analytics, measured indexes. After WP-46/53. |
 
-42/69 accepted; 27 remain. 2026-10-21: orchestration taken over (previous agent idle since 10-20 20:15); candidates 32/35/37/40/41/43/49 on remediation/combined-audit-20261020 await integration with master; 44/45/46 worktrees dirty, to resume. WP-65–69 added from production audit. Frontend handoffs in UX plan.
+43/69 accepted; 26 remain. 2026-10-21: orchestration taken over (previous agent idle since 10-20 20:15); candidates 32/35/37/40/41/43/49 on remediation/combined-audit-20261020 await integration with master; 44/45/46 worktrees dirty, to resume. WP-65–69 added from production audit. Frontend handoffs in UX plan.
