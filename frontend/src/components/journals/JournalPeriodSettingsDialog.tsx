@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { usePeriodName } from "../ui/periodName";
 import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
 import {
   JournalPeriodSettingsRules,
@@ -57,6 +58,7 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
   returnFocusSelector,
 }) => {
   const { t } = useTranslation(["journalPeriodSettings", "journals", "common"]);
+  const periodName: (label: string) => string = usePeriodName();
   const inputRef = useRef<HTMLInputElement>(null);
   const requestInFlightRef = useRef<boolean>(false);
   const [wasOpen, setWasOpen] = useState<boolean>(open);
@@ -225,13 +227,11 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
           <dd className="min-w-0 break-words font-medium text-ink">{courseTitle}</dd>
           <dt className="text-muted">{t("journalPeriodSettings:period")}</dt>
           <dd className="min-w-0 break-words font-medium text-ink">
-            {periodLabel}
+            {periodName(periodLabel)}
             <span className="block font-normal tabular-nums text-muted">
               {formatSchoolLessonDate(periodStart)} – {formatSchoolLessonDate(periodEnd)}
             </span>
           </dd>
-          <dt className="text-muted">{t("journalPeriodSettings:currentMaximum")}</dt>
-          <dd className="font-medium tabular-nums text-ink">{formatNumber(currentMaximum)}</dd>
         </dl>
         <p className="text-sm text-ink">{t("journalPeriodSettings:explanation")}</p>
         {highestExamScore !== null && (

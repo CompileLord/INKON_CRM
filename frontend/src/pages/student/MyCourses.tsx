@@ -1,36 +1,34 @@
-import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "../../components/PageHeader";
 import { useTranslation } from "react-i18next";
-import { BookOpen } from "lucide-react";
-import { useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
-import { CourseResultSummaries } from "../../lib/students/CourseResultSummary";
+import { useMyStudentProfile } from "../../lib/users/hooks";
 import type { StudentCourseProfile } from "../../lib/users/types";
-import { StudentCourseCard, type CourseResultState } from "../../components/student/StudentCourseCard";
-import { StudentBucketTabs, type CourseBucket } from "../../components/student/StudentBucketTabs";
+import { StudentCourseListRow } from "../../components/student/StudentCourseListRow";
+import { StaleNotice } from "../../components/pane/PaneStates";
 import { Button } from "../../components/ui/Button";
-import { BrandActivityIndicator } from "../../components/ui/BrandActivityIndicator";
-import { InfoTooltip } from "../../components/ui/InfoTooltip";
-import { JournalNotice, JournalPanelMessage } from "../../components/journals/JournalWorkspaceStates";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { PageContainer } from "../../components/ui/PageContainer";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { Tabs, tabPanelElementId, useTabParam, type TabDefinition } from "../../components/ui/Tabs";
 
-const CARD_GRID_CLASS: string = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3";
-const SKELETON_CARD_COUNT: number = 3;
+type CourseBucket = "active" | "archive";
 
-function CourseCardsSkeleton() {
+const BUCKET_IDS: readonly CourseBucket[] = ["active", "archive"];
+const SKELETON_ROW_COUNT: number = 3;
+const PANEL_ID_PREFIX: string = "my-courses";
+
+function CourseRowsSkeleton() {
   const { t } = useTranslation("student");
   return (
-    <div role="status" aria-busy="true" data-testid="courses-skeleton" className={CARD_GRID_CLASS}>
+    <div role="status" aria-busy="true" data-testid="courses-skeleton" className="flex flex-col">
       <span className="sr-only">{t("loadingCourses")}</span>
-      {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-        <div key={index} className="overflow-hidden rounded-2xl border border-border-warm bg-card">
-          <div className="flex flex-col gap-3 p-4">
-            <div className="flex items-center gap-3">
-              <BrandActivityIndicator size={22} aria-hidden="true" />
-              <div className="h-5 w-3/4 rounded-md bg-beige-dark motion-safe:animate-pulse" />
-            </div>
-            <div className="h-4 w-1/2 rounded-md bg-beige-dark motion-safe:animate-pulse" />
-            <div className="h-6 w-2/5 rounded-md bg-beige-dark motion-safe:animate-pulse" />
-            <div className="h-8 w-full rounded-md bg-beige-dark motion-safe:animate-pulse" />
+      {Array.from({ length: SKELETON_ROW_COUNT }, (_, index: number) => (
+        <div key={index} className="flex items-center gap-3 px-3 py-3 motion-safe:animate-pulse">
+          <div className="size-10 rounded-[10px] bg-strip" />
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="h-4 w-48 rounded bg-strip" />
+            <div className="h-3 w-32 rounded bg-strip" />
           </div>
+          <div className="h-4 w-16 rounded bg-strip" />
         </div>
       ))}
     </div>
@@ -39,58 +37,39 @@ function CourseCardsSkeleton() {
 
 export function MyCourses() {
   const { t } = useTranslation(["student", "common"]);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const bucket: CourseBucket = searchParams.get("bucket") === "archive" ? "archive" : "active";
+  const [bucket, selectBucket] = useTabParam(BUCKET_IDS, "active");
   const { data: profile, isLoading, isError, refetch } = useMyStudentProfile();
-  const journalsQuery = useMyStudentJournals();
-  const summaries = journalsQuery.data ? CourseResultSummaries.byCourse(journalsQuery.data) : null;
-  const resultsOf = (courseId: number): CourseResultState =>
-    summaries ? (summaries.get(courseId) ?? CourseResultSummaries.summarize([])) : journalsQuery.isError ? "unavailable" : "loading";
 
-  const selectBucket = (next: CourseBucket): void => {
-    setSearchParams(next === "archive" ? { bucket: "archive" } : {}, { replace: false });
-  };
-
-  const activeCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry) => entry.bucket === "active") : [];
-  const archiveCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry) => entry.bucket === "archive") : [];
+  const activeCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry: StudentCourseProfile) => entry.bucket === "active") : [];
+  const archiveCourses: StudentCourseProfile[] = profile ? profile.courses.filter((entry: StudentCourseProfile) => entry.bucket === "archive") : [];
   const visibleCourses: StudentCourseProfile[] = bucket === "archive" ? archiveCourses : activeCourses;
 
+  const tabs: TabDefinition[] = [
+    { id: "active", label: t("student:activeSegment"), count: profile ? activeCourses.length : undefined },
+    { id: "archive", label: t("student:archiveSegment"), count: profile ? archiveCourses.length : undefined },
+  ];
+
   const renderBody = () => {
-    if (isLoading) return <CourseCardsSkeleton />;
-    if (isError && !profile) {
-      return (
-        <JournalPanelMessage
-          tone="error"
-          title={t("coursesRefreshError")}
-          retryLabel={t("common:retry")}
-          onRetry={() => void refetch()}
-        />
-      );
-    }
+    if (isLoading) return <CourseRowsSkeleton />;
+    if (isError && !profile) return <ErrorState title={t("student:coursesRefreshError")} onRetry={() => void refetch()} />;
     if (visibleCourses.length === 0) {
       return bucket === "archive" ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-warm bg-card px-6 py-10 text-center">
-          <h2 className="text-base font-semibold text-ink">{t("noArchivedTitle")}</h2>
-          <p className="max-w-prose text-sm text-muted">{t("noArchivedBody")}</p>
-          <Button type="button" variant="secondary" onClick={() => selectBucket("active")}>
-            {t("returnToActive")}
-          </Button>
-        </div>
+        <EmptyState
+          title={t("student:noArchivedTitle")}
+          description={t("student:noArchivedBody")}
+          action={<Button type="button" variant="secondary" onClick={() => selectBucket("active")}>{t("student:returnToActive")}</Button>}
+        />
       ) : (
-        <JournalPanelMessage tone="empty" title={t("noCoursesTitle")} body={t("noCoursesBody")} />
+        <EmptyState title={t("student:noCoursesTitle")} description={t("student:noCoursesBody")} />
       );
     }
     return (
-      <div className="flex flex-col gap-3">
-        {isError && (
-          <JournalNotice tone="warning" action={{ label: t("common:retry"), onClick: () => void refetch() }}>
-            {t("coursesRefreshError")}
-          </JournalNotice>
-        )}
-        <ul className={CARD_GRID_CLASS} aria-label={bucket === "archive" ? t("archiveSegment") : t("activeSegment")}>
-          {visibleCourses.map((entry) => (
-            <li key={entry.course.id} className="flex min-w-0 flex-col [&>a]:flex-1">
-              <StudentCourseCard entry={entry} variant={bucket} results={resultsOf(entry.course.id)} />
+      <div className="flex flex-col gap-2">
+        {isError && <StaleNotice message={t("student:coursesRefreshError")} onRetry={() => void refetch()} />}
+        <ul className="flex flex-col" aria-label={bucket === "archive" ? t("student:archiveSegment") : t("student:activeSegment")}>
+          {visibleCourses.map((entry: StudentCourseProfile) => (
+            <li key={entry.course.id}>
+              <StudentCourseListRow entry={entry} />
             </li>
           ))}
         </ul>
@@ -99,21 +78,12 @@ export function MyCourses() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        titleIcon={<BookOpen className="h-6 w-6 text-maroon-text dark:text-accent" aria-hidden="true" />}
-        title={t("myCoursesTitle")}
-        info={<InfoTooltip label={t("coursesInfoLabel")}>{t("coursesInfo")}</InfoTooltip>}
-      />
-      <StudentBucketTabs
-        selected={bucket}
-        activeCount={profile ? activeCourses.length : null}
-        archiveCount={profile ? archiveCourses.length : null}
-        onSelect={selectBucket}
-      />
-      <div id="bucket-panel" role="tabpanel" aria-labelledby={`bucket-tab-${bucket}`}>
-        {renderBody()}
+    <PageContainer>
+      <PageHeader title={t("student:myCoursesTitle")} />
+      <Tabs tabs={tabs} value={bucket} onChange={selectBucket} ariaLabel={t("student:bucketTabsLabel")} idPrefix={PANEL_ID_PREFIX} />
+      <div role="tabpanel" id={tabPanelElementId(PANEL_ID_PREFIX, bucket)} aria-labelledby={`${PANEL_ID_PREFIX}-tab-${bucket}`}>
+        <div className="rounded-2xl border border-border bg-card p-2">{renderBody()}</div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -93,7 +93,8 @@ class JournalService(JournalQueryService):
             target_attendance = True if update_item.score > 0 else update_item.attendance
 
             if (
-                entry.attendance == target_attendance
+                entry.is_graded is True
+                and entry.attendance == target_attendance
                 and entry.score == update_item.score
                 and entry.comment == update_item.comment
             ):
@@ -117,6 +118,8 @@ class JournalService(JournalQueryService):
                 continue
 
             changes = {}
+            if entry.is_graded is not True:
+                changes["is_graded"] = (entry.is_graded, True)
             if entry.attendance != target_attendance:
                 changes["attendance"] = (entry.attendance, target_attendance)
             if entry.score != update_item.score:
@@ -127,10 +130,12 @@ class JournalService(JournalQueryService):
             if changes:
                 sanitized_comment: str | None = sanitize_html(update_item.comment) if update_item.comment is not None else None
                 entry_values_changed: bool = (
-                    entry.attendance != target_attendance
+                    entry.is_graded is not True
+                    or entry.attendance != target_attendance
                     or entry.score != update_item.score
                     or entry.comment != sanitized_comment
                 )
+                entry.is_graded = True
                 entry.attendance = target_attendance
                 entry.score = update_item.score
                 entry.comment = sanitized_comment
@@ -276,6 +281,9 @@ class JournalService(JournalQueryService):
             )
 
         previous_exam_score: int = summary.exam_score
+        previous_bonus_score: int = summary.bonus_score
+        previous_grading: bool | None = summary.is_graded
+        summary.is_graded = True
         summary.exam_score = exam_score
         summary.bonus_score = bonus_score
 
@@ -288,6 +296,15 @@ class JournalService(JournalQueryService):
                 detail="Conflict: The summary has been updated by another user. Please refresh and try again."
             )
 
+        from app.services.audit_service import AuditService
+        grading_changes: dict[str, tuple[object, object]] = {}
+        if previous_grading is not True:
+            grading_changes["is_graded"] = (previous_grading, True)
+        if previous_exam_score != exam_score:
+            grading_changes["exam_score"] = (previous_exam_score, exam_score)
+        if previous_bonus_score != bonus_score:
+            grading_changes["bonus_score"] = (previous_bonus_score, bonus_score)
+        await AuditService(self.db).log(current_user.id, "update", "journal_student_summary", summary.id, grading_changes)
         sum_service = SumCalculationService(self.db)
         await sum_service.recalculate(journal_id, student_id)
 

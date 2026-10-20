@@ -25,6 +25,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [frontend/src/lib/journals/types.ts:1](../../../frontend/src/lib/journals/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/lib/journals/useJournalAutosave.ts:1](../../../frontend/src/lib/journals/useJournalAutosave.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
+| `backend/app/core/journal_body_limit.py` | Pure ASGI route-specific pre-JSON body limiter, registered by main.py. |
 | [backend/app/tests/integration/test_remediation_wp35.py](../../../backend/app/tests/integration/test_remediation_wp35.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
@@ -48,6 +49,8 @@ Snapshot excerpt from `backend/app/api/v1/journals.py`:
 38: ) -> dict:
 39:     journal_service = JournalService(db)
 ```
+
+Policy (2026-10-20): Preserve the top-level JSON array and empty no-op. Accept at most 250 unique normalized student/date cells, comments at most 1000 Unicode code points, and body at most 4,194,304 actual bytes. Reject every repeated normalized key with 422, without selecting a winner. Reject over-byte-cap bodies with 413 before JSON/auth/service; count chunks regardless of Content-Length, retain at most the cap, do not drain unbounded excess, and preserve existing CORS/security headers. Ordinary upload routes remain unaffected. Current frontend queue owner, rather than wrapper, owns batching; exact frontend paths require serialized ownership before edits.
 
 ## Step-by-step change
 

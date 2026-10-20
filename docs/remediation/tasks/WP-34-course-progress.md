@@ -22,14 +22,16 @@ Reports are provenance links, not required reading for execution; the relevant p
 | File | Snapshot location / intent |
 |---|---|
 | [backend/app/api/v1/courses.py:197](../../../backend/app/api/v1/courses.py) | Existing file, anchor line 197; only this WP’s stated behavior may change. |
-| [backend/app/services/course_progress_service.py](../../../backend/app/services/course_progress_service.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
-| [backend/app/repositories/sqlalchemy/course_progress_repository.py](../../../backend/app/repositories/sqlalchemy/course_progress_repository.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| [backend/app/services/course_progress_service.py](../../../backend/app/services/course_progress_service.py) | Existing service; extend only this WP’s chart workflow. |
+| [backend/app/repositories/sqlalchemy/course_progress_repository.py](../../../backend/app/repositories/sqlalchemy/course_progress_repository.py) | Existing repository; extend typed chart snapshot without changing unrelated staff-progress semantics. |
+| `backend/app/repositories/interfaces/course_progress_repository.py` | Carry explicit grading evidence and chart cohort/color fields through repository DTOs. |
 | [backend/app/schemas/course_progress.py](../../../backend/app/schemas/course_progress.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/lib/courses/types.ts:1](../../../frontend/src/lib/courses/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp34.py](../../../backend/app/tests/integration/test_remediation_wp34.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/tests/integration/test_integrations_and_polish.py` | After WP32 releases ownership: only test_progress_chart_endpoint intended-grade fixture; preserve other tests. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
-| [frontend/src/components/student/StudentTrendChart.tsx:1](../../../frontend/src/components/student/StudentTrendChart.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
+
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
 
@@ -65,10 +67,12 @@ Snapshot excerpt from `backend/app/api/v1/courses.py`:
 
 ## Step-by-step change
 
+Policy (2026-10-20): Active nondeleted student enrollment cohort defines class means/size/ranks; authorized historical self stays separate. Ratios require explicit TRUE grading, started period and positive maximum; deliberate zero counts, unknown/ungraded/max-zero ratios are null. Preserve ordered future slots as upcoming/null. Student mean averages eligible periods; trailing class mean averages eligible active students’ unrounded means. Rank descending unrounded mean then student ID, absent for ineligible students. Emit aligned grading metadata; preserve unrelated staff/class-progress semantics. CONTRACT.md is explicitly exempt in the existing generated-file hook.
+
 1. Extract the existing chart operation into a typed CourseProgressService/repository result with one active/historical cohort and explicit graded-period denominator.
 2. Return an absent rank for students outside the ranked cohort instead of class_size+1; coordinate nullable type in the client contract.
 3. Index retained summaries once by journal/student so grouping is O(S+J), preserving privacy; this fixes computation, while request range/roster bounds are WP-58.
-4. If the chart returns explicit grading metadata to distinguish a graded zero, adapt StudentTrendChart rather than inferring graded periods from percentage > 0. Keep this a contract-consumer adjustment, not a frontend redesign.
+4. Return explicit grading metadata to distinguish graded zero from unknown/ungraded periods. The previously listed StudentTrendChart does not exist. Frontend source is separately owned: provide exact contract/consumer handoff and coordinate actual caller paths before changing frontend files; do not create a speculative component. Keep this a contract-consumer adjustment, not a redesign.
 
 ## Tests to write BEFORE the fix
 

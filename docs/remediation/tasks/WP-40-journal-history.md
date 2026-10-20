@@ -29,6 +29,16 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [frontend/src/lib/users/hooks.ts:1](../../../frontend/src/lib/users/hooks.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp40.py](../../../backend/app/tests/integration/test_remediation_wp40.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/repositories/sqlalchemy/student_performance_repository.py` | Replace the actual unbounded history implementation with bounded delegation; preserve WP33 ranking. |
+| `backend/app/repositories/interfaces/student_journal_history_repository.py` | NEW: narrow page/access boundary and typed slice records. |
+| `backend/app/repositories/sqlalchemy/student_journal_history_repository.py` | NEW: enrollment EXISTS, stable keyset and page-only summaries. |
+| `backend/app/services/student_journal_history_service.py` | NEW: authorization, history workflow and legacy overflow semantics. |
+| `backend/app/services/student_journal_history_cursor.py` | NEW: bounded validated filter-bound cursor codec class. |
+| `backend/app/schemas/student_journal_history.py` | NEW: strict cursor/query/page response models. |
+| `backend/app/core/deps.py` | Wire history service/repository with Depends. |
+| `backend/app/tests/integration/test_remediation_wp40_cursor.py` | NEW: cursor validation regressions if needed for module size. |
+| `backend/app/tests/integration/test_remediation_wp40_performance.py` | NEW: measured bounded rows/parameters at history scale. |
+| `backend/app/tests/integration/test_remediation_wp33.py` | Adapt only two direct retired-history repository calls to the new bounded history service; preserve every grading assertion. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [frontend/src/pages/student/MyCourseDetail.tsx:1](../../../frontend/src/pages/student/MyCourseDetail.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/components/dashboard/StudentDashboard.tsx:1](../../../frontend/src/components/dashboard/StudentDashboard.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
@@ -108,7 +118,7 @@ Primary risks are semantic drift, migration/client incompatibility and larger sh
 
 ## Dependencies and execution order
 
-Functional prerequisites: WP-39.
+Functional prerequisites: WP-39 and the accepted WP-41 backend privacy result.
 
 Required shared-file / migration ordering:
 - WP-39 → WP-40: `backend/app/repositories/sqlalchemy/user_repository.py`.
@@ -123,3 +133,11 @@ Complete prerequisites first and start from their merged result. Do not require 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
 Use branch `remediation/wp-40-journal-history` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
+
+### Current-source and staged compatibility correction (2026-10-20)
+
+The unbounded implementation moved to student_performance_repository.py. Extract it into the bounded history repository instead of growing that 17KB performance module beyond the source limit. Preserve WP33 eligibility, zero scores and future/unknown state semantics. Root has explicitly moved WP41 privacy ahead of WP40; preserve its new schemas/Protocol method.
+
+Backend contract: add GET /students/me/journals/page with page_size default20, maximum100, optional course_id and started_only. Return items and nullable next_cursor; fetch at most limit+1 journal rows with enrollment EXISTS and order period_start DESC,id DESC, then fetch only returned-page summaries. Authorize the requested course before paging (403 when not enrolled); student identity always comes from the authenticated caller. A strict bounded cursor carries version, student, course filter, started_only/cutoff and last date/id, rejecting malformed or cross-filter/student cursors with422. Freeze the started cutoff across pages so midnight does not change a traversal. Latest-started dashboard calls page_size1 plus started_only instead of filtering a page containing future rows.
+
+The legacy array endpoint/repository path must use the same capped operation: preserve exact array semantics for at most100 rows and return explicit409 on overflow, without materializing the lifetime or silently truncating. This is staged integration, not permission to deploy an incompatible client: FE-R40 remains a frontend-owner release prerequisite and the WP stays incomplete until navigation and chart completeness are synchronized. Course-card aggregates already come from profile payloads after UX5d; MyCourses no longer consumes journal history. Actual current history consumers are MyCourseDetail, StudentDashboard and useStudentProgressSeries/StudentProgressPanel. Do not auto-fetch all pages to recreate an unbounded history. No frontend writes by backend executors. Regenerate contract serially after WP41; add any further frontend handoff detail to the existing UX plan/status through root.

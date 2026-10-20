@@ -1,8 +1,10 @@
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import List
+from typing import Any, List
 from fastapi import HTTPException, status
-from sqlalchemy import select, func, case
+from sqlalchemy import Row, Select, select, func, case
+from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.selectable import Subquery
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
@@ -50,23 +52,27 @@ class JournalQueryService:
 
         journal_ids = [j.id for j in journals]
 
-        entry_counts_stmt = select(
+        entry_counts_stmt: Select[Any] = select(
             JournalEntry.journal_id,
             func.count(JournalEntry.id)
-        ).filter(
-            JournalEntry.journal_id.in_(journal_ids)
+        ).join(Journal, Journal.id == JournalEntry.journal_id).filter(
+            JournalEntry.journal_id.in_(journal_ids),
+            JournalEntry.is_graded.is_(True),
+            Journal.period_start <= date.today(),
         ).group_by(JournalEntry.journal_id)
         entry_counts_res = await self.db.execute(entry_counts_stmt)
         entry_counts_map = dict(entry_counts_res.all())
 
-        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=0.0)
+        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=None)
 
-        summary_avg_stmt = select(
+        summary_avg_stmt: Select[Any] = select(
             JournalStudentSummary.journal_id,
             func.avg(pct_expr),
             func.avg(JournalStudentSummary.sum_score)
-        ).filter(
-            JournalStudentSummary.journal_id.in_(journal_ids)
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).filter(
+            JournalStudentSummary.journal_id.in_(journal_ids),
+            JournalStudentSummary.is_graded.is_(True),
+            Journal.period_start <= date.today(),
         ).group_by(JournalStudentSummary.journal_id)
         summary_avg_res = await self.db.execute(summary_avg_stmt)
         summary_avg_rows = list(summary_avg_res.all())
@@ -117,10 +123,10 @@ class JournalQueryService:
         AT_RISK_THRESHOLD = 60
 
         journals_agg = await self.get_course_journals_aggregated(course_id)
-        periods_total = len(journals_agg)
+        periods_total = sum(j.state != "upcoming" for j in journals_agg)
         periods_complete = sum(1 for j in journals_agg if j.state == "complete")
 
-        journal_ids = [j.id for j in journals_agg]
+        journal_ids = [j.id for j in journals_agg if j.state != "upcoming"]
         if not journal_ids:
             return CourseJournalMetricsResponse(
                 class_avg_percentage=0.0,
@@ -131,15 +137,15 @@ class JournalQueryService:
                 at_risk_threshold=AT_RISK_THRESHOLD,
             )
 
-        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=0.0)
+        pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=None)
 
-        summary_totals_stmt = select(
+        summary_totals_stmt: Select[Any] = select(
             func.avg(pct_expr),
             func.sum(JournalStudentSummary.attendance_count),
             func.sum(JournalStudentSummary.total_lessons),
             func.avg(JournalStudentSummary.sum_score),
             func.avg(JournalStudentSummary.max_period_score)
-        ).filter(JournalStudentSummary.journal_id.in_(journal_ids))
+        ).filter(JournalStudentSummary.journal_id.in_(journal_ids), JournalStudentSummary.is_graded.is_(True))
         summary_res = await self.db.execute(summary_totals_stmt)
         avg_pct, sum_att, sum_lessons, avg_score_raw, avg_max_score_raw = summary_res.first() or (0.0, 0, 0, None, None)
 
@@ -151,11 +157,12 @@ class JournalQueryService:
         if sum_lessons and sum_lessons > 0 and sum_att is not None:
             attendance_rate = round((float(sum_att) / float(sum_lessons)) * 100.0, 1)
 
-        student_avg_stmt = select(
+        student_avg_stmt: Select[Any] = select(
             JournalStudentSummary.student_id,
             func.avg(pct_expr)
         ).filter(
-            JournalStudentSummary.journal_id.in_(journal_ids)
+            JournalStudentSummary.journal_id.in_(journal_ids),
+            JournalStudentSummary.is_graded.is_(True),
         ).group_by(JournalStudentSummary.student_id)
         student_avg_res = await self.db.execute(student_avg_stmt)
         at_risk_count = 0
@@ -386,24 +393,30 @@ class JournalQueryService:
             class_size_res = await self.db.execute(all_course_enrollments_query)
             class_size = class_size_res.scalar() or 0
 
-            period_summaries_query = select(JournalStudentSummary).filter(
-                JournalStudentSummary.journal_id == journal_id
+            eligible: tuple[ColumnElement[bool], ...] = (
+                JournalStudentSummary.journal_id == journal_id,
+                JournalStudentSummary.is_graded.is_(True),
+                Journal.period_start <= date.today(),
             )
-            period_summaries_res = await self.db.execute(period_summaries_query)
-            period_summaries = list(period_summaries_res.scalars().all())
-
-            if period_summaries:
-                valid_sums = [ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries if s.max_period_score > 0]
-                class_avg_percentage = round(sum(valid_sums) / len(valid_sums), 1) if valid_sums else 0.0
-                class_avg_score = round(sum(s.sum_score for s in period_summaries) / len(period_summaries), 1)
-
-                student_pcts = {s.student_id: ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in period_summaries}
-                sorted_student_ids = sorted(student_pcts.keys(), key=lambda sid: student_pcts[sid], reverse=True)
-                my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
-            else:
-                class_avg_percentage = 0.0
-                class_avg_score = 0.0
-                my_rank = 1
+            averages: Row[Any] = (await self.db.execute(select(
+                func.avg(case((JournalStudentSummary.max_period_score > 0,
+                    JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score))),
+                func.avg(JournalStudentSummary.sum_score),
+            ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(*eligible))).one()
+            class_avg_percentage = round(float(averages[0]), 1) if averages[0] is not None else 0.0
+            class_avg_score = round(float(averages[1]), 1) if averages[1] is not None else 0.0
+            ranked: Subquery = select(
+                JournalStudentSummary.student_id.label("student_id"),
+                func.row_number().over(order_by=(
+                    (JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).desc(),
+                    JournalStudentSummary.student_id.asc(),
+                )).label("rank"),
+            ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(
+                *eligible, JournalStudentSummary.max_period_score > 0,
+            ).subquery()
+            my_rank: int = (await self.db.execute(
+                select(ranked.c.rank).where(ranked.c.student_id == current_user.id)
+            )).scalar_one_or_none() or 0
 
             result_dict["class_size"] = class_size
             result_dict["class_avg_percentage"] = class_avg_percentage

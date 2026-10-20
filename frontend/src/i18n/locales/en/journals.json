@@ -62,8 +62,7 @@
     "stateComplete": "Complete",
     "stateUnavailable": "Unavailable",
     "latest": "Latest",
-    "upcoming": "Upcoming",
-    "past": "Past"
+    "upcoming": "Upcoming"
   },
   "table": {
     "students": "Students",
@@ -152,17 +151,8 @@
   "workspace": {
     "periodPickerLabel": "Period",
     "periodSettings": "Period settings",
-    "tabsLabel": "Journal sections",
     "tabs": {
-      "gradebook": "Gradebook",
-      "progress": "Progress"
-    },
-    "lessonNav": {
-      "label": "Lesson navigation",
-      "previous": "Previous lesson",
-      "next": "Next lesson",
-      "today": "Today",
-      "none": "No lessons"
+      "gradebook": "Gradebook"
     },
     "notice": {
       "period": "That period is not part of this course. Showing {{period}} instead.",
@@ -180,11 +170,9 @@
   },
   "grid": {
     "regionLabel": "Gradebook grid, {{period}}",
-    "scrollHint": "Scroll sideways to see more lessons",
     "refreshFailed": "Could not refresh the journal. Showing the last loaded data.",
     "noLessonsTitle": "No lessons in this period",
-    "noLessonsBody": "Lessons appear here when the course schedule has lessons in this period. Summary is still available.",
-    "scrollHintLabel": "About horizontal scrolling"
+    "noLessonsBody": "Lessons appear here when the course schedule has lessons in this period. Summary is still available."
   },
   "help": {
     "button": "Keyboard shortcuts",
@@ -209,20 +197,6 @@
   "summary": {
     "unavailable": "Unavailable"
   },
-  "lesson": {
-    "heading": "Lesson roster, {{period}}",
-    "listLabel": "Students for the selected lesson",
-    "present": "Present",
-    "scoreValue": "Score {{value}}",
-    "scoreAria": "Score for {{name}}: {{value}}. Choose a score",
-    "attendanceAria": "Present: {{name}}",
-    "addComment": "Add comment",
-    "editComment": "Edit comment",
-    "addCommentAria": "Add comment for {{name}}",
-    "editCommentAria": "Read or edit comment for {{name}}",
-    "errorLine": "This change was not saved. Use Retry in the status line.",
-    "conflictLine": "This change conflicts with newer data. Use Review in the status line."
-  },
   "picker": {
     "title": "Score for {{name}}, {{date}}",
     "clear": "Clear"
@@ -245,42 +219,23 @@
   "progress": {
     "scope": "Whole course, all periods",
     "scopeNote": "Average of stored totals for every period of this course. Missing results show as Unavailable.",
-    "tableLabel": "Class results by period",
-    "columns": {
-      "student": "Student",
-      "average": "Average",
-      "trend": "Trend",
-      "sortBy": "Sort by {{column}}"
-    },
-    "unavailable": "Unavailable",
     "classAverage": "Class average",
     "legendLabel": "Chart series",
     "loadFailedBody": "Your gradebook and unsaved changes are not affected.",
     "loadFailedBodyStudent": "Your results are not affected. Try again in a moment.",
     "refreshFailed": "Could not refresh progress. Showing the last loaded results.",
-    "noPeriodsTitle": "No periods to show yet",
-    "noPeriodsBody": "Results appear here once the course has journal periods.",
-    "noStudentsTitle": "No students in this course",
-    "noStudentsBody": "Once students are enrolled, each period shows how many have a stored result and their class average.",
     "chart": {
-      "label": "Percentage by period",
+      "label": "Scores by period",
       "hint": "Use the left and right arrow keys to move between periods.",
       "noValues": "No stored results",
       "entry": "{{name}} {{value}}"
     },
-    "infoLabel": "About these results",
     "showAll": "Show all",
     "hideAll": "Hide all",
     "moreCount": "+{{count}} more",
     "moreList": "More students",
     "moreListLabel": "Choose students to plot",
-    "trendWord": {
-      "up": "up",
-      "down": "down",
-      "flat": "unchanged"
-    },
-    "noStartedTitle": "No period has started yet",
-    "noStartedBody": "Results appear here once the first period starts."
+    "maximum": "Maximum"
   },
   "readOnly": {
     "you": "You"

@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronsRight } from "lucide-react";
-import { InfoTooltip } from "../ui/InfoTooltip";
 import { JournalLessonColumnMenu } from "./JournalLessonColumnMenu";
 import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
 import { useJournalGridViewport } from "./useJournalGridViewport";
@@ -41,8 +39,7 @@ interface GridFocus {
 const STICKY_STUDENT_COLUMN_PX = 200;
 const LESSON_COLUMN_PX = 128;
 const SUMMARY_FIELD_COLUMN_PX = 96;
-const TOTAL_COLUMN_PX = 80;
-const PERCENTAGE_COLUMN_PX = 80;
+const TOTAL_COLUMN_PX = 136;
 const SHELL_HEADER_OFFSET = "calc(3.5rem + 1px + env(safe-area-inset-top))";
 const VISIBLE_EDGE_PADDING_PX = 8;
 const DEFAULT_EXAM_MAXIMUM = 100;
@@ -91,8 +88,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     STICKY_STUDENT_COLUMN_PX +
     lessonDates.length * LESSON_COLUMN_PX +
     2 * SUMMARY_FIELD_COLUMN_PX +
-    TOTAL_COLUMN_PX +
-    PERCENTAGE_COLUMN_PX;
+    TOTAL_COLUMN_PX;
 
   const defaultLesson: string | undefined =
     selectedLesson && lessonDates.includes(selectedLesson) ? selectedLesson : lessonDates[0];
@@ -107,7 +103,11 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     focus !== null && focusIsValid ? cellKeyOf(focus.studentId, focus.lessonDate) : defaultKey;
   const focusFromKeyboard: boolean = focusIsValid && focus !== null && focus.fromKeyboard;
 
+  const lastAlignedLesson = useRef<string | undefined>(selectedLesson);
+
   useEffect(() => {
+    if (lastAlignedLesson.current === selectedLesson) return;
+    lastAlignedLesson.current = selectedLesson;
     const region: HTMLDivElement | null = regionRef.current;
     const header: HTMLTableCellElement | undefined = selectedLesson ? headerRefs.current.get(selectedLesson) : undefined;
     if (!region || !header) return;
@@ -170,19 +170,8 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     [effectiveEditing, students],
   );
 
-  const showScrollCue: boolean = viewport.canScrollLeft || viewport.canScrollRight;
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex min-h-6 items-center justify-end">
-        {showScrollCue && (
-          <span className="flex items-center gap-1 text-muted" data-testid="journal-scroll-cue">
-            <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-            <InfoTooltip label={t("grid.scrollHintLabel")}>{t("grid.scrollHint")}</InfoTooltip>
-          </span>
-        )}
-      </div>
-
       <div className="relative">
         <div
           ref={headerStripRef}
@@ -199,7 +188,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: TOTAL_COLUMN_PX }} />
-              <col style={{ width: PERCENTAGE_COLUMN_PX }} />
             </colgroup>
             <thead>
               <tr>
@@ -251,10 +239,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
                   {t("table.sum")}
                 </th>
-
-                <th scope="col" className="border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  %
-                </th>
               </tr>
             </thead>
           </table>
@@ -279,7 +263,6 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: TOTAL_COLUMN_PX }} />
-              <col style={{ width: PERCENTAGE_COLUMN_PX }} />
             </colgroup>
             <tbody>
               {students.map((student) => (

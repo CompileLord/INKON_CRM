@@ -39,12 +39,13 @@ describe("Period settings: exam maximum", () => {
     updateExamMaxMock.mockImplementation(async (_journalId, payload) => examResponse(payload.exam_max_score ?? 100));
   });
 
-  it("shows course, period name and range, current maximum, allowed range and the recalculation explanation", async () => {
+  it("shows course, period name and range, the maximum only in the input, allowed range and the recalculation explanation", async () => {
     const dialog = await openSettings();
     expect(within(dialog).getByText("Algebra Intensive")).toBeDefined();
     expect(within(dialog).getByText("Month 10")).toBeDefined();
     expect(dialog.textContent).toContain(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
-    expect(within(dialog).getByText("Current exam maximum").nextElementSibling?.textContent).toBe("100");
+    expect(within(dialog).queryByText("Current exam maximum")).toBeNull();
+    expect(dialog.querySelectorAll("dt")).toHaveLength(2);
     expect(within(dialog).getByText("Whole number from 0 to 100")).toBeDefined();
     expect(dialog.textContent).toContain("recalculates the grading denominator of this period");
     expect(maximumInput().value).toBe("100");

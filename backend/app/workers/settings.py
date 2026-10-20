@@ -3,6 +3,7 @@ from arq import cron, func
 from arq.connections import RedisSettings
 from app.core.config import settings
 from app.core.redis import RedisConnectionConfiguration
+from app.workers.debt_reminder_delivery import deliver_due_debt_reminders
 from app.workers.tasks import (
     send_verification_email_task,
     send_telegram_message,
@@ -56,6 +57,7 @@ class WorkerSettings:
         func(send_exam_result_notification_task, keep_result=0),
         send_student_document_notification_task,
         deliver_due_exam_results,
+        deliver_due_debt_reminders,
         recover_notification_deliveries,
         send_email
     ]
@@ -63,7 +65,8 @@ class WorkerSettings:
         cron(archive_expired_courses, hour=20, minute=0),
         cron(check_payment_reminders, hour=4, minute=0),
         cron(recover_notification_deliveries, second={15, 45}, run_at_startup=False),
-        cron(deliver_due_exam_results, second={0, 30}, run_at_startup=False)
+        cron(deliver_due_exam_results, second={0, 30}, run_at_startup=False),
+        cron(deliver_due_debt_reminders, second={10, 40}, run_at_startup=False)
     ]
     on_startup = outbox_worker_startup
     on_shutdown = outbox_worker_shutdown

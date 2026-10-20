@@ -24,6 +24,8 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [frontend/src/pages/MentorProfile.tsx:1](../../../frontend/src/pages/MentorProfile.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp41.py](../../../backend/app/tests/integration/test_remediation_wp41.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/repositories/interfaces/user_repository.py` | Narrow student-visible mentor course projection contract if needed. |
+| `backend/app/repositories/sqlalchemy/user_repository.py` | Database-only authorized mentor card course projection; preserve other operations. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [frontend/src/lib/users/hooks.ts:1](../../../frontend/src/lib/users/hooks.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/lib/users/endpoints.ts:1](../../../frontend/src/lib/users/endpoints.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
@@ -97,10 +99,12 @@ Primary risks are semantic drift, migration/client incompatibility and larger sh
 
 ## Dependencies and execution order
 
-Functional prerequisites: WP-40.
+Functional prerequisites: WP-39.
+
+Execution-order correction (2026-10-20): prioritize this independent privacy fix before WP-40. It needs no paged-history API. Its new mentor card schemas are disjoint from history schemas; contract generation is serialized. WP-40 must start from this accepted backend result and preserve the card/Protocol additions. Frontend client synchronization remains a separate-owner handoff.
 
 Required shared-file / migration ordering:
-- WP-40 → WP-41: `backend/app/schemas/user.py`, `frontend/src/lib/users/types.ts`, `CONTRACT.md`, `frontend/src/lib/users/hooks.ts`, `frontend/src/lib/users/endpoints.ts`, `frontend/src/pages/student/MyCourseDetail.tsx`, `frontend/src/components/dashboard/StudentDashboard.tsx`.
+- WP-41 → WP-40: `backend/app/schemas/user.py`, `frontend/src/lib/users/types.ts`, `CONTRACT.md`, `frontend/src/lib/users/hooks.ts`, `frontend/src/lib/users/endpoints.ts`, `frontend/src/pages/student/MyCourseDetail.tsx`, `frontend/src/components/dashboard/StudentDashboard.tsx`.
 
 Complete prerequisites first and start from their merged result. Do not require reading their WP files: their IDs, required interfaces/behavior and shared-file order are given here. Stop if the prerequisite result is absent. Parallel work is allowed only with disjoint source files and no dependency; STATUS row integration is serialized.
 
@@ -109,3 +113,7 @@ Complete prerequisites first and start from their merged result. Do not require 
 **S**: localized change or narrowly scoped evidence collection.
 
 Use branch `remediation/wp-41-student-mentor-card` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
+
+### Current-source correction (2026-10-20)
+
+A course filter alone is insufficient: UserResponse contains private contact, DOB and parent fields. Return a dedicated typed student mentor card with public identity (id, first_name, last_name, photo_path, thumbnail_path) and only authorized nondeleted enrolled courses, using a minimal course identity projection rather than a full internal course schema. Do not calculate or return mentor-wide aggregates for students. Preserve full authorized staff shape; use an explicit response union and verify serialization cannot select a more permissive branch or reintroduce excluded properties. Student access must require a nondeleted student enrollment and nondeleted mentor/course; preserve documented historical enrollment access unless the existing guard requires active status. Put new database projection work in repositories, not controller SQL. Regenerate only this endpoint contract after the other contract writer releases ownership. Frontend changes remain with the separate owner and must be recorded in the existing UX plan/status; no frontend edits by this executor.
