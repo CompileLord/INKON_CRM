@@ -16,7 +16,7 @@ const items: (NavigationItem & { access: NavKey })[] = [
 ];
 export function navigationFor(role: Role, userId: number | null): NavigationItem[] {
   const allowed = items.filter((item) => NAV_ACCESS[role].includes(item.access));
-  if ((role === "student" || role === "mentor") && userId !== null) allowed.push({ access: "settings", key: "nav.ownProfile", to: `/${role === "student" ? "students" : "mentors"}/${userId}`, icon: UserRound });
+  if (role === "mentor" && userId !== null) allowed.push({ access: "settings", key: "nav.ownProfile", to: `/mentors/${userId}`, icon: UserRound });
   return [...allowed, { key: "nav.notifications", to: "/notifications", icon: Bell }].filter((item) => isPathAllowed(role, item.to, userId));
 }
 export function primaryNavigation(role: Role, userId: number | null): NavigationItem[] {

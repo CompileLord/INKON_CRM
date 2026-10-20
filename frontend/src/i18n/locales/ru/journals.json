@@ -64,7 +64,8 @@
     "stateComplete": "Завершен",
     "stateUnavailable": "Недоступно",
     "latest": "Последний",
-    "upcoming": "Предстоящий"
+    "upcoming": "Предстоящий",
+    "past": "Завершён"
   },
   "table": {
     "students": "Студенты",
@@ -90,12 +91,13 @@
     "readOnlyCellLabel": "Посещение, оценка и комментарий: {{name}}, {{date}}",
     "present": "Присутствует",
     "absent": "Отсутствует",
-    "hasComment": "Есть комментарий",
     "notRecorded": "Не отмечено",
     "examCellLabel": "Оценка за экзамен: {{name}}",
     "bonusCellLabel": "Бонус: {{name}}",
     "addStudents": "Добавить студентов",
-    "noStudentsAdminBody": "Добавьте студентов в список курса, чтобы начать выставлять оценки."
+    "noStudentsAdminBody": "Добавьте студентов в список курса, чтобы начать выставлять оценки.",
+    "openComment": "Прочитать комментарий за {{date}}",
+    "commentDialogTitle": "Комментарий, {{date}}"
   },
   "cellStatus": {
     "dirty": "Несохранённое изменение",

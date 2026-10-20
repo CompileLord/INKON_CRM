@@ -1,12 +1,17 @@
 export class JournalChartPreference {
   static readonly STORAGE_KEY: string = "journal-progress-chart-collapsed";
 
-  static readCollapsed(): boolean {
+  static readStored(): boolean | null {
     try {
-      return window.localStorage.getItem(JournalChartPreference.STORAGE_KEY) === "1";
+      const stored: string | null = window.localStorage.getItem(JournalChartPreference.STORAGE_KEY);
+      return stored === null ? null : stored === "1";
     } catch {
-      return false;
+      return null;
     }
+  }
+
+  static readCollapsed(): boolean {
+    return JournalChartPreference.readStored() ?? false;
   }
 
   static writeCollapsed(collapsed: boolean): void {
