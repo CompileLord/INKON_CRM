@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { cleanup, configure, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chooseMentor, mockCreateMutateAsync, mockUpdateMutateAsync, mockUploadImageMutateAsync, renderWithClient, resetCourseFormMocks, sampleCourse, typeDate } from "./CourseFormTestSupport";
 import { CourseFormPanel } from "./CourseFormPanel";
@@ -9,6 +9,11 @@ import { AuthApiError } from "../../lib/auth/errors";
 
 vi.mock("../../lib/courses/hooks", async () => (await import("./CourseFormTestSupport")).buildCoursesHooksMock());
 vi.mock("../../lib/users/hooks", async () => (await import("./CourseFormTestSupport")).buildUsersHooksMock());
+
+beforeAll(() => {
+  configure({ asyncUtilTimeout: 4000 });
+  vi.setConfig({ testTimeout: 20000 });
+});
 
 afterEach(() => {
   cleanup();

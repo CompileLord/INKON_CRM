@@ -2,6 +2,7 @@
   "title": "Курсы и Группы",
   "addCourse": "Создать курс",
   "editCourse": "Редактировать курс",
+  "searchStudent": "Поиск студента…",
   "searchPlaceholder": "Поиск курса по названию...",
   "filter": {
     "all": "Все",

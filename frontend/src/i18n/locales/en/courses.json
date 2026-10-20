@@ -2,6 +2,7 @@
   "title": "Courses & Groups",
   "addCourse": "Create Course",
   "editCourse": "Edit Course",
+  "searchStudent": "Search student…",
   "searchPlaceholder": "Search course by title...",
   "filter": {
     "all": "All",
