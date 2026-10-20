@@ -28,7 +28,7 @@ export function LocationControls() {
 export function setup(state?: Record<string, unknown>, path = "/mentors/10") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } } });
   clients.push(queryClient);
-  render(<QueryClientProvider client={queryClient}><I18nextProvider i18n={i18n}><MemoryRouter initialEntries={[{ pathname: path, state }]}><LocationControls /><Routes><Route path="/mentors/:id" element={<MentorProfile />} /><Route path="/mentors" element={<h1>Teacher directory</h1>} /><Route path="/courses/:id" element={<h1>Course destination</h1>} /><Route path="/" element={<h1>Dashboard destination</h1>} /></Routes></MemoryRouter></I18nextProvider></QueryClientProvider>);
+  render(<QueryClientProvider client={queryClient}><I18nextProvider i18n={i18n}><MemoryRouter initialEntries={[{ pathname: path.split("?")[0], search: path.includes("?") ? `?${path.split("?")[1]}` : "", state }]}><LocationControls /><Routes><Route path="/mentors/:id" element={<MentorProfile />} /><Route path="/mentors" element={<h1>Teacher directory</h1>} /><Route path="/courses/:id" element={<h1>Course destination</h1>} /><Route path="/" element={<h1>Dashboard destination</h1>} /></Routes></MemoryRouter></I18nextProvider></QueryClientProvider>);
   return queryClient;
 }
 

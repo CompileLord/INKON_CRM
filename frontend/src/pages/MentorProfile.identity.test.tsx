@@ -27,11 +27,11 @@ describe("Mentor profile authorization and state", () => {
     vi.mocked(endpoints.getMentorAnalytics).mockReturnValue(new Promise(resolve => { finish = resolve; }));
     setup({ profileTab: "performance" });
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    expect(screen.getByText("Loading course and student totals…")).toBeDefined();
+    expect(screen.getByText("Loading results")).toBeDefined();
     expect(screen.queryByText("19")).toBeNull();
     await act(async () => { finish(analytics); });
     await screen.findByText("19");
-    expect(screen.queryByText("Loading course and student totals…")).toBeNull();
+    expect(screen.queryByText("Loading results")).toBeNull();
   });
 
   it("failed deletion keeps confirmation and enables a successful retry without duplicate writes", async () => {
@@ -39,8 +39,8 @@ describe("Mentor profile authorization and state", () => {
     const deletion = vi.spyOn(endpoints, "deleteUser").mockReturnValueOnce(new Promise((_resolve, reject) => { fail = reject; })).mockResolvedValue(undefined);
     setup();
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    await userEvent.click(screen.getByRole("button", { name: "Teacher actions: Alisher Navoiy" }));
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Teacher actions" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete teacher" }));
     const dialog = screen.getByRole("dialog");
     await userEvent.dblClick(within(dialog).getByRole("button", { name: "Delete" }));
     expect(deletion).toHaveBeenCalledTimes(1);
@@ -59,20 +59,29 @@ describe("Mentor profile authorization and state", () => {
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
     expect(screen.getAllByRole("tab")).toHaveLength(3);
     expect(screen.queryByRole("tab", { name: "Analytics" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Advanced Mathematics" }).getAttribute("href")).toBe("/courses/2");
+    expect(screen.getByRole("link", { name: /Advanced Mathematics/ }).getAttribute("href")).toBe("/courses/2");
     const summary = document.querySelector("[data-profile-summary]");
-    expect(summary?.textContent).toContain("70");
+    expect(summary?.textContent).toContain("70%");
     expect(summary?.textContent).not.toContain("46.67");
-    for (const tab of screen.getAllByRole("tab")) expect(document.getElementById(tab.getAttribute("aria-controls") || "")).not.toBeNull();
+    const selected = screen.getByRole("tab", { selected: true });
+    expect(document.getElementById(selected.getAttribute("aria-controls") || "")).not.toBeNull();
   });
 
-  it.each([null, 0, 123.456])("keeps missing and raw score %s distinct without clamping", async score => {
+  it.each([[null, "—"], [0, "0%"], [123.456, "—"]])("shows the average result %s as %s and never a percentage above 100", async (score, expected) => {
     vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, avg_score_defined_ratios_mean: score });
     setup();
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    const summary = document.querySelector("[data-profile-summary]");
-    expect(summary?.textContent).toContain(score === null ? "—Score unavailable" : score === 0 ? "0" : "123.5");
-    if (score !== null) expect(summary?.textContent).not.toContain("Score unavailable");
+    const tile = screen.getByText("Average result").closest("[data-stat-tile]") as HTMLElement;
+    expect(tile.textContent).toContain(expected);
+    expect(tile.textContent).not.toContain("123");
+  });
+
+  it("shows exactly three tiles in one stat group", async () => {
+    setup();
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    const group = document.querySelector("[data-profile-summary] [data-stat-group]") as HTMLElement;
+    expect(Array.from(group.querySelectorAll("dt")).map((node) => node.textContent)).toEqual(["Active courses", "Active students", "Average result"]);
+    expect(document.querySelectorAll("[data-entity-header]")).toHaveLength(1);
   });
 
   it("mentor self returns to Dashboard and never sees admin actions", async () => {
@@ -80,8 +89,8 @@ describe("Mentor profile authorization and state", () => {
     setup();
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
     expect(screen.getByRole("link", { name: "Back to Dashboard" }).getAttribute("href")).toBe("/");
-    expect(screen.queryByRole("button", { name: "Edit Teacher" })).toBeNull();
-    expect(screen.queryByText("Account access")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Teacher actions" })).toBeNull();
     expect(endpoints.getMentorProfile).toHaveBeenCalledWith(10);
   });
 
@@ -104,39 +113,67 @@ describe("Mentor profile authorization and state", () => {
     vi.mocked(endpoints.getMentorAnalytics).mockRejectedValueOnce(new AuthApiError(503, "Unavailable")).mockResolvedValue(analytics);
     setup({ profileTab: "performance" });
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    expect((await screen.findByRole("alert")).textContent).toContain("These totals are unavailable");
+    expect((await screen.findByRole("alert")).textContent).toContain("Couldn't load the results");
     expect(screen.queryByText("19")).toBeNull();
     expect(screen.queryByText("62")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByText("19");
     expect(screen.getByText("62")).toBeDefined();
-    expect(screen.getByText(/this is not a percentage/)).toBeDefined();
+    expect(screen.getByText("What a student scores in one period on average.")).toBeDefined();
   });
 
-  it("zero raw points with recorded summaries remains zero and empty summaries are explained", async () => {
+  it("zero points with recorded summaries remains 0 and without summaries shows a dash", async () => {
     vi.mocked(endpoints.getMentorAnalytics).mockResolvedValueOnce({ ...analytics, average_student_score: 0 }).mockResolvedValue({ ...analytics, average_student_score: 0, average_student_score_summary_count: 0, average_student_score_grading_state: "missing" });
     const queryClient = setup({ profileTab: "performance" });
     await screen.findByText("19");
-    expect(screen.getByText("0")).toBeDefined();
+    const pointsFact = (): HTMLElement => screen.getByText("Points per period").closest("div") as HTMLElement;
+    expect(pointsFact().textContent).toContain("0What a student");
     await act(async () => { await queryClient.invalidateQueries({ queryKey: ["users", "mentors", "analytics", 10] }); });
-    await screen.findByText("No period summaries have been recorded.");
-    expect(screen.queryByText("0")).toBeNull();
+    await waitFor(() => expect(pointsFact().textContent).toContain("—"));
+  });
+
+  it("explains an empty performance tab in plain language when nothing is graded", async () => {
+    vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, avg_score_defined_ratio_count: 0, avg_score_defined_ratios_mean: null, avg_score_summary_count: 0 });
+    vi.mocked(endpoints.getMentorAnalytics).mockResolvedValue({ ...analytics, average_student_score_summary_count: 0 });
+    setup({ profileTab: "performance" });
+    expect(await screen.findByText("No graded periods yet")).toBeDefined();
+    expect(screen.getByText(/Results appear after lessons/)).toBeDefined();
   });
 
   it("empty active courses explain the supported next state", async () => {
     vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, active_courses: [] });
     setup();
     await screen.findByText("No active courses");
-    expect(screen.getByText(/Archived courses remain in the course directory/)).toBeDefined();
+    expect(screen.getByText(/Courses assigned to this teacher will appear here/)).toBeDefined();
   });
 
-  it("preserves Performance through an authorized course visit and browser Back", async () => {
-    setup({ profileTab: "performance" });
+  it("keeps the selected tab in the tab query parameter through a course visit and browser Back", async () => {
+    setup();
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    await userEvent.click(screen.getByRole("link", { name: "Advanced Mathematics" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Performance" }));
+    expect(screen.getByTestId("location").textContent).toBe("/mentors/10?tab=performance");
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.getByTestId("location").textContent).toBe("/mentors/10");
+    await userEvent.click(screen.getByRole("link", { name: /Advanced Mathematics/ }));
     await userEvent.click(screen.getByRole("button", { name: "Browser Back" }));
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    expect(screen.getByRole("tab", { name: "Performance" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Courses" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("restores the tab from the URL on direct entry", async () => {
+    setup(undefined, "/mentors/10?tab=documents");
+    await screen.findByRole("heading", { name: "Alisher Navoiy" });
+    expect(screen.getByRole("tab", { name: "Documents" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("explains performance in short sentences with the points first", async () => {
+    setup({ profileTab: "performance" });
+    await screen.findByText("19");
+    const facts = Array.from(document.querySelectorAll("[role='tabpanel'] dl > div")).map((node) => node.textContent);
+    expect(facts[0]).toBe("Points per period62What a student scores in one period on average.");
+    expect(facts[1]).toContain("Average result70%");
+    expect(facts[2]).toContain("Students19");
+    expect(screen.getByText(/^Based on \d+ graded periods?\.$/)).toBeDefined();
   });
 
   it("does not navigate on abandoned deletion after a person returns", async () => {
@@ -144,8 +181,8 @@ describe("Mentor profile authorization and state", () => {
     vi.spyOn(endpoints, "deleteUser").mockReturnValue(new Promise<void>(resolve => { completeDelete = resolve; }));
     setup();
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
-    await userEvent.click(screen.getByRole("button", { name: "Teacher actions: Alisher Navoiy" }));
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Teacher actions" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete teacher" }));
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(endpoints.deleteUser).toHaveBeenCalledWith(10));
     act(() => navigateRoute("/mentors/11"));
