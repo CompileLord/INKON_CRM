@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.rate_limiter import AuthenticationRateLimiter
+from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.security import PasswordWorkService
 from app.core.student_passwords import StudentPasswordCodeGenerator
 from app.models.user import User, UserRole
@@ -42,11 +42,11 @@ class StudentPasswordSmsService:
     def __init__(
         self,
         db: AsyncSession,
-        limiter: Optional[AuthenticationRateLimiter] = None,
+        limiter: Optional[PasswordSmsRateLimiter] = None,
         code_generator: Optional[StudentPasswordCodeGenerator] = None,
     ) -> None:
         self._db: AsyncSession = db
-        self._limiter: AuthenticationRateLimiter = limiter or AuthenticationRateLimiter()
+        self._limiter: PasswordSmsRateLimiter = limiter or PasswordSmsRateLimiter()
         self._code_generator: StudentPasswordCodeGenerator = code_generator or StudentPasswordCodeGenerator()
         self._destination_resolver: StudentPasswordSmsDestinationResolver = StudentPasswordSmsDestinationResolver()
         self._password_work_service: PasswordWorkService = PasswordWorkService()
@@ -78,7 +78,7 @@ class StudentPasswordSmsService:
     ) -> PasswordSmsDestination:
         destination: PasswordSmsDestination = self.require_destination(user)
         if enforce_rate_limits:
-            await self._limiter.consume_password_sms_budgets(user.id, destination.phone)
+            await self._limiter.consume_budgets(user.id, destination.phone)
         code: str = self._code_generator.generate()
         user.password_hash = await self._password_work_service.hash(code)
         user.must_set_password = True

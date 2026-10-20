@@ -34,7 +34,7 @@ async def test_payment_schedule_assignment(client: AsyncClient, test_admin: User
             "email": "student_sched@example.com",
             "first_name": "Jane",
             "last_name": "Doe",
-            "role": "student",
+            "role": "student", "phone": "+992900000999",
             "payment_day_of_month": 29
         },
         headers=headers
@@ -48,7 +48,7 @@ async def test_payment_schedule_assignment(client: AsyncClient, test_admin: User
             "email": "student_sched@example.com",
             "first_name": "Jane",
             "last_name": "Doe",
-            "role": "student",
+            "role": "student", "phone": "+992900000999",
             "payment_day_of_month": 15
         },
         headers=headers
@@ -76,7 +76,7 @@ async def _setup_student_course(
             "email": email,
             "first_name": "S",
             "last_name": "One",
-            "role": "student",
+            "role": "student", "phone": "+992900000999",
             "payment_day_of_month": payment_day,
         },
         headers=admin_headers,

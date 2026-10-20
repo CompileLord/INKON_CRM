@@ -13,14 +13,14 @@ async def test_course_copy_flow(client: AsyncClient, test_admin: User, test_ment
     # 1. Create 2 students
     s1_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "c1@example.com", "first_name": "C", "last_name": "One", "role": "student"},
+        json={"email": "c1@example.com", "first_name": "C", "last_name": "One", "role": "student", "phone": "+992900000999"},
         headers=admin_headers
     )
     student1_id = s1_resp.json()["id"]
 
     s2_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "c2@example.com", "first_name": "C", "last_name": "Two", "role": "student"},
+        json={"email": "c2@example.com", "first_name": "C", "last_name": "Two", "role": "student", "phone": "+992900000999"},
         headers=admin_headers
     )
     student2_id = s2_resp.json()["id"]
