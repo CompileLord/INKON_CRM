@@ -26,37 +26,59 @@ class SQLAlchemyDebtReminderRepository:
             select(User.id).where(User.id.in_(student_ids)).order_by(User.id).with_for_update()
         )
 
-    async def last_reminder_at(self, student_id: int) -> datetime | None:
-        return await self._session.scalar(
-            select(func.max(DebtReminderNotification.created_at))
-            .where(DebtReminderNotification.student_id == student_id,
+    async def last_reminder_times(self, student_ids: list[int]) -> dict[int, datetime]:
+        rows: Any = (await self._session.execute(
+            select(DebtReminderNotification.student_id, func.max(DebtReminderNotification.created_at))
+            .where(DebtReminderNotification.student_id.in_(student_ids),
                    DebtReminderNotification.status.in_(self.counted_statuses))
-        )
+            .group_by(DebtReminderNotification.student_id)
+        )).all()
+        return {row[0]: row[1] for row in rows}
 
     async def queue(self, student_id: int, now: datetime) -> None:
         self._session.add(DebtReminderNotification(student_id=student_id, due_at=now, created_at=now))
         await self._session.flush()
 
     async def load_source(self, student_id: int, today: date) -> DebtReminderSource | None:
-        student: Any = (await self._session.execute(
-            select(User.first_name, User.last_name, User.parent_telegram_chat_id, TelegramChatPreference.language)
-            .outerjoin(TelegramChatPreference, TelegramChatPreference.chat_id == User.parent_telegram_chat_id)
-            .where(User.id == student_id, User.role == UserRole.STUDENT, User.is_deleted.is_(False))
-        )).first()
-        if student is None:
-            return None
+        return (await self.load_sources([student_id], today)).get(student_id)
+
+    async def load_sources(self, student_ids: list[int], today: date) -> dict[int, DebtReminderSource]:
         query: Select[Any]
-        query, _ = DebtQuery().build(today)
-        balances: Any = query.where(Enrollment.student_id == student_id).subquery()
-        course_rows: Any = (await self._session.execute(
-            select(balances.c.title, func.sum(balances.c.debt))
-            .group_by(balances.c.course_id, balances.c.title).order_by(balances.c.course_id)
-        )).all()
-        total: Decimal = await self._session.scalar(select(func.coalesce(func.sum(balances.c.debt), 0)))
-        return DebtReminderSource(
-            student_id, f"{student.first_name} {student.last_name}".strip(), student.parent_telegram_chat_id,
-            student.language, total, tuple((row[0], row[1]) for row in course_rows if row[1] > 0),
+        debt: Any
+        query, debt = DebtQuery().build(today)
+        balances: Any = (
+            query.with_only_columns(
+                Enrollment.student_id, Course.id.label("course_id"), Course.title, func.sum(debt).label("debt")
+            ).where(Enrollment.student_id.in_(student_ids))
+            .group_by(Enrollment.student_id, Course.id, Course.title).subquery()
         )
+        rows: Any = (await self._session.execute(
+            select(
+                User.id.label("student_id"), User.first_name, User.last_name,
+                User.parent_telegram_chat_id, TelegramChatPreference.language,
+                balances.c.title, balances.c.debt,
+                func.coalesce(func.sum(balances.c.debt).over(partition_by=User.id), 0).label("total_debt"),
+            )
+            .outerjoin(TelegramChatPreference, TelegramChatPreference.chat_id == User.parent_telegram_chat_id)
+            .outerjoin(balances, balances.c.student_id == User.id)
+            .where(User.id.in_(student_ids), User.role == UserRole.STUDENT, User.is_deleted.is_(False))
+            .order_by(User.id, balances.c.course_id)
+        )).all()
+        students: dict[int, Any] = {}
+        courses: dict[int, list[tuple[str, Decimal]]] = {}
+        row: Any
+        for row in rows:
+            students[row.student_id] = row
+            courses.setdefault(row.student_id, [])
+            if row.debt is not None and row.debt > 0:
+                courses[row.student_id].append((row.title, row.debt))
+        return {
+            student_id: DebtReminderSource(
+                student_id, f"{student.first_name} {student.last_name}".strip(), student.parent_telegram_chat_id,
+                student.language, student.total_debt, tuple(courses[student_id]),
+            )
+            for student_id, student in students.items()
+        }
 
     async def list_debts(self, today: date, filters: dict[str, Any], page: int, page_size: int) -> dict[str, Any]:
         query: Select[Any]

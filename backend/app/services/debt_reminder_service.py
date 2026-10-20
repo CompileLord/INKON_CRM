@@ -21,12 +21,14 @@ class DebtReminderService:
     async def queue(self, student_ids: list[int], actor_id: int) -> DebtReminderResponse:
         await self._repository.lock_students(sorted(student_ids))
         now: datetime = self._clock()
+        sources: dict[int, DebtReminderSource] = await self._repository.load_sources(
+            student_ids, now.astimezone(ZoneInfo("Asia/Dushanbe")).date()
+        )
+        last_reminder_times: dict[int, datetime] = await self._repository.last_reminder_times(student_ids)
         results: list[DebtReminderResult] = []
         student_id: int
         for student_id in student_ids:
-            source: DebtReminderSource | None = await self._repository.load_source(
-                student_id, now.astimezone(ZoneInfo("Asia/Dushanbe")).date()
-            )
+            source: DebtReminderSource | None = sources.get(student_id)
             result: DebtReminderResult = DebtReminderResult(student_id=student_id, outcome="not_found", next_allowed_at=None)
             if source is None:
                 results.append(result)
@@ -36,7 +38,7 @@ class DebtReminderService:
             elif source.parent_chat_id is None:
                 result.outcome = "no_parent_chat"
             else:
-                previous: datetime | None = await self._repository.last_reminder_at(student_id)
+                previous: datetime | None = last_reminder_times.get(student_id)
                 if previous is not None and previous + timedelta(hours=24) > now:
                     result.outcome = "recently_reminded"
                     result.next_allowed_at = previous + timedelta(hours=24)

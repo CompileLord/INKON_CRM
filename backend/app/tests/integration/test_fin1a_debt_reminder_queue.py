@@ -243,6 +243,38 @@ async def test_debts_list_query_count_does_not_grow_with_page_size(
 
 
 @pytest.mark.asyncio
+async def test_bulk_queue_select_count_does_not_grow_with_student_count(
+    client: AsyncClient, test_accountant: User, test_mentor: User
+) -> None:
+    student_ids: list[int] = []
+    index: int
+    for index in range(33):
+        student_id: int = await create_student(f"bulk-count-{index}@example.com", CHAT_ID, "ru")
+        await add_debt(student_id, test_mentor.id, f"Course {index}", "10.00", days_ago(4))
+        student_ids.append(student_id)
+    select_counts: list[int] = []
+    requested_ids: list[int]
+    for requested_ids in (list(reversed(student_ids[:3])), list(reversed(student_ids[3:]))):
+        captured: list[str] = []
+
+        def record(connection: Any, cursor: Any, statement: str, *rest: Any) -> None:
+            if statement.lstrip().upper().startswith("SELECT"):
+                captured.append(statement)
+
+        event.listen(test_engine.sync_engine, "before_cursor_execute", record)
+        try:
+            response: Response = await post_reminders(client, test_accountant, requested_ids)
+        finally:
+            event.remove(test_engine.sync_engine, "before_cursor_execute", record)
+        assert response.status_code == 200
+        assert [item["student_id"] for item in response.json()["results"]] == requested_ids
+        assert list(outcomes(response).values()) == ["queued"] * len(requested_ids)
+        select_counts.append(len(captured))
+    assert select_counts[0] >= 3
+    assert select_counts[0] == select_counts[1], select_counts
+
+
+@pytest.mark.asyncio
 async def test_debt_list_matches_the_original_finance_service_calculation(
     client: AsyncClient, test_accountant: User, test_mentor: User
 ) -> None:
