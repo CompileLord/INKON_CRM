@@ -27,6 +27,11 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/repositories/sqlalchemy/user_repository.py:83](../../../backend/app/repositories/sqlalchemy/user_repository.py) | Existing file, anchor line 83; only this WP’s stated behavior may change. |
 | [backend/alembic/versions/rwp33_grading_state.py](../../../backend/alembic/versions/rwp33_grading_state.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
 | [backend/app/tests/integration/test_remediation_wp33.py](../../../backend/app/tests/integration/test_remediation_wp33.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/services/journal_query_service.py` | Current completion, metric and class-rank query owner after extraction. |
+| `backend/app/repositories/sqlalchemy/student_performance_repository.py` | Current profile aggregates/history/rank query owner. |
+| `backend/app/services/student_profile_service.py` | Project internal explicit grading evidence without changing public types. |
+| `backend/app/repositories/interfaces/user_repository.py` | Internal proven/unknown summary counts in raw DTOs. |
+| `backend/app/tests/integration/test_remediation_wp33_migration.py` | Audit-proof backfill, unknown-state, additive replay and old-image compatibility tests under the 20 KB cap. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -50,6 +55,8 @@ Snapshot excerpt from `backend/app/services/journal_service.py`:
 61:         entry_counts_res = await self.db.execute(entry_counts_stmt)
 62:         entry_counts_map = dict(entry_counts_res.all())
 ```
+
+Scope correction (2026-10-20): nullable internal `is_graded` means NULL unknown legacy/old-image writes, FALSE explicitly precreated by the new image, TRUE accepted grading including deliberate zero. Backfill only audit-proven commands; replay-safe additive migrations preserve ambiguity. Version-check a first grading transition even when values are unchanged. Structural recorded-summary/positive-denominator counts retain their literal meanings over nonfuture periods; graded means/totals/ranks use explicit TRUE only. Integer rank 0 denotes unranked when no proven grade, preserving response types; record its frontend display handoff. Keep existing public state strings conservative. Course-progress raw history with explicit unknown provenance is outside this package; do not relabel it graded. Any necessary query extraction requires a precise additional path/DI proposal before edits.
 
 ## Step-by-step change
 
