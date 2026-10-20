@@ -62,7 +62,8 @@
     "stateComplete": "Анҷом ёфт",
     "stateUnavailable": "Дастнорас",
     "latest": "Охирин",
-    "upcoming": "Оянда"
+    "upcoming": "Оянда",
+    "past": "Анҷомёфта"
   },
   "table": {
     "students": "Донишҷӯён",
@@ -88,12 +89,13 @@
     "readOnlyCellLabel": "Ҳозирӣ, баҳо ва шарҳ: {{name}}, {{date}}",
     "present": "Ҳозир",
     "absent": "Ғоиб",
-    "hasComment": "Шарҳ дорад",
     "notRecorded": "Қайд нашудааст",
     "examCellLabel": "Баҳои имтиҳон: {{name}}",
     "bonusCellLabel": "Бонус: {{name}}",
     "addStudents": "Илова кардани донишҷӯён",
-    "noStudentsAdminBody": "Донишҷӯёнро ба рӯйхати курс илова кунед, то баҳогузориро оғоз кунед."
+    "noStudentsAdminBody": "Донишҷӯёнро ба рӯйхати курс илова кунед, то баҳогузориро оғоз кунед.",
+    "openComment": "Хондани шарҳ барои {{date}}",
+    "commentDialogTitle": "Шарҳ, {{date}}"
   },
   "cellStatus": {
     "dirty": "Тағйироти захиранашуда",

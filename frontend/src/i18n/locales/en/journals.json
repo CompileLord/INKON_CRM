@@ -62,7 +62,8 @@
     "stateComplete": "Complete",
     "stateUnavailable": "Unavailable",
     "latest": "Latest",
-    "upcoming": "Upcoming"
+    "upcoming": "Upcoming",
+    "past": "Done"
   },
   "table": {
     "students": "Students",
@@ -88,12 +89,13 @@
     "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
     "present": "Present",
     "absent": "Absent",
-    "hasComment": "Has a comment",
     "notRecorded": "Not recorded",
     "examCellLabel": "Exam score for {{name}}",
     "bonusCellLabel": "Bonus score for {{name}}",
     "addStudents": "Add students",
-    "noStudentsAdminBody": "Add students to the course roster to start grading."
+    "noStudentsAdminBody": "Add students to the course roster to start grading.",
+    "openComment": "Read comment for {{date}}",
+    "commentDialogTitle": "Comment, {{date}}"
   },
   "cellStatus": {
     "dirty": "Unsaved change",

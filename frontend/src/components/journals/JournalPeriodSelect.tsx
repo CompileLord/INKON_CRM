@@ -13,6 +13,7 @@ interface JournalPeriodSelectProps {
   today: string;
   onSelect: (periodId: number) => void;
   disabled?: boolean;
+  showPastStatus?: boolean;
 }
 
 const TIMING_LABEL_KEYS: Partial<Record<PeriodTiming, string>> = {
@@ -21,14 +22,16 @@ const TIMING_LABEL_KEYS: Partial<Record<PeriodTiming, string>> = {
   upcoming: "period.upcoming",
 };
 
-export const JournalPeriodSelect: React.FC<JournalPeriodSelectProps> = ({ periods, selectedPeriodId, today, onSelect, disabled = false }) => {
+const PAST_AWARE_LABEL_KEYS: Partial<Record<PeriodTiming, string>> = { ...TIMING_LABEL_KEYS, latest: "period.past", past: "period.past" };
+
+export const JournalPeriodSelect: React.FC<JournalPeriodSelectProps> = ({ periods, selectedPeriodId, today, onSelect, disabled = false, showPastStatus = false }) => {
   const { t } = useTranslation("journals");
   const periodName: (label: string) => string = usePeriodName();
   const ordered: JournalPeriod[] = JournalWorkspaceSelection.orderPeriods(periods);
   const selected: JournalPeriod = ordered.find((period) => period.id === selectedPeriodId) ?? ordered[0];
 
   const options: ListboxOption[] = ordered.map((period: JournalPeriod): ListboxOption => {
-    const timingKey: string | undefined = TIMING_LABEL_KEYS[JournalWorkspaceSelection.timingOf(period, ordered, today)];
+    const timingKey: string | undefined = (showPastStatus ? PAST_AWARE_LABEL_KEYS : TIMING_LABEL_KEYS)[JournalWorkspaceSelection.timingOf(period, ordered, today)];
     const range: string = t("period.range", { start: formatSchoolLessonDate(period.period_start), end: formatSchoolLessonDate(period.period_end) });
     const parts: string[] = [periodName(period.period_label), range, ...(timingKey ? [t(timingKey)] : [])];
     return { value: String(period.id), label: parts.join(" · "), muted: timingKey === "period.upcoming" };

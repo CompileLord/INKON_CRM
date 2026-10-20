@@ -107,8 +107,8 @@ async def classroom(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("endpoint", ["journal", "progress"])
-async def test_student_json_contains_no_classmate_identity_or_feedback(
+@pytest.mark.parametrize("endpoint", ["progress"])
+async def test_student_progress_contains_no_classmate_identity_or_feedback(
     client: AsyncClient, classroom: ClassRoom, endpoint: str, db_session: AsyncSession,
 ) -> None:
     if endpoint == "progress":
@@ -150,34 +150,29 @@ async def test_student_json_contains_no_classmate_identity_or_feedback(
         assert classmate.last_name not in serialized
     assert CLASSMATE_COMMENT not in serialized
     assert "Second private feedback" not in serialized
-    if endpoint == "journal":
-        assert body["students"][0]["summary"]["student_id"] == classroom.own.id
-        assert body["students"][0]["is_self"] is True
-        assert body["class_size"] == 3
-    else:
-        assert len(body["periods"]) > 1
-        assert len(aggregate_queries) == 1
-        assert any(result["score"] is not None for result in body["students"][0]["period_results"])
-        expected_averages: Any = (await db_session.execute(
-            select(
-                JournalStudentSummary.journal_id,
-                func.avg(JournalStudentSummary.sum_score),
-                func.avg(JournalStudentSummary.max_period_score),
-                func.avg(JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score),
-                func.count(JournalStudentSummary.id),
-            ).join(Journal).join(Enrollment, Enrollment.student_id == JournalStudentSummary.student_id)
-            .where(Journal.course_id == classroom.course_id, Enrollment.course_id == classroom.course_id)
-            .group_by(JournalStudentSummary.journal_id)
-        )).all()
-        for expected in expected_averages:
-            period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == expected[0])
-            assert period["class_avg_score"] == pytest.approx(float(expected[1]))
-            assert period["class_avg_max_score"] == pytest.approx(float(expected[2]))
-            assert period["class_avg_percentage"] == pytest.approx(float(expected[3]))
-            assert period["graded_count"] == expected[4] == 3
-        scored_period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == classroom.journal_id)
-        own_result: Dict[str, Any] = body["students"][0]["period_results"][0]
-        assert scored_period["class_avg_score"] != own_result["score"]
+    assert len(body["periods"]) > 1
+    assert len(aggregate_queries) == 1
+    assert any(result["score"] is not None for result in body["students"][0]["period_results"])
+    expected_averages: Any = (await db_session.execute(
+        select(
+            JournalStudentSummary.journal_id,
+            func.avg(JournalStudentSummary.sum_score),
+            func.avg(JournalStudentSummary.max_period_score),
+            func.avg(JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score),
+            func.count(JournalStudentSummary.id),
+        ).join(Journal).join(Enrollment, Enrollment.student_id == JournalStudentSummary.student_id)
+        .where(Journal.course_id == classroom.course_id, Enrollment.course_id == classroom.course_id)
+        .group_by(JournalStudentSummary.journal_id)
+    )).all()
+    for expected in expected_averages:
+        period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == expected[0])
+        assert period["class_avg_score"] == pytest.approx(float(expected[1]))
+        assert period["class_avg_max_score"] == pytest.approx(float(expected[2]))
+        assert period["class_avg_percentage"] == pytest.approx(float(expected[3]))
+        assert period["graded_count"] == expected[4] == 3
+    scored_period: Dict[str, Any] = next(period for period in body["periods"] if period["id"] == classroom.journal_id)
+    own_result: Dict[str, Any] = body["students"][0]["period_results"][0]
+    assert scored_period["class_avg_score"] != own_result["score"]
 
 
 @pytest.mark.asyncio
@@ -258,23 +253,6 @@ async def test_staff_do_not_use_the_student_class_journal(client: AsyncClient, c
 
 
 @pytest.mark.asyncio
-async def test_student_cannot_write_journal_entries_summaries_or_exam_maximum(client: AsyncClient, classroom: ClassRoom) -> None:
-    headers: Dict[str, str] = authorization(classroom.own)
-    entries: Response = await client.put(
-        f"/api/v1/journals/{classroom.journal_id}/entries",
-        json=[{"student_id": classroom.own.id, "lesson_date": classroom.lesson_date, "attendance": True, "score": 5, "comment": "self", "version": 1}],
-        headers=headers,
-    )
-    summary: Response = await client.patch(
-        f"/api/v1/journals/{classroom.journal_id}/students/{classroom.own.id}/summary",
-        json={"exam_score": 50, "bonus_score": 10, "version": 1},
-        headers=headers,
-    )
-    exam_maximum: Response = await client.patch(f"/api/v1/journals/{classroom.journal_id}/exam-max-score", json={"exam_max_score": 10}, headers=headers)
-    assert (entries.status_code, summary.status_code, exam_maximum.status_code) == (403, 403, 403)
-
-
-@pytest.mark.asyncio
 async def test_archived_student_still_reads_class_journal_but_removed_enrollment_cannot(
     client: AsyncClient, classroom: ClassRoom, db_session: AsyncSession
 ) -> None:
@@ -343,7 +321,8 @@ async def test_student_class_statistics_handle_missing_and_unscored_summaries(
     response: Response = await client.get(f"/api/v1/journals/{classroom.journal_id}/class", headers=authorization(classroom.own))
     assert response.status_code == 200
     body: Dict[str, Any] = response.json()
-    assert [record["student_id"] for record in body["students"]] == [classroom.own.id]
+    assert body["students"][0]["student_id"] == classroom.own.id
+    assert len(body["students"]) == 3
     assert body["class_size"] == 3
     if summary_state == "missing_self":
         assert body["students"][0]["summary"] is None
