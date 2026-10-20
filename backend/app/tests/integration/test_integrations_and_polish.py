@@ -88,6 +88,8 @@ async def test_progress_chart_endpoint(
     await db_session.commit()
 
     summary = JournalStudentSummary(
+        is_graded=True,
+        max_period_score=100,
         journal_id=journal.id,
         student_id=test_student.id,
         exam_score=80,

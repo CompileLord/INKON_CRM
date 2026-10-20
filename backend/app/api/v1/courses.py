@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
 from app.core.deps import (
@@ -18,7 +17,6 @@ from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
-from app.models.journal_student_summary import JournalStudentSummary
 from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseListItemResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
@@ -30,7 +28,7 @@ from app.repositories.interfaces.course_progress_repository import (
     CourseProgressRepositoryInterface,
     CourseAccessRecord,
 )
-from app.core.scoring import ScoringPolicy
+from app.schemas.course_progress import StaffChartResponse, StudentChartResponse
 
 router = APIRouter()
 
@@ -254,133 +252,14 @@ async def get_class_progress(
     return await progress_service.get_student_class_progress(id, current_user.id)
 
 
-@router.get("/{id}/progress-chart")
+@router.get("/{id}/progress-chart", response_model=StaffChartResponse | StudentChartResponse)
 async def get_progress_chart(
     id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> dict:
+    db: AsyncSession = Depends(get_db_session),
+    progress_service: CourseProgressService = Depends(get_course_progress_service),
+) -> StaffChartResponse | StudentChartResponse:
     await check_course_access(id, current_user, db)
-
-    journals = await get_course_journals(id, db)
-    journal_ids = [j.id for j in journals]
-
-    enroll_stmt = (
-        select(Enrollment)
-        .options(joinedload(Enrollment.student))
-        .filter(
-            Enrollment.course_id == id,
-            Enrollment.status == EnrollmentStatus.ACTIVE,
-            Enrollment.is_deleted == False
-        )
+    return await progress_service.get_progress_chart(
+        id, current_user.id if current_user.role == UserRole.STUDENT else None
     )
-    enroll_res = await db.execute(enroll_stmt)
-    enrollments = list(enroll_res.scalars().all())
-    class_size = len(enrollments)
-
-    summaries = []
-    if journal_ids:
-        summary_stmt = select(JournalStudentSummary).filter(
-            JournalStudentSummary.journal_id.in_(journal_ids)
-        )
-        summary_res = await db.execute(summary_stmt)
-        summaries = list(summary_res.scalars().all())
-
-    summary_map = {(s.student_id, s.journal_id): (s.sum_score, s.max_period_score) for s in summaries}
-
-    periods = [
-        {"id": j.id, "period_label": j.period_label}
-        for j in journals
-    ]
-
-    if current_user.role == UserRole.STUDENT:
-        my_percentages = []
-        my_graded_pcts = []
-        for j in journals:
-            sum_score, max_score = summary_map.get((current_user.id, j.id), (0, 0))
-            pct = ScoringPolicy.percentage(sum_score, max_score)
-            my_percentages.append(pct)
-            if max_score > 0:
-                my_graded_pcts.append(pct)
-        my_avg = round(sum(my_graded_pcts) / len(my_graded_pcts), 1) if my_graded_pcts else 0.0
-        my_series = my_percentages + [my_avg]
-
-        class_avg_series = []
-        graded_class_avgs = []
-        for j in journals:
-            j_summaries = [s for s in summaries if s.journal_id == j.id and s.max_period_score > 0]
-            if j_summaries:
-                j_pcts = [ScoringPolicy.percentage(s.sum_score, s.max_period_score) for s in j_summaries]
-                period_avg = round(sum(j_pcts) / len(j_pcts), 1)
-                class_avg_series.append(period_avg)
-                graded_class_avgs.append(period_avg)
-            else:
-                class_avg_series.append(0.0)
-        overall_class_avg = round(sum(graded_class_avgs) / len(graded_class_avgs), 1) if graded_class_avgs else 0.0
-        class_avg_series.append(overall_class_avg)
-
-        student_avgs = {}
-        for enroll in enrollments:
-            s_id = enroll.student.id
-            s_pcts = []
-            for j in journals:
-                sum_score, max_score = summary_map.get((s_id, j.id), (0, 0))
-                if max_score > 0:
-                    s_pcts.append(ScoringPolicy.percentage(sum_score, max_score))
-            student_avgs[s_id] = sum(s_pcts) / len(s_pcts) if s_pcts else 0.0
-
-        sorted_student_ids = sorted(student_avgs.keys(), key=lambda sid: student_avgs[sid], reverse=True)
-        my_rank = (sorted_student_ids.index(current_user.id) + 1) if current_user.id in sorted_student_ids else (len(sorted_student_ids) + 1)
-
-        return {
-            "periods": periods,
-            "my_series": my_series,
-            "class_avg_series": class_avg_series,
-            "my_rank": my_rank,
-            "class_size": class_size
-        }
-
-    labels = [j.period_label for j in journals] + ["Average"]
-    datasets = []
-
-    COLOR_PALETTE = [
-        "#E53E3E", "#319795", "#3182CE", "#D69E2E", "#D53F8C",
-        "#805AD5", "#DD6B20", "#38A169", "#00B5D8", "#B83280",
-        "#4C51BF", "#C05621", "#2B6CB0", "#2F855A", "#9B2C2C",
-        "#2C7A7B", "#6B46C1", "#975A16", "#702459", "#1A365D"
-    ]
-
-    for idx, enroll in enumerate(enrollments):
-        student = enroll.student
-        scores = []
-        max_scores = []
-        percentages = []
-        for j in journals:
-            sum_score, max_score = summary_map.get((student.id, j.id), (0, 0))
-            scores.append(sum_score)
-            max_scores.append(max_score)
-            percentages.append(ScoringPolicy.percentage(sum_score, max_score))
-
-        avg = round(sum(scores) / len(journals), 2) if journals else 0.0
-        avg_max = round(sum(max_scores) / len(journals), 2) if journals else 0.0
-        avg_pct = round(sum(percentages) / len(journals), 2) if journals else 0.0
-        scores.append(avg)
-        max_scores.append(avg_max)
-        percentages.append(avg_pct)
-
-        color_hex = enroll.color_hex if enroll.color_hex and enroll.color_hex != "#FF5733" else COLOR_PALETTE[idx % len(COLOR_PALETTE)]
-
-        datasets.append({
-            "student_id": student.id,
-            "name": f"{student.first_name} {student.last_name}",
-            "color_hex": color_hex,
-            "scores": scores,
-            "max_scores": max_scores,
-            "percentages": percentages
-        })
-
-    return {
-        "labels": labels,
-        "periods": periods,
-        "datasets": datasets
-    }
