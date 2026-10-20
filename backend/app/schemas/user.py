@@ -167,6 +167,28 @@ class StudentJournalPeriodResponse(BaseModel):
     state: str
 
 
+class StudentMentorIdentityResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    first_name: str
+    last_name: str
+    photo_path: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+
+
+class StudentMentorCourseResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    title: str
+    photo_path: Optional[str] = None
+
+
+class StudentMentorCardResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    user: StudentMentorIdentityResponse
+    active_courses: list[StudentMentorCourseResponse]
+
+
 class MentorProfileResponse(BaseModel):
     model_config = {"extra": "forbid"}
     user: UserResponse
