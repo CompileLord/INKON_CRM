@@ -6,7 +6,6 @@ from typing_extensions import Protocol
 import httpx
 
 from app.core.config import settings
-from app.schemas.common import CanonicalPhonePolicy
 
 class SmsDeliveryError(Exception):
     def __init__(self, reason: str, retryable: bool) -> None:
@@ -27,7 +26,7 @@ class SmsSender(Protocol):
 
 
 class ProviderPhoneFormatter:
-    E164_PATTERN: re.Pattern[str] = re.compile(CanonicalPhonePolicy.input_pattern)
+    E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9][0-9]{7,14}$")
 
     def to_provider_digits(self, phone_e164: str) -> str:
         if not self.E164_PATTERN.fullmatch(phone_e164):

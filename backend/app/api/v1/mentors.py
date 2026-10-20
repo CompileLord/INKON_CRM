@@ -9,6 +9,8 @@ from app.schemas.user import MentorAnalyticsResponse, MentorProfileResponse, Stu
 from app.services.user_service import UserService
 from app.services.mentor_analytics_service import MentorAnalyticsService
 
+from app.api.v1.contract_notes import ContractNotes
+
 router = APIRouter()
 
 
@@ -70,7 +72,8 @@ async def get_my_grading_queue(
     return await journal_service.get_mentor_grading_queue(current_user.id)
 
 
-@router.get("/{id}/profile", response_model=MentorProfileResponse | StudentMentorCardResponse)
+@router.get("/{id}/profile", response_model=MentorProfileResponse | StudentMentorCardResponse, description=ContractNotes.MENTOR_PROFILE,
+    responses={200: {"description": "Successful Response (mentor owner or superadmin)"}})
 async def get_mentor_profile(
     id: int,
     current_user: User = Depends(get_current_user),

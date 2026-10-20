@@ -374,6 +374,8 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Create User
 
+**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Students must supply at least one of `phone` or `parent_phone`; omitting both or setting both to null returns 422. Legacy response phone strings remain readable without rewriting stored values.
+
 **Request Body (JSON):**
 ```json
 {
@@ -388,8 +390,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "payment_day_of_month?": integer,
 }
 ```
-
-**Phone inputs:** Optional nullable `phone` and `parent_phone` must match `^\+[1-9][0-9]{1,14}$`: mandatory leading plus, nonzero first digit, 2–15 ASCII digits. Missing plus, whitespace, punctuation, empty strings and Unicode digits return 422; new inputs are not silently normalized. Students must supply at least one of `phone` or `parent_phone`; omitting both or setting both to null returns 422. Legacy response phone strings remain readable without rewriting stored values.
 
 **Responses:**
 - **201**: Successful Response
@@ -545,6 +545,8 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Update Own Profile
 
+**Phone input:** Nullable `phone` uses strict `^\+[1-9][0-9]{1,14}$` validation (mandatory plus, 2–15 ASCII digits, nonzero first digit); noncanonical inputs return 422. Omitting `phone` preserves its stored value, including legacy representations; explicit null clears it only if a student retains another contact phone (otherwise 422). This self-update does not permit guardian destination fields.
+
 **Request Body (JSON):**
 ```json
 {
@@ -554,8 +556,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "phone?": string,
 }
 ```
-
-**Phone input:** Nullable `phone` uses strict `^\+[1-9][0-9]{1,14}$` validation (mandatory plus, 2–15 ASCII digits, nonzero first digit); noncanonical inputs return 422. Omitting `phone` preserves its stored value, including legacy representations; explicit null clears it only if a student retains another contact phone (otherwise 422). This self-update does not permit guardian destination fields.
 
 **Responses:**
 - **200**: Successful Response
@@ -602,6 +602,8 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Update User
 
+**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them only if a student retains at least one contact phone (otherwise 422). Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads.
+
 **Parameters:**
 - `id` [path] *(required)*
 
@@ -618,8 +620,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "payment_day_of_month?": integer,
 }
 ```
-
-**Phone inputs:** Nullable `phone` and `parent_phone` use strict `^\+[1-9][0-9]{1,14}$` validation; noncanonical inputs return 422. Omitted fields retain stored values; explicit null clears them only if a student retains at least one contact phone (otherwise 422). Replacing an otherwise-valid historical optional-plus parent number with the same canonical number preserves the linked Telegram guardian. Real parent-number changes or clearing revoke the prior binding unless an authorized explicit guardian destination is supplied. Historical comparison accepts only 2–15 ASCII digits with optional plus; malformed stored numbers are not normalized or equated with null. Output phone strings remain permissive for legacy reads.
 
 **Responses:**
 - **200**: Successful Response
@@ -934,6 +934,10 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 
 **Summary:** Get My Journal Page
 
+**History bounds:** `page_size` defaults to 20 and must be between 1 and 100. `course_id`, when provided, must name a nondeleted enrollment belonging to the authenticated student; otherwise the response is 403. Unknown query fields and malformed, modified, cross-student or cross-filter cursors return 422.
+`next_cursor` is `string | null`; null means the bounded traversal has no remaining page. Cursors bind the student, course filter, started-only setting and date cutoff. Pages sort by `period_start DESC, journal_id DESC`. `started_only=true` freezes the school-date cutoff across pages. `has_upcoming_periods` reports whether an eligible period starts after the current school date, without returning future history; ownership and the course filter apply to this flag.
+The legacy `/students/me/journals` array preserves complete responses for at most 100 periods and returns 409 on overflow; it never silently truncates. Clients must migrate navigation and chart windows before releasing histories exceeding that limit. Course-wide totals come from existing profile aggregates, not a partial history page.
+
 **Parameters:**
 - `page_size` [query]
 - `course_id` [query]
@@ -982,10 +986,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
     ],
   }
   ```
-
-**History bounds:** `page_size` defaults to 20 and must be between 1 and 100. `course_id`, when provided, must name a nondeleted enrollment belonging to the authenticated student; otherwise the response is 403. Unknown query fields and malformed, modified, cross-student or cross-filter cursors return 422.
-`next_cursor` is `string | null`; null means the bounded traversal has no remaining page. Cursors bind the student, course filter, started-only setting and date cutoff. Pages sort by `period_start DESC, journal_id DESC`. `started_only=true` freezes the school-date cutoff across pages. `has_upcoming_periods` reports whether an eligible period starts after the current school date, without returning future history; ownership and the course filter apply to this flag.
-The legacy `/students/me/journals` array preserves complete responses for at most 100 periods and returns 409 on overflow; it never silently truncates. Clients must migrate navigation and chart windows before releasing histories exceeding that limit. Course-wide totals come from existing profile aggregates, not a partial history page.
 
 ---
 
@@ -1299,6 +1299,8 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
 
 **Summary:** Get Mentor Profile
 
+Students receive only public mentor identity and course identity for their nondeleted enrollments on nondeleted courses belonging to this nondeleted mentor. Historical enrollment statuses remain eligible. The `active_courses` name is retained for caller compatibility; it does not impose an active enrollment or course status filter. No contact, DOB, parent, account metadata, full course details or mentor-wide statistics are returned. The response union is `MentorProfileResponse | StudentMentorCardResponse`; the staff response above is unchanged. Students without an eligible relationship, unrelated mentors and accountants receive 403.
+
 **Parameters:**
 - `id` [path] *(required)*
 
@@ -1355,28 +1357,25 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
     "avg_score_defined_ratios_mean": number,
   }
   ```
-- **200**: Student mentor card (alternative response)
+- **200**: Alternative response (StudentMentorCardResponse)
   ```json
   {
     "user": {
       "id": integer,
       "first_name": string,
       "last_name": string,
-      "photo_path?": string | null,
-      "thumbnail_path?": string | null
+      "photo_path?": string,
+      "thumbnail_path?": string,
     },
     "active_courses": [
       {
         "id": integer,
         "title": string,
-        "photo_path?": string | null
+        "photo_path?": string,
       }
-    ]
+    ],
   }
   ```
-
-  Students receive only public mentor identity and course identity for their nondeleted enrollments on nondeleted courses belonging to this nondeleted mentor. Historical enrollment statuses remain eligible. The `active_courses` name is retained for caller compatibility; it does not impose an active enrollment or course status filter. No contact, DOB, parent, account metadata, full course details or mentor-wide statistics are returned. The response union is `MentorProfileResponse | StudentMentorCardResponse`; the staff response above is unchanged. Students without an eligible relationship, unrelated mentors and accountants receive 403.
-
 - **422**: Validation Error
   ```json
   {
@@ -2081,13 +2080,32 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
         "scores": array[],
         "max_scores": array[],
         "percentages": array[],
-        "grading_states": array[],
+        "grading_states": array["missing" | "ungraded" | "unknown" | "graded" | "upcoming"],
         "graded_periods_count": integer,
         "eligible_periods_count": integer,
       }
     ],
     "class_avg_series": array[number],
     "class_eligible_counts": array[integer],
+  }
+  ```
+- **200**: Alternative response (StudentChartResponse)
+  ```json
+  {
+    "periods": [
+      {
+        "id": integer,
+        "period_label": string,
+      }
+    ],
+    "my_series": array[number],
+    "class_avg_series": array[number],
+    "my_grading_states": array["missing" | "ungraded" | "unknown" | "graded" | "upcoming"],
+    "my_graded_periods_count": integer,
+    "my_eligible_periods_count": integer,
+    "class_eligible_counts": array[integer],
+    "my_rank": integer,
+    "class_size": integer,
   }
   ```
 - **422**: Validation Error
@@ -2496,6 +2514,13 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
 
 **Summary:** Batch Update Entries
 
+**Autosave bounds:** The request remains a top-level JSON array with 0–250 entries. Empty arrays are accepted as no-ops.
+Every normalized `(student_id, lesson_date)` pair must be unique; identical and conflicting duplicate keys both return 422 before service work.
+Each optional nullable comment is limited to 1000 Unicode code points; longer comments return 422 without truncation.
+Actual HTTP request bodies exceeding 4,194,304 bytes return 413 before JSON decoding, including chunked requests or misleading Content-Length headers.
+Only this PUT route is capped; document and image upload limits are unchanged.
+Accepted batches retain existing partial-conflict, optimistic-version and idempotent retry behavior.
+
 **Parameters:**
 - `id` [path] *(required)*
 
@@ -2569,14 +2594,6 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
     ],
   }
   ```
-
-
-**Autosave bounds:** The request remains a top-level JSON array with 0–250 entries. Empty arrays are accepted as no-ops.
-Every normalized `(student_id, lesson_date)` pair must be unique; identical and conflicting duplicate keys both return 422 before service work.
-Each optional nullable comment is limited to 1000 Unicode code points; longer comments return 422 without truncation.
-Actual HTTP request bodies exceeding 4,194,304 bytes return 413 before JSON decoding, including chunked requests or misleading Content-Length headers.
-Only this PUT route is capped; document and image upload limits are unchanged.
-Accepted batches retain existing partial-conflict, optimistic-version and idempotent retry behavior.
 
 ---
 
@@ -4055,6 +4072,8 @@ Manually apply a student's wallet credit to a specific charge.
 
 **Summary:** Update Org Settings
 
+**Input keys:** Only `org_name`, `notify_payments` and `notify_debts` are accepted (`additionalProperties: false`). Any unknown key returns 422 for the whole request without applying its other fields.
+
 **Request Body (JSON):**
 ```json
 {
@@ -4063,8 +4082,6 @@ Manually apply a student's wallet credit to a specific charge.
   "notify_debts?": boolean,
 }
 ```
-
-**Input keys:** Only `org_name`, `notify_payments` and `notify_debts` are accepted (`additionalProperties: false`). Any unknown key returns 422 for the whole request without applying its other fields.
 
 **Responses:**
 - **200**: Successful Response

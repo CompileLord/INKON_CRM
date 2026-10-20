@@ -66,6 +66,11 @@ def _resolve(schema: Dict[str, Any], spec: Dict[str, Any], depth: int = 0) -> An
     }.get(schema_type, "any")
 
 
+def _alternatives(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
+    options = [s for s in (schema.get("anyOf") or schema.get("oneOf") or []) if s.get("type") != "null"]
+    return options if len(options) > 1 else [schema]
+
+
 def _render(value: Any, indent: int = 0) -> str:
     pad = "  " * indent
     if isinstance(value, dict):
@@ -144,9 +149,14 @@ def main() -> None:
                 out.append(f"- **{code}**: {response.get('description', '')}")
                 content = (response.get("content") or {}).get("application/json")
                 if content and content.get("schema"):
-                    shape = _resolve(content["schema"], spec)
-                    rendered = _render(shape).replace("\n", "\n  ")
-                    out.append(f"  ```json\n  {rendered}\n  ```")
+                    alternatives = _alternatives(content["schema"])
+                    for position, alternative in enumerate(alternatives):
+                        if position:
+                            label = alternative.get("$ref", "").split("/")[-1] or "alternative"
+                            out.append(f"- **{code}**: Alternative response ({label})")
+                        shape = _resolve(alternative, spec)
+                        rendered = _render(shape).replace("\n", "\n  ")
+                        out.append(f"  ```json\n  {rendered}\n  ```")
             out.append("")
             out.append("---")
             out.append("")
