@@ -195,7 +195,7 @@ describe("Courses page directory", () => {
         },
       });
 
-      const searchInput = screen.getByPlaceholderText("Search course by title...");
+      const searchInput = screen.getByPlaceholderText("Search courses…");
       fireEvent.change(searchInput, { target: { value: "Python" } });
 
       expect(currentLocation?.search).toContain("page=2");

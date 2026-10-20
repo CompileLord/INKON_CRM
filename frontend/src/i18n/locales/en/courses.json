@@ -3,7 +3,7 @@
   "addCourse": "Create Course",
   "editCourse": "Edit Course",
   "searchStudent": "Search student…",
-  "searchPlaceholder": "Search course by title...",
+  "searchPlaceholder": "Search courses…",
   "filter": {
     "all": "All",
     "active": "Active",

@@ -161,7 +161,7 @@ describe("Courses page directory", () => {
 
       renderCoursesPage({ role: "superadmin" });
 
-      const searchInput = screen.getByPlaceholderText("Search course by title...");
+      const searchInput = screen.getByPlaceholderText("Search courses…");
       const actionsBtn = screen.getByRole("button", {
         name: "Course actions: Python Fundamentals",
       });

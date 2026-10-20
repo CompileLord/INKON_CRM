@@ -3,7 +3,7 @@
   "addCourse": "Создать курс",
   "editCourse": "Редактировать курс",
   "searchStudent": "Поиск студента…",
-  "searchPlaceholder": "Поиск курса по названию...",
+  "searchPlaceholder": "Поиск курсов…",
   "filter": {
     "all": "Все",
     "active": "Активные",

@@ -39,7 +39,7 @@
     "examLabel": "Экзамен"
   },
   "hubTitle": "Журналы",
-  "searchCoursePlaceholder": "Поиск по названию курса…",
+  "searchCoursePlaceholder": "Поиск курсов…",
   "loadFailedHub": "Не удалось загрузить журналы",
   "filter": {
     "all": "Все",

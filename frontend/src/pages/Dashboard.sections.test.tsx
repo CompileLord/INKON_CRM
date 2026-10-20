@@ -77,6 +77,16 @@ describe("Superadmin Dashboard (/)", () => {
     feedItems.slice(3).forEach((item) => expect(item.className).toContain("hidden lg:flex"));
   });
 
+  it("shows each activity time once, on the sentence line and not after the subtitle", () => {
+    const { container } = renderDashboard();
+    const feedItems: HTMLElement[] = Array.from(container.querySelectorAll<HTMLElement>("li")).filter((el) => el.querySelector("time") !== null);
+    feedItems.forEach((item: HTMLElement) => {
+      expect(item.querySelectorAll("time").length).toBe(1);
+      const timeParent: HTMLElement = item.querySelector("time")!.parentElement as HTMLElement;
+      expect(timeParent.className).toContain("justify-between");
+    });
+  });
+
   it("truthfully renders summary true zeros without fallback or fabrication", () => {
     const zeroAnalytics: FinanceAnalyticsResponse = {
       ...mockAnalytics,

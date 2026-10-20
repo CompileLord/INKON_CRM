@@ -66,6 +66,7 @@ export function PaymentsTab({ view, onPageChange, onChangeFilters, onOpenDetails
     {
       key: "student",
       header: t("finance:paymentsTab.columnStudent"),
+      stackedClassName: "max-sm:col-start-1 max-sm:row-start-1",
       cell: (payment: PaymentItem) => (
         <span className="flex flex-col">
           <span className="font-medium">{studentNameOf(payment)}</span>
@@ -80,6 +81,7 @@ export function PaymentsTab({ view, onPageChange, onChangeFilters, onOpenDetails
       key: "cash",
       header: t("finance:paymentsTab.columnCash"),
       numeric: true,
+      stackedClassName: "max-sm:col-start-2 max-sm:row-start-1",
       cell: (payment: PaymentItem) => <span className="font-semibold">{t("finance:moneyAmount", { amount: formatExactMoney(payment.amount) })}</span>,
     },
     {
@@ -89,13 +91,9 @@ export function PaymentsTab({ view, onPageChange, onChangeFilters, onOpenDetails
         <span className="flex flex-col">
           <span className="text-muted"><PaymentMethodLabel method={payment.method} /></span>
           <span className="text-muted tabular-nums">{formatDateTime(payment.paid_at, i18n.language, SCHOOL_TIMEZONE)}</span>
+          {PaymentStatus.hasNotice(payment) && <PaymentStatusPill payment={payment} />}
         </span>
       ),
-    },
-    {
-      key: "status",
-      header: t("finance:paymentsTab.columnStatus"),
-      cell: (payment: PaymentItem) => (PaymentStatus.hasNotice(payment) ? <PaymentStatusPill payment={payment} /> : <span className="sr-only">{t("finance:paymentsTab.statusRecorded")}</span>),
     },
     {
       key: "actions",
@@ -135,6 +133,7 @@ export function PaymentsTab({ view, onPageChange, onChangeFilters, onOpenDetails
           onRetry={() => void payments.refetch()}
           emptyTitle={t("finance:paymentsTab.empty")}
           skeletonRowCount={SKELETON_ROWS}
+          stackBelowSm
         />
       ) : (
         <div className="rounded-2xl border border-border bg-card">

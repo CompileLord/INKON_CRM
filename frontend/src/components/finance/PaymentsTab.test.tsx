@@ -106,13 +106,18 @@ afterEach(() => {
 });
 
 describe("Payments registry layout", () => {
-  it("renders a six-column table with the Details action column and no width switching", async () => {
+  it("renders a five-column table without an empty Status column and stacks rows below sm", async () => {
     renderPayments();
     await screen.findByText("Dilnoza Rustamova");
     expect(screen.getByRole("table")).toBeTruthy();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "Student", "Allocation", "Cash received", "Method and date", "Status", "Details",
+      "Student", "Allocation", "Cash received", "Method and date", "Details",
     ]);
+    expect(screen.getByRole("table").className).toContain("max-sm:block");
+    expect(screen.getByRole("columnheader", { name: "Student" }).closest("thead")?.className).toContain("max-sm:sr-only");
+    const voidedRow: HTMLElement = screen.getByText("Bahrom Qodirov").closest("tr") as HTMLElement;
+    expect(voidedRow.className).toContain("max-sm:grid");
+    expect(within(voidedRow.querySelectorAll("td")[3] as HTMLElement).getByText("Voided")).toBeTruthy();
     expect(screen.getAllByRole("button", { name: /^Details for/ }).length).toBeGreaterThanOrEqual(REGISTRY.length);
   });
 

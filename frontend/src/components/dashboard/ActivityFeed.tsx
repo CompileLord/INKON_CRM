@@ -22,13 +22,13 @@ function ActivityEventRow({ event, phoneHidden }: ActivityEventRowProps) {
   const timeText: string = formatRecentRelativeTime(event.created_at, language) ?? formatTime(event.created_at, language, SCHOOL_TIMEZONE);
   return (
     <li className={`${phoneHidden ? "hidden lg:flex" : "flex"} min-w-0 flex-col gap-0.5 px-3 py-3`}>
-      <p className="break-words text-sm text-ink">
-        <AuditSentence event={event} />
-      </p>
-      <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm text-muted">
-        {subtitle !== "" && <span className="min-w-0 break-words">{subtitle}</span>}
-        <time dateTime={event.created_at} title={formatDateTime(event.created_at, language, SCHOOL_TIMEZONE)} className="tabular-nums">{timeText}</time>
-      </p>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <p className="min-w-0 break-words text-sm text-ink">
+          <AuditSentence event={event} />
+        </p>
+        <time dateTime={event.created_at} title={formatDateTime(event.created_at, language, SCHOOL_TIMEZONE)} className="shrink-0 text-sm text-muted tabular-nums">{timeText}</time>
+      </div>
+      {subtitle !== "" && <p className="break-words text-sm text-muted">{subtitle}</p>}
     </li>
   );
 }
