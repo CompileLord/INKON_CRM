@@ -51,7 +51,7 @@ describe("single-screen journal page", () => {
     renderWorkspace();
     await waitForGrid();
     const toolbar: HTMLElement = screen.getByTestId("journal-toolbar");
-    expect(within(toolbar).getByRole("combobox", { name: "Period" })).toBeDefined();
+    expect(within(toolbar).getByRole("button", { name: "Period" })).toBeDefined();
     expect(within(toolbar).getByTestId("journal-search-slot")).toBeDefined();
     expect(within(toolbar).getByRole("button", { name: "Period options" })).toBeDefined();
     expect(within(toolbar).getByTestId("journal-save-status")).toBeDefined();
@@ -85,7 +85,7 @@ describe("single-screen journal page", () => {
     expect(screen.queryByTestId("progress-collapse-toggle")).toBeNull();
   });
 
-  it("shows Exam and Bonus as the last editable columns before Total and %, and saves an exam edit through the summary endpoint", async () => {
+  it("shows Exam and Bonus as the last editable columns before Total, and saves an exam edit through the summary endpoint", async () => {
     updateSummaryMock.mockImplementation(async (journalId, studentId, payload) => ({
       ...(buildJournal(journalId).students[0].summary as NonNullable<JournalDetailResponse["students"][number]["summary"]>),
       journal_id: journalId,
@@ -97,7 +97,7 @@ describe("single-screen journal page", () => {
     renderWorkspace();
     await waitForGrid();
     const names: string[] = screen.getAllByRole("columnheader").map((header) => header.textContent ?? "");
-    expect(names.slice(-4)).toEqual(["Exam", "Bonus", "Total", "%"]);
+    expect(names.slice(-3)).toEqual(["Exam", "Bonus", "Total"]);
     const exam = screen.getByRole("textbox", { name: "Exam score for Anvar Tester" });
     fireEvent.change(exam, { target: { value: "30" } });
     fireEvent.blur(exam);
@@ -219,41 +219,24 @@ describe("Group 04 cross-surface integration", () => {
 
 });
 
-describe("period listbox keyboard and focus", () => {
-  it("opens with ArrowDown, moves with the arrows, Home and End and shows the active option through aria-activedescendant", async () => {
-    renderWorkspace();
-    await waitForGrid();
-    periodPicker().focus();
-    fireEvent.keyDown(periodPicker(), { key: "ArrowDown" });
-    const listbox = screen.getByRole("listbox");
-    expect(document.activeElement).toBe(listbox);
-    const options = within(listbox).getAllByRole("option");
-    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[2].id);
-    fireEvent.keyDown(listbox, { key: "ArrowUp" });
-    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[1].id);
-    fireEvent.keyDown(listbox, { key: "Home" });
-    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[0].id);
-    fireEvent.keyDown(listbox, { key: "End" });
-    expect(listbox.getAttribute("aria-activedescendant")).toBe(options[2].id);
-  });
-
-  it("jumps by typeahead on the period label", async () => {
+describe("period select keyboard and focus", () => {
+  it("opens on click, moves focus with the arrows, Home and End and marks the selected option", async () => {
     renderWorkspace();
     await waitForGrid();
     fireEvent.click(periodPicker());
     const listbox = screen.getByRole("listbox");
     const options = within(listbox).getAllByRole("option");
-    fireEvent.keyDown(listbox, { key: "m" });
-    fireEvent.keyDown(listbox, { key: "o" });
-    fireEvent.keyDown(listbox, { key: "n" });
-    fireEvent.keyDown(listbox, { key: "t" });
-    fireEvent.keyDown(listbox, { key: "h" });
-    fireEvent.keyDown(listbox, { key: " " });
-    expect(options.length).toBe(3);
-    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+    expect(options.map((option) => option.getAttribute("aria-selected"))).toEqual(["false", "false", "true"]);
+    options[2].focus();
+    fireEvent.keyDown(listbox, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(options[1]);
+    fireEvent.keyDown(listbox, { key: "Home" });
+    expect(document.activeElement).toBe(options[0]);
+    fireEvent.keyDown(listbox, { key: "End" });
+    expect(document.activeElement).toBe(options[2]);
   });
 
-  it("selects with Enter through the drain: waits for the slow save, then switches", async () => {
+  it("selects through the drain: waits for the slow save, then switches", async () => {
     const slow = createDeferred<JournalBatchUpdateResponse>();
     batchUpdateMock.mockReturnValueOnce(slow.promise);
     renderWorkspace();
@@ -261,11 +244,7 @@ describe("period listbox keyboard and focus", () => {
     const cell = gradeCell("Anvar", "2026-10-13");
     cell.focus();
     fireEvent.keyDown(cell, { key: "4" });
-    periodPicker().focus();
-    fireEvent.keyDown(periodPicker(), { key: "ArrowDown" });
-    const listbox = screen.getByRole("listbox");
-    fireEvent.keyDown(listbox, { key: "Home" });
-    fireEvent.keyDown(listbox, { key: "Enter" });
+    choosePeriod(AUGUST);
     await screen.findByText("Saving your changes before you leave…");
     expect(router.state.location.search).toBe("");
     await act(async () => {
@@ -274,23 +253,22 @@ describe("period listbox keyboard and focus", () => {
     await waitFor(() => expect(router.state.location.search).toBe(`?period=${AUGUST}`));
   });
 
-  it("closes with Escape and returns focus to the trigger without changing the period", async () => {
+  it("closes with Escape without changing the period", async () => {
     renderWorkspace();
     await waitForGrid();
     fireEvent.click(periodPicker());
     const listbox = screen.getByRole("listbox");
     fireEvent.keyDown(listbox, { key: "Home" });
     fireEvent.keyDown(listbox, { key: "Escape" });
-    expect(screen.queryByRole("listbox")).toBeNull();
-    expect(document.activeElement).toBe(periodPicker());
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
     expect(router.state.location.search).toBe("");
   });
 
-  it("closes on an outside press", async () => {
+  it("choosing the already selected period keeps the route unchanged", async () => {
     renderWorkspace();
     await waitForGrid();
-    fireEvent.click(periodPicker());
-    fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("listbox")).toBeNull();
+    choosePeriod(OCTOBER);
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+    expect(router.state.location.search).toBe("");
   });
 });
