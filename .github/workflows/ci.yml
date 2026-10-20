@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
-      - run: pip install "ruff>=0.6.0"
+      - run: pip install --require-hashes -r backend/requirements-ci.lock
       - run: ruff check backend
 
   backend-test:
@@ -115,7 +115,6 @@ jobs:
           cache-dependency-path: backend/requirements.lock
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install --require-hashes -r backend/requirements.lock
       - name: Install isolated Redis and TLS test tools
         run: |
@@ -182,7 +181,6 @@ jobs:
           cache-dependency-path: backend/requirements.lock
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install --require-hashes -r backend/requirements.lock
       - name: Upgrade to head
         working-directory: backend
@@ -225,7 +223,6 @@ jobs:
           cache-dependency-path: backend/requirements.lock
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install --require-hashes -r backend/requirements.lock
       - name: Regenerate CONTRACT.md
         working-directory: backend
@@ -296,7 +293,7 @@ jobs:
           python-version: '3.12'
       - name: pip-audit (known unfixed python-jose/ecdsa advisories on main)
         run: |
-          pip install pip-audit
+          pip install --require-hashes -r backend/requirements-ci.lock
           pip-audit --require-hashes -r backend/requirements.lock
         continue-on-error: true
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020

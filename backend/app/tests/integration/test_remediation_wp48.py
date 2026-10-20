@@ -98,13 +98,21 @@ class TestImageInstallsFromHashedLock:
     def test_ci_installs_and_audits_through_the_hashed_lock(self) -> None:
         ci_text: str = ReleaseFileReader.read(".github/workflows/ci.yml")
         assert "backend/requirements.txt" not in ci_text
-        install_lines: List[str] = [
-            line for line in ci_text.splitlines() if "pip install -r" in line or "pip install --require-hashes" in line
-        ]
-        assert len(install_lines) == 3
+        install_lines: List[str] = [line for line in ci_text.splitlines() if "pip install" in line]
+        assert len(install_lines) == 5
         for line in install_lines:
-            assert "--require-hashes -r backend/requirements.lock" in line
+            assert re.search(r"--require-hashes -r backend/requirements(-ci)?\.lock$", line.strip()), line
         assert "pip-audit --require-hashes -r backend/requirements.lock" in ci_text
+
+    def test_ci_tooling_lock_pins_ruff_and_pip_audit_with_hashes(self) -> None:
+        tooling_text: str = ReleaseFileReader.read("backend/requirements-ci.lock")
+        for tool_name in ("ruff", "pip-audit"):
+            assert re.search(rf"^{tool_name}==\d+(\.\d+)+ \\\n    --hash=sha256:[0-9a-f]{{64}}", tooling_text, re.MULTILINE), tool_name
+
+    def test_wrangler_version_is_an_exact_pin(self) -> None:
+        deploy_text: str = ReleaseFileReader.read(".github/workflows/deploy-frontend.yml")
+        version_match: re.Match[str] | None = re.search(r"wranglerVersion:\s*'(\d+\.\d+\.\d+)'", deploy_text)
+        assert version_match is not None
 
 
 class TestWorkflowPinning:
