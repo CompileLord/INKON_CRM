@@ -42,7 +42,7 @@ Evidence and raw logs: `/home/compilelord/.local/state/imkon-remediation/` (outs
 | WP-34 | in_progress | remediation/wp-34-course-progress | 2026-10-20 | Baseline1103 reused | /root/wp31_preflight; chart cohort/linear grouping; logs wp34-sol/. |
 | WP-35 | todo | — | — | Not run | Pending. |
 | WP-36 | done | master | 2026-10-18 | Executor backend 874 pass/7 fail vs baseline 865 pass/same 7 fail (six Alembic multiple-heads, test_avatar_upload_and_thumbnail); targeted 9 pass; ruff pass; 5 mutations caught, 6 of 9 tests red on baseline | PASS commit dc3018d; shared/exclusive advisory month locks, sorted order, held to commit. Gaps: no throughput/deadlock-rate measurements; the 7 failures pre-date WP-36 (multiple Alembic heads introduced by WP-25 + main credentials migration, fix in progress). Logs wp36-sol/. |
-| WP-37 | todo | — | — | Not run | Pending. |
+| WP-37 | in_progress | remediation/wp-37-installment-identity | 2026-10-20 | Read-only preflight | /root/wp37_preflight; tests await disposable runtime. |
 | WP-38 | done | remediation/wp-38-seed-identities | 2026-10-15 | Independent Python3.12 365 pass (235.85s), critical 4 pass (4.81s); restored seed/reset/critical 41 pass; all three mapping mutations caught | PASS generated IDs with offset/default sequences, repeated guarded seed, finance/photo references and subsequent API creation. Logs wp13-recovery/wp38-root-*.log. Source/test bytes matched executed copy. |
 | WP-39 | todo | — | — | Not run | Pending. |
 | WP-40 | todo | — | — | Not run | Pending. |
