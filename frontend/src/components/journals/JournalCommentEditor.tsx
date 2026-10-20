@@ -3,6 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 
+export const MAX_COMMENT_CODE_POINTS: number = 1000;
+
+export function countCodePoints(text: string): number {
+  return Array.from(text).length;
+}
+
 interface JournalCommentEditorProps {
   studentName: string;
   formattedDate: string;
@@ -32,7 +38,11 @@ export const JournalCommentEditor: React.FC<JournalCommentEditorProps> = ({
     setConfirmingDiscard(true);
   };
 
+  const codePointCount: number = countCodePoints(draft.trim());
+  const isTooLong: boolean = codePointCount > MAX_COMMENT_CODE_POINTS;
+
   const save = (): void => {
+    if (isTooLong) return;
     onSave(draft.trim());
     onClose();
   };
@@ -61,7 +71,7 @@ export const JournalCommentEditor: React.FC<JournalCommentEditorProps> = ({
         <Button type="button" variant="secondary" onClick={onClose}>
           {t("table.commentCancel")}
         </Button>
-        <Button type="button" onClick={save}>
+        <Button type="button" onClick={save} disabled={isTooLong}>
           {t("table.commentSave")}
         </Button>
       </div>
@@ -91,10 +101,22 @@ export const JournalCommentEditor: React.FC<JournalCommentEditorProps> = ({
             save();
           }
         }}
+        aria-invalid={isTooLong}
+        aria-describedby="journal-comment-limit"
         rows={5}
         placeholder={t("table.commentPlaceholder")}
         className="min-h-32 w-full resize-y rounded-[10px] border border-control-border bg-card p-3 text-base text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring"
       />
+      <div id="journal-comment-limit" className="mt-1 flex flex-col gap-1">
+        {isTooLong && (
+          <p role="alert" className="text-sm text-destructive">
+            {t("comment.tooLong", { max: MAX_COMMENT_CODE_POINTS })}
+          </p>
+        )}
+        <p className={`text-right text-xs tabular-nums ${isTooLong ? "text-destructive" : "text-muted"}`}>
+          {t("comment.counter", { count: codePointCount, max: MAX_COMMENT_CODE_POINTS })}
+        </p>
+      </div>
     </Modal>
   );
 };

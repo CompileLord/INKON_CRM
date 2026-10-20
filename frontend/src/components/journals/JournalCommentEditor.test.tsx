@@ -115,4 +115,62 @@ describe("JournalCommentEditor", () => {
     expect(onClose).not.toHaveBeenCalled();
     expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("Typed before the keyboard opened");
   });
+
+  describe("length limit", () => {
+    function typeComment(textarea: HTMLTextAreaElement, value: string): void {
+      fireEvent.change(textarea, { target: { value } });
+    }
+
+    it("accepts exactly 1000 code points and saves", () => {
+      const { textarea, onSave } = mount(null);
+      typeComment(textarea, "a".repeat(1000));
+      expect(screen.queryByRole("alert")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      expect(onSave).toHaveBeenCalledWith("a".repeat(1000));
+    });
+
+    it("rejects 1001 code points with a message and blocks Save and Ctrl+Enter", () => {
+      const { textarea, onSave } = mount(null);
+      typeComment(textarea, "a".repeat(1001));
+      expect(screen.getByRole("alert").textContent).toContain("1000");
+      expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.keyDown(textarea, { key: "Enter", ctrlKey: true });
+      expect(onSave).not.toHaveBeenCalled();
+      expect(textarea.value.length).toBe(1001);
+    });
+
+    it("counts astral emoji as one code point each", () => {
+      const { textarea, onSave } = mount(null);
+      typeComment(textarea, "\u{1F600}".repeat(1000));
+      expect(textarea.value.length).toBe(2000);
+      expect(screen.queryByRole("alert")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects 1001 astral emoji", () => {
+      const { textarea } = mount(null);
+      typeComment(textarea, "\u{1F600}".repeat(1001));
+      expect(screen.getByRole("alert")).toBeDefined();
+      expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("does not count surrounding whitespace that is trimmed on save", () => {
+      const { textarea } = mount(null);
+      typeComment(textarea, `  ${"a".repeat(1000)}  `);
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("shows the limit message in Russian and Tajik", async () => {
+      for (const language of ["ru", "tg"]) {
+        await i18n.changeLanguage(language);
+        const { textarea } = mount(null);
+        typeComment(textarea, "a".repeat(1001));
+        const message: string = screen.getByRole("alert").textContent ?? "";
+        expect(message).toContain("1000");
+        expect(message).not.toBe(i18n.getFixedT("en", "journals")("comment.tooLong", { max: 1000 }));
+        cleanup();
+      }
+    });
+  });
 });
