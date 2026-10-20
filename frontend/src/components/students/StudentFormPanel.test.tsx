@@ -83,6 +83,15 @@ describe("StudentFormPanel", () => {
     expect(screen.queryByText(/Upload photo/i)).toBeNull();
   });
 
+  it("shows the birth date through the shared date picker as dd.MM.yyyy without a native date input", () => {
+    const { container } = renderPanel({ student: existingStudent });
+
+    expect(container.ownerDocument.querySelector('input[type="date"]')).toBeNull();
+    const birthDate = screen.getByLabelText(/Date of birth/i) as HTMLInputElement;
+    expect(birthDate.value).toBe("12.04.2005");
+    expect(birthDate.placeholder).toBe("dd.mm.yyyy");
+  });
+
   it("renders avatar upload field in edit mode", () => {
     renderPanel({ student: existingStudent });
 

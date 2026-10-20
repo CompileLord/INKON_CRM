@@ -18,6 +18,7 @@ interface DataTableProps<Row> {
   rows: readonly Row[];
   rowKey: (row: Row) => string;
   rowHref?: (row: Row) => To;
+  rowState?: (row: Row) => unknown;
   rowMenu?: (row: Row) => readonly MenuItem[];
   isLoading: boolean;
   isError: boolean;
@@ -27,7 +28,7 @@ interface DataTableProps<Row> {
   skeletonRowCount?: number;
 }
 
-export function DataTable<Row>({ caption, columns, rows, rowKey, rowHref, rowMenu, isLoading, isError, onRetry, emptyTitle, emptyDescription, skeletonRowCount = 5 }: DataTableProps<Row>) {
+export function DataTable<Row>({ caption, columns, rows, rowKey, rowHref, rowState, rowMenu, isLoading, isError, onRetry, emptyTitle, emptyDescription, skeletonRowCount = 5 }: DataTableProps<Row>) {
   const hasMenuColumn: boolean = rowMenu !== undefined;
   const columnCount: number = columns.length + (hasMenuColumn ? 1 : 0);
   const showRows: boolean = !isLoading && !isError && rows.length > 0;
@@ -70,7 +71,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, rowHref, rowMen
                 {columns.map((column, columnIndex) => (
                   <td key={column.key} className={`px-4 py-3 text-ink ${column.numeric ? "text-right tabular-nums" : ""} ${column.className ?? ""}`}>
                     {columnIndex === 0 && rowHref !== undefined ? (
-                      <Link to={rowHref(row)} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring after:absolute after:inset-0 after:content-['']">{column.cell(row)}</Link>
+                      <Link to={rowHref(row)} state={rowState?.(row)} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring after:absolute after:inset-0 after:content-['']">{column.cell(row)}</Link>
                     ) : column.cell(row)}
                   </td>
                 ))}

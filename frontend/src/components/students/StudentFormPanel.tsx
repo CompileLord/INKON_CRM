@@ -1,39 +1,17 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { Controller, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import { UNSAFE_DataRouterContext, useBlocker } from "react-router-dom";
+import { UNSAFE_DataRouterContext } from "react-router-dom";
+import { StudentNavigationGuard, type NavigationDecision } from "./StudentNavigationGuard";
+import { StudentContactFields } from "./StudentContactFields";
+import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { AvatarUploadField } from "../ui/AvatarUploadField";
 import { createStudentFormSchema, type StudentFormValues } from "../../lib/studentFormSchema";
 
-interface NavigationDecision {
-  proceed: () => void;
-  reset: () => void;
-}
-
-function StudentNavigationGuard({
-  active,
-  onBlock,
-}: {
-  active: boolean;
-  onBlock: (decision: NavigationDecision) => void;
-}) {
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      active && currentLocation.pathname !== nextLocation.pathname,
-  );
-
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      onBlock({ proceed: blocker.proceed, reset: blocker.reset });
-    }
-  }, [blocker.state, onBlock]);
-
-  return null;
-}
 import {
   applyFieldErrors,
   buildCreatePayload,
@@ -143,6 +121,7 @@ function StudentFormPanelInner({
 
   const {
     register,
+    control,
     handleSubmit,
     setError,
     reset,
@@ -156,11 +135,6 @@ function StudentFormPanelInner({
   const firstNameReg = register("firstName");
   const lastNameReg = register("lastName");
   const emailReg = register("email");
-  const phoneReg = register("phone");
-  const birthDateReg = register("birthDate");
-  const parentPhoneReg = register("parentPhone");
-  const parentTelegramChatIdReg = register("parentTelegramChatId");
-  const paymentDayReg = register("paymentDay");
 
   const isPending = createUser.isPending || updateUser.isPending;
   const isLocked = isPending || isSubmitting || isAvatarBusy;
@@ -482,14 +456,19 @@ function StudentFormPanelInner({
               <label htmlFor="student-birthDate" className={labelClass}>
                 {t("form.dobLabel")}
               </label>
-              <input
-                id="student-birthDate"
-                type="date"
-                autoComplete="bday"
-                aria-invalid={Boolean(errors.birthDate)}
-                aria-describedby={errors.birthDate ? "student-birthDate-error" : undefined}
-                className={inputClass}
-                {...birthDateReg}
+              <Controller
+                control={control}
+                name="birthDate"
+                render={({ field }) => (
+                  <DatePicker
+                    id="student-birthDate"
+                    label={t("form.dobLabel")}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    invalid={Boolean(errors.birthDate)}
+                    describedBy={errors.birthDate ? "student-birthDate-error" : undefined}
+                  />
+                )}
               />
               {errors.birthDate?.message && (
                 <span id="student-birthDate-error" role="alert" className="text-xs text-destructive">
@@ -499,135 +478,7 @@ function StudentFormPanelInner({
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-ink border-b border-border pb-2">
-              {t("form.sectionContacts")}
-            </h3>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="student-phone" className={labelClass}>
-                  {t("form.phoneLabel")}
-                </label>
-                <span className="text-xs text-muted">
-                  {t("form.phoneHelp")}
-                </span>
-              </div>
-              <input
-                id="student-phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="+992901234567"
-                aria-invalid={Boolean(errors.phone)}
-                aria-describedby={
-                  errors.phone
-                    ? "student-phone-error"
-                    : "student-phone-help"
-                }
-                className={inputClass}
-                {...phoneReg}
-              />
-              <span id="student-phone-help" className="sr-only">
-                {t("form.phoneHelp")}
-              </span>
-              {errors.phone?.message && (
-                <span id="student-phone-error" role="alert" className="text-xs text-destructive">
-                  {errors.phone.message}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="student-parentPhone" className={labelClass}>
-                {t("form.parentPhoneLabel")}
-              </label>
-              <input
-                id="student-parentPhone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="+992901234567"
-                aria-invalid={Boolean(errors.parentPhone)}
-                aria-describedby={errors.parentPhone ? "student-parentPhone-error" : undefined}
-                className={inputClass}
-                {...parentPhoneReg}
-              />
-              {errors.parentPhone?.message && (
-                <span id="student-parentPhone-error" role="alert" className="text-xs text-destructive">
-                  {errors.parentPhone.message}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="student-parentTelegramChatId" className={labelClass}>
-                {t("form.telegramChatIdLabel")}
-              </label>
-              <input
-                id="student-parentTelegramChatId"
-                inputMode="numeric"
-                placeholder="123456789"
-                aria-invalid={Boolean(errors.parentTelegramChatId)}
-                aria-describedby={
-                  errors.parentTelegramChatId
-                    ? "student-parentTelegramChatId-error"
-                    : "student-parentTelegramChatId-help"
-                }
-                className={inputClass}
-                {...parentTelegramChatIdReg}
-              />
-              <span id="student-parentTelegramChatId-help" className="text-xs text-muted">
-                {t("form.telegramChatIdHelp")}
-              </span>
-              {errors.parentTelegramChatId?.message && (
-                <span id="student-parentTelegramChatId-error" role="alert" className="text-xs text-destructive">
-                  {errors.parentTelegramChatId.message}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-ink border-b border-border pb-2">
-              {t("form.sectionPayment")}
-            </h3>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="student-paymentDay" className={labelClass}>
-                  {t("form.paymentDayLabel")}
-                </label>
-                <span className="text-xs text-muted">
-                  {t("form.paymentDayHelp")}
-                </span>
-              </div>
-              <input
-                id="student-paymentDay"
-                type="number"
-                min={1}
-                max={28}
-                inputMode="numeric"
-                placeholder="10"
-                aria-invalid={Boolean(errors.paymentDay)}
-                aria-describedby={
-                  errors.paymentDay
-                    ? "student-paymentDay-error"
-                    : "student-paymentDay-help"
-                }
-                className={inputClass}
-                {...paymentDayReg}
-              />
-              <span id="student-paymentDay-help" className="sr-only">
-                {t("form.paymentDayHelp")}
-              </span>
-              {errors.paymentDay?.message && (
-                <span id="student-paymentDay-error" role="alert" className="text-xs text-destructive">
-                  {errors.paymentDay.message}
-                </span>
-              )}
-            </div>
-          </div>
+          <StudentContactFields register={register} errors={errors} />
         </form>
       </SlideOver>
 
