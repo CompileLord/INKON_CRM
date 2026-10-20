@@ -15,9 +15,9 @@ Plan: `PLAN.md`. One row per task; updated by the orchestrator only.
 | UX-5a | Design system primitives | kitob/ux-5a-design-system | accepted | 76d3395, d1adb2b; merged 7e0157f; master build 0, vitest 1653 passed; guard allowlist 31 entries to burn down in UX-5b/c/d |
 | UX-5b | Admin list pages | kitob/ux-5b | in progress | |
 | UX-5c | Detail pages | kitob/ux-5c | in progress | |
-| UX-5d | Mentor and student experience | kitob/ux-5d | in progress | |
-| FIN-1a | Debt reminders backend | kitob/fin-1a-debt-reminders | in progress | Codex hit quota mid-task; continued by Sonnet fallback |
-| BE-4 | Student endpoints scoped to the caller (privacy) | kitob/be-4-student-privacy | in progress | found in UX-5d: class-progress and class journal return classmates to students |
+| UX-5d | Mentor and student experience | kitob/ux-5d | accepted | merged 6a256c0 after audit fix ba71c11; master build 0, vitest 1656 passed; follow-up: use BE-4 class averages in student chart |
+| FIN-1a | Debt reminders backend | kitob/fin-1a-debt-reminders | accepted | merged 4fd209f (incl. 9d785dd bulk-query fix); backend 1124 passed + 2 env failures; migration fork with rwp31 being fixed on kitob/fin-1a-chain |
+| BE-4 | Student endpoints scoped to the caller (privacy) | kitob/be-4-student-privacy | in progress | 583e099 privacy; audit: class-progress lost class averages, fix in progress (Codex quota → Sonnet) |
 | FIN-1b | Debt reminders UI | — | pending | needs FIN-1a, UX-5b |
 | FE-R34 | Course chart contract synchronization | — | pending | WP34 backend integrated9a2afe9; frontend owner: role union, nullable series/rank and metadata. Exact scope/tests in PLAN.md; frontend checks not run. |
 | FE-R35 | Autosave batching and comment limits | — | pending | Release prerequisite for WP35 backend candidate (1173 tests passed): <=250 unique cells/request, <=1000 Unicode code points/comment; preserve drafts/conflicts/retries. Not implemented; see PLAN.md. |
