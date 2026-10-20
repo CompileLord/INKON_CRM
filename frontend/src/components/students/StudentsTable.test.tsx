@@ -95,84 +95,48 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
 describe("StudentsTable", () => {
   it("shows the parent-linked badge only for students whose parent has linked Telegram", () => {
     renderTable();
-    const desktop = screen.getAllByText("Parent linked");
+    const desktop = screen.getAllByText("Linked");
     expect(desktop.length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Parent not linked").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Not linked").length).toBeGreaterThan(0);
     const sarahRow = document.getElementById("student-row-101") as HTMLElement;
     const johnRow = document.getElementById("student-row-102") as HTMLElement;
-    expect(within(sarahRow).getByText("Parent linked")).toBeTruthy();
-    expect(within(johnRow).getByText("Parent not linked")).toBeTruthy();
+    expect(within(sarahRow).getByText("Linked")).toBeTruthy();
+    expect(within(johnRow).getByText("Not linked")).toBeTruthy();
   });
 
-  it("renders desktop table with real link, phone tel, tabular payment day, and 44px menu button", async () => {
+  it("renders each student as one row link with phone text, payment day and a menu button", async () => {
     const { props } = renderTable();
 
-    const sarahLinks = screen.getAllByRole("link", { name: "Sarah Connor" });
-    expect(sarahLinks.length).toBeGreaterThan(0);
-    expect(sarahLinks[0].getAttribute("href")).toBe("/students/101");
+    const row = document.getElementById("student-row-101") as HTMLElement;
+    const rowLink = within(row).getByRole("link", { name: /Sarah Connor/ });
+    expect(rowLink.getAttribute("href")).toBe("/students/101");
+    expect(within(row).getAllByRole("link")).toHaveLength(1);
+    expect(within(row).getByText("+992900000001").className).toContain("tabular-nums");
 
-    const phoneLinks = screen.getAllByRole("link", { name: "+992900000001" });
-    expect(phoneLinks.length).toBeGreaterThan(0);
-    expect(phoneLinks[0].getAttribute("href")).toBe("tel:+992900000001");
-
-    const menuButtons = screen.getAllByRole("button", { name: "Student actions: Sarah Connor" });
-    expect(menuButtons.length).toBeGreaterThan(0);
-
+    const menuButton = within(row).getByRole("button", { name: "Student actions: Sarah Connor" });
     const user = userEvent.setup();
-    await user.click(menuButtons[0]);
-
-    const editItems = await screen.findAllByRole("menuitem", { name: /Edit/i });
-    expect(editItems.length).toBeGreaterThan(0);
-    await user.click(editItems[0]);
-
-    expect(props.onEdit).toHaveBeenCalledWith(mockStudents[0], expect.anything());
+    await user.click(menuButton);
+    await user.click(await screen.findByRole("menuitem", { name: /Edit/i }));
+    expect(props.onEdit).toHaveBeenCalledWith(mockStudents[0], menuButton);
   });
 
-  it("shows a single student phone per row with no phone labels and the guardian phone only inside the popover", async () => {
+  it("renders the payment day as text and no status pill for active students", () => {
     renderTable();
 
-    expect(screen.queryByText("Student phone")).toBeNull();
-    expect(screen.queryByText("Guardian phone")).toBeNull();
-    expect(screen.queryByText("+992900000002")).toBeNull();
-
-    const user = userEvent.setup();
-    const triggers = screen.getAllByRole("button", { name: "Guardian phone" });
-    expect(triggers.length).toBeGreaterThan(0);
-    await user.click(triggers[0]);
-
-    const guardianLink = await screen.findByRole("link", { name: "+992900000002" });
-    expect(guardianLink.getAttribute("href")).toBe("tel:+992900000002");
-    expect(guardianLink.className).toContain("tabular-nums");
-  });
-
-  it("renders no guardian trigger for a student without a guardian phone", () => {
-    renderTable({ students: [mockStudents[1]], total: 1 });
-    expect(screen.queryAllByRole("button", { name: "Guardian phone" })).toHaveLength(0);
-  });
-
-  it("renders the payment day as a chip and shows no status pill for active students", () => {
-    renderTable();
-
-    expect(screen.getAllByText("Day 12").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Day 25").length).toBeGreaterThan(0);
+    expect(screen.getByText("Day 12")).toBeTruthy();
+    expect(screen.getByText("Day 25")).toBeTruthy();
 
     const activeRow = document.getElementById("student-row-101") as HTMLElement;
-    expect(within(activeRow).queryByText("Active")).toBeNull();
     expect(within(activeRow).queryByText("Archived")).toBeNull();
 
     const archivedRow = document.getElementById("student-row-102") as HTMLElement;
     expect(within(archivedRow).getByText("Archived")).toBeDefined();
-    expect(screen.queryAllByText("Active")).toHaveLength(0);
   });
 
-  it("explains the payment day in the column header tooltip", async () => {
+  it("does not add a filler tooltip to the payment day header", () => {
     renderTable();
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Payment day" }));
-    expect(await screen.findByRole("tooltip")).toHaveProperty(
-      "textContent",
-      "The day of each month when this student's payment is due.",
-    );
+    expect(screen.queryByRole("button", { name: "Payment day" })).toBeNull();
+    expect(screen.getByText("Payment day")).toBeTruthy();
   });
 
   it("truncates the email on one line with a title", () => {
@@ -182,13 +146,12 @@ describe("StudentsTable", () => {
     expect(email?.className).toContain("truncate");
   });
 
-  it("opens the profile when the row is clicked but not when the phone link or menu is used", async () => {
+  it("records navigation when the row link is used but not when the menu is used", async () => {
     const onStudentNavigate = vi.fn();
     renderTable({ onStudentNavigate });
     const user = userEvent.setup();
     const row = document.getElementById("student-row-101") as HTMLElement;
 
-    await user.click(within(row).getByRole("link", { name: "+992900000001" }));
     await user.click(within(row).getByRole("button", { name: "Student actions: Sarah Connor" }));
     expect(onStudentNavigate).not.toHaveBeenCalled();
     expect(screen.getByTestId("location").textContent).toBe("/students");
@@ -214,23 +177,20 @@ describe("StudentsTable", () => {
     expect(props.onPageSizeChange).toHaveBeenCalledWith(50);
   });
 
-  it("renders mobile cards with name, email, phone and payment chip and no nested vertical scroll", () => {
+  it("keeps the same single-column-capable row on phones without a nested scroll container", () => {
     renderTable();
-    const card = document.getElementById("student-card-101") as HTMLElement;
-    expect(within(card).getByRole("link", { name: "Sarah Connor" })).toBeDefined();
-    expect(within(card).getByText("sarah.connor@example.com")).toBeDefined();
-    expect(within(card).getByRole("link", { name: "+992900000001" })).toBeDefined();
-    expect(within(card).getByText("Day 12")).toBeDefined();
-    expect(card.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
-    expect(document.querySelector("table")?.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    const row = document.getElementById("student-row-101") as HTMLElement;
+    expect(within(row).getByText("sarah.connor@example.com")).toBeDefined();
+    expect(within(row).getByText("Day 12")).toBeDefined();
+    expect(row.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    expect(document.querySelector("table")).toBeNull();
   });
 
-  it("renders loading skeleton in table and mobile layouts", () => {
+  it("renders a loading skeleton with the row grid geometry", () => {
     const { container } = renderTable({ isLoading: true, students: [], total: 0 });
 
-    const desktopSkeletonRows = container.querySelectorAll("tbody tr.h-\\[60px\\]");
-    expect(desktopSkeletonRows).toHaveLength(5);
-    expect(container.querySelectorAll('.lg\\:hidden [aria-hidden="true"]')).toHaveLength(4);
+    expect(container.querySelectorAll('ul[aria-hidden="true"] > li')).toHaveLength(5);
+    expect(container.querySelector("ul[aria-hidden='true'] .md\\:grid-cols-\\[minmax\\(0\\,2\\.2fr\\)_minmax\\(0\\,1\\.2fr\\)_5\\.5rem_6\\.5rem\\]")).not.toBeNull();
     expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
   });
 
@@ -286,7 +246,7 @@ describe("StudentsTable", () => {
     expect(errorAlert).toBeDefined();
     expect(screen.getByText("Failed to update list. Showing last loaded data.")).toBeDefined();
 
-    const emptyHeadings = screen.getAllByRole("heading", { name: "No students yet" });
+    const emptyHeadings = screen.getAllByText("No students yet");
     expect(emptyHeadings.length).toBeGreaterThan(0);
 
     const addButtons = screen.getAllByRole("button", { name: /Add Student/i });
@@ -316,7 +276,7 @@ describe("StudentsTable", () => {
     const errorAlert = screen.getByRole("alert");
     expect(errorAlert).toBeDefined();
 
-    const emptyHeadings = screen.getAllByRole("heading", { name: "No students found" });
+    const emptyHeadings = screen.getAllByText("No students found");
     expect(emptyHeadings.length).toBeGreaterThan(0);
     expect(screen.getAllByText("No students match your search query").length).toBeGreaterThan(0);
 

@@ -1,4 +1,3 @@
-import { Receipt, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDebts, usePayments } from "../../lib/finance/hooks";
 import type { CollectionRange } from "../../lib/finance/urlState";
@@ -35,9 +34,6 @@ export function OverviewTab({ range, onApplyRange, onAcceptPayment, onOpenDetail
         <PreviewPanel
           headingId="finance-course-balances"
           title={t("courseBalances.title")}
-          info={t("courseBalances.info")}
-          scope={null}
-          icon={<Wallet size={18} aria-hidden="true" />}
           loadingLabel={t("courseBalances.loading")}
           errorLabel={t("courseBalances.error")}
           emptyLabel={t("courseBalances.empty")}
@@ -59,9 +55,6 @@ export function OverviewTab({ range, onApplyRange, onAcceptPayment, onOpenDetail
         <PreviewPanel
           headingId="finance-latest-payments"
           title={t("latestPayments.title")}
-          info={t("latestPayments.info")}
-          scope={t("latestPayments.scope")}
-          icon={<Receipt size={18} aria-hidden="true" />}
           loadingLabel={t("latestPayments.loading")}
           errorLabel={t("latestPayments.error")}
           emptyLabel={t("latestPayments.empty")}

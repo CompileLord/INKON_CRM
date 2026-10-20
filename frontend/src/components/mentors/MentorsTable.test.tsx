@@ -80,28 +80,22 @@ function renderTable(props: Partial<Parameters<typeof MentorsTable>[0]> = {}) {
 }
 
 describe("MentorsTable", () => {
-  it("renders desktop table with real link, phone tel, user status badge, and 44px menu button", async () => {
+  it("renders each teacher as one row link with phone text, archived badge only when archived, and a menu", async () => {
     const { props } = renderTable();
 
-    const dilshodLinks = screen.getAllByRole("link", { name: "Dilshod Rahimov" });
-    expect(dilshodLinks.length).toBeGreaterThan(0);
-    expect(dilshodLinks[0].getAttribute("href")).toBe("/mentors/201");
+    const row = document.getElementById("mentor-row-201") as HTMLElement;
+    const rowLink = within(row).getByRole("link", { name: /Dilshod Rahimov/ });
+    expect(rowLink.getAttribute("href")).toBe("/mentors/201");
+    expect(within(row).getAllByRole("link")).toHaveLength(1);
+    expect(within(row).getByText("+992900000001").className).toContain("tabular-nums");
+    expect(row.querySelector("[data-badge-status]")).toBeNull();
+    expect((document.getElementById("mentor-row-202") as HTMLElement).querySelector("[data-badge-status='archived']")).not.toBeNull();
 
-    const phoneLinks = screen.getAllByRole("link", { name: "+992900000001" });
-    expect(phoneLinks.length).toBeGreaterThan(0);
-    expect(phoneLinks[0].getAttribute("href")).toBe("tel:+992900000001");
-
-    const menuButtons = screen.getAllByRole("button", { name: "Teacher actions: Dilshod Rahimov" });
-    expect(menuButtons.length).toBeGreaterThan(0);
-
+    const menuButton = within(row).getByRole("button", { name: "Teacher actions: Dilshod Rahimov" });
     const user = userEvent.setup();
-    await user.click(menuButtons[0]);
-
-    const editItems = await screen.findAllByRole("menuitem", { name: /Edit/i });
-    expect(editItems.length).toBeGreaterThan(0);
-    await user.click(editItems[0]);
-
-    expect(props.onEdit).toHaveBeenCalledWith(mockMentors[0], expect.anything());
+    await user.click(menuButton);
+    await user.click(await screen.findByRole("menuitem", { name: /Edit/i }));
+    expect(props.onEdit).toHaveBeenCalledWith(mockMentors[0], menuButton);
   });
 
   it("omits paymentDay column and all student parent fields entirely", () => {
@@ -110,11 +104,11 @@ describe("MentorsTable", () => {
     expect(screen.queryByText(/Parent/i)).toBeNull();
   });
 
-  it("renders email mailto fallback when phone is not provided", () => {
+  it("shows the email under the name and a dash when the phone is missing", () => {
     renderTable();
-    const emailLinks = screen.getAllByRole("link", { name: "parvina.saidova@example.com" });
-    expect(emailLinks.length).toBeGreaterThan(0);
-    expect(emailLinks[0].getAttribute("href")).toBe("mailto:parvina.saidova@example.com");
+    const row = document.getElementById("mentor-row-202") as HTMLElement;
+    expect(within(row).getByText("parvina.saidova@example.com")).toBeTruthy();
+    expect(within(row).getByText("—")).toBeTruthy();
   });
 
   it("renders empty state for empty search query with Add Teacher action", async () => {
@@ -160,22 +154,17 @@ describe("MentorsTable", () => {
     const alert = screen.getByRole("alert");
     expect(alert).toBeDefined();
     expect(screen.getByText("Failed to update list. Showing last loaded data.")).toBeDefined();
-    expect(screen.getAllByRole("link", { name: "Dilshod Rahimov" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Dilshod Rahimov/ }).length).toBeGreaterThan(0);
 
     const retryButton = within(alert).getByRole("button", { name: /Retry/i });
-    expect(retryButton.className).toContain("min-h-[44px]");
+    expect(retryButton).toBeTruthy();
   });
 
-  it("structures desktop table with table-fixed layout and responsive colgroup", () => {
+  it("uses the shared list geometry without a native table", () => {
     const { container } = renderTable();
-    const table = container.querySelector("table");
-    expect(table).not.toBeNull();
-    expect(table?.className).toContain("table-fixed");
-
-    const cols = container.querySelectorAll("colgroup col");
-    expect(cols.length).toBe(5);
-    expect(cols[0].className).toContain("w-[46%]");
-    expect(cols[3].className).toContain("hidden");
-    expect(cols[4].className).toContain("w-[84px]");
+    expect(container.querySelector("table")).toBeNull();
+    expect(container.querySelectorAll("[data-list-row]")).toHaveLength(2);
+    const grid = container.querySelector("a > span.grid");
+    expect(grid?.className).toContain("md:grid-cols-[");
   });
 });

@@ -1,10 +1,8 @@
 {
   "title": "Audit",
-  "titleInfo": "Who changed what, and when. Each row is one changed field.",
   "refresh": "Refresh",
   "searchLabel": "Search changes",
   "searchPlaceholder": "Search",
-  "searchInfo": "Searches the person, the kind of record and the field across every change, not only this page.",
   "filters": {
     "actor": "Who",
     "action": "Action",
@@ -49,7 +47,8 @@
     "refund": "<actor>{{actor}}</actor> refunded {{entity}}",
     "close_period": "<actor>{{actor}}</actor> closed {{entity}}",
     "reopen_period": "<actor>{{actor}}</actor> reopened {{entity}}",
-    "unknown": "<actor>{{actor}}</actor> changed {{entity}}"
+    "unknown": "<actor>{{actor}}</actor> changed {{entity}}",
+    "object": "<actor>{{actor}}</actor>: {{object}}"
   },
   "entities": {
     "payment": "Payment",
@@ -62,7 +61,10 @@
     "journal": "Journal",
     "enrollment": "Enrollment",
     "user": "User",
-    "student": "Student"
+    "student": "Student",
+    "student_telegram_link": "Parent Telegram link",
+    "journal_period_settings": "Period settings",
+    "journal_student_summary": "Student period summary"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -134,7 +136,6 @@
     "who": "Who",
     "when": "When",
     "record": "Record",
-    "changeNumber": "Change number",
     "before": "Before",
     "after": "After",
     "openStudent": "Open student",
@@ -152,7 +153,42 @@
     "paymentVoided": "<actor>{{actor}}</actor> voided {{amount}} payment from {{student}}",
     "reason": "Reason: {{reason}}",
     "fieldsChanged_one": "{{count}} field changed",
-    "fieldsChanged_other": "{{count}} fields changed"
+    "fieldsChanged_other": "{{count}} fields changed",
+    "fieldsList": "Changed: {{fields}}",
+    "similarCount": "{{count}} similar changes",
+    "showSimilar": "Show all",
+    "hideSimilar": "Hide"
   },
-  "moneyAmount": "{{amount}} TJS"
+  "moneyAmount": "{{amount}} TJS",
+  "objects": {
+    "journal_entry": {
+      "update": {
+        "score": "grade changed",
+        "attendance": "attendance changed",
+        "any": "journal entry changed"
+      },
+      "create": {
+        "score": "grade set",
+        "attendance": "attendance marked",
+        "any": "journal entry added"
+      }
+    },
+    "student_telegram_link": {
+      "update": {
+        "any": "parent Telegram link code renewed"
+      },
+      "create": {
+        "any": "parent Telegram link code created"
+      },
+      "delete": {
+        "any": "parent Telegram unlinked"
+      }
+    },
+    "course": {
+      "update": {
+        "mentor_id": "course teacher changed",
+        "status": "course status changed"
+      }
+    }
+  }
 }
