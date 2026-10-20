@@ -1,3 +1,4 @@
+from app.core.deps import get_student_journal_history_service
 from datetime import date, time, timedelta
 from decimal import Decimal
 from typing import Any
@@ -211,7 +212,7 @@ async def test_proven_only_means_ranks_and_history_keep_unknown_and_future_out(
     assert peer_profile["courses"][0]["my_rank"] == 0
     assert peer_profile["raw_totals"].unknown_summaries_count == 1
     assert peer_profile["raw_totals"].avg_score_raw is None
-    history: list[dict[str, Any]] = await repository.get_student_journals(classmate.id)
+    history: list[dict[str, Any]] = await get_student_journal_history_service(db_session).legacy(classmate.id)
     assert {row["journal_id"]: row["state"] for row in history} == {current.id: "in_progress", future.id: "upcoming"}
     grid: dict[str, Any] = await JournalService(db_session).get_journal(current.id, test_student)
     assert (grid["my_rank"], grid["class_avg_score"], grid["class_avg_percentage"]) == (1, 6.0, 5.9)
@@ -302,5 +303,5 @@ async def test_proven_zero_with_zero_maximum_counts_grade_without_ratio_or_rank(
     assert stats["raw_totals"].graded_summaries_count == 1
     assert stats["raw_totals"].periods_with_max_score_count == 0
     assert stats["raw_totals"].avg_score_raw is None
-    history: list[dict[str, Any]] = await repository.get_student_journals(test_student.id)
+    history: list[dict[str, Any]] = await get_student_journal_history_service(db_session).legacy(test_student.id)
     assert next(row for row in history if row["journal_id"] == current.id)["state"] == "graded"

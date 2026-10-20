@@ -118,13 +118,6 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
     async def get_student_profile_stats(self, student_id: int) -> Dict[str, Any]:
         return await SQLAlchemyStudentPerformanceRepository(self.session).get_student_profile_stats(student_id)
 
-    async def get_student_journals(
-        self,
-        student_id: int,
-        course_id: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        return await SQLAlchemyStudentPerformanceRepository(self.session).get_student_journals(student_id, course_id)
-
     async def get_student_visible_mentor_courses(self, mentor_id: int, student_id: int) -> list[Course]:
         statement: Select[tuple[Course]] = (
             select(Course)

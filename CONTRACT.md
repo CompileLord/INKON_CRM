@@ -804,6 +804,65 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## GET /api/v1/students/me/journals/page
+
+**Summary:** Get My Journal Page
+
+**Parameters:**
+- `page_size` [query]
+- `course_id` [query]
+- `started_only` [query]
+- `cursor` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "items": [
+      {
+        "journal_id": integer,
+        "course_id": integer,
+        "course_title": string,
+        "period_label": string,
+        "period_start": string,
+        "period_end": string,
+        "homework_score?": number,
+        "attendance_score?": number,
+        "exam_score?": number,
+        "bonus_score?": number,
+        "sum_score": number,
+        "max_period_score": number,
+        "percentage": number,
+        "attendance_count": integer,
+        "total_lessons": integer,
+        "state": string,
+      }
+    ],
+    "next_cursor": string,
+    "has_upcoming_periods": boolean,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+**History bounds:** `page_size` defaults to 20 and must be between 1 and 100. `course_id`, when provided, must name a nondeleted enrollment belonging to the authenticated student; otherwise the response is 403. Unknown query fields and malformed, modified, cross-student or cross-filter cursors return 422.
+`next_cursor` is `string | null`; null means the bounded traversal has no remaining page. Cursors bind the student, course filter, started-only setting and date cutoff. Pages sort by `period_start DESC, journal_id DESC`. `started_only=true` freezes the school-date cutoff across pages. `has_upcoming_periods` reports whether an eligible period starts after the current school date, without returning future history; ownership and the course filter apply to this flag.
+The legacy `/students/me/journals` array preserves complete responses for at most 100 periods and returns 409 on overflow; it never silently truncates. Clients must migrate navigation and chart windows before releasing histories exceeding that limit. Course-wide totals come from existing profile aggregates, not a partial history page.
+
+---
+
 ## GET /api/v1/students/me/journals
 
 **Summary:** Get My Journals
@@ -835,6 +894,7 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     }
   ]
   ```
+- **409**: History exceeds 100 periods; use the cursor-paged history endpoint
 - **422**: Validation Error
   ```json
   {
