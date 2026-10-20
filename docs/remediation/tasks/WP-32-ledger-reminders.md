@@ -41,6 +41,11 @@ Reports are provenance links, not required reading for execution; the relevant p
 | `backend/app/tests/integration/test_remediation_wp32_policy.py` | Separate policy/delivery regression tests if needed for 20 KB cap. |
 | `backend/app/tests/integration/test_remediation_wp32_performance.py` | Measured batch/query-count/RSS tests if needed for 20 KB cap. |
 | `backend/app/tests/integration/test_notification_recovery.py` | Update only durable reminder send-text assertion to the current ledger amount/content; preserve recovery and deduplication checks. |
+| `backend/app/services/debt_reminder_service.py` | Honor notify_debts before queueing the merged FIN1a workflow. |
+| `backend/app/repositories/interfaces/debt_reminder_repository.py` | Narrow organization policy repository boundary. |
+| `backend/app/repositories/sqlalchemy/debt_reminder_repository.py` | Read current debt notification policy. |
+| `backend/app/repositories/sqlalchemy/debt_reminder_delivery_repository.py` | Enforce debt policy atomically at claim and send-start, including recovered work. |
+| `backend/app/workers/debt_reminder_delivery.py` | Only if needed for truthful disabled-policy handling immediately before delivery. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -130,3 +135,7 @@ Complete prerequisites first and start from their merged result. Do not require 
 **M**: one focused cross-layer root cause or bounded extraction with targeted tests.
 
 Use branch `remediation/wp-32-ledger-reminders` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
+
+### FIN1a integration correction (2026-10-20)
+
+FIN1a is now merged, including its migration-chain repair. BUS18 debt policy is reachable and belongs to this package. Reject a disabled manual queue request as a whole with existing HTTP 409 conflict semantics before queue/audit writes; never report queued or invent a per-student outcome. Keep repositories free of HTTP exceptions. Disabled pending work must not be claimed or marked sent; recovery and re-enable preserve finite leases/retries and honest state. Check notify_debts atomically at send-start, independently of notify_payments. Tests cover queue, disable after claim, stale recovery, re-enable and switch independence; no frontend or schema change is needed for this existing error-envelope behavior.
