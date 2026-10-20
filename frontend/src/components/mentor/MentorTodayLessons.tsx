@@ -5,7 +5,7 @@ import { formatTime, getSchoolCalendarDate, getSchoolWeekdayIndex } from "../../
 import { ListRow } from "../ui/ListRow";
 import { SectionCard } from "../ui/SectionCard";
 import { EmptyState } from "../ui/EmptyState";
-import { MentorPane } from "./MentorPaneStates";
+import { Pane } from "../pane/PaneStates";
 
 export function MentorTodayLessons() {
   const { t } = useTranslation(["dashboard", "courses"]);
@@ -15,7 +15,7 @@ export function MentorTodayLessons() {
 
   return (
     <SectionCard title={t("dashboard:todayLessons")}>
-      <MentorPane
+      <Pane
         isLoadingInitial={data === undefined && isLoading}
         isFailedInitial={data === undefined && isError}
         isStaleFailure={data !== undefined && isError}
@@ -40,7 +40,7 @@ export function MentorTodayLessons() {
             </li>
           ))}
         </ul>
-      </MentorPane>
+      </Pane>
     </SectionCard>
   );
 }

@@ -6,7 +6,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
 import { SectionCard } from "../ui/SectionCard";
-import { MentorPane } from "./MentorPaneStates";
+import { Pane } from "../pane/PaneStates";
 
 export function MentorActiveCourses() {
   const { t } = useTranslation(["dashboard", "journals", "common"]);
@@ -18,7 +18,7 @@ export function MentorActiveCourses() {
       title={t("dashboard:myActiveCourses")}
       actions={<Link to="/journals" className="text-sm font-medium text-maroon-text hover:underline">{t("journals:hubTitle")}</Link>}
     >
-      <MentorPane
+      <Pane
         isLoadingInitial={data === undefined && isLoading}
         isFailedInitial={data === undefined && isError}
         isStaleFailure={data !== undefined && isError}
@@ -41,7 +41,7 @@ export function MentorActiveCourses() {
             </ListRow>
           ))}
         </div>
-      </MentorPane>
+      </Pane>
     </SectionCard>
   );
 }

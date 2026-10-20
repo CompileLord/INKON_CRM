@@ -90,13 +90,14 @@ describe("period selection", () => {
     expect(optionTextOf("Month 8")).toContain("Upcoming");
   });
 
-  it("shows only the period label in the trigger, with range and status inside the dropdown items", async () => {
+  it("shows the translated label, the dd.MM.yyyy range and the timing in the trigger and in the options", async () => {
     renderWorkspace();
     await waitForGrid();
-    expect(pickerSummary().trim()).toBe("Month 10");
-    const optionText: string = optionTextOf("Month 10");
-    expect(optionText).toContain(formatSchoolLessonDate("2026-10-01"));
-    expect(optionText).toContain("Current");
+    const summary: string = pickerSummary();
+    expect(summary).toContain("Month 10");
+    expect(summary).toContain(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
+    expect(summary).toContain("Current");
+    expect(optionTextOf("Month 10")).toContain("Current");
   });
 
   it("opens a listbox of rows with label, muted range, timing chip and a check on the selected period, with no fill-state badge", async () => {
@@ -108,7 +109,7 @@ describe("period selection", () => {
     expect(options).toHaveLength(3);
     expect(options[0].textContent).toContain("Month 8");
     expect(options[0].textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
-    expect(options[0].textContent).toContain("Past");
+    expect(options[0].textContent).not.toMatch(/Current|Latest|Upcoming/);
     expect(options[2].textContent).toContain("Current");
     options.forEach((option) => expect(option.className).toContain("min-h-11"));
     expect(options.map((option) => option.getAttribute("aria-selected"))).toEqual(["false", "false", "true"]);

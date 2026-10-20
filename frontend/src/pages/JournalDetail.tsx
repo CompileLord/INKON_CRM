@@ -1,18 +1,17 @@
 import { useMemo, useState } from "react";
-import { PageHeader } from "../components/PageHeader";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Users } from "lucide-react";
 import { useCourse, useCourseJournals } from "../lib/courses/hooks";
 import { useMentorProfile } from "../lib/users/hooks";
 import { useCourseEnrollmentsCount } from "../lib/enrollments/hooks";
-import { resolveMediaUrl } from "../lib/users/media";
 import { useAuthStore } from "../store/authStore";
-import { PersonAvatar } from "../components/ui/PersonAvatar";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
+import { usePeriodName } from "../components/ui/periodName";
 import { JournalProgressView } from "../components/journals/JournalProgressView";
 import { JournalGrid } from "../components/journals/JournalGrid";
 import { JournalPeriodMenu } from "../components/journals/JournalPeriodMenu";
-import { JournalPeriodPicker } from "../components/journals/JournalPeriodPicker";
+import { JournalPeriodSelect } from "../components/journals/JournalPeriodSelect";
 import { JournalPeriodTransition } from "../components/journals/JournalPeriodTransition";
 import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
 import { JournalKeyboardHelp } from "../components/journals/JournalKeyboardHelp";
@@ -54,6 +53,7 @@ export function JournalDetail() {
 
 function JournalDetailContent() {
   const { t } = useTranslation(["journals", "common"]);
+  const periodName: (label: string) => string = usePeriodName();
   const registry = useJournalQueueRegistry();
   const queueStatus = useJournalQueueStatus();
   const navigationGuard = useJournalNavigationGuard(JournalWorkspaceSelection.changesJournalContext);
@@ -105,43 +105,43 @@ function JournalDetailContent() {
     [editorsMounted, settingsBusy, applyEntryCommand, editSummary],
   );
 
-  const backLink = <PageHeader backTo="/journals" backLabel={t("backToJournals")} />;
+  const backLink = <PageHeader title={t("title")} backTo="/journals" backLabel={t("backToJournals")} />;
 
   if (courseId === undefined) {
     return (
-      <div className="flex flex-col gap-4">
+      <PageContainer>
         {backLink}
         <JournalPanelMessage tone="empty" title={t("notFound")} />
-      </div>
+      </PageContainer>
     );
   }
 
   if (courseLoading) {
     return (
-      <div className="flex flex-col gap-4">
+      <PageContainer>
         {backLink}
         <JournalContextSkeleton />
-      </div>
+      </PageContainer>
     );
   }
 
   const courseDenial = courseError ? JournalRouteErrors.denialOf(courseFailure) : null;
   if (courseDenial) {
     return (
-      <div className="flex flex-col gap-4">
+      <PageContainer>
         {backLink}
         <JournalPanelMessage
           tone="empty"
           title={courseDenial === "forbidden" ? t("accessDenied") : t("notFound")}
           body={courseDenial === "forbidden" ? t("accessDeniedBody") : t("notFoundBody")}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   if (courseError || !course) {
     return (
-      <div className="flex flex-col gap-4">
+      <PageContainer>
         {backLink}
         <JournalPanelMessage
           tone="error"
@@ -149,26 +149,15 @@ function JournalDetailContent() {
           retryLabel={t("common:retry")}
           onRetry={() => void refetchCourse()}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   const mentorProfile = mentorQuery.data;
-  const mentorLine = mentorProfile ? (
-    <span className="flex items-center gap-2">
-      <PersonAvatar
-        firstName={mentorProfile.user.first_name}
-        lastName={mentorProfile.user.last_name}
-        photoUrl={resolveMediaUrl(mentorProfile.user.thumbnail_path ?? mentorProfile.user.photo_path) ?? undefined}
-        size={24}
-      />
-      <span className="font-medium text-ink">
-        {mentorProfile.user.first_name} {mentorProfile.user.last_name}
-      </span>
-    </span>
-  ) : mentorQuery.isError ? (
-    <span>{t("hub.mentorUnavailable")}</span>
-  ) : null;
+  const metaItems: string[] = [
+    ...(mentorProfile ? [`${mentorProfile.user.first_name} ${mentorProfile.user.last_name}`] : mentorQuery.isError ? [t("hub.mentorUnavailable")] : []),
+    ...(rosterCount !== undefined ? [t("studentsCount", { count: rosterCount })] : []),
+  ];
 
   const periodLabel: string = journal?.period_label ?? selectedPeriod?.period_label ?? "";
   const lessonSelection = route.lessonResolution;
@@ -236,7 +225,7 @@ function JournalDetailContent() {
   };
 
   return (
-    <div className="flex flex-col gap-3 lg:gap-4">
+    <PageContainer>
       <JournalDrainDialog guard={navigationGuard} onReview={() => setReviewOpen(true)} />
       <JournalConflictReview
         open={reviewOpen}
@@ -249,17 +238,19 @@ function JournalDetailContent() {
         onRefetch={(conflictJournalId) => void registry.ownerFor(conflictJournalId).retryManual()}
       />
 
-      <PageHeader backTo="/journals" backLabel={t("backToJournals")} title={course.title}>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-          {mentorLine}
-          {rosterCount !== undefined && (
-            <span className="flex items-center gap-1 tabular-nums">
-              <Users className="h-4 w-4" aria-hidden="true" />
-              {t("studentsCount", { count: rosterCount })}
-            </span>
-          )}
-        </div>
-      </PageHeader>
+      <div className="flex flex-col gap-1">
+        <PageHeader backTo="/journals" backLabel={t("backToJournals")} title={course.title} />
+        {metaItems.length > 0 && (
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+            {metaItems.map((item: string, index: number) => (
+              <span key={`${index}-${item}`} className="flex items-center gap-2 tabular-nums">
+                {index > 0 && <span aria-hidden="true">·</span>}
+                <span>{item}</span>
+              </span>
+            ))}
+          </p>
+        )}
+      </div>
 
       {periodsLoading ? (
         <JournalPeriodBarSkeleton />
@@ -280,7 +271,7 @@ function JournalDetailContent() {
               testId="journal-route-notice-period"
               action={{ label: t("workspace.notice.dismiss"), onClick: route.dismissNotices }}
             >
-              {t("workspace.notice.period", { period: periodLabel })}
+              {t("workspace.notice.period", { period: periodName(periodLabel) })}
             </JournalNotice>
           )}
           {route.notices.includes("lesson") && lessonSelection.lesson && (
@@ -320,8 +311,8 @@ function JournalDetailContent() {
             </JournalPanelMessage>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-2" data-testid="journal-toolbar">
-                <JournalPeriodPicker
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="journal-toolbar">
+                <JournalPeriodSelect
                   periods={periods}
                   selectedPeriodId={selectedPeriod.id}
                   today={today}
@@ -349,9 +340,9 @@ function JournalDetailContent() {
                 </div>
               </div>
 
-              <JournalProgressView courseId={courseId} chartOnly />
+              <JournalProgressView courseId={courseId} />
 
-              <section className="flex min-w-0 flex-col gap-2 lg:gap-4" aria-label={t("workspace.tabs.gradebook")}>
+              <section className="flex min-w-0 flex-col gap-3" aria-label={t("workspace.tabs.gradebook")}>
                 <JournalPeriodTransition
                   displayedJournalId={journal?.journal_id}
                   displayedPeriodStart={journal?.period_start}
@@ -389,9 +380,9 @@ function JournalDetailContent() {
           onBusyChange={setSettingsBusy}
           onReview={() => setReviewOpen(true)}
           onClose={() => setSettingsJournalId(null)}
-          returnFocusSelector="[data-period-menu]"
+          returnFocusSelector="[data-period-menu] button"
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -2,7 +2,6 @@
   "title": "Period settings",
   "course": "Course",
   "period": "Period",
-  "currentMaximum": "Current exam maximum",
   "inputLabel": "Exam maximum",
   "range": "Whole number from {{min}} to {{max}}",
   "explanation": "Changing the exam maximum recalculates the grading denominator of this period for every student. Exam scores cannot exceed it.",

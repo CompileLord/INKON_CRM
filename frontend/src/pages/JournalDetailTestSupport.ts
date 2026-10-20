@@ -157,7 +157,7 @@ export function renderWorkspace(entries: string[] = [`/journals/${COURSE_ID}`], 
 }
 
 export function periodPicker(): HTMLElement {
-  return screen.getByRole("combobox", { name: "Period" });
+  return screen.getByRole("button", { name: "Period" });
 }
 
 export function pickerSummary(): string {
@@ -165,7 +165,7 @@ export function pickerSummary(): string {
 }
 
 export function optionTextOf(label: string): string {
-  if (periodPicker().getAttribute("aria-expanded") !== "true") fireEvent.click(periodPicker());
+  if (!screen.queryByRole("listbox")) fireEvent.click(periodPicker());
   const option: HTMLElement = within(screen.getByRole("listbox")).getByRole("option", { name: new RegExp(`^${label}`) });
   return option.textContent ?? "";
 }

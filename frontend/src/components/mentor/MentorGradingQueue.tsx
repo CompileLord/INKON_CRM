@@ -3,7 +3,7 @@ import { useMentorGradingQueue } from "../../lib/journals/hooks";
 import { EmptyState } from "../ui/EmptyState";
 import { SectionCard } from "../ui/SectionCard";
 import { GradingQueueRow, type GradingQueueItem } from "./GradingQueueRow";
-import { MentorPane } from "./MentorPaneStates";
+import { Pane } from "../pane/PaneStates";
 
 export function MentorGradingQueue() {
   const { t } = useTranslation(["dashboard", "journals"]);
@@ -11,7 +11,7 @@ export function MentorGradingQueue() {
 
   return (
     <SectionCard title={t("dashboard:needsGrading")}>
-      <MentorPane
+      <Pane
         isLoadingInitial={queue === undefined && isLoading}
         isFailedInitial={queue === undefined && isError}
         isStaleFailure={queue !== undefined && isError}
@@ -26,7 +26,7 @@ export function MentorGradingQueue() {
             <GradingQueueRow key={item.journal_id} item={item} />
           ))}
         </div>
-      </MentorPane>
+      </Pane>
     </SectionCard>
   );
 }
