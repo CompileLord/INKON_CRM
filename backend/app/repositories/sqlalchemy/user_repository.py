@@ -1,4 +1,5 @@
 from app.repositories.sqlalchemy.student_performance_repository import SQLAlchemyStudentPerformanceRepository
+from datetime import date
 from typing import Any, Dict, List, Optional
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
@@ -145,13 +146,15 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             func.avg(
                 case(
                     (JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
-                    else_=0.0
+                    else_=None
                 )
             )
         ).join(
             Journal, JournalStudentSummary.journal_id == Journal.id
         ).join(Course, Journal.course_id == Course.id).filter(
-            Course.mentor_id == mentor_id
+            Course.mentor_id == mentor_id,
+            Journal.period_start <= date.today(),
+            JournalStudentSummary.is_graded.is_(True),
         )
         avg_score_result = await self.session.execute(avg_score_query)
         avg_score = avg_score_result.scalar()
@@ -161,14 +164,15 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             func.count(case((JournalStudentSummary.max_period_score > 0, JournalStudentSummary.id))),
             func.count(case((JournalStudentSummary.max_period_score <= 0, JournalStudentSummary.id))),
             func.avg(case(
-                (JournalStudentSummary.max_period_score > 0,
+                (JournalStudentSummary.is_graded.is_(True) & (JournalStudentSummary.max_period_score > 0),
                  (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
                 else_=None
             ))
         ).join(
             Journal, JournalStudentSummary.journal_id == Journal.id
         ).join(Course, Journal.course_id == Course.id).filter(
-            Course.mentor_id == mentor_id
+            Course.mentor_id == mentor_id,
+            Journal.period_start <= date.today(),
         )
         profile_summary_counts_result: Any = await self.session.execute(profile_summary_counts_query)
         summary_count: int
@@ -207,13 +211,14 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         total_students_count: int = students_result.scalar() or 0
 
         score_result: Any = await self.session.execute(select(
-            func.avg(JournalStudentSummary.sum_score),
+            func.avg(JournalStudentSummary.sum_score).filter(JournalStudentSummary.is_graded.is_(True)),
             func.count(JournalStudentSummary.id)
         ).join(
             Journal, JournalStudentSummary.journal_id == Journal.id
         ).join(Course, Journal.course_id == Course.id).filter(
             Course.mentor_id == mentor_id,
-            Course.is_deleted == False
+            Course.is_deleted == False,
+            Journal.period_start <= date.today(),
         ))
         average_score: Any
         summary_count: int
