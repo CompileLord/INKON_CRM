@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import secrets
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable
@@ -7,6 +8,13 @@ from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from fastapi import HTTPException, status
 from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
 from app.repositories.interfaces.notification_log_repository import NotificationClaim, NotificationLogRepository
+
+
+class ExamNotificationFingerprint:
+    @classmethod
+    def build(cls, values: tuple[str | int, ...]) -> str:
+        encoded: str = "".join(f"{len(str(value).encode('utf-8'))}:{value}" for value in values)
+        return "v1:" + hashlib.md5(encoded.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 class NotificationService:
@@ -72,22 +80,42 @@ class NotificationService:
         score: int | None,
         revision_requested: bool,
         delivery_text: str | None = None,
+        revision_fingerprint: str | None = None,
+        summary_id: int | None = None,
+        source_journal_id: int | None = None,
     ) -> NotificationLog | None:
-        log: NotificationLog = await self.repo.lock_or_create(
-            recipient, notification_type, related_entity_id, notification_date, user_id, score
-        )
+        log: NotificationLog
+        if summary_id is not None:
+            if user_id is None or score is None or revision_fingerprint is None:
+                raise ValueError("Exam revision identity requires student, score and fingerprint")
+            observed: str | None = await self.repo.lock_exam_identity(recipient, summary_id)
+            if observed == revision_fingerprint:
+                return None
+            log = await self.repo.lock_exam_log(recipient, summary_id, notification_date, user_id, score)
+        else:
+            log = await self.repo.lock_or_create(
+                recipient, notification_type, related_entity_id, notification_date, user_id, score
+            )
         log.revision = log.revision or 1
         now: datetime = datetime.now(timezone.utc)
         if (
             (log.delivery_state or log.status) == NotificationStatus.INFLIGHT
             and log.lease_expires_at is not None
             and log.lease_expires_at > now
+            and (revision_fingerprint is None or log.revision_fingerprint == revision_fingerprint)
         ):
             return None
-        changed_score: bool = score is not None and log.delivery_score != score
+        changed_score: bool = (
+            log.revision_fingerprint is not None and log.revision_fingerprint != revision_fingerprint
+            if revision_fingerprint is not None
+            else score is not None and log.delivery_score != score
+        )
         legacy_same_score: bool = log.delivery_score is None and log.error_message == f"score:{score}"
         if (log.delivery_state or log.status) == NotificationStatus.SENT:
-            if not revision_requested or (score is not None and (not changed_score or legacy_same_score)):
+            if revision_fingerprint is not None:
+                if not changed_score:
+                    return None
+            elif not revision_requested or (score is not None and (not changed_score or legacy_same_score)):
                 return None
         if changed_score or ((log.delivery_state or log.status) == NotificationStatus.SENT and revision_requested):
             log.revision += 1
@@ -109,6 +137,9 @@ class NotificationService:
         log.lease_expires_at = None
         log.is_terminal = False
         log.delivery_text = delivery_text
+        if revision_fingerprint is not None:
+            log.revision_fingerprint = revision_fingerprint
+            log.source_journal_id = source_journal_id
         await self.repo.update(log)
         return log
 
@@ -226,6 +257,22 @@ class NotificationService:
             return False
         return await self.deliver_notification(notification_id, revision, send_func)
 
+    async def send_exam_revision(
+        self, recipient: str, summary_id: int, journal_id: int, student_id: int,
+        score: int, fingerprint: str, notification_date: date,
+        send_func: Callable[[bool], Awaitable[None]],
+    ) -> bool:
+        log: NotificationLog | None = await self.reserve_notification(
+            recipient, NotificationType.EXAM_RESULT, -summary_id, notification_date, student_id, score, True,
+            revision_fingerprint=fingerprint, summary_id=summary_id, source_journal_id=journal_id,
+        )
+        notification_id: int | None = log.id if log is not None else None
+        revision: int | None = log.revision if log is not None else None
+        await self.repo.commit()
+        if notification_id is None or revision is None:
+            return False
+        return await self.deliver_notification(notification_id, revision, send_func)
+
     async def reject_notification(self, notification_id: int, revision: int, reason: str) -> bool:
         claim: NotificationClaim | None = await self.claim_notification(notification_id, revision)
         if claim is None:
@@ -250,7 +297,7 @@ class NotificationService:
                 payload.update(chat_id=int(log.recipient), text=log.delivery_text)
                 jobs.append(("send_telegram_message", payload))
             else:
-                payload.update(student_id=log.user_id, journal_id=log.related_entity_id)
+                payload.update(student_id=log.user_id, journal_id=log.source_journal_id if log.source_journal_id is not None else log.related_entity_id)
                 jobs.append(("send_exam_result_notification_task", payload))
         await self.repo.commit()
         job_name: str

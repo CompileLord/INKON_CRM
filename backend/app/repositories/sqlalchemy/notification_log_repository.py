@@ -6,7 +6,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql import Select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
+from app.models.notification_log import ExamNotificationBaseline, NotificationLog, NotificationStatus, NotificationType
 from app.models.user import User
 from app.models.enrollment import Enrollment
 from app.models.course import Course
@@ -137,6 +137,46 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
             )
         ).scalar_one()
         return log
+
+    async def lock_exam_identity(self, recipient: str, summary_id: int) -> str | None:
+        await self._session.execute(
+            insert(ExamNotificationBaseline).values(recipient=recipient, summary_id=summary_id)
+            .on_conflict_do_nothing()
+        )
+        observed: str | None = (
+            await self._session.execute(
+                select(ExamNotificationBaseline.observed_fingerprint)
+                .where(ExamNotificationBaseline.recipient == recipient, ExamNotificationBaseline.summary_id == summary_id)
+                .with_for_update()
+            )
+        ).scalar_one()
+
+        has_delivery: bool = (
+            await self._session.execute(select(exists().where(
+                NotificationLog.recipient == recipient,
+                NotificationLog.type == NotificationType.EXAM_RESULT,
+                NotificationLog.related_entity_id == -summary_id,
+            )))
+        ).scalar_one()
+        return None if has_delivery else observed
+
+    async def lock_exam_log(
+        self, recipient: str, summary_id: int, notification_date: date, user_id: int, score: int
+    ) -> NotificationLog:
+        log: NotificationLog | None = (
+            await self._session.execute(
+                select(NotificationLog).where(
+                    NotificationLog.recipient == recipient,
+                    NotificationLog.type == NotificationType.EXAM_RESULT,
+                    NotificationLog.related_entity_id == -summary_id,
+                ).with_for_update().execution_options(populate_existing=True)
+            )
+        ).scalar_one_or_none()
+        if log is not None:
+            return log
+        return await self.lock_or_create(
+            recipient, NotificationType.EXAM_RESULT, -summary_id, notification_date, user_id, score
+        )
 
     async def claim(
         self,
