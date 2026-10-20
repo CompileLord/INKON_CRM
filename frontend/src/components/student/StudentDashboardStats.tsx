@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { StudentTotals } from "../../lib/users/types";
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
+import { WholePercent } from "../../lib/students/WholePercent";
 import { StatGroup, StatTile } from "../ui/StatGroup";
 import { ScoreFraction } from "./ScoreFraction";
 
@@ -19,7 +20,7 @@ export function StudentDashboardStats({ totals }: StudentDashboardStatsProps) {
         label={t("average")}
         value={hasScore ? <ScoreFraction score={totals!.total_score!} maximum={totals!.total_max_score!} showPercentage /> : null}
       />
-      <StatTile label={t("attendance")} value={hasLessons ? formatPercentage(totals!.attendance_percentage) : null} />
+      <StatTile label={t("attendance")} value={hasLessons ? WholePercent.format(totals!.attendance_percentage) : null} />
       <StatTile
         label={t("absences")}
         value={totals ? formatNumber(totals.absences) : null}

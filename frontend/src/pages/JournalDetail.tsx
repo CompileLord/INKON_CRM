@@ -312,14 +312,16 @@ function JournalDetailContent() {
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="journal-toolbar">
-                <JournalPeriodSelect
-                  periods={periods}
-                  selectedPeriodId={selectedPeriod.id}
-                  today={today}
-                  onSelect={route.selectPeriod}
-                  disabled={queueStatus.draining}
-                />
-                {editorsMounted && journal && <JournalPeriodMenu onOpenSettings={() => setSettingsJournalId(journalId ?? null)} />}
+                <div className="flex w-full items-center gap-2 sm:w-auto">
+                  <JournalPeriodSelect
+                    periods={periods}
+                    selectedPeriodId={selectedPeriod.id}
+                    today={today}
+                    onSelect={route.selectPeriod}
+                    disabled={queueStatus.draining}
+                  />
+                  {editorsMounted && journal && <JournalPeriodMenu onOpenSettings={() => setSettingsJournalId(journalId ?? null)} />}
+                </div>
                 {rosterSearchVisible && (
                   <JournalRosterSearch
                     query={searchQuery}

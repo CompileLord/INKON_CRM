@@ -72,6 +72,15 @@ describe("StudentDashboard", () => {
     expect(tiles[2].textContent).toContain("of 30 lessons");
   });
 
+  it("labels the first tile as the points total it shows and rounds its percentage to whole numbers", () => {
+    state.profile = profile([courseEntry(1, "Physics", null)], { total_score: 86, total_max_score: 117 });
+    const { container } = renderDashboard();
+    const tile = container.querySelectorAll("[data-stat-tile]")[0];
+    expect(tile.textContent).toContain("My points");
+    expect(tile.textContent).not.toMatch(/average/i);
+    expect(tile.querySelector("[data-score-percentage]")?.textContent).toBe("74%");
+  });
+
   it("keeps a recorded zero score as a number and shows a dash only when the backend has no score", () => {
     state.profile = profile([courseEntry(1, "Physics", null)], { total_score: 0, total_max_score: 600 });
     const first = renderDashboard();
@@ -130,7 +139,7 @@ describe("StudentDashboard latest result", () => {
     renderDashboard();
     const card = screen.getByTestId("latest-result-score");
     expect(card.textContent).toContain("86/ 117");
-    expect(card.querySelector("[data-score-percentage]")?.textContent).toBe("73,5%");
+    expect(card.querySelector("[data-score-percentage]")?.textContent).toBe("74%");
     expect(screen.getByText(/Неделя 4/)).toBeTruthy();
     expect(screen.queryByText(/Неделя 5/)).toBeNull();
     expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/my/journal/2")).toBe(true);
@@ -208,7 +217,7 @@ describe("StudentDashboard profile failures", () => {
   it("shows a skeleton while the profile loads", () => {
     state.profile = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() };
     renderDashboard();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Student Dashboard");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Student dashboard");
     expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
   });
 });

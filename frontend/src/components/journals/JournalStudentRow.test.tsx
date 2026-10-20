@@ -133,8 +133,8 @@ describe("JournalStudentRow totals", () => {
     expect(screen.queryByText("0%")).toBeNull();
   });
 
-  it("displays a percentage above 100 as supplied", () => {
+  it("displays a percentage above 100 as a whole number", () => {
     mount({ ...student, summary: { ...student.summary!, sum_score: 110, percentage: 102.5 } });
-    expect(screen.getByText("102.5%")).toBeDefined();
+    expect(screen.getByText(/^10[23]%$/)).toBeDefined();
   });
 });

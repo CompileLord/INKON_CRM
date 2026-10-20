@@ -1,4 +1,5 @@
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
+import { WholePercent } from "../../lib/students/WholePercent";
 
 interface ScoreFractionProps {
   score: number;
@@ -16,7 +17,7 @@ export function ScoreFraction({ score, maximum, showPercentage = false, scoreCla
       <span className={`font-semibold ${scoreClassName}`}>{formatNumber(score, undefined, SCORE_FRACTION_DIGITS)}</span>
       {hasMaximum && <span className="font-normal text-muted">/ {formatNumber(maximum, undefined, SCORE_FRACTION_DIGITS)}</span>}
       {hasMaximum && showPercentage && (
-        <span className="text-sm font-normal text-muted" data-score-percentage>{formatPercentage((score * 100) / maximum)}</span>
+        <span className="text-sm font-normal text-muted" data-score-percentage>{WholePercent.format((score * 100) / maximum)}</span>
       )}
     </span>
   );

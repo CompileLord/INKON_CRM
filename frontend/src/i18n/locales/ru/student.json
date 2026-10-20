@@ -1,7 +1,7 @@
 {
   "activeCoursesSummary": "{{count}} активных курсов",
   "activeStudent": "Активный студент",
-  "average": "Средний балл",
+  "average": "Мои баллы",
   "attendance": "Посещаемость",
   "absences": "Пропуски",
   "ofLessons": "из {{total}} занятий",
@@ -20,7 +20,7 @@
   "archiveSegment": "Архив",
   "noArchivedTitle": "В архиве пока ничего нет",
   "noArchivedBody": "Курсы появятся здесь после их завершения.",
-  "myAverage": "Мой балл",
+  "myAverage": "Мои баллы",
   "periodsCount": "{{graded}} из {{total}} периодов",
   "status": {
     "completed": "Завершено",

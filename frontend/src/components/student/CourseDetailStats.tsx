@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { StudentCourseProfile } from "../../lib/users/types";
 import type { CourseResultSummary } from "../../lib/students/CourseResultSummary";
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
+import { WholePercent } from "../../lib/students/WholePercent";
 import { StatGroup, StatTile } from "../ui/StatGroup";
 import { ScoreFraction } from "./ScoreFraction";
 
@@ -22,7 +23,7 @@ export function CourseDetailStats({ entry, results }: CourseDetailStatsProps) {
           label={t("myAverage")}
           value={hasScore ? <ScoreFraction score={entry!.my_total_score!} maximum={entry!.my_total_max_score!} showPercentage /> : results !== null ? t("notGradedYet") : null}
         />
-        <StatTile label={t("attendance")} value={hasLessons ? formatPercentage((results!.attendedLessons * 100) / results!.totalLessons) : null} />
+        <StatTile label={t("attendance")} value={hasLessons ? WholePercent.format((results!.attendedLessons * 100) / results!.totalLessons) : null} />
         <StatTile
           label={t("absences")}
           value={hasLessons ? formatNumber(results!.totalLessons - results!.attendedLessons) : null}

@@ -178,7 +178,7 @@ describe("JournalGrid total column", () => {
     const cell = screen.getByTestId("total-cell");
     expect(cell.textContent).toContain("86");
     expect(cell.textContent).toContain("/ 117");
-    expect(screen.getByTestId("total-percentage").textContent).toBe("73.5%");
+    expect(screen.getByTestId("total-percentage").textContent).toBe("74%");
     expect(screen.getByTestId("total-percentage").className).toContain("text-muted");
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).not.toContain("%");
   });

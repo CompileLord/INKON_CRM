@@ -102,13 +102,13 @@ describe("MentorDashboard panes", () => {
     i18n.changeLanguage("ru");
     renderMentorDashboard();
     expect(screen.getByText("Все текущие периоды оценены")).toBeDefined();
-    expect(screen.getByText("Панель Преподавателя")).toBeDefined();
+    expect(screen.getByText("Панель преподавателя")).toBeDefined();
 
     cleanup();
     i18n.changeLanguage("tg");
     renderMentorDashboard();
     expect(screen.getByText("Ҳамаи давраҳои ҷорӣ баҳогузорӣ шудаанд")).toBeDefined();
-    expect(screen.getByText("Панели Муаллим")).toBeDefined();
+    expect(screen.getByText("Панели муаллим")).toBeDefined();
   });
 
   it("scopes mentor profile and requests using current identity hook without administrative parameters", () => {

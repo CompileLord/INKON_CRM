@@ -138,13 +138,13 @@ export class JournalProgressRules {
     return Array.from({ length: intervals + 1 }, (_, index) => index * step);
   }
 
-  static stepPath(coordinates: ChartCoordinate[]): string {
+  static stepPath(coordinates: ChartCoordinate[], minimumX: number = -Infinity, maximumX: number = Infinity): string {
     if (coordinates.length === 0) return "";
     const midpointX = (left: ChartCoordinate, right: ChartCoordinate): number => (left.x + right.x) / 2;
     const first: ChartCoordinate = coordinates[0];
     const last: ChartCoordinate = coordinates[coordinates.length - 1];
-    const leadingX: number = coordinates.length > 1 ? first.x - (coordinates[1].x - first.x) / 2 : first.x - 12;
-    const trailingX: number = coordinates.length > 1 ? last.x + (last.x - coordinates[coordinates.length - 2].x) / 2 : last.x + 12;
+    const leadingX: number = Math.max(minimumX, coordinates.length > 1 ? first.x - (coordinates[1].x - first.x) / 2 : first.x - 12);
+    const trailingX: number = Math.min(maximumX, coordinates.length > 1 ? last.x + (last.x - coordinates[coordinates.length - 2].x) / 2 : last.x + 12);
     let path: string = `M${leadingX},${first.y}`;
     coordinates.forEach((coordinate, index) => {
       const next: ChartCoordinate | undefined = coordinates[index + 1];

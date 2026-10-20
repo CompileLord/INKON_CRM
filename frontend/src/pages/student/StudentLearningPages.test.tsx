@@ -189,7 +189,7 @@ describe("PeriodScoreSummary", () => {
     render(<PeriodScoreSummary summary={summary} />);
     expect(screen.getByTestId("period-total").textContent).toContain("75/ 117");
     const percentage = screen.getByTestId("period-total").querySelector("[data-score-percentage]") as HTMLElement;
-    expect(percentage.textContent).toBe("64.1%");
+    expect(percentage.textContent).toBe("64%");
     expect(percentage.className).toContain("text-muted");
     expect(["homework", "attendance", "exam", "bonus"].map((key) => screen.getByTestId(`contribution-${key}`).textContent)).toEqual(["20", "5", "40", "10"]);
   });

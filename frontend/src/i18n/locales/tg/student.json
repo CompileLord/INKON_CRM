@@ -1,7 +1,7 @@
 {
   "activeCoursesSummary": "{{count}} курсҳои фаъол",
   "activeStudent": "Донишҷӯи фаъол",
-  "average": "Балли миёна",
+  "average": "Баллҳои ман",
   "attendance": "Иштирок",
   "absences": "Ғоибӣ",
   "ofLessons": "аз {{total}} дарс",
@@ -20,7 +20,7 @@
   "archiveSegment": "Бойгонӣ",
   "noArchivedTitle": "Дар бойгонӣ ҳоло ҳеҷ чиз нест",
   "noArchivedBody": "Курсҳо пас аз хатм дар ин ҷо пайдо мешаванд.",
-  "myAverage": "Балли ман",
+  "myAverage": "Баллҳои ман",
   "periodsCount": "{{graded}} аз {{total}} давраҳо",
   "status": {
     "completed": "Хатмшуда",

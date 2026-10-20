@@ -5,7 +5,8 @@ import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { JournalSummaryCell } from "./JournalSummaryCell";
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
+import { WholePercent } from "../../lib/students/WholePercent";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
 import type { JournalStudentResponse } from "../../lib/journals/types";
@@ -169,7 +170,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
                 <span className="font-semibold text-ink">{formatNumber(summary.sum_score)}</span>
                 {summary.max_period_score > 0 && <span className="text-muted"> / {formatNumber(summary.max_period_score)}</span>}
               </span>
-              {summary.max_period_score > 0 && <span className="text-xs text-muted" data-testid="total-percentage">{formatPercentage(summary.percentage)}</span>}
+              {summary.max_period_score > 0 && <span className="text-xs text-muted" data-testid="total-percentage">{WholePercent.format(summary.percentage)}</span>}
             </span>
           ) : (
             <span className="text-muted">{t("summary.unavailable")}</span>

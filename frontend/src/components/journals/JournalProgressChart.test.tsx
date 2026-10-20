@@ -62,6 +62,9 @@ describe("Progress score chart", () => {
     render(<JournalProgressView courseId={1} />);
     const path = screen.getByTestId("chart-maximum-line").getAttribute("d") ?? "";
     expect(path).toMatch(/^M[\d.-]+,[\d.]+H[\d.]+V[\d.]+H[\d.]+V[\d.]+H[\d.]+$/);
+    const [startX, endX] = [Number(path.match(/^M([\d.-]+),/)?.[1]), Number(path.match(/H([\d.]+)$/)?.[1])];
+    expect(startX).toBeGreaterThanOrEqual(42);
+    expect(endX).toBeLessThanOrEqual(640 - 24);
     const verticals = Array.from(path.matchAll(/V([\d.]+)/g)).map((match) => Number(match[1]));
     expect(new Set(verticals).size).toBe(2);
     expect(screen.getByTestId("chart-series-maximum").getAttribute("data-visible")).toBe("true");

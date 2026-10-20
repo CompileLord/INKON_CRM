@@ -46,7 +46,7 @@ export const StudentSwatch: React.FC<StudentSwatchProps> = ({ student, muted = f
 };
 
 export const AverageSwatch: React.FC = () => <span aria-hidden="true" className="h-0 w-4 shrink-0 border-t-2 border-dashed border-muted" />;
-export const MaximumSwatch: React.FC = () => <span aria-hidden="true" className="h-0 w-4 shrink-0 border-t-2 border-control-border" />;
+export const MaximumSwatch: React.FC = () => <span aria-hidden="true" className="h-0 w-4 shrink-0 border-t-2 border-ink/50" />;
 
 interface TooltipEntry {
   key: string;
@@ -256,9 +256,10 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
               <path
                 key={run[0].index}
                 data-testid="chart-maximum-line"
-                d={JournalProgressRules.stepPath(run.map((vertex) => ({ x: xFor(vertex.index), y: yFor(vertex.value) })))}
+                d={JournalProgressRules.stepPath(run.map((vertex) => ({ x: xFor(vertex.index), y: yFor(vertex.value) })), marginLeft, width - marginRight)}
                 fill="none"
-                className="stroke-control-border"
+                className="stroke-ink"
+                strokeOpacity={0.5}
                 strokeWidth={2}
                 strokeLinejoin="round"
               />

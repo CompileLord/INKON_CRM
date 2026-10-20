@@ -114,6 +114,7 @@ describe("JournalProgressRules", () => {
   it("draws a step line that holds each value across its period and jumps at the midpoints", () => {
     const path = JournalProgressRules.stepPath([{ x: 0, y: 10 }, { x: 20, y: 40 }, { x: 40, y: 40 }]);
     expect(path).toBe("M-10,10H10V40H30V40H50");
+    expect(JournalProgressRules.stepPath([{ x: 0, y: 10 }, { x: 20, y: 40 }, { x: 40, y: 40 }], 0, 40)).toBe("M0,10H10V40H30V40H40");
     expect(JournalProgressRules.stepPath([])).toBe("");
     expect(JournalProgressRules.stepPath([{ x: 5, y: 7 }])).toBe("M-7,7H17");
   });
