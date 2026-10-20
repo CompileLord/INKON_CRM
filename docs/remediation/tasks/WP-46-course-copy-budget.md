@@ -23,6 +23,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [backend/app/services/course_service.py:234](../../../backend/app/services/course_service.py) | Existing file, anchor line 234; only this WP’s stated behavior may change. |
 | [backend/app/services/enrollment_service.py:90](../../../backend/app/services/enrollment_service.py) | Existing file, anchor line 90; only this WP’s stated behavior may change. |
 | [backend/app/core/schedule_utils.py:6](../../../backend/app/core/schedule_utils.py) | NEW: class-based typed lesson-date and bounded copy plan extracted from enrollment service; preserve existing date semantics. |
+| `backend/app/repositories/sqlalchemy/course_repository.py` | Bounded active source enrollment fetch (limit101) and destination journal plan queries; database operations stay in repository. |
 | [backend/app/repositories/interfaces/course_repository.py:7](../../../backend/app/repositories/interfaces/course_repository.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/repositories/interfaces/user_repository.py:7](../../../backend/app/repositories/interfaces/user_repository.py) | Existing file, anchor line 7; only this WP’s stated behavior may change. |
 | [backend/app/core/deps.py:14](../../../backend/app/core/deps.py) | Existing file, anchor line 14; only this WP’s stated behavior may change. |
