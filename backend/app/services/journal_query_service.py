@@ -223,22 +223,29 @@ class JournalQueryService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions"
             )
-        payload: dict = await self.get_journal(journal_id, current_user)
-        students_view: List[dict] = [
-            {
+        payload: dict = await self.get_journal(journal_id, current_user, include_all_students=True)
+        students_view: List[dict] = []
+        for student_record in payload["students"]:
+            is_self: bool = student_record["student_id"] == current_user.id
+            entries_view: List[dict] = [
+                entry_record
+                if is_self
+                else {**entry_record, "comment": None, "has_comment": False}
+                for entry_record in student_record["entries"]
+            ]
+            students_view.append({
                 "student_id": student_record["student_id"],
                 "first_name": student_record["first_name"],
                 "last_name": student_record["last_name"],
                 "color_hex": student_record["color_hex"],
-                "is_self": True,
-                "entries": student_record["entries"],
+                "is_self": is_self,
+                "entries": entries_view,
                 "summary": student_record["summary"],
-            }
-            for student_record in payload["students"]
-        ]
+            })
+        students_view.sort(key=lambda record: not record["is_self"])
         return {**payload, "students": students_view}
 
-    async def get_journal(self, journal_id: int, current_user: User) -> dict:
+    async def get_journal(self, journal_id: int, current_user: User, include_all_students: bool = False) -> dict:
         journal = await self.db.get(Journal, journal_id)
         if not journal:
             raise HTTPException(
@@ -287,7 +294,7 @@ class JournalQueryService:
 
         lesson_dates = get_lesson_dates(journal.period_start, journal.period_end, schedules)
 
-        if current_user.role == UserRole.STUDENT:
+        if current_user.role == UserRole.STUDENT and not include_all_students:
             students_query = select(User, Enrollment.color_hex).join(Enrollment, Enrollment.student_id == User.id).filter(
                 User.id == current_user.id,
                 Enrollment.course_id == course.id,
