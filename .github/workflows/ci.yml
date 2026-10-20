@@ -13,6 +13,18 @@ permissions:
   contents: read
 
 jobs:
+  deployment-tests:
+    name: Deployment regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shell syntax and deployment behavior
+        run: |
+          while IFS= read -r shell_file; do
+            bash -n "$shell_file"
+          done < <(find deploy -name '*.sh' -type f)
+          bash deploy/tests/regression.sh
+
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
