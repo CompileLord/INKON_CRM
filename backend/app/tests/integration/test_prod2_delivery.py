@@ -1,4 +1,5 @@
 import asyncio
+import time
 from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock
@@ -122,7 +123,10 @@ class TestDeliveryReliability:
         monkeypatch.setattr(outbox, "SMTP_TRANSPORT_TIMEOUT_SECONDS", 0.01)
         worker: OutboxWorkerManager = OutboxWorkerManager(settings.DATABASE_URL, settings.JWT_SECRET_KEY, email_service=email, batch_size=1)
         monkeypatch.setattr(worker, "check_verification_state", AsyncMock(return_value=(True, "")))
-        assert await worker.run_once(TestingSessionLocal) == 1
+        started_at: float = time.monotonic()
+        processed_count: int = await asyncio.wait_for(worker.run_once(TestingSessionLocal), timeout=5.0)
+        assert time.monotonic() - started_at < 2.0
+        assert processed_count == 1
         assert cancelled.is_set()
         await db_session.refresh(event)
         assert event.status == (OutboxEventStatus.CLAIMED if steal_lease else OutboxEventStatus.PENDING)
@@ -131,3 +135,23 @@ class TestDeliveryReliability:
         assert event.attempt_count == 1
         if steal_lease:
             assert event.lease_owner == "replacement"
+
+    @pytest.mark.asyncio
+    async def test_settlement_requires_current_lease_owner(self, db_session: AsyncSession) -> None:
+        repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(db_session)
+        event: OutboxEvent = await OutboxService(repository, settings.JWT_SECRET_KEY).enqueue_verification_email(
+            "fence@example.com", "123456",
+        )
+        await db_session.commit()
+        now: datetime = datetime.now(timezone.utc)
+        await repository.claim_pending_batch("original", 60, 1, now)
+        await db_session.execute(update(OutboxEvent).where(OutboxEvent.id == event.id).values(lease_owner="replacement"))
+        await db_session.commit()
+        assert not await repository.mark_delivered(event.id, "original", now)
+        assert not await repository.mark_failed(event.id, "original", "transport_failure", now, now)
+        await db_session.commit()
+        await db_session.refresh(event)
+        assert event.status == OutboxEventStatus.CLAIMED
+        assert event.lease_owner == "replacement"
+        assert event.delivered_at is None
+        assert event.encrypted_payload is not None
