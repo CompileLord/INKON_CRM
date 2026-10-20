@@ -124,8 +124,8 @@ async def test_private_download_matches_document_listing_policy(
     assert student_owned.status_code == 200
     assert b"owned-student.pdf" in student_owned.content
     assert student_peer.status_code == 404
-    assert mentor_student.status_code == 200
-    assert b"peer-student.pdf" in mentor_student.content
+    assert mentor_student.status_code == 404
+    assert b"peer-student.pdf" not in mentor_student.content
     assert mentor_owned.status_code == 200
     assert b"owned-mentor.pdf" in mentor_owned.content
     assert mentor_peer.status_code == 404

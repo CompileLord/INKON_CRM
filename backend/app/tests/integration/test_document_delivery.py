@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from httpx import ASGITransport
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,23 +36,25 @@ async def test_document_download_preserves_exact_role_policy(
     client: AsyncClient, db_session: AsyncSession, test_admin: User,
     test_student: User, test_mentor: User, test_accountant: User
 ) -> None:
-    other_student = User(email="other-download-student@example.com", first_name="Other", last_name="Student", role=UserRole.STUDENT, must_set_password=False)
-    other_mentor = User(email="other-download-mentor@example.com", first_name="Other", last_name="Mentor", role=UserRole.MENTOR, must_set_password=False)
+    other_student: User = User(email="other-download-student@example.com", first_name="Other", last_name="Student", role=UserRole.STUDENT, must_set_password=False)
+    other_mentor: User = User(email="other-download-mentor@example.com", first_name="Other", last_name="Mentor", role=UserRole.MENTOR, must_set_password=False)
     db_session.add_all([other_student, other_mentor])
     await db_session.commit()
+    owner: User
+    viewer: User | None
     for owner in (test_student, other_student, test_mentor, other_mentor):
-        content = b"%PDF-1.7\n" + str(owner.id).encode()
-        document = await DocumentFixtures.upload(client, test_admin, owner, content)
+        content: bytes = b"%PDF-1.7\n" + str(owner.id).encode()
+        document: dict = await DocumentFixtures.upload(client, test_admin, owner, content)
         for viewer in (test_admin, test_student, other_student, test_mentor, other_mentor, test_accountant, None):
-            response = await client.get(f"/api/v1/documents/{document['id']}/download", headers=DocumentFixtures.headers(viewer))
+            response: Response = await client.get(f"/api/v1/documents/{document['id']}/download", headers=DocumentFixtures.headers(viewer))
             if viewer is None:
-                expected_status = 401
+                expected_status: int = 401
             elif viewer.role == UserRole.SUPERADMIN:
                 expected_status = 200
             elif viewer.role == UserRole.STUDENT:
                 expected_status = 200 if owner.role == UserRole.STUDENT and owner.id == viewer.id else 404
             elif viewer.role == UserRole.MENTOR:
-                expected_status = 200 if owner.role == UserRole.STUDENT or owner.id == viewer.id else 404
+                expected_status = 200 if owner.role == UserRole.MENTOR and owner.id == viewer.id else 404
             else:
                 expected_status = 403
             assert response.status_code == expected_status, (owner.id, viewer.id if viewer else None, response.text)
