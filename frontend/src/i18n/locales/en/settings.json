@@ -10,12 +10,6 @@
     "organization": "Organization",
     "rules": "Notification rules"
   },
-  "sectionHints": {
-    "profile": "Your name, photo and contact details.",
-    "appearance": "Theme and language for this device.",
-    "organization": "Center name, currency and the Telegram bot.",
-    "rules": "Choose which messages the center sends."
-  },
   "saveBar": {
     "label": "Unsaved changes",
     "unsaved": "Unsaved changes",
