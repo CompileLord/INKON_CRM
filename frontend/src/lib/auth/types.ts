@@ -12,6 +12,11 @@ export interface RefreshRequest {
   refresh_token: string;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface SetPasswordRequest {
   new_password: string;
 }

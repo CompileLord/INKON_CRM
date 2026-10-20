@@ -79,6 +79,18 @@ class Settings(BaseSettings):
     AUTH_RESET_AGGREGATE_LIMIT: int = Field(default=100, gt=0)
     AUTH_RESET_AGGREGATE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
 
+    SMS_PASSWORD_RESEND_COOLDOWN_SECONDS: int = Field(default=60, gt=0)
+    SMS_PASSWORD_ACCOUNT_LIMIT: int = Field(default=5, gt=0)
+    SMS_PASSWORD_ACCOUNT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    SMS_PASSWORD_PHONE_LIMIT: int = Field(default=10, gt=0)
+    SMS_PASSWORD_PHONE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+
+    SMS_PASSWORD_PHONE_DAILY_LIMIT: int = Field(default=10, gt=0)
+    SMS_API_KEY: Optional[str] = None
+    SMS_BASE_URL: str = "https://api.payomchi.tj/api/v1"
+    SMS_SENDER_ID: str = "KitobCRM"
+    SMS_REQUEST_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0)
+
     DATABASE_URL: str
 
     REDIS_HOST: str = "localhost"

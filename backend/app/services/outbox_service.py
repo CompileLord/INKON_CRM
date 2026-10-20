@@ -14,6 +14,7 @@ from app.services.email_templates import (
 
 OUTBOX_PAYLOAD_DOMAIN_SEPARATOR = b"imkon-crm:outbox-payload:v1"
 OUTBOX_CODE_TTL_SECONDS = 600
+STUDENT_PASSWORD_SMS_TTL_SECONDS = 3600
 
 
 class NotificationIntentPayload(BaseModel):
@@ -153,6 +154,31 @@ class OutboxService:
             max_attempts=5,
             next_attempt_at=now,
             expires_at=expires_at,
+        )
+        return await self._repository.enqueue(event)
+
+    async def enqueue_student_password_sms(
+        self,
+        recipient_phone: str,
+        target_user_id: int,
+        code: str,
+        reason: str,
+        language: Optional[str],
+    ) -> OutboxEvent:
+        now: datetime = datetime.now(timezone.utc)
+        payload_fields: dict[str, Optional[str]] = {"code": code, "reason": reason, "language": language}
+        event: OutboxEvent = OutboxEvent(
+            kind=OutboxEventKind.STUDENT_PASSWORD_SMS,
+            status=OutboxEventStatus.PENDING,
+            recipient_email="",
+            subject="",
+            recipient_phone=recipient_phone,
+            target_user_id=target_user_id,
+            encrypted_payload=self._encryptor.encrypt(json.dumps(payload_fields)),
+            correlation_key=f"password-sms:{target_user_id}",
+            max_attempts=6,
+            next_attempt_at=now,
+            expires_at=now + timedelta(seconds=STUDENT_PASSWORD_SMS_TTL_SECONDS),
         )
         return await self._repository.enqueue(event)
 

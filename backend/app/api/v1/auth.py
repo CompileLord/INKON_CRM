@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_setup_user
+from app.core.deps import get_current_user, get_db_session, get_setup_user
 from app.core.rate_limiter import (
     AuthenticationRateLimiter,
     LockoutReservation,
@@ -18,6 +18,7 @@ from app.schemas.auth import (
     PasswordResetVerifyRequest,
     PasswordResetConfirmRequest,
     SetPasswordRequest,
+    ChangePasswordRequest,
 )
 from app.services.auth_service import AuthService
 
@@ -132,6 +133,20 @@ async def set_password(
 ) -> TokenPair:
     auth_service = AuthService(db)
     return await auth_service.set_password(current_user.id, payload.new_password)
+
+
+@router.post("/change-password", response_model=TokenPair)
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
+) -> TokenPair:
+    await limiter.consume_login_budget(current_user.email, get_client_ip(request))
+    return await AuthService(db).change_password(
+        current_user.id, payload.current_password, payload.new_password
+    )
 
 
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)

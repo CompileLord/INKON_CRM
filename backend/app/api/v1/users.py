@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, status, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, Query, status, File, UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_storage_service, require_superadmin, get_current_user
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserCreateResponse, UserUpdate, UserSelfUpdate, UserResponse
+from app.models.outbox_event import OutboxEvent, OutboxEventStatus
+from app.services.student_password_sms_service import PasswordSmsDestination
+from app.schemas.user import PasswordSmsDeliveryResponse, PasswordSmsResendResponse, UserCreate, UserCreateResponse, UserUpdate, UserSelfUpdate, UserResponse
 from app.services.telegram_link_service import IssuedLinkCode
 from app.services.storage_service import StorageService
 from app.services.user_service import UserService
@@ -19,10 +21,40 @@ async def create_user(
     user_service = UserService(db)
     created_user: User
     issued_link_code: IssuedLinkCode | None
-    created_user, issued_link_code = await user_service.create_user_with_link_code(payload)
+    destination: PasswordSmsDestination | None
+    created_user, issued_link_code, destination = await user_service.create_user_with_link_code(
+        payload, current_user.id
+    )
     response: UserCreateResponse = UserCreateResponse.model_validate(created_user, from_attributes=True)
     response.parent_link_code = issued_link_code.code if issued_link_code else None
+    response.password_sms_destination = destination.kind.value if destination else None
     return response
+
+
+@router.get("/password-sms-deliveries", response_model=list[PasswordSmsDeliveryResponse])
+async def list_password_sms_deliveries(
+    user_id: int | None = None,
+    delivery_status: list[OutboxEventStatus] = Query(
+        default=[OutboxEventStatus.FAILED, OutboxEventStatus.EXPIRED], alias="status"
+    ),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db_session),
+) -> list[PasswordSmsDeliveryResponse]:
+    events: list[OutboxEvent] = await UserService(db).list_password_sms_deliveries(
+        delivery_status, user_id, limit
+    )
+    return [PasswordSmsDeliveryResponse.from_event(event) for event in events]
+
+
+@router.post("/{id}/resend-password-sms", response_model=PasswordSmsResendResponse)
+async def resend_password_sms(
+    id: int,
+    current_user: User = Depends(require_superadmin),
+    db: AsyncSession = Depends(get_db_session),
+) -> PasswordSmsResendResponse:
+    destination: PasswordSmsDestination = await UserService(db).resend_password_sms(id, current_user.id)
+    return PasswordSmsResendResponse(destination=destination.kind.value)
 
 
 @router.get("/me", response_model=UserResponse)

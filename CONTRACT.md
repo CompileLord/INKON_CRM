@@ -221,6 +221,45 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 ---
 
+## POST /api/v1/auth/change-password
+
+**Summary:** Change Password
+
+**Request Body (JSON):**
+```json
+{
+  "current_password": string,
+  "new_password": string,
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "access_token": string,
+    "refresh_token?": string,
+    "token_type?": string,
+    "must_set_password?": boolean,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## POST /api/v1/auth/password-reset/request
 
 **Summary:** Password Reset Request
@@ -369,6 +408,83 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
     "created_at": string,
     "updated_at": string,
     "parent_link_code?": string,
+    "password_sms_destination?": "student_phone" | "parent_phone",
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/users/password-sms-deliveries
+
+**Summary:** List Password Sms Deliveries
+
+**Parameters:**
+- `user_id` [query]
+- `status` [query]
+- `limit` [query]
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  [
+    {
+      "id": integer,
+      "user_id?": integer,
+      "status": "pending" | "claimed" | "delivered" | "failed" | "expired",
+      "masked_phone?": string,
+      "attempt_count": integer,
+      "max_attempts": integer,
+      "last_error?": string,
+      "provider_message_id?": string,
+      "provider_status?": string,
+      "created_at": string,
+      "delivered_at?": string,
+    }
+  ]
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## POST /api/v1/users/{id}/resend-password-sms
+
+**Summary:** Resend Password Sms
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "destination": "student_phone" | "parent_phone",
   }
   ```
 - **422**: Validation Error
