@@ -273,6 +273,10 @@ async def test_check_payment_reminders(db_session: AsyncSession, test_student: U
         status=EnrollmentStatus.ACTIVE
     )
     db_session.add(enrollment)
+    await db_session.flush()
+    from app.models.charge import Charge
+    charge: Charge = Charge(student=test_student, enrollment=enrollment, sequence_no=1, amount=course.price, due_date=date(2026, 7, 14))
+    db_session.add(charge)
     await db_session.commit()
 
     mock_enqueue = AsyncMock()
