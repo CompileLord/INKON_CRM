@@ -53,7 +53,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-45 | in_progress | remediation/wp-45-refresh-retention | 2026-10-20 | Red-first implementation | Audited WP43 prerequisite224b80d staged; integration awaits full gate. wp45-sol/. |
 | WP-46 | in_progress | remediation/wp-46-course-copy-budget | 2026-10-20 | Red-first implementation | Audited WP40/49 prerequisites staged; bounded copy scope refreshed. wp46-sol/. |
 | WP-47 | done | remediation/wp-47-provisioning-secrets | 2026-10-15 | Integrated Python3.12 backend 430 pass (199.01s) | PASS after correction: real fresh PostgreSQL smoke, actual stdin/FD password persistence and non-echoing terminal verified. Secret outside PGDATA; no real provisioning. Evidence wp13-recovery/wp47-*.log. |
-| WP-48 | todo | — | — | — | Pending. |
+| WP-48 | in_progress | remediation/wp-48-release-provenance | 2026-10-21 | b1f8ef5 audited; full 1290 pass; 10 mutations caught | Lock frozen to venv versions with hashes, actions/images pinned, PR build has no deploy secrets. Google-auth item obsolete (SSH deploy). Awaits master merge. Advisories →WP-70. |
 | WP-49 | in_progress | remediation/wp-49-canonical-inputs | 2026-10-20 | Focused129/root129 pass; legacy-binding mutation caught | Candidate86b71a9; full gate running. FE-R49 required. wp49-sol/. |
 | WP-50 | todo | — | — | — | Pending. |
 | WP-51 | todo | — | — | — | Pending. |
@@ -75,5 +75,6 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-67 | done | master | 2026-10-21 | deploy regression 21 pass (rerun by orchestrator); 8 mutations caught; bash -n 14 files | PASS 3078682/0577497/f92e34b. Real GitHub/VPS not exercised. ARQ check uses default 1h interval (→WP-68). |
 | WP-68 | todo | — | — | — | Audit: production TESTING/CORS guards, separate outbox key, uniform resend-code, short ARQ health interval. After WP-66. |
 | WP-69 | todo | — | — | — | Audit: payment idempotency, ordered copy locks, debtor cache, SQL analytics, measured indexes. After WP-46/53. |
+| WP-70 | todo | — | — | — | WP-48 pip-audit: aiohttp, pillow, certifi, ecdsa, python-jose (20 advisories). After WP-48. |
 
-43/69 accepted; 26 remain. 2026-10-21: orchestration taken over (previous agent idle since 10-20 20:15); candidates 32/35/37/40/41/43/49 on remediation/combined-audit-20261020 await integration with master; 44/45/46 worktrees dirty, to resume. WP-65–69 added from production audit. Frontend handoffs in UX plan.
+43/70 accepted; 27 remain. 2026-10-21: orchestration taken over (previous agent idle since 10-20 20:15); candidates 32/35/37/40/41/43/49 on remediation/combined-audit-20261020 await integration with master; 44/45/46 worktrees dirty, to resume. WP-65–69 added from production audit. Frontend handoffs in UX plan.
