@@ -26,10 +26,20 @@ describe("history presentation and lifetime summaries", (): void => {
     state.progress.isLoading = false;
     view.rerender(<MemoryRouter><StudentProgressPanel studentId={42} courses={mockProfileResponse.courses} role="student" currentUserId={42} /></MemoryRouter>);
     expect(screen.getByText("No history yet")).toBeTruthy();
+    expect(screen.queryByText(/All 0 started periods loaded|Showing 0 periods/)).toBeNull();
     expect(screen.getByText(/Results appear when your first period starts/)).toBeTruthy();
     state.progress.history!.hasUpcoming = true;
     view.rerender(<MemoryRouter><StudentProgressPanel studentId={42} courses={mockProfileResponse.courses} role="student" currentUserId={42} /></MemoryRouter>);
     expect(screen.getByText(/Your periods have not started yet/)).toBeTruthy();
+  });
+  it("hides either completeness message for empty history and shows complete totals for populated history", (): void => {
+    state.progress.history!.hasMore = true;
+    const view: ReturnType<typeof render> = ProgressFixture.render();
+    expect(screen.queryByText(/Showing .* periods|All .* started periods loaded/)).toBeNull();
+    state.progress.history!.hasMore = false;
+    state.progress.history!.items = [{ journal_id: 1, course_id: 4, course_title: "Own history", period_label: "Week 1", period_start: "2026-01-01", period_end: "2026-01-07", state: "graded", percentage: 0, sum_score: 0, max_period_score: 100, attendance_count: 0, total_lessons: 1 }];
+    view.rerender(<MemoryRouter><StudentProgressPanel studentId={42} courses={mockProfileResponse.courses} role="student" currentUserId={42} /></MemoryRouter>);
+    expect(screen.getByText("All 1 started periods loaded.")).toBeTruthy();
   });
   it("offers working retry on errors", (): void => {
     state.progress.isError = true;

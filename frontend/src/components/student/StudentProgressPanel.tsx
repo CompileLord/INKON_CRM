@@ -107,7 +107,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
 
       {progress.history && !progress.isLoading && !progress.isError && (
         <div className="mt-4 min-w-0 space-y-3" data-testid="student-history">
-          <p className="text-sm text-muted tabular-nums">{t(progress.history.hasMore ? "progress.historyWindow" : "progress.historyComplete", { count: progress.history.items.length })}</p>
+          {progress.history.items.length > 0 && <p className="text-sm text-muted tabular-nums">{t(progress.history.hasMore ? "progress.historyWindow" : "progress.historyComplete", { count: progress.history.items.length })}</p>}
           {progress.history.items.length === 0 ? (
             <EmptyState title={t("progress.historyEmptyTitle")} description={t(progress.history.hasUpcoming ? "progress.historyUpcoming" : "progress.historyEmptyBody")} />
           ) : (
