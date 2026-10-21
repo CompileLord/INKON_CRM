@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from alembic import op
 
 revision: str = "rwp45_refresh_retention"
-down_revision: str = "fin1a7d3e5b9c10"
+down_revision: str = "sms1b_pending_password"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
