@@ -247,7 +247,7 @@ export function registerStudentProfileHooks(): void {
     useAuthStore.setState({ role: "superadmin", userId: 1 });
     vi.spyOn(courseEndpoints, "getCourseStaffProgress").mockImplementation(async (courseId: number) => staffProgressFixture(courseId));
     vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "900.00", total_settled: "650.00", net_receivable: "250.00", credit_balance: "0.00", days_overdue: 3 });
-  vi.spyOn(userEndpoints, "getMyStudentJournals").mockResolvedValue(ownJournalsFixture);
+  vi.spyOn(userEndpoints, "getMyStudentJournalPage").mockResolvedValue({ items: ownJournalsFixture, next_cursor: null, has_upcoming_periods: false });
     vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
     vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
       return {

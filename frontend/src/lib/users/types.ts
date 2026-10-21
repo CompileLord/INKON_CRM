@@ -257,3 +257,10 @@ export interface StudentMentorCardResponse {
 
 export type MentorProfileResponse = MentorStaffProfileResponse;
 export type MentorProfileResult = MentorStaffProfileResponse | StudentMentorCardResponse;
+
+export interface StudentJournalHistoryParams {
+  course_id?: number;
+  page_size?: number;
+  started_only?: boolean;
+  cursor?: string;
+}

@@ -1,6 +1,7 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { getCourseStaffProgress } from "../courses/endpoints";
-import { getMyStudentJournals } from "../users/endpoints";
+import { useMyStudentJournalHistory } from "../users/hooks";
+import type { StudentJournalPeriod } from "../users/types";
 import {
   StudentProgressSeriesBuilder,
   type StudentProgressCourseReference,
@@ -12,6 +13,7 @@ export interface StudentProgressSeriesState {
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
+  history?: { items: StudentJournalPeriod[]; hasMore: boolean; loadingMore: boolean; loadMore: () => void; hasUpcoming: boolean };
 }
 
 export function useStudentProgressSeries(
@@ -19,11 +21,7 @@ export function useStudentProgressSeries(
   courses: StudentProgressCourseReference[],
   readsOwnJournals: boolean,
 ): StudentProgressSeriesState {
-  const ownJournals = useQuery({
-    queryKey: ["users", "students", "journals", "me", undefined],
-    queryFn: () => getMyStudentJournals(),
-    enabled: readsOwnJournals && studentId !== undefined,
-  });
+  const ownJournals: ReturnType<typeof useMyStudentJournalHistory> = useMyStudentJournalHistory(undefined, readsOwnJournals && studentId !== undefined);
 
   const staffProgress = useQueries({
     queries: courses.map((course) => ({
@@ -35,14 +33,16 @@ export function useStudentProgressSeries(
   });
 
   if (readsOwnJournals) {
+    const items: StudentJournalPeriod[] = ownJournals.data?.pages.flatMap((page) => page.items) ?? [];
     const series: StudentProgressSeries[] = ownJournals.data
-      ? courses.map((course, slot) => StudentProgressSeriesBuilder.fromOwnJournals(course, slot, ownJournals.data))
+      ? courses.map((course, slot) => StudentProgressSeriesBuilder.fromOwnJournals(course, slot, items))
       : [];
     return {
       series,
       isLoading: ownJournals.isLoading,
       isError: ownJournals.isError,
       refetch: () => void ownJournals.refetch(),
+      history: { items, hasMore: ownJournals.hasNextPage, loadingMore: ownJournals.isFetchingNextPage, loadMore: () => void ownJournals.fetchNextPage(), hasUpcoming: ownJournals.data?.pages[0]?.has_upcoming_periods ?? false },
     };
   }
 

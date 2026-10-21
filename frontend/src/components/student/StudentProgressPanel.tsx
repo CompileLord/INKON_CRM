@@ -8,11 +8,11 @@ import { SectionCard } from "../ui/SectionCard";
 import { ScoreFigure } from "../profile/ScoreFigure";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
-import { formatNumber, formatPercentage } from "../../i18n/formatters";
+import { formatNumber, formatPercentage, formatSchoolLessonDate } from "../../i18n/formatters";
 import { getStudentCourseLink } from "../../lib/students/studentNavigation";
 import { StudentProgressSeriesBuilder, type StudentProgressSeries } from "../../lib/students/StudentProgressSeriesBuilder";
 import { useStudentProgressSeries } from "../../lib/students/useStudentProgressSeries";
-import type { StudentCourseProfile } from "../../lib/users/types";
+import type { StudentCourseProfile, StudentJournalPeriod } from "../../lib/users/types";
 
 interface StudentProgressPanelProps {
   studentId: number;
@@ -36,7 +36,7 @@ function CourseProgressRow({ item, role, currentUserId }: { item: StudentCourseP
             <StudentCourseStagePill course={item} />
           </span>
           {stats !== null ? (
-            <span className="flex shrink-0 flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
+            <span className="flex min-w-0 max-w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
               <ScoreFigure score={item.my_total_score} max={item.my_total_max_score} />
               {attendance !== null ? (
                 <span className="tabular-nums text-muted">{t("progress.attendanceShort", { value: formatNumber(attendance, i18n.language, { maximumFractionDigits: 0 }) })}</span>
@@ -95,8 +95,33 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
           formatAxisValue={(value: number) => formatNumber(value, i18n.language)}
           describeEntry={(name: string, formattedValue: string) => t("progress.chartEntry", { name, value: formattedValue })}
         />
-      ) : (
+      ) : progress.history?.items.length === 0 ? null : (
         <EmptyState title={t("progress.emptyTitle")} description={t("progress.emptyBody")} />
+      )}
+
+      {progress.history && progress.isLoading && (
+        <ul aria-label={t("common:loading")} aria-busy="true" className="divide-y divide-border rounded-2xl border border-border bg-card motion-safe:animate-pulse">
+          {[0, 1, 2].map((row: number) => <li key={row} className="flex items-center justify-between gap-2 p-4"><span className="h-10 w-48 max-w-full rounded bg-strip" /><span className="h-5 w-12 rounded bg-strip" /></li>)}
+        </ul>
+      )}
+
+      {progress.history && !progress.isLoading && !progress.isError && (
+        <div className="mt-4 min-w-0 space-y-3" data-testid="student-history">
+          <p className="text-sm text-muted tabular-nums">{t(progress.history.hasMore ? "progress.historyWindow" : "progress.historyComplete", { count: progress.history.items.length })}</p>
+          {progress.history.items.length === 0 ? (
+            <EmptyState title={t("progress.historyEmptyTitle")} description={t(progress.history.hasUpcoming ? "progress.historyUpcoming" : "progress.historyEmptyBody")} />
+          ) : (
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+              {progress.history.items.map((period: StudentJournalPeriod) => (
+                <li key={period.journal_id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 p-4">
+                  <span className="min-w-0 break-words text-sm text-ink">{period.course_title} · {periodName(period.period_label)}<span className="block text-xs text-muted tabular-nums">{formatSchoolLessonDate(period.period_start)} – {formatSchoolLessonDate(period.period_end)}</span></span>
+                  <span className="text-sm text-muted tabular-nums">{period.state === "graded" ? formatPercentage(period.percentage, i18n.language) : t("progress.rowNoData")}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {progress.history.hasMore && <Button type="button" variant="secondary" loading={progress.history.loadingMore} onClick={progress.history.loadMore}>{t("progress.loadMore")}</Button>}
+        </div>
       )}
 
       {courses.length > 0 ? (
