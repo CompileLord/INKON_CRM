@@ -115,12 +115,14 @@
     "discardWithSavedAvatar": "The uploaded photo has already been saved. Unsaved profile details will be discarded. Discard remaining changes?",
     "discardConfirm": "Discard",
     "keepEditing": "Keep editing",
-    "createSuccess": "Student created. Login details (email and temporary password) were sent to their email",
+    "createSuccess": "Student created",
     "updateSuccess": "Student updated successfully",
     "deleteSuccess": "Student deleted successfully",
     "deleteWithdrawError": "Failed to withdraw student's active enrollments. The student account was not deleted.",
     "deleteFailedAfterWithdraw": "Active enrollments were withdrawn, but deleting the student account failed.",
-    "deleteAccountError": "Failed to delete student account. The student was not deleted."
+    "deleteAccountError": "Failed to delete student account. The student was not deleted.",
+    "contactsInfoLabel": "About contacts",
+    "contactsInfo": "Enter the student phone, the parent phone, or both. The password is sent there by SMS."
   },
   "validation": {
     "firstNameRequired": "Enter first name",
@@ -128,10 +130,11 @@
     "nameTooLong": "Maximum 100 characters",
     "emailRequired": "Email is required",
     "invalidEmail": "Invalid email address",
-    "invalidPhone": "Format: +992901234567 (no spaces or hyphens)",
+    "invalidPhone": "Use the international format, e.g. +992901234567",
     "invalidTelegramChatId": "Must be a valid integer ID",
     "invalidPaymentDay": "Must be a number from 1 to 28",
-    "emailTaken": "This email is already in use"
+    "emailTaken": "This email is already in use",
+    "phoneOrParentPhoneRequired": "Enter a student or parent phone."
   },
   "currencyTjs": "TJS",
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",

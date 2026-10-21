@@ -1,7 +1,5 @@
 {
   "title": "Documents",
-  "subtitle": "Files attached to this profile",
-  "subtitleNamed": "Files attached to {{owner}}",
   "uploadDoc": "Upload Document",
   "uploadHelp": "Photos, audio, PDF, Word (.docx) and plain-text files up to 50 MB.",
   "loadingDocs": "Loading documents…",

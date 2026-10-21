@@ -15,7 +15,7 @@ class TestUsersEndpointGroup:
             "email": "new_admin_user@example.com",
             "first_name": "New",
             "last_name": "AdminUser",
-            "role": "student"
+            "role": "student", "phone": "+992900000999"
         }, headers=headers)
         assert res.status_code == 201
 
@@ -25,7 +25,7 @@ class TestUsersEndpointGroup:
             "email": "mentor_bad_create@example.com",
             "first_name": "New",
             "last_name": "MentorUser",
-            "role": "student"
+            "role": "student", "phone": "+992900000999"
         }, headers=headers)
         assert res.status_code == 403
 
@@ -35,7 +35,7 @@ class TestUsersEndpointGroup:
             "email": "student_bad_create@example.com",
             "first_name": "New",
             "last_name": "StudentUser",
-            "role": "student"
+            "role": "student", "phone": "+992900000999"
         }, headers=headers)
         assert res.status_code == 403
 

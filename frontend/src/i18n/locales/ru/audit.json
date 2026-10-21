@@ -1,10 +1,8 @@
 {
   "title": "Аудит",
-  "titleInfo": "Кто, что и когда изменил. Каждая строка — одно изменённое поле.",
   "refresh": "Обновить",
   "searchLabel": "Поиск по изменениям",
   "searchPlaceholder": "Поиск",
-  "searchInfo": "Ищет по сотруднику, типу записи и полю среди всех изменений, а не только на этой странице.",
   "filters": {
     "actor": "Кто",
     "action": "Действие",
@@ -49,7 +47,8 @@
     "refund": "<actor>{{actor}}</actor>: возврат — {{entity}}",
     "close_period": "<actor>{{actor}}</actor>: закрытие — {{entity}}",
     "reopen_period": "<actor>{{actor}}</actor>: повторное открытие — {{entity}}",
-    "unknown": "<actor>{{actor}}</actor>: изменение — {{entity}}"
+    "unknown": "<actor>{{actor}}</actor>: изменение — {{entity}}",
+    "object": "<actor>{{actor}}</actor>: {{object}}"
   },
   "entities": {
     "payment": "Платёж",
@@ -62,7 +61,10 @@
     "journal": "Журнал",
     "enrollment": "Запись на курс",
     "user": "Пользователь",
-    "student": "Студент"
+    "student": "Студент",
+    "student_telegram_link": "Привязка Telegram родителя",
+    "journal_period_settings": "Настройки периода",
+    "journal_student_summary": "Итог студента за период"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -134,7 +136,6 @@
     "who": "Кто",
     "when": "Когда",
     "record": "Запись",
-    "changeNumber": "Номер изменения",
     "before": "Было",
     "after": "Стало",
     "openStudent": "Открыть студента",
@@ -154,7 +155,42 @@
     "fieldsChanged_one": "Изменено {{count}} поле",
     "fieldsChanged_few": "Изменено {{count}} поля",
     "fieldsChanged_many": "Изменено {{count}} полей",
-    "fieldsChanged_other": "Изменено {{count}} полей"
+    "fieldsChanged_other": "Изменено {{count}} полей",
+    "fieldsList": "Изменено: {{fields}}",
+    "similarCount": "Похожих изменений: {{count}}",
+    "showSimilar": "Показать все",
+    "hideSimilar": "Скрыть"
   },
-  "moneyAmount": "{{amount}} TJS"
+  "moneyAmount": "{{amount}} TJS",
+  "objects": {
+    "journal_entry": {
+      "update": {
+        "score": "изменена оценка",
+        "attendance": "изменена посещаемость",
+        "any": "изменена запись журнала"
+      },
+      "create": {
+        "score": "выставлена оценка",
+        "attendance": "отмечена посещаемость",
+        "any": "добавлена запись журнала"
+      }
+    },
+    "student_telegram_link": {
+      "update": {
+        "any": "обновлён код привязки Telegram родителя"
+      },
+      "create": {
+        "any": "создан код привязки Telegram родителя"
+      },
+      "delete": {
+        "any": "отвязан Telegram родителя"
+      }
+    },
+    "course": {
+      "update": {
+        "mentor_id": "изменён преподаватель курса",
+        "status": "изменён статус курса"
+      }
+    }
+  }
 }

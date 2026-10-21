@@ -25,6 +25,8 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    pending_password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    pending_password_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     role: Mapped[UserRole] = mapped_column(String(20), nullable=False)

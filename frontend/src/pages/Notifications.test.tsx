@@ -56,10 +56,12 @@ beforeEach(async () => {
 afterEach(() => cleanup());
 
 describe("Notifications inbox", () => {
-  it("is titled Notifications with the explanation in an info tooltip", () => {
+  it("is titled Notifications without a title icon or info tooltip", () => {
     renderNotifications("student");
     expect(screen.getByRole("heading", { level: 1, name: /^Notifications/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Notifications" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Notifications" })).toBeNull();
+    expect(document.querySelector("h1 svg")).toBeNull();
+    expect(document.querySelector("[data-page-container]")).not.toBeNull();
     expect(screen.queryByText("System Notifications Log")).toBeNull();
   });
 

@@ -1,5 +1,6 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token
 from app.models.user import User
 from app.models.course import Course
@@ -38,18 +39,29 @@ async def test_auth_refresh_logout_resend_coverage(client: AsyncClient, test_stu
 
 
 @pytest.mark.asyncio
-async def test_password_reset_flow(client: AsyncClient, test_student: User):
-    # Request password reset
-    res = await client.post("/api/v1/auth/password-reset/request", json={"email": test_student.email})
-    assert res.status_code == 200
-
-    # Verify code with invalid code
-    res_v = await client.post("/api/v1/auth/password-reset/verify", json={"email": test_student.email, "code": "000000"})
-    assert res_v.status_code in [400, 422]
-
-    # Confirm with invalid payload
-    res_c = await client.post("/api/v1/auth/password-reset/confirm", json={"token": "invalid", "new_password": "NewPassword123!"})
-    assert res_c.status_code in [400, 401, 422]
+async def test_password_reset_flow(
+    client: AsyncClient, test_student: User, db_session: AsyncSession
+) -> None:
+    original_password_hash: str = test_student.password_hash
+    request_response: Response = await client.post(
+        "/api/v1/auth/password-reset/request", json={"email": test_student.email}
+    )
+    assert request_response.status_code == 200
+    verify_response: Response = await client.post(
+        "/api/v1/auth/password-reset/verify",
+        json={"email": test_student.email, "code": "000000"},
+    )
+    assert verify_response.status_code == 400
+    confirm_response: Response = await client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"reset_token": "invalid", "new_password": "NewPassword123!"},
+    )
+    assert confirm_response.status_code == 400
+    assert confirm_response.json()["detail"] == "Invalid or expired reset token"
+    persisted_student: User | None = await db_session.get(User, test_student.id)
+    assert persisted_student is not None
+    await db_session.refresh(persisted_student)
+    assert persisted_student.password_hash == original_password_hash
 
 
 @pytest.mark.asyncio

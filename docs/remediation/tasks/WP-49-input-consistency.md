@@ -25,6 +25,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | [frontend/src/lib/settings/types.ts:1](../../../frontend/src/lib/settings/types.ts) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [CONTRACT.md:1](../../../CONTRACT.md) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp49.py](../../../backend/app/tests/integration/test_remediation_wp49.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/services/user_service.py` | Preserve linked guardian when a legacy optional-plus phone is replaced by the same canonical number; real changes retain revocation. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.
@@ -103,3 +104,9 @@ Complete prerequisites first and start from their merged result. Do not require 
 **S**: localized change or narrowly scoped evidence collection.
 
 Use branch `remediation/wp-49-input-consistency` and one PR for this WP. Update only this WP’s row in `docs/remediation/STATUS.md` with concise actual results, blockers and external evidence paths. No push/PR publication occurs in this planning task.
+
+### Current-source policy correction (2026-10-20)
+
+Use one shared strict new-input type for all five phone/parent_phone fields: mandatory leading plus, nonzero first ASCII digit, total2–15 ASCII digits (`^\+[1-9][0-9]{1,14}$`), nullable where already permitted. Reject missing plus, whitespace, punctuation, empty and Unicode digits; do not silently normalize new untrusted inputs. Keep output phone strings permissive for legacy reads. Historical comparison may canonicalize only an otherwise-valid ASCII number with optional leading plus; do not strip arbitrary characters or equate invalid stored values with null. A transition from legacy digits to the same plus-prefixed parent phone must preserve Telegram binding; a real changed/cleared number keeps WP15 unbinding behavior. Current Telegram linking uses one-use codes and student IDs, not phone lookup; preserve those flows. No bulk rewrite or new database migration is authorized. Missing-key versus explicit-null updates must remain distinct.
+
+Frontend string types are unchanged, but strict inputs require the existing frontend owner to align form validation/help and safely canonicalize valid legacy edit prefills. Root records the exact handoff in existing UX PLAN/STATUS. Do not edit frontend. Serialize contract generation after WP40 and preserve existing union/nullable prose; document input patterns explicitly if the generator omits them.

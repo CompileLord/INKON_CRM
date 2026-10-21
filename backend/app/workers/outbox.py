@@ -19,6 +19,8 @@ from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxReposi
 from app.services.email_service import EmailDeliveryError, EmailService, SMTP_SOCKET_TIMEOUT_SECONDS
 from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
 from app.services.outbox_service import NotificationIntentPayload, OutboxPayloadEncryptor
+from app.services.sms.sender import PayomchiSmsSender, SmsSender
+from app.workers.sms_delivery import StudentPasswordSmsDispatcher
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,9 @@ class OutboxWorkerManager:
         database_url: str,
         payload_master_key: str,
         email_service: Optional[EmailService] = None,
+        sms_sender: Optional[SmsSender] = None,
+        sms_send_interval_seconds: float = 0.2,
+        sms_jitter_fraction: float = 0.25,
         batch_size: int = OUTBOX_WORKER_BATCH_SIZE,
         lease_duration_seconds: int = OUTBOX_WORKER_LEASE_SECONDS,
         poll_interval_seconds: float = OUTBOX_WORKER_POLL_INTERVAL_SECONDS,
@@ -53,6 +58,12 @@ class OutboxWorkerManager:
         self.email_service = email_service or EmailService()
         self.encryptor = OutboxPayloadEncryptor(payload_master_key)
         self.template_factory = OutboxEmailTemplateFactory()
+        self.sms_dispatcher = StudentPasswordSmsDispatcher(
+            sender=sms_sender or PayomchiSmsSender(),
+            send_interval_seconds=sms_send_interval_seconds,
+            jitter_fraction=sms_jitter_fraction,
+            backoff_base_seconds=backoff_base_seconds,
+        )
         self.batch_size = batch_size
         self.lease_duration_seconds = lease_duration_seconds
         self.poll_interval_seconds = poll_interval_seconds
@@ -191,7 +202,7 @@ class OutboxWorkerManager:
                 await session.commit()
             return True
 
-        if event.kind not in self.notification_tasks and (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
+        if event.kind not in self.notification_tasks and event.kind != OutboxEventKind.STUDENT_PASSWORD_SMS and (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
             async with session_factory() as session:
                 repo = SQLAlchemyOutboxRepository(session)
                 await repo.mark_expired(event.id, lease_owner, "event_exceeded_maximum_queue_age", now)
@@ -233,6 +244,9 @@ class OutboxWorkerManager:
 
         if event.kind in self.notification_tasks:
             return await self.dispatch_notification(event, code, lease_owner, session_factory)
+
+        if event.kind == OutboxEventKind.STUDENT_PASSWORD_SMS:
+            return await self.sms_dispatcher.dispatch(event, code, lease_owner, session_factory)
 
         async with session_factory() as session:
             is_valid, invalidate_reason = await self.check_verification_state(event, code, session)
@@ -355,9 +369,7 @@ class OutboxWorkerManager:
     async def start(self) -> None:
         self._engine = create_async_engine(
             self.database_url,
-            pool_pre_ping=True,
-            pool_size=2,
-            max_overflow=2,
+            **settings.main_engine_options(outbox=True),
         )
         self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False)
         self._stop_event = asyncio.Event()
@@ -379,6 +391,7 @@ class OutboxWorkerManager:
             except (asyncio.TimeoutError, Exception):
                 pass
             self._inflight_transports.clear()
+        await self.sms_dispatcher.close()
         if self._engine is not None:
             await self._engine.dispose()
             self._engine = None

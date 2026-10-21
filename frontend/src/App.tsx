@@ -27,7 +27,7 @@ import { bootstrapAuth } from "./lib/authBootstrap";
 
 import { MyCourses } from "./pages/student/MyCourses";
 import { MyCourseDetail } from "./pages/student/MyCourseDetail";
-import { MyJournalPeriod } from "./pages/student/MyJournalPeriod";
+import { MyCourseJournal } from "./pages/student/MyCourseJournal";
 
 const router = createBrowserRouter([
   ...(import.meta.env.DEV ? [{ path: "/dev/ui", element: <DevUi /> }] : []),
@@ -67,7 +67,7 @@ const router = createBrowserRouter([
                   { index: true, element: <Dashboard /> },
                   { path: "my/courses", element: <MyCourses /> },
                   { path: "my/courses/:courseId", element: <MyCourseDetail /> },
-                  { path: "my/journal/:journalId", element: <MyJournalPeriod /> },
+                  { path: "my/courses/:courseId/journal", element: <MyCourseJournal /> },
                   { path: "students", element: <Students /> },
                   { path: "students/:id", element: <StudentProfile /> },
                   { path: "mentors", element: <Mentors /> },

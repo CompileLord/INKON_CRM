@@ -192,9 +192,7 @@
     "columnAllocation": "Allocation",
     "columnCash": "Cash received",
     "columnMethod": "Method and date",
-    "columnStatus": "Status",
     "columnActions": "Details",
-    "statusRecorded": "Recorded",
     "detailsFor": "Details for {{student}}, payment {{id}}",
     "all": "All",
     "pillVoided": "Voided",
@@ -239,5 +237,22 @@
     "pageCorrected": "Moved to the last page.",
     "pagerLabel": "Course balances pages",
     "openProfile": "Open profile: {{student}}"
+  },
+  "reminders": {
+    "action": "Remind in Telegram",
+    "actionFor": "Remind the parent of {{student}} in Telegram",
+    "noParent": "Parent is not linked in Telegram",
+    "lastSent": "Last reminder: {{when}}",
+    "neverSent": "No reminder sent yet",
+    "bulk": "Remind all on this page ({{count}})",
+    "bulkNone": "No linked parents on this page",
+    "queuedOne": "Reminder queued for {{student}}.",
+    "recentlyReminded": "{{student}} was reminded in the last 24 hours. Next reminder: {{when}}.",
+    "noParentChat": "{{student}} has no parent linked in Telegram.",
+    "noDebt": "{{student}} has no unpaid balance.",
+    "notFound": "{{student}} was not found.",
+    "bulkResult": "Reminders queued: {{queued}}. Skipped: {{skipped}} (no linked parent, reminded in the last 24 hours, or no debt).",
+    "disabled": "Debt reminders are turned off in notification settings. Turn them on to send.",
+    "failed": "Reminders could not be sent. Try again."
   }
 }

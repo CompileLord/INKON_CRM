@@ -65,7 +65,7 @@ class TestEndpoints:
         student_response = await client.post(
             "/api/v1/users/",
             headers=admin_headers(test_admin),
-            json={"email": "new-student@example.com", "first_name": "New", "last_name": "Kid", "role": "student"},
+            json={"email": "new-student@example.com", "first_name": "New", "last_name": "Kid", "role": "student", "phone": "+992900000999"},
         )
         mentor_response = await client.post(
             "/api/v1/users/",
@@ -88,7 +88,7 @@ class TestRegistrationDelivery:
         created = await client.post(
             "/api/v1/users/",
             headers=admin_headers(test_admin),
-            json={"email": "delivered@example.com", "first_name": "Del", "last_name": "Ivered", "role": "student"},
+            json={"email": "delivered@example.com", "first_name": "Del", "last_name": "Ivered", "role": "student", "phone": "+992900000999"},
         )
         body: dict[str, Any] = created.json()
         code: str = body["parent_link_code"]
@@ -122,22 +122,23 @@ class TestRegistrationDelivery:
         from app.core.config import settings
         from app.models.outbox_event import OutboxEvent, OutboxEventKind
         from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
-        from app.services.outbox_service import OutboxPayloadEncryptor
 
         monkeypatch.setattr(settings, "TELEGRAM_BOT_USERNAME", "kitob_test_bot")
         created = await client.post(
             "/api/v1/users/",
             headers=admin_headers(test_admin),
-            json={"email": "mailed@example.com", "first_name": "Mail", "last_name": "Ed", "role": "student"},
+            json={"email": "mailed@example.com", "first_name": "Mail", "last_name": "Ed", "role": "student", "phone": "+992900000999"},
         )
         code: str = created.json()["parent_link_code"]
-        event: OutboxEvent = (
+        assert code
+        credentials_events = (
             await db_session.execute(select(OutboxEvent).where(OutboxEvent.kind == OutboxEventKind.CREDENTIALS_EMAIL))
-        ).scalars().one()
-        assert event.encrypted_payload is not None
-        payload: str = OutboxPayloadEncryptor(settings.JWT_SECRET_KEY).decrypt(event.encrypted_payload)
-        assert json.loads(payload)["parent_link_code"] == code
-        rendered: RenderedEmail = OutboxEmailTemplateFactory().create(event.kind, event.recipient_email, payload).render()
+        ).scalars().all()
+        assert credentials_events == []
+        payload: str = json.dumps({"first_name": "Mail", "temporary_password": "123456", "parent_link_code": code})
+        rendered: RenderedEmail = OutboxEmailTemplateFactory().create(
+            OutboxEventKind.CREDENTIALS_EMAIL, "mailed@example.com", payload
+        ).render()
         assert "Код для Telegram родителя" in rendered.html_body
         assert rendered.html_body.count(code) == 1
         assert "Передайте код родителю, чтобы подключить уведомления в боте @kitob_test_bot." in rendered.html_body

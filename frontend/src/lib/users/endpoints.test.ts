@@ -20,6 +20,8 @@ const {
   getStudentProfile,
   getMyMentorProfile,
   getMentorProfile,
+  resendPasswordSms,
+  listPasswordSmsDeliveries,
 } = await import("./endpoints");
 
 const mock = new MockAdapter(httpClient);
@@ -212,5 +214,19 @@ describe("403 handling", () => {
     expect(err).toBeInstanceOf(AuthApiError);
     expect((err as InstanceType<typeof AuthApiError>).status).toBe(403);
     expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(0);
+  });
+});
+
+describe("password SMS endpoints", () => {
+  it("posts the resend request for the student and returns the destination", async () => {
+    mock.onPost("/users/7/resend-password-sms").reply(200, { destination: "parent_phone" });
+    await expect(resendPasswordSms(7)).resolves.toEqual({ destination: "parent_phone" });
+  });
+
+  it("lists deliveries for one user across every status", async () => {
+    mock.onGet("/users/password-sms-deliveries").reply(200, []);
+    await listPasswordSmsDeliveries(7);
+    const request = mock.history.get[mock.history.get.length - 1];
+    expect(request.params).toEqual({ user_id: 7, status: ["pending", "claimed", "delivered", "failed", "expired"] });
   });
 });

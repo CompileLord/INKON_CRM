@@ -35,7 +35,7 @@ async def test_schedule_generation_and_auto_allocation(
             "email": "sched_stud@example.com",
             "first_name": "Sched",
             "last_name": "Student",
-            "role": "student",
+            "role": "student", "phone": "+992900000999",
             "payment_day_of_month": 15,
         },
         headers=admin_headers,
@@ -116,7 +116,7 @@ async def test_void_and_refund_lifecycle(
     # Setup student + course + enrollment
     st_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "lifecycle_st@example.com", "first_name": "L", "last_name": "C", "role": "student"},
+        json={"email": "lifecycle_st@example.com", "first_name": "L", "last_name": "C", "role": "student", "phone": "+992900000999"},
         headers=admin_headers,
     )
     student_id = st_resp.json()["id"]
@@ -242,7 +242,7 @@ async def test_period_close_enforcement(
     # 2. Attempt to post payment into closed period (2026-07) -> expect 400
     st_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "period_st@example.com", "first_name": "P", "last_name": "S", "role": "student"},
+        json={"email": "period_st@example.com", "first_name": "P", "last_name": "S", "role": "student", "phone": "+992900000999"},
         headers=admin_headers,
     )
     student_id = st_resp.json()["id"]
@@ -317,7 +317,7 @@ async def test_receipt_generation(
 
     st_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "receipt_st@example.com", "first_name": "Alice", "last_name": "Smith", "role": "student"},
+        json={"email": "receipt_st@example.com", "first_name": "Alice", "last_name": "Smith", "role": "student", "phone": "+992900000999"},
         headers=admin_headers,
     )
     student_id = st_resp.json()["id"]

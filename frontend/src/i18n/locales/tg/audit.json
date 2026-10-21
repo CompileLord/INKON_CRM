@@ -1,10 +1,8 @@
 {
   "title": "Аудит",
-  "titleInfo": "Кӣ, чӣ ва кай тағйир додааст. Ҳар сатр як майдони тағйирёфтаро нишон медиҳад.",
   "refresh": "Навсозӣ",
   "searchLabel": "Ҷустуҷӯи тағйирот",
   "searchPlaceholder": "Ҷустуҷӯ",
-  "searchInfo": "Аз рӯи шахс, навъи сабт ва майдон дар байни ҳамаи тағйирот ҷустуҷӯ мекунад, на танҳо дар ин саҳифа.",
   "filters": {
     "actor": "Кӣ",
     "action": "Амал",
@@ -49,7 +47,8 @@
     "refund": "<actor>{{actor}}</actor>: {{entity}} баргардонида шуд",
     "close_period": "<actor>{{actor}}</actor>: {{entity}} баста шуд",
     "reopen_period": "<actor>{{actor}}</actor>: {{entity}} аз нав кушода шуд",
-    "unknown": "<actor>{{actor}}</actor>: {{entity}} дигаргун шуд"
+    "unknown": "<actor>{{actor}}</actor>: {{entity}} дигаргун шуд",
+    "object": "<actor>{{actor}}</actor>: {{object}}"
   },
   "entities": {
     "payment": "Пардохт",
@@ -62,7 +61,10 @@
     "journal": "Журнал",
     "enrollment": "Сабти номи курс",
     "user": "Корбар",
-    "student": "Донишҷӯ"
+    "student": "Донишҷӯ",
+    "student_telegram_link": "Пайвасти Telegram-и волид",
+    "journal_period_settings": "Танзимоти давра",
+    "journal_student_summary": "Натиҷаи донишҷӯ барои давра"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -134,7 +136,6 @@
     "who": "Кӣ",
     "when": "Кай",
     "record": "Сабт",
-    "changeNumber": "Рақами тағйир",
     "before": "Пештар",
     "after": "Баъд",
     "openStudent": "Кушодани донишҷӯ",
@@ -152,7 +153,42 @@
     "paymentVoided": "<actor>{{actor}}</actor>: пардохти {{amount}} аз {{student}} бекор карда шуд",
     "reason": "Сабаб: {{reason}}",
     "fieldsChanged_one": "{{count}} майдон тағйир ёфт",
-    "fieldsChanged_other": "{{count}} майдон тағйир ёфт"
+    "fieldsChanged_other": "{{count}} майдон тағйир ёфт",
+    "fieldsList": "Тағйир ёфт: {{fields}}",
+    "similarCount": "Тағйироти монанд: {{count}}",
+    "showSimilar": "Ҳамаро нишон диҳед",
+    "hideSimilar": "Пинҳон кардан"
   },
-  "moneyAmount": "{{amount}} TJS"
+  "moneyAmount": "{{amount}} TJS",
+  "objects": {
+    "journal_entry": {
+      "update": {
+        "score": "баҳо тағйир ёфт",
+        "attendance": "ҳозирӣ тағйир ёфт",
+        "any": "сабти журнал тағйир ёфт"
+      },
+      "create": {
+        "score": "баҳо гузошта шуд",
+        "attendance": "ҳозирӣ қайд шуд",
+        "any": "сабти журнал илова шуд"
+      }
+    },
+    "student_telegram_link": {
+      "update": {
+        "any": "рамзи пайвасти Telegram-и волид нав шуд"
+      },
+      "create": {
+        "any": "рамзи пайвасти Telegram-и волид сохта шуд"
+      },
+      "delete": {
+        "any": "Telegram-и волид ҷудо шуд"
+      }
+    },
+    "course": {
+      "update": {
+        "mentor_id": "омӯзгори курс тағйир ёфт",
+        "status": "ҳолати курс тағйир ёфт"
+      }
+    }
+  }
 }

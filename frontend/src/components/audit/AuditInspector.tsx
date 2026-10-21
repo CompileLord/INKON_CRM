@@ -1,7 +1,7 @@
 import { Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { formatDateTime, formatNumber, SCHOOL_TIMEZONE } from "../../i18n/formatters";
+import { formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditChange, AuditEvent } from "../../lib/audit/api";
 import { QUIET_ACTION_CLASSES } from "../finance/quietActionClasses";
 import { SlideOver } from "../ui/SlideOver";
@@ -72,10 +72,6 @@ export function AuditInspector({ event, onClose, onShowRecord, returnFocusTo }: 
               <dd className="mt-0.5 break-words text-ink">
                 {labels.entityLabel(event.entity_type)} · {event.entity_label ?? t("inspector.unknownRecord")}
               </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-label">{t("inspector.changeNumber")}</dt>
-              <dd className="mt-0.5 text-ink tabular-nums">{formatNumber(event.id, language, { useGrouping: false })}</dd>
             </div>
           </dl>
           <section aria-labelledby="audit-inspector-fields">

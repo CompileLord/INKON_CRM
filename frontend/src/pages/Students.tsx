@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader } from "../components/PageHeader";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Input } from "../components/ui/Input";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
@@ -271,6 +273,7 @@ export function Students() {
           state: {
             createdStudentId: user.id,
             createdParentLinkCode: user.parent_link_code ?? null,
+            createdPasswordSmsDestination: user.password_sms_destination ?? null,
             fromDirectory: {
               search: searchInput,
               page,
@@ -363,56 +366,47 @@ export function Students() {
   const hasLoadedOnce = isCurrentParamsMatchingLastGood || (data !== undefined && !isLoading);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <PageHeader
-          title={t("title")}
-          count={
-            <span className="inline-flex items-center gap-2">
-              {isLoading && !isCurrentParamsMatchingLastGood ? (
-                <span className="h-6 w-10 animate-pulse rounded-full bg-beige" />
-              ) : typeof effectiveData?.total === "number" ? (
-                <span title={t("table.total")} aria-label={`${t("table.total")}: ${formatNumber(effectiveData.total, i18n.language)}`}>
-                  {formatNumber(effectiveData.total, i18n.language)}
-                </span>
-              ) : null}
-              {isFetching && !isLoading && <BrandActivityIndicator size={18} />}
-            </span>
-          }
-        />
-
-        <div className="flex items-center gap-3">
-          <div className="relative min-w-0 flex-1 sm:max-w-[480px]">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-            />
-            <input
-              ref={searchInputRef}
-              type="search"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("searchPlaceholder")}
-              className="w-full min-h-[48px] rounded-xl border border-control-border bg-card py-2.5 pl-10 pr-4 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
-            />
-          </div>
-
+    <PageContainer>
+      <PageHeader
+        title={t("title")}
+        count={
+          <span className="inline-flex items-center gap-2">
+            {isLoading && !isCurrentParamsMatchingLastGood ? (
+              <span className="h-6 w-10 animate-pulse rounded-full bg-border" />
+            ) : typeof effectiveData?.total === "number" ? (
+              <span title={t("table.total")} aria-label={`${t("table.total")}: ${formatNumber(effectiveData.total, i18n.language)}`}>
+                {formatNumber(effectiveData.total, i18n.language)}
+              </span>
+            ) : null}
+            {isFetching && !isLoading && <BrandActivityIndicator size={18} />}
+          </span>
+        }
+        actions={
           <Button
             ref={addStudentTriggerRef}
             type="button"
-            variant="primary"
             aria-label={t("addStudent")}
             onClick={() => {
               activeTriggerRef.current = addStudentTriggerRef.current;
               setPanel({ mode: "create" });
             }}
-            className="min-h-[48px] shrink-0 whitespace-nowrap sm:ml-auto"
           >
-            <Plus size={16} className="sm:mr-1.5" />
-            <span className="hidden sm:inline">{t("addStudent")}</span>
+            <Plus size={16} aria-hidden="true" />
+            <span>{t("addStudent")}</span>
           </Button>
-        </div>
+        }
+      />
+
+      <div className="min-w-0 sm:w-[30rem]">
+        <Input
+          ref={searchInputRef}
+          type="search"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
+          leftAddon={<Search size={16} aria-hidden="true" />}
+        />
       </div>
 
       <StudentsTable
@@ -486,6 +480,6 @@ export function Students() {
       />
 
       <Toast message={toast.message} show={toast.visible} variant={toast.variant} />
-    </div>
+    </PageContainer>
   );
 }

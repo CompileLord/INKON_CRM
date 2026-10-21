@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: write
 
 jobs:
@@ -24,14 +25,29 @@ jobs:
     steps:
       - name: Resolve commit and floating tag
         id: refs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CI_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "$EVENT_NAME" = "push" ]; then
             echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
             echo "floating_tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
-            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "sha=${CI_SHA}" >> "$GITHUB_OUTPUT"
             echo "floating_tag=main" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Checkout release verification script
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: deploy
+
+      - name: Require main ancestry and successful CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.refs.outputs.sha }}
+        run: bash deploy/verify-release.sh "$RELEASE_SHA"
 
       - name: Checkout repository
         uses: actions/checkout@v4

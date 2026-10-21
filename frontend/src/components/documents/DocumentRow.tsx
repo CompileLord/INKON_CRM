@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { formatDate } from "../../i18n/formatters";
 import type { DocumentItem } from "../../lib/documents/types";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
+import { Menu } from "../ui/Menu";
 import { DocumentFileName, DocumentSizeFormatter } from "./documentRules";
-import { DocumentRowMenu } from "./DocumentRowMenu";
 
 export const documentDesktopColumnClasses: string = "lg:grid-cols-[minmax(0,1fr)_96px_128px_176px]";
 
@@ -13,12 +13,12 @@ export const documentRowGridClasses: string =
 
 function TypeIcon({ fileType }: { fileType: string }) {
   const Icon = fileType.startsWith("image") ? ImageIcon : fileType.startsWith("audio") ? Music : FileText;
-  return <div aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-beige text-nav"><Icon size={18} /></div>;
+  return <div aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-strip text-nav"><Icon size={18} /></div>;
 }
 
 export function DocumentListHeader() {
   const { t } = useTranslation("documents");
-  return <div aria-hidden="true" className={`hidden gap-x-3 border-b border-border px-4 py-2 text-xs font-medium text-label lg:grid ${documentDesktopColumnClasses}`}>
+  return <div aria-hidden="true" className={`hidden gap-x-3 border-b border-border px-4 py-2 text-xs font-medium text-muted lg:grid ${documentDesktopColumnClasses}`}>
     <span>{t("columns.name")}</span><span>{t("columns.size")}</span><span>{t("columns.uploaded")}</span><span />
   </div>;
 }
@@ -63,7 +63,7 @@ export function DocumentRow({ document, canManage, downloading, downloadLocked, 
           {downloading ? <BrandActivityIndicator size={20} /> : <Download size={18} />}
           <span>{downloading ? t("downloading") : t("common:download")}</span>
         </button>
-        {canManage && <DocumentRowMenu document={document} onDelete={onDelete} />}
+        {canManage && <Menu label={t("rowActions", { filename: document.file_name })} items={[{ key: "delete", label: t("common:delete"), onSelect: () => onDelete(document, null), destructive: true }]} />}
       </div>
     </li>
   );
@@ -72,17 +72,17 @@ export function DocumentRow({ document, canManage, downloading, downloadLocked, 
 export function DocumentSkeletonRows() {
   return <>{[0, 1, 2, 3].map(index => (
     <li key={index} aria-hidden="true" className={`${documentRowGridClasses} motion-safe:animate-pulse`}>
-      <div className="col-start-1 row-start-1 h-8 w-8 rounded-lg bg-beige lg:hidden" />
+      <div className="col-start-1 row-start-1 h-8 w-8 rounded-lg bg-strip lg:hidden" />
       <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-3 lg:col-start-1">
-        <div className="hidden h-8 w-8 shrink-0 rounded-lg bg-beige lg:block" />
-        <div className="h-5 w-full max-w-64 rounded bg-beige" />
+        <div className="hidden h-8 w-8 shrink-0 rounded-lg bg-strip lg:block" />
+        <div className="h-5 w-full max-w-64 rounded bg-strip" />
       </div>
       <div className="col-start-2 row-start-2 flex gap-2 lg:contents">
-        <div className="h-4 w-14 rounded bg-beige lg:col-start-2 lg:row-start-1" />
-        <div className="h-4 w-20 rounded bg-beige lg:col-start-3 lg:row-start-1" />
+        <div className="h-4 w-14 rounded bg-strip lg:col-start-2 lg:row-start-1" />
+        <div className="h-4 w-20 rounded bg-strip lg:col-start-3 lg:row-start-1" />
       </div>
       <div className="col-start-3 row-span-2 row-start-1 flex gap-1 max-sm:col-start-2 max-sm:row-span-1 max-sm:row-start-3 lg:col-start-4 lg:row-span-1">
-        <div className="h-11 w-11 rounded-[10px] bg-beige" /><div className="h-11 w-11 rounded-[10px] bg-beige" />
+        <div className="h-11 w-11 rounded-[10px] bg-strip" /><div className="h-11 w-11 rounded-[10px] bg-strip" />
       </div>
     </li>
   ))}</>;

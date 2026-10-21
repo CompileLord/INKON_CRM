@@ -37,7 +37,7 @@
     "examLabel": "Exam"
   },
   "hubTitle": "Journals",
-  "searchCoursePlaceholder": "Search course by title…",
+  "searchCoursePlaceholder": "Search courses…",
   "loadFailedHub": "Failed to load journals",
   "filter": {
     "all": "All",
@@ -62,7 +62,8 @@
     "stateComplete": "Complete",
     "stateUnavailable": "Unavailable",
     "latest": "Latest",
-    "upcoming": "Upcoming"
+    "upcoming": "Upcoming",
+    "past": "Done"
   },
   "table": {
     "students": "Students",
@@ -88,12 +89,13 @@
     "readOnlyCellLabel": "Attendance, score and comment for {{name}} on {{date}}",
     "present": "Present",
     "absent": "Absent",
-    "hasComment": "Has a comment",
     "notRecorded": "Not recorded",
     "examCellLabel": "Exam score for {{name}}",
     "bonusCellLabel": "Bonus score for {{name}}",
     "addStudents": "Add students",
-    "noStudentsAdminBody": "Add students to the course roster to start grading."
+    "noStudentsAdminBody": "Add students to the course roster to start grading.",
+    "openComment": "Read comment for {{date}}",
+    "commentDialogTitle": "Comment, {{date}}"
   },
   "cellStatus": {
     "dirty": "Unsaved change",
@@ -145,7 +147,8 @@
       "title": "No journals match",
       "body": "Nothing on this page matches your search or status filter. Clear them to see every journal loaded for this page.",
       "clear": "Clear search and filters"
-    }
+    },
+    "statusLabel": "Status"
   },
   "workspace": {
     "periodPickerLabel": "Period",
@@ -205,7 +208,9 @@
     "cancelConsequence": "Cancel discards your unsaved comment changes.",
     "discardPrompt": "You have unsaved comment changes.",
     "continueEditing": "Continue editing",
-    "discard": "Discard comment changes"
+    "discard": "Discard comment changes",
+    "counter": "{{count}} / {{max}}",
+    "tooLong": "Comment is too long. Shorten it to {{max}} characters or fewer to save."
   },
   "search": {
     "label": "Search students in this period",

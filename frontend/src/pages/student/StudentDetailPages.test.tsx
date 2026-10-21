@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import i18n from "../../i18n";
 import { MyCourseDetail } from "./MyCourseDetail";
-import { MyJournalPeriod } from "./MyJournalPeriod";
 import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 import type { JournalDetailResponse, JournalStudentResponse } from "../../lib/journals/types";
 
@@ -51,7 +50,7 @@ const progress: CourseStaffProgressResponse = {
 function journalStudent(id: number, firstName: string, lastName: string, isSelf: boolean): JournalStudentResponse {
   return {
     student_id: id, first_name: firstName, last_name: lastName, color_hex: "#123456", is_self: isSelf,
-    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : "Private note", has_comment: true, version: 1 }],
+    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : null, has_comment: isSelf, version: 1 }],
     summary: { id, homework_score: 20, attendance_score: 2, exam_score: 60, bonus_score: 4, sum_score: 86, max_period_score: 117, percentage: 73.5, attendance_count: 1, total_lessons: 1, version: 1 },
   };
 }
@@ -70,14 +69,6 @@ function renderCourse(path = "/my/courses/4") {
   );
 }
 
-function renderPeriod() {
-  return render(
-    <MemoryRouter initialEntries={["/my/journal/16"]}>
-      <Routes><Route path="/my/journal/:journalId" element={<MyJournalPeriod />} /></Routes>
-    </MemoryRouter>,
-  );
-}
-
 const periodRows = [{ journal_id: 16, course_id: 4, course_title: "Web", period_label: "Week 5", period_start: "2026-08-29", period_end: "2026-08-31", homework_score: 20, attendance_score: 2, exam_score: 60, bonus_score: 4, sum_score: 86, max_period_score: 117, percentage: 73.5, attendance_count: 1, total_lessons: 2, state: "graded" }];
 
 beforeEach(async () => {
@@ -91,14 +82,23 @@ beforeEach(async () => {
 });
 afterEach(cleanup);
 
-describe("student course page privacy", () => {
-  it("shows only the student's own results: no ranking, rank tile, classmate names or classmate lines", () => {
+describe("student course page journal", () => {
+  it("shows the read-only class journal with classmates, own row first, no ranking and no comments of others", () => {
     renderCourse();
+    const rows: HTMLElement[] = screen.getAllByRole("row").slice(1);
+    expect(rows[0].getAttribute("data-self")).toBe("true");
+    expect(rows[0].textContent).toContain("Demo Student");
     const text: string = document.body.textContent ?? "";
-    for (const name of classmates) expect(text).not.toContain(name.split(" ")[0]);
+    for (const name of classmates) expect(text).toContain(name);
+    expect(text).not.toContain("Private note");
     expect(text).not.toMatch(/Ранг|9 из 9/);
-    expect(document.querySelectorAll("[data-testid='progress-table'], [data-testid='student-row']")).toHaveLength(0);
-    expect(document.querySelectorAll("[data-testid='chart-series-student']")).toHaveLength(1);
+    expect(document.querySelectorAll("input, textarea, [data-control]")).toHaveLength(0);
+  });
+
+  it("keeps the progress chart collapsed by default", () => {
+    renderCourse();
+    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelectorAll("[data-testid='chart-series-student']")).toHaveLength(0);
   });
 });
 
@@ -112,11 +112,9 @@ describe("student course page", () => {
     expect(container.querySelectorAll("[data-page-container]")).toHaveLength(1);
   });
 
-  it("lists periods with translated names and links the started ones", () => {
+  it("no longer renders the study periods list", () => {
     renderCourse();
-    expect(screen.getAllByText("Неделя 5").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Week 5")).toBeNull();
-    expect(screen.getByRole("link", { name: /Неделя 5/ }).getAttribute("href")).toBe("/my/journal/16");
+    expect(screen.queryByTestId("period-list")).toBeNull();
   });
 
   it("uses an initial tile for a course without a photo", () => {
@@ -136,39 +134,5 @@ describe("student course page", () => {
     renderCourse("/my/courses/abc");
     expect(screen.getByText("Курс не найден")).toBeTruthy();
     expect(screen.getAllByRole("link")).toHaveLength(1);
-  });
-});
-
-describe("student journal period page", () => {
-  it("shows only the own lessons and the own summary, never a classmate", () => {
-    renderPeriod();
-    const text: string = document.body.textContent ?? "";
-    for (const name of ["Shahnoza", "Nozima", "Private note"]) expect(text).not.toContain(name);
-    expect(screen.getAllByTestId("lesson-score")).toHaveLength(1);
-    expect(screen.getByText("Не отмечено")).toBeTruthy();
-    expect(screen.getByText("Keep going")).toBeTruthy();
-  });
-
-  it("leads with the score over the maximum and formats dates as dd.MM.yyyy", () => {
-    renderPeriod();
-    expect(screen.getByTestId("period-total").textContent).toContain("86/ 117");
-    expect(screen.getByText("29.08.2026 – 31.08.2026")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Неделя 5");
-    expect(document.body.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-  });
-
-  it("has no tab bar, no rank and no editing control", () => {
-    const { container } = renderPeriod();
-    expect(container.querySelectorAll("[role='tablist']")).toHaveLength(0);
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(document.body.textContent).not.toMatch(/9 из 9/);
-  });
-
-  it("offers a retry when the period fails to load", () => {
-    const refetch = vi.fn();
-    state.scopedJournal = { data: undefined, isLoading: false, isError: true, error: new Error("x"), isPlaceholderData: false, refetch };
-    renderPeriod();
-    fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
-    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

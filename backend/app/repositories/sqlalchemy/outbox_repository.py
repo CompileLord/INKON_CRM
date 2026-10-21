@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Sequence
 from sqlalchemy import cast, case, literal, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.outbox_event import OutboxEvent, OutboxEventStatus
+from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 
 
 class SQLAlchemyOutboxRepository:
@@ -74,6 +74,8 @@ class SQLAlchemyOutboxRepository:
         event_id: int,
         lease_owner: str,
         now: datetime,
+        provider_message_id: Optional[str] = None,
+        provider_status: Optional[str] = None,
     ) -> bool:
         statement = (
             update(OutboxEvent)
@@ -89,6 +91,8 @@ class SQLAlchemyOutboxRepository:
                 lease_owner=None,
                 lease_expires_at=None,
                 encrypted_payload=None,
+                provider_message_id=provider_message_id,
+                provider_status=provider_status,
             )
         )
         result = await self._session.execute(statement)
@@ -226,3 +230,21 @@ class SQLAlchemyOutboxRepository:
         )
         await self._session.execute(statement)
         await self._session.flush()
+
+    async def list_by_kind(
+        self,
+        kind: OutboxEventKind,
+        statuses: Sequence[OutboxEventStatus],
+        limit: int,
+        target_user_id: Optional[int] = None,
+    ) -> Sequence[OutboxEvent]:
+        statement = (
+            select(OutboxEvent)
+            .where(OutboxEvent.kind == kind, OutboxEvent.status.in_(list(statuses)))
+            .order_by(OutboxEvent.id.desc())
+            .limit(limit)
+        )
+        if target_user_id is not None:
+            statement = statement.where(OutboxEvent.target_user_id == target_user_id)
+        result = await self._session.execute(statement)
+        return result.scalars().all()

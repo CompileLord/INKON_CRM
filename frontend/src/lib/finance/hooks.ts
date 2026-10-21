@@ -10,6 +10,7 @@ import {
   fetchFinanceAnalytics,
   fetchPaymentReceipt,
   fetchPayments,
+  queueDebtReminders,
   fetchStudentBalance,
   fetchStudentCredits,
   fetchStudentLedger,
@@ -87,6 +88,10 @@ function useFinanceMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult
       queryClient.invalidateQueries({ queryKey: FINANCE_KEY });
     },
   });
+}
+
+export function useQueueDebtReminders() {
+  return useFinanceMutation((studentIds: number[]) => queueDebtReminders(studentIds));
 }
 
 export function useCreatePayment() {

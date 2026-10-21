@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader } from "../components/PageHeader";
-import { RefreshCw, ScrollText } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { AuditEventRow } from "../components/audit/AuditEventRow";
+import { AuditClusterList } from "../components/audit/AuditClusterList";
 import { AuditInspector } from "../components/audit/AuditInspector";
 import { AuditToolbar, type AuditFilterChange } from "../components/audit/AuditToolbar";
 import { useAuditNavigation } from "../components/audit/useAuditNavigation";
 import { Button } from "../components/ui/Button";
-import { InfoTooltip } from "../components/ui/InfoTooltip";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
 import { Pagination } from "../components/ui/Pagination";
 import { formatDate, formatNumber, SCHOOL_TIMEZONE } from "../i18n/formatters";
 import type { AuditEvent } from "../lib/audit/api";
@@ -100,17 +102,16 @@ export function Audit() {
   );
 
   return (
-    <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
+    <PageContainer>
       <PageHeader
-        titleIcon={<ScrollText size={24} aria-hidden="true" className="shrink-0 text-maroon-text dark:text-accent" />}
         title={
           <span ref={headingRef} tabIndex={-1} className="focus-visible:outline-none">
             {t("audit:title")}
           </span>
         }
-        info={<InfoTooltip label={t("audit:title")}>{t("audit:titleInfo")}</InfoTooltip>}
+        count={logs.data ? formatNumber(total, i18n.language) : undefined}
         actions={
-          <Button variant="secondary" aria-label={t("audit:refresh")} title={t("audit:refresh")} onClick={() => void logs.refetch()} className="shrink-0 px-3">
+          <Button variant="secondary" aria-label={t("audit:refresh")} title={t("audit:refresh")} onClick={() => void logs.refetch()} className="px-3">
             <RefreshCw size={18} aria-hidden="true" className={logs.isFetching ? "motion-safe:animate-spin" : ""} />
           </Button>
         }
@@ -124,68 +125,53 @@ export function Audit() {
         onClearAll={clearAll}
       />
       <p role="status" ref={announcementRef} className="sr-only" />
-      {logs.data && (
-        <p className="text-sm text-label tabular-nums" aria-live="polite">
-          {t("audit:total", { total: formatNumber(total, i18n.language) })}
-        </p>
-      )}
       {logs.isPending ? (
         <div role="status" aria-busy="true">
           <span className="sr-only">{t("audit:states.loading")}</span>
-          <ul aria-hidden="true" className="divide-y divide-border rounded-2xl border border-border bg-card motion-safe:animate-pulse">
+          <ul aria-hidden="true" className="flex flex-col rounded-2xl border border-border bg-card p-1 motion-safe:animate-pulse">
             {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <li key={index} className="flex min-h-[4.5rem] items-start gap-3 px-4 py-3">
-                <div className="h-9 w-9 shrink-0 rounded-[10px] bg-strip" />
+              <li key={index} className="flex min-h-[4.5rem] items-start gap-3 px-3 py-3">
+                <div className="size-9 shrink-0 rounded-[10px] bg-border" />
                 <div className="flex-1 space-y-2 pt-1">
-                  <div className="h-4 w-3/4 rounded bg-strip" />
-                  <div className="h-4 w-1/2 rounded bg-strip" />
+                  <div className="h-4 w-3/4 rounded bg-border" />
+                  <div className="h-4 w-1/2 rounded bg-border" />
                 </div>
               </li>
             ))}
           </ul>
         </div>
       ) : !logs.data ? (
-        <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4">
-          <p className="text-sm text-destructive">{t("audit:states.error")}</p>
-          {retry}
+        <div className="rounded-2xl border border-border bg-card">
+          <ErrorState message={t("audit:states.error")} onRetry={() => void logs.refetch()} />
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4">
-          <p className="text-sm text-muted">{t(hasFilters ? "audit:states.noMatch" : "audit:states.empty")}</p>
-          {hasFilters && (
-            <Button variant="secondary" onClick={clearAll}>
-              {t("audit:states.clear")}
-            </Button>
-          )}
+        <div className="rounded-2xl border border-border bg-card">
+          <EmptyState
+            title={t(hasFilters ? "audit:states.noMatch" : "audit:states.empty")}
+            action={hasFilters ? <Button variant="secondary" onClick={clearAll}>{t("audit:states.clear")}</Button> : undefined}
+          />
         </div>
       ) : (
         <div aria-busy={logs.isPlaceholderData} className={`flex flex-col gap-4 ${logs.isPlaceholderData ? "opacity-70" : ""}`}>
           {logs.isError && (
-            <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-warning-surface px-4 py-2 text-sm text-warning">
+            <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
               <p>{t("audit:states.refreshFailed")}</p>
               {retry}
             </div>
           )}
           {groups.map((group) => (
-            <section key={group.day} aria-labelledby={`audit-day-${group.day}`}>
-              <h2
-                id={`audit-day-${group.day}`}
-                className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 bg-cream px-1 py-2 text-sm font-semibold text-label tabular-nums"
-              >
+            <section key={group.day} aria-labelledby={`audit-day-${group.day}`} className="flex flex-col gap-2">
+              <h2 id={`audit-day-${group.day}`} className="px-1 text-sm font-semibold text-muted tabular-nums">
                 {dayHeading(group.day)}
               </h2>
-              <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
-                {group.items.map((event) => (
-                  <AuditEventRow key={event.id} event={event} onOpen={openInspector} />
-                ))}
-              </ul>
+              <AuditClusterList events={group.items} onOpen={openInspector} />
             </section>
           ))}
         </div>
       )}
       {logs.data && items.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-label tabular-nums">
+          <p className="text-sm text-muted tabular-nums">
             {t("audit:range", {
               from: formatNumber(firstRecord, i18n.language),
               to: formatNumber(firstRecord + items.length - 1, i18n.language),
@@ -196,6 +182,6 @@ export function Audit() {
         </div>
       )}
       <AuditInspector event={inspected} onClose={() => setInspected(null)} onShowRecord={showAllForRecord} returnFocusTo={returnFocusTo} />
-    </div>
+    </PageContainer>
   );
 }

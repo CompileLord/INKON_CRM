@@ -1,9 +1,9 @@
-import { Clock, Search, UserCheck } from "lucide-react";
-import { useId } from "react";
+import { Search } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { DebtorsViewState } from "../../lib/finance/urlState";
 import type { EnrollmentStatus } from "../../lib/finance/types";
-import { InfoTooltip } from "../ui/InfoTooltip";
+import { Input } from "../ui/Input";
 import { FilterChip } from "./FilterChip";
 import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 
@@ -17,11 +17,11 @@ interface DebtorsToolbarProps {
   studentLabel: string | null;
   onSearchChange: (value: string) => void;
   onChangeFilters: (filters: Partial<Omit<DebtorsViewState, "page">>) => void;
+  trailingAction?: ReactNode;
 }
 
-export function DebtorsToolbar({ view, search, courseLabel, studentLabel, onSearchChange, onChangeFilters }: DebtorsToolbarProps) {
+export function DebtorsToolbar({ view, search, courseLabel, studentLabel, onSearchChange, onChangeFilters, trailingAction }: DebtorsToolbarProps) {
   const { t } = useTranslation("finance");
-  const searchId: string = useId();
   const statusLabel = (status: EnrollmentStatus): string => t(`debtorsTab.status${status[0].toUpperCase()}${status.slice(1)}`);
   const overdueOptions: ListboxOption[] = [
     { value: "", label: t("debtorsTab.any") },
@@ -34,42 +34,34 @@ export function DebtorsToolbar({ view, search, courseLabel, studentLabel, onSear
   const hasFilters: boolean = view.courseId !== null || view.studentId !== null || view.overdueDays !== null || view.enrollmentStatus !== null;
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border px-4 py-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="w-full @[40rem]:max-w-xs">
-          <div className="flex items-center gap-1">
-            <label htmlFor={searchId} className="text-sm font-medium text-label">
-              {t("debtorsTab.searchLabel")}
-            </label>
-            <InfoTooltip label={t("overview.aboutMetric", { label: t("debtorsTab.searchLabel") })}>{t("debtorsTab.searchInfo")}</InfoTooltip>
-          </div>
-          <div className="relative mt-1">
-            <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              id={searchId}
-              type="search"
-              value={search}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={t("debtorsTab.searchPlaceholder")}
-              autoComplete="off"
-              className="min-h-12 w-full rounded-[10px] border border-control-border bg-card py-2 pl-9 pr-3 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-72">
+          <Input
+            type="search"
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={t("debtorsTab.searchPlaceholder")}
+            aria-label={t("debtorsTab.searchLabel")}
+            autoComplete="off"
+            leftAddon={<Search size={16} aria-hidden="true" />}
+          />
         </div>
         <ListboxPicker
           label={t("debtorsTab.overdueLabel")}
-          icon={<Clock size={16} />}
+          icon={null}
           options={overdueOptions}
           value={view.overdueDays === null ? "" : String(view.overdueDays)}
           onChange={(value) => onChangeFilters({ overdueDays: value === "" ? null : Number(value) })}
         />
         <ListboxPicker
           label={t("debtorsTab.statusLabel")}
-          icon={<UserCheck size={16} />}
+          icon={null}
           options={statusOptions}
           value={view.enrollmentStatus ?? ""}
           onChange={(value) => onChangeFilters({ enrollmentStatus: value === "" ? null : (value as EnrollmentStatus) })}
         />
+        {trailingAction !== undefined && <div data-debtors-toolbar-action className="ml-auto">{trailingAction}</div>}
       </div>
       {hasFilters && (
         <div className="flex flex-wrap items-center gap-2">
@@ -96,7 +88,7 @@ export function DebtorsToolbar({ view, search, courseLabel, studentLabel, onSear
           <button
             type="button"
             onClick={() => onChangeFilters({ courseId: null, studentId: null, studentName: null, overdueDays: null, enrollmentStatus: null })}
-            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("debtorsTab.clearFilters")}
           </button>

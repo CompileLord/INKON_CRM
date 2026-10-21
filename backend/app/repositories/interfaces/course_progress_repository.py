@@ -17,6 +17,10 @@ class ProgressPeriodRecord:
     period_label: str
     period_start: date
     period_end: date
+    class_avg_score: Optional[float] = None
+    class_avg_max_score: Optional[float] = None
+    class_avg_percentage: Optional[float] = None
+    graded_count: int = 0
 
 
 @dataclass(frozen=True)

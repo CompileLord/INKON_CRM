@@ -8,13 +8,8 @@
     "profile": "Profile",
     "appearance": "Appearance",
     "organization": "Organization",
-    "rules": "Notification rules"
-  },
-  "sectionHints": {
-    "profile": "Your name, photo and contact details.",
-    "appearance": "Theme and language for this device.",
-    "organization": "Center name, currency and the Telegram bot.",
-    "rules": "Choose which messages the center sends."
+    "rules": "Notification rules",
+    "security": "Security"
   },
   "saveBar": {
     "label": "Unsaved changes",
@@ -86,5 +81,15 @@
     "debts": "Debt reminders",
     "debtsHint": "Remind students who have an overdue balance.",
     "telegram": "Telegram"
+  },
+  "security": {
+    "currentPassword": "Current password",
+    "currentPasswordHint": "Students can enter the code from the SMS.",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat new password",
+    "rulesLabel": "Password rules",
+    "submit": "Change password",
+    "changed": "Password changed",
+    "currentPasswordWrong": "The current password is incorrect."
   }
 }

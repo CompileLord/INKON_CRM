@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Dict, List, Optional, Tuple
 from datetime import date
 from app.core.scoring import ScoringPolicy
@@ -32,7 +33,12 @@ class CourseProgressService:
         return self._build_progress_response(course_id, snapshot)
 
     async def get_student_class_progress(self, course_id: int, student_id: int) -> CourseStaffProgressResponse:
-        snapshot = await self.repo.get_course_progress_snapshot(course_id, always_include_student_id=student_id)
+        snapshot: CourseProgressSnapshot = await self.repo.get_course_progress_snapshot(course_id, always_include_student_id=student_id)
+        snapshot = replace(
+            snapshot,
+            students=[student for student in snapshot.students if student.student_id == student_id],
+            summaries=[summary for summary in snapshot.summaries if summary.student_id == student_id],
+        )
         return self._build_progress_response(course_id, snapshot)
 
     def _build_progress_response(self, course_id: int, snapshot: CourseProgressSnapshot) -> CourseStaffProgressResponse:
@@ -43,6 +49,10 @@ class CourseProgressService:
                 period_label=p.period_label,
                 period_start=p.period_start,
                 period_end=p.period_end,
+                class_avg_score=p.class_avg_score,
+                class_avg_max_score=p.class_avg_max_score,
+                class_avg_percentage=p.class_avg_percentage,
+                graded_count=p.graded_count,
             )
             for p in snapshot.periods
         ]

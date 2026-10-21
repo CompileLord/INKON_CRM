@@ -1,7 +1,5 @@
 {
   "title": "Notifications",
-  "titleInfo": "Your own messages from the center: exam results and payment reminders.",
-  "titleInfoAdmin": "Your own messages, plus the log of every message the system sent to users.",
   "tabs": {
     "inbox": "Inbox",
     "log": "Delivery log"
