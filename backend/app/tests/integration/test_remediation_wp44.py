@@ -1,4 +1,5 @@
 import json
+import os
 import statistics
 from time import perf_counter
 from typing import Any
@@ -147,6 +148,7 @@ class DirectoryBenchmark:
         return output
 
 
+@pytest.mark.skipif(os.environ.get("IMKON_RUN_SCALE") != "1", reason="scale measurement is opt-in: set IMKON_RUN_SCALE=1")
 @pytest.mark.asyncio
 @pytest.mark.parametrize("population", [10000, 100000, 1000000])
 async def test_directory_representative_scale_measurements(db_session: AsyncSession, population: int) -> None:
