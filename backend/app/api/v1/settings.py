@@ -9,6 +9,8 @@ from app.services.telegram_status_service import TelegramStatusService
 from app.telegram_bot.bot import bot
 from app.services.settings_service import SettingsService
 
+from app.api.v1.contract_notes import ContractNotes
+
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
 
@@ -21,7 +23,7 @@ async def get_org_settings(
     return await settings_service.get_org_settings()
 
 
-@router.patch("/org", response_model=OrgSettingsResponse)
+@router.patch("/org", response_model=OrgSettingsResponse, description=ContractNotes.ORG_SETTINGS_UPDATE)
 async def update_org_settings(
     data: OrgSettingsUpdate,
     current_user: User = Depends(require_superadmin),

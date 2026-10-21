@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from typing import Any, Sequence
-from sqlalchemy import and_, case, or_, select, update
+from sqlalchemy import and_, case, func, or_, select, true, update
+from sqlalchemy.sql.elements import ColumnElement
+from app.models.org_settings import OrgSettings
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.debt_reminder_notification import DebtReminderNotification as Notification
 
@@ -8,6 +10,9 @@ from app.models.debt_reminder_notification import DebtReminderNotification as No
 class SQLAlchemyDebtReminderDeliveryRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session: AsyncSession = session
+
+    def notifications_enabled(self) -> ColumnElement[bool]:
+        return func.coalesce(select(OrgSettings.notify_debts).where(OrgSettings.id == 1).scalar_subquery(), true())
 
     async def release_stale_claims(self, now: datetime) -> None:
         uncertain: Any = or_(Notification.send_started_at.is_not(None), Notification.attempt_count >= Notification.max_attempts)
@@ -24,7 +29,7 @@ class SQLAlchemyDebtReminderDeliveryRepository:
     async def claim_due_batch(self, owner: str, now: datetime, batch_size: int = 20) -> Sequence[Notification]:
         due: Any = (
             select(Notification.id).where(Notification.status == "pending", Notification.due_at <= now,
-                                          Notification.attempt_count < Notification.max_attempts)
+                                          Notification.attempt_count < Notification.max_attempts, self.notifications_enabled())
             .order_by(Notification.due_at, Notification.id).limit(batch_size)
             .with_for_update(skip_locked=True).scalar_subquery()
         )
@@ -39,7 +44,7 @@ class SQLAlchemyDebtReminderDeliveryRepository:
         result: Any = await self._session.execute(
             update(Notification).where(Notification.id == notification_id, Notification.status == "claimed",
                                        Notification.lease_owner == owner, Notification.lease_expires_at > now,
-                                       Notification.send_started_at.is_(None))
+                                       Notification.send_started_at.is_(None), self.notifications_enabled())
             .values(send_started_at=now)
         )
         return bool(result.rowcount)

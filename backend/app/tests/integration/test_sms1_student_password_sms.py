@@ -53,7 +53,7 @@ async def test_student_without_any_phone_is_rejected_with_422_and_nothing_create
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("bad_phone", ["992900000001", "+9929000", "+992 900 000 001", "+0900000001", "+992٩٠٠٠٠٠٠٠١", "tel"])
+@pytest.mark.parametrize("bad_phone", ["992900000001", "+1", "+992 900 000 001", "+0900000001", "+992٩٠٠٠٠٠٠٠١", "tel"])
 async def test_non_e164_phone_is_rejected_by_schema(client: AsyncClient, test_admin: User, bad_phone: str) -> None:
     response: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "bad@example.com", bad_phone)
     assert response.status_code == 422

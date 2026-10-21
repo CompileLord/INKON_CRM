@@ -1,7 +1,31 @@
+import re
 from datetime import date
 from decimal import Decimal
-from typing import Annotated, Generic, List, Self, TypeAlias, TypeVar
+from typing import Annotated, ClassVar, Generic, List, Self, TypeAlias, TypeVar
 from pydantic import BaseModel, Field, model_validator
+
+
+class CanonicalPhonePolicy:
+    input_pattern: ClassVar[str] = r"^\+[1-9][0-9]{1,14}$"
+    historical_pattern: ClassVar[str] = r"\+?[1-9][0-9]{1,14}"
+
+    @classmethod
+    def normalize_historical(cls, value: str) -> str | None:
+        if re.fullmatch(cls.historical_pattern, value) is None:
+            return None
+        return value if value.startswith("+") else f"+{value}"
+
+    @classmethod
+    def are_equivalent(cls, stored_value: str | None, incoming_value: str | None) -> bool:
+        if stored_value is None or incoming_value is None:
+            return stored_value is None and incoming_value is None
+        canonical_stored_value: str | None = cls.normalize_historical(stored_value)
+        canonical_incoming_value: str | None = cls.normalize_historical(incoming_value)
+        return canonical_stored_value is not None and canonical_stored_value == canonical_incoming_value
+
+
+CanonicalPhone: TypeAlias = Annotated[str, Field(pattern=CanonicalPhonePolicy.input_pattern)]
+
 
 PositiveMoney: TypeAlias = Annotated[Decimal, Field(gt=0, le=Decimal("99999999.99"), max_digits=10, decimal_places=2, allow_inf_nan=False)]
 

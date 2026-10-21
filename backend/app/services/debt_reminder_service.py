@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Protocol
 from zoneinfo import ZoneInfo
+from fastapi import HTTPException, status
 from app.repositories.interfaces.debt_reminder_repository import DebtReminderRepository, DebtReminderSource
 from app.schemas.debt_reminder import DebtReminderResponse, DebtReminderResult
 
@@ -19,6 +20,8 @@ class DebtReminderService:
         self._clock: Callable[[], datetime] = clock
 
     async def queue(self, student_ids: list[int], actor_id: int) -> DebtReminderResponse:
+        if not await self._repository.notifications_enabled():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Debt notifications are disabled")
         await self._repository.lock_students(sorted(student_ids))
         now: datetime = self._clock()
         sources: dict[int, DebtReminderSource] = await self._repository.load_sources(
