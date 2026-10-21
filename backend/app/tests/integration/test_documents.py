@@ -62,13 +62,12 @@ async def test_upload_document_flow(client: AsyncClient, test_admin: User, test_
     assert list_resp.status_code == 200
     assert len(list_resp.json()["items"]) == 1
 
-    # Mentor GET should be able to see student's document
     mentor_token = create_access_token(test_mentor.id, test_mentor.role)
     mentor_headers = {"Authorization": f"Bearer {mentor_token}"}
 
     list_resp_m = await client.get("/api/v1/documents/", headers=mentor_headers)
     assert list_resp_m.status_code == 200
-    assert len(list_resp_m.json()["items"]) == 1
+    assert list_resp_m.json()["items"] == []
 
     # Student tries to DELETE -> verify 403
     del_resp = await client.delete(f"/api/v1/documents/{doc_id}", headers=student_headers)

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AppearanceSection } from "../components/settings/AppearanceSection";
 import { NotificationRulesSection } from "../components/settings/NotificationRulesSection";
 import { OrganizationSection } from "../components/settings/OrganizationSection";
+import { SecuritySection } from "../components/settings/SecuritySection";
 import { ProfileSection } from "../components/settings/ProfileSection";
 import { useTransientToast } from "../components/settings/useTransientToast";
 import { PageContainer } from "../components/ui/PageContainer";
@@ -11,9 +12,9 @@ import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition 
 import { Toast } from "../components/ui/Toast";
 import { useAuthStore } from "../store/authStore";
 
-type SettingsSectionId = "profile" | "appearance" | "organization" | "rules";
+type SettingsSectionId = "profile" | "security" | "appearance" | "organization" | "rules";
 
-const PERSONAL_SECTIONS: readonly SettingsSectionId[] = ["profile", "appearance"];
+const PERSONAL_SECTIONS: readonly SettingsSectionId[] = ["profile", "security", "appearance"];
 const ADMINISTRATOR_SECTIONS: readonly SettingsSectionId[] = ["organization", "rules"];
 const ID_PREFIX: string = "settings";
 
@@ -27,10 +28,12 @@ export function Settings() {
   const tabs: readonly TabDefinition[] = sectionIds.map((id: SettingsSectionId) => ({ id, label: t(`sections.${id}`) }));
 
   const announceSaved = (): void => announce(t("saved"));
+  const announcePasswordChanged = (): void => announce(t("security.changed"));
   const announceFailed = (): void => announce(t("saveBar.failed"), "error");
 
   const content: Record<SettingsSectionId, ReactNode> = {
     profile: <ProfileSection role={role} onSaved={announceSaved} />,
+    security: <SecuritySection onChanged={announcePasswordChanged} />,
     appearance: <AppearanceSection />,
     organization: <OrganizationSection onSaved={announceSaved} />,
     rules: <NotificationRulesSection onSaved={announceSaved} onFailed={announceFailed} />,

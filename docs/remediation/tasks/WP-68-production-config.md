@@ -8,6 +8,7 @@ Phase **3** · Priority **High** · Effort **M** · Status **todo** · Source: p
 2. The development CORS origin regex (localhost, LAN, `*.instatunnel.my`) applies only outside production.
 3. Outbox payload encryption uses its own versioned key (`OUTBOX_ENCRYPTION_KEYS`, newest first) with old-key decryption during rotation; existing payloads encrypted with `JWT_SECRET_KEY` stay readable until drained (expand/contract).
 4. `/auth/resend-code` returns the same status and body for unknown, established and onboarding accounts.
+5. Set an explicit ARQ `health_check_interval` (about 30 s) so the worker healthcheck added by WP-67 (`arq --check`) detects a hung worker within a minute, not an hour.
 
 ## Exact files
 
@@ -15,7 +16,7 @@ Phase **3** · Priority **High** · Effort **M** · Status **todo** · Source: p
 
 ## Dependencies
 
-After WP-66 (shared `outbox.py`, `workers/settings.py`) and WP-67 (runbook). SMS-1 is merged.
+After WP-66 (shared `outbox.py`, `workers/settings.py`). WP-67 and SMS-1 are merged.
 
 ## How to verify
 

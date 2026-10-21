@@ -172,15 +172,16 @@ async def test_leader_failure_releases_lease_and_waiter_recovers(failure: str) -
 async def test_expired_owner_cannot_publish_or_delete_successor_lease() -> None:
     from app.services.analytics_cache_service import AnalyticsCacheService
 
-    cache: AnalyticsCacheService = AnalyticsCacheService(finance_module.redis_client, lease_milliseconds=80)
+    cache: AnalyticsCacheService = AnalyticsCacheService(finance_module.redis_client, lease_milliseconds=30_000)
     first: CacheScenario = CacheScenario(finance_module.redis_client)
     second: CacheScenario = CacheScenario(finance_module.redis_client)
     leader: asyncio.Task[dict[str, object]] = asyncio.create_task(cache.get_or_compute("wp20:expiry", first.compute, first.eligible))
-    await first.started.wait()
-    await asyncio.sleep(0.12)
+    await asyncio.wait_for(first.started.wait(), timeout=5)
+    assert await raw_test_redis.pexpire(f"{TEST_REDIS_PREFIX}wp20:expiry:lease", 0)
     successor: asyncio.Task[dict[str, object]] = asyncio.create_task(cache.get_or_compute("wp20:expiry", second.compute, second.eligible))
-    await second.started.wait()
+    await asyncio.wait_for(second.started.wait(), timeout=5)
     successor_owner: str | None = await finance_module.redis_client.get("wp20:expiry:lease")
+    assert successor_owner is not None
     first.proceed.set()
     await leader
     assert await finance_module.redis_client.get("wp20:expiry") is None

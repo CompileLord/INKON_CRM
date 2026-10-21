@@ -32,7 +32,8 @@ async def test_avatar_upload_and_thumbnail(client: AsyncClient, test_admin: User
     assert photo_path1 is not None
 
     # Check generated image dimensions on disk
-    disk_path1: str = os.path.join(settings.STORAGE_PATH, photo_path1.removeprefix("/storage/"))
+    # The storage path is inside settings.STORAGE_PATH (i.e. 'storage')
+    disk_path1 = os.path.join(settings.STORAGE_PATH, photo_path1.removeprefix("/storage/"))
     assert os.path.exists(disk_path1)
 
     disk_image1 = Image.open(disk_path1)
@@ -58,7 +59,7 @@ async def test_avatar_upload_and_thumbnail(client: AsyncClient, test_admin: User
     assert os.path.exists(disk_path1)
     await StorageCleanupWorker().run_once()
     assert not os.path.exists(disk_path1)
-    disk_path2: str = os.path.join(settings.STORAGE_PATH, photo_path2.removeprefix("/storage/"))
+    disk_path2 = os.path.join(settings.STORAGE_PATH, photo_path2.removeprefix("/storage/"))
     assert os.path.exists(disk_path2)
 
     # 3. Try to upload txt file renamed to .png -> verify 400

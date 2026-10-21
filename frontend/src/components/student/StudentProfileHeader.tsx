@@ -13,14 +13,13 @@ import type { User } from "../../lib/users/types";
 interface StudentProfileHeaderProps {
   user: User;
   isSuperAdmin: boolean;
-  initialLinkCode: string | null;
   editTriggerRef: RefObject<HTMLButtonElement | null>;
   onEdit: () => void;
   onDelete: () => void;
   onOpenAccess: () => void;
 }
 
-export function StudentProfileHeader({ user, isSuperAdmin, initialLinkCode, editTriggerRef, onEdit, onDelete, onOpenAccess }: StudentProfileHeaderProps) {
+export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdit, onDelete, onOpenAccess }: StudentProfileHeaderProps) {
   const { t } = useTranslation("studentProfile");
   const meta: string[] = [
     user.email,
@@ -42,7 +41,7 @@ export function StudentProfileHeader({ user, isSuperAdmin, initialLinkCode, edit
       status={
         <>
           {user.is_deleted ? <Badge status="archived" /> : null}
-          <StudentParentLink user={user} canManage={isSuperAdmin} initialLinkCode={initialLinkCode} />
+          <StudentParentLink user={user} canManage={isSuperAdmin} />
         </>
       }
       meta={meta}

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useAuthStore } from "../store/authStore";
 import * as userHooks from "../lib/users/hooks";
+import * as userEndpoints from "../lib/users/endpoints";
 import type { StudentProfileResponse } from "../lib/users/types";
-import { mockStudentUser, mockProfileResponse, renderStudentProfile, registerStudentProfileHooks } from "./StudentProfileTestSupport";
+import { mockProfileResponse, renderStudentProfile, registerStudentProfileHooks } from "./StudentProfileTestSupport";
 
 registerStudentProfileHooks();
 
@@ -95,48 +96,32 @@ describe("StudentProfile Component", () => {
     expect(screen.getByRole("tabpanel", { name: "Courses" }).hidden).toBe(false);
   });
 
-  it("shows truthful unavailable copy in the account access popover when no plaintext credentials exist", async () => {
+  it("opens the password SMS dialog from the actions menu for staff, with resend and the deliveries list", async () => {
     const user = userEvent.setup();
+    const list = vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
+    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone" });
     renderStudentProfile();
 
     await user.click(screen.getByRole("button", { name: "Student actions" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Account access" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Password SMS" }));
 
-    expect(await screen.findByText(/The password isn't stored in readable form/i)).toBeDefined();
+    expect(await screen.findByText(/No SMS sent yet/)).toBeDefined();
+    expect(list).toHaveBeenCalledWith(42);
+    await user.click(screen.getByRole("button", { name: "Resend password SMS" }));
+    expect(await screen.findByText("New code sent to the student phone.")).toBeDefined();
+    expect(resend).toHaveBeenCalledWith(42);
   });
 
-  it("resets a revealed password to masked when the account access popover is closed and reopened", async () => {
-    const user = userEvent.setup();
-    const profileWithRawPassword: StudentProfileResponse = {
-      ...mockProfileResponse,
-      user: { ...mockStudentUser, raw_password: "InitialPassword123!" },
-    };
-    vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: profileWithRawPassword, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
-
+  it("does not request deliveries until the dialog is opened", () => {
+    const list = vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
     renderStudentProfile();
-
-    const openAccess = async (): Promise<void> => {
-      await user.click(screen.getByRole("button", { name: "Student actions" }));
-      await user.click(await screen.findByRole("menuitem", { name: "Account access" }));
-    };
-    await openAccess();
-    expect(await screen.findByText("••••••••")).toBeDefined();
-    expect(screen.queryByText("InitialPassword123!")).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: /Show password/i }));
-    expect(screen.getByText("InitialPassword123!")).toBeDefined();
-
-    await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByText("InitialPassword123!")).toBeNull());
-    await openAccess();
-    expect(await screen.findByText("••••••••")).toBeDefined();
-    expect(screen.queryByText("InitialPassword123!")).toBeNull();
+    expect(list).not.toHaveBeenCalled();
   });
 
   it("hides account access from non-superadmin roles", () => {
     useAuthStore.setState({ role: "mentor", userId: 7 });
     renderStudentProfile();
     expect(screen.queryByRole("button", { name: "Student actions" })).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: "Account access" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Password SMS" })).toBeNull();
   });
 });

@@ -16,6 +16,7 @@ import {
   type AuthErrorKind,
   type MappedFieldError,
 } from "../lib/auth/errorMessages";
+import { normalizeStudentCode } from "../lib/auth/studentCode";
 import { getSafeRedirect, resolveLandingPath } from "../lib/postAuthRedirect";
 import { useAuthStore } from "../store/authStore";
 
@@ -67,7 +68,7 @@ export function Login() {
     setServerFieldErrors([]);
     setSubmitting(true);
     try {
-      const result = await login(values.email.trim(), values.password);
+      const result = await login(values.email.trim(), normalizeStudentCode(values.password));
       setAuthenticated(result.access_token, result.refresh_token, result.must_set_password);
 
       if (result.must_set_password) {

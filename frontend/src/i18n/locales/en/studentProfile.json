@@ -8,7 +8,7 @@
   "header": {
     "actions": "Student actions",
     "edit": "Edit",
-    "access": "Account access",
+    "access": "Password SMS",
     "delete": "Delete student",
     "parentPhone": "Parent: {{phone}}"
   },
@@ -17,13 +17,6 @@
     "title": "Parent link",
     "linkedHelp": "A parent has linked a Telegram chat to this student. A new code replaces the old one.",
     "notLinkedHelp": "Create a code and give it to the parent to enter in the Telegram bot."
-  },
-  "access": {
-    "title": "Account access",
-    "password": "Password",
-    "show": "Show password",
-    "hide": "Hide password",
-    "unavailable": "The password isn't stored in readable form and can't be shown."
   },
   "stats": {
     "score": "Points, active courses",

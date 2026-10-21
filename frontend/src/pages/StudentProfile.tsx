@@ -14,14 +14,15 @@ import { ProfileSkeleton, ProfileState } from "../components/profile/ProfileStat
 import { classifyProfileFailure, type ProfileUnavailableKind } from "../components/profile/ProfileUnavailable";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
 import { StudentFormPanel } from "../components/students/StudentFormPanel";
-import { StudentAccountAccess } from "../components/student/StudentAccountAccess";
+import { StudentCreatedNotice } from "../components/student/StudentCreatedNotice";
+import { StudentPasswordSmsDialog } from "../components/student/StudentPasswordSmsDialog";
 import { StudentCoursesTab } from "../components/student/StudentCoursesTab";
 import { StudentProfileHeader } from "../components/student/StudentProfileHeader";
 import { StudentProgressPanel } from "../components/student/StudentProgressPanel";
 import { StudentStatTiles } from "../components/student/StudentStatTiles";
 import { useStudentDeletion } from "../components/student/useStudentDeletion";
 import { getStudentProfileReturnTarget, parseStudentProfileTab, type StudentProfileTabId } from "../lib/students/studentNavigation";
-import type { User } from "../lib/users/types";
+import type { PasswordSmsDestination, User } from "../lib/users/types";
 
 const TAB_IDS: readonly StudentProfileTabId[] = ["courses", "performance", "documents"];
 const PROFILE_ID_PREFIX: string = "profile";
@@ -35,6 +36,7 @@ interface ToastState {
 interface CreationState {
   createdStudentId?: number;
   createdParentLinkCode?: string | null;
+  createdPasswordSmsDestination?: PasswordSmsDestination | null;
 }
 
 export function StudentProfile() {
@@ -74,6 +76,7 @@ export function StudentProfile() {
   const creation = location.state as CreationState | null;
   const [createdFeedbackVisible, setCreatedFeedbackVisible] = useState<boolean>(() => Boolean(isSuperAdmin && numericId && creation?.createdStudentId === numericId));
   const [createdParentLinkCode, setCreatedParentLinkCode] = useState<string | null>(() => (isSuperAdmin && numericId && creation?.createdStudentId === numericId ? creation.createdParentLinkCode ?? null : null));
+  const [createdDestination, setCreatedDestination] = useState<PasswordSmsDestination | null>(() => (isSuperAdmin && numericId && creation?.createdStudentId === numericId ? creation.createdPasswordSmsDestination ?? null : null));
   const previousProfileIdRef = useRef<number | undefined>(numericId);
 
   const { data: queriedProfile, isLoading, isError, error, refetch } = useStudentProfile(Number.isFinite(numericId) ? numericId : undefined);
@@ -125,6 +128,7 @@ export function StudentProfile() {
     previousProfileIdRef.current = numericId;
     setCreatedFeedbackVisible(false);
     setCreatedParentLinkCode(null);
+    setCreatedDestination(null);
   }, [numericId]);
 
   useEffect(() => {
@@ -133,9 +137,9 @@ export function StudentProfile() {
       const nextState: Record<string, unknown> = { ...locationState };
       delete nextState.createdStudentId;
       delete nextState.createdParentLinkCode;
+      delete nextState.createdPasswordSmsDestination;
       navigate(`${location.pathname}${location.search}`, { replace: true, state: nextState });
-      const timer: number = window.setTimeout(() => setCreatedFeedbackVisible(false), 5000);
-      return () => window.clearTimeout(timer);
+      return;
     }
     if (locationState?.createdStudentId !== undefined) setCreatedFeedbackVisible(false);
   }, [location.pathname, location.search, location.state, navigate, numericId]);
@@ -199,16 +203,12 @@ export function StudentProfile() {
       )}
 
       {createdFeedbackVisible && (
-        <div role="status" aria-live="polite" className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-ink">
-          <span>{t("students:form.createSuccess")}</span>
-          <Button variant="secondary" onClick={() => setCreatedFeedbackVisible(false)} aria-label={t("common:close")}>{t("common:close")}</Button>
-        </div>
+        <StudentCreatedNotice destination={createdDestination} parentLinkCode={createdParentLinkCode} onClose={() => setCreatedFeedbackVisible(false)} />
       )}
 
       <StudentProfileHeader
         user={user}
         isSuperAdmin={isSuperAdmin}
-        initialLinkCode={createdParentLinkCode}
         editTriggerRef={activeTriggerRef}
         onEdit={() => {
           if (isLiveOwner()) setFormStudent(user);
@@ -231,7 +231,7 @@ export function StudentProfile() {
         {activeTab === "documents" && <DocumentsTab key={profileKey} ownerType="student" ownerId={user.id} canManage={isSuperAdmin} ownerName={`${user.first_name} ${user.last_name}`} />}
       </div>
 
-      <StudentAccountAccess key={ownerKey} open={isAccessOpen && isSuperAdmin} rawPassword={user.raw_password} onClose={() => setIsAccessOpen(false)} />
+      <StudentPasswordSmsDialog key={ownerKey} open={isAccessOpen && isSuperAdmin} studentId={user.id} onClose={() => setIsAccessOpen(false)} />
 
       <StudentFormPanel
         open={formStudent !== null && formStudent.id === numericId && isSuperAdmin}
