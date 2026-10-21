@@ -14,6 +14,7 @@ class RefreshToken(Base):
             unique=True,
             postgresql_where=text("revoked_at IS NULL"),
         ),
+        Index("ix_refresh_tokens_expires_at_id", "expires_at", "id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
