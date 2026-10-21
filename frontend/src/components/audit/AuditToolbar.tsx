@@ -1,10 +1,9 @@
-import { Activity, Layers, Search, User } from "lucide-react";
-import { useId } from "react";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditFilterOptions, KnownAuditAction } from "../../lib/audit/api";
 import { AuditUrlState, type AuditViewState } from "../../lib/audit/auditUrlState";
-import { InfoTooltip } from "../ui/InfoTooltip";
+import { Input } from "../ui/Input";
 import { FilterChip } from "../finance/FilterChip";
 import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { PaymentDateRangePicker } from "../finance/PaymentDateRangePicker";
@@ -24,7 +23,6 @@ interface AuditToolbarProps {
 export function AuditToolbar({ view, searchDraft, options, onSearchChange, onChangeFilters, onClearAll }: AuditToolbarProps) {
   const { t, i18n } = useTranslation("audit");
   const labels = useAuditLabels();
-  const searchId: string = useId();
   const language: string = i18n.language;
   const actors = options?.actors ?? [];
   const entityTypes: string[] = options?.entity_types ?? [];
@@ -56,45 +54,36 @@ export function AuditToolbar({ view, searchDraft, options, onSearchChange, onCha
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="w-full @[40rem]:max-w-xs">
-          <div className="flex items-center gap-1">
-            <label htmlFor={searchId} className="text-sm font-medium text-label">
-              {t("searchLabel")}
-            </label>
-            <InfoTooltip label={t("searchLabel")}>{t("searchInfo")}</InfoTooltip>
-          </div>
-          <div className="relative mt-1">
-            <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              id={searchId}
-              type="search"
-              value={searchDraft}
-              maxLength={AuditUrlState.maximumSearchLength}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={t("searchPlaceholder")}
-              autoComplete="off"
-              className="min-h-12 w-full rounded-[10px] border border-control-border bg-card py-2 pl-9 pr-3 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-72">
+          <Input
+            type="search"
+            value={searchDraft}
+            maxLength={AuditUrlState.maximumSearchLength}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchLabel")}
+            autoComplete="off"
+            leftAddon={<Search size={16} aria-hidden="true" />}
+          />
         </div>
         <ListboxPicker
           label={t("filters.actor")}
-          icon={<User size={16} />}
+          icon={null}
           options={actorOptions}
           value={view.actorId === null ? "" : String(view.actorId)}
           onChange={(value) => onChangeFilters({ actorId: value === "" ? null : Number(value) })}
         />
         <ListboxPicker
           label={t("filters.action")}
-          icon={<Activity size={16} />}
+          icon={null}
           options={actionOptions}
           value={view.action ?? ""}
           onChange={(value) => onChangeFilters({ action: value === "" ? null : (value as KnownAuditAction) })}
         />
         <ListboxPicker
           label={t("filters.entity")}
-          icon={<Layers size={16} />}
+          icon={null}
           options={entityOptions}
           value={view.entityType ?? ""}
           onChange={(value) => onChangeFilters({ entityType: value === "" ? null : value, entityId: null })}
@@ -113,7 +102,7 @@ export function AuditToolbar({ view, searchDraft, options, onSearchChange, onCha
           <button
             type="button"
             onClick={onClearAll}
-            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 items-center rounded-[10px] px-2 text-sm font-medium text-maroon-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("chips.clearAll")}
           </button>

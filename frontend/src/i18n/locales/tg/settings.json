@@ -8,13 +8,8 @@
     "profile": "Профил",
     "appearance": "Намуди зоҳирӣ",
     "organization": "Ташкилот",
-    "rules": "Қоидаҳои огоҳиҳо"
-  },
-  "sectionHints": {
-    "profile": "Ном, акс ва маълумоти тамос.",
-    "appearance": "Мавзӯъ ва забон дар ин дастгоҳ.",
-    "organization": "Номи марказ, асъор ва боти Telegram.",
-    "rules": "Кадом паёмҳоро марказ мефиристад."
+    "rules": "Қоидаҳои огоҳиҳо",
+    "security": "Амният"
   },
   "saveBar": {
     "label": "Тағйироти захиранашуда",
@@ -86,5 +81,15 @@
     "debts": "Хотирнишони қарз",
     "debtsHint": "Ба хонандагони дорои қарзи гузашта хотиррасон мекунад.",
     "telegram": "Telegram"
+  },
+  "security": {
+    "currentPassword": "Рамзи ҷорӣ",
+    "currentPasswordHint": "Донишҷӯ метавонад рамзи SMS-ро ворид кунад.",
+    "newPassword": "Рамзи нав",
+    "confirmPassword": "Рамзи навро такрор кунед",
+    "rulesLabel": "Қоидаҳои рамз",
+    "submit": "Иваз кардани рамз",
+    "changed": "Рамз иваз шуд",
+    "currentPasswordWrong": "Рамзи ҷорӣ нодуруст аст."
   }
 }

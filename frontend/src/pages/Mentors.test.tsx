@@ -136,10 +136,10 @@ describe("Mentors directory page", () => {
     renderMentorsPage();
 
     expect(screen.getByRole("heading", { name: "Teachers" })).toBeDefined();
-    expect(screen.getByText(/Total: 2/i)).toBeDefined();
+    expect(screen.getByText("2")).toBeDefined();
     expect(screen.getByRole("searchbox")).toBeDefined();
-    expect(screen.getAllByRole("link", { name: "Alisher Navoiy" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Zarina Kamilova" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Alisher Navoiy/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Zarina Kamilova/ }).length).toBeGreaterThan(0);
   });
 
   it("omits paymentDay column and all student parent fields from directory table", () => {
@@ -192,8 +192,9 @@ describe("Mentors directory page", () => {
     const { getLocation } = renderMentorsPage(["/mentors?page=2&pageSize=20"]);
     const user = userEvent.setup();
 
-    const pageSizeSelect = screen.getByRole("combobox", { name: /Page/i });
-    await user.selectOptions(pageSizeSelect, "50");
+    const pageSizeSelect = screen.getByRole("button", { name: /Rows per page/i });
+    await user.click(pageSizeSelect);
+    await user.click(await screen.findByRole("option", { name: /50/ }));
 
     await waitFor(() => {
       expect(getLocation()?.search).toContain("pageSize=50");
@@ -214,7 +215,7 @@ describe("Mentors directory page", () => {
     const { getLocation } = renderMentorsPage();
     const user = userEvent.setup();
 
-    const alisherLink = screen.getAllByRole("link", { name: "Alisher Navoiy" })[0];
+    const alisherLink = screen.getAllByRole("link", { name: /Alisher Navoiy/ })[0];
     await user.click(alisherLink);
 
     await waitFor(() => {
@@ -285,7 +286,7 @@ describe("Mentors directory page", () => {
     const addMentorBtn = screen.getByRole("button", { name: /Add Teacher/i });
     await user.click(addMentorBtn);
 
-    expect(screen.getByRole("heading", { name: "New Teacher" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: /New Teacher/ })).toBeDefined();
 
     const dialog = screen.getByRole("dialog");
     await user.type(within(dialog).getByLabelText(/First Name/i), "Rustam");

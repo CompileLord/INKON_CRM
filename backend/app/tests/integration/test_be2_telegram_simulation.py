@@ -36,7 +36,7 @@ async def test_real_parent_journey_is_logged(
 
     created = await client.post(
         "/api/v1/users/", headers=headers,
-        json={"email": "sim-student@example.com", "first_name": "Aziza", "last_name": "Rahimova", "role": "student"},
+        json={"email": "sim-student@example.com", "first_name": "Aziza", "last_name": "Rahimova", "role": "student", "phone": "+992900000999"},
     )
     student_id: int = created.json()["id"]
     transcript.append(f"student registered id={student_id} parent_linked={created.json()['parent_linked']} expiry={created.json()['parent_link_code_expires_at']}")

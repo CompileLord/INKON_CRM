@@ -30,7 +30,7 @@ def build_session_factory() -> async_sessionmaker[AsyncSession]:
 
 async def create_student(db_session: AsyncSession, email: str = "fresh.student@example.com") -> User:
     created_user: User = await UserService(db_session).create_user(
-        UserCreate(email=email, first_name="Farrukh", last_name="Karimov", role=UserRole.STUDENT)
+        UserCreate(email=email, first_name="Farrukh", last_name="Karimov", role=UserRole.MENTOR)
     )
     await db_session.commit()
     return created_user

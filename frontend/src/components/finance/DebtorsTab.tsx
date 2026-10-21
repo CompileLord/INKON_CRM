@@ -1,23 +1,25 @@
-import { useEffect, useRef, useState } from "react";
-import { Users } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useDebts } from "../../lib/finance/hooks";
+import { useDebts, useQueueDebtReminders } from "../../lib/finance/hooks";
 import { FinanceUrlState, type DebtorsViewState } from "../../lib/finance/urlState";
 import type { DebtItem, PaymentItem } from "../../lib/finance/types";
 import { CourseBalanceIdentity } from "../../lib/finance/courseBalanceIdentity";
-import { formatNumber } from "../../i18n/formatters";
+import { formatDateTime, formatNumber } from "../../i18n/formatters";
+import { DebtReminders } from "../../lib/finance/debtReminders";
+import type { DebtReminderResult } from "../../lib/finance/types";
+import { AuthApiError } from "../../lib/auth/errors";
 import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/Button";
-import { InfoTooltip } from "../ui/InfoTooltip";
+import { EmptyState } from "../ui/EmptyState";
+import { ErrorState } from "../ui/ErrorState";
+import { SectionCard } from "../ui/SectionCard";
 import { Pagination } from "../ui/Pagination";
 import { DebtorRow } from "./DebtorRow";
 import { DebtorsToolbar } from "./DebtorsToolbar";
-import { useElementWidth } from "./useElementWidth";
 
 const PAGE_SIZE: number = 20;
 const SKELETON_ROWS: number = 6;
-const TABLE_MINIMUM_WIDTH_PIXELS: number = 840;
 
 interface DebtorsTabProps {
   view: DebtorsViewState;
@@ -25,23 +27,29 @@ interface DebtorsTabProps {
   onPageChange: (page: number) => void;
   onChangeFilters: (filters: Partial<Omit<DebtorsViewState, "page">>) => void;
   onAcceptPayment: (debt: DebtItem) => void;
+  renderRowAction?: (debt: DebtItem) => ReactNode;
+  toolbarAction?: ReactNode;
 }
 
 function rowKeyOf(debt: DebtItem): string {
   return `${debt.student.id}-${debt.course.id}`;
 }
 
-export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilters, onAcceptPayment }: DebtorsTabProps) {
+export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilters, onAcceptPayment, renderRowAction, toolbarAction }: DebtorsTabProps) {
   const { t, i18n } = useTranslation(["finance", "common"]);
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.role);
-  const [sectionRef, sectionWidth] = useElementWidth<HTMLElement>();
+  const sectionRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLSpanElement>(null);
   const pendingRowKey = useRef<string | null>(null);
   const pendingRowIndex = useRef<number>(0);
   const handledPaymentId = useRef<number | null>(null);
   const [search, setSearch] = useState<string>("");
   const [expandedRows, setExpandedRows] = useState<ReadonlySet<string>>(new Set());
+  const [reminderFeedback, setReminderFeedback] = useState<{ message: string; failed: boolean } | null>(null);
+  const [bulkRunning, setBulkRunning] = useState<boolean>(false);
+  const [remindingIds, setRemindingIds] = useState<ReadonlySet<number>>(new Set());
+  const queueReminders = useQueueDebtReminders();
   const announcementRef = useRef<HTMLParagraphElement>(null);
 
   const debts = useDebts(view.page, PAGE_SIZE, FinanceUrlState.debtFilters(view));
@@ -53,7 +61,6 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
   const total: number = debts.data?.total ?? 0;
   const totalPages: number = debts.data?.total_pages ?? 1;
   const lastValidPage: number = Math.max(1, totalPages);
-  const layout: "table" | "list" = sectionWidth >= TABLE_MINIMUM_WIDTH_PIXELS ? "table" : "list";
   const ambiguousStudents: Set<number> = CourseBalanceIdentity.studentIdsSharingAName(loaded);
   const courseTitle: string | undefined = loaded.find((debt) => debt.course.id === view.courseId)?.course.title;
   const courseLabel: string | null =
@@ -84,15 +91,65 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     if (key === null || debts.data.items.some((debt) => rowKeyOf(debt) === key)) return;
     const rows: NodeListOf<HTMLElement> | undefined = sectionRef.current?.querySelectorAll<HTMLElement>("[data-row-key]");
     const target: HTMLElement | undefined = rows && rows.length > 0 ? rows[Math.min(pendingRowIndex.current, rows.length - 1)] : undefined;
-    const focusable: HTMLElement | null | undefined = target?.querySelector<HTMLElement>("button, a");
+    const focusable: HTMLElement | null | undefined = target?.querySelector<HTMLElement>("button:not(:disabled), a");
     (focusable ?? headingRef.current)?.focus();
-  }, [recordedPayment, debts.data, debts.isFetching, sectionRef]);
+  }, [recordedPayment, debts.data, debts.isFetching]);
 
   const acceptPayment = (debt: DebtItem): void => {
     pendingRowKey.current = rowKeyOf(debt);
     pendingRowIndex.current = Math.max(0, visible.findIndex((candidate) => rowKeyOf(candidate) === rowKeyOf(debt)));
     onAcceptPayment(debt);
   };
+
+  const sendReminders = async (studentIds: number[], single: DebtItem | null): Promise<void> => {
+    setReminderFeedback(null);
+    setRemindingIds(new Set(studentIds));
+    setBulkRunning(single === null);
+    try {
+      const response = await queueReminders.mutateAsync(studentIds);
+      setReminderFeedback({ message: describeReminders(response.results, single), failed: false });
+    } catch (error) {
+      const policyDisabled: boolean = error instanceof AuthApiError && error.status === 409;
+      setReminderFeedback({ message: t(policyDisabled ? "finance:reminders.disabled" : "finance:reminders.failed"), failed: true });
+    } finally {
+      setRemindingIds(new Set());
+      setBulkRunning(false);
+    }
+  };
+
+  const describeReminders = (results: DebtReminderResult[], single: DebtItem | null): string => {
+    const first: DebtReminderResult | undefined = results[0];
+    if (!single || !first) {
+      const tally = DebtReminders.tally(results);
+      return t("finance:reminders.bulkResult", { queued: formatNumber(tally.queued, i18n.language), skipped: formatNumber(tally.skipped, i18n.language) });
+    }
+    const student: string = `${single.student.first_name} ${single.student.last_name}`;
+    const outcomeKeys: Record<DebtReminderResult["outcome"], string> = {
+      queued: "queuedOne",
+      recently_reminded: "recentlyReminded",
+      no_parent_chat: "noParentChat",
+      no_debt: "noDebt",
+      not_found: "notFound",
+    };
+    return t(`finance:reminders.${outcomeKeys[first.outcome]}`, { student, when: formatDateTime(first.next_allowed_at, i18n.language) });
+  };
+
+  const eligibleIds: number[] = DebtReminders.eligibleStudentIds(visible);
+
+  const bulkAction = (
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="secondary"
+        disabled={eligibleIds.length === 0}
+        loading={bulkRunning}
+        aria-describedby={eligibleIds.length === 0 ? "debtors-bulk-remind-reason" : undefined}
+        onClick={() => void sendReminders(eligibleIds, null)}
+      >
+        {t("finance:reminders.bulk", { count: formatNumber(eligibleIds.length, i18n.language) })}
+      </Button>
+      {eligibleIds.length === 0 && debts.data && loaded.length > 0 && <p id="debtors-bulk-remind-reason" className="text-xs text-muted">{t("finance:reminders.bulkNone")}</p>}
+    </div>
+  );
 
   const toggleDetails = (rowKey: string): void => {
     setExpandedRows((current) => {
@@ -110,12 +167,14 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
         key={rowKey}
         debt={debt}
         rowKey={rowKey}
-        layout={layout}
         showStudentNumber={ambiguousStudents.has(debt.student.id)}
         canOpenProfile={role === "superadmin"}
         isExpanded={expandedRows.has(rowKey)}
         onToggleDetails={toggleDetails}
         onAcceptPayment={acceptPayment}
+        extraAction={renderRowAction?.(debt)}
+        onRemind={(target: DebtItem) => void sendReminders([target.student.id], target)}
+        isReminding={!bulkRunning && remindingIds.has(debt.student.id)}
       />
     );
   });
@@ -126,105 +185,72 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     </Button>
   );
 
+  const summary = debts.data ? (
+    <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted tabular-nums">
+      <span>{t("finance:debtorsTab.total", { total: formatNumber(total, i18n.language) })}</span>
+      {normalizedSearch && (
+        <span>{t("finance:debtorsTab.pageMatches", { shown: formatNumber(visible.length, i18n.language), loaded: formatNumber(loaded.length, i18n.language) })}</span>
+      )}
+    </p>
+  ) : undefined;
+
   return (
-    <section ref={sectionRef} aria-labelledby="finance-debtors-heading" className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border px-4 py-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-          <Users size={18} aria-hidden="true" />
-          <span id="finance-debtors-heading" ref={headingRef} tabIndex={-1} className="focus-visible:outline-none">
-            {t("finance:debtors.title")}
-          </span>
-          <InfoTooltip label={t("finance:overview.aboutMetric", { label: t("finance:debtors.title") })}>{t("finance:debtors.info")}</InfoTooltip>
-        </h2>
-        {debts.data && (
-          <p className="flex flex-wrap items-center gap-x-3 text-sm text-label tabular-nums">
-            <span>{t("finance:debtorsTab.total", { total: formatNumber(total, i18n.language) })}</span>
-            {normalizedSearch && (
-              <span>
-                {t("finance:debtorsTab.pageMatches", {
-                  shown: formatNumber(visible.length, i18n.language),
-                  loaded: formatNumber(loaded.length, i18n.language),
-                })}
-              </span>
-            )}
-          </p>
+    <div ref={sectionRef} role="region" aria-labelledby="finance-debtors-heading">
+      <SectionCard title={t("finance:debtors.title")} actions={summary}>
+        <span id="finance-debtors-heading" ref={headingRef} tabIndex={-1} className="sr-only focus-visible:outline-none">{t("finance:debtors.title")}</span>
+        <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} trailingAction={<>{toolbarAction}{bulkAction}</>} />
+        <p role="status" ref={announcementRef} className="sr-only" />
+        {reminderFeedback && (
+          <p role="status" className={["text-sm", reminderFeedback.failed ? "text-destructive" : "text-ink"].join(" ")}>{reminderFeedback.message}</p>
         )}
-      </div>
-      <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} />
-      <p role="status" ref={announcementRef} className="sr-only" />
-      {debts.isPending ? (
-        <div role="status" aria-busy="true">
-          <span className="sr-only">{t("finance:courseBalances.loading")}</span>
-          <ul aria-hidden="true" className="divide-y divide-border motion-safe:animate-pulse">
-            {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <li key={index} className={layout === "table" ? "h-[4.5rem] px-4 py-3" : "h-[7.5rem] px-4 py-3"}>
-                <div className="h-full rounded-lg bg-strip" />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : !debts.data ? (
-        <div role="alert" className="flex flex-col items-start gap-3 p-4">
-          <p className="text-sm text-destructive">{t("finance:debtorsTab.error")}</p>
-          {retry}
-        </div>
-      ) : loaded.length === 0 ? (
-        <div className="p-4">
-          <p className="text-sm text-muted">
-            {t(view.studentId !== null ? "finance:debtorsFilter.studentMissing" : hasServerFilters ? "finance:debtorsTab.noMatchFilters" : "finance:debtorsTab.empty")}
-          </p>
-          {view.studentId !== null && (
-            <Button variant="secondary" className="mt-3" onClick={() => navigate(-1)}>
-              {t("finance:debtorsFilter.back")}
-            </Button>
-          )}
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 p-4">
-          <p className="text-sm text-muted">{t("finance:debtorsTab.noMatchPage")}</p>
-          <Button variant="secondary" onClick={() => setSearch("")}>
-            {t("finance:debtorsTab.clearSearch")}
-          </Button>
-        </div>
-      ) : (
-        <>
-          {debts.isError && (
-            <div role="status" className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-warning-surface px-4 py-2 text-sm text-warning">
-              <p>{t("finance:refreshFailed")}</p>
-              {retry}
-            </div>
-          )}
-          {layout === "table" ? (
-            <table className="w-full table-fixed text-left">
-              <thead>
-                <tr className="border-b border-border bg-strip text-xs text-label">
-                  <th scope="col" className="w-[40%] px-4 py-2 font-medium">{t("finance:debtorsTab.columnStudent")}</th>
-                  <th scope="col" className="w-[20%] px-3 py-2 text-right font-medium">{t("finance:debtorsTab.columnDue")}</th>
-                  <th scope="col" className="w-[15%] px-3 py-2 font-medium">{t("finance:debtorsTab.columnOverdue")}</th>
-                  <th scope="col" className="w-[25%] px-3 py-2 font-medium">
-                    <span className="sr-only">{t("finance:debtorsTab.columnActions")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">{rows}</tbody>
-            </table>
-          ) : (
-            <ul className="divide-y divide-border">{rows}</ul>
-          )}
-        </>
-      )}
-      {debts.data && loaded.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-3">
-          <p className="text-sm text-label tabular-nums">
-            {t("finance:debtorsTab.range", {
-              from: formatNumber(firstRecord, i18n.language),
-              to: formatNumber(firstRecord + loaded.length - 1, i18n.language),
-              total: formatNumber(total, i18n.language),
-            })}
-          </p>
-          {totalPages > 1 && <Pagination page={view.page} totalPages={totalPages} onPageChange={onPageChange} />}
-        </div>
-      )}
-    </section>
+        {debts.isPending ? (
+          <div role="status" aria-busy="true">
+            <span className="sr-only">{t("finance:courseBalances.loading")}</span>
+            <ul aria-hidden="true" className="flex flex-col motion-safe:animate-pulse">
+              {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+                <li key={index} className="flex items-center justify-between gap-4 px-3 py-3">
+                  <div className="flex flex-1 flex-col gap-2">
+                    <div className="h-4 w-40 max-w-full rounded bg-border" />
+                    <div className="h-3 w-56 max-w-full rounded bg-border" />
+                  </div>
+                  <div className="h-4 w-20 rounded bg-border" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : !debts.data ? (
+          <ErrorState message={t("finance:debtorsTab.error")} onRetry={() => void debts.refetch()} />
+        ) : loaded.length === 0 ? (
+          <EmptyState
+            title={t(view.studentId !== null ? "finance:debtorsFilter.studentMissing" : hasServerFilters ? "finance:debtorsTab.noMatchFilters" : "finance:debtorsTab.empty")}
+            action={view.studentId !== null ? <Button variant="secondary" onClick={() => navigate(-1)}>{t("finance:debtorsFilter.back")}</Button> : undefined}
+          />
+        ) : visible.length === 0 ? (
+          <EmptyState title={t("finance:debtorsTab.noMatchPage")} action={<Button variant="secondary" onClick={() => setSearch("")}>{t("finance:debtorsTab.clearSearch")}</Button>} />
+        ) : (
+          <>
+            {debts.isError && (
+              <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                <p>{t("finance:refreshFailed")}</p>
+                {retry}
+              </div>
+            )}
+            <ul className="flex flex-col">{rows}</ul>
+          </>
+        )}
+        {debts.data && loaded.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted tabular-nums">
+              {t("finance:debtorsTab.range", {
+                from: formatNumber(firstRecord, i18n.language),
+                to: formatNumber(firstRecord + loaded.length - 1, i18n.language),
+                total: formatNumber(total, i18n.language),
+              })}
+            </p>
+            {totalPages > 1 && <Pagination page={view.page} totalPages={totalPages} onPageChange={onPageChange} />}
+          </div>
+        )}
+      </SectionCard>
+    </div>
   );
 }

@@ -21,6 +21,8 @@ class CanonicalInputFixture:
         payload: dict[str, Any] = {field: value}
         if schema is UserCreate:
             payload.update(email="canonical@example.com", first_name="Canonical", last_name="Input", role="student")
+            alternate_field: str = "parent_phone" if field == "phone" else "phone"
+            payload[alternate_field] = "+992900000003"
         return payload
 
 
@@ -127,6 +129,7 @@ async def test_explicit_null_self_phone_clears_legacy_value(
     client: AsyncClient, db_session: AsyncSession, test_student: User,
 ) -> None:
     test_student.phone = "992900000001"
+    test_student.parent_phone = "+992900000003"
     db_session.add(test_student)
     await db_session.commit()
     response: Response = await client.patch("/api/v1/users/me", headers=CanonicalInputFixture.headers(test_student), json={"phone": None})

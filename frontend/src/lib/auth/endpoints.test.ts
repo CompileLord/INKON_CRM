@@ -16,6 +16,7 @@ const {
   passwordResetRequest,
   passwordResetVerify,
   passwordResetConfirm,
+  changePassword,
 } = await import("./endpoints");
 
 const mock = new MockAdapter(httpClient);
@@ -141,5 +142,17 @@ describe("error shape", () => {
     mock.onPost("/auth/login").networkError();
 
     await expect(login("a@b.com", "secret")).rejects.toBeInstanceOf(NetworkError);
+  });
+});
+
+describe("changePassword", () => {
+  it("posts current and new password with the bearer token and returns the new token pair", async () => {
+    tokenStorage.setTokens({ accessToken: "old-access", refreshToken: "old-refresh" });
+    mock.onPost("/auth/change-password").reply(200, tokenPair);
+    const result = await changePassword("12345A", "NewPass123");
+    expect(result).toEqual(tokenPair);
+    const request = mock.history.post[0];
+    expect(JSON.parse(request.data as string)).toEqual({ current_password: "12345A", new_password: "NewPass123" });
+    expect(request.headers?.Authorization).toBe("Bearer old-access");
   });
 });

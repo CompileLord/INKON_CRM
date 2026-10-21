@@ -278,7 +278,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   editing={effectiveEditing}
                   examMaximum={examMaximum}
                   bonusMaximum={bonusMaximum}
-                  atRisk={atRiskStudentIds.has(student.student_id)}
+                  atRisk={atRiskStudentIds.has(student.student_id) && (readOnlySelfStudentId === null || student.student_id === readOnlySelfStudentId)}
                   isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
                   markUnrecorded={readOnlySelfStudentId !== null}
                   onCellFocus={handleCellFocus}

@@ -121,5 +121,13 @@
   "hideComment": "Пинҳон кардани шарҳ",
   "scoreInfoLabel": "Холи миёна барои давраҳои анҷомёфта",
   "scoreInfo": "Миёнаи давраҳои анҷомёфтаи шумо. Бо сутуни «Миёна» дар ҷадвали гурӯҳ мувофиқ аст; давраҳои оянда ҳисоб намешаванд.",
-  "lessonsTitle": "Дарсҳо"
+  "lessonsTitle": "Дарсҳо",
+  "card": {
+    "mentor": "Мураббӣ",
+    "schedule": "Ҷадвал",
+    "noNextLesson": "Дарси наздик нест",
+    "attendanceValue": "Ҳузур {{value}}",
+    "openJournal": "Кушодани журнал",
+    "scoreUnavailable": "Хол —"
+  }
 }

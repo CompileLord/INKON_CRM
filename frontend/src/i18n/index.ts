@@ -21,6 +21,10 @@ import ruValidation from "./locales/ru/validation.json";
 
 import ruStudent from "./locales/ru/student.json";
 import ruUi from "./locales/ru/ui.json";
+import ruCourseDetail from "./locales/ru/courseDetail.json";
+import ruStudentProfile from "./locales/ru/studentProfile.json";
+import ruMentorProfile from "./locales/ru/mentorProfile.json";
+import ruPasswordSms from "./locales/ru/passwordSms.json";
 
 // English
 import enCommon from "./locales/en/common.json";
@@ -40,6 +44,10 @@ import enNotifications from "./locales/en/notifications.json";
 import enValidation from "./locales/en/validation.json";
 import enStudent from "./locales/en/student.json";
 import enUi from "./locales/en/ui.json";
+import enCourseDetail from "./locales/en/courseDetail.json";
+import enStudentProfile from "./locales/en/studentProfile.json";
+import enMentorProfile from "./locales/en/mentorProfile.json";
+import enPasswordSms from "./locales/en/passwordSms.json";
 
 // Tajik
 import tgCommon from "./locales/tg/common.json";
@@ -59,6 +67,10 @@ import tgNotifications from "./locales/tg/notifications.json";
 import tgValidation from "./locales/tg/validation.json";
 import tgStudent from "./locales/tg/student.json";
 import tgUi from "./locales/tg/ui.json";
+import tgCourseDetail from "./locales/tg/courseDetail.json";
+import tgStudentProfile from "./locales/tg/studentProfile.json";
+import tgMentorProfile from "./locales/tg/mentorProfile.json";
+import tgPasswordSms from "./locales/tg/passwordSms.json";
 
 export const defaultNS = "common";
 export const resources = {
@@ -80,6 +92,10 @@ export const resources = {
     validation: ruValidation,
     student: ruStudent,
     ui: ruUi,
+    courseDetail: ruCourseDetail,
+    studentProfile: ruStudentProfile,
+    mentorProfile: ruMentorProfile,
+    passwordSms: ruPasswordSms,
   },
   en: {
     common: enCommon,
@@ -99,6 +115,10 @@ export const resources = {
     validation: enValidation,
     student: enStudent,
     ui: enUi,
+    courseDetail: enCourseDetail,
+    studentProfile: enStudentProfile,
+    mentorProfile: enMentorProfile,
+    passwordSms: enPasswordSms,
   },
   tg: {
     common: tgCommon,
@@ -118,6 +138,10 @@ export const resources = {
     validation: tgValidation,
     student: tgStudent,
     ui: tgUi,
+    courseDetail: tgCourseDetail,
+    studentProfile: tgStudentProfile,
+    mentorProfile: tgMentorProfile,
+    passwordSms: tgPasswordSms,
   },
 } as const;
 

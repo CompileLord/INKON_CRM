@@ -1,152 +1,59 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, User as UserIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMoney } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
-import { resolveMediaUrl } from "../../lib/users/media";
-import { AdminCourseMenu } from "./AdminCourseMenu";
+import { Badge } from "../ui/Badge";
+import { ListRow } from "../ui/ListRow";
 import { CourseScheduleLine } from "./CourseScheduleLine";
-import type { CourseListItemResponse, CourseResponse } from "../../lib/courses/types";
+import { CourseThumb } from "./CourseThumb";
+import { useCourseMenu, type CourseMenuHandlers } from "./useCourseMenu";
+import type { CourseListItemResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 interface CourseListRowProps {
   course: CourseListItemResponse;
   mentor?: User;
-  isSuperAdmin: boolean;
+  showMentor: boolean;
   isMentor: boolean;
+  menuHandlers: CourseMenuHandlers | null;
   onNavigate?: () => void;
-  onEdit?: (course: CourseResponse) => void;
-  onDuplicate?: (course: CourseResponse, triggerElement?: HTMLElement | null) => void;
-  onDelete?: (course: CourseResponse, triggerElement?: HTMLElement | null) => void;
 }
 
-export function CourseListRow({
-  course,
-  mentor,
-  isSuperAdmin,
-  isMentor,
-  onNavigate,
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: CourseListRowProps) {
+export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandlers, onNavigate }: CourseListRowProps) {
   const { t, i18n } = useTranslation(["courses", "common"]);
-  const [imageError, setImageError] = useState(false);
-
-  const isActive = course.status === "active";
-  const photoUrl =
-    !imageError && course.photo_path ? resolveMediaUrl(course.photo_path) : null;
-  const mentorName = mentor
-    ? `${mentor.first_name} ${mentor.last_name}`.trim()
-    : null;
-
-  const handleLinkClick = () => {
-    onNavigate?.();
-  };
-
-  const handleLinkKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter") {
-      onNavigate?.();
-    }
-  };
+  const menu = useCourseMenu(course, menuHandlers, isMentor ? () => onNavigate?.() : null);
+  const mentorName: string | null = mentor ? `${mentor.first_name} ${mentor.last_name}`.trim() : null;
+  const columns: string = showMentor
+    ? "md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_7.5rem]"
+    : "md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_7.5rem]";
 
   return (
-    <div className="flex flex-wrap items-center gap-4 border-b border-border px-5 py-3.5 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out last:border-b-0 hover:bg-row-hover">
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-strip flex items-center justify-center">
-        {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt=""
-            onError={() => setImageError(true)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <BookOpen size={20} className="text-muted" aria-hidden="true" />
-        )}
-      </div>
-
-      <div className="min-w-44 flex-1">
-        <Link
-          to={`/courses/${course.id}`}
-          onClick={handleLinkClick}
-          onKeyDown={handleLinkKeyDown}
-          className="text-sm font-semibold text-ink break-words motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out hover:text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon rounded-[10px]"
-        >
-          {course.title}
-        </Link>
-        <p className="text-xs font-medium text-muted">
-          {t(`examTypeLabel.${course.exam_type}`)}
-        </p>
-      </div>
-
-      {mentorName ? (
-        <div className="hidden w-44 shrink-0 md:flex items-start gap-1.5 text-xs text-muted min-w-0">
-          <UserIcon size={13} className="mt-0.5 shrink-0" />
-          <span className="break-words min-w-0">{mentorName}</span>
-        </div>
-      ) : null}
-
-      <div className="hidden w-44 shrink-0 flex-col gap-1 md:flex">
-        <CourseScheduleLine schedules={course.schedules} />
-        <span className="pl-5 text-xs text-nav tabular-nums">
-          {t("studentsCount", { count: course.active_student_count })}
+    <div ref={menu.rootRef} onClickCapture={onNavigate === undefined ? undefined : (event) => { if ((event.target as HTMLElement).closest("a") !== null) onNavigate(); }}>
+      <ListRow to={`/courses/${course.id}`} menuItems={menu.items} menuLabel={menu.label}>
+        <span className={`grid items-center gap-x-4 gap-y-1 ${columns}`}>
+          <span className="flex min-w-0 items-center gap-3">
+            <CourseThumb title={course.title} photoPath={course.photo_path} />
+            <span className="flex min-w-0 flex-col">
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2">
+                <span className="break-words text-sm font-semibold text-ink">{course.title}</span>
+                {course.status === "archived" && <Badge status="archived" />}
+              </span>
+              <span className="break-words text-sm text-muted">{t(`examTypeLabel.${course.exam_type}`)}</span>
+            </span>
+          </span>
+          {showMentor && <span className="break-words text-sm text-muted">{mentorName ?? ""}</span>}
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <CourseScheduleLine schedules={course.schedules} />
+            <span className="flex flex-wrap gap-x-1.5 text-sm text-muted tabular-nums">
+              <span>{formatSchoolLessonDate(course.start_date, i18n.language)} – {formatSchoolLessonDate(course.end_date, i18n.language)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{t("studentsCount", { count: course.active_student_count })}</span>
+            </span>
+          </span>
+          <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink md:text-right">
+            {formatMoney(course.price)} {t("currencyPerMonth")}
+          </span>
         </span>
-      </div>
-
-      <span className="hidden shrink-0 rounded-md bg-strip px-2.5 py-1 text-xs text-nav tabular-nums sm:inline-flex">
-        {formatSchoolLessonDate(course.start_date, i18n.language)} –{" "}
-        {formatSchoolLessonDate(course.end_date, i18n.language)}
-      </span>
-
-      <span className="w-28 shrink-0 whitespace-nowrap text-right text-sm font-bold tabular-nums text-ink">
-        {formatMoney(course.price)} {t("currencyPerMonth")}
-      </span>
-
-      <span
-        className={[
-          "hidden shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium sm:inline-flex",
-          isActive
-            ? "bg-success-surface text-success"
-            : "bg-strip text-muted border border-border",
-        ].join(" ")}
-      >
-        {isActive ? t("filter.active") : t("filter.archived")}
-      </span>
-
-      <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
-        {isMentor ? (
-          <Link
-            to={`/journals/${course.id}`}
-            onClick={handleLinkClick}
-            onKeyDown={handleLinkKeyDown}
-            aria-label={`${t("openJournal")}: ${course.title}`}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-[10px] bg-card border border-control-border text-ink hover:bg-strip motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon"
-          >
-            <BookOpen size={14} className="text-maroon-text shrink-0" />
-            <span>{t("openJournal")}</span>
-          </Link>
-        ) : null}
-
-        {isSuperAdmin && onEdit && onDuplicate && onDelete ? (
-          <AdminCourseMenu
-            course={course}
-            onEdit={onEdit}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-          />
-        ) : null}
-
-        <Link
-          to={`/courses/${course.id}`}
-          onClick={handleLinkClick}
-          onKeyDown={handleLinkKeyDown}
-          aria-label={`${t("details")}: ${course.title}`}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[10px] text-muted motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out hover:bg-strip hover:text-ink motion-safe:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2"
-        >
-          <ArrowRight size={16} />
-        </Link>
-      </div>
+      </ListRow>
     </div>
   );
 }

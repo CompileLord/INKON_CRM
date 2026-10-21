@@ -16,6 +16,8 @@ from app.schemas.journal import (
 )
 from app.services.journal_service import JournalService, JournalCommandTransaction
 
+from app.api.v1.contract_notes import ContractNotes
+
 router = APIRouter()
 
 
@@ -39,7 +41,7 @@ async def get_class_journal(
     return await journal_service.get_class_journal(id, current_user)
 
 
-@router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK, responses={413: {"description": "Autosave request body exceeds 4194304 bytes"}})
+@router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK, description=ContractNotes.JOURNAL_AUTOSAVE, responses={413: {"description": "Autosave request body exceeds 4194304 bytes"}})
 async def batch_update_entries(
     id: int,
     payload: JournalEntryBatchUpdate,

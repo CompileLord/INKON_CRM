@@ -1,11 +1,11 @@
 import { useId, useState, type FormEvent } from "react";
 import { Popover } from "@base-ui/react/popover";
-import { CalendarDays } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { FinanceUrlState, type RangePreset, type RangeProblem } from "../../lib/finance/urlState";
 import type { PaymentDayRange } from "../../lib/finance/paymentDateBounds";
 import { Button } from "../ui/Button";
+import { DatePicker } from "../ui/DatePicker";
 
 interface PaymentDateRangePickerProps {
   range: PaymentDayRange;
@@ -14,8 +14,6 @@ interface PaymentDateRangePickerProps {
 }
 
 const PRESETS: readonly RangePreset[] = ["thisMonth", "lastMonth", "thisYear"];
-const INPUT_CLASSES: string =
-  "mt-1 min-h-12 w-full min-w-0 rounded-[10px] border border-control-border bg-card px-3 py-2 text-base text-ink tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function PaymentDateRangePicker({ range, onApply, title }: PaymentDateRangePickerProps) {
   const { t, i18n } = useTranslation("finance");
@@ -35,7 +33,6 @@ export function PaymentDateRangePicker({ range, onApply, title }: PaymentDateRan
         aria-haspopup="dialog"
         className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-control-border bg-card px-3 text-sm text-ink hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
       >
-        <CalendarDays size={16} aria-hidden="true" className="text-muted" />
         <span className="text-label">{t("paymentsTab.dateLabel")}</span>
         <span className="font-medium tabular-nums">{summary}</span>
       </Popover.Trigger>
@@ -98,13 +95,17 @@ function PaymentDateRangeForm({ initial, onApply }: PaymentDateRangeFormProps) {
           <label htmlFor={`${formId}-from`} className="text-sm font-medium text-label">
             {t("overview.rangeFrom")}
           </label>
-          <input id={`${formId}-from`} type="date" value={draftFrom} onChange={(event) => setDraftFrom(event.target.value)} aria-invalid={problem !== null} aria-describedby={problem ? problemId : undefined} className={INPUT_CLASSES} />
+          <div className="mt-1">
+            <DatePicker id={`${formId}-from`} label={t("overview.rangeFrom")} value={draftFrom} onChange={setDraftFrom} invalid={problem !== null} describedBy={problem ? problemId : undefined} />
+          </div>
         </div>
         <div>
           <label htmlFor={`${formId}-to`} className="text-sm font-medium text-label">
             {t("overview.rangeTo")}
           </label>
-          <input id={`${formId}-to`} type="date" value={draftTo} onChange={(event) => setDraftTo(event.target.value)} aria-invalid={problem !== null} aria-describedby={problem ? problemId : undefined} className={INPUT_CLASSES} />
+          <div className="mt-1">
+            <DatePicker id={`${formId}-to`} label={t("overview.rangeTo")} value={draftTo} onChange={setDraftTo} invalid={problem !== null} describedBy={problem ? problemId : undefined} />
+          </div>
         </div>
         {problemKey && (
           <p id={problemId} role="alert" className="col-span-2 text-sm text-destructive">

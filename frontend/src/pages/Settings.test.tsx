@@ -65,33 +65,39 @@ beforeEach(async () => {
 afterEach(() => cleanup());
 
 describe("Settings navigation", () => {
-  it("offers Profile and Appearance to a student and never the administrator sections", () => {
+  it("offers Profile, Security and Appearance to a student as vertical tabs and never the administrator sections", () => {
     renderSettings("student");
-    const nav = screen.getByRole("navigation", { name: "Settings sections" });
-    expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Appearance"]);
+    const tabs = screen.getByRole("tablist", { name: "Settings sections" });
+    expect(tabs.getAttribute("aria-orientation")).toBe("vertical");
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance"]);
   });
 
   it("adds Organization and Notification rules for the superadmin", () => {
     renderSettings("superadmin");
-    const nav = screen.getByRole("navigation", { name: "Settings sections" });
-    expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Appearance", "Organization", "Notification rules"]);
+    const tabs = screen.getByRole("tablist", { name: "Settings sections" });
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance", "Organization", "Notification rules"]);
   });
 
   it("falls back to Profile for an administrator section requested by a nonadmin", () => {
-    renderSettings("student", "/settings?section=organization");
-    expect(screen.getByRole("link", { name: "Profile" }).getAttribute("aria-current")).toBe("page");
+    renderSettings("student", "/settings?tab=organization");
+    expect(screen.getByRole("tab", { name: "Profile" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.queryByText("Organization name")).toBeNull();
     expect(mocks.organizationEnabledCalls).toEqual([]);
   });
 
-  it("shows only the section list on a phone until a section is chosen", () => {
-    renderSettings("student", "/settings", false);
-    expect(screen.getByRole("navigation", { name: "Settings sections" }).className).not.toContain("hidden");
-    expect(screen.getByRole("link", { name: "Profile" }).getAttribute("aria-current")).toBeNull();
-    cleanup();
-    renderSettings("student", "/settings?section=profile", false);
-    expect(screen.getByRole("navigation", { name: "Settings sections" }).className).toContain("hidden");
-    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
+  it("keeps the active section in ?tab= and shows only its panel", () => {
+    renderSettings("superadmin", "/settings?tab=rules");
+    expect(screen.getByRole("tab", { name: "Notification rules" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("settings-tab-rules");
+    fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
+    expect(screen.getByRole("tab", { name: "Appearance" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("settings-tab-appearance");
+  });
+
+  it("has no subtitle under the page title and no page-level max width", () => {
+    renderSettings("student");
+    expect(document.querySelector("[data-page-container]")).not.toBeNull();
+    expect(screen.queryByText(/Choose how|Manage your/)).toBeNull();
   });
 });
 
@@ -153,7 +159,7 @@ describe("Profile section", () => {
 
 describe("Appearance section", () => {
   it("applies the theme and language immediately without a save bar", async () => {
-    renderSettings("student", "/settings?section=appearance");
+    renderSettings("student", "/settings?tab=appearance");
     const theme = screen.getByRole("radiogroup", { name: "Theme" });
     fireEvent.click(within(theme).getByRole("radio", { name: "Dark" }));
     expect(useThemeStore.getState().theme).toBe("dark");
@@ -167,7 +173,7 @@ describe("Appearance section", () => {
   });
 
   it("moves the selection with arrow keys like a radio group", () => {
-    renderSettings("student", "/settings?section=appearance");
+    renderSettings("student", "/settings?tab=appearance");
     const theme = screen.getByRole("radiogroup", { name: "Theme" });
     const light = within(theme).getByRole("radio", { name: "Light" });
     fireEvent.click(light);
@@ -178,7 +184,7 @@ describe("Appearance section", () => {
   });
 
   it("places the app and server builds in the About group", () => {
-    renderSettings("student", "/settings?section=appearance");
+    renderSettings("student", "/settings?tab=appearance");
     const about = screen.getByRole("heading", { name: "About" }).closest("section") as HTMLElement;
     expect(within(about).getByText("App")).toBeTruthy();
     expect(within(about).getByText("Server")).toBeTruthy();
@@ -188,7 +194,7 @@ describe("Appearance section", () => {
 
 describe("Organization section", () => {
   it("edits the name inline and sends only the dirty org_name", async () => {
-    renderSettings("superadmin", "/settings?section=organization");
+    renderSettings("superadmin", "/settings?tab=organization");
     expect(screen.queryByTestId("settings-save-bar")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Edit name" }));
     fireEvent.change(screen.getByLabelText("Organization name"), { target: { value: "New Name" } });
@@ -197,7 +203,7 @@ describe("Organization section", () => {
   });
 
   it("shows currency read-only with an explanation and runs the Telegram test", () => {
-    renderSettings("superadmin", "/settings?section=organization");
+    renderSettings("superadmin", "/settings?tab=organization");
     expect(screen.getByText("TJS · Somoni")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Currency" })).toBeTruthy();
     expect(screen.getByTestId("telegram-status").getAttribute("data-state")).toBe("unchecked");
@@ -208,7 +214,7 @@ describe("Organization section", () => {
 
 describe("Notification rules section", () => {
   it("renders switches reflecting the saved values and autosaves only the toggled rule", async () => {
-    renderSettings("superadmin", "/settings?section=rules");
+    renderSettings("superadmin", "/settings?tab=rules");
     const payments = screen.getByRole("switch", { name: "Payment notifications" });
     const debts = screen.getByRole("switch", { name: "Debt reminders" });
     expect(payments.getAttribute("aria-checked")).toBe("true");
@@ -223,7 +229,7 @@ describe("Notification rules section", () => {
 
   it("reverts the switch and reports the failure when the save is rejected", async () => {
     mocks.updateOrganization.mockRejectedValue(new Error("boom"));
-    renderSettings("superadmin", "/settings?section=rules");
+    renderSettings("superadmin", "/settings?tab=rules");
     const payments = screen.getByRole("switch", { name: "Payment notifications" });
     fireEvent.click(payments);
     expect(mocks.updateOrganization).toHaveBeenCalledWith({ notify_payments: false });

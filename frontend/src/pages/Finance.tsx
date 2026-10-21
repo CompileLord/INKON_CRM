@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { PageHeader } from "../components/PageHeader";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DebtorsTab } from "../components/finance/DebtorsTab";
@@ -45,11 +46,11 @@ export function Finance() {
   };
 
   return (
-    <div className="@container mx-auto flex w-full max-w-[1440px] flex-col gap-6 pb-8">
+    <PageContainer>
       <PageHeader
         title={t("title")}
         actions={
-          <Button className="w-full shrink-0 sm:w-auto" onClick={openGlobalPayment}>
+          <Button onClick={openGlobalPayment}>
             <Plus size={18} aria-hidden="true" />
             {t("acceptPayment")}
           </Button>
@@ -57,7 +58,7 @@ export function Finance() {
       />
       <PaymentCompletion payment={recordedPayment} />
       <FinanceTabs selected={state.tab} onSelect={navigation.selectTab} />
-      <div key={state.tab} role="tabpanel" className="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
+      <div key={state.tab} role="tabpanel" className="flex flex-col gap-6 motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out motion-safe:starting:opacity-0" id={`finance-panel-${state.tab}`} aria-labelledby={`finance-tab-${state.tab}`} tabIndex={-1}>
         {state.tab === "overview" && (
           <OverviewTab
             range={state.range}
@@ -97,6 +98,6 @@ export function Finance() {
         defaultCourseName={paymentContext?.courseName}
       />
       <PaymentDetailModal payment={detailPayment} onClose={() => setDetailPayment(null)} />
-    </div>
+    </PageContainer>
   );
 }

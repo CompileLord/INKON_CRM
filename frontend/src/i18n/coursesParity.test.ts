@@ -46,9 +46,9 @@ describe("courses i18n key parity", () => {
     expect(ruCourses.searchPageScope).toContain("{{count}}");
     expect(tgCourses.searchPageScope).toContain("{{count}}");
 
-    expect(enCourses.filters).toBe("Filters");
-    expect(ruCourses.filters).toBe("Фильтры");
-    expect(tgCourses.filters).toBe("Филтрҳо");
+    expect(enCourses.statusLabel).toBe("Status");
+    expect(ruCourses.statusLabel).toBe("Статус");
+    expect(tgCourses.statusLabel).toBe("Ҳолат");
 
     expect(enCourses.emptyCatalogAdmin).not.toBe("");
     expect(ruCourses.emptyCatalogAdmin).not.toBe("");

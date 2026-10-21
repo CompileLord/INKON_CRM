@@ -22,13 +22,22 @@ export function useAuditEventText(event: AuditEvent): AuditEventText {
     return amount === null ? null : t("moneyAmount", { amount: formatExactMoney(amount) });
   })();
   const singleChange: AuditChange | undefined = event.changes.length === 1 ? event.changes[0] : undefined;
-  const genericSubtitle: string = [
-    event.entity_label,
-    singleChange ? summarizeChange(t, labels, event.action, singleChange) : t("event.fieldsChanged", { count: event.changes.length }),
-  ]
+  const fieldNames: string[] = event.changes.map((change) => change.field_name);
+  const changeSummary: string = singleChange
+    ? summarizeChange(t, labels, event.action, singleChange)
+    : event.changes.length <= 3
+      ? t("event.fieldsList", { fields: fieldNames.map((field) => labels.fieldLabel(field).toLowerCase()).join(", ") })
+      : t("event.fieldsChanged", { count: event.changes.length });
+  const genericSubtitle: string = [event.course_title !== event.entity_label ? event.course_title : null, event.entity_label, changeSummary]
     .filter((part): part is string => Boolean(part))
     .join(" · ");
-  const generic: AuditEventText = { sentence: { key: labels.sentenceKey(event.action), values: { actor, entity } }, subtitle: genericSubtitle };
+  const objectPhrase: string | null = labels.objectPhrase(event.entity_type, event.action, fieldNames);
+  const generic: AuditEventText = {
+    sentence: objectPhrase === null
+      ? { key: labels.sentenceKey(event.action), values: { actor, entity } }
+      : { key: "sentence.object", values: { actor, object: objectPhrase } },
+    subtitle: genericSubtitle,
+  };
 
   if (event.entity_type === "payment" && event.entity_label && amountText !== null) {
     if (event.action === "create") {
