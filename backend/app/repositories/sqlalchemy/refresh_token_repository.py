@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import CTE, ColumnElement, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.refresh_token import RefreshToken
 from app.repositories.interfaces.refresh_token_repository import RefreshTokenRepository
@@ -41,11 +40,11 @@ class SQLAlchemyRefreshTokenRepository(SQLAlchemyBaseRepository[RefreshToken], R
         return result.scalar_one_or_none() is not None
 
     async def purge_expired_before(self, cutoff: datetime, batch_size: int) -> int:
-        eligibility: tuple = (
+        eligibility: tuple[ColumnElement[bool], ...] = (
             RefreshToken.expires_at < cutoff,
             or_(RefreshToken.revoked_at.is_(None), RefreshToken.revoked_at < cutoff),
         )
-        candidates: Any = (
+        candidates: CTE = (
             select(RefreshToken.id)
             .where(*eligibility)
             .order_by(RefreshToken.expires_at, RefreshToken.id)
@@ -53,7 +52,7 @@ class SQLAlchemyRefreshTokenRepository(SQLAlchemyBaseRepository[RefreshToken], R
             .with_for_update(skip_locked=True)
             .cte("expired_refresh_tokens")
         )
-        deleted: Any = (
+        deleted: CTE = (
             delete(RefreshToken)
             .where(RefreshToken.id.in_(select(candidates.c.id)), *eligibility)
             .returning(RefreshToken.id)
