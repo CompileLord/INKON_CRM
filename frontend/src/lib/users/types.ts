@@ -255,4 +255,5 @@ export interface StudentMentorCardResponse {
   active_courses: StudentMentorCourseResponse[];
 }
 
-export type MentorProfileResponse = MentorStaffProfileResponse | StudentMentorCardResponse;
+export type MentorProfileResponse = MentorStaffProfileResponse;
+export type MentorProfileResult = MentorStaffProfileResponse | StudentMentorCardResponse;

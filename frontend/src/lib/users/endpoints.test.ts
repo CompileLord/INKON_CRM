@@ -230,3 +230,9 @@ describe("password SMS endpoints", () => {
     expect(request.params).toEqual({ user_id: 7, status: ["pending", "claimed", "delivered", "failed", "expired"] });
   });
 });
+
+it("getMentorProfile preserves the narrow student card without manufacturing staff fields", async (): Promise<void> => {
+  const card: import("./types").StudentMentorCardResponse = { user: { id: 1, first_name: "A", last_name: "B", photo_path: null, thumbnail_path: null }, active_courses: [{ id: 4, title: "Enrolled course", photo_path: null }] };
+  mock.onGet("/mentors/1/profile").reply(200, card);
+  await expect(getMentorProfile(1)).resolves.toEqual(card);
+});

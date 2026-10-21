@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDeleteUser, useMentorAnalytics, useMentorProfile } from "../lib/users/hooks";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
-import type { User } from "../lib/users/types";
+import type { User, MentorProfileResult, MentorStaffProfileResponse } from "../lib/users/types";
 import { useAuthStore } from "../store/authStore";
 import { mentorLocationState, mentorProfileTab, mentorReturnTarget, type MentorProfileTab } from "../lib/mentors/mentorNavigation";
 import { Button } from "../components/ui/Button";
@@ -19,7 +19,14 @@ import { MentorFormPanel } from "../components/mentors/MentorFormPanel";
 import { MentorPerformance } from "../components/mentors/MentorPerformance";
 import { MentorProfileHeader } from "../components/mentors/MentorProfileHeader";
 import { MentorSummary } from "../components/mentors/MentorSummary";
+import { StudentMentorCard } from "../components/mentors/StudentMentorCard";
 import { DocumentsTab } from "../components/documents/DocumentsTab";
+
+class MentorProfileContract {
+  static isStaff(profile: MentorProfileResult | undefined): profile is MentorStaffProfileResponse {
+    return profile !== undefined && "active_students_count" in profile && "role" in profile.user && profile.user.role === "mentor";
+  }
+}
 
 const TAB_IDS: readonly MentorProfileTab[] = ["courses", "performance", "documents"];
 const PROFILE_ID_PREFIX: string = "mentor";
@@ -29,6 +36,7 @@ export function MentorProfile() {
   const role = useAuthStore((state) => state.role);
   const userId = useAuthStore((state) => state.userId);
   const numericId: number | undefined = id && /^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0 ? Number(id) : undefined;
+  if (role === "student") return <StudentMentorCard key={`${role}:${userId}:${numericId}`} id={numericId} />;
   return <MentorProfileWorkspace key={`${role}:${userId}:${numericId}`} id={numericId} role={role} userId={userId} />;
 }
 
@@ -96,7 +104,7 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
 
   const transientError: boolean = profileQuery.isError && (profileQuery.error instanceof NetworkError || (profileQuery.error instanceof AuthApiError && profileQuery.error.status >= 500 && profileQuery.error.status <= 599));
   const queriedProfile = profileQuery.data;
-  const profile = authorized && queriedProfile?.user.id === id && queriedProfile?.user.role === "mentor" && (!profileQuery.isError || transientError) ? queriedProfile : undefined;
+  const profile = authorized && queriedProfile?.user.id === id && MentorProfileContract.isStaff(queriedProfile) && (!profileQuery.isError || transientError) ? queriedProfile : undefined;
 
   useEffect(() => {
     if (!profileQuery.isError || transientError) return;

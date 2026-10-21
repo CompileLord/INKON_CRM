@@ -61,6 +61,7 @@ export function isPathAllowed(
   }
 
   if (role === "student") {
+    if (topLevel === "mentors" && segments.length === 2 && /^[1-9][0-9]*$/.test(segments[1])) return true;
     if (topLevel === "students" && segments.length >= 2 && userId !== null) {
       return Number(segments[1]) === userId;
     }

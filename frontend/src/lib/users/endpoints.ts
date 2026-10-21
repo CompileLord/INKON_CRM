@@ -4,6 +4,7 @@ import type {
   ListUsersParams,
   MentorAnalyticsResponse,
   MentorProfileResponse,
+  MentorProfileResult,
   PaginatedUsers,
   PasswordSmsDelivery,
   PasswordSmsResendResponse,
@@ -98,8 +99,8 @@ export function getMyMentorProfile(): Promise<MentorProfileResponse> {
   return httpClient.get<MentorProfileResponse>("/mentors/me/profile").then((res) => res.data);
 }
 
-export function getMentorProfile(id: number): Promise<MentorProfileResponse> {
-  return httpClient.get<MentorProfileResponse>(`/mentors/${id}/profile`).then((res) => res.data);
+export function getMentorProfile(id: number): Promise<MentorProfileResult> {
+  return httpClient.get<MentorProfileResult>(`/mentors/${id}/profile`).then((res) => res.data);
 }
 
 export function getMentorAnalytics(id: number): Promise<MentorAnalyticsResponse> {
