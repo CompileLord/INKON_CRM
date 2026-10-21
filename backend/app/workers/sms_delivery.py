@@ -27,11 +27,15 @@ class StudentPasswordSmsDispatcher:
         send_interval_seconds: float,
         jitter_fraction: float,
         backoff_base_seconds: int,
+        transport_deadline_seconds: float | None = None,
     ) -> None:
         self._sender: SmsSender = sender
         self._send_interval_seconds: float = send_interval_seconds
         self._jitter_fraction: float = jitter_fraction
         self._backoff_base_seconds: int = backoff_base_seconds
+        self._transport_deadline_seconds: float = (
+            transport_deadline_seconds if transport_deadline_seconds is not None else settings.SMS_REQUEST_TIMEOUT_SECONDS + 2.0
+        )
         self._message_factory: PasswordSmsMessageFactory = PasswordSmsMessageFactory()
         self._password_work_service: PasswordWorkService = PasswordWorkService()
 
@@ -69,26 +73,34 @@ class StudentPasswordSmsDispatcher:
                 await session.commit()
             return True
 
-        async with session_factory() as session:
-            if not await SQLAlchemyOutboxRepository(session).is_lease_valid(
-                event.id, lease_owner, datetime.now(timezone.utc)
-            ):
-                return False
-
         payload: dict[str, Optional[str]] = json.loads(plaintext_payload)
         message: str = self._message_factory.build(
             payload.get("language"), PasswordSmsReason(payload["reason"]), str(payload["code"])
         )
-        send_result: Optional[SmsSendResult] = None
-        failure: Optional[SmsDeliveryError] = None
         if self._send_interval_seconds > 0:
             await asyncio.sleep(self._send_interval_seconds)
+        async with session_factory() as session:
+            repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(session)
+            attempt_count: int | None = await repository.begin_attempt(
+                event.id, lease_owner, datetime.now(timezone.utc), self._transport_deadline_seconds + 2.0,
+            )
+            if attempt_count is None:
+                await repository.release_claim(event.id, lease_owner)
+                await session.commit()
+                return False
+            event.attempt_count = attempt_count
+            await session.commit()
+        send_result: Optional[SmsSendResult] = None
+        failure: Optional[SmsDeliveryError] = None
         try:
-            send_result = await self._sender.send(
-                str(event.recipient_phone), message, self.idempotency_key_for(event)
+            send_result = await asyncio.wait_for(
+                self._sender.send(str(event.recipient_phone), message, self.idempotency_key_for(event)),
+                self._transport_deadline_seconds,
             )
         except SmsDeliveryError as error:
             failure = error
+        except asyncio.TimeoutError:
+            failure = SmsDeliveryError("sms_transport_deadline_exceeded", retryable=True)
 
         settled_at: datetime = datetime.now(timezone.utc)
         async with session_factory() as session:

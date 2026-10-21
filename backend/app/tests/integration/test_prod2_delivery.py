@@ -84,7 +84,7 @@ class TestDeliveryReliability:
         async def inspect_claim(event: OutboxEvent, owner: str, factory: Any) -> bool:
             async with factory() as session:
                 rows: list[OutboxEvent] = list((await session.scalars(select(OutboxEvent))).all())
-                assert sum(row.status == OutboxEventStatus.CLAIMED for row in rows) == 1
+                assert sum(row.status == OutboxEventStatus.CLAIMED for row in rows) == 1, [(row.id, row.status, row.lease_owner, row.attempt_count) for row in rows]
                 assert all(row.attempt_count == 0 for row in rows)
                 await asyncio.sleep(0.02)
                 await SQLAlchemyOutboxRepository(session).mark_delivered(event.id, owner, datetime.now(timezone.utc))
@@ -155,3 +155,17 @@ class TestDeliveryReliability:
         assert event.lease_owner == "replacement"
         assert event.delivered_at is None
         assert event.encrypted_payload is not None
+
+    @pytest.mark.asyncio
+    async def test_claim_never_exceeds_requested_batch_size(self, db_session: AsyncSession) -> None:
+        repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(db_session)
+        service: OutboxService = OutboxService(repository, settings.JWT_SECRET_KEY)
+        index: int
+        for index in range(40):
+            await service.enqueue_verification_email(f"batch{index}@example.com", "123456")
+        await db_session.commit()
+        round_index: int
+        for round_index in range(10):
+            claimed: Any = await repository.claim_pending_batch("owner", 60, 1, datetime.now(timezone.utc))
+            await db_session.commit()
+            assert len(claimed) == 1

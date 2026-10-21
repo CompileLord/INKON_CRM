@@ -25,7 +25,7 @@ class SQLAlchemyOutboxRepository:
     ) -> Sequence[OutboxEvent]:
         lease_expires_at = now + timedelta(seconds=lease_duration_seconds)
 
-        subquery = (
+        candidate_statement = (
             select(OutboxEvent.id)
             .where(
                 OutboxEvent.status == OutboxEventStatus.PENDING,
@@ -37,12 +37,14 @@ class SQLAlchemyOutboxRepository:
             .order_by(OutboxEvent.next_attempt_at.asc())
             .limit(batch_size)
             .with_for_update(skip_locked=True)
-            .scalar_subquery()
         )
+        candidate_identifiers: list[int] = list((await self._session.scalars(candidate_statement)).all())
+        if not candidate_identifiers:
+            return []
 
         statement = (
             update(OutboxEvent)
-            .where(OutboxEvent.id.in_(subquery))
+            .where(OutboxEvent.id.in_(candidate_identifiers))
             .values(
                 status=OutboxEventStatus.CLAIMED,
                 lease_owner=lease_owner,
