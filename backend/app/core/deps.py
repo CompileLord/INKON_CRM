@@ -227,3 +227,9 @@ def get_student_journal_history_service(db: AsyncSession = Depends(get_db_sessio
     from app.services.student_journal_history_service import StudentJournalHistoryService
 
     return StudentJournalHistoryService(SQLAlchemyStudentJournalHistoryRepository(db), StudentJournalHistoryCursorCodec(settings.JWT_SECRET_KEY))
+
+
+def get_course_copy_service(db: AsyncSession = Depends(get_db_session)) -> "CourseService":
+    from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
+    from app.services.course_service import CourseService
+    return CourseService(db, course_repo=SQLAlchemyCourseRepository(db), user_repo=SQLAlchemyUserRepository(db))

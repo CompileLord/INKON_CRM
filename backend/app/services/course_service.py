@@ -4,6 +4,9 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.schedule_utils import CourseCopyBudgetExceeded, CourseCopyPlan, EnrollmentLessonPlan
+from app.repositories.interfaces.course_repository import CourseRepository
+from app.repositories.interfaces.user_repository import UserRepository
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.course_mentor_history import CourseMentorHistory
@@ -25,10 +28,13 @@ from app.services.storage_service import StorageService, get_storage_service
 
 
 class CourseService:
-    def __init__(self, db: AsyncSession, storage: StorageService | None = None) -> None:
-        self.db = db
-        self.course_repo = SQLAlchemyCourseRepository(db)
-        self.user_repo = SQLAlchemyUserRepository(db)
+    def __init__(
+        self, db: AsyncSession, storage: StorageService | None = None,
+        course_repo: CourseRepository | None = None, user_repo: UserRepository | None = None,
+    ) -> None:
+        self.db: AsyncSession = db
+        self.course_repo: CourseRepository = course_repo or SQLAlchemyCourseRepository(db)
+        self.user_repo: UserRepository = user_repo or SQLAlchemyUserRepository(db)
         self.storage_service: StorageService = storage or get_storage_service()
 
     async def create_course(self, data: CourseCreate, current_user: User) -> Course:
@@ -258,34 +264,32 @@ class CourseService:
         return page_result
 
     async def copy_course(self, new_course_data: CourseCreate, source_course_id: int, current_user: User) -> Course:
-        from app.models.enrollment import Enrollment, EnrollmentStatus
         from app.services.enrollment_service import EnrollmentService
 
-        new_course = await self.create_course(new_course_data, current_user)
-
-        enroll_query = select(Enrollment).filter(
-            Enrollment.course_id == source_course_id,
-            Enrollment.status == EnrollmentStatus.ACTIVE,
-            Enrollment.is_deleted == False
+        source_course: Course | None = await self.course_repo.get_by_id(source_course_id)
+        if source_course is None or source_course.is_deleted:
+            raise HTTPException(status_code=404, detail="Course not found")
+        enrollments: list[Enrollment] = await self.course_repo.get_copy_source_enrollments(
+            source_course_id, CourseCopyPlan.maximum_enrollments + 1,
         )
-        enroll_res = await self.db.execute(enroll_query)
-        enrollments = enroll_res.scalars().all()
-
-        enroll_service = EnrollmentService(self.db)
+        try:
+            copy_plan: CourseCopyPlan = CourseCopyPlan.build(new_course_data, len(enrollments))
+        except CourseCopyBudgetExceeded as budget_error:
+            raise HTTPException(status_code=422, detail=str(budget_error)) from budget_error
+        new_course: Course = await self.create_course(new_course_data, current_user)
+        journals: list[Journal] = await self.course_repo.get_course_journals(new_course.id)
+        lesson_plan: EnrollmentLessonPlan = EnrollmentLessonPlan.build(new_course.id, journals, copy_plan.lesson_dates)
+        enrollment_service: EnrollmentService = EnrollmentService(
+            self.db, course_repo=self.course_repo, user_repo=self.user_repo,
+        )
         for enrollment in enrollments:
-            student_user = await self.user_repo.get_by_id(enrollment.student_id)
-            if not student_user or student_user.is_deleted or student_user.role != UserRole.STUDENT:
+            student_user: User | None = await self.user_repo.get_by_id(enrollment.student_id)
+            if student_user is None or student_user.is_deleted or student_user.role != UserRole.STUDENT:
                 continue
-
-            try:
-                await enroll_service.enroll_student(
-                    student_id=enrollment.student_id,
-                    course_id=new_course.id,
-                    current_user=current_user
-                )
-            except HTTPException:
-                pass
-
+            await enrollment_service.enroll_student(
+                student_id=enrollment.student_id, course_id=new_course.id,
+                current_user=current_user, lesson_plan=lesson_plan,
+            )
         await self.db.refresh(new_course)
         return new_course
 
