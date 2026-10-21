@@ -32,8 +32,6 @@ export interface UserSelfUpdate {
   last_name?: string;
   date_of_birth?: string | null;
   phone?: string | null;
-  parent_telegram_chat_id?: number | null;
-  parent_phone?: string | null;
 }
 
 export interface User {

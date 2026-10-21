@@ -26,9 +26,10 @@
     "email": "Email",
     "emailHint": "Used to sign in. Ask an administrator to change it.",
     "phone": "Phone",
-    "phoneHint": "International format, e.g. +992901234567.",
+    "phoneHint": "Start with + and use 2–15 digits, without spaces.",
     "nameRequired": "Enter a name.",
-    "phoneInvalid": "Use the international format, e.g. +992901234567."
+    "phoneInvalid": "Use the international format, e.g. +992901234567.",
+    "phoneHintStudent": "Start with + and use 8–15 digits, without spaces."
   },
   "appearance": {
     "theme": "Theme",
