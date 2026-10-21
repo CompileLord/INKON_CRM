@@ -103,7 +103,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         page_size: int = 20,
         search: Optional[str] = None
     ) -> dict:
-        query = select(User).filter(User.role == UserRole.MENTOR, User.is_deleted == False)
+        query: Select[tuple[User]] = select(User).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
         if search:
             search_pattern = f"%{search}%"
             query = query.filter(
