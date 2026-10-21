@@ -1,5 +1,6 @@
+import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query";
 import type { AxiosProgressEvent } from "axios";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createUser,
   deleteUser,
@@ -9,16 +10,18 @@ import {
   getMentorProfile,
   getMentors,
   getMyMentorProfile,
-  getMyStudentJournals,
+  getMyStudentJournalPage,
   getMyStudentProfile,
   getStudentProfile,
   getStudents,
+  listPasswordSmsDeliveries,
+  resendPasswordSms,
   updateOwnProfile,
   updateUser,
   uploadAvatar,
 } from "./endpoints";
 import { AuthApiError } from "../auth/errors";
-import type { ListUsersParams, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
+import type { ListUsersParams, StudentJournalHistoryPage, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
 
 /**
  * There's no GET /users/{id} — no single-user fetch hook exists. Edit/avatar
@@ -171,10 +174,15 @@ export function useMyStudentProfile() {
   });
 }
 
-export function useMyStudentJournals(courseId?: number) {
-  return useQuery({
-    queryKey: ["users", "students", "journals", "me", courseId],
-    queryFn: () => getMyStudentJournals(courseId),
+export function useMyStudentJournalHistory(courseId?: number, enabled: boolean = true): UseInfiniteQueryResult<InfiniteData<StudentJournalHistoryPage>, Error> {
+  const retry: ReturnType<typeof useProfileRetryPolicy> = useProfileRetryPolicy();
+  return useInfiniteQuery({
+    queryKey: ["users", "students", "journal-history", "me", courseId, true, 20],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => getMyStudentJournalPage({ course_id: courseId, started_only: true, page_size: 20, cursor: pageParam }),
+    getNextPageParam: (page: StudentJournalHistoryPage): string | undefined => page.next_cursor ?? undefined,
+    enabled,
+    retry,
   });
 }
 
@@ -202,5 +210,28 @@ export function useMyMentorProfile() {
   return useQuery({
     queryKey: ["users", "mentors", "profile", "me"],
     queryFn: () => getMyMentorProfile(),
+  });
+}
+
+export function passwordSmsDeliveriesQueryKey(userId: number) {
+  return ["users", "password-sms-deliveries", userId] as const;
+}
+
+export function usePasswordSmsDeliveries(userId: number, enabled: boolean = true) {
+  return useQuery({
+    queryKey: passwordSmsDeliveriesQueryKey(userId),
+    queryFn: () => listPasswordSmsDeliveries(userId),
+    enabled,
+  });
+}
+
+export function useResendPasswordSms(userId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => resendPasswordSms(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: passwordSmsDeliveriesQueryKey(userId) });
+    },
   });
 }

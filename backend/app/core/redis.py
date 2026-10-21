@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 from urllib.parse import urlsplit
@@ -77,22 +78,80 @@ class RedisConnectionConfiguration:
 redis_connection_configuration: RedisConnectionConfiguration = (
     RedisConnectionConfiguration.from_url(settings.REDIS_URL)
 )
-redis_client: aioredis.Redis = redis_connection_configuration.create_client()
+class RedisClientOwner:
+    def __init__(self, client: aioredis.Redis) -> None:
+        self.client: aioredis.Redis = client
+
+    async def close(self) -> None:
+        await self.client.aclose()
+
+
+redis_client_owner: RedisClientOwner = RedisClientOwner(redis_connection_configuration.create_client())
+redis_client: aioredis.Redis = redis_client_owner.client
 
 
 async def get_redis() -> aioredis.Redis:
     return redis_client
 
 
-_arq_pool: ArqRedis | None = None
+class ArqProducerOwner:
+    def __init__(self) -> None:
+        self.pool: ArqRedis | None = None
+        self.cleanup_pending: bool = False
+        self.lock: asyncio.Lock = asyncio.Lock()
+        self.loop: asyncio.AbstractEventLoop | None = None
+
+    def current_lock(self) -> asyncio.Lock:
+        loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+        if self.loop is not loop:
+            if self.pool is not None:
+                raise RuntimeError("ARQ producer must be closed before changing event loops")
+            self.lock = asyncio.Lock()
+            self.loop = loop
+        return self.lock
+
+    async def get(self) -> ArqRedis:
+        async with self.current_lock():
+            if self.cleanup_pending:
+                raise RuntimeError("ARQ producer cleanup must be retried before use")
+            if self.pool is None:
+                from arq import create_pool
+                from app.core.resource_lifecycle import ResourceCleanup
+
+                creation: asyncio.Task[ArqRedis] = asyncio.create_task(create_pool(redis_connection_configuration.create_arq_settings()))
+                try:
+                    self.pool = await asyncio.shield(creation)
+                except asyncio.CancelledError as cancellation:
+                    async def close_created_pool() -> None:
+                        self.pool = await creation
+                        await self._close_owned_pool()
+
+                    try:
+                        await ResourceCleanup.close_all([close_created_pool])
+                    except BaseException as cleanup_error:
+                        raise cancellation from cleanup_error
+                    raise
+            return self.pool
+
+    async def _close_owned_pool(self) -> None:
+        if self.pool is not None:
+            self.cleanup_pending = True
+            await self.pool.aclose()
+            self.pool = None
+            self.cleanup_pending = False
+
+    async def close(self) -> None:
+        from app.core.resource_lifecycle import ResourceCleanup
+
+        async with self.current_lock():
+            await ResourceCleanup.close_all([self._close_owned_pool])
+
+
+arq_producer_owner: ArqProducerOwner = ArqProducerOwner()
 
 
 async def get_arq_pool() -> ArqRedis:
-    global _arq_pool
-    if _arq_pool is None:
-        from arq import create_pool
-        _arq_pool = await create_pool(redis_connection_configuration.create_arq_settings())
-    return _arq_pool
+    return await arq_producer_owner.get()
 
 
 async def enqueue_job(job_name: str, *args, **kwargs) -> None:
@@ -103,8 +162,4 @@ async def enqueue_job(job_name: str, *args, **kwargs) -> None:
 
 
 async def close_arq_pool() -> None:
-    global _arq_pool
-    if _arq_pool is not None:
-        await _arq_pool.aclose()
-        _arq_pool = None
-
+    await arq_producer_owner.close()

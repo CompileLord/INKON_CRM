@@ -25,6 +25,7 @@ from app.schemas.course import (
 from app.services.journal_generation_service import JournalGenerationService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
+from app.services.bounded_upload_reader import BoundedUploadReader
 
 
 class CourseService:
@@ -175,14 +176,11 @@ class CourseService:
                 detail="Course not found"
             )
 
-        content = await file.read()
-        if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="Image size exceeds the 5MB limit"
-            )
+        content: bytes = await BoundedUploadReader().read(
+            file, 5 * 1024 * 1024, "Image size exceeds the 5MB limit"
+        )
         try:
-            image = Image.open(io.BytesIO(content))
+            image: Image.Image = Image.open(io.BytesIO(content))
             image.verify()
         except Exception:
             raise HTTPException(
@@ -200,16 +198,16 @@ class CourseService:
         lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.storage_service)
         old_photo: str | None = course.photo_path
 
-        ext = image.format.lower()
+        ext: str = image.format.lower()
         if ext == "jpeg":
             ext = "jpg"
-        filename = f"course_image.{ext}"
+        filename: str = f"course_image.{ext}"
         new_path: str
         intent_id: str
         new_path, intent_id = await lifecycle.stage(content, "course", course_id, filename)
 
         course.photo_path = new_path
-        updated_course = await self.course_repo.update(course)
+        updated_course: Course = await self.course_repo.update(course)
         await lifecycle.adopt(intent_id)
         await lifecycle.delete_after_commit(old_photo)
         await self.db.refresh(updated_course)

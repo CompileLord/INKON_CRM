@@ -1,25 +1,23 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCourse, useCourseSchedule } from "../../lib/courses/hooks";
-import { useMentorProfile, useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
+import { useCourse } from "../../lib/courses/hooks";
+import { useMentorProfile, useMyStudentProfile } from "../../lib/users/hooks";
 import { useAuthStore } from "../../store/authStore";
 import { JournalRouteErrors } from "../../components/journals/JournalRouteErrors";
-import { NextLessonCalculator, type ScheduleGroup, type UpcomingLesson } from "../../lib/students/NextLessonCalculator";
-import { CourseResultSummaries, type CourseResultSummary } from "../../lib/students/CourseResultSummary";
-import type { StudentCourseProfile, StudentJournalPeriod } from "../../lib/users/types";
-import { formatSchoolLessonDate, formatTime } from "../../i18n/formatters";
+import { useCourseScheduleSummary } from "../../lib/students/useCourseScheduleSummary";
+import type { StudentCourseProfile } from "../../lib/users/types";
+import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalProgressView } from "../../components/journals/JournalProgressView";
 import { CourseDescription } from "../../components/student/CourseDescription";
 import { CourseDetailStats } from "../../components/student/CourseDetailStats";
-import { CoursePeriodList } from "../../components/student/CoursePeriodList";
+import { StudentCourseJournal } from "../../components/student/StudentCourseJournal";
 import { CourseThumb } from "../../components/student/CourseThumb";
-import { PanelSkeleton, StaleNotice } from "../../components/pane/PaneStates";
+import { PanelSkeleton } from "../../components/pane/PaneStates";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { PageContainer } from "../../components/ui/PageContainer";
 import { PageHeader } from "../../components/ui/PageHeader";
-import { SectionCard } from "../../components/ui/SectionCard";
 
 function parseCourseId(raw: string | undefined): number | undefined {
   return raw !== undefined && /^[1-9]\d*$/.test(raw) ? Number(raw) : undefined;
@@ -47,11 +45,10 @@ export function MyCourseDetail() {
   const userId: number | null = useAuthStore((state) => state.userId);
 
   const courseQuery = useCourse(courseId);
-  const scheduleQuery = useCourseSchedule(courseId);
   const profileQuery = useMyStudentProfile();
-  const periodsQuery = useMyStudentJournals(courseId);
   const course = courseQuery.data;
   const mentorQuery = useMentorProfile(course?.mentor_id);
+  const scheduleSummary = useCourseScheduleSummary(course);
 
   const entry: StudentCourseProfile | undefined = profileQuery.data?.courses.find((candidate: StudentCourseProfile) => candidate.course.id === courseId);
   const listHref: string = entry?.bucket === "archive" ? "/my/courses?tab=archive" : "/my/courses";
@@ -89,34 +86,13 @@ export function MyCourseDetail() {
     );
   }
 
-  const scheduleGroups: ScheduleGroup[] = scheduleQuery.data ? NextLessonCalculator.groupByTime(scheduleQuery.data) : [];
-  const nextLesson: UpcomingLesson | null =
-    scheduleQuery.data && course.status === "active" ? NextLessonCalculator.next(scheduleQuery.data, course.end_date, new Date()) : null;
-  const weekdayName = (index: number): string => t(`weekdays.${index}`);
-  const scheduleLine: string = scheduleGroups
-    .map((group: ScheduleGroup) => `${group.weekdayIndexes.map(weekdayName).join(" · ")} ${formatTime(group.timeStart)}–${formatTime(group.timeEnd)}`)
-    .join("; ");
-  const periods: StudentJournalPeriod[] = periodsQuery.data ?? [];
-  const results: CourseResultSummary | null = periodsQuery.data ? CourseResultSummaries.summarize(periodsQuery.data) : null;
   const mentorUser = mentorQuery.data?.user;
   const metaItems: string[] = [
     `${formatSchoolLessonDate(course.start_date)} – ${formatSchoolLessonDate(course.end_date)}`,
-    ...(scheduleLine !== "" ? [scheduleLine] : []),
+    ...(scheduleSummary.scheduleLine !== "" ? [scheduleSummary.scheduleLine] : []),
     ...(mentorUser !== undefined ? [`${mentorUser.first_name} ${mentorUser.last_name}`] : []),
-    ...(nextLesson !== null ? [t("nextLessonChip", { when: `${weekdayName(nextLesson.weekdayIndex)} ${formatTime(nextLesson.timeStart)}` })] : []),
+    ...(scheduleSummary.nextLessonLabel !== null ? [t("nextLessonChip", { when: scheduleSummary.nextLessonLabel })] : []),
   ];
-
-  const renderPeriods = () => {
-    if (periodsQuery.isLoading) return <PanelSkeleton label={t("loadingPeriods")} rows={3} />;
-    if (periodsQuery.isError && !periodsQuery.data) return <ErrorState title={t("periodsLoadFailed")} onRetry={() => void periodsQuery.refetch()} />;
-    if (periods.length === 0) return <EmptyState title={t("noPeriods")} description={t("noPeriodsBody")} />;
-    return (
-      <div className="flex flex-col gap-2">
-        {periodsQuery.isError && <StaleNotice message={t("journalsRefreshError")} onRetry={() => void periodsQuery.refetch()} />}
-        <CoursePeriodList periods={periods} />
-      </div>
-    );
-  };
 
   return (
     <PageContainer>
@@ -133,17 +109,17 @@ export function MyCourseDetail() {
         </p>
       </div>
 
-      {profileQuery.isError && !entry && !results ? (
+      {profileQuery.isError && !entry ? (
         <ErrorState title={t("profileRefreshError")} message={t("profileUnavailableBody")} onRetry={() => void profileQuery.refetch()} />
       ) : profileQuery.isLoading ? (
         <div data-testid="stats-skeleton"><PanelSkeleton label={t("common:loading")} rows={1} /></div>
       ) : (
-        <CourseDetailStats entry={entry} results={results} />
+        <CourseDetailStats entry={entry} />
       )}
 
-      <SectionCard title={t("periodsTitle")}>{renderPeriods()}</SectionCard>
+      {userId !== null && <StudentCourseJournal courseId={courseId} selfStudentId={userId} />}
 
-      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} />
+      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} collapsedByDefault />
 
       {course.description.trim() !== "" && <CourseDescription description={course.description} />}
     </PageContainer>

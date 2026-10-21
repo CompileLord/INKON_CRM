@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   resolve:
@@ -27,15 +28,28 @@ jobs:
       environment: ${{ steps.target.outputs.environment }}
       sha: ${{ steps.target.outputs.sha }}
     steps:
+      - name: Checkout release verification script
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: deploy
+
       - name: Determine environment and commit
         id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_SHA: ${{ inputs.sha }}
+          BUILD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            environment="${{ inputs.environment }}"
-            sha="${{ inputs.sha }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            environment="$INPUT_ENVIRONMENT"
+            sha="$INPUT_SHA"
           else
-            head_branch="${{ github.event.workflow_run.head_branch }}"
-            sha="${{ github.event.workflow_run.head_sha }}"
+            head_branch="$BUILD_BRANCH"
+            sha="$BUILD_SHA"
             case "$head_branch" in
               main) environment=staging ;;
               v*) environment=production ;;
@@ -46,6 +60,7 @@ jobs:
             echo "sha must be a full 40-character commit SHA" >&2
             exit 1
           fi
+          bash deploy/verify-release.sh "$sha"
           echo "environment=${environment}" >> "$GITHUB_OUTPUT"
           echo "sha=${sha}" >> "$GITHUB_OUTPUT"
 
@@ -84,7 +99,7 @@ jobs:
         run: |
           tar -C deploy -cf - . | ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" 'mkdir -p /opt/imkon/deploy && tar -xf - -C /opt/imkon/deploy'
 
-      - name: Run deploy script
+      - name: Run connection-budget-validated deploy script
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}

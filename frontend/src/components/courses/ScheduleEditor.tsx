@@ -1,23 +1,25 @@
-import { Plus, Trash2, Clock } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, type Control, type FieldErrors, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Select } from "../ui/Select";
+import type { ListboxOption } from "../ui/ListboxPicker";
 import { emptyScheduleRow } from "../../lib/courses/formMapping";
 import type { CourseFormValues } from "../../lib/courseFormSchema";
 
 const DAY_VALUES = ["0", "1", "2", "3", "4", "5", "6"] as const;
 
-const DAY_KEY_MAP: Record<string, { short: string; full: string }> = {
-  "0": { short: "mon", full: "monFull" },
-  "1": { short: "tue", full: "tueFull" },
-  "2": { short: "wed", full: "wedFull" },
-  "3": { short: "thu", full: "thuFull" },
-  "4": { short: "fri", full: "friFull" },
-  "5": { short: "sat", full: "satFull" },
-  "6": { short: "sun", full: "sunFull" },
+const DAY_KEY_MAP: Record<string, { full: string }> = {
+  "0": { full: "monFull" },
+  "1": { full: "tueFull" },
+  "2": { full: "wedFull" },
+  "3": { full: "thuFull" },
+  "4": { full: "friFull" },
+  "5": { full: "satFull" },
+  "6": { full: "sunFull" },
 };
 
 const inputClass =
-  "w-full min-h-11 rounded-lg border border-border-warm bg-card px-3 py-2.5 text-base md:text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out disabled:pointer-events-none disabled:opacity-100 disabled:bg-strip disabled:cursor-not-allowed";
+  "w-full min-h-11 rounded-[10px] border border-control-border bg-card px-3 py-2.5 text-base md:text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out disabled:pointer-events-none disabled:opacity-100 disabled:bg-strip disabled:cursor-not-allowed";
 
 interface ScheduleEditorProps {
   control: Control<CourseFormValues>;
@@ -57,12 +59,7 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
     return acc;
   }, {});
 
-  const getDayLabel = (dayValue: string, isFull = false) => {
-    const mapping = DAY_KEY_MAP[dayValue];
-    if (!mapping) return dayValue;
-    const key = isFull ? mapping.full : mapping.short;
-    return t(`days.${key}` as const, dayValue);
-  };
+  const dayOptions: readonly ListboxOption[] = DAY_VALUES.map((value) => ({ value, label: t(`days.${DAY_KEY_MAP[value].full}`) }));
 
   return (
     <div className="flex flex-col gap-3">
@@ -76,9 +73,7 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
           return (
             <div
               key={field.id}
-              className={`flex flex-col gap-3 rounded-xl border bg-card p-3.5 shadow-xs motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
-                isDuplicate ? "border-destructive/60 bg-destructive/5" : "border-border-warm"
-              }`}
+              className={`flex flex-col gap-3 rounded-[10px] border p-3 ${isDuplicate ? "border-destructive" : "border-border"}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
@@ -86,26 +81,21 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
                     control={control}
                     name={`schedules.${index}.day_of_week`}
                     render={({ field: dayField }) => (
-                      <select
-                        id={`schedule-day-${index}`}
-                        aria-label={t("form.dayOfWeek")}
-                        aria-invalid={Boolean(rowErrors?.day_of_week)}
-                        disabled={disabled}
-                        className={`${inputClass} font-semibold w-48 min-h-11 bg-beige`}
-                        {...dayField}
-                      >
-                        {DAY_VALUES.map((val) => (
-                          <option key={val} value={val}>
-                            {getDayLabel(val, true)}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-52 max-w-full">
+                        <Select
+                          id={`schedule-day-${index}`}
+                          label={t("form.dayOfWeek")}
+                          options={dayOptions}
+                          value={dayField.value}
+                          onChange={dayField.onChange}
+                          disabled={disabled}
+                          invalid={Boolean(rowErrors?.day_of_week)}
+                        />
+                      </div>
                     )}
                   />
                   {duration && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-strip text-xs font-medium text-ink tabular-nums">
-                      <Clock size={13} className="text-muted" /> {duration}
-                    </span>
+                    <span className="text-sm text-muted tabular-nums">{duration}</span>
                   )}
                 </div>
 
@@ -114,9 +104,9 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
                   aria-label={t("form.removeScheduleRow")}
                   onClick={() => remove(index)}
                   disabled={disabled || fields.length <= 1}
-                  className="flex h-11 w-11 min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-strip hover:text-ink disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
+                  className="flex size-11 items-center justify-center rounded-[10px] text-muted hover:bg-strip hover:text-ink disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </div>
 
@@ -201,9 +191,9 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
         type="button"
         onClick={() => append({ ...emptyScheduleRow })}
         disabled={disabled}
-        className="inline-flex w-full min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-border-warm bg-card py-2.5 text-xs font-semibold text-ink hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[10px] px-3 text-sm font-medium text-maroon-text hover:bg-strip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] disabled:pointer-events-none disabled:opacity-50"
       >
-        <Plus size={16} /> {t("form.addScheduleRow")}
+        <Plus size={16} aria-hidden="true" /> {t("form.addScheduleRow")}
       </button>
     </div>
   );

@@ -27,7 +27,7 @@ async def _setup(client: AsyncClient, admin_headers: dict, mentor_id: int, email
             "email": email,
             "first_name": "Inv",
             "last_name": "Ariant",
-            "role": "student",
+            "role": "student", "phone": "+992900000999",
             "payment_day_of_month": 1,
         },
         headers=admin_headers,

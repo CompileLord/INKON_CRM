@@ -5,6 +5,7 @@ import { AttentionList } from "../components/dashboard/AttentionList";
 import { ActivityFeed } from "../components/dashboard/ActivityFeed";
 import { TodayLessons } from "../components/dashboard/TodayLessons";
 import { AccountantDashboard } from "../components/dashboard/AccountantDashboard";
+import { PageContainer } from "../components/ui/PageContainer";
 import { MentorDashboard } from "../components/dashboard/MentorDashboard";
 import { StudentDashboard } from "../components/dashboard/StudentDashboard";
 
@@ -16,14 +17,14 @@ export function Dashboard() {
   if (role === "student") return <StudentDashboard />;
 
   return (
-    <div className="flex flex-col gap-5 @container">
+    <PageContainer>
       <GreetingBanner />
       <StatsRow />
       <TodayLessons showMentor />
-      <div className="grid grid-cols-1 @[840px]:grid-cols-[3fr_2fr] gap-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
         <AttentionList />
         <ActivityFeed />
       </div>
-    </div>
+    </PageContainer>
   );
 }

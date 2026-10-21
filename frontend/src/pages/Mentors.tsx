@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader } from "../components/PageHeader";
+import { PageContainer } from "../components/ui/PageContainer";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Input } from "../components/ui/Input";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -331,68 +333,44 @@ export function Mentors() {
   const hasLoadedOnce = isCurrentParamsMatchingLastGood || (data !== undefined && !isLoading);
 
   return (
-    <div className="flex flex-col gap-6">
+    <PageContainer>
       <PageHeader
         title={t("title")}
         count={
           <span className="inline-flex items-center gap-2">
             {isLoading && !isCurrentParamsMatchingLastGood ? (
-              <span className="h-5 w-24 motion-safe:animate-pulse rounded-md bg-beige" />
+              <span className="h-5 w-24 motion-safe:animate-pulse rounded bg-border" />
             ) : typeof effectiveData?.total === "number" ? (
-              <span>
-                {t("common:total")}: {formatNumber(effectiveData.total, i18n.language)}
-              </span>
+              <span>{formatNumber(effectiveData.total, i18n.language)}</span>
             ) : null}
             {isFetching && !isLoading && <BrandActivityIndicator size={18} />}
           </span>
         }
-      />
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full sm:w-auto sm:min-w-[320px] sm:max-w-[480px] sm:flex-1">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            ref={searchInputRef}
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t("searchPlaceholder")}
-            aria-label={t("searchPlaceholder")}
-            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card py-2.5 pl-10 pr-4 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
-          />
-        </div>
-
-        <div className="flex w-full sm:w-auto items-center justify-between gap-3 sm:ml-auto">
-          <select
-            value={pageSize}
-            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
-            aria-label={t("common:page")}
-            className="min-h-[48px] rounded-xl border border-control-border bg-card px-3 py-2 text-base text-ink tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150"
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size} / {t("common:page")}
-              </option>
-            ))}
-          </select>
-
+        actions={
           <Button
             ref={addMentorTriggerRef}
             type="button"
-            variant="primary"
             onClick={() => {
               activeTriggerRef.current = addMentorTriggerRef.current;
               setPanel({ mode: "create" });
             }}
-            className="min-h-[48px] whitespace-nowrap"
           >
-            <Plus size={16} className="mr-1.5" />
+            <Plus size={16} aria-hidden="true" />
             {t("addMentor")}
           </Button>
-        </div>
+        }
+      />
+
+      <div className="min-w-0 sm:w-[30rem]">
+        <Input
+          ref={searchInputRef}
+          type="search"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
+          leftAddon={<Search size={16} aria-hidden="true" />}
+        />
       </div>
 
       <MentorsTable
@@ -407,6 +385,8 @@ export function Mentors() {
         hasLoadedOnce={hasLoadedOnce}
         onRetry={() => refetch()}
         onPageChange={handlePageChange}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={handlePageSizeChange}
         onEdit={(mentor, trigger) => {
           activeTriggerRef.current = trigger ?? null;
           handleMentorNavigate(mentor);
@@ -464,6 +444,6 @@ export function Mentors() {
       />
 
       <Toast message={toast.message} show={toast.visible} variant={toast.variant} />
-    </div>
+    </PageContainer>
   );
 }

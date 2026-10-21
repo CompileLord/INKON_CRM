@@ -38,6 +38,7 @@ Reports are provenance links, not required reading for execution; the relevant p
 | `backend/app/core/deps.py` | Wire history service/repository with Depends. |
 | `backend/app/tests/integration/test_remediation_wp40_cursor.py` | NEW: cursor validation regressions if needed for module size. |
 | `backend/app/tests/integration/test_remediation_wp40_performance.py` | NEW: measured bounded rows/parameters at history scale. |
+| `backend/app/tests/integration/test_remediation_wp33.py` | Adapt only two direct retired-history repository calls to the new bounded history service; preserve every grading assertion. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 | [frontend/src/pages/student/MyCourseDetail.tsx:1](../../../frontend/src/pages/student/MyCourseDetail.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [frontend/src/components/dashboard/StudentDashboard.tsx:1](../../../frontend/src/components/dashboard/StudentDashboard.tsx) | Existing file, anchor line 1; only this WP’s stated behavior may change. |

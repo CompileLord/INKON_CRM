@@ -57,13 +57,17 @@ roll_back_to_previous_release() {
     return
   fi
   log "Rolling back to $previous_release"
-  IMAGE_TAG="$previous_release" compose up -d api worker
+  IMAGE_TAG="$previous_release" compose up -d --force-recreate --no-deps --wait api worker
+  IMAGE_TAG="$previous_release" compose up -d caddy
 }
 
 export IMAGE_TAG="$RELEASE_TAG"
 
 log "Pulling images for $RELEASE_TAG"
 compose pull api worker caddy db redis
+
+log "Validating database connection budget and topology"
+compose run --rm --no-deps --entrypoint python api -m app.db.connection_policy
 
 log "Starting data services"
 compose up -d --wait db redis
@@ -81,11 +85,10 @@ else
 fi
 
 log "Starting api and worker"
-compose up -d --force-recreate --no-deps api worker
-compose up -d caddy
-
-if ! wait_for_health; then
-  log "Health check failed at $HEALTH_URL"
+if ! compose up -d --force-recreate --no-deps --wait --wait-timeout "$HEALTH_TIMEOUT_SECONDS" api worker ||
+   ! compose up -d caddy ||
+   ! wait_for_health; then
+  log "Release startup or health verification failed at $HEALTH_URL"
   roll_back_to_previous_release
   exit 1
 fi

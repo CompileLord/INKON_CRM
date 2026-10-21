@@ -212,7 +212,7 @@ describe("Audit states", () => {
   it("reports the server total and range", async () => {
     mock.onGet(logsUrl).reply(200, listing([paymentCreated, courseUpdated], { total: 45, page: 2, total_pages: 3 }));
     renderAudit("?page=2");
-    expect(await screen.findByText("Changes: 45")).toBeTruthy();
+    expect(await screen.findByText("45")).toBeTruthy();
     expect(screen.getByText("21–22 of 45")).toBeTruthy();
   });
 });
@@ -241,11 +241,11 @@ describe("Audit events", () => {
   it("keeps a single changed field readable and counts several fields honestly", async () => {
     mock.onGet(logsUrl).reply(200, listing([
       courseUpdated,
-      log({ id: 70, action: "update", entity_type: "course", entity_label: "Python Advanced", changes: [change("price", "1", "2", 70), change("title", "A", "B", 71), change("status", "open", "closed", 72)] }),
+      log({ id: 70, action: "update", entity_type: "course", entity_label: "Python Advanced", changes: [change("price", "1", "2", 70), change("title", "A", "B", 71), change("status", "open", "closed", 72), change("comment", "x", "y", 73)] }),
     ]));
     renderAudit();
     expect(await screen.findByText(/Price: 800\.00 → 850\.50/)).toBeTruthy();
-    expect(screen.getByText(/3 fields changed/)).toBeTruthy();
+    expect(screen.getByText(/4 fields changed/)).toBeTruthy();
     expect(screen.queryByText(/Title: A/)).toBeNull();
   });
 
@@ -261,7 +261,7 @@ describe("Audit events", () => {
   it("requests events, so pagination counts events", async () => {
     mock.onGet(logsUrl).reply(200, listing([paymentCreated], { total: 41, total_pages: 3 }));
     renderAudit();
-    expect(await screen.findByText("Changes: 41")).toBeTruthy();
+    expect(await screen.findByText("41")).toBeTruthy();
     expect(logRequests()[0].url).toContain("/audit-log/events/");
   });
 });

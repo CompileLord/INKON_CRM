@@ -8,13 +8,8 @@
     "profile": "Profile",
     "appearance": "Appearance",
     "organization": "Organization",
-    "rules": "Notification rules"
-  },
-  "sectionHints": {
-    "profile": "Your name, photo and contact details.",
-    "appearance": "Theme and language for this device.",
-    "organization": "Center name, currency and the Telegram bot.",
-    "rules": "Choose which messages the center sends."
+    "rules": "Notification rules",
+    "security": "Security"
   },
   "saveBar": {
     "label": "Unsaved changes",
@@ -31,9 +26,10 @@
     "email": "Email",
     "emailHint": "Used to sign in. Ask an administrator to change it.",
     "phone": "Phone",
-    "phoneHint": "International format, e.g. +992901234567.",
+    "phoneHint": "Start with + and use 2–15 digits, without spaces.",
     "nameRequired": "Enter a name.",
-    "phoneInvalid": "Use the international format, e.g. +992901234567."
+    "phoneInvalid": "Use the international format, e.g. +992901234567.",
+    "phoneHintStudent": "Start with + and use 8–15 digits, without spaces."
   },
   "appearance": {
     "theme": "Theme",
@@ -86,5 +82,15 @@
     "debts": "Debt reminders",
     "debtsHint": "Remind students who have an overdue balance.",
     "telegram": "Telegram"
+  },
+  "security": {
+    "currentPassword": "Current password",
+    "currentPasswordHint": "Students can enter the code from the SMS.",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat new password",
+    "rulesLabel": "Password rules",
+    "submit": "Change password",
+    "changed": "Password changed",
+    "currentPasswordWrong": "The current password is incorrect."
   }
 }

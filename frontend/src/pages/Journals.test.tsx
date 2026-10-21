@@ -167,7 +167,8 @@ describe("Journals hub", () => {
     await screen.findByText("Course 1");
     expect(lastListParams().page).toBe(3);
 
-    fireEvent.click(screen.getByRole("button", { name: "Archived" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter journals by status" }));
+    fireEvent.click(screen.getByRole("option", { name: "Archived" }));
 
     await waitFor(() => expect(latestLocation).toBe("/journals?status=archived"));
     await waitFor(() => expect(lastListParams()).toMatchObject({ status: "archived", page: 1 }));
@@ -226,7 +227,8 @@ describe("Journals hub", () => {
     renderHub();
     await screen.findByText("Course 1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Archived" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter journals by status" }));
+    fireEvent.click(screen.getByRole("option", { name: "Archived" }));
     expect(await screen.findByText("No journals match")).toBeTruthy();
     expect(screen.queryByText("No journals yet")).toBeNull();
 
@@ -247,7 +249,7 @@ describe("Journals hub", () => {
     expect(screen.queryByText("No journals match")).toBeNull();
     expect(screen.queryByText("0 journals")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Archived" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Filter journals by status" })).toBeNull();
   });
 
   it("keeps the toolbar and count for a no-match state", async () => {
@@ -259,7 +261,7 @@ describe("Journals hub", () => {
 
     expect(await screen.findByText("No journals match")).toBeTruthy();
     expect(screen.getByRole("textbox")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "All" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Filter journals by status" }).textContent).toContain("Archived");
     expect(screen.getByText("0 journals")).toBeTruthy();
   });
 
@@ -350,10 +352,9 @@ describe("Journals hub", () => {
     expect(link.getAttribute("href")).toBe("/journals/7");
     expect(link.closest("li")?.querySelectorAll("a").length).toBe(1);
     expect(link.querySelectorAll("a, button, input, select, textarea, [tabindex]").length).toBe(0);
-    expect(link.textContent).toContain("Open journal");
+    expect(link.textContent).not.toContain("Open journal");
     expect(link.className).not.toMatch(/translate|shadow|scale/);
-    expect(link.className).toContain("hover:bg-row-hover");
-    expect(link.className).toContain("min-h-[80px]");
+    expect(link.closest("[data-list-row]")?.className).toContain("hover:bg-row-hover");
   });
 
   it("removes the mentor stat preamble and student-count tile", async () => {
@@ -365,5 +366,18 @@ describe("Journals hub", () => {
     expect(screen.queryByText("My Students")).toBeNull();
     expect(screen.queryByText("Needs Grading")).toBeNull();
     expect(screen.queryByText("Total Journals")).toBeNull();
+  });
+  it("uses the shared list row with an initial tile and a status badge only for archived journals", async () => {
+    listCoursesMock.mockResolvedValue(pageOf([buildCourse(1, { title: "Algebra" }), buildCourse(2, { title: "Geometry", status: "archived" })]));
+    getMentorsMock.mockResolvedValue(mentorPage([]));
+    const { container } = renderHub();
+    await screen.findByText("Algebra");
+
+    const rows = container.querySelectorAll("[data-list-row]");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelector("[data-initial-tile]")?.textContent).toBe("A");
+    expect(rows[0].querySelector("[data-badge-status]")).toBeNull();
+    expect(rows[1].querySelector("[data-badge-status='archived']")).not.toBeNull();
+    expect(container.querySelector("[data-page-container]")).not.toBeNull();
   });
 });

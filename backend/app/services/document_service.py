@@ -2,7 +2,7 @@ import os
 from typing import List, Optional
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
-from sqlalchemy import and_, or_, select, true
+from sqlalchemy import Select, and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from app.models.document import Document, DocumentOwnerType
@@ -14,6 +14,7 @@ from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxReposi
 from app.services.outbox_service import OutboxService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
+from app.services.bounded_upload_reader import BoundedUploadReader
 
 
 def verify_magic_bytes(content: bytes, filename: str) -> bool:
@@ -52,13 +53,10 @@ class DocumentService:
         journal_id: Optional[int],
         current_user: User
     ) -> Document:
-        content = await file.read()
-        file_size = len(content)
-        if file_size > 50 * 1024 * 1024:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="File size exceeds the 50MB limit"
-            )
+        content: bytes = await BoundedUploadReader().read(
+            file, 50 * 1024 * 1024, "File size exceeds the 50MB limit"
+        )
+        file_size: int = len(content)
 
         content_type = file.content_type or ""
         allowed_types = ["audio", "image", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]
@@ -144,20 +142,28 @@ class DocumentService:
         page_size: int,
         current_user: User
     ) -> dict:
-        query = select(Document).where(
+        requested_owner_id: int | None = filters.get("owner_id")
+        if (
+            current_user.role == UserRole.MENTOR
+            and filters.get("owner_type") == DocumentOwnerType.STUDENT
+            and requested_owner_id is not None
+            and not await self.document_repo.mentor_has_student(current_user.id, requested_owner_id)
+        ):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
+        query: Select[tuple[Document]] = select(Document).where(
             Document.is_deleted.is_(False),
             self._document_visibility_filter(current_user),
         )
 
-        owner_type = filters.get("owner_type")
+        owner_type: str | None = filters.get("owner_type")
         if owner_type:
             query = query.filter(Document.owner_type == owner_type)
 
-        owner_id = filters.get("owner_id")
+        owner_id: int | None = filters.get("owner_id")
         if owner_id:
             query = query.filter(Document.owner_id == owner_id)
 
-        journal_id = filters.get("journal_id")
+        journal_id: int | None = filters.get("journal_id")
         if journal_id:
             query = query.filter(Document.journal_id == journal_id)
 
@@ -194,8 +200,7 @@ class DocumentService:
         if owner_segment != DocumentOwnerType(document.owner_type).value or owner_identifier != str(document.owner_id):
             raise ValueError("Invalid document path")
 
-    @staticmethod
-    def _document_visibility_filter(current_user: User) -> ColumnElement[bool]:
+    def _document_visibility_filter(self, current_user: User) -> ColumnElement[bool]:
         if current_user.role == UserRole.STUDENT:
             return and_(
                 Document.owner_type == DocumentOwnerType.STUDENT,
@@ -203,7 +208,10 @@ class DocumentService:
             )
         if current_user.role == UserRole.MENTOR:
             return or_(
-                Document.owner_type == DocumentOwnerType.STUDENT,
+                and_(
+                    Document.owner_type == DocumentOwnerType.STUDENT,
+                    self.document_repo.student_is_enrolled_with_mentor(current_user.id),
+                ),
                 and_(
                     Document.owner_type == DocumentOwnerType.MENTOR,
                     Document.owner_id == current_user.id,

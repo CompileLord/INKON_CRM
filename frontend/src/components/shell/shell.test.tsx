@@ -38,7 +38,7 @@ describe("role navigation", () => {
     expect(links.some((item) => item.to === "/notifications")).toBe(true);
     expect(links.some((item) => item.to === "/students")).toBe(role === "superadmin");
     expect(links.some((item) => item.to === "/finance")).toBe(role === "superadmin" || role === "accountant");
-    expect(links.some((item) => item.to === "/students/42")).toBe(role === "student");
+    expect(links.some((item) => item.to === "/students/42")).toBe(false);
     expect(links.some((item) => item.to === "/mentors/42")).toBe(role === "mentor");
   });
   it("does not invent a profile without identity", () => expect(navigationFor("student", null).some((item) => item.key === "nav.ownProfile")).toBe(false));
@@ -187,7 +187,7 @@ describe("shared shell lifecycle", () => {
 });
 
 describe("top bar", () => {
-  const routes: string[] = ["/my/courses", "/my/courses/7", "/my/journal/5"];
+  const routes: string[] = ["/my/courses", "/my/courses/7", "/my/courses/7/journal"];
   it.each(routes)("renders only the action buttons and no page title or back link on %s", (route: string) => {
     useAuthStore.setState({ status: "authenticated", userId: 42, role: "student", mustSetPassword: false });
     const client: QueryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import MockAdapter from "axios-mock-adapter";
+import { DebtorsTab } from "./DebtorsTab";
+import { FinanceUrlState } from "../../lib/finance/urlState";
 import { Finance } from "../../pages/Finance";
 import { httpClient } from "../../lib/auth/httpClient";
 import { useAuthStore } from "../../store/authStore";
@@ -225,17 +227,35 @@ describe("Debtors rows", () => {
     expect(link.getAttribute("href")).toBe("/students/7");
   });
 
-  it("switches between a table and a divided list by content width", async () => {
+  it("renders one list layout at every width without a native table", async () => {
     stubContainerWidth(900);
     renderDebtors();
     await screen.findByText("Anisa Karimova");
-    expect(screen.getByRole("table")).toBeTruthy();
-    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Student and course", "Due unpaid", "Overdue", "Actions"]);
-    cleanup();
-    stubContainerWidth(600);
-    renderDebtors();
-    await screen.findByText("Anisa Karimova");
     expect(screen.queryByRole("table")).toBeNull();
+    expect(document.querySelectorAll("li[data-row-key]").length).toBeGreaterThan(0);
+  });
+
+  it("offers an action slot per row and in the toolbar for later features", async () => {
+    mock.onGet(debtsUrl).reply(200, listing([anisa]));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <DebtorsTab
+            view={FinanceUrlState.parse(new URLSearchParams("tab=debtors")).debtors}
+            recordedPayment={null}
+            onPageChange={vi.fn()}
+            onChangeFilters={vi.fn()}
+            onAcceptPayment={vi.fn()}
+            renderRowAction={(debt) => <button type="button">Slot {debt.student.first_name}</button>}
+            toolbarAction={<button type="button">Bulk slot</button>}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByText("Anisa Karimova");
+    expect(screen.getByRole("button", { name: "Slot Anisa" })).toBeTruthy();
+    expect(document.querySelector("[data-debtors-toolbar-action]")?.firstElementChild?.textContent).toBe("Bulk slot");
   });
 });
 

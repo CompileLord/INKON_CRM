@@ -15,6 +15,8 @@ from app.services.user_service import UserService
 from app.schemas.student_journal_history import StudentJournalHistoryPage, StudentJournalHistoryQuery
 from app.services.student_journal_history_service import StudentJournalHistoryService
 
+from app.api.v1.contract_notes import ContractNotes
+
 router = APIRouter()
 
 
@@ -78,7 +80,7 @@ async def get_my_profile(
     }
 
 
-@router.get("/me/journals/page", response_model=StudentJournalHistoryPage)
+@router.get("/me/journals/page", response_model=StudentJournalHistoryPage, description=ContractNotes.JOURNAL_HISTORY_PAGE)
 async def get_my_journal_page(
     query: Annotated[StudentJournalHistoryQuery, Query()],
     current_user: User = Depends(get_current_user),

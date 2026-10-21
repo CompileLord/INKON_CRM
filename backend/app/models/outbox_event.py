@@ -12,6 +12,7 @@ class OutboxEventKind(str, enum.Enum):
     CREDENTIALS_EMAIL = "credentials_email"
     EXAM_RESULT_NOTIFICATION = "exam_result_notification"
     DOCUMENT_NOTIFICATION = "document_notification"
+    STUDENT_PASSWORD_SMS = "student_password_sms"
 
 
 class OutboxEventStatus(str, enum.Enum):
@@ -27,6 +28,7 @@ class OutboxEvent(Base):
     __table_args__ = (
         Index("ix_outbox_events_status_next_attempt_at", "status", "next_attempt_at"),
         Index("ix_outbox_events_correlation_key", "correlation_key"),
+        Index("ix_outbox_events_kind_target_user_id", "kind", "target_user_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -69,3 +71,7 @@ class OutboxEvent(Base):
     )
     delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    recipient_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    target_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    provider_message_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    provider_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)

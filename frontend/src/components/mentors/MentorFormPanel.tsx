@@ -1,8 +1,11 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
-import { useForm, type FieldErrors } from "react-hook-form";
+import { Controller, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import { UNSAFE_DataRouterContext, useBlocker } from "react-router-dom";
+import { UNSAFE_DataRouterContext } from "react-router-dom";
+import { MentorNavigationGuard, type NavigationDecision } from "./MentorNavigationGuard";
+import { MentorContactFields } from "./MentorContactFields";
+import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -19,34 +22,6 @@ import { resolveMediaUrl } from "../../lib/users/media";
 import { AuthApiError } from "../../lib/auth/errors";
 import type { User } from "../../lib/users/types";
 import { useAuthStore } from "../../store/authStore";
-
-interface NavigationDecision {
-  proceed: () => void;
-  reset: () => void;
-}
-
-function MentorNavigationGuard({
-  active,
-  onBlock,
-  shouldAllowNavigation,
-}: {
-  active: boolean;
-  onBlock: (decision: NavigationDecision) => void;
-  shouldAllowNavigation: () => boolean;
-}) {
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      active && !shouldAllowNavigation() && currentLocation.pathname !== nextLocation.pathname,
-  );
-
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      onBlock({ proceed: blocker.proceed, reset: blocker.reset });
-    }
-  }, [blocker.state, onBlock]);
-
-  return null;
-}
 
 interface MentorFormPanelProps {
   open: boolean;
@@ -158,6 +133,7 @@ function MentorFormPanelInner({
 
   const {
     register,
+    control,
     handleSubmit,
     setError,
     reset,
@@ -170,8 +146,6 @@ function MentorFormPanelInner({
   const firstNameReg = register("firstName");
   const lastNameReg = register("lastName");
   const emailReg = register("email");
-  const phoneReg = register("phone");
-  const birthDateReg = register("birthDate");
 
   const isPending = createUser.isPending || updateUser.isPending;
   const isLocked = isPending || isSubmitting || isAvatarBusy;
@@ -548,14 +522,19 @@ function MentorFormPanelInner({
               <label htmlFor="mentor-birthDate" className={labelClass}>
                 {t("form.dobLabel")}
               </label>
-              <input
-                id="mentor-birthDate"
-                type="date"
-                autoComplete="bday"
-                aria-invalid={Boolean(errors.birthDate)}
-                aria-describedby={errors.birthDate ? "mentor-birthDate-error" : undefined}
-                className={inputClass}
-                {...birthDateReg}
+              <Controller
+                control={control}
+                name="birthDate"
+                render={({ field }) => (
+                  <DatePicker
+                    id="mentor-birthDate"
+                    label={t("form.dobLabel")}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    invalid={Boolean(errors.birthDate)}
+                    describedBy={errors.birthDate ? "mentor-birthDate-error" : undefined}
+                  />
+                )}
               />
               {errors.birthDate?.message && (
                 <span id="mentor-birthDate-error" role="alert" className="text-xs text-destructive">
@@ -565,45 +544,7 @@ function MentorFormPanelInner({
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-ink border-b border-border pb-2">
-              {t("form.sectionContacts")}
-            </h3>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="mentor-phone" className={labelClass}>
-                  {t("form.phoneLabel")}
-                </label>
-                <span className="text-xs text-muted">
-                  {t("form.phoneHelp")}
-                </span>
-              </div>
-              <input
-                id="mentor-phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder={t("form.phonePlaceholder")}
-                aria-invalid={Boolean(errors.phone)}
-                aria-describedby={
-                  errors.phone
-                    ? "mentor-phone-error"
-                    : "mentor-phone-help"
-                }
-                className={inputClass}
-                {...phoneReg}
-              />
-              <span id="mentor-phone-help" className="sr-only">
-                {t("form.phoneHelp")}
-              </span>
-              {errors.phone?.message && (
-                <span id="mentor-phone-error" role="alert" className="text-xs text-destructive">
-                  {errors.phone.message}
-                </span>
-              )}
-            </div>
-          </div>
+          <MentorContactFields register={register} errors={errors} />
         </form>
       </SlideOver>
 

@@ -27,13 +27,14 @@ afterEach(() => { cleanup(); mock.reset(); });
 describe("Accountant dashboard contract", () => {
   it("uses an explicit school-month cash scope while latest payments remain all dates", async () => {
     mock.onGet(analyticsUrl).reply(200, analytics); mock.onGet(paymentsUrl).reply(200, listReply()); renderDashboard();
-    await screen.findAllByText("Payment #123");
+    await screen.findByText("Unknown student");
     const range = getSchoolMonthRange(); const request = mock.history.get.find(request => analyticsUrl.test(request.url ?? ""));
     expect(request?.url).toContain("date_from=" + range.start); expect(request?.url).toContain("date_to=" + range.end);
     const listRequest = mock.history.get.find(request => paymentsUrl.test(request.url ?? ""));
     expect(listRequest?.url).toContain("page_size=5"); expect(listRequest?.url).not.toContain("date_from"); expect(listRequest?.url).not.toContain("date_to");
     expect(screen.getByRole("heading", { level: 1, name: "Financial Overview" })).toBeTruthy();
-    expect(screen.getByText("Latest five records · all dates")).toBeTruthy();
+    expect(screen.queryByText("Latest five records · all dates")).toBeNull();
+    expect(screen.queryByText(/Payment #\d+/)).toBeNull();
     expect(mock.history.get.some(request => request.url?.startsWith("/students/"))).toBe(false);
   });
 
@@ -45,9 +46,9 @@ describe("Accountant dashboard contract", () => {
   });
 
   it("keeps payment records usable when only analytics fails, without error-to-zero metrics", async () => {
-    mock.onGet(analyticsUrl).reply(500); mock.onGet(paymentsUrl).reply(200, listReply()); renderDashboard(); await screen.findAllByText("Payment #123");
+    mock.onGet(analyticsUrl).reply(500); mock.onGet(paymentsUrl).reply(200, listReply()); renderDashboard(); await screen.findByText("Unknown student");
     const summary = screen.getByRole("region", { name: "Dashboard Summary" }); expect(await within(summary).findByRole("alert")).toBeTruthy(); expect(within(summary).queryByText(/0\.00/)).toBeNull();
-    const recent = screen.getByRole("region", { name: "Recent Payments" }); expect(within(recent).queryByRole("alert")).toBeNull(); expect(within(recent).getAllByText("750.50 TJS")).toHaveLength(2);
+    const recent = screen.getByRole("region", { name: "Recent Payments" }); expect(within(recent).queryByRole("alert")).toBeNull(); expect(within(recent).getAllByText("750.50 TJS")).toHaveLength(1);
     mock.onGet(analyticsUrl).reply(200, analytics); await userEvent.click(within(summary).getByRole("button", { name: "Retry" })); await within(summary).findByText("1 200.25 TJS");
   });
 
@@ -55,14 +56,14 @@ describe("Accountant dashboard contract", () => {
     mock.onGet(analyticsUrl).reply(200, analytics); mock.onGet(paymentsUrl).reply(500); renderDashboard();
     const recent = screen.getByRole("region", { name: "Recent Payments" }); await within(recent).findByRole("alert");
     expect(screen.getByText("1 200.25 TJS")).toBeTruthy(); const summaryCalls = mock.history.get.filter(request => analyticsUrl.test(request.url ?? "")).length;
-    mock.onGet(paymentsUrl).reply(200, listReply()); await userEvent.click(within(recent).getByRole("button", { name: "Retry" })); await screen.findAllByText("Payment #123");
+    mock.onGet(paymentsUrl).reply(200, listReply()); await userEvent.click(within(recent).getByRole("button", { name: "Retry" })); await screen.findByText("Unknown student");
     expect(mock.history.get.filter(request => analyticsUrl.test(request.url ?? ""))).toHaveLength(summaryCalls);
   });
 
   it("retains loaded records and explicit stale copy after a failed refresh", async () => {
     mock.onGet(analyticsUrl).reply(200, analytics); mock.onGet(paymentsUrl).replyOnce(200, listReply()).onGet(paymentsUrl).reply(500);
-    const client = renderDashboard(); await screen.findAllByText("Payment #123"); await act(async () => { await client.refetchQueries({ queryKey: ["finance", "payments"] }); });
-    const recent = screen.getByRole("region", { name: "Recent Payments" }); expect(await within(recent).findByText("Update failed — showing cached data")).toBeTruthy(); expect(within(recent).getAllByText("750.50 TJS")).toHaveLength(2);
+    const client = renderDashboard(); await screen.findByText("Unknown student"); await act(async () => { await client.refetchQueries({ queryKey: ["finance", "payments"] }); });
+    const recent = screen.getByRole("region", { name: "Recent Payments" }); expect(await within(recent).findByText("Update failed — showing cached data")).toBeTruthy(); expect(within(recent).getAllByText("750.50 TJS")).toHaveLength(1);
   });
 
   it("distinguishes a successful empty list from request failure", async () => {
@@ -73,9 +74,9 @@ describe("Accountant dashboard contract", () => {
   it("preserves original cash, refund/void state and actual allocations in read-only detail", async () => {
     mock.onGet(analyticsUrl).reply(200, analytics); mock.onGet(paymentsUrl).reply(200, listReply([{ ...payment, is_voided: true }]));
     mock.onGet("/finance/payments/123/receipt").reply(200, { receipt_number: "ACTUAL-123", student_name: "Authorized name", accepted_by_name: "Accountant", allocations: [] });
-    renderDashboard(); await screen.findAllByText("Payment #123");
-    expect(screen.getAllByText("This payment was voided.")).toHaveLength(2); expect(screen.getAllByText("Refunded: 12.50 TJS")).toHaveLength(2);
-    await userEvent.click(screen.getAllByRole("button", { name: "View payment #123" })[0]); const dialog = await screen.findByRole("dialog"); await within(dialog).findByText("ACTUAL-123");
+    renderDashboard(); await screen.findByText("Unknown student");
+    expect(screen.getAllByText("This payment was voided.")).toHaveLength(1); expect(screen.getAllByText("Refunded: 12.50 TJS")).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "More actions" })); await userEvent.click(await screen.findByRole("menuitem", { name: "View payment" })); const dialog = await screen.findByRole("dialog"); await within(dialog).findByText("ACTUAL-123");
     expect(within(dialog).getByText("750.50 TJS")).toBeTruthy(); expect(within(dialog).getByText("This payment was voided.")).toBeTruthy(); expect(within(dialog).getByText("Refunded: 12.50 TJS")).toBeTruthy();
     expect(within(dialog).getByText("No current allocations")).toBeTruthy(); expect(within(dialog).queryByText("First Course")).toBeNull(); expect(within(dialog).queryByRole("button", { name: "Accept Payment" })).toBeNull();
     await waitFor(() => expect(mock.history.post).toHaveLength(0));

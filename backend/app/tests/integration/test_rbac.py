@@ -36,7 +36,7 @@ async def test_student_cannot_create_user(client: AsyncClient, test_student: Use
             "email": "another@example.com",
             "first_name": "Bad",
             "last_name": "Actor",
-            "role": "student"
+            "role": "student", "phone": "+992900000999"
         },
         headers=headers
     )

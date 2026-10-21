@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_setup_user
+from app.core.deps import get_current_user, get_db_session, get_setup_user
 from app.core.rate_limiter import (
     AuthenticationRateLimiter,
     LockoutReservation,
@@ -15,9 +15,11 @@ from app.schemas.auth import (
     VerifyCodeRequest,
     ResendCodeRequest,
     PasswordResetRequest,
+    PasswordResetRequestResponse,
     PasswordResetVerifyRequest,
     PasswordResetConfirmRequest,
     SetPasswordRequest,
+    ChangePasswordRequest,
 )
 from app.services.auth_service import AuthService
 
@@ -134,18 +136,35 @@ async def set_password(
     return await auth_service.set_password(current_user.id, payload.new_password)
 
 
-@router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+@router.post("/change-password", response_model=TokenPair)
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+    limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
+) -> TokenPair:
+    await limiter.consume_login_budget(current_user.email, get_client_ip(request))
+    return await AuthService(db).change_password(
+        current_user.id, payload.current_password, payload.new_password
+    )
+
+
+@router.post(
+    "/password-reset/request", response_model=PasswordResetRequestResponse, status_code=status.HTTP_200_OK,
+    description="Students receive a pending SMS password with a short expiration (ten minutes by default). Their current password and sessions remain valid until the SMS password is used at login.",
+)
 async def password_reset_request(
     payload: PasswordResetRequest,
     request: Request,
     db: AsyncSession = Depends(get_db_session),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
-) -> dict:
+) -> PasswordResetRequestResponse:
     client_ip: str = get_client_ip(request)
     await limiter.consume_password_reset_budgets(payload.email, client_ip)
     auth_service: AuthService = AuthService(db)
     await auth_service.password_reset_request(payload.email)
-    return {"message": "If the email exists, a reset code has been sent."}
+    return PasswordResetRequestResponse(message="If the email exists, a reset code has been sent.")
 
 
 @router.post("/password-reset/verify", response_model=dict)

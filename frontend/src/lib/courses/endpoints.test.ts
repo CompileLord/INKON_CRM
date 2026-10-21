@@ -6,6 +6,13 @@ vi.mock("../auth/tokenStorage", async (importOriginal) => {
   return { ...actual, tokenStorage: actual.createMemoryTokenStorage() };
 });
 
+import type {
+  CourseProgressChartResponse,
+  StaffCourseProgressChartResponse,
+  StudentCourseProgressChartResponse,
+} from "./types";
+import { CourseChartResponses } from "./CourseChartResponses";
+
 const { httpClient } = await import("../auth/httpClient");
 const { tokenStorage } = await import("../auth/tokenStorage");
 const {
@@ -168,13 +175,141 @@ describe("getCourseMentorHistory", () => {
 });
 
 describe("getCourseProgressChart", () => {
-  it("fetches the typed progress-chart payload as-is", async () => {
-    const chart = {
-      labels: ["Week 1", "Week 2", "Average"],
-      datasets: [{ student_id: 1, name: "Ayub Gulmadov", color_hex: "#FF0000", scores: [70, 85, 77.5] }],
-    };
-    mock.onGet("/courses/1/progress-chart").reply(200, chart);
-    await expect(getCourseProgressChart(1)).resolves.toEqual(chart);
+  const staffChart: StaffCourseProgressChartResponse = {
+    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+    periods: [
+      { id: 1, period_label: "Week 1" },
+      { id: 2, period_label: "Week 2" },
+      { id: 3, period_label: "Week 3" },
+      { id: 4, period_label: "Week 4" },
+    ],
+    datasets: [
+      {
+        student_id: 1,
+        name: "Ayub Gulmadov",
+        color_hex: "#FF0000",
+        scores: [0, null, 8, null],
+        max_scores: [10, null, 10, null],
+        percentages: [0, null, 80, null],
+        grading_states: ["graded", "missing", "graded", "upcoming"],
+        graded_periods_count: 2,
+        eligible_periods_count: 3,
+      },
+      {
+        student_id: 2,
+        name: "Zero Eligible",
+        color_hex: "#00FF00",
+        scores: [null, null, null, null],
+        max_scores: [null, null, null, null],
+        percentages: [null, null, null, null],
+        grading_states: ["unknown", "ungraded", "unknown", "upcoming"],
+        graded_periods_count: 0,
+        eligible_periods_count: 0,
+      },
+    ],
+    class_avg_series: [0, null, 80, null],
+    class_eligible_counts: [1, 0, 1, 0],
+  };
+
+  const studentChart: StudentCourseProgressChartResponse = {
+    periods: [
+      { id: 1, period_label: "Week 1" },
+      { id: 2, period_label: "Week 2" },
+      { id: 3, period_label: "Week 3" },
+    ],
+    my_series: [0, null, null],
+    class_avg_series: [55, 60, null],
+    my_grading_states: ["graded", "missing", "upcoming"],
+    my_graded_periods_count: 1,
+    my_eligible_periods_count: 2,
+    class_eligible_counts: [4, 4, 0],
+    my_rank: null,
+    class_size: 4,
+  };
+
+  it("returns the complete staff payload with graded zero preserved and gaps as null", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, staffChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    expect(CourseChartResponses.isStaff(chart)).toBe(true);
+    expect(CourseChartResponses.isStudent(chart)).toBe(false);
+    if (!CourseChartResponses.isStaff(chart)) throw new Error("expected staff chart");
+    expect(chart.datasets[0].scores).toEqual([0, null, 8, null]);
+    expect(chart.datasets[0].scores[0]).toBe(0);
+    expect(chart.datasets[0].scores[1]).toBeNull();
+    expect(chart.datasets[0].percentages[0]).toBe(0);
+    expect(chart.class_avg_series[0]).toBe(0);
+    expect(chart.class_avg_series[1]).toBeNull();
+    expect(chart.class_eligible_counts).toEqual([1, 0, 1, 0]);
+  });
+
+  it("keeps period alignment and states for every dataset and the class series", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, staffChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    if (!CourseChartResponses.isStaff(chart)) throw new Error("expected staff chart");
+    const periodCount: number = chart.periods.length;
+    for (const dataset of chart.datasets) {
+      expect(dataset.scores).toHaveLength(periodCount);
+      expect(dataset.max_scores).toHaveLength(periodCount);
+      expect(dataset.percentages).toHaveLength(periodCount);
+      expect(dataset.grading_states).toHaveLength(periodCount);
+    }
+    expect(chart.class_avg_series).toHaveLength(periodCount);
+    expect(chart.class_eligible_counts).toHaveLength(periodCount);
+  });
+
+  it("reports zero eligible periods without inventing scores", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, staffChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    if (!CourseChartResponses.isStaff(chart)) throw new Error("expected staff chart");
+    const idle = chart.datasets[1];
+    expect(idle.eligible_periods_count).toBe(0);
+    expect(idle.graded_periods_count).toBe(0);
+    expect(idle.percentages.every((value: number | null) => value === null)).toBe(true);
+  });
+
+  it("marks future periods upcoming with null values", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, staffChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    if (!CourseChartResponses.isStaff(chart)) throw new Error("expected staff chart");
+    const upcomingIndex: number = chart.datasets[0].grading_states.indexOf("upcoming");
+    expect(upcomingIndex).toBe(3);
+    expect(chart.datasets[0].scores[upcomingIndex]).toBeNull();
+    expect(chart.class_avg_series[upcomingIndex]).toBeNull();
+    expect(chart.class_eligible_counts[upcomingIndex]).toBe(0);
+  });
+
+  it("returns the student payload with only the caller series and nullable rank", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, studentChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    expect(CourseChartResponses.isStudent(chart)).toBe(true);
+    if (!CourseChartResponses.isStudent(chart)) throw new Error("expected student chart");
+    expect(chart.my_series).toEqual([0, null, null]);
+    expect(chart.my_series[0]).toBe(0);
+    expect(chart.my_grading_states).toEqual(["graded", "missing", "upcoming"]);
+    expect(chart.my_graded_periods_count).toBe(1);
+    expect(chart.my_eligible_periods_count).toBe(2);
+    expect(chart.class_avg_series).toEqual([55, 60, null]);
+    expect(chart.class_eligible_counts).toEqual([4, 4, 0]);
+  });
+
+  it("treats a null rank as unavailable and a numeric rank as available", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, studentChart);
+    const unranked: CourseProgressChartResponse = await getCourseProgressChart(1);
+    if (!CourseChartResponses.isStudent(unranked)) throw new Error("expected student chart");
+    expect(unranked.my_rank).toBeNull();
+    expect(CourseChartResponses.hasRank(unranked)).toBe(false);
+    expect(CourseChartResponses.hasRank({ ...unranked, my_rank: 2 })).toBe(true);
+  });
+
+  it("exposes no peer identities in the student payload", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, studentChart);
+    const chart: CourseProgressChartResponse = await getCourseProgressChart(1);
+    expect(CourseChartResponses.isStaff(chart)).toBe(false);
+    const serialized: string = JSON.stringify(chart);
+    for (const forbidden of ["datasets", "student_id", "name", "color_hex"]) {
+      expect(serialized).not.toContain(`"${forbidden}"`);
+    }
+    expect(Object.keys(chart).sort()).toEqual(Object.keys(studentChart).sort());
   });
 });
 

@@ -43,14 +43,14 @@ Each row is a maximal currently ready wave under the conservative file-order gra
 | 3 | 17 | WP-34, WP-37, WP-39 |
 | 3 | 18 | WP-35 |
 | 3 | 19 | WP-40, WP-43 |
-| 3 | 20 | WP-41, WP-44, WP-45, WP-46, WP-48, WP-50 |
+| 3 | 20 | WP-41, WP-44, WP-45, WP-46, WP-48, WP-50, WP-65, WP-66, WP-67 |
 | 3 | 21 | WP-49, WP-64 |
-| 3 | 22 | WP-51, WP-57 |
+| 3 | 22 | WP-51, WP-57, WP-68 |
 | 3 | 23 | WP-55, WP-58, WP-63 |
 | 3 | 24 | WP-56 |
 | 3 | 25 | WP-54 |
 | 3 | 26 | WP-53 |
-| 3 | 27 | WP-52 |
+| 3 | 27 | WP-52, WP-69 |
 | 4 | 28 | WP-62 |
 
 ## Sequential boundaries
@@ -64,3 +64,5 @@ Use agents only when implementation is authorized. Small disjoint security fixes
 ## Gates and residuals
 
 WP-02 produces explicit failing security tests in a module outside default collection; record them as known red, never skip/xfail or call them fixed. WP-03/WP-04 run their targeted selectors and WP-07 runs the whole module; WP-62 runs it again. Existing integration tests remain required before/after each fix. External IAM/firewall, legacy cache/artifact cleanup and retention decisions require concrete recorded operational evidence; repository edits alone do not prove them.
+
+WP-65–WP-69 come from the 2026-10-21 production-readiness audit (tasks/WP-65…69). WP-67 precedes WP-48; WP-66 and WP-67 precede WP-68; WP-46 and WP-53 precede WP-69.

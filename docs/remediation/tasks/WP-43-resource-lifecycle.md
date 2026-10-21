@@ -33,10 +33,13 @@ Reports are provenance links, not required reading for execution; the relevant p
 | `backend/app/core/resource_lifecycle.py` | NEW if needed: narrow cancellation-safe process resource ownership. |
 | `backend/alembic/env.py` | Explicit migration connection deadlines; preserve NullPool and historical migrations. |
 | `backend/app/db/connection_policy.py` | NEW: typed pool/deadline and deployment budget policy. |
+| `backend/app/tests/integration/test_remediation_wp29_resources.py` | NEW: move existing WP29 resource tests intact to keep touched modules below the enforced 20KB limit. |
 | `backend/app/tests/integration/test_remediation_wp43_lifecycle.py` | NEW: bounded lifecycle/concurrency regression module. |
 | `backend/app/tests/integration/test_remediation_wp43_database.py` | NEW: disposable PostgreSQL deadline/recovery regressions. |
 | [backend/.env.example:1](../../../backend/.env.example) | Existing file, anchor line 1; only this WP’s stated behavior may change. |
 | [backend/app/tests/integration/test_remediation_wp43.py](../../../backend/app/tests/integration/test_remediation_wp43.py) | NEW file, no existing line number; exact creation path authorized by this WP. |
+| `backend/app/db/storage_intent_session.py` | Add only idle-in-transaction deadline; preserve accepted 5s statement/1s lock and shared1+0 pool. |
+| `backend/app/tests/integration/test_remediation_wp29.py` | Normalize owned-client baseline in the existing lifecycle measurement without weakening pool-creation/no-leak assertions. |
 | [docs/remediation/STATUS.md](../STATUS.md) | Shared execution record; orchestrator updates only this WP’s concise row with results, blockers and external evidence paths. No separate report. |
 
 Only these exact paths may change. `NEW` paths are planned artifacts, not claims that the files already exist. Do not edit historical migration versions, audit reports, unrelated source or `.taskmaster`. Generated CONTRACT.md is permitted only where listed. Any additional path needs a plan revision before implementation.

@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from pydantic import BeforeValidator, Field, ValidationError, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
+from app.db.connection_policy import DatabaseConnectionPolicy
 
 
 def parse_cors_origins(value: Union[str, List[str]]) -> List[str]:
@@ -21,12 +22,13 @@ def parse_cors_origins(value: Union[str, List[str]]) -> List[str]:
     return value
 
 
-class Settings(BaseSettings):
+class Settings(BaseSettings, DatabaseConnectionPolicy):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        hide_input_in_errors=True,
     )
 
     def __init__(self, **values: Any) -> None:
@@ -78,6 +80,22 @@ class Settings(BaseSettings):
     AUTH_RESET_CLIENT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
     AUTH_RESET_AGGREGATE_LIMIT: int = Field(default=100, gt=0)
     AUTH_RESET_AGGREGATE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+
+    SMS_PASSWORD_RESEND_COOLDOWN_SECONDS: int = Field(default=60, gt=0)
+    SMS_PASSWORD_ACCOUNT_LIMIT: int = Field(default=5, gt=0)
+    SMS_PASSWORD_ACCOUNT_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    SMS_PASSWORD_PHONE_LIMIT: int = Field(default=10, gt=0)
+    SMS_PASSWORD_PHONE_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+
+    SMS_PASSWORD_PHONE_DAILY_LIMIT: int = Field(default=10, gt=0)
+    SMS_PASSWORD_IP_LIMIT: int = Field(default=100, gt=0)
+    SMS_PASSWORD_IP_WINDOW_SECONDS: int = Field(default=3600, gt=0)
+    SMS_PASSWORD_GLOBAL_DAILY_LIMIT: int = Field(default=1000, gt=0)
+    SMS_PASSWORD_PENDING_TTL_SECONDS: int = Field(default=600, gt=0, le=3600)
+    SMS_API_KEY: Optional[str] = Field(default=None, repr=False, exclude=True)
+    SMS_BASE_URL: str = "https://api.payomchi.tj/api/v1"
+    SMS_SENDER_ID: str = "KitobCRM"
+    SMS_REQUEST_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0)
 
     DATABASE_URL: str
 

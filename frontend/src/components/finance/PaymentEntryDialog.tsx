@@ -14,7 +14,7 @@ import { Modal } from "../ui/Modal";
 import { PAYMENT_COURSE_TRIGGER_ID, PaymentCourseField } from "./PaymentCourseField";
 import { PaymentMethodRadios } from "./PaymentMethodRadios";
 import { PaymentNavigationGuard, type NavigationDecision } from "./PaymentNavigationGuard";
-import { SchoolDatePicker } from "./SchoolDatePicker";
+import { DatePicker } from "../ui/DatePicker";
 import { StudentSearchField } from "./StudentSearchField";
 
 export interface PaymentEntryProps {
@@ -30,6 +30,8 @@ interface SelectedStudent {
   id: number;
   name: string;
 }
+
+const PAYMENT_DATE_FIELD_ID: string = "payment-date";
 
 type EntryField = "student" | "course" | "amount" | "date";
 
@@ -80,7 +82,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const searchField = useRef<HTMLInputElement>(null);
   const changeStudentButton = useRef<HTMLButtonElement>(null);
   const amountField = useRef<HTMLInputElement>(null);
-  const dateField = useRef<HTMLButtonElement>(null);
   const keepEditing = useRef<HTMLButtonElement>(null);
   const opener = useRef<Element | null>(typeof document === "undefined" ? null : document.activeElement);
   const createPayment = useCreatePayment();
@@ -154,7 +155,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
 
   const focusProblem = (field: EntryField): void => {
     const target: HTMLElement | null | undefined =
-      field === "student" ? searchField.current : field === "course" ? document.getElementById(PAYMENT_COURSE_TRIGGER_ID) : field === "amount" ? amountField.current : dateField.current;
+      field === "student" ? searchField.current : field === "course" ? document.getElementById(PAYMENT_COURSE_TRIGGER_ID) : field === "amount" ? amountField.current : document.getElementById(PAYMENT_DATE_FIELD_ID);
     target?.focus();
   };
 
@@ -193,7 +194,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
       const kind: PaymentFailureKind = PaymentSubmissionOutcome.classify(error);
       setVerificationRequired(!PaymentSubmissionOutcome.isConfirmedRejection(kind));
       setFailure(kind);
-      if (kind === "closedPeriod") dateField.current?.focus();
+      if (kind === "closedPeriod") document.getElementById(PAYMENT_DATE_FIELD_ID)?.focus();
       else if (kind === "enrollment" && !isLocked) {
         setCourseId(null);
         void payableCourses.refetch();
@@ -232,7 +233,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
         <Button variant="secondary" disabled={pending} onClick={requestClose}>
           {t("common:cancel")}
         </Button>
-        <Button type="submit" form="shared-payment-form" loading={pending} disabled={!student || !eligibleCourse || verificationRequired}>
+        <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired}>
           {!pending && <Plus size={18} aria-hidden="true" />}
           {t(pending ? "finance:paymentModal.recording" : "finance:paymentModal.acceptPayment")}
         </Button>
@@ -371,17 +372,19 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                 )}
               </div>
               <div>
-                <label htmlFor="payment-date" className="text-sm font-medium text-label">
+                <label htmlFor={PAYMENT_DATE_FIELD_ID} className="text-sm font-medium text-label">
                   {t("finance:paymentModal.date")}
                 </label>
-                <SchoolDatePicker
-                  id="payment-date"
-                  value={paidAt}
-                  onChange={setPaidAt}
-                  triggerRef={dateField}
-                  invalid={problem?.field === "date"}
-                  describedBy={problem?.field === "date" ? problemId("date") : undefined}
-                />
+                <div className="mt-1">
+                  <DatePicker
+                    id={PAYMENT_DATE_FIELD_ID}
+                    label={t("finance:paymentModal.date")}
+                    value={paidAt}
+                    onChange={setPaidAt}
+                    invalid={problem?.field === "date"}
+                    describedBy={problem?.field === "date" ? problemId("date") : undefined}
+                  />
+                </div>
                 {problemFor("date") && (
                   <p id={problemId("date")} role="alert" className="mt-1 text-sm text-destructive">
                     {problemFor("date")}
