@@ -2,11 +2,10 @@ import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCourse } from "../../lib/courses/hooks";
-import { useMentorProfile, useMyStudentJournals, useMyStudentProfile } from "../../lib/users/hooks";
+import { useMentorProfile, useMyStudentProfile } from "../../lib/users/hooks";
 import { useAuthStore } from "../../store/authStore";
 import { JournalRouteErrors } from "../../components/journals/JournalRouteErrors";
 import { useCourseScheduleSummary } from "../../lib/students/useCourseScheduleSummary";
-import { CourseResultSummaries, type CourseResultSummary } from "../../lib/students/CourseResultSummary";
 import type { StudentCourseProfile } from "../../lib/users/types";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalProgressView } from "../../components/journals/JournalProgressView";
@@ -47,7 +46,6 @@ export function MyCourseDetail() {
 
   const courseQuery = useCourse(courseId);
   const profileQuery = useMyStudentProfile();
-  const periodsQuery = useMyStudentJournals(courseId);
   const course = courseQuery.data;
   const mentorQuery = useMentorProfile(course?.mentor_id);
   const scheduleSummary = useCourseScheduleSummary(course);
@@ -88,7 +86,6 @@ export function MyCourseDetail() {
     );
   }
 
-  const results: CourseResultSummary | null = periodsQuery.data ? CourseResultSummaries.summarize(periodsQuery.data) : null;
   const mentorUser = mentorQuery.data?.user;
   const metaItems: string[] = [
     `${formatSchoolLessonDate(course.start_date)} – ${formatSchoolLessonDate(course.end_date)}`,
@@ -112,12 +109,12 @@ export function MyCourseDetail() {
         </p>
       </div>
 
-      {profileQuery.isError && !entry && !results ? (
+      {profileQuery.isError && !entry ? (
         <ErrorState title={t("profileRefreshError")} message={t("profileUnavailableBody")} onRetry={() => void profileQuery.refetch()} />
       ) : profileQuery.isLoading ? (
         <div data-testid="stats-skeleton"><PanelSkeleton label={t("common:loading")} rows={1} /></div>
       ) : (
-        <CourseDetailStats entry={entry} results={results} />
+        <CourseDetailStats entry={entry} />
       )}
 
       {userId !== null && <StudentCourseJournal courseId={courseId} selfStudentId={userId} />}

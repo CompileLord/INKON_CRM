@@ -6,9 +6,9 @@ export interface OrgSettings {
 }
 
 export interface OrgSettingsUpdate {
-  org_name?: string;
-  notify_payments?: boolean;
-  notify_debts?: boolean;
+  org_name?: string | null;
+  notify_payments?: boolean | null;
+  notify_debts?: boolean | null;
 }
 
 export interface TelegramBotCheck {

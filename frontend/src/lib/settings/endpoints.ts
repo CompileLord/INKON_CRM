@@ -8,8 +8,12 @@ export function fetchOrgSettings(): Promise<OrgSettings> {
 }
 
 export function updateOrgSettings(payload: OrgSettingsUpdate): Promise<OrgSettings> {
+  const allowed: OrgSettingsUpdate = {};
+  if (payload.org_name !== undefined) allowed.org_name = payload.org_name;
+  if (payload.notify_payments !== undefined) allowed.notify_payments = payload.notify_payments;
+  if (payload.notify_debts !== undefined) allowed.notify_debts = payload.notify_debts;
   return httpClient
-    .patch<OrgSettings>("/settings/org", payload)
+    .patch<OrgSettings>("/settings/org", allowed)
     .then((res) => res.data);
 }
 

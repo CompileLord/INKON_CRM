@@ -4,10 +4,12 @@ import type {
   ListUsersParams,
   MentorAnalyticsResponse,
   MentorProfileResponse,
+  MentorProfileResult,
   PaginatedUsers,
   PasswordSmsDelivery,
   PasswordSmsResendResponse,
-  StudentJournalPeriod,
+  StudentJournalHistoryPage,
+  StudentJournalHistoryParams,
   StudentProfileResponse,
   TelegramLinkCode,
   User,
@@ -79,12 +81,8 @@ export function getMyStudentProfile(): Promise<StudentProfileResponse> {
   return httpClient.get<StudentProfileResponse>("/students/me/profile").then((res) => res.data);
 }
 
-export function getMyStudentJournals(courseId?: number): Promise<StudentJournalPeriod[]> {
-  return httpClient
-    .get<StudentJournalPeriod[]>("/students/me/journals", {
-      params: courseId !== undefined ? { course_id: courseId } : undefined,
-    })
-    .then((res) => res.data);
+export function getMyStudentJournalPage(params: StudentJournalHistoryParams = {}): Promise<StudentJournalHistoryPage> {
+  return httpClient.get<StudentJournalHistoryPage>("/students/me/journals/page", { params }).then((response) => response.data);
 }
 
 export function getStudentProfile(id: number): Promise<StudentProfileResponse> {
@@ -98,8 +96,8 @@ export function getMyMentorProfile(): Promise<MentorProfileResponse> {
   return httpClient.get<MentorProfileResponse>("/mentors/me/profile").then((res) => res.data);
 }
 
-export function getMentorProfile(id: number): Promise<MentorProfileResponse> {
-  return httpClient.get<MentorProfileResponse>(`/mentors/${id}/profile`).then((res) => res.data);
+export function getMentorProfile(id: number): Promise<MentorProfileResult> {
+  return httpClient.get<MentorProfileResult>(`/mentors/${id}/profile`).then((res) => res.data);
 }
 
 export function getMentorAnalytics(id: number): Promise<MentorAnalyticsResponse> {

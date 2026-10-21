@@ -8,7 +8,7 @@ import { SettingsSaveBar } from "./SettingsSaveBar";
 import { SettingsSectionError, SettingsSectionSkeleton } from "./SettingsSectionState";
 import { useCurrentUser, useUpdateOwnProfile } from "../../lib/users/hooks";
 import { resolveMediaUrl } from "../../lib/users/media";
-import { phonePattern } from "../../lib/studentFormSchema";
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { Role, UserSelfUpdate } from "../../lib/users/types";
 
 interface ProfileDraft {
@@ -32,13 +32,13 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
   if (isLoading) return <SettingsSectionSkeleton rows={5} />;
   if (isError || !user) return <SettingsSectionError onRetry={() => void refetch()} />;
 
-  const saved: ProfileDraft = { firstName: user.first_name, lastName: user.last_name, phone: user.phone ?? "" };
+  const saved: ProfileDraft = { firstName: user.first_name, lastName: user.last_name, phone: CanonicalPhone.prefill(user.phone) };
   const current: ProfileDraft = draft ?? saved;
   const edit = (change: Partial<ProfileDraft>): void => setDraft({ ...current, ...change });
 
   const firstNameError: string | undefined = current.firstName.trim() === "" ? t("profile.nameRequired") : undefined;
   const lastNameError: string | undefined = current.lastName.trim() === "" ? t("profile.nameRequired") : undefined;
-  const phoneError: string | undefined = current.phone.trim() !== "" && !phonePattern.test(current.phone.trim()) ? t("profile.phoneInvalid") : undefined;
+  const phoneError: string | undefined = current.phone !== "" && !CanonicalPhone.valid(current.phone, role === "student") ? t("profile.phoneInvalid") : undefined;
   const dirty: boolean = draft !== null && (draft.firstName !== saved.firstName || draft.lastName !== saved.lastName || draft.phone !== saved.phone);
   const invalid: boolean = Boolean(firstNameError || lastNameError || phoneError);
 
@@ -47,7 +47,7 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
     const payload: UserSelfUpdate = {};
     if (current.firstName !== saved.firstName) payload.first_name = current.firstName.trim();
     if (current.lastName !== saved.lastName) payload.last_name = current.lastName.trim();
-    if (current.phone !== saved.phone) payload.phone = current.phone.trim() === "" ? null : current.phone.trim();
+    if (current.phone !== saved.phone) payload.phone = current.phone === "" ? null : current.phone;
     updateProfile.mutate(payload, {
       onSuccess: () => {
         setDraft(null);
@@ -62,7 +62,7 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
   };
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 pb-28 lg:pb-0">
       <SettingsGroup>
         <SettingsRow icon={<Camera size={18} />} label={t("profile.photo")} description={t("profile.photoHint")}>
           <AvatarUploadField
@@ -84,7 +84,7 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
         <SettingsRow icon={<Mail size={18} />} label={t("profile.email")} description={t("profile.emailHint")} controlId={`${identifier}-email`}>
           <Input id={`${identifier}-email`} type="email" value={user.email} disabled readOnly />
         </SettingsRow>
-        <SettingsRow icon={<Phone size={18} />} label={t("profile.phone")} description={t("profile.phoneHint")} controlId={`${identifier}-phone`}>
+        <SettingsRow icon={<Phone size={18} />} label={t("profile.phone")} description={t(role === "student" ? "profile.phoneHintStudent" : "profile.phoneHint")} controlId={`${identifier}-phone`}>
           <Input id={`${identifier}-phone`} type="tel" inputMode="tel" value={current.phone} autoComplete="tel" error={dirty ? phoneError : undefined} onChange={(event) => edit({ phone: event.target.value })} />
         </SettingsRow>
       </SettingsGroup>

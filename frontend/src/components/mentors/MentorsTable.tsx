@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useRef, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -82,7 +83,7 @@ function MentorRow({ mentor, search, page, pageSize, onEdit, onDeleteRequest, on
               <span className="break-words text-sm text-muted [overflow-wrap:anywhere]">{mentor.email}</span>
             </span>
           </span>
-          <span className="text-sm tabular-nums text-ink">{mentor.phone ?? <span className="text-muted">—</span>}</span>
+          <span className="text-sm tabular-nums text-ink">{mentor.phone != null ? CanonicalPhone.prefill(mentor.phone) : <span className="text-muted">—</span>}</span>
           <span className="text-sm tabular-nums text-muted">{formatDate(mentor.created_at, i18n.language)}</span>
         </span>
       </ListRow>

@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const phonePattern = /^\+[1-9]\d{1,14}$/;
+import { CanonicalPhone } from "./users/CanonicalPhone";
 
 export function createMentorFormSchema(t: (key: string) => string = (k) => k) {
   return z.object({
@@ -21,8 +20,7 @@ export function createMentorFormSchema(t: (key: string) => string = (k) => k) {
       .email(t("validation.invalidEmail")),
     phone: z
       .string()
-      .trim()
-      .refine((value) => !value || phonePattern.test(value), t("validation.invalidPhone")),
+      .refine((value) => !value || CanonicalPhone.valid(value), t("validation.invalidPhone")),
     birthDate: z.string(),
   });
 }

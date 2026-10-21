@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
@@ -241,7 +242,7 @@ export function EnrollStudentModal({
                 </p>
                 <p className="break-words text-xs text-muted">
                   {selectedCandidate.email}
-                  {selectedCandidate.phone ? ` • ${selectedCandidate.phone}` : ""}
+                  {selectedCandidate.phone ? ` • ${CanonicalPhone.prefill(selectedCandidate.phone)}` : ""}
                 </p>
               </div>
             </div>
@@ -372,7 +373,7 @@ export function EnrollStudentModal({
                       </span>
                       <span className="text-xs text-muted break-words block">
                         {candidate.email}
-                        {candidate.phone ? ` • ${candidate.phone}` : ""}
+                        {candidate.phone ? ` • ${CanonicalPhone.prefill(candidate.phone)}` : ""}
                       </span>
                     </div>
                   </label>

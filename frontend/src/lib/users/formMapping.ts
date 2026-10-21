@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "./CanonicalPhone";
 import { AuthApiError, NetworkError } from "../auth/errors";
 import type { UserCreate, UserUpdate } from "./types";
 
@@ -47,11 +48,11 @@ export function buildUserFormValues(user?: ExistingUserFields): UserFormValues {
     firstName: user.first_name,
     lastName: user.last_name,
     email: user.email,
-    phone: user.phone ?? "",
+    phone: CanonicalPhone.prefill(user.phone),
     birthDate: user.date_of_birth ?? "",
     parentTelegramChatId:
       user.parent_telegram_chat_id != null ? String(user.parent_telegram_chat_id) : "",
-    parentPhone: user.parent_phone ?? "",
+    parentPhone: CanonicalPhone.prefill(user.parent_phone),
     paymentDay: user.payment_day_of_month != null ? String(user.payment_day_of_month) : "",
   };
 }
@@ -79,7 +80,7 @@ export function buildMentorFormValues(user?: ExistingUserFields): MentorFormValu
     firstName: user.first_name,
     lastName: user.last_name,
     email: user.email,
-    phone: user.phone ?? "",
+    phone: CanonicalPhone.prefill(user.phone),
     birthDate: user.date_of_birth ?? "",
   };
 }
@@ -92,11 +93,11 @@ function toApiFields(values: UserFormValues): UserApiFields {
     first_name: values.firstName.trim(),
     last_name: values.lastName.trim(),
     date_of_birth: values.birthDate || null,
-    phone: values.phone.trim() || null,
+    phone: values.phone === "" ? null : values.phone,
     parent_telegram_chat_id: values.parentTelegramChatId.trim()
       ? Number(values.parentTelegramChatId)
       : null,
-    parent_phone: values.parentPhone?.trim() || null,
+    parent_phone: values.parentPhone === "" ? null : values.parentPhone,
     payment_day_of_month: values.paymentDay.trim() ? Number(values.paymentDay) : null,
   };
 }
@@ -111,7 +112,7 @@ export function buildMentorCreatePayload(values: MentorFormValues): UserApiField
     first_name: values.firstName.trim(),
     last_name: values.lastName.trim(),
     date_of_birth: values.birthDate || null,
-    phone: values.phone.trim() || null,
+    phone: values.phone === "" ? null : values.phone,
   };
 }
 
@@ -162,7 +163,7 @@ export function buildMentorUpdatePayload(
     if (field === "birthDate") {
       update.date_of_birth = values.birthDate || null;
     } else if (field === "phone") {
-      update.phone = values.phone.trim() || null;
+      update.phone = values.phone === "" ? null : values.phone;
     } else if (field === "email") {
       update.email = values.email.trim();
     } else if (field === "firstName") {

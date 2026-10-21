@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useRef, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -86,7 +87,7 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
               <span className="truncate text-sm text-muted" title={student.email}>{student.email}</span>
             </span>
           </span>
-          <span className="text-sm tabular-nums text-ink">{student.phone ?? <span className="text-muted">—</span>}</span>
+          <span className="text-sm tabular-nums text-ink">{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>
           <span className="text-sm tabular-nums text-muted">
             {student.payment_day_of_month ? t("table.paymentDayChip", { day: formatNumber(student.payment_day_of_month, i18n.language) }) : <span aria-label={t("table.paymentDayNone")}>—</span>}
           </span>

@@ -159,7 +159,7 @@ describe("StudentProfile Component", () => {
     await user.click(screen.getByRole("tab", { name: "Progress" }));
     const chart = await screen.findByTestId("student-progress-chart");
     expect(chart.querySelectorAll('[data-testid="student-chart-line"]')).toHaveLength(2);
-    expect(userEndpoints.getMyStudentJournals).toHaveBeenCalled();
+    expect(userEndpoints.getMyStudentJournalPage).toHaveBeenCalled();
     expect(courseEndpoints.getCourseStaffProgress).not.toHaveBeenCalled();
   });
 

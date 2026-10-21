@@ -52,5 +52,12 @@
     "failedTitle": "Couldn't load the profile",
     "failedBody": "Check your connection and try again.",
     "refreshError": "Couldn't refresh the profile. Showing the last loaded data."
+  },
+  "studentCard": {
+    "title": "Your mentor",
+    "back": "My courses",
+    "courses": "Your courses with this mentor",
+    "emptyTitle": "No shared courses",
+    "emptyBody": "No courses are available here. Return to your courses."
   }
 }

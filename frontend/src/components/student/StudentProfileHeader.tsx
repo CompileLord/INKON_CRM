@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../ui/Badge";
@@ -23,8 +24,8 @@ export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdi
   const { t } = useTranslation("studentProfile");
   const meta: string[] = [
     user.email,
-    ...(user.phone ? [user.phone] : []),
-    ...(user.parent_phone ? [t("header.parentPhone", { phone: user.parent_phone })] : []),
+    ...(user.phone ? [CanonicalPhone.prefill(user.phone)] : []),
+    ...(user.parent_phone ? [t("header.parentPhone", { phone: CanonicalPhone.prefill(user.parent_phone) })] : []),
     ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : []),
   ];
   const menuItems: MenuItem[] | undefined = isSuperAdmin

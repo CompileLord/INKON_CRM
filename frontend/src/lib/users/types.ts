@@ -32,8 +32,6 @@ export interface UserSelfUpdate {
   last_name?: string;
   date_of_birth?: string | null;
   phone?: string | null;
-  parent_telegram_chat_id?: number | null;
-  parent_phone?: string | null;
 }
 
 export interface User {
@@ -255,4 +253,12 @@ export interface StudentMentorCardResponse {
   active_courses: StudentMentorCourseResponse[];
 }
 
-export type MentorProfileResponse = MentorStaffProfileResponse | StudentMentorCardResponse;
+export type MentorProfileResponse = MentorStaffProfileResponse;
+export type MentorProfileResult = MentorStaffProfileResponse | StudentMentorCardResponse;
+
+export interface StudentJournalHistoryParams {
+  course_id?: number;
+  page_size?: number;
+  started_only?: boolean;
+  cursor?: string;
+}

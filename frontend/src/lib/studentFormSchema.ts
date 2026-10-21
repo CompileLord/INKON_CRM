@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { CanonicalPhone } from "./users/CanonicalPhone";
 
-export const phonePattern = /^\+[1-9]\d{7,14}$/;
+export const phonePattern: RegExp = CanonicalPhone.studentPattern;
 
 export function createStudentFormSchema(t: (key: string) => string = (k) => k, requireContactPhone: boolean = false) {
   return z.object({
@@ -21,8 +22,7 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k, r
       .email(t("validation.invalidEmail")),
     phone: z
       .string()
-      .trim()
-      .refine((value) => !value || phonePattern.test(value), t("validation.invalidPhone")),
+      .refine((value) => !value || CanonicalPhone.valid(value, true), t("validation.invalidPhone")),
     birthDate: z.string(),
     parentTelegramChatId: z
       .string()
@@ -30,8 +30,7 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k, r
       .refine((value) => !value || /^-?\d+$/.test(value), t("validation.invalidTelegramChatId")),
     parentPhone: z
       .string()
-      .trim()
-      .refine((value) => !value || phonePattern.test(value), t("validation.invalidPhone")),
+      .refine((value) => !value || CanonicalPhone.valid(value, true), t("validation.invalidPhone")),
     paymentDay: z
       .string()
       .refine(

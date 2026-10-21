@@ -38,6 +38,17 @@ describe("StudentProfile Component", () => {
     expect(screen.getByRole("link", { name: /English Literature/ }).getAttribute("href")).toBe("/courses/102");
   });
 
+  it("presents legacy student and parent phones canonically without changing stored values", (): void => {
+    const legacyUser: typeof mockStudentUser = { ...mockStudentUser, phone: "992901234567", parent_phone: "992901234568" };
+    mockProfile({ user: legacyUser });
+    renderStudentProfile();
+    const header: HTMLElement = document.querySelector<HTMLElement>("[data-entity-header]")!;
+    expect(within(header).getByText("+992901234567")).toBeTruthy();
+    expect(within(header).getByText("Parent: +992901234568")).toBeTruthy();
+    expect(legacyUser.phone).toBe("992901234567");
+    expect(legacyUser.parent_phone).toBe("992901234568");
+  });
+
   it("keeps the other actions inside one overflow menu", async () => {
     const user = userEvent.setup();
     renderStudentProfile();

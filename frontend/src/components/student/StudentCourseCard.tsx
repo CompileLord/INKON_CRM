@@ -47,7 +47,7 @@ export function StudentCourseCard({ entry }: StudentCourseCardProps) {
         <h3 className="min-w-0 break-words text-base font-semibold text-ink">{course.title}</h3>
       </div>
       <div className="flex flex-col gap-2">
-        {mentor !== undefined && <FactRow icon={<UserRound size={16} />} label={t("card.mentor")}>{mentor.first_name} {mentor.last_name}</FactRow>}
+        {mentor !== undefined && <FactRow icon={<UserRound size={16} />} label={t("card.mentor")}><Link to={`/mentors/${mentor.id}`} className="underline decoration-border underline-offset-4 hover:text-maroon">{mentor.first_name} {mentor.last_name}</Link></FactRow>}
         {summary.scheduleLine !== "" && <FactRow icon={<CalendarClock size={16} />} label={t("card.schedule")}>{summary.scheduleLine}</FactRow>}
         <FactRow icon={<Clock size={16} />} label={t("nextLesson")}>
           {nextLesson ?? <span className="text-muted">{t("card.noNextLesson")}</span>}

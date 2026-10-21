@@ -51,7 +51,13 @@
     "errorBody": "Period results couldn't be loaded. Try again.",
     "rowNoData": "No grades yet",
     "coursesLabel": "Progress by course",
-    "attendanceShort": "{{value}}% attendance"
+    "attendanceShort": "{{value}}% attendance",
+    "historyWindow": "Showing {{count}} periods. Load more for older results.",
+    "historyComplete": "All {{count}} started periods loaded.",
+    "historyEmptyTitle": "No history yet",
+    "historyEmptyBody": "Results appear when your first period starts. Check back after a lesson.",
+    "historyUpcoming": "Your periods have not started yet. Check back after the first lesson.",
+    "loadMore": "Load more"
   },
   "state": {
     "forbiddenTitle": "No access to this profile",

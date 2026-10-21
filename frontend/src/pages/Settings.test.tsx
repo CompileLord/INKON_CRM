@@ -237,3 +237,33 @@ describe("Notification rules section", () => {
     expect(payments.getAttribute("aria-checked")).toBe("true");
   });
 });
+
+describe("canonical profile phones", () => {
+  afterEach(() => { mocks.user.phone = "+992900000001"; });
+  it("normalizes a legacy prefill and omits unchanged phones from name edits", () => {
+    mocks.user.phone = "992900000001";
+    renderSettings("student");
+    expect((screen.getByLabelText("Phone") as HTMLInputElement).value).toBe("+992900000001");
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "New" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ first_name: "New" });
+  });
+  it("rejects whitespace and retries after correction without trimming the entered phone", () => {
+    renderSettings("superadmin");
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: " +12 " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ phone: "+12" });
+  });
+  it("retains the longer student minimum and supports explicit clearing", () => {
+    renderSettings("student");
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ phone: null });
+  });
+});
