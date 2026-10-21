@@ -199,6 +199,8 @@ async def test_concurrent_allocation(
     db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User
 ) -> None:
     scenario: ConcurrentLedgerScenario = ConcurrentLedgerScenario(db_session)
+    charge_id: int
+    payment_id: int
     charge_id, payment_id = await scenario.seed(db_session, test_student, test_mentor, test_admin)
     async with asyncio.timeout(15):
         await asyncio.gather(
@@ -234,7 +236,7 @@ async def test_concurrent_refund(
     db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User
 ) -> None:
     scenario: ConcurrentLedgerScenario = ConcurrentLedgerScenario(db_session)
-    _, payment_id = await scenario.seed(db_session, test_student, test_mentor, test_admin)
+    payment_id: int = (await scenario.seed(db_session, test_student, test_mentor, test_admin))[1]
     async with asyncio.timeout(15):
         await asyncio.gather(
             scenario.write_refund(payment_id, test_admin),

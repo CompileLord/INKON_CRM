@@ -62,3 +62,27 @@ export const createSetPasswordFormSchema = (
 export const setPasswordFormSchema = createSetPasswordFormSchema((key: string) => key);
 
 export type SetPasswordFormValues = z.infer<typeof setPasswordFormSchema>;
+
+export const createChangePasswordFormSchema = (
+  t: TFunction | ((key: string, options?: Record<string, unknown>) => string),
+) =>
+  z
+    .object({
+      currentPassword: z.string().min(1, t("validation:required")),
+      newPassword: z
+        .string()
+        .min(1, t("validation:required"))
+        .refine((val) => countUnicodeCodepoints(val) >= 8, {
+          message: t("validation:passwordMinLength", { min: 8 }),
+        })
+        .refine((val) => hasPythonDigit(val), {
+          message: t("validation:passwordRequiresDigit"),
+        }),
+      confirmPassword: z.string().min(1, t("validation:required")),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t("validation:passwordsDoNotMatch"),
+      path: ["confirmPassword"],
+    });
+
+export type ChangePasswordFormValues = z.infer<ReturnType<typeof createChangePasswordFormSchema>>;

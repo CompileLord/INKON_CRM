@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-export const phonePattern = /^\+?[1-9]\d{1,14}$/;
+export const phonePattern = /^\+[1-9]\d{7,14}$/;
 
-export function createStudentFormSchema(t: (key: string) => string = (k) => k) {
+export function createStudentFormSchema(t: (key: string) => string = (k) => k, requireContactPhone: boolean = false) {
   return z.object({
     firstName: z
       .string()
@@ -38,6 +38,10 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k) {
         (value) => !value || (/^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 28),
         t("validation.invalidPaymentDay"),
       ),
+  }).superRefine((values, context) => {
+    if (requireContactPhone && values.phone === "" && values.parentPhone === "") {
+      context.addIssue({ code: "custom", path: ["phone"], message: t("validation.phoneOrParentPhoneRequired") });
+    }
   });
 }
 

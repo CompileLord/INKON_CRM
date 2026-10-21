@@ -1,5 +1,6 @@
 import { httpClient } from "./httpClient";
 import type {
+  ChangePasswordRequest,
   LoginRequest,
   PasswordResetConfirmRequest,
   PasswordResetRequest,
@@ -55,4 +56,9 @@ export function passwordResetConfirm(resetToken: string, newPassword: string): P
   return httpClient
     .post<TokenPair>("/auth/password-reset/confirm", body, { skipAuth: true })
     .then((res) => res.data);
+}
+
+export function changePassword(currentPassword: string, newPassword: string): Promise<TokenPair> {
+  const body: ChangePasswordRequest = { current_password: currentPassword, new_password: newPassword };
+  return httpClient.post<TokenPair>("/auth/change-password", body).then((res) => res.data);
 }

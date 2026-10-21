@@ -65,17 +65,17 @@ beforeEach(async () => {
 afterEach(() => cleanup());
 
 describe("Settings navigation", () => {
-  it("offers Profile and Appearance to a student as vertical tabs and never the administrator sections", () => {
+  it("offers Profile, Security and Appearance to a student as vertical tabs and never the administrator sections", () => {
     renderSettings("student");
     const tabs = screen.getByRole("tablist", { name: "Settings sections" });
     expect(tabs.getAttribute("aria-orientation")).toBe("vertical");
-    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Appearance"]);
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance"]);
   });
 
   it("adds Organization and Notification rules for the superadmin", () => {
     renderSettings("superadmin");
     const tabs = screen.getByRole("tablist", { name: "Settings sections" });
-    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Appearance", "Organization", "Notification rules"]);
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance", "Organization", "Notification rules"]);
   });
 
   it("falls back to Profile for an administrator section requested by a nonadmin", () => {

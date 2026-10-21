@@ -17,7 +17,7 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 - Staging deploys automatically after `CI` and `Build Image` succeed on `main`.
 - Production deploys when a `v*` tag is pushed to a commit that passed CI on `main`, after reviewer approval. It can also be started with the `Deploy Backend` workflow (`workflow_dispatch`, environment and full SHA).
-- On the VPS `deploy.sh <sha>` pulls the images, writes `/var/backups/imkon/pre-<sha>.dump`, runs `alembic upgrade head`, restarts `api` and `worker`, polls `/health` for 60 seconds and, on failure, restarts the previous release. Current and previous release SHAs are in `/var/lib/imkon/current_release` and `/var/lib/imkon/previous_release`.
+- On the VPS `deploy.sh <sha>` pulls the images, writes `/var/backups/imkon/pre-<sha>.dump`, runs `alembic upgrade head`, restarts `api` and `worker`, waits for API and worker container health, polls `/health` for 60 seconds and, on any startup or health failure, restarts the previous release. Current and previous release SHAs are in `/var/lib/imkon/current_release` and `/var/lib/imkon/previous_release`.
 - Production runs `deploy.sh --register-webhook` afterwards to register the Telegram webhook.
 
 ## 3. Roll back
@@ -27,17 +27,19 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 ## 4. Restore
 
-1. Stop writers: `cd /opt/imkon/deploy && IMAGE_TAG=$(cat /var/lib/imkon/current_release) docker compose -f docker-compose.prod.yml stop api worker`.
+1. Stop writers: `cd /opt/imkon/deploy && export IMAGE_TAG=$(cat /var/lib/imkon/current_release) && docker compose -f docker-compose.prod.yml stop api worker`.
 2. Pick a dump from `/var/backups/imkon` or fetch one with `restic restore latest --tag db --target /tmp/restore` (source `/etc/imkon/backup.env`).
 3. `docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' < <dump>`.
-4. Restore documents if needed: `restic restore latest --tag storage --target /`, then `chown -R 10001:10001 /var/lib/imkon/storage`.
+4. Restore documents if needed: `restic restore latest --tag storage --target /tmp/storage-restore`, then as root run `tar -xpf /tmp/storage-restore/storage.tar -C /var/lib/imkon/storage` and `chown -R 10001:10001 /var/lib/imkon/storage`. Older storage snapshots contain the original `/var/lib/imkon/storage` tree rather than `storage.tar`; restore those to `/` as before.
 5. Start `api worker` again and check `/health`.
+
+Nightly storage backups run `tar` in a one-off API container as UID/GID `10001:10001`, streaming `storage.tar` to restic under the `storage` tag. This reads app-owned 0600 uploads without granting the host `deploy` user filesystem access or widening upload permissions. The backup fails if either the archive command or restic fails.
 
 The monthly `imkon-restore-check.service` (`deploy/restore_check.sh`) restores the latest off-site dump into a throwaway Postgres container and runs `alembic current` plus a row count. Run it manually after any backup change: `sudo systemctl start imkon-restore-check.service`.
 
 ## 5. Rotate secrets
 
-Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
+Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. `JWT_SECRET_KEY` also encrypts pending outbox payloads: drain the outbox completely and stop writers before rotating it, or pending payloads become unreadable. A separate encryption key is planned for a later package. Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
 
 ## 6. Renew the Telegram webhook
 
@@ -47,3 +49,17 @@ Run `/opt/imkon/deploy/deploy.sh --register-webhook` on the production host. Cha
 
 - Staging on the same VPS (CD-06) is not automated; use a separate host or a second `COMPOSE_PROJECT_NAME`, `IMKON_DATA_DIR` and `API_DOMAIN` in `deploy.env`, with a different `ports` mapping for Caddy.
 - `deploy.sh` backs up and restores nothing outside the database; storage is covered by the nightly restic job only.
+
+## Database connection budget and shutdown
+
+The supported Compose topology runs one single-process API and one ARQ worker. Both services declare one replica. CI invokes the same budget-validated deployment script. Scaling either service or adding Uvicorn workers requires a new validated topology; do not override these process counts with `--scale` or `--workers`.
+
+PostgreSQL is configured with `max_connections=100`. `DB_CONNECTION_BUDGET` may be smaller, never larger. Each process has a main pool ceiling of `DB_POOL_SIZE + DB_MAX_OVERFLOW` (default 8 + 2), plus one storage-intent connection. Worker cleanup shares that storage-intent engine, so it adds no second pool. The worker also owns its outbox pool (default 2 + 0). One revision therefore has a configured ceiling of `2 × (10 + 1) + 2 = 24`. Two overlapping revisions reserve 48, maintenance reserves 2, and administration reserves 10: total 60 of 100. These are configured upper bounds, not measured open connections. The remaining 40 are unallocated headroom; they do not authorize additional application processes. Maintenance commands must be serialized within their two-connection reserve; deployments already use the deployment lock. Backups and restore checks must not overlap other maintenance beyond this reserve.
+
+`deploy.sh` runs `python -m app.db.connection_policy` inside the release image, without database dependencies, before starting data services or running backups/migrations. Invalid budgets and deadlines fail before application resources open. This validates declared configuration, not live server limits or production demand. Direct API/worker startup validates the same settings before engine construction.
+
+Request and worker main/outbox connections use 15-second statement, 2-second lock, 15-second idle-in-transaction and 5-second pool checkout deadlines. Storage-intent connections retain their existing 5-second statement and 1-second lock deadlines, with the configured 15-second idle transaction deadline. Alembic retains NullPool and separate 300-second statement, 10-second lock and 300-second idle transaction deadlines. A timeout requires rollback before reuse; session context cleanup releases failed transactions. Do not enlarge pools to mask slow transaction holds. Adjust deadlines only after disposable workload checks, including notification delivery, outbox processing and storage cleanup.
+
+API and worker shutdown close the bot session, producer ARQ pool, normal Redis client, main engine and storage-intent engine. Worker startup failure unwinds any started outbox/cleanup worker. Cleanup attempts all remaining resources after a close failure and finishes under cancellation before propagating the cancellation or cleanup error. This does not change webhook registration or notification retry policy.
+
+A failed ARQ producer close retains the owned handle and blocks producer use until `close_arq_pool()` succeeds on retry. Cancelled initialization retains any created pool whose cleanup fails; cancellation remains the primary error, with the cleanup failure chained. Cleanup of other process resources still runs. Close failures must be treated as shutdown failures, not successful disposal.

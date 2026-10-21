@@ -10,6 +10,9 @@ from alembic import context
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.db.base import Base
+from app.db.connection_policy import DatabaseDeploymentSettings
+
+connection_policy: DatabaseDeploymentSettings = DatabaseDeploymentSettings()
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.course import Course
@@ -72,6 +75,7 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"server_settings": connection_policy.server_settings(maintenance=True)},
     )
 
     async with connectable.connect() as connection:

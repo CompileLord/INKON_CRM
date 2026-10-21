@@ -159,8 +159,8 @@ describe("StudentProfile Component", () => {
       },
     ]);
 
-    expect(screen.getByLabelText("Parent link code").textContent).toBe("12A345");
-    expect(screen.getByRole("button", { name: "Copy code" })).toBeDefined();
+    expect(screen.getByText("12A345")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Copy" })).toBeDefined();
   });
 
   it("renders creation banner when createdStudentId is passed in location state and dismisses it", async () => {
@@ -168,15 +168,15 @@ describe("StudentProfile Component", () => {
     renderStudentProfile([
       {
         pathname: "/students/42",
-        state: { createdStudentId: 42 },
+        state: { createdStudentId: 42, createdPasswordSmsDestination: "parent_phone" },
       },
     ]);
 
-    expect(screen.getByText(/Student created\. Login details/i)).toBeDefined();
+    expect(screen.getByText("The password was sent by SMS to the parent phone.")).toBeDefined();
 
     const closeBtn = screen.getByRole("button", { name: /Close/i });
     await user.click(closeBtn);
 
-    expect(screen.queryByText(/Student created\. Login details/i)).toBeNull();
+    expect(screen.queryByText("The password was sent by SMS to the parent phone.")).toBeNull();
   });
 });

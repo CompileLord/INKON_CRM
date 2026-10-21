@@ -3,17 +3,14 @@ import importlib.util
 import json
 import logging
 import os
-import secrets
-import tempfile
 import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
@@ -21,22 +18,18 @@ from app.core.redis import redis_client
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
-from app.schemas.user import UserCreate
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
-from app.services.outbox_service import OutboxPayloadEncryptor, OutboxService
-from app.services.user_service import UserService
-from app.tests.integration.test_remediation_wp12 import (
-    LocalStartTLSServer,
-    create_authority,
-    create_server_certificate,
-)
+from app.services.outbox_service import OutboxService
 from app.workers.outbox import OutboxWorkerManager, run_outbox_worker_once
 
 ORIGINAL_SEND_EMAIL = EmailService.send_email
 
 
-from app.tests.integration.test_remediation_wp18 import _make_test_session_factory
+def _make_test_session_factory() -> async_sessionmaker[AsyncSession]:
+    db_url = os.environ["TEST_DATABASE_URL"]
+    engine = create_async_engine(db_url, pool_pre_ping=True, pool_size=5, max_overflow=5)
+    return async_sessionmaker(engine, expire_on_commit=False)
 
 
 @pytest.mark.asyncio

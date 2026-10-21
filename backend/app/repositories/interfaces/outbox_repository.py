@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Sequence
 from typing_extensions import Protocol
-from app.models.outbox_event import OutboxEvent
+from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 
 
 class OutboxRepository(Protocol):
@@ -38,6 +38,8 @@ class OutboxRepository(Protocol):
         event_id: int,
         lease_owner: str,
         now: datetime,
+        provider_message_id: Optional[str] = None,
+        provider_status: Optional[str] = None,
     ) -> bool:
         ...
 
@@ -68,4 +70,13 @@ class OutboxRepository(Protocol):
         ...
 
     async def purge_sensitive_payload(self, event_id: int) -> None:
+        ...
+
+    async def list_by_kind(
+        self,
+        kind: OutboxEventKind,
+        statuses: Sequence[OutboxEventStatus],
+        limit: int,
+        target_user_id: Optional[int] = None,
+    ) -> Sequence[OutboxEvent]:
         ...

@@ -1,7 +1,8 @@
 from datetime import date, datetime
-from typing import Literal, Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Any, Literal, Optional
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from app.models.user import UserRole
+from app.schemas.common import CanonicalPhone
 
 
 class UserCreate(BaseModel):
@@ -11,10 +12,16 @@ class UserCreate(BaseModel):
     last_name: str = Field(min_length=1, max_length=100)
     role: UserRole
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    phone: Optional[CanonicalPhone] = None
     parent_telegram_chat_id: Optional[int] = None
-    parent_phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
+
+    @model_validator(mode="after")
+    def require_student_contact_phone(self) -> "UserCreate":
+        if self.role == UserRole.STUDENT and not (self.phone or self.parent_phone):
+            raise ValueError("A student requires a phone or a parent phone")
+        return self
 
 
 class UserUpdate(BaseModel):
@@ -23,9 +30,9 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    phone: Optional[CanonicalPhone] = None
     parent_telegram_chat_id: Optional[int] = None
-    parent_phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
 
@@ -34,7 +41,7 @@ class UserSelfUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    phone: Optional[CanonicalPhone] = None
 
 
 class UserResponse(BaseModel):
@@ -61,6 +68,42 @@ class UserResponse(BaseModel):
 
 class UserCreateResponse(UserResponse):
     parent_link_code: Optional[str] = None
+    password_sms_destination: Optional[Literal["student_phone", "parent_phone"]] = None
+
+
+class PasswordSmsResendResponse(BaseModel):
+    destination: Literal["student_phone", "parent_phone"]
+
+
+class PasswordSmsDeliveryResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    status: Literal["pending", "claimed", "delivered", "failed", "expired"]
+    masked_phone: Optional[str] = None
+    attempt_count: int
+    max_attempts: int
+    last_error: Optional[str] = None
+    provider_message_id: Optional[str] = None
+    provider_status: Optional[Literal["pending", "queued", "accepted", "sent", "delivered"]] = None
+    created_at: datetime
+    delivered_at: Optional[datetime] = None
+
+    @classmethod
+    def from_event(cls, event: Any) -> "PasswordSmsDeliveryResponse":
+        phone: Optional[str] = event.recipient_phone
+        return cls(
+            id=event.id,
+            user_id=event.target_user_id,
+            status=event.status.value,
+            masked_phone=f"***{phone[-4:]}" if phone else None,
+            attempt_count=event.attempt_count,
+            max_attempts=event.max_attempts,
+            last_error=event.last_error,
+            provider_message_id=event.provider_message_id,
+            provider_status=event.provider_status,
+            created_at=event.created_at,
+            delivered_at=event.delivered_at,
+        )
 
 
 from app.schemas.course import CourseResponse, StaffGradingProvenance, StaffGradingState
@@ -165,6 +208,28 @@ class StudentJournalPeriodResponse(BaseModel):
     attendance_count: int
     total_lessons: int
     state: str
+
+
+class StudentMentorIdentityResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    first_name: str
+    last_name: str
+    photo_path: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+
+
+class StudentMentorCourseResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    title: str
+    photo_path: Optional[str] = None
+
+
+class StudentMentorCardResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    user: StudentMentorIdentityResponse
+    active_courses: list[StudentMentorCourseResponse]
 
 
 class MentorProfileResponse(BaseModel):

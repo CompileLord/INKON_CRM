@@ -1,37 +1,21 @@
-import asyncio
-import importlib.util
-import json
-import logging
 import os
-import secrets
-import tempfile
-import threading
-import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.core.redis import redis_client
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.schemas.user import UserCreate
-from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxPayloadEncryptor, OutboxService
 from app.services.user_service import UserService
-from app.tests.integration.test_remediation_wp12 import (
-    LocalStartTLSServer,
-    create_authority,
-    create_server_certificate,
-)
-from app.workers.outbox import OutboxWorkerManager, run_outbox_worker_once
+from app.workers.outbox import OutboxWorkerManager
 
 ORIGINAL_SEND_EMAIL = EmailService.send_email
 
@@ -112,6 +96,7 @@ async def test_user_service_create_user_rollback_no_mail_sent(db_session: AsyncS
                     first_name="Rollback",
                     last_name="Tester",
                     role=UserRole.STUDENT,
+                    phone="+992900000999",
                 )
                 await user_service.create_user(user_create)
                 raise RuntimeError("simulated business transaction failure")
@@ -517,3 +502,5 @@ async def test_corrupt_or_missing_payload_recovers_to_terminal_failed() -> None:
         assert updated.status == OutboxEventStatus.FAILED
         assert updated.encrypted_payload is None
         assert updated.last_error == "payload_decryption_failed"
+
+

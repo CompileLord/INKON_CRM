@@ -175,9 +175,9 @@ async def test_backend_error_or_invalid_result_fails_closed(
 @pytest.mark.asyncio
 @pytest.mark.parametrize('namespace', ['code', 'reset'])
 async def test_database_failure_never_restores_consumed_code_and_new_request_recovers(
-    namespace: str, db_session: AsyncSession, test_student: User, monkeypatch: pytest.MonkeyPatch,
+    namespace: str, db_session: AsyncSession, test_mentor: User, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    key: str = f'auth:{namespace}:{test_student.email}'
+    key: str = f'auth:{namespace}:{test_mentor.email}'
     await redis_client.set(key, json.dumps({'code': '123456', 'attempts': 0}), ex=600)
     service: AuthService = AuthService(db_session)
     original_lookup: Any = service.user_repo.get_by_email_for_update
@@ -188,28 +188,28 @@ async def test_database_failure_never_restores_consumed_code_and_new_request_rec
     monkeypatch.setattr(service.user_repo, 'get_by_email_for_update', unavailable)
     with pytest.raises(RuntimeError):
         if namespace == 'code':
-            await service.verify_code(test_student.email, '123456')
+            await service.verify_code(test_mentor.email, '123456')
         else:
-            await service.password_reset_verify(test_student.email, '123456')
+            await service.password_reset_verify(test_mentor.email, '123456')
     assert await redis_client.get(key) is None
     monkeypatch.setattr(service.user_repo, 'get_by_email_for_update', original_lookup)
     with pytest.raises(HTTPException) as caught:
         if namespace == 'code':
-            await service.verify_code(test_student.email, '123456')
+            await service.verify_code(test_mentor.email, '123456')
         else:
-            await service.password_reset_verify(test_student.email, '123456')
+            await service.password_reset_verify(test_mentor.email, '123456')
     assert caught.value.status_code == 400
     if namespace == 'code':
-        await service.generate_verification_code(test_student.email)
+        await service.generate_verification_code(test_mentor.email)
     else:
-        await service.password_reset_request(test_student.email)
+        await service.password_reset_request(test_mentor.email)
     raw: str | None = await redis_client.get(key)
     assert raw is not None
     fresh_code: str = json.loads(raw)['code']
     if namespace == 'code':
-        await service.verify_code(test_student.email, fresh_code)
+        await service.verify_code(test_mentor.email, fresh_code)
     else:
-        await service.password_reset_verify(test_student.email, fresh_code)
+        await service.password_reset_verify(test_mentor.email, fresh_code)
     assert await redis_client.get(key) is None
 
 
@@ -217,20 +217,20 @@ async def test_database_failure_never_restores_consumed_code_and_new_request_rec
 @pytest.mark.parametrize('namespace', ['code', 'reset'])
 @pytest.mark.parametrize('attempts', [4, 5])
 async def test_fifth_submission_is_last_available_attempt(
-    namespace: str, attempts: int, db_session: AsyncSession, test_student: User,
+    namespace: str, attempts: int, db_session: AsyncSession, test_mentor: User,
 ) -> None:
-    key: str = f'auth:{namespace}:{test_student.email}'
+    key: str = f'auth:{namespace}:{test_mentor.email}'
     await redis_client.set(key, json.dumps({'code': '123456', 'attempts': attempts}), ex=600)
     service: AuthService = AuthService(db_session)
     if attempts == 5:
         with pytest.raises(HTTPException) as caught:
             if namespace == 'code':
-                await service.verify_code(test_student.email, '123456')
+                await service.verify_code(test_mentor.email, '123456')
             else:
-                await service.password_reset_verify(test_student.email, '123456')
+                await service.password_reset_verify(test_mentor.email, '123456')
         assert caught.value.status_code == 400
     elif namespace == 'code':
-        await service.verify_code(test_student.email, '123456')
+        await service.verify_code(test_mentor.email, '123456')
     else:
-        await service.password_reset_verify(test_student.email, '123456')
+        await service.password_reset_verify(test_mentor.email, '123456')
     assert await redis_client.get(key) is None

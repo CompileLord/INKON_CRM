@@ -1,5 +1,6 @@
 from typing import Any
 from datetime import timezone as datetime_timezone
+from collections.abc import Awaitable, Callable
 from arq import cron, func
 from arq.connections import RedisSettings
 from app.core.config import settings
@@ -21,31 +22,38 @@ from app.workers.tasks import (
 async def outbox_worker_startup(ctx: dict[str, Any]) -> None:
     from app.workers.outbox import OutboxWorkerManager
 
-    manager = OutboxWorkerManager(
+    from app.workers.storage_cleanup import StorageCleanupWorker
+
+    manager: OutboxWorkerManager = OutboxWorkerManager(
         database_url=settings.DATABASE_URL,
         payload_master_key=settings.JWT_SECRET_KEY,
     )
-    await manager.start()
     ctx["outbox_worker"] = manager
-    from app.workers.storage_cleanup import StorageCleanupWorker
-    cleanup: StorageCleanupWorker = StorageCleanupWorker()
-    await cleanup.start()
-    ctx["storage_cleanup"] = cleanup
+    try:
+        await manager.start()
+        cleanup: StorageCleanupWorker = StorageCleanupWorker()
+        ctx["storage_cleanup"] = cleanup
+        await cleanup.start()
+    except BaseException:
+        try:
+            await outbox_worker_shutdown(ctx)
+        except BaseException:
+            pass
+        raise
 
 
 async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
-    cleanup: Any = ctx.get("storage_cleanup")
-    try:
-        if cleanup is not None:
-            await cleanup.stop()
-    finally:
-        manager: Any = ctx.get("outbox_worker")
-        try:
-            if manager is not None:
-                await manager.stop()
-        finally:
-            from app.core.redis import close_arq_pool
-            await close_arq_pool()
+    from app.core.resource_lifecycle import ProcessResources, ResourceCleanup
+
+    cleanup: Any = ctx.pop("storage_cleanup", None)
+    manager: Any = ctx.pop("outbox_worker", None)
+    closers: list[Callable[[], Awaitable[None]]] = []
+    if cleanup is not None:
+        closers.append(cleanup.stop)
+    if manager is not None:
+        closers.append(manager.stop)
+    closers.append(ProcessResources.close)
+    await ResourceCleanup.close_all(closers)
 
 
 class WorkerSettings:

@@ -240,4 +240,34 @@ describe("Login page submission", () => {
       expect(screen.getByTestId(expectedLanding)).not.toBeNull();
     });
   });
+
+  it("uppercases a lowercase SMS code before logging in", async () => {
+    const user = userEvent.setup();
+    const loginSpy = vi.spyOn(authEndpoints, "login").mockResolvedValue({
+      access_token: createMockToken("student", 10),
+      refresh_token: "r",
+      token_type: "bearer",
+      must_set_password: false,
+    });
+    renderLogin();
+    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "student@example.com");
+    await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "12345a");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("student@example.com", "12345A"));
+  });
+
+  it("sends a staff password exactly as typed", async () => {
+    const user = userEvent.setup();
+    const loginSpy = vi.spyOn(authEndpoints, "login").mockResolvedValue({
+      access_token: createMockToken("superadmin", 1),
+      refresh_token: "r",
+      token_type: "bearer",
+      must_set_password: false,
+    });
+    renderLogin();
+    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "admin@example.com");
+    await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "adminpass9");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("admin@example.com", "adminpass9"));
+  });
 });

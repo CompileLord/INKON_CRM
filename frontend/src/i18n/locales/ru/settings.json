@@ -8,7 +8,8 @@
     "profile": "Профиль",
     "appearance": "Оформление",
     "organization": "Организация",
-    "rules": "Правила уведомлений"
+    "rules": "Правила уведомлений",
+    "security": "Безопасность"
   },
   "saveBar": {
     "label": "Несохранённые изменения",
@@ -80,5 +81,15 @@
     "debts": "Напоминания о долге",
     "debtsHint": "Напоминать ученикам с просроченным балансом.",
     "telegram": "Telegram"
+  },
+  "security": {
+    "currentPassword": "Текущий пароль",
+    "currentPasswordHint": "Студент может ввести код из SMS.",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Повторите новый пароль",
+    "rulesLabel": "Правила пароля",
+    "submit": "Сменить пароль",
+    "changed": "Пароль изменён",
+    "currentPasswordWrong": "Текущий пароль неверный."
   }
 }

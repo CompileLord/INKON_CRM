@@ -334,6 +334,7 @@ async def test_student() -> User:
             first_name="Student",
             last_name="One",
             role=UserRole.STUDENT,
+            phone="+992900000888",
             must_set_password=False
         )
         session.add(student)

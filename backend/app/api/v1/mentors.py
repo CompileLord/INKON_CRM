@@ -1,15 +1,15 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user, get_mentor_analytics_service, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
-from app.models.enrollment import Enrollment
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.user import MentorAnalyticsResponse, MentorProfileResponse, UserResponse
+from app.schemas.user import MentorAnalyticsResponse, MentorProfileResponse, StudentMentorCardResponse, StudentMentorCourseResponse, StudentMentorIdentityResponse, UserResponse
 from app.services.user_service import UserService
 from app.services.mentor_analytics_service import MentorAnalyticsService
+
+from app.api.v1.contract_notes import ContractNotes
 
 router = APIRouter()
 
@@ -72,44 +72,47 @@ async def get_my_grading_queue(
     return await journal_service.get_mentor_grading_queue(current_user.id)
 
 
-@router.get("/{id}/profile", response_model=MentorProfileResponse)
+@router.get("/{id}/profile", response_model=MentorProfileResponse | StudentMentorCardResponse, description=ContractNotes.MENTOR_PROFILE,
+    responses={200: {"description": "Successful Response (mentor owner or superadmin)"}})
 async def get_mentor_profile(
     id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
-) -> dict:
+) -> dict | StudentMentorCardResponse:
     if current_user.role == UserRole.MENTOR and current_user.id != id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to other mentor profiles"
         )
+    user_repo: SQLAlchemyUserRepository = SQLAlchemyUserRepository(db)
     if current_user.role == UserRole.STUDENT:
-        enroll_query = select(Enrollment).join(Course).filter(
-            Enrollment.student_id == current_user.id,
-            Course.mentor_id == id,
-            Enrollment.is_deleted == False
-        )
-        enroll_res = await db.execute(enroll_query)
-        if not enroll_res.scalars().first():
+        visible_courses: list[Course] = await user_repo.get_student_visible_mentor_courses(id, current_user.id)
+        if not visible_courses:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enrolled in any course with this mentor"
             )
+        target_mentor: User | None = await user_repo.get_by_id(id)
+        if target_mentor is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mentor not found")
+        return StudentMentorCardResponse(
+            user=StudentMentorIdentityResponse.model_validate(target_mentor),
+            active_courses=[StudentMentorCourseResponse.model_validate(course) for course in visible_courses],
+        )
     elif current_user.role not in [UserRole.SUPERADMIN, UserRole.MENTOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
 
-    user_repo = SQLAlchemyUserRepository(db)
-    target_user = await user_repo.get_by_id(id)
+    target_user: User | None = await user_repo.get_by_id(id)
     if not target_user or target_user.role != UserRole.MENTOR:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mentor not found"
         )
 
-    stats = await user_repo.get_mentor_profile_stats(id)
+    stats: dict = await user_repo.get_mentor_profile_stats(id)
     return {
         "user": target_user,
         "active_courses": stats["active_courses"],

@@ -121,7 +121,7 @@ describe("Students page", () => {
     };
 
     vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue(newStudent),
+      mutateAsync: vi.fn().mockResolvedValue({ ...newStudent, password_sms_destination: "student_phone" }),
       isPending: false,
     } as unknown as ReturnType<typeof userHooks.useCreateUser>);
 
@@ -141,17 +141,18 @@ describe("Students page", () => {
     await user.type(screen.getByLabelText(/First Name/i), "Nodir");
     await user.type(screen.getByLabelText(/Last Name/i), "Yusupov");
     await user.type(screen.getByLabelText(/^Email/i), "new.student@example.com");
+    await user.type(screen.getByLabelText(/^Phone/i), "+992900000099");
 
     const createSubmit = screen.getByRole("button", { name: "Create" });
     await user.click(createSubmit);
 
     await waitFor(() => {
       expect(getLocation()?.pathname).toBe("/students/99");
-      expect(screen.getByRole("status").textContent).toContain("Student created. Login details (email and temporary password) were sent to their email");
+      expect(screen.getByRole("status").textContent).toContain("The password was sent by SMS to the student phone.");
       expect(screen.getByRole("heading", { name: "Nodir Yusupov" })).toBeDefined();
     });
     navigate("/students/11");
-    await waitFor(() => expect(screen.queryByText(/Student created\. Login details/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/sent by SMS to the student phone/)).toBeNull());
   });
 
   it("handles student deletion with enrollment withdrawal and confirmation dialog", async () => {
