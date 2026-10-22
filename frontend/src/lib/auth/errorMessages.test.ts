@@ -9,7 +9,7 @@ import {
 
 describe("describeAuthError", () => {
   it("uses the caller-supplied message for 401", () => {
-    const err = new AuthApiError(401, "Invalid email or password");
+    const err = new AuthApiError(401, "Invalid login or password");
     expect(describeAuthError(err, "Неверный email или пароль")).toBe("Неверный email или пароль");
   });
 

@@ -58,7 +58,7 @@ class AuthService:
             await self.password_work_service.hash("invalid-login-placeholder")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
+                detail="Invalid login or password"
             )
 
         current_password_matches: bool = bool(user.password_hash) and await self.password_work_service.verify(
@@ -73,7 +73,7 @@ class AuthService:
         if not current_password_matches and not pending_password_matches:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
+                detail="Invalid login or password"
             )
         if pending_password_matches and not current_password_matches:
             user.password_hash = await self.password_work_service.hash(password)
