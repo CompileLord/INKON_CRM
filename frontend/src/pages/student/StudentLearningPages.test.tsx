@@ -63,13 +63,13 @@ describe("MyCourses", () => {
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
-  it("shows a dash when the backend has no score for a course", () => {
+  it("says Not graded yet instead of a bare dash when the backend has no score for a course", () => {
     const unscored = entry(1, "active");
     unscored.my_total_score = undefined;
     unscored.my_total_max_score = undefined;
     profileState.current = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [unscored] } };
     renderCourses();
-    expect(screen.getByTestId("course-score").textContent).toBe("—");
+    expect(screen.getByTestId("course-score").textContent).toBe("Not graded yet");
   });
 
   it("uses an initial tile without a photo and the photo when there is one", () => {

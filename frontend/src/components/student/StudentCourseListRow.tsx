@@ -31,7 +31,7 @@ export function StudentCourseListRow({ entry }: StudentCourseListRowProps) {
           {hasScore ? (
             <CourseScore score={entry.my_total_score!} />
           ) : (
-            <span className="text-muted">{t("metricUnavailable")}</span>
+            <span className="text-xs text-muted">{t("notGradedYet")}</span>
           )}
         </div>
       </div>

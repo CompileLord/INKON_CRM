@@ -129,5 +129,8 @@
     "attendanceValue": "Посещаемость {{value}}",
     "openJournal": "Открыть журнал",
     "scoreUnavailable": "Баллы —"
+  },
+  "home": {
+    "continue": "Продолжить"
   }
 }

@@ -5,16 +5,12 @@ import i18n from "../../i18n";
 import { StudentDashboard } from "./StudentDashboard";
 import type { StudentCourseProfile } from "../../lib/users/types";
 
-const state = vi.hoisted(() => ({ profile: {} as Record<string, unknown>, mentor: {} as Record<string, unknown>, schedule: {} as Record<string, unknown> }));
+const state = vi.hoisted(() => ({ profile: {} as Record<string, unknown>, history: {} as Record<string, unknown> }));
 
 vi.mock("../../lib/users/hooks", () => ({
   useMyStudentProfile: () => state.profile,
-  useMentorProfile: () => state.mentor,
+  useMyStudentJournalHistory: () => state.history,
 }));
-vi.mock("../../lib/courses/hooks", () => ({
-  useCourseSchedule: () => state.schedule,
-}));
-
 function courseEntry(id: number, title: string, nextLessonAt: string | null, bucket: "active" | "archive" = "active"): StudentCourseProfile {
   return {
     course: { id, title, description: "", photo_path: null, start_date: "2020-06-01", end_date: "2099-12-31", exam_type: "weekly", price: "1.00", mentor_id: 10, status: "active", is_deleted: false, created_at: "", updated_at: "" },
@@ -34,52 +30,53 @@ function renderDashboard() {
   return render(<MemoryRouter><StudentDashboard /></MemoryRouter>);
 }
 
+function period(courseId: number, sumScore: number, start: string, end: string, graded: boolean = true): Record<string, unknown> {
+  return { journal_id: courseId * 10, course_id: courseId, course_title: "x", period_label: "Month 3", period_start: start, period_end: end, state: graded ? "graded" : "in_progress", percentage: 82, sum_score: sumScore, max_period_score: 120, attendance_count: 0, total_lessons: 1 };
+}
+
 beforeEach(async () => {
   await i18n.changeLanguage("en");
   state.profile = profile([courseEntry(1, "Physics", null), courseEntry(2, "Chemistry", null), courseEntry(3, "Old", null, "archive")]);
-  state.mentor = { data: { user: { first_name: "Davron", last_name: "Karimov" } }, isLoading: false, isError: false };
-  state.schedule = { data: [{ id: 1, course_id: 1, day_of_week: 0, time_start: "10:00:00", time_end: "11:30:00" }, { id: 2, course_id: 1, day_of_week: 2, time_start: "10:00:00", time_end: "11:30:00" }], isLoading: false, isError: false };
+  state.history = { data: { pages: [{ items: [period(1, 99, "2026-03-01", "2026-03-31"), period(2, 5, "2026-03-01", "2026-03-31", false)] }] }, isLoading: false, isError: false };
 });
 afterEach(cleanup);
 
 describe("StudentDashboard", () => {
-  it("renders one card per active course and no stat tiles, next lesson card or latest period card", () => {
+  it("does not repeat My courses: no course card grid and no stat tiles", () => {
     const { container } = renderDashboard();
-    expect(screen.getAllByTestId("student-course-card")).toHaveLength(2);
+    expect(screen.queryAllByTestId("student-course-card")).toHaveLength(0);
+    expect(screen.queryByTestId("student-course-cards")).toBeNull();
     expect(container.querySelectorAll("[data-stat-group]")).toHaveLength(0);
-    expect(screen.queryByRole("heading", { name: "Next lesson" })).toBeNull();
-    expect(screen.queryByText(/latest result/i)).toBeNull();
+    expect(screen.queryByText("Davron Karimov")).toBeNull();
+    expect(screen.queryByText(/Attendance/)).toBeNull();
   });
 
-  it("shows title, mentor, schedule, computed next lesson, score over max, attendance and an Open journal link", () => {
+  it("shows one compact row per active course with the latest graded total and a Continue link", () => {
     renderDashboard();
-    const card: HTMLElement = screen.getAllByTestId("student-course-card")[0];
-    expect(within(card).getByText("Physics")).toBeTruthy();
-    expect(within(card).getByText("Davron Karimov")).toBeTruthy();
-    expect(card.textContent).toMatch(/10:00.11:30/);
-    expect(within(card).queryByText("No upcoming lesson")).toBeNull();
-    expect(within(card).getByTestId("course-card-score").textContent).toContain("92/ 130");
-    expect(card.textContent).toContain("Attendance 90%");
-    expect(within(card).getByRole("link", { name: "Open journal" }).getAttribute("href")).toBe("/my/courses/1/journal");
+    const rows: HTMLElement[] = screen.getAllByTestId("student-home-course");
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText("Physics")).toBeTruthy();
+    expect(within(rows[0]).getByTestId("latest-total").textContent).toBe("99");
+    expect(rows[0].textContent).not.toMatch(/%|\/ 120|Month/);
+    expect(within(rows[0]).getByRole("link", { name: "Continue" }).getAttribute("href")).toBe("/my/courses/1/journal");
+    expect(within(rows[1]).queryByTestId("latest-total")).toBeNull();
+    expect(within(rows[1]).getByText("Not graded yet")).toBeTruthy();
   });
 
-  it("falls back to the profile next lesson and then to an explicit empty line", () => {
-    state.schedule = { data: [], isLoading: false, isError: false };
-    state.profile = profile([courseEntry(1, "Physics", "2099-10-20T05:00:00Z"), courseEntry(2, "Chemistry", null)]);
+  it("shows the soonest next lesson across active courses with its course name", () => {
+    state.profile = profile([courseEntry(1, "Physics", "2099-10-21T05:00:00Z"), courseEntry(2, "Chemistry", "2099-10-20T05:00:00Z"), courseEntry(3, "Old", "2099-10-19T05:00:00Z", "archive")]);
     renderDashboard();
-    const cards: HTMLElement[] = screen.getAllByTestId("student-course-card");
-    expect(within(cards[0]).queryByText("No upcoming lesson")).toBeNull();
-    expect(within(cards[1]).getByText("No upcoming lesson")).toBeTruthy();
+    const next: HTMLElement = screen.getByTestId("student-next-lesson");
+    expect(next.textContent).toContain("Chemistry");
+    expect(next.textContent).not.toContain("Physics");
   });
 
-  it("labels a missing score instead of showing a bare dash", () => {
-    const entry: StudentCourseProfile = { ...courseEntry(1, "Physics", null), my_total_score: undefined, my_total_max_score: undefined };
-    state.profile = profile([entry]);
+  it("omits the next lesson block when no lesson is scheduled", () => {
     renderDashboard();
-    expect(screen.getByTestId("course-card-score").textContent).toBe("Score —");
+    expect(screen.queryByTestId("student-next-lesson")).toBeNull();
   });
 
-  it("shows a skeleton with the card geometry while loading", () => {
+  it("shows a skeleton with the row geometry while loading", () => {
     state.profile = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() };
     renderDashboard();
     expect(screen.getByTestId("student-courses-skeleton").children.length).toBeGreaterThan(1);
