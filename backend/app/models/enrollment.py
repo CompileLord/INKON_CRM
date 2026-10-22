@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, SoftDeleteMixin
 
@@ -16,6 +16,12 @@ class Enrollment(Base, SoftDeleteMixin):
     __tablename__ = "enrollments"
     __table_args__ = (
         UniqueConstraint("student_id", "course_id", name="uq_student_course"),
+        Index(
+            "ix_enrollments_course_student_live",
+            "course_id",
+            "student_id",
+            postgresql_where=text("is_deleted = false"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
