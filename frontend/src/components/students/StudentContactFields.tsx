@@ -16,7 +16,6 @@ export function StudentContactFields({ register, errors }: StudentContactFieldsP
   const { t } = useTranslation("students");
   const phoneReg = register("phone");
   const parentPhoneReg = register("parentPhone");
-  const parentTelegramChatIdReg = register("parentTelegramChatId");
   const paymentDayReg = register("paymentDay");
 
   return (
@@ -83,32 +82,6 @@ export function StudentContactFields({ register, errors }: StudentContactFieldsP
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="student-parentTelegramChatId" className={labelClass}>
-                {t("form.telegramChatIdLabel")}
-              </label>
-              <input
-                id="student-parentTelegramChatId"
-                inputMode="numeric"
-                placeholder="123456789"
-                aria-invalid={Boolean(errors.parentTelegramChatId)}
-                aria-describedby={
-                  errors.parentTelegramChatId
-                    ? "student-parentTelegramChatId-error"
-                    : "student-parentTelegramChatId-help"
-                }
-                className={inputClass}
-                {...parentTelegramChatIdReg}
-              />
-              <span id="student-parentTelegramChatId-help" className="text-xs text-muted">
-                {t("form.telegramChatIdHelp")}
-              </span>
-              {errors.parentTelegramChatId?.message && (
-                <span id="student-parentTelegramChatId-error" role="alert" className="text-xs text-destructive">
-                  {errors.parentTelegramChatId.message}
-                </span>
-              )}
-            </div>
           </div>
 
           <div className="flex flex-col gap-4">

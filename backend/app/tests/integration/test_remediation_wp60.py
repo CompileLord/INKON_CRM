@@ -1,3 +1,4 @@
+from app.core.login_identifier import LoginIdentifierParser
 import asyncio
 import threading
 import time
@@ -87,11 +88,11 @@ class TestPasswordOffload:
         hashing: AsyncMock = AsyncMock(return_value=hash_password("replacement123"))
         monkeypatch.setattr(adapter, "verify", verify)
         monkeypatch.setattr(adapter, "hash", hashing)
-        await service.login(test_student.email, "student_pass123")
+        await service.login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
         verify.assert_awaited_once()
         verify.return_value = False
         with pytest.raises(HTTPException) as rejected:
-            await service.login(test_student.email, "wrong")
+            await service.login(LoginIdentifierParser.from_email(test_student.email), "wrong")
         assert rejected.value.status_code == 401
         await service.set_password(test_student.id, "replacement123")
         hashing.assert_awaited_once_with("replacement123")
@@ -129,7 +130,7 @@ class TestPasswordOffload:
         self, db_session: AsyncSession, test_student: User,
     ) -> None:
         service: AuthService = AuthService(db_session)
-        original_tokens: TokenPair = await service.login(test_student.email, "student_pass123")
+        original_tokens: TokenPair = await service.login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
         issued_at: datetime = datetime.now(timezone.utc)
         reset_token: str = jwt.encode(
             {"sub": str(test_student.id), "type": "password_reset",
@@ -142,9 +143,9 @@ class TestPasswordOffload:
         assert updated_user is not None
         assert await security.PasswordWorkService().verify("changed_password123", updated_user.password_hash)
         with pytest.raises(HTTPException) as old_password:
-            await service.login(test_student.email, "student_pass123")
+            await service.login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
         assert old_password.value.status_code == 401
-        await service.login(test_student.email, "changed_password123")
+        await service.login(LoginIdentifierParser.from_email(test_student.email), "changed_password123")
         with pytest.raises(HTTPException) as revoked_refresh:
             await service.refresh(original_tokens.refresh_token)
         assert revoked_refresh.value.status_code == 401

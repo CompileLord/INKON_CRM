@@ -1,3 +1,4 @@
+from app.core.login_identifier import LoginIdentifierParser
 import asyncio
 import json
 from typing import Any
@@ -202,7 +203,7 @@ async def test_database_failure_never_restores_consumed_code_and_new_request_rec
     if namespace == 'code':
         await service.generate_verification_code(test_mentor.email)
     else:
-        await service.password_reset_request(test_mentor.email)
+        await service.password_reset_request(LoginIdentifierParser.from_email(test_mentor.email))
     raw: str | None = await redis_client.get(key)
     assert raw is not None
     fresh_code: str = json.loads(raw)['code']

@@ -99,17 +99,18 @@ describe("StudentProfile Component", () => {
   it("opens the password SMS dialog from the actions menu for staff, with resend and the deliveries list", async () => {
     const user = userEvent.setup();
     const list = vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
-    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone" });
+    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone", channel: "student_phone", masked_phone: "***0042" });
     renderStudentProfile();
 
     await user.click(screen.getByRole("button", { name: "Student actions" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Password SMS" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Send login details" }));
 
     expect(await screen.findByText(/No SMS sent yet/)).toBeDefined();
     expect(list).toHaveBeenCalledWith(42);
-    await user.click(screen.getByRole("button", { name: "Resend password SMS" }));
-    expect(await screen.findByText("New code sent to the student phone.")).toBeDefined();
-    expect(resend).toHaveBeenCalledWith(42);
+    await user.click(screen.getByRole("radio", { name: /Student phone/ }));
+    await user.click(screen.getByRole("button", { name: "Resend password" }));
+    expect(await screen.findByText("New code sent by SMS to the student phone ***0042.")).toBeDefined();
+    expect(resend).toHaveBeenCalledWith(42, "student_phone");
   });
 
   it("does not request deliveries until the dialog is opened", () => {
@@ -122,6 +123,6 @@ describe("StudentProfile Component", () => {
     useAuthStore.setState({ role: "mentor", userId: 7 });
     renderStudentProfile();
     expect(screen.queryByRole("button", { name: "Student actions" })).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: "Password SMS" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Send login details" })).toBeNull();
   });
 });

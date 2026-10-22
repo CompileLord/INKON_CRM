@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { EnrollmentStatusBadge } from "../enrollments/EnrollmentStatusBadge";
@@ -34,7 +35,7 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, isHighlight
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span ref={(element: HTMLElement | null) => registerName(item.student_id, element)} className="truncate text-sm font-medium text-ink">{studentName}</span>
-        <span className="truncate text-xs text-muted">{item.student.email}</span>
+        <span className="truncate text-xs text-muted">{item.student.email ?? CanonicalPhone.prefill(item.student.phone)}</span>
         <span className="text-xs tabular-nums text-muted sm:hidden">{price} · {enrolledOn}</span>
       </span>
       <span className="flex shrink-0 items-center gap-4">

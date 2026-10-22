@@ -48,6 +48,7 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
                     User.last_name.ilike(search_pattern),
                     User.email.ilike(search_pattern),
                     User.phone.ilike(search_pattern),
+                    User.phone.ilike(search_pattern),
                 )
             )
         return criteria
@@ -251,6 +252,7 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
                     User.first_name.ilike(search_pattern),
                     User.last_name.ilike(search_pattern),
                     User.email.ilike(search_pattern),
+                    User.phone.ilike(search_pattern),
                     User.phone.ilike(search_pattern),
                 )
             )

@@ -21,13 +21,13 @@ export function getAuthErrorKind(err: unknown): AuthErrorKind {
   return "genericError";
 }
 
-export interface MappedFieldError<T extends string = "email" | "password"> {
+export interface MappedFieldError<T extends string = "login" | "email" | "password"> {
   field: T;
   messageKey: string;
   params?: Record<string, unknown>;
 }
 
-export interface ValidationMappingResult<T extends string = "email" | "password"> {
+export interface ValidationMappingResult<T extends string = "login" | "email" | "password"> {
   fieldErrors: MappedFieldError<T>[];
   formErrorKey: AuthErrorKind | null;
 }
@@ -69,6 +69,12 @@ export function mapValidationError(detail: unknown): ValidationMappingResult {
         fieldErrors.push({ field: "email", messageKey: "validation:invalidEmail" });
       } else {
         fieldErrors.push({ field: "email", messageKey: "auth:genericError" });
+      }
+    } else if (field === "login") {
+      if (type === "missing") {
+        fieldErrors.push({ field: "login", messageKey: "validation:required" });
+      } else {
+        fieldErrors.push({ field: "login", messageKey: "validation:invalidLogin" });
       }
     } else if (field === "password") {
       if (type === "missing") {

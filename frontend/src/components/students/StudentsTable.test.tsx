@@ -20,7 +20,6 @@ const mockStudents: User[] = [
     parent_phone: "+992900000002",
     date_of_birth: "2005-06-15",
     payment_day_of_month: 12,
-    parent_telegram_chat_id: 12345,
     parent_linked: true,
     is_deleted: false,
     must_set_password: false,
@@ -39,7 +38,6 @@ const mockStudents: User[] = [
     parent_phone: null,
     date_of_birth: null,
     payment_day_of_month: 25,
-    parent_telegram_chat_id: null,
     parent_linked: false,
     is_deleted: true,
     must_set_password: false,
@@ -91,6 +89,16 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
     props: defaultProps,
   };
 }
+
+describe("StudentsTable without an email", () => {
+  it("shows the phone under the name when the student has no email", () => {
+    const emailless: User = { ...mockStudents[0], id: 103, email: null, phone: "+992900000099", first_name: "Nodira" };
+    renderTable({ students: [emailless], total: 1 });
+    const row = document.getElementById("student-row-103") as HTMLElement;
+    expect(within(row).getAllByText("+992900000099").length).toBeGreaterThanOrEqual(2);
+    expect(row.textContent).not.toContain("null");
+  });
+});
 
 describe("StudentsTable", () => {
   it("shows the parent-linked badge only for students whose parent has linked Telegram", () => {

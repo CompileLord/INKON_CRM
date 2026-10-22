@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.core.login_identifier import LoginIdentifier, LoginIdentifierParser
 from app.core.redis import redis_client
 from app.core.security import verify_password
 from app.core.temporary_passwords import TemporaryPasswordGenerator
@@ -34,6 +35,10 @@ async def create_student(db_session: AsyncSession, email: str = "fresh.student@e
     )
     await db_session.commit()
     return created_user
+
+
+def email_login(email: str) -> LoginIdentifier:
+    return LoginIdentifierParser.from_email(email)
 
 
 async def load_credentials_events(db_session: AsyncSession, email: str) -> list[OutboxEvent]:
@@ -99,7 +104,7 @@ async def test_emailed_password_logs_in_with_must_set_password_scope(db_session:
     event: OutboxEvent = (await load_credentials_events(db_session, user.email))[0]
     temporary_password: str = decrypt_temporary_password(event)
 
-    token_pair: TokenPair = await AuthService(db_session).login(user.email, temporary_password)
+    token_pair: TokenPair = await AuthService(db_session).login(email_login(user.email), temporary_password)
 
     assert token_pair.must_set_password is True
     assert len(temporary_password) == 6 and temporary_password.isdigit()
@@ -132,9 +137,9 @@ async def test_set_password_invalidates_temporary_password(db_session: AsyncSess
     await db_session.commit()
 
     with pytest.raises(HTTPException) as caught:
-        await auth_service.login(user.email, temporary_password)
+        await auth_service.login(email_login(user.email), temporary_password)
     assert caught.value.status_code == 401
-    final_pair: TokenPair = await auth_service.login(user.email, "my-own-pass-42")
+    final_pair: TokenPair = await auth_service.login(email_login(user.email), "my-own-pass-42")
     assert final_pair.must_set_password is False
 
 
@@ -153,30 +158,32 @@ async def test_resend_replaces_temporary_password(db_session: AsyncSession) -> N
     second_password: str = decrypt_temporary_password(events[1])
     assert second_password != first_password
     with pytest.raises(HTTPException):
-        await auth_service.login(user.email, first_password)
-    assert (await auth_service.login(user.email, second_password)).must_set_password is True
+        await auth_service.login(email_login(user.email), first_password)
+    assert (await auth_service.login(email_login(user.email), second_password)).must_set_password is True
     await db_session.refresh(user)
     assert user.auth_version > initial_auth_version
 
 
 @pytest.mark.asyncio
-async def test_resend_rejects_user_with_password_already_set(
+async def test_resend_for_user_with_password_already_set_is_silent_and_sends_nothing(
     db_session: AsyncSession, test_student: User
 ) -> None:
-    with pytest.raises(HTTPException) as caught:
-        await AuthService(db_session).resend_code(test_student.email)
-    assert caught.value.status_code == 400
+    assert await AuthService(db_session).resend_code(test_student.email) is None
     assert await load_credentials_events(db_session, test_student.email) == []
 
 
 @pytest.mark.asyncio
-async def test_email_change_issues_new_credentials_and_invalidates_old_password(
+async def test_resend_for_unknown_email_is_silent(db_session: AsyncSession) -> None:
+    assert await AuthService(db_session).resend_code("nobody@example.com") is None
+    assert await load_credentials_events(db_session, "nobody@example.com") == []
+
+
+@pytest.mark.asyncio
+async def test_email_change_before_first_login_reissues_credentials_to_new_email(
     db_session: AsyncSession,
 ) -> None:
     user: User = await create_student(db_session)
     old_password: str = decrypt_temporary_password((await load_credentials_events(db_session, user.email))[0])
-    await AuthService(db_session).set_password(user.id, "my-own-pass-42")
-    await db_session.commit()
     auth_version_before: int = user.auth_version
 
     updated_user: User = await UserService(db_session).update_user(
@@ -191,10 +198,29 @@ async def test_email_change_issues_new_credentials_and_invalidates_old_password(
     assert len(new_events) == 1
     new_password: str = decrypt_temporary_password(new_events[0])
     auth_service = AuthService(db_session)
-    for rejected_password in (old_password, "my-own-pass-42"):
-        with pytest.raises(HTTPException):
-            await auth_service.login("moved.student@example.com", rejected_password)
-    assert (await auth_service.login("moved.student@example.com", new_password)).must_set_password is True
+    with pytest.raises(HTTPException):
+        await auth_service.login(email_login("moved.student@example.com"), old_password)
+    assert (await auth_service.login(email_login("moved.student@example.com"), new_password)).must_set_password is True
+
+
+@pytest.mark.asyncio
+async def test_email_change_after_first_login_keeps_password_and_sends_nothing(
+    db_session: AsyncSession,
+) -> None:
+    user: User = await create_student(db_session)
+    await AuthService(db_session).set_password(user.id, "my-own-pass-42")
+    await db_session.commit()
+    auth_version_before: int = user.auth_version
+
+    updated_user: User = await UserService(db_session).update_user(
+        user.id, UserUpdate(email="moved.student@example.com")
+    )
+    await db_session.commit()
+
+    assert updated_user.auth_version == auth_version_before
+    assert await load_credentials_events(db_session, "moved.student@example.com") == []
+    final_pair: TokenPair = await AuthService(db_session).login(email_login("moved.student@example.com"), "my-own-pass-42")
+    assert final_pair.must_set_password is False
 
 
 class RecordingEmailService(EmailService):

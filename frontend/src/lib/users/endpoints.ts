@@ -7,6 +7,8 @@ import type {
   MentorProfileResult,
   PaginatedUsers,
   PasswordSmsDelivery,
+  PasswordResendRequest,
+  CredentialsChannel,
   PasswordSmsResendResponse,
   StudentJournalHistoryPage,
   StudentJournalHistoryParams,
@@ -110,9 +112,10 @@ export function generateTelegramLinkCode(studentId: number): Promise<TelegramLin
     .then((res) => res.data);
 }
 
-export function resendPasswordSms(userId: number): Promise<PasswordSmsResendResponse> {
+export function resendPasswordSms(userId: number, channel?: CredentialsChannel): Promise<PasswordSmsResendResponse> {
+  const body: PasswordResendRequest = channel ? { channel } : {};
   return httpClient
-    .post<PasswordSmsResendResponse>(`/users/${userId}/resend-password-sms`)
+    .post<PasswordSmsResendResponse>(`/users/${userId}/resend-password-sms`, body)
     .then((res) => res.data);
 }
 

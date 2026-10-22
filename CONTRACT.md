@@ -14,7 +14,8 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 **Request Body (JSON):**
 ```json
 {
-  "email": string,
+  "login?": string,
+  "email?": string,
   "password": string,
 }
 ```
@@ -264,12 +265,14 @@ Regenerate with `python -m scripts.generate_contract` from the `backend/` direct
 
 **Summary:** Password Reset Request
 
-Students receive a pending SMS password with a short expiration (ten minutes by default). Their current password and sessions remain valid until the SMS password is used at login.
+Accepts login (email or E.164 phone) or the legacy email field, plus an optional SMS channel. Accounts with an email receive a reset code by email; accounts without one, or requests naming a channel, receive a pending SMS password with a short expiration (ten minutes by default). The current password and sessions remain valid until the SMS password is used at login. The response is identical whether or not the account or channel exists.
 
 **Request Body (JSON):**
 ```json
 {
-  "email": string,
+  "login?": string,
+  "email?": string,
+  "channel?": "student_phone" | "parent_phone",
 }
 ```
 
@@ -379,13 +382,12 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 **Request Body (JSON):**
 ```json
 {
-  "email": string,
+  "email?": string,
   "first_name": string,
   "last_name": string,
   "role": "superadmin" | "mentor" | "student" | "accountant",
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
   "parent_phone?": string,
   "payment_day_of_month?": integer,
 }
@@ -396,7 +398,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   ```json
   {
     "id": integer,
-    "email": string,
+    "email?": string,
     "first_name": string,
     "last_name": string,
     "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -415,6 +417,8 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
     "updated_at": string,
     "parent_link_code?": string,
     "password_sms_destination?": "student_phone" | "parent_phone",
+    "credentials_channel?": "email" | "student_phone" | "parent_phone",
+    "credentials_masked_phone?": string,
   }
   ```
 - **422**: Validation Error
@@ -486,11 +490,20 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
 **Parameters:**
 - `id` [path] *(required)*
 
+**Request Body (JSON):**
+```json
+{
+  "channel?": "email" | "student_phone" | "parent_phone",
+}
+```
+
 **Responses:**
 - **200**: Successful Response
   ```json
   {
-    "destination": "student_phone" | "parent_phone",
+    "destination?": "student_phone" | "parent_phone",
+    "channel": "email" | "student_phone" | "parent_phone",
+    "masked_phone?": string,
   }
   ```
 - **422**: Validation Error
@@ -519,7 +532,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   ```json
   {
     "id": integer,
-    "email": string,
+    "email?": string,
     "first_name": string,
     "last_name": string,
     "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -562,7 +575,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   ```json
   {
     "id": integer,
-    "email": string,
+    "email?": string,
     "first_name": string,
     "last_name": string,
     "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -615,7 +628,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "last_name?": string,
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
   "parent_phone?": string,
   "payment_day_of_month?": integer,
 }
@@ -626,7 +638,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   ```json
   {
     "id": integer,
-    "email": string,
+    "email?": string,
     "first_name": string,
     "last_name": string,
     "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -707,7 +719,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   ```json
   {
     "id": integer,
-    "email": string,
+    "email?": string,
     "first_name": string,
     "last_name": string,
     "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -759,7 +771,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
     "items": [
       {
         "id": integer,
-        "email": string,
+        "email?": string,
         "first_name": string,
         "last_name": string,
         "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -843,7 +855,7 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   {
     "user": {
       "id": integer,
-      "email": string,
+      "email?": string,
       "first_name": string,
       "last_name": string,
       "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -1051,7 +1063,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   {
     "user": {
       "id": integer,
-      "email": string,
+      "email?": string,
       "first_name": string,
       "last_name": string,
       "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -1168,7 +1180,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
     "items": [
       {
         "id": integer,
-        "email": string,
+        "email?": string,
         "first_name": string,
         "last_name": string,
         "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -1220,7 +1232,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   {
     "user": {
       "id": integer,
-      "email": string,
+      "email?": string,
       "first_name": string,
       "last_name": string,
       "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -1310,7 +1322,7 @@ Students receive only public mentor identity and course identity for their nonde
   {
     "user": {
       "id": integer,
-      "email": string,
+      "email?": string,
       "first_name": string,
       "last_name": string,
       "role": "superadmin" | "mentor" | "student" | "accountant",
@@ -2287,7 +2299,7 @@ Students receive only public mentor identity and course identity for their nonde
           "id": any,
           "first_name": any,
           "last_name": any,
-          "email": any,
+          "email?": any,
           "phone?": any,
           "photo_path?": any,
           "thumbnail_path?": any,
@@ -2354,7 +2366,7 @@ Students receive only public mentor identity and course identity for their nonde
         "id": integer,
         "first_name": string,
         "last_name": string,
-        "email": string,
+        "email?": any,
         "phone?": any,
         "photo_path?": any,
         "thumbnail_path?": any,
@@ -2398,7 +2410,7 @@ Students receive only public mentor identity and course identity for their nonde
         "id": integer,
         "first_name": string,
         "last_name": string,
-        "email": string,
+        "email?": string,
         "phone?": string,
         "photo_path?": string,
         "thumbnail_path?": string,
@@ -3281,7 +3293,7 @@ Manually apply a student's wallet credit to a specific charge.
     {
       "student_id": integer,
       "student_name": string,
-      "email": string,
+      "email?": string,
       "credit_balance": string,
     }
   ]
@@ -3304,7 +3316,7 @@ Manually apply a student's wallet credit to a specific charge.
     "occurred_at": string,
     "student_id": integer,
     "student_name": string,
-    "student_email": string,
+    "student_email?": string,
     "amount": string,
     "method?": "cash" | "transfer",
     "accepted_by_name": string,
@@ -3450,7 +3462,7 @@ Manually apply a student's wallet credit to a specific charge.
           "id": any,
           "first_name": any,
           "last_name": any,
-          "email": any,
+          "email?": any,
           "payment_day_of_month?": any,
         },
         "course": {
@@ -3561,7 +3573,7 @@ Manually apply a student's wallet credit to a specific charge.
         "student_id": integer,
         "first_name": string,
         "last_name": string,
-        "email": string,
+        "email?": string,
         "debt": string,
       }
     ],

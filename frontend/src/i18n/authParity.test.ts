@@ -39,8 +39,8 @@ describe("auth i18n key parity", () => {
     expect(ruAuth.editorialTitle).toBe("Откройте новую главу.");
     expect(tgAuth.editorialTitle).toBe("Фасли навро оғоз кунед.");
 
-    expect(enAuth.invalidCredentials).toBe("Invalid email or password");
-    expect(ruAuth.invalidCredentials).toBe("Неверный email или пароль");
-    expect(tgAuth.invalidCredentials).toBe("Почта ё пароли нодуруст");
+    expect(enAuth.invalidCredentials).toBe("Invalid login or password");
+    expect(ruAuth.invalidCredentials).toBe("Неверный логин или пароль");
+    expect(tgAuth.invalidCredentials).toBe("Логин ё пароли нодуруст аст");
   });
 });

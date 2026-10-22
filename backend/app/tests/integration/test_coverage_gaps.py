@@ -21,8 +21,7 @@ async def test_logout_revokes_rotated_refresh_token(client: AsyncClient, test_st
     resend_response: Response = await client.post(
         "/api/v1/auth/resend-code", json={"email": test_student.email}
     )
-    assert resend_response.status_code == 400
-    assert resend_response.json()["detail"] == "Password already set"
+    assert resend_response.status_code == 204
     login_response: Response = await client.post(
         "/api/v1/auth/login",
         json={"email": test_student.email, "password": "student_pass123"},

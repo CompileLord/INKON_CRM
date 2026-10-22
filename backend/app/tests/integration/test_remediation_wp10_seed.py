@@ -72,7 +72,7 @@ async def test_seed_failure_rolls_back_database_and_keeps_original_storage(tmp_p
 
 
 @pytest.mark.asyncio
-async def test_demo_seed_populates_forced_change_users_and_replaces_only_disposable_storage(
+async def test_demo_seed_populates_ready_login_users_and_replaces_only_disposable_storage(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -108,7 +108,7 @@ async def test_demo_seed_populates_forced_change_users_and_replaces_only_disposa
         accountant: User | None = await session.scalar(select(User).where(User.email == "accountant@test.com"))
 
     assert len(seeded_users) == 37
-    assert all(user.must_set_password for user in seeded_users)
+    assert not any(user.must_set_password for user in seeded_users)
     assert administrator is not None
     assert accountant is not None
     assert verify_password(administrator_password, administrator.password_hash)

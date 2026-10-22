@@ -95,7 +95,6 @@ describe("Students page", () => {
       parent_phone: null,
       date_of_birth: null,
       payment_day_of_month: 5,
-      parent_telegram_chat_id: null,
       is_deleted: false,
       must_set_password: false,
       created_at: "2026-03-01T00:00:00Z",
@@ -121,7 +120,7 @@ describe("Students page", () => {
     };
 
     vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({ ...newStudent, password_sms_destination: "student_phone" }),
+      mutateAsync: vi.fn().mockResolvedValue({ ...newStudent, credentials_channel: "student_phone", credentials_masked_phone: "***0099" }),
       isPending: false,
     } as unknown as ReturnType<typeof userHooks.useCreateUser>);
 
@@ -148,11 +147,11 @@ describe("Students page", () => {
 
     await waitFor(() => {
       expect(getLocation()?.pathname).toBe("/students/99");
-      expect(screen.getByRole("status").textContent).toContain("The password was sent by SMS to the student phone.");
+      expect(screen.getByRole("status").textContent).toContain("The password was sent by SMS to ***0099.");
       expect(screen.getByRole("heading", { name: "Nodir Yusupov" })).toBeDefined();
     });
     navigate("/students/11");
-    await waitFor(() => expect(screen.queryByText(/sent by SMS to the student phone/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/sent by SMS to \*\*\*0099/)).toBeNull());
   });
 
   it("handles student deletion with enrollment withdrawal and confirmation dialog", async () => {

@@ -80,6 +80,7 @@ async def test_seeded_course_ids_preserve_references_and_leave_api_sequence_read
     offset_course_sequence: bool,
 ) -> None:
     from scripts import seed_demo_data
+    from scripts.demo_seed_report import DemoSeedReport
 
     backend_root: Path = tmp_path / "backend"
     backend_root.mkdir()
@@ -108,6 +109,7 @@ async def test_seeded_course_ids_preserve_references_and_leave_api_sequence_read
             staged_assets: dict[str, bytes],
             administrator_password: str,
             demo_password: str,
+            report: DemoSeedReport | None = None,
         ) -> None:
             async with session_factory() as sequence_session:
                 await sequence_session.execute(
@@ -122,6 +124,7 @@ async def test_seeded_course_ids_preserve_references_and_leave_api_sequence_read
                 staged_assets=staged_assets,
                 administrator_password=administrator_password,
                 demo_password=demo_password,
+                report=report,
             )
 
         monkeypatch.setattr(

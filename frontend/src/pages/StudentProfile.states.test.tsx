@@ -168,15 +168,15 @@ describe("StudentProfile Component", () => {
     renderStudentProfile([
       {
         pathname: "/students/42",
-        state: { createdStudentId: 42, createdPasswordSmsDestination: "parent_phone" },
+        state: { createdStudentId: 42, createdCredentials: { channel: "parent_phone", maskedPhone: "***8901" } },
       },
     ]);
 
-    expect(screen.getByText("The password was sent by SMS to the parent phone.")).toBeDefined();
+    expect(screen.getByText("The password was sent by SMS to the parent, ***8901.")).toBeDefined();
 
     const closeBtn = screen.getByRole("button", { name: /Close/i });
     await user.click(closeBtn);
 
-    expect(screen.queryByText("The password was sent by SMS to the parent phone.")).toBeNull();
+    expect(screen.queryByText("The password was sent by SMS to the parent, ***8901.")).toBeNull();
   });
 });

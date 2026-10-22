@@ -77,7 +77,7 @@ describe("Login page submission", () => {
 
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "admin@example.com");
     await user.type(passwordInput, "Password123");
@@ -116,7 +116,7 @@ describe("Login page submission", () => {
 
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "admin@example.com");
     await user.type(passwordInput, "Password123");
@@ -134,7 +134,7 @@ describe("Login page submission", () => {
     });
     expect(submitBtn.getAttribute("aria-busy")).toBe("true");
 
-    rejectLogin(new AuthApiError(401, "Invalid email or password"));
+    rejectLogin(new AuthApiError(401, "Invalid login or password"));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).not.toBeNull();
@@ -171,7 +171,7 @@ describe("Login page submission", () => {
 
     renderLogin();
 
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "forced@example.com");
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "forced@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "InitialPass123");
     const getSpy = vi.spyOn(httpClient, "get");
     const postSpy = vi.spyOn(httpClient, "post");
@@ -206,7 +206,7 @@ describe("Login page submission", () => {
 
     renderLogin();
 
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), `${role}@example.com`);
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), `${role}@example.com`);
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "ValidPass123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -232,7 +232,7 @@ describe("Login page submission", () => {
 
     renderLogin(`/login?redirect=${encodeURIComponent(param)}`);
 
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "admin@example.com");
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "admin@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "ValidPass123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -250,7 +250,7 @@ describe("Login page submission", () => {
       must_set_password: false,
     });
     renderLogin();
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "student@example.com");
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "student@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "12345a");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("student@example.com", "12345A"));
@@ -265,7 +265,7 @@ describe("Login page submission", () => {
       must_set_password: false,
     });
     renderLogin();
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "admin@example.com");
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "admin@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "adminpass9");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("admin@example.com", "adminpass9"));

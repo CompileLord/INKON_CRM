@@ -21,7 +21,7 @@ from app.workers.outbox import OutboxWorkerManager
 async def test_transient_failure_retries_with_backoff_and_reuses_idempotency_key(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "retry@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     user_id: int = created.json()["id"]
     sender: FakeSmsSender = FakeSmsSender([SmsDeliveryError("provider_http_503", retryable=True)])
     worker: OutboxWorkerManager = SmsPasswordTestSupport.build_worker(sender)
@@ -48,7 +48,7 @@ async def test_transient_failure_retries_with_backoff_and_reuses_idempotency_key
 async def test_permanent_failure_is_terminal_and_payload_purged(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "perm@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     sender: FakeSmsSender = FakeSmsSender([SmsDeliveryError("provider_status_rejected", retryable=False)])
     await SmsPasswordTestSupport.build_worker(sender).run_once(SmsPasswordTestSupport.build_session_factory())
     event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0]
@@ -61,7 +61,7 @@ async def test_permanent_failure_is_terminal_and_payload_purged(
 
 @pytest.mark.asyncio
 async def test_max_attempts_cap_ends_in_failed(client: AsyncClient, test_admin: User, db_session: AsyncSession) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "cap@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     user_id: int = created.json()["id"]
     sender: FakeSmsSender = FakeSmsSender([SmsDeliveryError("provider_http_500", retryable=True) for _ in range(10)])
     worker: OutboxWorkerManager = SmsPasswordTestSupport.build_worker(sender)
@@ -80,7 +80,7 @@ async def test_concurrent_workers_send_each_event_exactly_once(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
     for index in range(6):
-        assert (await SmsPasswordTestSupport.create_student_via_api(client, test_admin, f"conc{index}@example.com", f"+99290000010{index}")).status_code == 201
+        assert (await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, f"+99290000010{index}")).status_code == 201
     sender: FakeSmsSender = FakeSmsSender()
     factory: async_sessionmaker[AsyncSession] = SmsPasswordTestSupport.build_session_factory()
     await asyncio.gather(*(SmsPasswordTestSupport.build_worker(sender, batch_size=3).run_once(factory) for _ in range(4)))
@@ -90,10 +90,10 @@ async def test_concurrent_workers_send_each_event_exactly_once(
 
 @pytest.mark.asyncio
 async def test_initial_and_pending_code_can_both_be_delivered(client: AsyncClient, test_admin: User, db_session: AsyncSession) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "super@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     user_id: int = created.json()["id"]
-    resend: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))
-    assert resend.status_code == 200 and resend.json() == {"destination": "student_phone"}
+    resend: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", json={"channel": "student_phone"}, headers=SmsPasswordTestSupport.bearer(test_admin))
+    assert resend.status_code == 200 and resend.json() == {"destination": "student_phone", "channel": "student_phone", "masked_phone": "***0001"}
     older: OutboxEvent
     newer: OutboxEvent
     older, newer = await SmsPasswordTestSupport.sms_events(db_session, user_id)
@@ -109,18 +109,18 @@ async def test_initial_and_pending_code_can_both_be_delivered(client: AsyncClien
 async def test_resend_preserves_old_code_sessions_and_is_rate_limited(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "resend@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     user_id: int = created.json()["id"]
     old_code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, user_id))[0])
-    session_response: Response = await SmsPasswordTestSupport.login(client, "resend@example.com", old_code)
+    session_response: Response = await SmsPasswordTestSupport.login(client, "+992900000001", old_code)
     assert session_response.status_code == 200
-    first: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))
+    first: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", json={"channel": "student_phone"}, headers=SmsPasswordTestSupport.bearer(test_admin))
     assert first.status_code == 200
     assert old_code not in first.text
-    assert (await SmsPasswordTestSupport.login(client, "resend@example.com", old_code)).status_code == 200
+    assert (await SmsPasswordTestSupport.login(client, "+992900000001", old_code)).status_code == 200
     refresh: Response = await client.post("/api/v1/auth/refresh", json={"refresh_token": session_response.json()["refresh_token"]})
     assert refresh.status_code == 200
-    second: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))
+    second: Response = await client.post(f"/api/v1/users/{user_id}/resend-password-sms", json={"channel": "student_phone"}, headers=SmsPasswordTestSupport.bearer(test_admin))
     assert second.status_code == 429 and "Retry-After" in second.headers
     audit_rows: list[AuditLog] = list((await db_session.execute(select(AuditLog).where(AuditLog.field_name == "password_sms_queued", AuditLog.entity_id == user_id))).scalars().all())
     assert len(audit_rows) == 2
@@ -134,7 +134,7 @@ async def test_per_phone_hourly_and_daily_caps_block_shared_parent_phone_abuse(
     monkeypatch.setattr(settings, "SMS_PASSWORD_PHONE_LIMIT", 5)
     ids: list[int] = []
     for index in range(3):
-        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, f"cap{index}x@example.com", None, "+992900000077")
+        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, f"+9922{index}", "+992900000077")
         ids.append(created.json()["id"])
     statuses: list[int] = [
         (await client.post(f"/api/v1/users/{user_id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))).status_code
@@ -147,8 +147,8 @@ async def test_per_phone_hourly_and_daily_caps_block_shared_parent_phone_abuse(
 async def test_daily_phone_cap(client: AsyncClient, test_admin: User, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "SMS_PASSWORD_RESEND_COOLDOWN_SECONDS", 1)
     monkeypatch.setattr(settings, "SMS_PASSWORD_PHONE_DAILY_LIMIT", 3)
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "daily@example.com", None, "+992900000078")
-    other: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "daily2@example.com", None, "+992900000078")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+99231", "+992900000078")
+    other: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+99232", "+992900000078")
     first: Response = await client.post(f"/api/v1/users/{created.json()['id']}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))
     second: Response = await client.post(f"/api/v1/users/{other.json()['id']}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))
     assert (first.status_code, second.status_code) == (200, 429)
@@ -160,7 +160,7 @@ async def test_resend_is_staff_only_and_student_only(
 ) -> None:
     assert (await client.post(f"/api/v1/users/{test_student.id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_mentor))).status_code == 403
     assert (await client.post(f"/api/v1/users/{test_student.id}/resend-password-sms")).status_code in (401, 403)
-    assert (await client.post(f"/api/v1/users/{test_mentor.id}/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))).status_code == 404
+    assert (await client.post(f"/api/v1/users/{test_mentor.id}/resend-password-sms", json={"channel": "student_phone"}, headers=SmsPasswordTestSupport.bearer(test_admin))).status_code == 422
     assert (await client.post("/api/v1/users/999999/resend-password-sms", headers=SmsPasswordTestSupport.bearer(test_admin))).status_code == 404
     assert (await client.get("/api/v1/users/password-sms-deliveries", headers=SmsPasswordTestSupport.bearer(test_mentor))).status_code == 403
 
@@ -169,7 +169,7 @@ async def test_resend_is_staff_only_and_student_only(
 async def test_staff_sees_failed_deliveries_with_masked_phone_then_resends(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "failed@example.com", "+992900004321")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+992900004321")
     user_id: int = created.json()["id"]
     sender: FakeSmsSender = FakeSmsSender([SmsDeliveryError("provider_status_rejected", retryable=False)])
     await SmsPasswordTestSupport.build_worker(sender).run_once(SmsPasswordTestSupport.build_session_factory())
@@ -189,17 +189,17 @@ async def test_staff_sees_failed_deliveries_with_masked_phone_then_resends(
 async def test_student_password_reset_sends_new_code_by_sms_without_enumeration(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "reset@example.com", None, "+992900000055")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+99211", "+992900000055")
     user_id: int = created.json()["id"]
-    known: Response = await client.post("/api/v1/auth/password-reset/request", json={"email": "reset@example.com"})
-    unknown: Response = await client.post("/api/v1/auth/password-reset/request", json={"email": "ghost@example.com"})
+    known: Response = await client.post("/api/v1/auth/password-reset/request", json={"login": "+99211"})
+    unknown: Response = await client.post("/api/v1/auth/password-reset/request", json={"login": "+99299"})
     assert known.status_code == unknown.status_code == 200 and known.json() == unknown.json()
     events: list[OutboxEvent] = await SmsPasswordTestSupport.sms_events(db_session, user_id)
     assert len(events) == 2
     assert events[1].recipient_phone == "+992900000055"
     new_code: str = SmsPasswordTestSupport.read_code(events[1])
-    assert (await SmsPasswordTestSupport.login(client, "reset@example.com", new_code)).status_code == 200
-    again: Response = await client.post("/api/v1/auth/password-reset/request", json={"email": "reset@example.com"})
+    assert (await SmsPasswordTestSupport.login(client, "+99211", new_code)).status_code == 200
+    again: Response = await client.post("/api/v1/auth/password-reset/request", json={"login": "+99211"})
     assert again.status_code == 200 and again.json() == known.json()
     assert len(await SmsPasswordTestSupport.sms_events(db_session, user_id)) == 2
 
@@ -215,18 +215,18 @@ async def test_staff_password_reset_still_uses_email(client: AsyncClient, test_m
 
 @pytest.mark.asyncio
 async def test_brute_force_of_code_is_locked_out(client: AsyncClient, test_admin: User, db_session: AsyncSession) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "brute@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0])
-    guesses: list[int] = [(await SmsPasswordTestSupport.login(client, "brute@example.com", f"1234{index}Q")).status_code for index in range(settings.AUTH_LOGIN_LOCKOUT_LIMIT)]
+    guesses: list[int] = [(await SmsPasswordTestSupport.login(client, "+992900000001", f"1234{index}Q")).status_code for index in range(settings.AUTH_LOGIN_LOCKOUT_LIMIT)]
     assert guesses == [401] * settings.AUTH_LOGIN_LOCKOUT_LIMIT
-    assert (await SmsPasswordTestSupport.login(client, "brute@example.com", code)).status_code == 429
+    assert (await SmsPasswordTestSupport.login(client, "+992900000001", code)).status_code == 429
 
 
 @pytest.mark.asyncio
 async def test_unconfigured_api_key_fails_permanently_without_network(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "nokey@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     worker: OutboxWorkerManager = OutboxWorkerManager(
         settings.DATABASE_URL, settings.JWT_SECRET_KEY,
         sms_sender=PayomchiSmsSender(api_key=None), sms_send_interval_seconds=0,

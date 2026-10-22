@@ -8,7 +8,7 @@
   "header": {
     "actions": "Student actions",
     "edit": "Edit",
-    "access": "Password SMS",
+    "access": "Send login details",
     "delete": "Delete student",
     "parentPhone": "Parent: {{phone}}"
   },

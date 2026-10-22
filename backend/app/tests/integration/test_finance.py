@@ -1,3 +1,4 @@
+import zlib
 import pytest
 from decimal import Decimal
 from datetime import datetime, date, timedelta, timezone
@@ -76,7 +77,7 @@ async def _setup_student_course(
             "email": email,
             "first_name": "S",
             "last_name": "One",
-            "role": "student", "phone": "+992900000999",
+            "role": "student", "phone": f"+99277{zlib.crc32(email.encode()) % 10_000_000:07d}",
             "payment_day_of_month": payment_day,
         },
         headers=admin_headers,

@@ -22,7 +22,7 @@ import { StudentProgressPanel } from "../components/student/StudentProgressPanel
 import { StudentStatTiles } from "../components/student/StudentStatTiles";
 import { useStudentDeletion } from "../components/student/useStudentDeletion";
 import { getStudentProfileReturnTarget, parseStudentProfileTab, type StudentProfileTabId } from "../lib/students/studentNavigation";
-import type { PasswordSmsDestination, User } from "../lib/users/types";
+import type { CreatedCredentials, User } from "../lib/users/types";
 
 const TAB_IDS: readonly StudentProfileTabId[] = ["courses", "performance", "documents"];
 const PROFILE_ID_PREFIX: string = "profile";
@@ -36,7 +36,7 @@ interface ToastState {
 interface CreationState {
   createdStudentId?: number;
   createdParentLinkCode?: string | null;
-  createdPasswordSmsDestination?: PasswordSmsDestination | null;
+  createdCredentials?: CreatedCredentials | null;
 }
 
 export function StudentProfile() {
@@ -76,7 +76,7 @@ export function StudentProfile() {
   const creation = location.state as CreationState | null;
   const [createdFeedbackVisible, setCreatedFeedbackVisible] = useState<boolean>(() => Boolean(isSuperAdmin && numericId && creation?.createdStudentId === numericId));
   const [createdParentLinkCode, setCreatedParentLinkCode] = useState<string | null>(() => (isSuperAdmin && numericId && creation?.createdStudentId === numericId ? creation.createdParentLinkCode ?? null : null));
-  const [createdDestination, setCreatedDestination] = useState<PasswordSmsDestination | null>(() => (isSuperAdmin && numericId && creation?.createdStudentId === numericId ? creation.createdPasswordSmsDestination ?? null : null));
+  const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(() => (isSuperAdmin && numericId && creation?.createdStudentId === numericId ? creation.createdCredentials ?? null : null));
   const previousProfileIdRef = useRef<number | undefined>(numericId);
 
   const { data: queriedProfile, isLoading, isError, error, refetch } = useStudentProfile(Number.isFinite(numericId) ? numericId : undefined);
@@ -128,7 +128,7 @@ export function StudentProfile() {
     previousProfileIdRef.current = numericId;
     setCreatedFeedbackVisible(false);
     setCreatedParentLinkCode(null);
-    setCreatedDestination(null);
+    setCreatedCredentials(null);
   }, [numericId]);
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export function StudentProfile() {
       const nextState: Record<string, unknown> = { ...locationState };
       delete nextState.createdStudentId;
       delete nextState.createdParentLinkCode;
-      delete nextState.createdPasswordSmsDestination;
+      delete nextState.createdCredentials;
       navigate(`${location.pathname}${location.search}`, { replace: true, state: nextState });
       return;
     }
@@ -203,7 +203,7 @@ export function StudentProfile() {
       )}
 
       {createdFeedbackVisible && (
-        <StudentCreatedNotice destination={createdDestination} parentLinkCode={createdParentLinkCode} onClose={() => setCreatedFeedbackVisible(false)} />
+        <StudentCreatedNotice credentials={createdCredentials} parentLinkCode={createdParentLinkCode} onClose={() => setCreatedFeedbackVisible(false)} />
       )}
 
       <StudentProfileHeader
@@ -231,7 +231,7 @@ export function StudentProfile() {
         {activeTab === "documents" && <DocumentsTab key={profileKey} ownerType="student" ownerId={user.id} canManage={isSuperAdmin} ownerName={`${user.first_name} ${user.last_name}`} />}
       </div>
 
-      <StudentPasswordSmsDialog key={ownerKey} open={isAccessOpen && isSuperAdmin} studentId={user.id} onClose={() => setIsAccessOpen(false)} />
+      <StudentPasswordSmsDialog key={ownerKey} open={isAccessOpen && isSuperAdmin} studentId={user.id} contacts={user} onClose={() => setIsAccessOpen(false)} />
 
       <StudentFormPanel
         open={formStudent !== null && formStudent.id === numericId && isSuperAdmin}

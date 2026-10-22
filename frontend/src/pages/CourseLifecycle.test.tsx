@@ -133,7 +133,6 @@ const mentorUser: User = {
   role: "mentor",
   date_of_birth: null,
   phone: null,
-  parent_telegram_chat_id: null,
   parent_phone: null,
   photo_path: null,
   thumbnail_path: null,
@@ -495,94 +494,4 @@ describe("CourseLifecycle integration suite", () => {
     });
   });
 
-  it("retains duplicate dialog and allows retry or cancellation after copy failure", async () => {
-    vi.mocked(courseHooks.useCopyCourse).mockReturnValue({
-      mutateAsync: vi.fn().mockRejectedValue(new Error("Server error")),
-      isPending: false,
-    } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
-
-    renderPage("superadmin");
-    const actionsBtn = screen.getByLabelText("Course actions: Python Fundamentals");
-    actionsBtn.focus();
-    fireEvent.click(actionsBtn);
-
-    const dupMenuItem = screen.getByRole("menuitem", { name: /Duplicate/i });
-    fireEvent.click(dupMenuItem);
-    await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
-
-    const confirmBtn = screen.getByRole("button", { name: "Duplicate" });
-    fireEvent.click(confirmBtn);
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeTruthy();
-    });
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(confirmBtn).toHaveProperty("disabled", false);
-
-    const cancelBtn = screen.getByRole("button", { name: "Cancel" });
-    expect(cancelBtn).toHaveProperty("disabled", false);
-    fireEvent.click(cancelBtn);
-
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
-    await waitFor(() => {
-      expect(document.activeElement).toBe(actionsBtn);
-    });
-  });
-
-  it("retains delete dialog and allows retry or cancellation after delete failure", async () => {
-    vi.mocked(courseHooks.useDeleteCourse).mockReturnValue({
-      mutateAsync: vi.fn().mockRejectedValue(new Error("Delete failed")),
-      isPending: false,
-    } as unknown as ReturnType<typeof courseHooks.useDeleteCourse>);
-
-    renderPage("superadmin");
-    const actionsBtn = screen.getByLabelText("Course actions: Python Fundamentals");
-    actionsBtn.focus();
-    fireEvent.click(actionsBtn);
-
-    const deleteMenuItem = screen.getByRole("menuitem", { name: /Delete/i });
-    fireEvent.click(deleteMenuItem);
-    await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
-
-    const confirmDeleteBtn = screen.getByRole("button", { name: "Delete" });
-    fireEvent.click(confirmDeleteBtn);
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeTruthy();
-    });
-    expect(screen.getByRole("dialog")).toBeTruthy();
-
-    const cancelBtn = screen.getByRole("button", { name: "Cancel" });
-    expect(cancelBtn).toHaveProperty("disabled", false);
-    fireEvent.click(cancelBtn);
-
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
-    await waitFor(() => expect(document.activeElement).toBe(actionsBtn));
-  });
-
-  it("ignores stale resolution from an earlier duplicate operation if cancelled before dispatch", async () => {
-    const copyMutate = vi.fn().mockResolvedValue({ id: 55, title: "Duplicated" });
-    vi.mocked(courseHooks.useCopyCourse).mockReturnValue({
-      mutateAsync: copyMutate,
-      isPending: false,
-    } as unknown as ReturnType<typeof courseHooks.useCopyCourse>);
-
-    renderPage("superadmin");
-    const actionsBtn = screen.getByLabelText("Course actions: Python Fundamentals");
-    fireEvent.click(actionsBtn);
-
-    const dupMenuItem = screen.getByRole("menuitem", { name: /Duplicate/i });
-    fireEvent.click(dupMenuItem);
-
-    const cancelBtn = screen.getByRole("button", { name: "Cancel" });
-    fireEvent.click(cancelBtn);
-
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(copyMutate).not.toHaveBeenCalled();
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
 });

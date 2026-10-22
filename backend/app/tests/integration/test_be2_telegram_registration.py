@@ -134,7 +134,7 @@ class TestRegistrationDelivery:
         credentials_events = (
             await db_session.execute(select(OutboxEvent).where(OutboxEvent.kind == OutboxEventKind.CREDENTIALS_EMAIL))
         ).scalars().all()
-        assert credentials_events == []
+        assert [event.recipient_email for event in credentials_events] == ["mailed@example.com"]
         payload: str = json.dumps({"first_name": "Mail", "temporary_password": "123456", "parent_link_code": code})
         rendered: RenderedEmail = OutboxEmailTemplateFactory().create(
             OutboxEventKind.CREDENTIALS_EMAIL, "mailed@example.com", payload

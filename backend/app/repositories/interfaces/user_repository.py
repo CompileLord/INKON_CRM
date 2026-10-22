@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from typing_extensions import Protocol
+from app.core.login_identifier import LoginIdentifier
 from app.models.user import User
 from app.models.course import Course
 from app.repositories.interfaces.base_repository import BaseRepository, RepositoryPage
@@ -34,6 +35,15 @@ class StudentCourseRawRecord:
 
 class UserRepository(BaseRepository[User], Protocol):
     async def get_by_email(self, email: str) -> Optional[User]:
+        ...
+
+    async def get_by_phone(self, phone: str) -> Optional[User]:
+        ...
+
+    async def get_by_login(self, identifier: LoginIdentifier) -> Optional[User]:
+        ...
+
+    async def get_by_login_for_update(self, identifier: LoginIdentifier) -> Optional[User]:
         ...
 
     async def get_by_id_for_authentication(self, user_id: int) -> Optional[User]:

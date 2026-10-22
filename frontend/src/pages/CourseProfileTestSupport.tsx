@@ -140,7 +140,6 @@ export const mockMentorUser: User = {
   role: "mentor",
   date_of_birth: null,
   phone: "+992900000000",
-  parent_telegram_chat_id: null,
   parent_phone: null,
   photo_path: null,
   thumbnail_path: null,

@@ -9,13 +9,12 @@ import type { CourseResponse } from "../courses/types";
 export type Role = "superadmin" | "mentor" | "student" | "accountant";
 
 export interface UserCreate {
-  email: string;
+  email?: string | null;
   first_name: string;
   last_name: string;
   role: Role;
   date_of_birth?: string | null;
   phone?: string | null;
-  parent_telegram_chat_id?: number | null;
   parent_phone?: string | null;
   payment_day_of_month?: number | null;
 }
@@ -36,13 +35,12 @@ export interface UserSelfUpdate {
 
 export interface User {
   id: number;
-  email: string;
+  email: string | null;
   first_name: string;
   last_name: string;
   role: Role;
   date_of_birth: string | null;
   phone: string | null;
-  parent_telegram_chat_id: number | null;
   parent_linked?: boolean;
   parent_link_code_expires_at?: string | null;
   parent_phone: string | null;
@@ -58,13 +56,28 @@ export interface User {
 
 export type PasswordSmsDestination = 'student_phone' | 'parent_phone';
 
+export type CredentialsChannel = 'email' | 'student_phone' | 'parent_phone';
+
+export interface CreatedCredentials {
+  channel: CredentialsChannel;
+  maskedPhone: string | null;
+}
+
 export interface UserCreateResponse extends User {
   parent_link_code?: string | null;
   password_sms_destination?: PasswordSmsDestination | null;
+  credentials_channel?: CredentialsChannel | null;
+  credentials_masked_phone?: string | null;
+}
+
+export interface PasswordResendRequest {
+  channel?: CredentialsChannel;
 }
 
 export interface PasswordSmsResendResponse {
-  destination: PasswordSmsDestination;
+  destination: PasswordSmsDestination | null;
+  channel: CredentialsChannel;
+  masked_phone: string | null;
 }
 
 export type PasswordSmsDeliveryStatus = 'pending' | 'claimed' | 'delivered' | 'failed' | 'expired';

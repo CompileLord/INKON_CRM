@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { UNSAFE_DataRouterContext } from "react-router-dom";
 import { StudentNavigationGuard, type NavigationDecision } from "./StudentNavigationGuard";
+import { StudentParentLink } from "../student/StudentParentLink";
 import { StudentContactFields } from "./StudentContactFields";
+import { StudentEmailField } from "./StudentEmailField";
 import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
 import { Button } from "../ui/Button";
@@ -117,7 +119,7 @@ function StudentFormPanelInner({
   const createUser = useCreateUser("student");
   const updateUser = useUpdateUser("student");
 
-  const requireContactPhone: boolean = !isEditing || Boolean(student?.phone || student?.parent_phone);
+  const requireContactPhone: boolean = !isEditing || Boolean(student?.email || student?.phone);
   const formSchema = useMemo(() => createStudentFormSchema((k: string) => t(k), requireContactPhone), [t, requireContactPhone]);
 
   const {
@@ -135,7 +137,6 @@ function StudentFormPanelInner({
 
   const firstNameReg = register("firstName");
   const lastNameReg = register("lastName");
-  const emailReg = register("email");
 
   const isPending = createUser.isPending || updateUser.isPending;
   const isLocked = isPending || isSubmitting || isAvatarBusy;
@@ -431,27 +432,7 @@ function StudentFormPanelInner({
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="student-email" className={labelClass}>
-                {t("form.emailLabel")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="student-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                aria-required="true"
-                aria-invalid={Boolean(errors.email)}
-                aria-describedby={errors.email ? "student-email-error" : undefined}
-                className={inputClass}
-                {...emailReg}
-              />
-              {errors.email?.message && (
-                <span id="student-email-error" role="alert" className="text-xs text-destructive">
-                  {errors.email.message}
-                </span>
-              )}
-            </div>
+            <StudentEmailField register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="student-birthDate" className={labelClass}>
@@ -480,6 +461,7 @@ function StudentFormPanelInner({
           </div>
 
           <StudentContactFields register={register} errors={errors} />
+          {student && <StudentParentLink user={student} canManage />}
         </form>
       </SlideOver>
 
