@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import redis as redis_module
+from app.core.access_token_deny_list import AccessTokenDenyList
 from app.core.config import settings
 from app.core.security import PasswordWorkService
 from app.core.student_passwords import PendingStudentPasswordHasher
@@ -15,9 +16,10 @@ from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefre
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.services.auth_collaborators import (
     AuthChallengeConsumer, AuthChallengeWriter, AuthMailOutbox, AuthPasswordSms,
-    AuthPasswordWork, AuthPendingPasswordHasher, AuthSmsBudget, AuthTemporaryPasswordGenerator,
+    AuthPasswordWork, AuthPendingPasswordHasher, AuthSessions, AuthSmsBudget, AuthTemporaryPasswordGenerator,
 )
 from app.services.auth_service import AuthService
+from app.services.auth_session_service import AuthSessionService
 from app.services.outbox_service import OutboxService
 
 
@@ -65,6 +67,18 @@ class AuthServiceComposition:
         return PasswordSmsRateLimiter()
 
     @staticmethod
+    def deny_list() -> AccessTokenDenyList:
+        return AccessTokenDenyList(redis_module.redis_client)
+
+    @staticmethod
+    def session_service(db: AsyncSession) -> AuthSessions:
+        return AuthSessionService(
+            AuthServiceComposition.user_repository(db),
+            AuthServiceComposition.refresh_token_repository(db),
+            AuthServiceComposition.deny_list(),
+        )
+
+    @staticmethod
     def create(db: AsyncSession) -> AuthService:
         return AuthService(
             AuthServiceComposition.user_repository(db),
@@ -77,4 +91,5 @@ class AuthServiceComposition:
             AuthServiceComposition.challenge_consumer(),
             AuthServiceComposition.password_sms(db),
             AuthServiceComposition.sms_budget(),
+            AuthServiceComposition.session_service(db),
         )

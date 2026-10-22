@@ -122,7 +122,9 @@ async def test_same_second_logins_and_rotations_keep_refresh_identity_isolated(
         assert tokens["refresh_token"] not in issued_tokens
         issued_tokens.add(tokens["refresh_token"])
         replay = await client.post("/api/v1/auth/refresh", json={"refresh_token": original_token})
-        assert replay.status_code == 401
+        assert replay.status_code == 200
+        assert replay.json()["refresh_token"] not in issued_tokens
+        issued_tokens.add(replay.json()["refresh_token"])
         rotated = await client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
         assert rotated.status_code == 200
         rotated_claims = jwt.decode(rotated.json()["access_token"], settings.JWT_SECRET_KEY, algorithms=["HS256"])

@@ -128,7 +128,7 @@ class StudentPasswordSmsService:
         code: str = self._code_generator.generate()
         if reason == PasswordSmsReason.INITIAL:
             user.password_hash = await self._password_work_service.hash(code)
-            user.must_set_password = False
+            user.must_set_password = True
         else:
             user.pending_password_hash = self._pending_password_hasher.hash(user.id, code)
             user.pending_password_expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.SMS_PASSWORD_PENDING_TTL_SECONDS)

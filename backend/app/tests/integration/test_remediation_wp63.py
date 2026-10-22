@@ -16,7 +16,7 @@ from app.models.user import User
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
 from app.repositories.interfaces.user_repository import AuthUserRepository
-from app.repositories.interfaces.refresh_token_repository import AuthRefreshTokenRepository
+from app.repositories.interfaces.refresh_token_repository import AuthRefreshTokenRepository, ConsumedRefreshToken
 from fastapi import HTTPException
 
 
@@ -55,7 +55,8 @@ class TestAuthenticationInjection:
             user_repository.get_by_login_for_update.assert_awaited_once()
             token_repository.create.assert_awaited_once()
             user_repository.get_by_id_for_update.return_value = test_student
-            token_repository.consume_valid_token.side_effect = [True, False]
+            token_repository.rotate_valid_token.side_effect = [ConsumedRefreshToken(family_id=None), None]
+            token_repository.find_rotated_token.return_value = None
             rotated: Response = await client.post(
                 "/api/v1/auth/refresh", json={"refresh_token": response.json()["refresh_token"]},
             )
@@ -86,9 +87,8 @@ class TestAuthenticationInjection:
         assert payload["scope"] == "must_set_password"
         rotated: TokenPair = await service.refresh(pair.refresh_token)
         assert rotated.refresh_token != pair.refresh_token
-        with pytest.raises(HTTPException) as rejected:
-            await service.refresh(pair.refresh_token)
-        assert rejected.value.status_code == 401
+        replayed_within_grace: TokenPair = await service.refresh(pair.refresh_token)
+        assert replayed_within_grace.refresh_token not in {pair.refresh_token, rotated.refresh_token}
         await service.set_password(test_student.id, "Changed123")
         await service.change_password(test_student.id, "Changed123", "Changed456")
         await service.issue_temporary_credentials(stored_user)

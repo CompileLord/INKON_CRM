@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.access_token_deny_list import AccessTokenDenyList, AccessTokenDenyListUnavailable
 from app.core.security import AccessTokenPrincipal
 from app.db.session import AsyncSessionLocal
 from app.models.user import User, UserRole
@@ -21,10 +22,11 @@ from app.repositories.interfaces.user_repository import AuthUserRepository
 from app.repositories.interfaces.refresh_token_repository import AuthRefreshTokenRepository
 from app.services.auth_service import AuthService
 from app.services.auth_composition import AuthServiceComposition
+from app.services.auth_session_service import AuthSessionService
 from app.services.auth_collaborators import (
     AuthMailOutbox, AuthPasswordWork, AuthTemporaryPasswordGenerator,
     AuthPendingPasswordHasher, AuthChallengeWriter, AuthChallengeConsumer,
-    AuthPasswordSms, AuthSmsBudget,
+    AuthPasswordSms, AuthSessions, AuthSmsBudget,
 )
 
 
@@ -77,7 +79,22 @@ async def _get_user_for_principal(
         )
     if user.auth_version != principal.auth_version:
         raise _credentials_exception()
+    await _reject_denied_token(principal)
     return user
+
+
+async def _reject_denied_token(principal: AccessTokenPrincipal) -> None:
+    if principal.token_id is None:
+        return
+    try:
+        denied: bool = await AuthServiceComposition.deny_list().is_denied(principal.token_id)
+    except AccessTokenDenyListUnavailable:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session service is currently unavailable. Try again.",
+        ) from None
+    if denied:
+        raise _credentials_exception()
 
 
 def _decode_principal(token_auth: HTTPAuthorizationCredentials) -> AccessTokenPrincipal:
@@ -335,6 +352,13 @@ def get_auth_sms_budget() -> AuthSmsBudget:
     return AuthServiceComposition.sms_budget()
 
 
+def get_auth_session_service(
+    user_repository: AuthUserRepository = Depends(get_auth_user_repository),
+    token_repository: AuthRefreshTokenRepository = Depends(get_auth_refresh_token_repository),
+) -> AuthSessions:
+    return AuthSessionService(user_repository, token_repository, AuthServiceComposition.deny_list())
+
+
 def get_auth_service(
     user_repository: AuthUserRepository = Depends(get_auth_user_repository),
     token_repository: AuthRefreshTokenRepository = Depends(get_auth_refresh_token_repository),
@@ -346,10 +370,11 @@ def get_auth_service(
     challenge_consumer: AuthChallengeConsumer = Depends(get_auth_challenge_consumer),
     sms_service: AuthPasswordSms = Depends(get_auth_password_sms),
     sms_budget: AuthSmsBudget = Depends(get_auth_sms_budget),
+    session_service: AuthSessions = Depends(get_auth_session_service),
 ) -> AuthService:
     return AuthService(
         user_repository, token_repository, outbox_service, password_work_service,
         temporary_password_generator, pending_password_hasher, challenge_writer,
-        challenge_consumer, sms_service, sms_budget,
+        challenge_consumer, sms_service, sms_budget, session_service,
     )
 

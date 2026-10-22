@@ -97,6 +97,7 @@ class Settings(BaseSettings, DatabaseConnectionPolicy):
     JWT_REFRESH_SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    REFRESH_REUSE_GRACE_SECONDS: int = Field(default=30, ge=0, le=300)
 
     AUTH_LOGIN_RATE_LIMIT: int = Field(default=30, gt=0)
     AUTH_LOGIN_RATE_WINDOW_SECONDS: int = Field(default=60, gt=0)
