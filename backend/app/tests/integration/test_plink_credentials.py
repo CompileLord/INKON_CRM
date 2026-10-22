@@ -243,3 +243,16 @@ async def test_user_responses_serialize_a_student_without_email(
     assert [item["id"] for item in listing.json()["items"]] == [student.id]
     assert listing.json()["items"][0]["email"] is None
     assert UserRole.STUDENT.value == own.json()["role"]
+
+
+@pytest.mark.asyncio
+async def test_student_search_matches_own_phone_and_parent_phone_separately(
+    client: AsyncClient, test_admin: User, db_session: AsyncSession
+) -> None:
+    own_phone_student: User = await PlinkUsers.create(db_session, None, "+992900771111")
+    parent_phone_student: User = await PlinkUsers.create(db_session, None, "+992900772222", parent_phone="+992900773333")
+    headers: dict[str, str] = SmsPasswordTestSupport.bearer(test_admin)
+    by_own_phone: Response = await client.get("/api/v1/students/?search=771111", headers=headers)
+    by_parent_phone: Response = await client.get("/api/v1/students/?search=773333", headers=headers)
+    assert [item["id"] for item in by_own_phone.json()["items"]] == [own_phone_student.id]
+    assert [item["id"] for item in by_parent_phone.json()["items"]] == [parent_phone_student.id]
