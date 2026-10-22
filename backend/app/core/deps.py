@@ -10,6 +10,11 @@ from app.repositories.interfaces.course_progress_repository import CourseProgres
 from app.repositories.sqlalchemy.course_progress_repository import SqlAlchemyCourseProgressRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.services.course_progress_service import CourseProgressService
+from app.repositories.interfaces.user_repository import UserRepository
+from app.repositories.interfaces.document_repository import DocumentRepository
+from app.repositories.interfaces.enrollment_repository import EnrollmentRepository
+from app.repositories.interfaces.audit_log_repository import AuditLogRepository
+from app.services.storage_service import StorageService
 
 oauth2_scheme = HTTPBearer()
 
@@ -168,31 +173,74 @@ def get_storage_service() -> "StorageService":
     return resolve_configured_storage_service()
 
 
+def get_user_repository(db: AsyncSession = Depends(get_db_session)) -> UserRepository:
+    return SQLAlchemyUserRepository(db)
+
+
+def get_document_repository(db: AsyncSession = Depends(get_db_session)) -> DocumentRepository:
+    from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
+    return SQLAlchemyDocumentRepository(db)
+
+
+def get_enrollment_repository(db: AsyncSession = Depends(get_db_session)) -> EnrollmentRepository:
+    from app.repositories.sqlalchemy.enrollment_repository import SQLAlchemyEnrollmentRepository
+    return SQLAlchemyEnrollmentRepository(db)
+
+
+def get_audit_log_repository(db: AsyncSession = Depends(get_db_session)) -> AuditLogRepository:
+    from app.repositories.sqlalchemy.audit_log_repository import SQLAlchemyAuditLogRepository
+    return SQLAlchemyAuditLogRepository(db)
+
+
+def get_audit_service(
+    db: AsyncSession = Depends(get_db_session),
+    repository: AuditLogRepository = Depends(get_audit_log_repository),
+) -> "AuditService":
+    from app.services.audit_service import AuditService
+    return AuditService(db, audit_repo=repository)
+
+
+def get_document_service(
+    db: AsyncSession = Depends(get_db_session),
+    storage: StorageService = Depends(get_storage_service),
+    repository: DocumentRepository = Depends(get_document_repository),
+) -> "DocumentService":
+    from app.services.document_service import DocumentService
+    return DocumentService(db, storage, document_repo=repository)
+
+
+def get_enrollment_service(
+    db: AsyncSession = Depends(get_db_session),
+    repository: EnrollmentRepository = Depends(get_enrollment_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
+) -> "EnrollmentService":
+    from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
+    from app.services.enrollment_service import EnrollmentService
+    return EnrollmentService(db, enrollment_repo=repository, course_repo=SQLAlchemyCourseRepository(db), user_repo=user_repository)
+
+
 def get_student_profile_service(
-    db: AsyncSession = Depends(get_db_session)
+    user_repo: UserRepository = Depends(get_user_repository)
 ) -> "StudentProfileService":
-    from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
     from app.services.schedule_service import LessonScheduleService
     from app.services.student_profile_service import StudentProfileService
-    user_repo = SQLAlchemyUserRepository(db)
-    schedule_service = LessonScheduleService()
+    schedule_service: LessonScheduleService = LessonScheduleService()
     return StudentProfileService(user_repo=user_repo, schedule_service=schedule_service)
 
 
 def get_document_delivery_service(
-    db: AsyncSession = Depends(get_db_session)
+    repository: DocumentRepository = Depends(get_document_repository)
 ) -> "DocumentDeliveryService":
-    from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
     from app.services.document_delivery_service import DocumentDeliveryService
     from app.services.document_file_storage import LocalDocumentFileStorage
-    return DocumentDeliveryService(SQLAlchemyDocumentRepository(db), LocalDocumentFileStorage())
+    return DocumentDeliveryService(repository, LocalDocumentFileStorage())
 
 
 def get_mentor_analytics_service(
-    db: AsyncSession = Depends(get_db_session)
+    repository: UserRepository = Depends(get_user_repository)
 ) -> "MentorAnalyticsService":
     from app.services.mentor_analytics_service import MentorAnalyticsService
-    return MentorAnalyticsService(SQLAlchemyUserRepository(db))
+    return MentorAnalyticsService(repository)
 
 
 def get_course_progress_repository(

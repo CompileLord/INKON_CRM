@@ -1,6 +1,6 @@
 from app.repositories.sqlalchemy.student_performance_repository import SQLAlchemyStudentPerformanceRepository
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import cast, Any, Dict, List, Optional
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,7 @@ from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
+from app.repositories.interfaces.base_repository import RepositoryPage
 from app.repositories.interfaces.user_repository import UserRepository
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
@@ -67,7 +68,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         page_size: int = 20,
         search: Optional[str] = None,
         mentor_id: int | None = None,
-    ) -> dict:
+    ) -> RepositoryPage[User]:
         query: Select[tuple[User]] = select(User).where(
             User.role == UserRole.STUDENT,
             User.is_deleted.is_(False),
@@ -95,14 +96,14 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     User.email.ilike(search_pattern),
                 )
             )
-        return await self.get_paginated(query, page, page_size)
+        return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
 
     async def get_mentors_list(
         self,
         page: int = 1,
         page_size: int = 20,
         search: Optional[str] = None
-    ) -> dict:
+    ) -> RepositoryPage[User]:
         query: Select[tuple[User]] = select(User).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
         if search:
             search_pattern = f"%{search}%"
@@ -113,7 +114,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     User.email.ilike(search_pattern),
                 )
             )
-        return await self.get_paginated(query, page, page_size)
+        return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
 
     async def get_student_profile_stats(self, student_id: int) -> Dict[str, Any]:
         return await SQLAlchemyStudentPerformanceRepository(self.session).get_student_profile_stats(student_id)
@@ -246,3 +247,11 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             "average_student_score_basis": "all_summaries_on_non_deleted_courses_including_archived_raw_points",
             "average_student_score_summary_count": summary_count
         }
+
+    async def mentor_has_student(self, mentor_id: int, student_id: int) -> bool:
+        query: Select[tuple[bool]] = select(select(Enrollment.id).join(Course).where(
+            Enrollment.student_id == student_id,
+            Course.mentor_id == mentor_id,
+            Enrollment.is_deleted.is_(False),
+        ).exists())
+        return bool(await self.session.scalar(query))

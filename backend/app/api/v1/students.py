@@ -1,16 +1,13 @@
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, get_student_journal_history_service, get_student_profile_service, require_superadmin
+from app.core.deps import get_db_session, get_user_repository, get_current_user, get_student_journal_history_service, get_student_profile_service, require_superadmin
 from app.models.user import User, UserRole
-from app.models.enrollment import Enrollment
-from app.models.course import Course
-from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.repositories.interfaces.base_repository import RepositoryPage
+from app.repositories.interfaces.user_repository import UserRepository
 from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, TelegramLinkCodeResponse, UserResponse
 from app.services.student_profile_service import StudentProfileService
 from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
-from app.services.user_service import UserService
 
 from app.schemas.student_journal_history import StudentJournalHistoryPage, StudentJournalHistoryQuery
 from app.services.student_journal_history_service import StudentJournalHistoryService
@@ -27,16 +24,15 @@ async def get_students(
     search: Optional[str] = None,
     pagination: PaginationParams = Depends(),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
-) -> dict:
+    user_repo: UserRepository = Depends(get_user_repository)
+) -> RepositoryPage[User]:
     if current_user.role not in [UserRole.SUPERADMIN, UserRole.ACCOUNTANT, UserRole.MENTOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
-    user_service = UserService(db)
     mentor_id: int | None = current_user.id if current_user.role == UserRole.MENTOR else None
-    return await user_service.get_students(
+    return await user_repo.get_students_list(
         page=pagination.page,
         page_size=pagination.page_size,
         search=search,
@@ -107,7 +103,7 @@ async def get_my_journals(
 async def get_student_profile(
     id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session),
+    user_repo: UserRepository = Depends(get_user_repository),
     profile_service: StudentProfileService = Depends(get_student_profile_service)
 ) -> dict:
     if current_user.role not in [UserRole.SUPERADMIN, UserRole.MENTOR, UserRole.STUDENT]:
@@ -123,21 +119,13 @@ async def get_student_profile(
         )
 
     if current_user.role == UserRole.MENTOR:
-        query = select(Enrollment).join(Course).filter(
-            Enrollment.student_id == id,
-            Course.mentor_id == current_user.id,
-            Enrollment.is_deleted == False
-        )
-        result = await db.execute(query)
-        enrollment = result.scalars().first()
-        if not enrollment:
+        if not await user_repo.mentor_has_student(current_user.id, id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to view this student's profile"
             )
 
-    user_repo = SQLAlchemyUserRepository(db)
-    target_user = await user_repo.get_by_id(id)
+    target_user: User | None = await user_repo.get_by_id(id)
     if not target_user or target_user.role != UserRole.STUDENT:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

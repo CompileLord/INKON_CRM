@@ -1,10 +1,14 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from datetime import date
+from typing import List, Optional, TypedDict
+from app.models.course_schedule import CourseSchedule
+from app.models.journal import Journal
+from app.models.charge import Charge
 from typing_extensions import Protocol
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User
 from app.schemas.enrollment import RosterSortOrder
-from app.repositories.interfaces.base_repository import BaseRepository
+from app.repositories.interfaces.base_repository import BaseRepository, RepositoryPage
 
 
 @dataclass(frozen=True)
@@ -36,6 +40,12 @@ class EligibleCandidatesQueryResult:
     page: int
     page_size: int
     total_pages: int
+
+
+class EnrollmentFilters(TypedDict, total=False):
+    course_id: int
+    student_id: int
+    mentor_id: int
 
 
 class EnrollmentRepository(BaseRepository[Enrollment], Protocol):
@@ -73,4 +83,22 @@ class EnrollmentRepository(BaseRepository[Enrollment], Protocol):
         ...
 
     async def get_active_enrollments_count(self, course_id: int) -> int:
+        ...
+
+    async def list_enrollments(self, filters: EnrollmentFilters, page: int, page_size: int) -> RepositoryPage[Enrollment]:
+        ...
+
+    async def find_existing(self, student_id: int, course_id: int) -> Enrollment | None:
+        ...
+
+    async def count_existing(self, course_id: int) -> int:
+        ...
+
+    async def list_schedules(self, course_id: int) -> list[CourseSchedule]:
+        ...
+
+    async def list_journals(self, course_id: int) -> list[Journal]:
+        ...
+
+    async def list_future_open_charges(self, enrollment_id: int, today: date) -> list[Charge]:
         ...

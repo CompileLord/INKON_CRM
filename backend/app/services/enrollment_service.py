@@ -1,8 +1,6 @@
 from datetime import date
 from typing import List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import Select, select, func
-from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.scoring import ScoringPolicy
@@ -24,7 +22,8 @@ from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.repositories.interfaces.course_repository import CourseRepository
-from app.repositories.interfaces.enrollment_repository import EnrollmentRepository
+from app.repositories.interfaces.enrollment_repository import EnrollmentRepository, EnrollmentFilters
+from app.repositories.interfaces.base_repository import RepositoryPage
 from app.repositories.interfaces.user_repository import UserRepository
 from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
 from app.repositories.sqlalchemy.enrollment_repository import SQLAlchemyEnrollmentRepository
@@ -65,7 +64,7 @@ class EnrollmentService:
         user_repo: Optional[UserRepository] = None,
         conflict_classifier: Optional[EnrollmentConflictClassifier] = None,
     ) -> None:
-        self.db = db
+        self.db: AsyncSession = db
         self.enrollment_repo: EnrollmentRepository = enrollment_repo or SQLAlchemyEnrollmentRepository(db)
         self.course_repo: CourseRepository = course_repo or SQLAlchemyCourseRepository(db)
         self.user_repo: UserRepository = user_repo or SQLAlchemyUserRepository(db)
@@ -94,24 +93,13 @@ class EnrollmentService:
                 detail="Student deactivated/inactive"
             )
 
-        existing_enrollment_query = select(Enrollment).filter(
-            Enrollment.student_id == student_id,
-            Enrollment.course_id == course_id,
-            Enrollment.is_deleted == False
-        )
-        existing_result = await self.db.execute(existing_enrollment_query)
-        if existing_result.scalars().first() is not None:
+        if await self.enrollment_repo.find_existing(student_id, course_id) is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Student is already enrolled in this course"
             )
 
-        count_query = select(func.count(Enrollment.id)).filter(
-            Enrollment.course_id == course_id,
-            Enrollment.is_deleted == False
-        )
-        count_result = await self.db.execute(count_query)
-        count_existing_enrollments = count_result.scalar() or 0
+        count_existing_enrollments: int = await self.enrollment_repo.count_existing(course_id)
         color_hex = PALETTE[count_existing_enrollments % len(PALETTE)]
 
         enrollment = Enrollment(
@@ -134,12 +122,8 @@ class EnrollmentService:
             raise
 
         if lesson_plan is None:
-            schedules_query: Select[tuple[CourseSchedule]] = select(CourseSchedule).filter(CourseSchedule.course_id == course_id)
-            schedules_result: Result[tuple[CourseSchedule]] = await self.db.execute(schedules_query)
-            schedules: list[CourseSchedule] = list(schedules_result.scalars().all())
-            journals_query: Select[tuple[Journal]] = select(Journal).filter(Journal.course_id == course_id)
-            journals_result: Result[tuple[Journal]] = await self.db.execute(journals_query)
-            journals: list[Journal] = list(journals_result.scalars().all())
+            schedules: list[CourseSchedule] = await self.enrollment_repo.list_schedules(course_id)
+            journals: list[Journal] = await self.enrollment_repo.list_journals(course_id)
             lesson_plan = EnrollmentLessonPlan.build(course_id, journals, LessonDateCalculator.calculate(
                 course.start_date, course.end_date, [schedule.day_of_week for schedule in schedules],
             ))
@@ -210,17 +194,11 @@ class EnrollmentService:
 
         from app.models.charge import Charge, ChargeStatus
         from app.services.finance_service import get_dushanbe_today
-        today = get_dushanbe_today()
-        cancel_q = select(Charge).filter(
-            Charge.enrollment_id == enrollment_id,
-            Charge.due_date > today,
-            Charge.status == ChargeStatus.OPEN,
-            Charge.is_deleted == False
-        )
-        c_res = await self.db.execute(cancel_q)
-        future_charges = list(c_res.scalars().all())
-        for fc in future_charges:
-            fc.status = ChargeStatus.CANCELLED
+        today: date = get_dushanbe_today()
+        future_charges: list[Charge] = await self.enrollment_repo.list_future_open_charges(enrollment_id, today)
+        future_charge: Charge
+        for future_charge in future_charges:
+            future_charge.status = ChargeStatus.CANCELLED
 
         await FinanceService(self.db)._invalidate_cache()
         await self.db.refresh(enrollment)
@@ -228,18 +206,11 @@ class EnrollmentService:
 
     async def list_enrollments(
         self,
-        filters: dict,
+        filters: EnrollmentFilters,
         page: int,
         page_size: int
-    ) -> dict:
-        query = select(Enrollment).filter(Enrollment.is_deleted == False)
-        if "course_id" in filters and filters["course_id"] is not None:
-            query = query.filter(Enrollment.course_id == filters["course_id"])
-        if "student_id" in filters and filters["student_id"] is not None:
-            query = query.filter(Enrollment.student_id == filters["student_id"])
-        if "mentor_id" in filters and filters["mentor_id"] is not None:
-            query = query.join(Course, Enrollment.course_id == Course.id).filter(Course.mentor_id == filters["mentor_id"])
-        return await self.enrollment_repo.get_paginated(query, page, page_size)
+    ) -> RepositoryPage[Enrollment]:
+        return await self.enrollment_repo.list_enrollments(filters, page, page_size)
 
     async def get_course_roster(
         self,

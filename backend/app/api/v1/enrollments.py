@@ -1,10 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_current_user, require_superadmin
+from app.core.deps import get_db_session, get_enrollment_service, get_current_user, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.repositories.interfaces.enrollment_repository import EnrollmentFilters
 from app.schemas.enrollment import (
     EnrollmentCreate,
     EnrollmentResponse,
@@ -15,31 +16,17 @@ from app.schemas.enrollment import (
 )
 from app.schemas.common import PaginatedResponse
 from app.services.enrollment_service import EnrollmentService
-from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
-from app.repositories.sqlalchemy.enrollment_repository import SQLAlchemyEnrollmentRepository
-from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 
 router = APIRouter()
-
-
-def get_enrollment_service(
-    db: AsyncSession = Depends(get_db_session),
-) -> EnrollmentService:
-    return EnrollmentService(
-        db=db,
-        enrollment_repo=SQLAlchemyEnrollmentRepository(db),
-        course_repo=SQLAlchemyCourseRepository(db),
-        user_repo=SQLAlchemyUserRepository(db),
-    )
 
 
 @router.post("/", response_model=EnrollmentResponse, status_code=http_status.HTTP_201_CREATED)
 async def enroll_student(
     payload: EnrollmentCreate,
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> Enrollment:
-    enrollment_service = EnrollmentService(db)
     return await enrollment_service.enroll_student(payload.student_id, payload.course_id, current_user)
 
 
@@ -47,9 +34,9 @@ async def enroll_student(
 async def withdraw_student(
     id: int,
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> Enrollment:
-    enrollment_service = EnrollmentService(db)
     return await enrollment_service.withdraw_student(id)
 
 
@@ -60,9 +47,10 @@ async def list_enrollments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> dict:
-    filters = {}
+    filters: EnrollmentFilters = {}
     if current_user.role == UserRole.MENTOR:
         if not course_id:
             raise HTTPException(
@@ -89,7 +77,6 @@ async def list_enrollments(
         if student_id is not None:
             filters["student_id"] = student_id
 
-    enrollment_service = EnrollmentService(db)
     return await enrollment_service.list_enrollments(filters, page, page_size)
 
 
