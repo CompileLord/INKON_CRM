@@ -31,7 +31,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-23 | done | main | 2026-10-17 | Python3.12 full664 pass380.05s | PASS consume-before-DB/recovery, fixedTTL/budgets. OpenAPI75paths unchanged. wp23-sol/{root-audit,source-hashes}.json; root-{mutation,restored}.log. |
 | WP-24 | done | main | 2026-10-18 | Executor backend 843 pass (462s) on rebased branch | PASS commit 239bfb0 (one typing nit corrected after audit). Decimal-string frontend inputs unchanged; CONTRACT.md byte-identical. logs wp24-sol/finish/. Post-merge combined run pending with WP-26/36. |
 | WP-25 | done | main | 2026-10-18 | Executor backend 715 pass (430.74s) | PASS after correction 8d8d704/d6fc7f6. Gaps: earlier mutations not rerun; existing untyped locals remain. Alembic heads fixed3fe0534, parentd4e5f6a7b8c9; replay/full881 pass beforeWP26. Task parent stale. logs wp25-sol/correction{2,3}-*. |
-| WP-26 | done | master | 2026-10-18 | Executor backend 778 pass/6 fail (all six known Alembic multiple-heads, reproduced on b64b617) | PASS (accepted with gaps) commit f12d2ae; registry fails closed, services/workers use configured backend, worker streams and uses expiring private URLs. Gaps: no real GCS adapter (fake client only), app/main.py still serves /storage avatar/course from local disk, DocumentDeliveryService unchanged, red phase was import failure only. Added paths: core/config.py, storage_lifecycle_service.py, storage_cleanup.py. Logs wp26-sol/. |
+| WP-26 | done | master | 2026-10-18 | Executor backend 778 pass/6 fail (all six known Alembic multiple-heads, reproduced on b64b617) | PASS with gaps f12d2ae: registry fails closed, expiring private URLs. Gaps: fake GCS only; main.py serves /storage locally; DocumentDeliveryService unchanged. logs wp26-sol/. |
 | WP-27 | done | remediation/wp-27-webhook-lifecycle | 2026-10-15 | Backend 356 pass (200.44s) | PASS after one FAIL correction. Explicit registration CLI; instance shutdown closes local resources. Owner /root/wp05_executor. Logs wp13-recovery/wp27-root-*.log. Real registration not executed. |
 | WP-28 | done | remediation/wp-28-webhook-errors | 2026-10-15 | Backend 363 pass (195.18s) | PASS; malformed JSON/UTF-8 400, invalid schema 422, processing failure 503, real rollback/retry preserves one binding. earlier executor storage-override failure resolved. |
 | WP-29 | done | master | 2026-10-18 | Executor backend 909 pass | PASS; exam-result and document intents written in the business transaction, stable job IDs, retry after Redis failure, shared producer closed on shutdown. Scope revision: outbox model, repository-free migration rwp29, workers/settings, approved replacement of one WP-13 test. logs wp29-sol/. |
@@ -60,7 +60,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-52 | todo | — | — | — | Pending. |
 | WP-53 | todo | — | — | — | Pending. |
 | WP-54 | todo | — | — | — | Pending. |
-| WP-55 | todo | — | — | — | Pending. |
+| WP-55 | done | master | 2026-10-22 | Full 1844 pass pre-merge (WP-11/13 env); post-merge 83 targeted | PASS 7b13865 merge 6fd72f7. Queue 501→5 queries. Sonnet. logs wp55/. |
 | WP-56 | todo | — | — | — | Pending. |
 | WP-57 | done | master | 2026-10-22 | Codex targeted + full suite once (known fails only) | PASS cdff207, merge 8fc64c5. Cron endpoints 202 + job_id, 503 Retry-After on Redis error; schedule-window job_id dedup, Redis lock, keep_result 48h, max_tries 3. |
 | WP-58 | todo | — | — | — | Pending. |
@@ -82,4 +82,4 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | UI-1 | done | master | 2026-10-22 | About: deb349f (verified as mentor: version only); journal: 172ba09, 0e5496f, c2f6def, merge 3b7b34b; vitest targeted 226 pass, tsc 0 | User requests: About build details superadmin-only; journal icon-only attendance, name-only period picker with muted span + status icon, total max shown once in header, minimal chart (one Max label, % in tooltip). Final master regression pending. |
 | UI-2 | done | master | 2026-10-22 | 98cad23..9bce88a, merge 41dc073; vitest targeted 497 pass, tsc 0 | User requests: period grades show total only; Home shows next steps, not My courses; compact chart legend; tg "Балли максималӣ". Staff row 2f0575c, 4b8d723. |
 
-62/71 accepted (WP-69 part A merged); 9 remain. QA-1 passed 2026-10-22; single head wp69a_payment_idempotency. Awaiting user decision on master→main and production deploy. After deploy: WP-55, 58, 63, 56→54→53→52, WP-69 items 2–5, WP-62.
+63/71 accepted (WP-69 part A merged); 8 remain. QA-1 passed 2026-10-22; single head wp69a_payment_idempotency. Awaiting user decision on master→main and production deploy. After deploy: WP-55, 58, 63, 56→54→53→52, WP-69 items 2–5, WP-62.
