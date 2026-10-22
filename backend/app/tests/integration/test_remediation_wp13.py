@@ -358,6 +358,7 @@ async def test_authenticated_application_producer_and_worker_share_tls_redis(
     monkeypatch.setattr(settings, "TESTING", False)
     monkeypatch.setattr(redis_module, "redis_connection_configuration", configuration)
     await redis_module.close_arq_pool()
+    original_worker_settings_namespace: dict[str, Any] = dict(vars(worker_settings_module))
     loaded_worker_settings_module = importlib.reload(worker_settings_module)
     marker: str = uuid4().hex
     job_id: str = f"wp13-{uuid4().hex}"
@@ -382,7 +383,8 @@ async def test_authenticated_application_producer_and_worker_share_tls_redis(
         await redis_module.close_arq_pool()
         monkeypatch.setattr(settings, "REDIS_URL", original_redis_url)
         monkeypatch.setattr(settings, "TESTING", original_testing)
-        importlib.reload(worker_settings_module)
+        vars(worker_settings_module).clear()
+        vars(worker_settings_module).update(original_worker_settings_namespace)
 
 
 @pytest.mark.asyncio
