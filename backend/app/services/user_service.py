@@ -14,7 +14,7 @@ from app.schemas.common import CanonicalPhonePolicy
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.audit_service import AuditService
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.services.credentials_channel import CredentialsChannel
 from app.services.credentials_delivery_service import CredentialsDelivery, CredentialsDeliveryService
 from app.services.storage_lifecycle_service import StorageLifecycleService

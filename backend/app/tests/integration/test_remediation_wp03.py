@@ -16,7 +16,7 @@ from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 
 
 class FrozenTokenDatetime(datetime):

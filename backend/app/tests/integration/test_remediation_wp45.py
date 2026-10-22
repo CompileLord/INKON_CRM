@@ -13,7 +13,7 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.tests.conftest import TestingSessionLocal
 from app.tests.integration.test_remediation_wp03 import encode_refresh_claims, issue_stored_refresh_token
 

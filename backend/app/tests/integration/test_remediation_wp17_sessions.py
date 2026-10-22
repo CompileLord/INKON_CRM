@@ -14,7 +14,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.user import User
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.tests.integration.test_remediation_wp17 import _create_password_reset_grant, _token_claims
 
 

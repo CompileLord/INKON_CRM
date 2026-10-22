@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.redis import redis_client
 from app.models.user import User
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.tests.conftest import RedisNamespaceClient, TEST_REDIS_PREFIX, TestingSessionLocal
 import app.core.redis as auth_module
 

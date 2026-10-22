@@ -20,7 +20,7 @@ from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventSta
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxService
 from app.workers.outbox import OutboxWorkerManager, run_outbox_worker_once

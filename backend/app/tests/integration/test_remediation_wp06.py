@@ -12,7 +12,7 @@ from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 
 
 @pytest.mark.asyncio

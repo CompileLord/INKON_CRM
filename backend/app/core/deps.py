@@ -17,17 +17,10 @@ from app.repositories.interfaces.audit_log_repository import AuditLogRepository
 from app.services.storage_service import StorageService
 
 from app.core.config import settings
-from app.core import redis as redis_module
-from app.core.security import PasswordWorkService
-from app.core.student_passwords import PendingStudentPasswordHasher
-from app.core.temporary_passwords import TemporaryPasswordGenerator
-from app.core.verification_codes import VerificationCodeStore
 from app.repositories.interfaces.user_repository import AuthUserRepository
 from app.repositories.interfaces.refresh_token_repository import AuthRefreshTokenRepository
-from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
-from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
-from app.services.outbox_service import OutboxService
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 from app.services.auth_collaborators import (
     AuthMailOutbox, AuthPasswordWork, AuthTemporaryPasswordGenerator,
     AuthPendingPasswordHasher, AuthChallengeWriter, AuthChallengeConsumer,
@@ -303,45 +296,43 @@ def get_course_copy_service(db: AsyncSession = Depends(get_db_session)) -> "Cour
 
 
 def get_auth_user_repository(db: AsyncSession = Depends(get_db_session)) -> AuthUserRepository:
-    return SQLAlchemyUserRepository(db)
+    return AuthServiceComposition.user_repository(db)
 
 
 def get_auth_refresh_token_repository(db: AsyncSession = Depends(get_db_session)) -> AuthRefreshTokenRepository:
-    return SQLAlchemyRefreshTokenRepository(db)
+    return AuthServiceComposition.refresh_token_repository(db)
 
 
 def get_auth_mail_outbox(db: AsyncSession = Depends(get_db_session)) -> AuthMailOutbox:
-    return OutboxService(SQLAlchemyOutboxRepository(db), settings.JWT_SECRET_KEY)
+    return AuthServiceComposition.mail_outbox(db)
 
 
 def get_auth_password_work() -> AuthPasswordWork:
-    return PasswordWorkService()
+    return AuthServiceComposition.password_work()
 
 
 def get_auth_temporary_password_generator() -> AuthTemporaryPasswordGenerator:
-    return TemporaryPasswordGenerator()
+    return AuthServiceComposition.temporary_password_generator()
 
 
 def get_auth_pending_password_hasher() -> AuthPendingPasswordHasher:
-    return PendingStudentPasswordHasher(settings.JWT_SECRET_KEY)
+    return AuthServiceComposition.pending_password_hasher()
 
 
 def get_auth_challenge_writer() -> AuthChallengeWriter:
-    return redis_module.redis_client
+    return AuthServiceComposition.challenge_writer()
 
 
 def get_auth_challenge_consumer() -> AuthChallengeConsumer:
-    return VerificationCodeStore(redis_module.redis_client)
+    return AuthServiceComposition.challenge_consumer()
 
 
 def get_auth_password_sms(db: AsyncSession = Depends(get_db_session)) -> AuthPasswordSms:
-    from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
-    return StudentPasswordSmsServiceFactory.create(db)
+    return AuthServiceComposition.password_sms(db)
 
 
 def get_auth_sms_budget() -> AuthSmsBudget:
-    from app.core.sms_rate_limiter import PasswordSmsRateLimiter
-    return PasswordSmsRateLimiter()
+    return AuthServiceComposition.sms_budget()
 
 
 def get_auth_service(
@@ -362,14 +353,3 @@ def get_auth_service(
         challenge_consumer, sms_service, sms_budget,
     )
 
-
-class AuthServiceComposition:
-    @staticmethod
-    def create(db: AsyncSession) -> AuthService:
-        return get_auth_service(
-            get_auth_user_repository(db), get_auth_refresh_token_repository(db),
-            get_auth_mail_outbox(db), get_auth_password_work(),
-            get_auth_temporary_password_generator(), get_auth_pending_password_hasher(),
-            get_auth_challenge_writer(), get_auth_challenge_consumer(),
-            get_auth_password_sms(db), get_auth_sms_budget(),
-        )

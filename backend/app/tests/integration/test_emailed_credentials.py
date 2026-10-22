@@ -18,7 +18,7 @@ from app.models.user import User, UserRole
 from app.schemas.auth import TokenPair
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxPayloadEncryptor
 from app.services.user_service import UserService

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.audit_service import AuditService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 from app.services.credentials_channel import CredentialsChannel, CredentialsChannelPolicy
 from app.services.sms.messages import PasswordSmsReason
 from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory

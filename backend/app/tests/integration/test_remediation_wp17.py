@@ -13,7 +13,7 @@ from app.core.redis import redis_client
 from app.models.user import User
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
-from app.core.deps import AuthServiceComposition
+from app.services.auth_composition import AuthServiceComposition
 
 
 def _create_password_reset_grant(
