@@ -105,8 +105,6 @@
     "phoneHelp": "Формат: +992901234567",
     "dobLabel": "Санаи таваллуд",
     "parentPhoneLabel": "Телефони волидайн",
-    "telegramChatIdLabel": "Telegram Chat ID-и волидайн",
-    "telegramChatIdHelp": "Барои огоҳиномаҳои худкор истифода мешавад. Ворид кардани ID пайвасти фаъолро кафолат намедиҳад.",
     "paymentDayLabel": "Рӯзи пардохт (ҳармоҳа)",
     "paymentDayHelp": "Рақам аз 1 то 28",
     "saving": "Сабт шуда истодааст…",
@@ -131,7 +129,6 @@
     "emailRequired": "Почтаи электрониро ворид кунед",
     "invalidEmail": "Почтаи электронии нодуруст",
     "invalidPhone": "Формат: +992901234567",
-    "invalidTelegramChatId": "Бояд рақами бутун бошад",
     "invalidPaymentDay": "Рақам аз 1 то 28",
     "emailTaken": "Ин почтаи электронӣ аллакай ба қайд гирифта шудааст",
     "phoneOrParentPhoneRequired": "Телефони донишҷӯ ё волидайнро ворид кунед."

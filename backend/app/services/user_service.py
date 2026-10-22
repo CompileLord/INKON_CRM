@@ -114,7 +114,6 @@ class UserService:
             role=user_create.role,
             date_of_birth=user_create.date_of_birth,
             phone=user_create.phone,
-            parent_telegram_chat_id=user_create.parent_telegram_chat_id,
             parent_phone=user_create.parent_phone,
             payment_day_of_month=user_create.payment_day_of_month,
             must_set_password=True
@@ -224,13 +223,8 @@ class UserService:
             user.date_of_birth = user_update.date_of_birth
         if "phone" in user_update.model_fields_set:
             user.phone = user_update.phone
-        if "parent_telegram_chat_id" in user_update.model_fields_set:
-            user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
         if "parent_phone" in user_update.model_fields_set:
-            if (
-                not CanonicalPhonePolicy.are_equivalent(user.parent_phone, user_update.parent_phone)
-                and "parent_telegram_chat_id" not in user_update.model_fields_set
-            ):
+            if not CanonicalPhonePolicy.are_equivalent(user.parent_phone, user_update.parent_phone):
                 user.parent_telegram_chat_id = None
             user.parent_phone = user_update.parent_phone
         if user.role == UserRole.STUDENT and not (user.phone or user.parent_phone):

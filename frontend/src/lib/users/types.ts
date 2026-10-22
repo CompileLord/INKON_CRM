@@ -15,7 +15,6 @@ export interface UserCreate {
   role: Role;
   date_of_birth?: string | null;
   phone?: string | null;
-  parent_telegram_chat_id?: number | null;
   parent_phone?: string | null;
   payment_day_of_month?: number | null;
 }
@@ -42,7 +41,6 @@ export interface User {
   role: Role;
   date_of_birth: string | null;
   phone: string | null;
-  parent_telegram_chat_id: number | null;
   parent_linked?: boolean;
   parent_link_code_expires_at?: string | null;
   parent_phone: string | null;

@@ -95,7 +95,6 @@ describe("Students page", () => {
       parent_phone: null,
       date_of_birth: null,
       payment_day_of_month: 5,
-      parent_telegram_chat_id: null,
       is_deleted: false,
       must_set_password: false,
       created_at: "2026-03-01T00:00:00Z",

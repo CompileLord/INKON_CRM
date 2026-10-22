@@ -14,7 +14,6 @@ export interface UserFormValues {
   email: string;
   phone: string;
   birthDate: string;
-  parentTelegramChatId: string;
   parentPhone: string;
   paymentDay: string;
 }
@@ -25,7 +24,6 @@ export const userFormDefaults: UserFormValues = {
   email: "",
   phone: "",
   birthDate: "",
-  parentTelegramChatId: "",
   parentPhone: "",
   paymentDay: "",
 };
@@ -36,7 +34,6 @@ interface ExistingUserFields {
   email: string;
   phone: string | null;
   date_of_birth: string | null;
-  parent_telegram_chat_id: number | null;
   parent_phone?: string | null;
   payment_day_of_month: number | null;
 }
@@ -50,8 +47,6 @@ export function buildUserFormValues(user?: ExistingUserFields): UserFormValues {
     email: user.email,
     phone: CanonicalPhone.prefill(user.phone),
     birthDate: user.date_of_birth ?? "",
-    parentTelegramChatId:
-      user.parent_telegram_chat_id != null ? String(user.parent_telegram_chat_id) : "",
     parentPhone: CanonicalPhone.prefill(user.parent_phone),
     paymentDay: user.payment_day_of_month != null ? String(user.payment_day_of_month) : "",
   };
@@ -94,9 +89,6 @@ function toApiFields(values: UserFormValues): UserApiFields {
     last_name: values.lastName.trim(),
     date_of_birth: values.birthDate || null,
     phone: values.phone === "" ? null : values.phone,
-    parent_telegram_chat_id: values.parentTelegramChatId.trim()
-      ? Number(values.parentTelegramChatId)
-      : null,
     parent_phone: values.parentPhone === "" ? null : values.parentPhone,
     payment_day_of_month: values.paymentDay.trim() ? Number(values.paymentDay) : null,
   };
@@ -122,7 +114,6 @@ const FIELD_TO_API_KEY: Record<keyof UserFormValues, keyof UserApiFields> = {
   email: "email",
   phone: "phone",
   birthDate: "date_of_birth",
-  parentTelegramChatId: "parent_telegram_chat_id",
   parentPhone: "parent_phone",
   paymentDay: "payment_day_of_month",
 };
@@ -182,7 +173,6 @@ const API_KEY_TO_FIELD: Record<string, keyof UserFormValues> = {
   email: "email",
   phone: "phone",
   date_of_birth: "birthDate",
-  parent_telegram_chat_id: "parentTelegramChatId",
   parent_phone: "parentPhone",
   payment_day_of_month: "paymentDay",
 };

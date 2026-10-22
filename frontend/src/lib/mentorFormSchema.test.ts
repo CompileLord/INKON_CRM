@@ -23,7 +23,6 @@ describe("mentorFormSchema", () => {
       email: "jane.smith@example.com",
       phone: "",
       birthDate: "",
-      parentTelegramChatId: "",
     };
 
     const result = mentorFormSchema.safeParse(minimalData);
@@ -37,7 +36,6 @@ describe("mentorFormSchema", () => {
       email: "jane@example.com",
       phone: "",
       birthDate: "",
-      parentTelegramChatId: "",
     });
 
     expect(result.success).toBe(false);
@@ -53,7 +51,6 @@ describe("mentorFormSchema", () => {
       email: "jane@example.com",
       phone: "",
       birthDate: "",
-      parentTelegramChatId: "",
     });
 
     expect(result.success).toBe(false);
@@ -69,7 +66,6 @@ describe("mentorFormSchema", () => {
       email: "not-an-email",
       phone: "",
       birthDate: "",
-      parentTelegramChatId: "",
     });
 
     expect(result.success).toBe(false);
@@ -85,7 +81,6 @@ describe("mentorFormSchema", () => {
       email: "jane@example.com",
       phone: "+992901234567",
       birthDate: "",
-      parentTelegramChatId: "",
     });
     expect(valid.success).toBe(true);
 
@@ -95,7 +90,6 @@ describe("mentorFormSchema", () => {
       email: "jane@example.com",
       phone: "123-abc",
       birthDate: "",
-      parentTelegramChatId: "",
     });
     expect(invalid.success).toBe(false);
   });

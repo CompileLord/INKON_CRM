@@ -105,8 +105,6 @@
     "phoneHelp": "Format: +992901234567",
     "dobLabel": "Date of Birth",
     "parentPhoneLabel": "Parent phone",
-    "telegramChatIdLabel": "Parent Telegram chat ID",
-    "telegramChatIdHelp": "Used for automated notifications. Entering an ID does not guarantee an active connection.",
     "paymentDayLabel": "Payment day (monthly)",
     "paymentDayHelp": "A number from 1 to 28",
     "saving": "Saving…",
@@ -131,7 +129,6 @@
     "emailRequired": "Email is required",
     "invalidEmail": "Invalid email address",
     "invalidPhone": "Use the international format, e.g. +992901234567",
-    "invalidTelegramChatId": "Must be a valid integer ID",
     "invalidPaymentDay": "Must be a number from 1 to 28",
     "emailTaken": "This email is already in use",
     "phoneOrParentPhoneRequired": "Enter a student or parent phone."

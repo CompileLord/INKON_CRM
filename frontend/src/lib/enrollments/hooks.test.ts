@@ -120,7 +120,6 @@ describe("buildRoster", () => {
         role: "student" as const,
         date_of_birth: null,
         phone: null,
-        parent_telegram_chat_id: null,
         parent_phone: null,
         photo_path: null,
         thumbnail_path: null,

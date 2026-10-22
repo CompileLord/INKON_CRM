@@ -13,7 +13,6 @@ class UserCreate(BaseModel):
     role: UserRole
     date_of_birth: Optional[date] = None
     phone: Optional[CanonicalPhone] = None
-    parent_telegram_chat_id: Optional[int] = None
     parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
@@ -31,7 +30,6 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
     phone: Optional[CanonicalPhone] = None
-    parent_telegram_chat_id: Optional[int] = None
     parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 

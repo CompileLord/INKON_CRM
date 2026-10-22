@@ -233,7 +233,6 @@ export const sampleMentors: User[] = [
     role: "mentor",
     date_of_birth: null,
     phone: "+992900000001",
-    parent_telegram_chat_id: null,
     parent_phone: null,
     photo_path: null,
     thumbnail_path: null,

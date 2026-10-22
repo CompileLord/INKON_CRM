@@ -385,7 +385,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "role": "superadmin" | "mentor" | "student" | "accountant",
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
   "parent_phone?": string,
   "payment_day_of_month?": integer,
 }
@@ -615,7 +614,6 @@ Students receive a pending SMS password with a short expiration (ten minutes by 
   "last_name?": string,
   "date_of_birth?": string,
   "phone?": string,
-  "parent_telegram_chat_id?": integer,
   "parent_phone?": string,
   "payment_day_of_month?": integer,
 }

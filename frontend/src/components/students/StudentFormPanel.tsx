@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { UNSAFE_DataRouterContext } from "react-router-dom";
 import { StudentNavigationGuard, type NavigationDecision } from "./StudentNavigationGuard";
+import { StudentParentLink } from "../student/StudentParentLink";
 import { StudentContactFields } from "./StudentContactFields";
 import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
@@ -480,6 +481,7 @@ function StudentFormPanelInner({
           </div>
 
           <StudentContactFields register={register} errors={errors} />
+          {student && <StudentParentLink user={student} canManage />}
         </form>
       </SlideOver>
 

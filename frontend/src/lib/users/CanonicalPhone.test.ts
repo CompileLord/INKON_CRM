@@ -5,7 +5,7 @@ import { createMentorFormSchema } from "../mentorFormSchema";
 import { buildUserFormValues, buildMentorFormValues, buildCreatePayload, buildUpdatePayload } from "./formMapping";
 import type { UserFormValues } from "./formMapping";
 
-const values: UserFormValues = { firstName: "A", lastName: "B", email: "a@example.com", phone: "", parentPhone: "", birthDate: "", parentTelegramChatId: "123", paymentDay: "" };
+const values: UserFormValues = { firstName: "A", lastName: "B", email: "a@example.com", phone: "", parentPhone: "", birthDate: "", paymentDay: "" };
 
 describe("canonical phone inputs", (): void => {
   it.each(["+12", "+12345678", "+123456789012345"])("accepts canonical staff phone %s", (phone: string): void => {
@@ -25,7 +25,7 @@ describe("canonical phone inputs", (): void => {
     }
   });
   it("normalizes valid legacy prefills and keeps guardian bindings omitted on unchanged edits", (): void => {
-    const user: Parameters<typeof buildUserFormValues>[0] = { first_name: "A", last_name: "B", email: "a@example.com", phone: "992901234567", parent_phone: "992901234568", parent_telegram_chat_id: 123, date_of_birth: null, payment_day_of_month: null };
+    const user: Parameters<typeof buildUserFormValues>[0] = { first_name: "A", last_name: "B", email: "a@example.com", phone: "992901234567", parent_phone: "992901234568", date_of_birth: null, payment_day_of_month: null };
     const prefilled: UserFormValues = buildUserFormValues(user);
     expect(prefilled.phone).toBe("+992901234567");
     expect(prefilled.parentPhone).toBe("+992901234568");

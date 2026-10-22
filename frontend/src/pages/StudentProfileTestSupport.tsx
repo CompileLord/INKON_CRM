@@ -26,7 +26,6 @@ export const mockStudentUser: User = {
   parent_phone: "+992900000043",
   date_of_birth: "2007-05-15",
   payment_day_of_month: 15,
-  parent_telegram_chat_id: null,
   is_deleted: false,
   must_set_password: false,
   created_at: "2026-01-01T00:00:00Z",

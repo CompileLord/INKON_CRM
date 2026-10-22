@@ -34,7 +34,6 @@ const sampleUser = {
   role: "student",
   date_of_birth: null,
   phone: null,
-  parent_telegram_chat_id: null,
   photo_path: null,
   thumbnail_path: null,
   payment_day_of_month: null,

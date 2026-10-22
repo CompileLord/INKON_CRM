@@ -24,10 +24,6 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k, r
       .string()
       .refine((value) => !value || CanonicalPhone.valid(value, true), t("validation.invalidPhone")),
     birthDate: z.string(),
-    parentTelegramChatId: z
-      .string()
-      .trim()
-      .refine((value) => !value || /^-?\d+$/.test(value), t("validation.invalidTelegramChatId")),
     parentPhone: z
       .string()
       .refine((value) => !value || CanonicalPhone.valid(value, true), t("validation.invalidPhone")),

@@ -22,7 +22,6 @@ describe("buildUserFormValues", () => {
       email: "aziz@example.com",
       phone: "+992901234567",
       date_of_birth: "2000-05-01",
-      parent_telegram_chat_id: 123456789,
       payment_day_of_month: 15,
     });
 
@@ -32,7 +31,6 @@ describe("buildUserFormValues", () => {
       email: "aziz@example.com",
       phone: "+992901234567",
       birthDate: "2000-05-01",
-      parentTelegramChatId: "123456789",
       parentPhone: "",
       paymentDay: "15",
     });
@@ -47,7 +45,6 @@ describe("buildCreatePayload", () => {
       email: "aziz@example.com",
       phone: "",
       birthDate: "",
-      parentTelegramChatId: "",
       parentPhone: "",
       paymentDay: "",
     });
@@ -58,7 +55,6 @@ describe("buildCreatePayload", () => {
       email: "aziz@example.com",
       phone: null,
       date_of_birth: null,
-      parent_telegram_chat_id: null,
       parent_phone: null,
       payment_day_of_month: null,
     });
@@ -72,7 +68,6 @@ describe("buildUpdatePayload", () => {
     email: "aziz@example.com",
     phone: "+992901234567",
     birthDate: "2000-05-01",
-    parentTelegramChatId: "123456789",
     parentPhone: "+992901234568",
     paymentDay: "15",
   };

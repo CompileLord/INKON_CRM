@@ -105,8 +105,6 @@
     "phoneHelp": "Формат: +992901234567",
     "dobLabel": "Дата рождения",
     "parentPhoneLabel": "Телефон родителя",
-    "telegramChatIdLabel": "Telegram Chat ID родителя",
-    "telegramChatIdHelp": "Используется для автоматических уведомлений. Ввод ID не гарантирует активное подключение.",
     "paymentDayLabel": "День оплаты (ежемесячно)",
     "paymentDayHelp": "Число от 1 до 28",
     "saving": "Сохранение…",
@@ -131,7 +129,6 @@
     "emailRequired": "Введите адрес электронной почты",
     "invalidEmail": "Некорректный адрес электронной почты",
     "invalidPhone": "Формат: +992901234567",
-    "invalidTelegramChatId": "Должен быть целым числом",
     "invalidPaymentDay": "Число от 1 до 28",
     "emailTaken": "Этот адрес электронной почты уже занят",
     "phoneOrParentPhoneRequired": "Укажите телефон студента или родителя."

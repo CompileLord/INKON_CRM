@@ -7,7 +7,6 @@ const baseValues = {
   email: "aziz@example.com",
   phone: "",
   birthDate: "",
-  parentTelegramChatId: "",
   parentPhone: "",
   paymentDay: "",
 };

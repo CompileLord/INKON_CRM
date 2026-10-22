@@ -138,7 +138,7 @@ async def test_explicit_null_self_phone_clears_legacy_value(
 
 
 @pytest.mark.asyncio
-async def test_explicit_guardian_destination_replacement_remains_authorized(
+async def test_explicit_guardian_chat_replacement_is_rejected_without_partial_phone_change(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_student: User,
 ) -> None:
     test_student.parent_phone = "992900000001"
@@ -146,8 +146,10 @@ async def test_explicit_guardian_destination_replacement_remains_authorized(
     db_session.add(test_student)
     await db_session.commit()
     response: Response = await client.patch(f"/api/v1/users/{test_student.id}", headers=CanonicalInputFixture.headers(test_admin), json={"parent_phone": "+992900000002", "parent_telegram_chat_id": 4905})
-    assert response.status_code == 200
-    assert response.json()["parent_telegram_chat_id"] == 4905
+    assert response.status_code == 422
+    await db_session.refresh(test_student)
+    assert test_student.parent_telegram_chat_id == 4904
+    assert test_student.parent_phone == "992900000001"
 
 
 @pytest.mark.asyncio
