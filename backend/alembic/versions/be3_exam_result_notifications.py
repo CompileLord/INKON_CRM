@@ -40,6 +40,15 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    connection: sa.engine.Connection = op.get_bind()
+    connection.execute(sa.text("LOCK TABLE exam_result_notifications IN ACCESS EXCLUSIVE MODE"))
+    pending_count: int = connection.scalar(
+        sa.text("SELECT count(*) FROM exam_result_notifications WHERE status IN ('pending', 'claimed')")
+    ) or 0
+    if pending_count > 0:
+        raise RuntimeError(
+            f"Cannot downgrade exam_result_notifications: {pending_count} pending or claimed notification(s) remain unprocessed"
+        )
     op.drop_index("ix_exam_result_notifications_status_due_at", table_name="exam_result_notifications")
     op.drop_index("uq_exam_result_notifications_pending_student_journal", table_name="exam_result_notifications")
     op.drop_table("exam_result_notifications")

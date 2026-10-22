@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Set
+from typing import Optional, Sequence, Set
 
 from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
@@ -16,7 +16,7 @@ from app.models.outbox_event import OutboxEvent, OutboxEventKind
 from app.repositories.interfaces.user_repository import UserRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
-from app.services.email_service import EmailDeliveryError, EmailService, SMTP_SOCKET_TIMEOUT_SECONDS
+from app.services.email_service import EmailDeliveryError, EmailService, SMTP_TRANSPORT_TIMEOUT_SECONDS
 from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
 from app.services.outbox_service import NotificationIntentPayload, OutboxPayloadEncryptor
 from app.services.sms.sender import PayomchiSmsSender, SmsSender
@@ -29,7 +29,7 @@ OUTBOX_WORKER_LEASE_SECONDS = 60
 OUTBOX_WORKER_POLL_INTERVAL_SECONDS = 5.0
 OUTBOX_WORKER_BACKOFF_BASE_SECONDS = 10
 OUTBOX_WORKER_MAX_QUEUE_AGE_SECONDS = 600
-OUTBOX_WORKER_MIN_LEASE_REMAINING_SECONDS = max(12.0, SMTP_SOCKET_TIMEOUT_SECONDS + 2.0)
+OUTBOX_WORKER_MIN_LEASE_REMAINING_SECONDS: float = SMTP_TRANSPORT_TIMEOUT_SECONDS + 2.0
 
 
 class OutboxWorkerManager:
@@ -69,7 +69,7 @@ class OutboxWorkerManager:
         self.poll_interval_seconds = poll_interval_seconds
         self.backoff_base_seconds = backoff_base_seconds
         self.max_queue_age_seconds = max_queue_age_seconds
-        self.min_lease_remaining_seconds = min_lease_remaining_seconds
+        self.min_lease_remaining_seconds = max(min_lease_remaining_seconds, OUTBOX_WORKER_MIN_LEASE_REMAINING_SECONDS)
         self._engine: Optional[AsyncEngine] = None
         self._session_factory: Optional[async_sessionmaker[AsyncSession]] = None
         self._stop_event: Optional[asyncio.Event] = None
@@ -93,8 +93,15 @@ class OutboxWorkerManager:
         session: AsyncSession
         async with session_factory() as session:
             repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(session)
-            if not await repository.is_lease_valid(event.id, lease_owner, datetime.now(timezone.utc)):
+            attempt_count: int | None = await repository.begin_attempt(
+                event.id, lease_owner, datetime.now(timezone.utc), self.min_lease_remaining_seconds,
+            )
+            if attempt_count is None:
+                await repository.release_claim(event.id, lease_owner)
+                await session.commit()
                 return False
+            event.attempt_count = attempt_count
+            await session.commit()
 
         send_error: str | None = None
         try:
@@ -210,6 +217,10 @@ class OutboxWorkerManager:
             return True
 
         if event.lease_expires_at is None or (event.lease_expires_at - now).total_seconds() < self.min_lease_remaining_seconds:
+            async with session_factory() as session:
+                repo = SQLAlchemyOutboxRepository(session)
+                await repo.release_claim(event.id, lease_owner)
+                await session.commit()
             return False
 
         if event.encrypted_payload is None:
@@ -257,13 +268,18 @@ class OutboxWorkerManager:
                 await session.commit()
             return True
 
+        rendered_email: RenderedEmail = self.render_email(event, code)
         async with session_factory() as session:
             repo = SQLAlchemyOutboxRepository(session)
-            lease_still_valid = await repo.is_lease_valid(event.id, lease_owner, datetime.now(timezone.utc))
-        if not lease_still_valid:
-            return False
-
-        rendered_email: RenderedEmail = self.render_email(event, code)
+            attempt_count: int | None = await repo.begin_attempt(
+                event.id, lease_owner, datetime.now(timezone.utc), self.min_lease_remaining_seconds,
+            )
+            if attempt_count is None:
+                await repo.release_claim(event.id, lease_owner)
+                await session.commit()
+                return False
+            event.attempt_count = attempt_count
+            await session.commit()
 
         send_error: Optional[str] = None
         transport_task = asyncio.create_task(
@@ -278,12 +294,16 @@ class OutboxWorkerManager:
         )
         self._inflight_transports.add(transport_task)
         try:
-            await asyncio.shield(transport_task)
+            await asyncio.wait_for(asyncio.shield(transport_task), SMTP_TRANSPORT_TIMEOUT_SECONDS + 0.5)
+        except asyncio.TimeoutError:
+            transport_task.cancel()
+            await asyncio.gather(transport_task, return_exceptions=True)
+            send_error = "TimeoutError"
         except EmailDeliveryError as exc:
             send_error = type(exc).__name__
         except asyncio.CancelledError:
             try:
-                await transport_task
+                await asyncio.wait_for(transport_task, SMTP_TRANSPORT_TIMEOUT_SECONDS + 0.5)
             except Exception as exc:
                 send_error = type(exc).__name__
         except Exception as exc:
@@ -329,26 +349,36 @@ class OutboxWorkerManager:
             await repo.expire_stale(now)
             await session.commit()
 
-        async with active_factory() as session:
-            repo = SQLAlchemyOutboxRepository(session)
-            claimed = await repo.claim_pending_batch(
-                lease_owner=lease_owner,
-                lease_duration_seconds=self.lease_duration_seconds,
-                batch_size=self.batch_size,
-                now=now,
-            )
-            await session.commit()
-
-        for event in claimed:
+        claimed_count: int = 0
+        iteration_index: int
+        for iteration_index in range(self.batch_size):
             if self._stop_event is not None and self._stop_event.is_set():
                 break
-            await self.process_single_event(
-                event=event,
-                lease_owner=lease_owner,
-                session_factory=active_factory,
-            )
-
-        return len(claimed)
+            async with active_factory() as session:
+                repo = SQLAlchemyOutboxRepository(session)
+                claimed: Sequence[OutboxEvent] = await repo.claim_pending_batch(
+                    lease_owner=lease_owner,
+                    lease_duration_seconds=self.lease_duration_seconds,
+                    batch_size=1,
+                    now=datetime.now(timezone.utc),
+                )
+                await session.commit()
+            if not claimed:
+                break
+            event: OutboxEvent = claimed[0]
+            claimed_count += 1
+            original_attempt_count: int = event.attempt_count
+            try:
+                processed: bool = await self.process_single_event(event, lease_owner, active_factory)
+            finally:
+                async with active_factory() as session:
+                    repo = SQLAlchemyOutboxRepository(session)
+                    if event.attempt_count == original_attempt_count:
+                        await repo.release_claim(event.id, lease_owner)
+                    await session.commit()
+            if not processed:
+                break
+        return claimed_count
 
     async def run_loop(self) -> None:
         while self._stop_event is not None and not self._stop_event.is_set():

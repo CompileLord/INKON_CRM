@@ -140,7 +140,7 @@ async def test_claim_pending_batch_atomic(db_session: AsyncSession) -> None:
         assert event.status == OutboxEventStatus.CLAIMED
         assert event.lease_owner == "test-worker-1"
         assert event.lease_expires_at is not None
-        assert event.attempt_count == 1
+        assert event.attempt_count == 0
 
 
 @pytest.mark.asyncio

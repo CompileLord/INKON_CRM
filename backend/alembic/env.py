@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 from logging.config import fileConfig
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
@@ -57,6 +57,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
+    lock_timeout_ms: int = int(os.environ.get("MIGRATION_LOCK_TIMEOUT_MS", "5000"))
+    statement_timeout_ms: int = int(os.environ.get("MIGRATION_STATEMENT_TIMEOUT_MS", "900000"))
+    if lock_timeout_ms <= 0 or statement_timeout_ms <= 0:
+        raise ValueError("Migration timeouts must be positive milliseconds")
+    connection.execute(text("SELECT set_config('lock_timeout', :timeout, false)"), {"timeout": f"{lock_timeout_ms}ms"})
+    connection.execute(text("SELECT set_config('statement_timeout', :timeout, false)"), {"timeout": f"{statement_timeout_ms}ms"})
+    connection.commit()
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
