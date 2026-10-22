@@ -64,7 +64,6 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Password policy** (T1-07, T8-08):
   - A new password needs at least 8 characters and must not be on the common-password list.
   - A 6-character SMS code becomes a one-time credential that forces a password change.
-- **Errors** (T8-05): out-of-range integer ids and NUL characters return 422, not a plain-text 500.
 
 ### U03 FE: auth and session UX
 - **Change password**: a 400 from change-password shows an inline "current password is wrong"; it never logs the user out.
@@ -135,6 +134,7 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Amounts** (T5-02, T5-04, T5-06): `NaN`, `Infinity` and exponent notation are rejected with 422, as are amounts with more than 2 decimals.
 - **Payment dates** (T5-03): must be timezone-aware; no future dates beyond today; no dates before the enrollment start minus a configured tolerance.
 - **Comments** (T5-07): limited to 500 characters.
+- **Errors** (T8-05): out-of-range integer ids and NUL characters return 422 JSON, not a plain-text 500, handled centrally for all routers.
 
 ### U11 FE: finance screens
 - **Accountant actions** (T5-01): void, refund, discount, credit allocation and a student ledger drawer, using the existing endpoints.
