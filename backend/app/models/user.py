@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import BigInteger, DateTime, Integer, String, Date, CheckConstraint, text
+from sqlalchemy import BigInteger, DateTime, Index, Integer, String, Date, CheckConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin
 
@@ -20,10 +20,16 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
             "payment_day_of_month >= 1 AND payment_day_of_month <= 28",
             name="check_payment_day_of_month_range"
         ),
+        Index(
+            "ux_users_phone_live",
+            "phone",
+            unique=True,
+            postgresql_where=text("is_deleted = false AND phone IS NOT NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     pending_password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     pending_password_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

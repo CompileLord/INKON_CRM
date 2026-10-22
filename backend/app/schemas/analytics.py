@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +14,7 @@ class DebtorPreviewItem(BaseModel):
     student_id: int
     first_name: str
     last_name: str
-    email: str
+    email: Optional[str] = None
     debt: Decimal
 
 

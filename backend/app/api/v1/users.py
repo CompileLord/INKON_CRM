@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, Query, status, File, UploadFile, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, Query, status, File, UploadFile, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.rate_limiter import get_client_ip
 from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.deps import get_db_session, get_storage_service, require_superadmin, get_current_user
 from app.models.user import User, UserRole
 from app.models.outbox_event import OutboxEvent, OutboxEventStatus
-from app.services.student_password_sms_service import PasswordSmsDestination
-from app.schemas.user import PasswordSmsDeliveryResponse, PasswordSmsResendResponse, UserCreate, UserCreateResponse, UserUpdate, UserSelfUpdate, UserResponse
+from app.services.credentials_channel import CredentialsChannel
+from app.services.credentials_delivery_service import CredentialsDelivery
+from app.schemas.user import PasswordResendRequest, PasswordSmsDeliveryResponse, PasswordSmsResendResponse, UserCreate, UserCreateResponse, UserUpdate, UserSelfUpdate, UserResponse
 from app.services.telegram_link_service import IssuedLinkCode
 from app.services.storage_service import StorageService
 from app.services.user_service import UserService
@@ -23,18 +24,20 @@ async def create_user(
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session)
 ) -> UserCreateResponse:
-    if payload.role == UserRole.STUDENT:
+    if payload.role == UserRole.STUDENT and not payload.email:
         await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
     user_service: UserService = UserService(db)
     created_user: User
     issued_link_code: IssuedLinkCode | None
-    destination: PasswordSmsDestination | None
-    created_user, issued_link_code, destination = await user_service.create_user_with_link_code(
+    delivery: CredentialsDelivery
+    created_user, issued_link_code, delivery = await user_service.create_user_with_link_code(
         payload, current_user.id
     )
     response: UserCreateResponse = UserCreateResponse.model_validate(created_user, from_attributes=True)
     response.parent_link_code = issued_link_code.code if issued_link_code else None
-    response.password_sms_destination = destination.kind.value if destination else None
+    response.password_sms_destination = delivery.destination.kind.value if delivery.destination else None
+    response.credentials_channel = delivery.channel.value
+    response.credentials_masked_phone = delivery.masked_phone
     return response
 
 
@@ -58,12 +61,18 @@ async def list_password_sms_deliveries(
 async def resend_password_sms(
     id: int,
     request: Request,
+    payload: PasswordResendRequest = Body(default_factory=PasswordResendRequest),
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db_session),
 ) -> PasswordSmsResendResponse:
     await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
-    destination: PasswordSmsDestination = await UserService(db).resend_password_sms(id, current_user.id)
-    return PasswordSmsResendResponse(destination=destination.kind.value)
+    requested_channel: CredentialsChannel | None = CredentialsChannel(payload.channel) if payload.channel else None
+    delivery: CredentialsDelivery = await UserService(db).resend_credentials(id, current_user.id, requested_channel)
+    return PasswordSmsResendResponse(
+        destination=delivery.destination.kind.value if delivery.destination else None,
+        channel=delivery.channel.value,
+        masked_phone=delivery.masked_phone,
+    )
 
 
 @router.get("/me", response_model=UserResponse)
@@ -92,9 +101,9 @@ async def update_user(
     db: AsyncSession = Depends(get_db_session)
 ) -> User:
     user_service = UserService(db)
-    if payload.email:
+    if "email" in payload.model_fields_set:
         await PasswordSmsRateLimiter().consume_ip_budget(get_client_ip(request))
-    return await user_service.update_user(id, payload)
+    return await user_service.update_user(id, payload, current_user.id)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthFrame } from "../layouts/AuthFrame";
@@ -19,6 +19,9 @@ import {
 import { normalizeStudentCode } from "../lib/auth/studentCode";
 import { getSafeRedirect, resolveLandingPath } from "../lib/postAuthRedirect";
 import { useAuthStore } from "../store/authStore";
+
+const toFormField = (field: "login" | "email" | "password"): keyof LoginFormValues =>
+  field === "email" ? "login" : field;
 
 export function Login() {
   const navigate = useNavigate();
@@ -42,7 +45,7 @@ export function Login() {
     formState: { errors, isSubmitted },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { login: "", password: "" },
   });
 
   const currentLanguage = i18n.language;
@@ -53,7 +56,7 @@ export function Login() {
       previousLanguage.current = currentLanguage;
       if (serverFieldErrors.length > 0) {
         for (const item of serverFieldErrors) {
-          setError(item.field, { type: "server", message: t(item.messageKey) });
+          setError(toFormField(item.field), { type: "server", message: t(item.messageKey) });
         }
       } else if (isSubmitted) {
         trigger();
@@ -68,7 +71,7 @@ export function Login() {
     setServerFieldErrors([]);
     setSubmitting(true);
     try {
-      const result = await login(values.email.trim(), normalizeStudentCode(values.password));
+      const result = await login(values.login.trim(), normalizeStudentCode(values.password));
       setAuthenticated(result.access_token, result.refresh_token, result.must_set_password);
 
       if (result.must_set_password) {
@@ -86,7 +89,7 @@ export function Login() {
         if (fieldErrors.length > 0) {
           setServerFieldErrors(fieldErrors);
           for (const item of fieldErrors) {
-            setError(item.field, { type: "server", message: t(item.messageKey) });
+            setError(toFormField(item.field), { type: "server", message: t(item.messageKey) });
           }
         }
         if (mappedFormError) {
@@ -128,18 +131,18 @@ export function Login() {
           )}
 
           <Input
-            id="email"
-            label={t("auth:email")}
-            type="email"
+            id="login"
+            label={t("auth:phoneOrEmail")}
+            type="text"
             autoComplete="username"
             inputMode="email"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder={t("auth:emailPlaceholder")}
-            error={errors.email?.message}
+            placeholder={t("auth:phoneOrEmailPlaceholder")}
+            error={errors.login?.message}
             disabled={submitting}
             required
-            {...register("email")}
+            {...register("login")}
           />
 
           <Input
@@ -168,6 +171,13 @@ export function Login() {
             }
             {...register("password")}
           />
+
+          <Link
+            to="/forgot-password"
+            className="self-start text-sm font-medium text-maroon-text underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
+          >
+            {t("auth:forgotPassword")}
+          </Link>
 
           <p className="text-sm leading-5 text-muted">{t("auth:newUserPasswordHint")}</p>
 

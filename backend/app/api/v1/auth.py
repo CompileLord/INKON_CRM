@@ -7,7 +7,9 @@ from app.core.rate_limiter import (
     get_auth_rate_limiter,
     get_client_ip,
 )
+from app.core.login_identifier import LoginIdentifier
 from app.models.user import User
+from app.services.student_password_sms_service import PasswordSmsDestinationKind
 from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
@@ -34,12 +36,13 @@ async def login(
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
     client_ip: str = get_client_ip(request)
-    await limiter.consume_login_budget(payload.email, client_ip)
-    reservation: LockoutReservation = await limiter.reserve_login_slot(payload.email)
+    identifier: LoginIdentifier = payload.identifier
+    await limiter.consume_login_budget(identifier.value, client_ip)
+    reservation: LockoutReservation = await limiter.reserve_login_slot(identifier.value)
     try:
         auth_service: AuthService = AuthService(db)
         try:
-            result: TokenPair = await auth_service.login(payload.email, payload.password)
+            result: TokenPair = await auth_service.login(identifier, payload.password)
             await reservation.commit_success()
             return result
         except HTTPException as error:
@@ -144,7 +147,7 @@ async def change_password(
     db: AsyncSession = Depends(get_db_session),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
-    await limiter.consume_login_budget(current_user.email, get_client_ip(request))
+    await limiter.consume_login_budget(current_user.email or current_user.phone or str(current_user.id), get_client_ip(request))
     return await AuthService(db).change_password(
         current_user.id, payload.current_password, payload.new_password
     )
@@ -152,7 +155,7 @@ async def change_password(
 
 @router.post(
     "/password-reset/request", response_model=PasswordResetRequestResponse, status_code=status.HTTP_200_OK,
-    description="Students receive a pending SMS password with a short expiration (ten minutes by default). Their current password and sessions remain valid until the SMS password is used at login.",
+    description="Accepts login (email or E.164 phone) or the legacy email field, plus an optional SMS channel. Accounts with an email receive a reset code by email; accounts without one, or requests naming a channel, receive a pending SMS password with a short expiration (ten minutes by default). The current password and sessions remain valid until the SMS password is used at login. The response is identical whether or not the account or channel exists.",
 )
 async def password_reset_request(
     payload: PasswordResetRequest,
@@ -161,10 +164,14 @@ async def password_reset_request(
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> PasswordResetRequestResponse:
     client_ip: str = get_client_ip(request)
-    await limiter.consume_password_reset_budgets(payload.email, client_ip)
+    identifier: LoginIdentifier = payload.identifier
+    await limiter.consume_password_reset_budgets(identifier.value, client_ip)
     auth_service: AuthService = AuthService(db)
-    await auth_service.password_reset_request(payload.email)
-    return PasswordResetRequestResponse(message="If the email exists, a reset code has been sent.")
+    requested_channel: PasswordSmsDestinationKind | None = (
+        PasswordSmsDestinationKind(payload.channel) if payload.channel else None
+    )
+    await auth_service.password_reset_request(identifier, requested_channel, client_ip)
+    return PasswordResetRequestResponse(message="If the account exists, a reset message has been sent.")
 
 
 @router.post("/password-reset/verify", response_model=dict)

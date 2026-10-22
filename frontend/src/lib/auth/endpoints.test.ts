@@ -40,7 +40,7 @@ const tokenPair = {
 describe("login", () => {
   it("posts credentials without an Authorization header and returns the token pair", async () => {
     mock.onPost("/auth/login").reply((config) => {
-      expect(JSON.parse(config.data)).toEqual({ email: "a@b.com", password: "secret" });
+      expect(JSON.parse(config.data)).toEqual({ login: "a@b.com", password: "secret" });
       expect(config.headers?.Authorization).toBeUndefined();
       return [200, tokenPair];
     });
@@ -84,14 +84,25 @@ describe("setPassword", () => {
 });
 
 describe("passwordResetRequest", () => {
-  it("posts email without an Authorization header", async () => {
+  it("posts the identifier without an Authorization header", async () => {
     mock.onPost("/auth/password-reset/request").reply((config) => {
-      expect(JSON.parse(config.data)).toEqual({ email: "a@b.com" });
+      expect(JSON.parse(config.data)).toEqual({ login: "a@b.com" });
       expect(config.headers?.Authorization).toBeUndefined();
       return [200, { message: "code sent" }];
     });
 
     await expect(passwordResetRequest("a@b.com")).resolves.toEqual({ message: "code sent" });
+  });
+});
+
+describe("passwordResetRequest fallback channel", () => {
+  it("adds the chosen SMS channel to the body", async () => {
+    mock.onPost("/auth/password-reset/request").reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({ login: "+992900000001", channel: "parent_phone" });
+      return [200, { message: "sent" }];
+    });
+
+    await expect(passwordResetRequest("+992900000001", "parent_phone")).resolves.toEqual({ message: "sent" });
   });
 });
 

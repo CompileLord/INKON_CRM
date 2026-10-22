@@ -21,6 +21,9 @@ from app.services.sum_calculation_service import SumCalculationService
 
 
 from scripts.demo_seed_assets import TAJIK_STUDENTS, save_course_photo, save_mentor_avatar
+from scripts.demo_seed_recorder import DemoSeedRecorder
+from scripts.demo_seed_report import DemoSeedReport
+from scripts.demo_student_contacts import DemoStudentContactPlan, DemoStudentContacts
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -33,7 +36,9 @@ class DemoDataPopulator:
         staged_assets: Dict[str, bytes],
         administrator_password: str,
         demo_password: str,
+        report: DemoSeedReport | None = None,
     ) -> None:
+        seed_report: DemoSeedReport = report if report is not None else DemoSeedReport()
         password_hash_default: str = hash_password(demo_password)
 
         async with session_factory() as session:
@@ -45,7 +50,7 @@ class DemoDataPopulator:
                 last_name="System",
                 role=UserRole.SUPERADMIN,
                 phone="+992900000000",
-                must_set_password=True
+                must_set_password=False
             )
             session.add(admin_user)
 
@@ -56,7 +61,7 @@ class DemoDataPopulator:
                 last_name="Karimova",
                 role=UserRole.ACCOUNTANT,
                 phone="+992900000099",
-                must_set_password=True
+                must_set_password=False
             )
             session.add(accountant_user)
 
@@ -67,7 +72,7 @@ class DemoDataPopulator:
                 last_name="Hakimov",
                 role=UserRole.MENTOR,
                 phone="+992900000001",
-                must_set_password=True
+                must_set_password=False
             )
             mentor_gulnora: User = User(
                 email="gulnora.saidova@imkon.tj",
@@ -76,7 +81,7 @@ class DemoDataPopulator:
                 last_name="Saidova",
                 role=UserRole.MENTOR,
                 phone="+992900000002",
-                must_set_password=True
+                must_set_password=False
             )
             mentor_farhod: User = User(
                 email="farhod.ziyoyev@imkon.tj",
@@ -85,7 +90,7 @@ class DemoDataPopulator:
                 last_name="Ziyoyev",
                 role=UserRole.MENTOR,
                 phone="+992900000003",
-                must_set_password=True
+                must_set_password=False
             )
             session.add_all([mentor_sukhrob, mentor_gulnora, mentor_farhod])
             await session.flush()
@@ -98,21 +103,26 @@ class DemoDataPopulator:
 
             student_users: List[User] = []
             for idx, (first_name, last_name, email, phone) in enumerate(TAJIK_STUDENTS, start=1):
+                contacts: DemoStudentContacts = DemoStudentContactPlan.for_student(idx, email, phone)
                 student: User = User(
-                    email=email,
+                    email=contacts.email,
                     password_hash=password_hash_default,
                     first_name=first_name,
                     last_name=last_name,
                     role=UserRole.STUDENT,
-                    phone=phone,
+                    phone=contacts.phone,
                     payment_day_of_month=(idx % 20) + 1,
-                    parent_phone=f"+99290888{idx:04d}",
-                    must_set_password=True
+                    parent_phone=contacts.parent_phone,
+                    must_set_password=False
                 )
                 session.add(student)
                 student_users.append(student)
 
             await session.flush()
+            DemoSeedRecorder.record_credentials(
+                seed_report, [admin_user, accountant_user, mentor_sukhrob, mentor_gulnora, mentor_farhod], student_users,
+            )
+            await DemoSeedRecorder.issue_parent_link_codes(session, seed_report, student_users)
             logger.info(f"Seeded users: 1 Admin, 1 Accountant, 3 Mentors (with real photos), {len(student_users)} Students.")
 
             course_definitions: List[Dict[str, Any]] = [

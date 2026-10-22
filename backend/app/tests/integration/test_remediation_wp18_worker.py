@@ -1,3 +1,4 @@
+from app.core.login_identifier import LoginIdentifierParser
 import asyncio
 import importlib.util
 import json
@@ -45,7 +46,7 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
     await db_session.commit()
 
     auth_svc = AuthService(db_session)
-    await auth_svc.password_reset_request(user.email)
+    await auth_svc.password_reset_request(LoginIdentifierParser.from_email(user.email))
     await db_session.commit()
 
     session_factory = _make_test_session_factory()

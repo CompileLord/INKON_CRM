@@ -34,7 +34,7 @@ async def test_login_invalid_password(client: AsyncClient, test_student: User) -
         json={"email": test_student.email, "password": "wrong_password"}
     )
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid email or password"
+    assert response.json()["detail"] == "Invalid login or password"
 
 
 @pytest.mark.asyncio

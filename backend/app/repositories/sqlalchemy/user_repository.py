@@ -5,6 +5,7 @@ from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Exists
+from app.core.login_identifier import LoginIdentifier, LoginIdentifierKind
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -22,6 +23,28 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
     async def get_by_email(self, email: str) -> Optional[User]:
         query = select(User).filter(User.email == email, User.is_deleted == False)
         result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_by_phone(self, phone: str) -> Optional[User]:
+        query: Select[tuple[User]] = select(User).where(User.phone == phone, User.is_deleted.is_(False))
+        result: Result[tuple[User]] = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_by_login(self, identifier: LoginIdentifier) -> Optional[User]:
+        if identifier.kind == LoginIdentifierKind.EMAIL:
+            return await self.get_by_email(identifier.value)
+        return await self.get_by_phone(identifier.value)
+
+    async def get_by_login_for_update(self, identifier: LoginIdentifier) -> Optional[User]:
+        if identifier.kind == LoginIdentifierKind.EMAIL:
+            return await self.get_by_email_for_update(identifier.value)
+        query: Select[tuple[User]] = (
+            select(User)
+            .where(User.phone == identifier.value, User.is_deleted.is_(False))
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        result: Result[tuple[User]] = await self.session.execute(query)
         return result.scalars().first()
 
     async def get_by_id_for_authentication(self, user_id: int) -> Optional[User]:
@@ -94,6 +117,8 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     User.first_name.ilike(search_pattern),
                     User.last_name.ilike(search_pattern),
                     User.email.ilike(search_pattern),
+                    User.phone.ilike(search_pattern),
+                    User.parent_phone.ilike(search_pattern),
                 )
             )
         return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
@@ -112,6 +137,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                     User.first_name.ilike(search_pattern),
                     User.last_name.ilike(search_pattern),
                     User.email.ilike(search_pattern),
+                    User.phone.ilike(search_pattern),
                 )
             )
         return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))

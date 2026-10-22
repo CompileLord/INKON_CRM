@@ -18,7 +18,7 @@ class PaymentReceiptResponse(BaseModel):
     occurred_at: datetime
     student_id: int
     student_name: str
-    student_email: str
+    student_email: Optional[str] = None
     amount: Decimal
     method: Optional[PaymentMethod] = None
     accepted_by_name: str

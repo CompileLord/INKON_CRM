@@ -60,8 +60,8 @@ describe("Login page integration", () => {
     expect(screen.getByText(/open a new chapter\./i)).not.toBeNull();
     expect(screen.getByText(/your courses, progress, and learning community in one place\./i)).not.toBeNull();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" });
-    expect(emailInput.getAttribute("type")).toBe("email");
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" });
+    expect(emailInput.getAttribute("type")).toBe("text");
     expect(emailInput.getAttribute("autocomplete")).toBe("username");
 
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" });
@@ -84,7 +84,7 @@ describe("Login page integration", () => {
     const submitBtn = screen.getByRole("button", { name: /sign in/i });
     await user.click(submitBtn);
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" });
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" });
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" });
 
     await waitFor(() => {
@@ -94,16 +94,16 @@ describe("Login page integration", () => {
 
     const emailErrorId = emailInput.getAttribute("aria-describedby");
     const passErrorId = passwordInput.getAttribute("aria-describedby");
-    expect(emailErrorId).toBe("email-error");
+    expect(emailErrorId).toBe("login-error");
     expect(passErrorId).toBe("password-error");
-    expect(document.getElementById("email-error")).not.toBeNull();
+    expect(document.getElementById("login-error")).not.toBeNull();
     expect(document.getElementById("password-error")).not.toBeNull();
 
     await user.type(emailInput, "not-an-email");
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(document.getElementById("email-error")?.textContent).toContain("Invalid email address");
+      expect(document.getElementById("login-error")?.textContent).toContain("Enter a valid email or phone number");
     });
   });
 
@@ -132,11 +132,11 @@ describe("Login page integration", () => {
 
   it("handles 401 invalid credentials and re-translates error dynamically across locales without clearing input", async () => {
     const user = userEvent.setup();
-    const error401 = new AuthApiError(401, "Invalid email or password");
+    const error401 = new AuthApiError(401, "Invalid login or password");
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error401);
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "user@example.com");
     await user.type(passwordInput, "WrongPassword");
@@ -144,24 +144,24 @@ describe("Login page integration", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Invalid email or password");
+    expect(alert.textContent).toContain("Invalid login or password");
     expect(emailInput.value).toBe("user@example.com");
     expect(passwordInput.value).toBe("WrongPassword");
 
     await i18n.changeLanguage("ru");
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("Неверный email или пароль");
+      expect(screen.getByRole("alert").textContent).toContain("Неверный логин или пароль");
     });
-    const ruEmail = screen.getByLabelText(/электронная почта/i, { selector: "input" }) as HTMLInputElement;
+    const ruEmail = screen.getByLabelText(/почта или телефон/i, { selector: "input" }) as HTMLInputElement;
     const ruPass = screen.getByLabelText(/^пароль/i, { selector: "input" }) as HTMLInputElement;
     expect(ruEmail.value).toBe("user@example.com");
     expect(ruPass.value).toBe("WrongPassword");
 
     await i18n.changeLanguage("tg");
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("Почта ё пароли нодуруст");
+      expect(screen.getByRole("alert").textContent).toContain("Логин ё пароли нодуруст аст");
     });
-    const tgEmail = screen.getByLabelText(/почтаи электронӣ/i, { selector: "input" }) as HTMLInputElement;
+    const tgEmail = screen.getByLabelText(/почта ё телефон/i, { selector: "input" }) as HTMLInputElement;
     const tgPass = screen.getByLabelText(/^парол/i, { selector: "input" }) as HTMLInputElement;
     expect(tgEmail.value).toBe("user@example.com");
     expect(tgPass.value).toBe("WrongPassword");
@@ -172,7 +172,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(new NetworkError());
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "network@example.com");
     await user.type(passwordInput, "SomePass123");
@@ -198,7 +198,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error422);
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "bad-format");
     await user.type(passwordInput, "Password123");
@@ -207,22 +207,22 @@ describe("Login page integration", () => {
     await waitFor(() => {
       expect(emailInput.getAttribute("aria-invalid")).toBe("true");
     });
-    const emailError = document.getElementById("email-error");
-    expect(emailError?.textContent).toContain("Invalid email address");
+    const emailError = document.getElementById("login-error");
+    expect(emailError?.textContent).toContain("Enter a valid email or phone number");
     expect(document.body.textContent).not.toContain(technicalEmailMessage);
     expect(emailInput.value).toBe("bad-format");
     expect(passwordInput.value).toBe("Password123");
 
     await i18n.changeLanguage("ru");
     await waitFor(() => {
-      expect(document.getElementById("email-error")?.textContent).toContain("Некорректный адрес электронной почты");
+      expect(document.getElementById("login-error")?.textContent).toContain("Введите корректную почту или номер телефона");
     });
     expect(emailInput.value).toBe("bad-format");
     expect(passwordInput.value).toBe("Password123");
 
     await i18n.changeLanguage("tg");
     await waitFor(() => {
-      expect(document.getElementById("email-error")?.textContent).toContain("Нишонии почтаи электронӣ нодуруст аст");
+      expect(document.getElementById("login-error")?.textContent).toContain("Почтаи дуруст ё рақами телефонро ворид кунед");
     });
     expect(emailInput.value).toBe("bad-format");
     expect(passwordInput.value).toBe("Password123");
@@ -237,7 +237,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error422);
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" }) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" }) as HTMLInputElement;
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" }) as HTMLInputElement;
     await user.type(emailInput, "bad@domain.com");
     await user.type(passwordInput, "Password123");
@@ -246,7 +246,7 @@ describe("Login page integration", () => {
     await waitFor(() => {
       expect(emailInput.getAttribute("aria-invalid")).toBe("true");
     });
-    const emailError = document.getElementById("email-error");
+    const emailError = document.getElementById("login-error");
     expect(emailError?.textContent).toContain("Something went wrong. Please try again");
     expect(document.body.textContent).not.toContain(technicalBackendMessage);
     expect(emailInput.value).toBe("bad@domain.com");
@@ -254,7 +254,7 @@ describe("Login page integration", () => {
 
     await i18n.changeLanguage("ru");
     await waitFor(() => {
-      expect(document.getElementById("email-error")?.textContent).toContain("Что-то пошло не так. Попробуйте ещё раз");
+      expect(document.getElementById("login-error")?.textContent).toContain("Что-то пошло не так. Попробуйте ещё раз");
     });
     expect(emailInput.value).toBe("bad@domain.com");
     expect(passwordInput.value).toBe("Password123");
@@ -262,7 +262,7 @@ describe("Login page integration", () => {
 
     await i18n.changeLanguage("tg");
     await waitFor(() => {
-      expect(document.getElementById("email-error")?.textContent).toContain("Хатои номаълум рух дод. Лутфан бори дигар кӯшиш кунед");
+      expect(document.getElementById("login-error")?.textContent).toContain("Хатои номаълум рух дод. Лутфан бори дигар кӯшиш кунед");
     });
     expect(emailInput.value).toBe("bad@domain.com");
     expect(passwordInput.value).toBe("Password123");
@@ -278,7 +278,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error422);
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" });
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" });
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" });
     await user.type(emailInput, "user@example.com");
     await user.type(passwordInput, "Secret123");
@@ -307,7 +307,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error422);
     renderLogin();
 
-    const emailInput = screen.getByLabelText(/^email/i, { selector: "input" });
+    const emailInput = screen.getByLabelText(/^email or phone/i, { selector: "input" });
     const passwordInput = screen.getByLabelText(/^password/i, { selector: "input" });
     await user.type(emailInput, "user@example.com");
     await user.type(passwordInput, "Secret123");
@@ -317,7 +317,7 @@ describe("Login page integration", () => {
       expect(emailInput.getAttribute("aria-invalid")).toBe("true");
       expect(passwordInput.getAttribute("aria-invalid")).toBe("true");
     });
-    expect(document.getElementById("email-error")?.textContent).toContain("Required field");
+    expect(document.getElementById("login-error")?.textContent).toContain("Required field");
     expect(document.getElementById("password-error")?.textContent).toContain("Required field");
   });
 
@@ -330,7 +330,7 @@ describe("Login page integration", () => {
     vi.spyOn(authEndpoints, "login").mockRejectedValue(error422);
     renderLogin();
 
-    await user.type(screen.getByLabelText(/^email/i, { selector: "input" }), "user@example.com");
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "user@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "Secret123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 

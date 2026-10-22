@@ -26,4 +26,4 @@ export function useStudentSearch(term: string, enabled: boolean) {
   });
 }
 
-export type StudentSearchResult = Pick<User, "id" | "first_name" | "last_name" | "email">;
+export type StudentSearchResult = Pick<User, "id" | "first_name" | "last_name" | "email"> & Partial<Pick<User, "phone">>;

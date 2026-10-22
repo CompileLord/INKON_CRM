@@ -36,7 +36,7 @@ const existingStudent: User = {
   parent_phone: "+992901234568",
   date_of_birth: "2005-04-12",
   payment_day_of_month: 15,
-  parent_telegram_chat_id: 98765,
+  parent_linked: true,
   is_deleted: false,
   must_set_password: false,
   created_at: "2026-01-01T00:00:00Z",
@@ -81,6 +81,15 @@ describe("StudentFormPanel", () => {
     expect(screen.getByLabelText(/Email/i)).toBeDefined();
     expect(screen.queryByLabelText(/Photo/i)).toBeNull();
     expect(screen.queryByText(/Upload photo/i)).toBeNull();
+  });
+
+  it.each([true, false])("shows parent link status %s without a raw chat-id field", (linked: boolean): void => {
+    renderPanel({ student: { ...existingStudent, parent_linked: linked } });
+
+    expect(document.querySelector('[name="parentTelegramChatId"]')).toBeNull();
+    expect(screen.queryByLabelText(/Telegram chat ID/i)).toBeNull();
+    expect(screen.getByText(i18n.t("studentProfile:parentLink.label"))).toBeDefined();
+    expect(document.querySelector(`[data-badge-status="${linked ? "linked" : "notLinked"}"]`)).not.toBeNull();
   });
 
   it("shows the birth date through the shared date picker as dd.MM.yyyy without a native date input", () => {
@@ -474,53 +483,4 @@ describe("StudentFormPanel", () => {
     });
   });
 
-  it("blocks creating a student without a student or parent phone and shows the translated message", async () => {
-    const createSpy = vi.fn();
-    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
-      mutateAsync: createSpy,
-      isPending: false,
-    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
-    renderPanel();
-    const user = userEvent.setup();
-
-    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
-    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
-    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
-    await user.click(screen.getByRole("button", { name: "Create" }));
-
-    expect(await screen.findByText("Enter a student or parent phone.")).toBeDefined();
-    expect(createSpy).not.toHaveBeenCalled();
-    expect(document.activeElement?.id).toBe("student-phone");
-  });
-
-  it("creates a student with only a parent phone", async () => {
-    const createSpy = vi.fn().mockResolvedValue({ ...existingStudent, id: 77, password_sms_destination: "parent_phone" });
-    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
-      mutateAsync: createSpy,
-      isPending: false,
-    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
-    const { props } = renderPanel();
-    const user = userEvent.setup();
-
-    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
-    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
-    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
-    await user.type(screen.getByLabelText(/^Parent phone/i), "+992901112233");
-    await user.click(screen.getByRole("button", { name: "Create" }));
-
-    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
-    expect(createSpy.mock.calls[0][0]).toMatchObject({ phone: null, parent_phone: "+992901112233" });
-    expect(props.onSaved).toHaveBeenCalledWith("created", expect.objectContaining({ id: 77, password_sms_destination: "parent_phone" }));
-  });
-
-  it("rejects a phone without the leading plus", async () => {
-    renderPanel();
-    const user = userEvent.setup();
-    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
-    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
-    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
-    await user.type(screen.getByLabelText(/^Phone/i), "992901112233");
-    await user.click(screen.getByRole("button", { name: "Create" }));
-    expect(await screen.findByText("Use the international format, e.g. +992901234567")).toBeDefined();
-  });
 });

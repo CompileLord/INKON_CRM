@@ -40,11 +40,13 @@ class SmsPasswordTestSupport:
     async def create_student_via_api(
         client: AsyncClient,
         admin: User,
-        email: str,
+        email: str | None,
         phone: str | None = "+992900000001",
         parent_phone: str | None = None,
     ) -> Response:
-        payload: dict[str, Any] = {"email": email, "first_name": "Sam", "last_name": "Student", "role": "student"}
+        payload: dict[str, Any] = {"first_name": "Sam", "last_name": "Student", "role": "student"}
+        if email is not None:
+            payload["email"] = email
         if phone is not None:
             payload["phone"] = phone
         if parent_phone is not None:
@@ -66,5 +68,5 @@ class SmsPasswordTestSupport:
         return str(decrypted["code"])
 
     @staticmethod
-    async def login(client: AsyncClient, email: str, password: str) -> Response:
-        return await client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    async def login(client: AsyncClient, identifier: str, password: str) -> Response:
+        return await client.post("/api/v1/auth/login", json={"login": identifier, "password": password})

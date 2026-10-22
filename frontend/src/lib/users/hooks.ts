@@ -21,7 +21,7 @@ import {
   uploadAvatar,
 } from "./endpoints";
 import { AuthApiError } from "../auth/errors";
-import type { ListUsersParams, StudentJournalHistoryPage, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
+import type { CredentialsChannel, ListUsersParams, StudentJournalHistoryPage, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
 
 /**
  * There's no GET /users/{id} — no single-user fetch hook exists. Edit/avatar
@@ -229,7 +229,7 @@ export function useResendPasswordSms(userId: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => resendPasswordSms(userId),
+    mutationFn: (channel?: CredentialsChannel) => resendPasswordSms(userId, channel),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: passwordSmsDeliveriesQueryKey(userId) });
     },

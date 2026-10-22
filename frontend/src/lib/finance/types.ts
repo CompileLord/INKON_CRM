@@ -148,7 +148,7 @@ export interface PaymentItem {
 export interface StudentCreditItem {
   student_id: number;
   student_name: string;
-  email: string;
+  email: string | null;
   credit_balance: string;
 }
 
@@ -165,7 +165,7 @@ export interface PaymentReceipt {
   occurred_at: string;
   student_id: number;
   student_name: string;
-  student_email: string;
+  student_email: string | null;
   amount: string;
   method?: PaymentMethod | null;
   accepted_by_name: string;
@@ -178,7 +178,7 @@ export interface DebtItem {
     id: number;
     first_name: string;
     last_name: string;
-    email: string;
+    email: string | null;
     payment_day_of_month: number | null;
   };
   course: {
@@ -221,7 +221,7 @@ export interface DebtorPreview {
   student_id: number;
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   debt: string;
 }
 

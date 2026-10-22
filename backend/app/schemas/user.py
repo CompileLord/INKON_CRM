@@ -7,20 +7,22 @@ from app.schemas.common import CanonicalPhone
 
 class UserCreate(BaseModel):
     model_config = {"extra": "forbid"}
-    email: EmailStr
+    email: Optional[EmailStr] = None
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     role: UserRole
     date_of_birth: Optional[date] = None
     phone: Optional[CanonicalPhone] = None
-    parent_telegram_chat_id: Optional[int] = None
     parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
     @model_validator(mode="after")
-    def require_student_contact_phone(self) -> "UserCreate":
-        if self.role == UserRole.STUDENT and not (self.phone or self.parent_phone):
-            raise ValueError("A student requires a phone or a parent phone")
+    def require_login_identifier(self) -> "UserCreate":
+        if self.role == UserRole.STUDENT:
+            if not (self.email or self.phone):
+                raise ValueError("A student requires an email or their own phone to log in; a parent phone alone is not enough")
+        elif not self.email:
+            raise ValueError("An email is required for this role")
         return self
 
 
@@ -31,7 +33,6 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
     phone: Optional[CanonicalPhone] = None
-    parent_telegram_chat_id: Optional[int] = None
     parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
@@ -46,7 +47,7 @@ class UserSelfUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: Optional[EmailStr] = None
     first_name: str
     last_name: str
     role: UserRole
@@ -69,10 +70,19 @@ class UserResponse(BaseModel):
 class UserCreateResponse(UserResponse):
     parent_link_code: Optional[str] = None
     password_sms_destination: Optional[Literal["student_phone", "parent_phone"]] = None
+    credentials_channel: Optional[Literal["email", "student_phone", "parent_phone"]] = None
+    credentials_masked_phone: Optional[str] = None
+
+
+class PasswordResendRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    channel: Optional[Literal["email", "student_phone", "parent_phone"]] = None
 
 
 class PasswordSmsResendResponse(BaseModel):
-    destination: Literal["student_phone", "parent_phone"]
+    destination: Optional[Literal["student_phone", "parent_phone"]] = None
+    channel: Literal["email", "student_phone", "parent_phone"]
+    masked_phone: Optional[str] = None
 
 
 class PasswordSmsDeliveryResponse(BaseModel):

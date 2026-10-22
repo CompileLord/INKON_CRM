@@ -1,11 +1,12 @@
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.models.user import User, UserRole
+from app.services.telegram_link_service import TelegramLinkService
 
 
 @pytest.mark.parametrize(
@@ -51,11 +52,12 @@ async def test_student_cannot_change_guardian_destination_through_self_update(
 async def test_admin_can_provision_and_phone_change_clears_stale_binding(
     client: AsyncClient,
     test_admin: User,
+    db_session: AsyncSession,
 ) -> None:
     headers: dict[str, str] = {
         "Authorization": f"Bearer {create_access_token(test_admin.id, UserRole.SUPERADMIN)}"
     }
-    create_response = await client.post(
+    create_response: Response = await client.post(
         "/api/v1/users/",
         headers=headers,
         json={
@@ -65,15 +67,16 @@ async def test_admin_can_provision_and_phone_change_clears_stale_binding(
             "role": "student",
             "phone": "+992900000601",
             "parent_phone": "+992900000602",
-            "parent_telegram_chat_id": 7401,
         },
     )
     assert create_response.status_code == 201
-    student_id = create_response.json()["id"]
+    student_id: int = create_response.json()["id"]
     assert create_response.json()["parent_phone"] == "+992900000602"
-    assert create_response.json()["parent_telegram_chat_id"] == 7401
+    assert create_response.json()["parent_telegram_chat_id"] is None
+    await TelegramLinkService(db_session).link_parent_chat(7401, create_response.json()["parent_link_code"])
+    await db_session.commit()
 
-    change_response = await client.patch(
+    change_response: Response = await client.patch(
         f"/api/v1/users/{student_id}",
         headers=headers,
         json={"parent_phone": "+992900000603"},
@@ -82,18 +85,16 @@ async def test_admin_can_provision_and_phone_change_clears_stale_binding(
     assert change_response.json()["parent_phone"] == "+992900000603"
     assert change_response.json()["parent_telegram_chat_id"] is None
 
-    reset_response = await client.patch(
+    reset_response: Response = await client.patch(
         f"/api/v1/users/{student_id}",
         headers=headers,
         json={"parent_telegram_chat_id": 7402},
     )
-    assert reset_response.status_code == 200
-    assert reset_response.json()["parent_telegram_chat_id"] == 7402
+    assert reset_response.status_code == 422
 
-    clear_response = await client.patch(
+    clear_response: Response = await client.patch(
         f"/api/v1/users/{student_id}",
         headers=headers,
         json={"parent_telegram_chat_id": None},
     )
-    assert clear_response.status_code == 200
-    assert clear_response.json()["parent_telegram_chat_id"] is None
+    assert clear_response.status_code == 422

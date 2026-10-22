@@ -27,7 +27,7 @@ describe("bootstrapAuth", () => {
     const refreshSpy = vi
       .spyOn(endpoints, "refresh")
       .mockRejectedValueOnce(new NetworkError())
-      .mockResolvedValueOnce({ access_token: buildAccessToken(), refresh_token: "rotated", must_set_password: false });
+      .mockResolvedValueOnce({ access_token: buildAccessToken(), refresh_token: "rotated", token_type: "bearer", must_set_password: false });
     const bootstrap: Promise<void> = bootstrapAuth();
     await vi.runAllTimersAsync();
     await bootstrap;

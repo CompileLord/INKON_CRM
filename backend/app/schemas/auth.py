@@ -1,10 +1,29 @@
-from typing import Literal, Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Literal, Optional, Self
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from app.core.login_identifier import LoginIdentifier, LoginIdentifierParser
 
 
-class LoginRequest(BaseModel):
+class IdentifierRequest(BaseModel):
     model_config = {"extra": "forbid"}
-    email: EmailStr
+    login: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
+
+    @model_validator(mode="after")
+    def require_exactly_one_identifier(self) -> Self:
+        if (self.login is None) == (self.email is None):
+            raise ValueError("Provide exactly one of login or email")
+        if self.login is not None:
+            LoginIdentifierParser.parse(self.login)
+        return self
+
+    @property
+    def identifier(self) -> LoginIdentifier:
+        if self.login is not None:
+            return LoginIdentifierParser.parse(self.login)
+        return LoginIdentifierParser.from_email(str(self.email))
+
+
+class LoginRequest(IdentifierRequest):
     password: str
 
 
@@ -31,9 +50,8 @@ class ResendCodeRequest(BaseModel):
     email: EmailStr
 
 
-class PasswordResetRequest(BaseModel):
-    model_config = {"extra": "forbid"}
-    email: EmailStr
+class PasswordResetRequest(IdentifierRequest):
+    channel: Optional[Literal["student_phone", "parent_phone"]] = None
 
 
 class PasswordResetVerifyRequest(BaseModel):
@@ -60,4 +78,4 @@ class ChangePasswordRequest(BaseModel):
 
 
 class PasswordResetRequestResponse(BaseModel):
-    message: Literal["If the email exists, a reset code has been sent."]
+    message: Literal["If the account exists, a reset message has been sent."]

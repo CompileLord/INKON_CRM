@@ -25,6 +25,7 @@ import { RouteError } from "./pages/RouteError";
 import { DevUi } from "./pages/dev/DevUi";
 import { bootstrapAuth } from "./lib/authBootstrap";
 
+import { ForgotPassword } from "./pages/ForgotPassword";
 import { MyCourses } from "./pages/student/MyCourses";
 import { MyCourseDetail } from "./pages/student/MyCourseDetail";
 import { MyCourseJournal } from "./pages/student/MyCourseJournal";
@@ -36,6 +37,14 @@ const router = createBrowserRouter([
     element: (
       <GuestRoute>
         <Login />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <GuestRoute>
+        <ForgotPassword />
       </GuestRoute>
     ),
   },

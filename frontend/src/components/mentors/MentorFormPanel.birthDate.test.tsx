@@ -19,7 +19,6 @@ const mentor: User = {
   parent_phone: null,
   date_of_birth: "1985-08-20",
   payment_day_of_month: null,
-  parent_telegram_chat_id: null,
   is_deleted: false,
   must_set_password: false,
   created_at: "2026-01-01T00:00:00Z",

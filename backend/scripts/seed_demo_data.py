@@ -11,32 +11,14 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.db.session import engine
 from app.core.config import settings
+from scripts.demo_seed_report import DemoSeedReport
+from scripts.reset_tables import ResetTableCatalog
 from scripts.reset_guard import CredentialProvisioner, ResetGuardError, ResetTarget, ResetTargetGuard, StorageReplacement
 
 populate_demo_data: Callable[..., Awaitable[None]] = DemoDataPopulator.populate_demo_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-TABLES_TO_TRUNCATE: List[str] = [
-    "refresh_tokens",
-    "audit_logs",
-    "notification_logs",
-    "documents",
-    "allocations",
-    "ledger_entries",
-    "charges",
-    "payments",
-    "journal_student_summaries",
-    "journal_entries",
-    "journals",
-    "enrollments",
-    "course_mentor_history",
-    "course_schedules",
-    "courses",
-    "users"
-]
-
 
 def create_reset_guard() -> ResetTargetGuard:
     backend_root: Path = Path(__file__).resolve().parents[1]
@@ -52,13 +34,14 @@ async def seed_demo_data(target: ResetTarget, administrator_password: str, demo_
     target = create_reset_guard().authorize_target(target)
     if target.dry_run:
         raise ResetGuardError("Dry-run targets cannot modify the database or storage.")
+    report: DemoSeedReport = DemoSeedReport()
     staged_assets: Dict[str, bytes] = stage_downloadable_assets()
     storage_replacement: StorageReplacement = StorageReplacement(target)
     staged_storage_root: Path = storage_replacement.prepare()
 
     try:
         async with engine.begin() as connection:
-            for table_name in TABLES_TO_TRUNCATE:
+            for table_name in ResetTableCatalog.tables_to_truncate():
                 await connection.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;"))
 
             session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
@@ -72,6 +55,7 @@ async def seed_demo_data(target: ResetTarget, administrator_password: str, demo_
                 staged_assets=staged_assets,
                 administrator_password=administrator_password,
                 demo_password=demo_password,
+                report=report,
             )
             storage_replacement.install()
     except BaseException:
@@ -86,6 +70,7 @@ async def seed_demo_data(target: ResetTarget, administrator_password: str, demo_
         storage_replacement.finalize()
     except Exception:
         logger.error("The previous disposable storage backup could not be removed.")
+    print(report.render())
 
 
 def main(arguments: Sequence[str] | None = None) -> None:

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
-import type { PasswordSmsDestination } from "../../lib/users/types";
+import type { CreatedCredentials } from "../../lib/users/types";
 
 interface StudentCreatedNoticeProps {
-  destination: PasswordSmsDestination | null;
+  credentials: CreatedCredentials | null;
   parentLinkCode: string | null;
   onClose: () => void;
 }
 
-export function StudentCreatedNotice({ destination, parentLinkCode, onClose }: StudentCreatedNoticeProps) {
+export function StudentCreatedNotice({ credentials, parentLinkCode, onClose }: StudentCreatedNoticeProps) {
   const { t } = useTranslation(["passwordSms", "common"]);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -29,7 +29,7 @@ export function StudentCreatedNotice({ destination, parentLinkCode, onClose }: S
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">{t("passwordSms:created.title")}</p>
-          {destination ? <p className="mt-0.5 text-muted">{t(`passwordSms:created.${destination}`)}</p> : null}
+          {credentials ? <p className="mt-0.5 text-muted tabular-nums">{t(`passwordSms:created.${credentials.channel}`, { phone: credentials.maskedPhone ?? "" })}</p> : null}
         </div>
         <Button variant="secondary" onClick={onClose} aria-label={t("common:close")} className="min-h-11 shrink-0">{t("common:close")}</Button>
       </div>

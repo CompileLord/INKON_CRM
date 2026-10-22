@@ -8,7 +8,7 @@ class DebtStudentInfo(BaseModel):
     id: int
     first_name: str
     last_name: str
-    email: str
+    email: Optional[str] = None
     payment_day_of_month: Optional[int] = None
 
 

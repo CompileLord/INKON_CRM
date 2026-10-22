@@ -23,7 +23,7 @@ interface StudentProfileHeaderProps {
 export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdit, onDelete, onOpenAccess }: StudentProfileHeaderProps) {
   const { t } = useTranslation("studentProfile");
   const meta: string[] = [
-    user.email,
+    ...(user.email ? [user.email] : []),
     ...(user.phone ? [CanonicalPhone.prefill(user.phone)] : []),
     ...(user.parent_phone ? [t("header.parentPhone", { phone: CanonicalPhone.prefill(user.parent_phone) })] : []),
     ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : []),

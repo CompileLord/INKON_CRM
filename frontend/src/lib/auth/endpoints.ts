@@ -5,6 +5,7 @@ import type {
   PasswordResetConfirmRequest,
   PasswordResetRequest,
   PasswordResetRequestResponse,
+  PasswordResetSmsChannel,
   PasswordResetVerifyRequest,
   PasswordResetVerifyResponse,
   RefreshRequest,
@@ -12,8 +13,8 @@ import type {
   TokenPair,
 } from "./types";
 
-export function login(email: string, password: string): Promise<TokenPair> {
-  const body: LoginRequest = { email, password };
+export function login(identifier: string, password: string): Promise<TokenPair> {
+  const body: LoginRequest = { login: identifier, password };
   return httpClient.post<TokenPair>("/auth/login", body, { skipAuth: true }).then((res) => res.data);
 }
 
@@ -34,8 +35,11 @@ export function setPassword(newPassword: string): Promise<TokenPair> {
   return httpClient.post<TokenPair>("/auth/set-password", body).then((res) => res.data);
 }
 
-export function passwordResetRequest(email: string): Promise<PasswordResetRequestResponse> {
-  const body: PasswordResetRequest = { email };
+export function passwordResetRequest(
+  identifier: string,
+  channel?: PasswordResetSmsChannel,
+): Promise<PasswordResetRequestResponse> {
+  const body: PasswordResetRequest = channel ? { login: identifier, channel } : { login: identifier };
   return httpClient
     .post<PasswordResetRequestResponse>("/auth/password-reset/request", body, { skipAuth: true })
     .then((res) => res.data);

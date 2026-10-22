@@ -146,12 +146,12 @@ async def test_upgrade_recovers_real_interrupted_concurrent_index_and_accepts_va
                 await asyncio.gather(build, return_exceptions=True)
             await builder.close()
             await writer.close()
-        RosterIndexFixture.assert_command(database.upgrade('head'))
+        RosterIndexFixture.assert_command(database.upgrade('rwp64_roster_index'))
         await RosterIndexFixture.assert_valid_index(database)
         assert await database.fetchval('SELECT count(*) FROM enrollments') == 8
         existing_oid: int = await database.fetchval('SELECT to_regclass($1)::oid', RosterIndexFixture.index_name)
         RosterIndexFixture.assert_command(database.run_alembic('stamp', 'rwp45_refresh_retention'))
-        RosterIndexFixture.assert_command(database.upgrade('head'))
+        RosterIndexFixture.assert_command(database.upgrade('rwp64_roster_index'))
         assert await database.fetchval('SELECT to_regclass($1)::oid', RosterIndexFixture.index_name) == existing_oid
         await RosterIndexFixture.assert_valid_index(database)
 
@@ -162,7 +162,7 @@ async def test_upgrade_recovers_real_interrupted_concurrent_index_and_accepts_va
 async def test_course_roster_scale_plan_uses_measured_index(population: int) -> None:
     database: DisposableMigrationDatabase
     async with DisposableMigrationDatabase(RosterIndexFixture.backend_root) as database:
-        RosterIndexFixture.assert_command(database.upgrade('head'))
+        RosterIndexFixture.assert_command(database.upgrade('rwp64_roster_index'))
         await database.execute("INSERT INTO users(id,email,first_name,last_name,role) SELECT v,'wp64-scale-'||v||'@example.test','First','Last','student' FROM generate_series(1,$1::integer) v", population)
         await database.execute("INSERT INTO courses(id,title,description,start_date,end_date,exam_type,price,mentor_id) SELECT v,'Course'||v,'',DATE '2026-01-01',DATE '2026-12-31','monthly',100,1 FROM generate_series(1,$1::integer) v", population // 25)
         await database.execute("INSERT INTO enrollments(student_id,course_id,price_at_enrollment,color_hex,is_deleted) SELECT v,1+v%($1::integer/25),100,'#112233',v%13=0 FROM generate_series(1,$1::integer) v", population)
