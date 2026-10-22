@@ -45,6 +45,7 @@ class Settings(BaseSettings, DatabaseConnectionPolicy):
 
     ENVIRONMENT: str = "development"
     TESTING: bool = False
+    ALLOW_EMAILLESS_USERS: bool = False
 
     @field_validator("TESTING")
     @classmethod

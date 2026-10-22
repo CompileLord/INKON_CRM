@@ -263,3 +263,8 @@ async def test_seeded_course_ids_preserve_references_and_leave_api_sequence_read
     assert response.status_code == 201
     assert response.json()["id"] not in seeded_course_ids
     assert response.json()["id"] > max(seeded_course_ids)
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

@@ -150,3 +150,8 @@ async def test_reseeding_removes_stale_outbox_events_of_the_previous_dataset(see
     await seed_demo_data.seed_demo_data(seeded.target, ADMINISTRATOR_PASSWORD, DEMO_PASSWORD)
     async with AsyncSessionLocal() as session:
         assert await session.scalar(select(func.count()).select_from(OutboxEvent)) == 0
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

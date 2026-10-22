@@ -7,6 +7,8 @@ import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import settings
+
 from app.models.outbox_event import OutboxEvent, OutboxEventStatus
 from app.models.user import User
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
@@ -117,3 +119,8 @@ class TestSmsDeliveryClaimModel:
         await db_session.refresh(event)
         assert event.status == OutboxEventStatus.CLAIMED
         assert event.delivered_at is None
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

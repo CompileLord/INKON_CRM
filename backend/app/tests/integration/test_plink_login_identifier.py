@@ -199,3 +199,8 @@ async def test_user_service_lookup_by_phone_ignores_soft_deleted_users(db_sessio
     assert (await service.user_repo.get_by_phone(test_student.phone)) is not None
     await service.user_repo.soft_delete(test_student.id)
     assert (await service.user_repo.get_by_phone(test_student.phone)) is None
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

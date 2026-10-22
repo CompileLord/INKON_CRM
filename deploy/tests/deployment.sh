@@ -23,6 +23,30 @@ for scenario in start caddy health worker success; do
   printf 'PASS deployment %s\n' "$scenario"
 done
 
+export TEST_SCENARIO=success
+: > "$TEST_COMMAND_LOG"
+bash "$repository_directory/deploy/deploy.sh" bbbbbbb > "$test_directory/deploy-repair-order.log" 2>&1
+repair_line="$(grep -nF 'bbbbbbb|run --rm --no-deps api python -m scripts.repair_alembic_version' "$TEST_COMMAND_LOG" | cut -d: -f1)"
+upgrade_line="$(grep -nF 'bbbbbbb|run --rm --no-deps api alembic upgrade head' "$TEST_COMMAND_LOG" | cut -d: -f1)"
+[[ "$upgrade_line" -eq "$((repair_line + 1))" ]]
+printf 'PASS repair immediately precedes migration\n'
+
+export TEST_SCENARIO=repair
+: > "$TEST_COMMAND_LOG"
+if bash "$repository_directory/deploy/deploy.sh" bbbbbbb > "$test_directory/deploy-repair-refused.log" 2>&1; then
+  exit 1
+fi
+! grep -Fq 'api alembic upgrade head' "$TEST_COMMAND_LOG"
+! grep -Fq 'up -d --force-recreate' "$TEST_COMMAND_LOG"
+printf 'PASS repair refusal blocks migration and restart\n'
+
+export TEST_SCENARIO=success
+: > "$TEST_COMMAND_LOG"
+bash "$repository_directory/deploy/deploy.sh" --skip-migrations bbbbbbb > "$test_directory/deploy-skip-repair.log" 2>&1
+! grep -Fq 'scripts.repair_alembic_version' "$TEST_COMMAND_LOG"
+! grep -Fq 'api alembic upgrade head' "$TEST_COMMAND_LOG"
+printf 'PASS skip migrations skips repair\n'
+
 awk '/^  worker:/{worker=1;next} /^  db:/{worker=0} worker{print}' "$repository_directory/deploy/docker-compose.prod.yml" > "$test_directory/worker.yml"
 grep -Fq 'test: ["CMD", "arq", "--check", "app.workers.settings.WorkerSettings"]' "$test_directory/worker.yml"
 printf 'PASS worker healthcheck configuration\n'

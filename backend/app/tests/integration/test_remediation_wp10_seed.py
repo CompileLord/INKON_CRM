@@ -315,3 +315,8 @@ async def test_demo_assets_are_staged_before_database_or_storage_replacement(tmp
     assert captured_population["administrator_password"] == administrator_password
     assert captured_population["demo_password"] == demo_password
     assert administrator_password != demo_password
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

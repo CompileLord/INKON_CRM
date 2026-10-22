@@ -27,6 +27,9 @@ set -euo pipefail
 shift 3
 printf '%s|%s\n' "${IMAGE_TAG:-unset}" "$*" >> "$TEST_COMMAND_LOG"
 case "$*" in
+  'run --rm --no-deps api python -m scripts.repair_alembic_version')
+    [[ "$TEST_SCENARIO" != repair ]]
+    ;;
   'up -d --force-recreate --no-deps --wait --wait-timeout '* )
     [[ "$*" == *' api worker' ]]
     [[ "$TEST_SCENARIO" != start && "$TEST_SCENARIO" != worker ]]

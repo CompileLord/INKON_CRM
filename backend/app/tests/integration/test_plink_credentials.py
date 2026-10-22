@@ -256,3 +256,8 @@ async def test_student_search_matches_own_phone_and_parent_phone_separately(
     by_parent_phone: Response = await client.get("/api/v1/students/?search=773333", headers=headers)
     assert [item["id"] for item in by_own_phone.json()["items"]] == [own_phone_student.id]
     assert [item["id"] for item in by_parent_phone.json()["items"]] == [parent_phone_student.id]
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

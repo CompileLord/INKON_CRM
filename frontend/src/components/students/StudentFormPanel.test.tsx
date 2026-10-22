@@ -272,6 +272,30 @@ describe("StudentFormPanel", () => {
     expect(cancelButton.hasAttribute("disabled")).toBe(true);
   });
 
+  it.each(["en", "ru", "tg"])("translates the email gate rejection in %s", async (locale: string) => {
+    await i18n.changeLanguage(locale);
+    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
+      mutateAsync: vi.fn().mockRejectedValue(
+        new AuthApiError(422, "Email is required until email-less users are enabled"),
+      ),
+      isPending: false,
+    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
+    try {
+      renderPanel();
+      const user: ReturnType<typeof userEvent.setup> = userEvent.setup();
+      await user.type(document.querySelector<HTMLInputElement>("#student-firstName")!, "Test");
+      await user.type(document.querySelector<HTMLInputElement>("#student-lastName")!, "User");
+      await user.type(document.querySelector<HTMLInputElement>("#student-phone")!, "+992901234567");
+      fireEvent.submit(document.querySelector<HTMLFormElement>("form")!);
+      await waitFor(() => {
+        expect(screen.getByText(i18n.t("students:validation.emailRequired"))).toBeDefined();
+        expect(document.activeElement?.id).toBe("student-email");
+      });
+    } finally {
+      await i18n.changeLanguage("en");
+    }
+  });
+
   it("focuses first invalid field on 422 server error", async () => {
     vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
       mutateAsync: vi.fn().mockRejectedValue(

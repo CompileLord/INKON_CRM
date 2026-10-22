@@ -213,3 +213,8 @@ class TestPendingStudentPassword:
         assert response.status_code == 422 and "12345Z" not in response.text
         errors: list[dict[str, Any]] = response.json()["detail"]
         assert errors[0]["loc"] == ["body", "new_password"]
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)
