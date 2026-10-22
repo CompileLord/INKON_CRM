@@ -185,6 +185,7 @@ def workflow_environment_names() -> set[str]:
 def synthetic_workflow_values() -> dict[str, str]:
     values: dict[str, str] = {
         "ENVIRONMENT": "production",
+        "OUTBOX_ENCRYPTION_KEYS": f"v1:{'11' * 32}",
         "DATABASE_URL": "postgresql+asyncpg://wp11_probe:synthetic-only@localhost:5432/wp11_probe",
         "REDIS_URL": "redis://localhost:6379/15",
         "JWT_SECRET_KEY": "synthetic-wp11-jwt-not-a-secret",
@@ -363,6 +364,7 @@ def test_testing_configuration_preserves_local_telegram_webhook_behavior(
 ) -> None:
     values: dict[str, str] = synthetic_values_with_legacy_database_fields()
     values["TESTING"] = "true"
+    values["ENVIRONMENT"] = "testing"
     values["TELEGRAM_WEBHOOK_URL"] = "http://localhost:8000/api/v1/telegram/webhook"
     result: subprocess.CompletedProcess[str] = configuration_probe.run_python(
         "from app.core.config import settings; print('LOADED')",

@@ -121,6 +121,7 @@ class MaintenanceWorker:
 
 
 class WorkerSettings:
+    health_check_interval: int = 30
     timezone: datetime_timezone = datetime_timezone.utc
     redis_settings: RedisSettings = RedisConnectionConfiguration.from_url(
         settings.REDIS_URL

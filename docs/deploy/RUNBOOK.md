@@ -39,7 +39,19 @@ The monthly `imkon-restore-check.service` (`deploy/restore_check.sh`) restores t
 
 ## 5. Rotate secrets
 
-Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. `JWT_SECRET_KEY` also encrypts pending outbox payloads: drain the outbox completely and stop writers before rotating it, or pending payloads become unreadable. A separate encryption key is planned for a later package. Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
+Edit `/etc/imkon/backend.env`, then `deploy.sh --skip-migrations $(cat /var/lib/imkon/current_release)` to recreate containers. Changing `JWT_*` logs everyone out. Outbox encryption uses `OUTBOX_ENCRYPTION_KEYS`, a comma-separated list of unique version names and 32-byte hexadecimal keys, newest writer key first: `v2:<new_64_hex_characters>,v1:<previous_64_hex_characters>`. Generate each independent key with `openssl rand -hex 32`; never reuse JWT secrets. Production API and worker startup require a nonempty valid list and reject `TESTING=true`. Development and testing may leave the list empty to retain legacy encryption.
+
+New payloads carry their encryption key version; readers select that exact version. Unversioned payloads still use the legacy `JWT_SECRET_KEY` derivation. Keep that JWT secret unchanged until all unversioned pending, leased and retryable payloads have drained. Afterwards JWT rotation does not affect versioned payloads.
+
+For the initial rollout from an image that cannot read versioned payloads, pause writers and drain pending/retryable outbox work before upgrading API and worker together. Resume writers only after both run the version-aware image with the same key list. Once versioned payloads exist, rollback requires a version-aware image with the retained keys; rolling back to an older reader requires pausing writers and draining versioned work first.
+
+To rotate outbox keys without losing queued work:
+
+1. Generate a new key and a never-reused version identifier. Distribute it to every API and worker while leaving the current writer key first, for example `v1:<current_key>,v2:<new_key>`. Recreate all containers so every reader knows both versions before any writer switches.
+2. Reorder the list to `v2:<new_key>,v1:<current_key>` and recreate all API and worker containers. New writes use v2; both versions remain readable during overlap. Keep the same full list for rollback images.
+3. Keep v1 until no pending, leased or retryable payload references it and no running/rollback writer can still produce it. Retain keys separately for any backups that must be replayed. Only then remove v1 and recreate containers. Removing a key early makes its queued payloads unreadable; unknown versions fail closed.
+
+Changing the database or Redis password requires changing it in the running service too (`ALTER USER`, `CONFIG SET requirepass`) or recreating the data directory.
 
 ## 6. Renew the Telegram webhook
 
