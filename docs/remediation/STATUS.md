@@ -56,13 +56,13 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-48 | done | master | 2026-10-22 | wp48 16 pass; podman build 0; deploy tests 4×0; lock byte-identical after master merge | PASS b1f8ef5, merge 1f9811a; master merge 64a2ee3. Hash-locked deps, digest-pinned actions/images. 20 pip-audit advisories → WP-70. logs wp48/. |
 | WP-49 | done | master | 2026-10-21 | int1 full 1531 pass, 2 env fails = master (wp11/25) | Integrated 0fe2147 via remediation/integration-r1. |
 | WP-50 | done | master | 2026-10-22 | targeted 15 pass; 9 wrong-result doubles caught; merged-master full 1581 pass | PASS a75be52; merge 9cd6de7. Privacy, rank, bucket, logout (rotated token), reset success/replay each asserted exactly. Test-only. logs wp50/. |
-| WP-51 | in_progress | — | — | — | Pending. |
+| WP-51 | done | master | 2026-10-22 | Codex targeted + full suite once (known fails only) | PASS 2d2b8a5, merge b26d3e5. Depends providers for user/document/enrollment/audit repos+services; document visibility filter in repository (fail-closed); enrollment queries moved to repository. |
 | WP-52 | todo | — | — | — | Pending. |
 | WP-53 | todo | — | — | — | Pending. |
 | WP-54 | todo | — | — | — | Pending. |
 | WP-55 | todo | — | — | — | Pending. |
 | WP-56 | todo | — | — | — | Pending. |
-| WP-57 | in_progress | — | — | — | Pending. |
+| WP-57 | done | master | 2026-10-22 | Codex targeted + full suite once (known fails only) | PASS cdff207, merge 8fc64c5. Cron endpoints 202 + job_id, 503 Retry-After on Redis error; schedule-window job_id dedup, Redis lock, keep_result 48h, max_tries 3. |
 | WP-58 | todo | — | — | — | Pending. |
 | WP-59 | done | main | 2026-10-18 | Pod full backend before 2 fail/732 pass, after 2 fail/734 pass (same two failures: test_avatar_upload_and_thumbnail, wp11 alembic online init) | PASS commit 7783942 (one stray line removed). Unrelated pod failures uninvestigated; no mutation check (not required). logs wp59-sol/. |
 | WP-60 | done | master | 2026-10-19 | Executor backend 921 pass/3 fail | PASS after one audit FAIL (fail-fast 503 rejected 28/30 burst logins; fixed with 64-waiter/5s bounded queue). 2 bcrypt workers; burst-30 90 successes/0 503; mean p95 login 263/1380/4009ms at c1/10/30 (warm in-process ASGI). Residual: workers/outbox.py still verifies synchronously (out of scope). logs wp60-sol/. |
@@ -75,6 +75,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-67 | done | master | 2026-10-21 | deploy regression 21 pass (rerun by orchestrator); 8 mutations caught; bash -n 14 files | PASS 3078682/0577497/f92e34b. Real GitHub/VPS not exercised. ARQ check uses default 1h interval (→WP-68). |
 | WP-68 | todo | — | — | — | Audit: production TESTING/CORS guards, separate outbox key, uniform resend-code, short ARQ health interval. After WP-66. |
 | WP-69 | todo | — | — | — | Audit: payment idempotency, ordered copy locks, debtor cache, SQL analytics, measured indexes. After WP-46/53. |
-| WP-70 | in_progress | — | — | — | WP-48 pip-audit: aiohttp, pillow, certifi, ecdsa, python-jose (20 advisories). After WP-48. |
+| WP-70 | done | master | 2026-10-22 | pip-audit clean except accepted; podman build 0; import app.main in 3.12 image; 115 targeted pass 3.12+3.14 | PASS ebfff64, merge d496c66. aiohttp 3.14.4, certifi 2026.10.19, pillow 13.0.0. Accepted (unreachable, HS256 only): ecdsa PYSEC-2026-1325, python-jose PYSEC-2026-4298; review by 2026-11-22. 3.12 suite exposed WP-71. logs wp70/. |
+| WP-71 | in_progress | — | — | — | Found by WP-70 3.12 suite: Python 3.12 smtplib leaves _host empty after connect(), STARTTLS raises ValueError on every send in prod image. Fix DeadlineSMTP TLS hostname (Codex). Pre-deploy blocker. |
 
-57/70 accepted; 13 remain. 2026-10-22: master 64a2ee3 full suite 1581 pass, 2 known fail (wp11 online-init, wp25 legacy metadata), 4 wp13 errors (host redis-server missing), single head rwp64_roster_index (after WP-64 merge). In progress: WP-51, WP-57, WP-70 (Codex). Pre-deploy order: WP-70, WP-68 (after WP-57), WP-69 payment-idempotency part pulled ahead of 56/54/53 with its frontend key, then QA-1 incl. Python 3.12 image suite; remaining Medium WPs and WP-62 after deploy. Plan revisions: WP-51 +audit_logs.py/documents.py/enrollments.py (Depends wiring only); WP-57 +test_remediation_wp05.py (queued contract, auth asserts kept).
+60/71 accepted; 11 remain. 2026-10-22: master 8fc64c5+b26d3e5 (WP-57, WP-51 on WP-64) full suite 1661 pass, 2 known fail (wp11 online-init, wp25 legacy metadata), 4 wp13 errors (host redis-server missing); WP-70 merged d496c66 after. Single head rwp64_roster_index. In progress: WP-71 (SMTP 3.12 blocker). Pre-deploy order: WP-71, WP-68, WP-69 payment-idempotency part with its frontend key, then QA-1 incl. Python 3.12 image suite; remaining Medium WPs and WP-62 after deploy.
