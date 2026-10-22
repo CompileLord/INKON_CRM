@@ -88,7 +88,7 @@ export function registerGridHooks(): void {
     Object.defineProperty(window, "matchMedia", {
       configurable: true,
       writable: true,
-      value: () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }),
+      value: (query: string) => ({ matches: !query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
     });
   });
 

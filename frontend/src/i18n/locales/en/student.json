@@ -129,5 +129,8 @@
     "attendanceValue": "Attendance {{value}}",
     "openJournal": "Open journal",
     "scoreUnavailable": "Score —"
+  },
+  "home": {
+    "continue": "Continue"
   }
 }

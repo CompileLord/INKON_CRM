@@ -9,6 +9,7 @@ import {
   formatSchoolLessonWeekday,
   formatPercentage,
   formatSchoolPeriodSpan,
+  formatWeekdayRanges,
   getActiveLocale,
   SCHOOL_TIMEZONE,
   getSchoolCalendarDate,
@@ -232,5 +233,23 @@ describe("school period span", () => {
 
   it("keeps both years when the range crosses a year boundary", () => {
     expect(formatSchoolPeriodSpan("2026-12-15", "2027-01-14", "en")).toBe("Dec 15 2026 – Jan 14 2027");
+  });
+});
+
+describe("weekday ranges", () => {
+  it("collapses three or more consecutive weekdays into a translated range", () => {
+    expect(formatWeekdayRanges([0, 1, 2, 3, 4, 5], "en")).toBe("Mon–Sat");
+    expect(formatWeekdayRanges([5, 3, 4], "en")).toBe("Thu–Sat");
+    expect(formatWeekdayRanges([0, 1, 2, 3, 4, 5], "ru")).toBe("Пн–Сб");
+  });
+
+  it("keeps pairs and gaps as separate names", () => {
+    expect(formatWeekdayRanges([0, 1], "en")).toBe("Mon · Tue");
+    expect(formatWeekdayRanges([0, 2, 4], "en")).toBe("Mon · Wed · Fri");
+    expect(formatWeekdayRanges([0, 1, 2, 4], "en")).toBe("Mon–Wed · Fri");
+  });
+
+  it("does not repeat duplicated weekdays", () => {
+    expect(formatWeekdayRanges([2, 2, 3, 4], "en")).toBe("Wed–Fri");
   });
 });

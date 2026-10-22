@@ -237,6 +237,7 @@
       "noValues": "No stored results",
       "entry": "{{name}} {{value}}"
     },
+    "noGradedYet": "No graded periods yet",
     "showAll": "Show all",
     "hideAll": "Hide all",
     "moreCount": "+{{count}} more",

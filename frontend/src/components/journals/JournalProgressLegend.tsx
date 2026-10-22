@@ -12,7 +12,7 @@ interface MoreStudentsMenuProps {
   onShowAll: () => void;
   onHideAll: () => void;
   showBulkActions: boolean;
-  chipClassName: string;
+  moreClassName: string;
 }
 
 const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
@@ -23,7 +23,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
   onShowAll,
   onHideAll,
   showBulkActions,
-  chipClassName,
+  moreClassName,
 }) => {
   const { t } = useTranslation("journals");
   const [open, setOpen] = useState<boolean>(false);
@@ -60,7 +60,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={chipClassName}
+        className={moreClassName}
         data-testid="legend-more"
       >
         {hiddenCount > 0 ? t("progress.moreCount", { count: hiddenCount }) : t("progress.moreList")}
@@ -137,10 +137,12 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
   );
 };
 
-const chipClass = (pressed: boolean): string =>
-  `inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-9 motion-safe:transition-colors motion-safe:duration-150 ${
-    pressed ? "border-border bg-card text-ink" : "border-transparent bg-transparent text-muted"
+const legendItemClass = (pressed: boolean): string =>
+  `inline-flex min-h-6 max-w-[12rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 ${
+    pressed ? "text-ink" : "text-muted line-through"
   }`;
+
+const MORE_ITEM_CLASS: string = "inline-flex min-h-6 shrink-0 items-center whitespace-nowrap rounded-[6px] text-xs font-semibold text-maroon-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent";
 
 interface JournalProgressLegendProps {
   students: ProgressChartStudent[];
@@ -174,29 +176,29 @@ export const JournalProgressLegend: React.FC<JournalProgressLegendProps> = ({
   const hiddenStudents: ProgressChartStudent[] = students.filter((student) => !visibleIds.has(student.studentId));
   const youBadge = (student: ProgressChartStudent) =>
     student.studentId === selfStudentId ? (
-      <span className="rounded-full bg-info-surface px-2 text-xs font-semibold text-ink">{t("readOnly.you")}</span>
+      <span className="shrink-0 font-semibold">{t("readOnly.you")}</span>
     ) : null;
 
   return (
-    <div className="relative flex min-w-0 items-center gap-1" data-testid="progress-legend">
-      <ul className="flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain lg:flex-wrap lg:overflow-visible" aria-label={t("progress.legendLabel")}>
+    <div className="relative mt-1 flex min-w-0 items-center gap-x-3" data-testid="progress-legend">
+      <ul className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1" aria-label={t("progress.legendLabel")}>
         <li className="shrink-0">
-          <button type="button" aria-pressed={showAverage} onClick={onToggleAverage} className={chipClass(showAverage)}>
+          <button type="button" aria-pressed={showAverage} onClick={onToggleAverage} className={legendItemClass(showAverage)}>
             <AverageSwatch />
             {t("progress.classAverage")}
           </button>
         </li>
         <li className="shrink-0">
-          <button type="button" aria-pressed={showMaximum} onClick={onToggleMaximum} className={chipClass(showMaximum)} data-testid="legend-maximum">
+          <button type="button" aria-pressed={showMaximum} onClick={onToggleMaximum} className={legendItemClass(showMaximum)} data-testid="legend-maximum">
             <MaximumSwatch />
             {t("progress.maximum")}
           </button>
         </li>
         {plottedStudents.map((student) => (
           <li key={student.studentId} className="shrink-0">
-            <button type="button" aria-pressed onClick={() => onToggleStudent(student.studentId)} className={chipClass(true)}>
+            <button type="button" aria-pressed onClick={() => onToggleStudent(student.studentId)} className={legendItemClass(true)} title={student.name}>
               <StudentSwatch student={student} />
-              {student.name}
+              <span className="min-w-0 truncate">{student.name}</span>
               {youBadge(student)}
             </button>
           </li>
@@ -211,7 +213,7 @@ export const JournalProgressLegend: React.FC<JournalProgressLegendProps> = ({
           onShowAll={() => onVisibleChange(new Set(students.map((student) => student.studentId)))}
           onHideAll={() => onVisibleChange(new Set())}
           showBulkActions={manyStudents}
-          chipClassName={chipClass(true)}
+          moreClassName={MORE_ITEM_CLASS}
         />
       )}
     </div>

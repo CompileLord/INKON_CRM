@@ -15,10 +15,10 @@ import { JournalProgressLegend } from "./JournalProgressLegend";
 interface JournalProgressViewProps {
   courseId: number;
   readOnlySelfStudentId?: number;
-  collapsedByDefault?: boolean;
+  gradedPeriodCount?: number;
 }
 
-export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId, collapsedByDefault = false }) => {
+export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ courseId, readOnlySelfStudentId, gradedPeriodCount }) => {
   const { t } = useTranslation(["journals", "common"]);
   const selfStudentId: number | null = readOnlySelfStudentId ?? null;
   const staffQuery = useCourseStaffProgress(courseId, selfStudentId === null);
@@ -27,7 +27,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
   const [showMaximum, setShowMaximum] = useState<boolean>(true);
-  const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readStored() ?? collapsedByDefault);
+  const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readStored() ?? false);
 
   const data: CourseStaffProgressResponse | undefined = query.data;
   const rows: ProgressPeriodRow[] = useMemo(() => (data ? JournalProgressRules.buildPeriodRows(data, getSchoolCalendarDate()) : []), [data]);
@@ -75,8 +75,8 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
     );
   }
 
-  const hasGradedData: boolean = started.some((_, periodIndex) => students.some((student) => student.results[periodIndex] !== null));
-  if (!hasGradedData) return null;
+  const hasGradedData: boolean = gradedPeriodCount !== 0 && started.some((_, periodIndex) => students.some((student) => student.results[periodIndex] !== null));
+  if (!hasGradedData) return selfStudentId === null ? null : <p data-testid="progress-no-graded" className="text-sm text-muted">{t("journals:progress.noGradedYet")}</p>;
 
   return (
     <div data-testid="journal-progress">

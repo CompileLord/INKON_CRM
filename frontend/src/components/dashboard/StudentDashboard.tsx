@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useMyStudentProfile } from "../../lib/users/hooks";
 import type { StudentCourseProfile } from "../../lib/users/types";
+import { StudentNextLesson } from "../student/StudentNextLesson";
 import { StudentDashboardCourses } from "../student/StudentDashboardCourses";
 import { ErrorState } from "../ui/ErrorState";
 import { PageContainer } from "../ui/PageContainer";
@@ -24,6 +25,7 @@ export function StudentDashboard() {
       ) : (
         <>
           {profileQuery.isError && profile !== undefined && <StaleNotice message={t("student:profileRefreshError")} onRetry={() => void profileQuery.refetch()} />}
+          <StudentNextLesson activeCourses={activeCourses} />
           <StudentDashboardCourses activeCourses={activeCourses} isLoading={profileLoading} />
         </>
       )}

@@ -241,6 +241,7 @@
       "noValues": "Нет сохранённых результатов",
       "entry": "{{name}} {{value}}"
     },
+    "noGradedYet": "Оценённых периодов пока нет",
     "showAll": "Показать всех",
     "hideAll": "Скрыть всех",
     "moreCount": "+{{count}} ещё",

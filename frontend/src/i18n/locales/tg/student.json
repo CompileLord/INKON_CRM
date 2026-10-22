@@ -129,5 +129,8 @@
     "attendanceValue": "Ҳузур {{value}}",
     "openJournal": "Кушодани журнал",
     "scoreUnavailable": "Хол —"
+  },
+  "home": {
+    "continue": "Идома додан"
   }
 }

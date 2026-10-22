@@ -16,7 +16,7 @@ const props = {
 };
 
 function mount(value: JournalStudentResponse) {
-  return render(<table><tbody><JournalStudentRow {...props} student={value} /></tbody></table>);
+  return render(<table><tbody><JournalStudentRow {...props} sharedMaximum={100} student={value} /></tbody></table>);
 }
 
 afterEach(() => cleanup());
@@ -120,10 +120,11 @@ describe("JournalStudentRow totals", () => {
     expect(screen.getByRole("rowheader").querySelector('[style*="background"]')).toBeNull();
   });
 
-  it("shows the server total and percentage", () => {
+  it("shows the server total without a percentage", () => {
     mount(student);
     expect(screen.getAllByText("5").length).toBeGreaterThan(0);
-    expect(screen.getByText("5%")).toBeDefined();
+    expect(screen.queryByText("5%")).toBeNull();
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
   });
 
   it("reads Unavailable, never zero, when the summary is missing", () => {
@@ -133,8 +134,32 @@ describe("JournalStudentRow totals", () => {
     expect(screen.queryByText("0%")).toBeNull();
   });
 
-  it("displays a percentage above 100 as a whole number", () => {
+  it("shows no percentage even when the share is above 100", () => {
     mount({ ...student, summary: { ...student.summary!, sum_score: 110, percentage: 102.5 } });
-    expect(screen.getByText(/^10[23]%$/)).toBeDefined();
+    expect(screen.getByTestId("total-cell").textContent).toBe("110");
+  });
+});
+
+describe("JournalStudentRow own-row not-graded state", () => {
+  const ownRow = (value: JournalStudentResponse) =>
+    render(<table><tbody><JournalStudentRow {...props} editing={null} sharedMaximum={100} markUnrecorded isSelf student={value} /></tbody></table>);
+
+  it("shows a dash instead of 0 when nothing is graded yet", () => {
+    ownRow({ ...student, entries: [], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    const cell: HTMLElement = screen.getByTestId("total-cell");
+    expect(cell.textContent).toBe("—");
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
+    expect(screen.queryByText("0")).toBeNull();
+    expect(screen.queryByText("0%")).toBeNull();
+  });
+
+  it("treats recorded absences without a score as not graded", () => {
+    ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: false, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    expect(screen.getByTestId("total-cell").textContent).toBe("—");
+  });
+
+  it("shows the real zero once an attended lesson is recorded", () => {
+    ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: true, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    expect(screen.getByTestId("total-cell").textContent).toBe("0");
   });
 });

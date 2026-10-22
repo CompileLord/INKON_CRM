@@ -60,19 +60,20 @@ describe("StudentProfile Component", () => {
   it("shows exactly three distinct stat tiles in one group for a superadmin", async () => {
     renderStudentProfile();
     const group = document.querySelector("[data-profile-summary] [data-stat-group]") as HTMLElement;
+    await waitFor(() => expect(group.textContent).toContain("Debt"));
     expect(group.querySelectorAll("[data-stat-tile]")).toHaveLength(3);
     const labels = Array.from(group.querySelectorAll("dt")).map((node) => node.textContent);
     expect(new Set(labels).size).toBe(3);
-    await waitFor(() => expect(group.textContent).toContain("Debt"));
+    expect(group.getAttribute("data-compact")).toBe("true");
   });
 
-  it("shows the points of the active courses as score over maximum with the percentage muted", () => {
+  it("shows the points of the active courses as the score only", () => {
     renderStudentProfile();
     const group = document.querySelector("[data-stat-group]") as HTMLElement;
     const tile = within(group).getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("340 / 400");
-    expect(tile.textContent).toContain("85%");
-    expect(tile.textContent).not.toContain("170");
+    expect(tile.textContent).toContain("340");
+    expect(tile.textContent).not.toContain("400");
+    expect(tile.textContent).not.toContain("85%");
   });
 
   it("shows attendance with the missed lessons as its hint", () => {
@@ -82,27 +83,27 @@ describe("StudentProfile Component", () => {
     expect(tile.textContent).toContain("2 of 24 missed");
   });
 
-  it("marks attendance as missing when the stored attendance denominator is zero", () => {
+  it("hides the attendance tile when no lesson is recorded instead of showing a dash", () => {
     mockProfile({ performance: { ...mockProfileResponse.performance!, attendance_denominator: 0, attendance_percentage: 91.6 } });
     renderStudentProfile();
-    const tile = screen.getByText("Attendance").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).not.toContain("92%");
-    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
+    expect(screen.queryByText("Attendance")).toBeNull();
+    expect(document.body.textContent).not.toContain("92%");
+    expect(document.querySelector("[data-stat-group] [data-stat-missing]")).toBeNull();
   });
 
-  it("marks the points as missing when no active course has a recorded maximum", () => {
+  it("hides the points tile when no active course has a recorded maximum", () => {
     mockProfile({ courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: undefined, my_total_max_score: undefined })) });
     renderStudentProfile();
-    const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
+    expect(screen.queryByText("Points, active courses")).toBeNull();
+    expect(document.querySelector("[data-stat-group] [data-stat-missing]")).toBeNull();
   });
 
-  it("never shows a percentage above 100 next to the points", () => {
+  it("shows no percentage or maximum next to the points", () => {
     mockProfile({ courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: 130, my_total_max_score: 100 })) });
     renderStudentProfile();
     const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("130 / 100");
-    expect(tile.textContent).not.toMatch(/1\d\d%/);
+    expect(tile.textContent).toContain("130");
+    expect(tile.textContent).not.toMatch(/%|\/ 100/);
   });
 
   it("shows the debt with money formatting and the overdue days", async () => {

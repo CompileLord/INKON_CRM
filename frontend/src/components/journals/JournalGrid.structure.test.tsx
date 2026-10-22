@@ -185,7 +185,7 @@ describe("JournalGrid weekday headers", () => {
 });
 
 describe("JournalGrid total column", () => {
-  it("shows the total as score over the period maximum with the percentage muted, in one column", () => {
+  it("shows the total as the score only with no percentage line, in one column", () => {
     const scored = student(1, "Anvar");
     scored.summary = { ...(scored.summary as NonNullable<JournalStudentResponse["summary"]>), sum_score: 86, max_period_score: 117, percentage: 73.5 };
     mountGrid({ students: [scored] });
@@ -193,8 +193,9 @@ describe("JournalGrid total column", () => {
     expect(cell.textContent).toContain("86");
     expect(cell.textContent).not.toContain("/");
     expect(screen.getByTestId("total-maximum").textContent).toBe("/ 117");
-    expect(screen.getByTestId("total-percentage").textContent).toBe("74%");
-    expect(screen.getByTestId("total-percentage").className).toContain("text-muted");
+    expect(cell.textContent).toBe("86");
+    expect(cell.textContent).not.toContain("%");
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).not.toContain("%");
   });
 
@@ -254,5 +255,64 @@ describe("JournalGrid initial scroll position", () => {
     view.rerender(gridElement(DATES[1]));
     view.rerender(gridElement(DATES[2]));
     expect(region.scrollLeft).toBeGreaterThan(0);
+  });
+});
+
+describe("JournalGrid compact columns on phones", () => {
+  it("narrows the sticky name column to 120px and the read-only lesson columns to 112px so two lessons fit at 390px", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    const own: JournalStudentResponse = student(1, "Anvar");
+    render(
+      <JournalGrid
+        journalId={7}
+        periodLabel="Month 10"
+        students={[own]}
+        lessonDates={DATES}
+        selectedLesson={DATES[0]}
+        cellStatus={new Map()}
+        summaryStatus={new Map()}
+        editing={null}
+        examMaximum={24}
+        onSelectLesson={vi.fn()}
+        readOnlySelfStudentId={1}
+      />,
+    );
+    const widths: string[] = Array.from(document.querySelectorAll("table")[1].querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
+    expect(widths[0]).toBe("120px");
+    expect(widths[1]).toBe("112px");
+    const rowHeader: HTMLElement = screen.getAllByRole("rowheader")[0];
+    expect(rowHeader.className).toContain("min-w-[120px]");
+    expect(rowHeader.querySelector("[title]")?.getAttribute("title")).toBe("Anvar Tester");
+    expect(120 + 2 * 112).toBeLessThanOrEqual(390 - 32);
+  });
+
+  it("keeps the full 200px name column and 128px lessons on desktop", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: !query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    mountGrid();
+    const widths: string[] = Array.from(document.querySelectorAll("table")[1].querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
+    expect(widths.slice(0, 2)).toEqual(["200px", "128px"]);
+  });
+});
+
+describe("JournalGrid own row on phones", () => {
+  it("drops the visible You badge on phones but keeps it for screen readers", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    render(
+      <JournalGrid journalId={7} periodLabel="Month 10" students={[student(1, "Anvar")]} lessonDates={DATES} selectedLesson={DATES[0]} cellStatus={new Map()} summaryStatus={new Map()} editing={null} examMaximum={24} onSelectLesson={vi.fn()} readOnlySelfStudentId={1} />,
+    );
+    const badge: HTMLElement = screen.getByText("You");
+    expect(badge.className).toContain("sr-only");
   });
 });

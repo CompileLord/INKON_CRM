@@ -5,10 +5,10 @@ import { EmptyState } from "../ui/EmptyState";
 import { ProgressLineChart, type ProgressLineSeries } from "../ui/charts/ProgressLineChart";
 import { usePeriodName } from "../ui/periodName";
 import { SectionCard } from "../ui/SectionCard";
-import { ScoreFigure } from "../profile/ScoreFigure";
+import { CourseScore } from "./CourseScore";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
-import { formatNumber, formatPercentage, formatSchoolLessonDate } from "../../i18n/formatters";
+import { formatNumber, formatPercentage, formatSchoolLessonDate, formatSchoolPeriodSpan } from "../../i18n/formatters";
 import { getStudentCourseLink } from "../../lib/students/studentNavigation";
 import { StudentProgressSeriesBuilder, type StudentProgressSeries } from "../../lib/students/StudentProgressSeriesBuilder";
 import { useStudentProgressSeries } from "../../lib/students/useStudentProgressSeries";
@@ -37,7 +37,7 @@ function CourseProgressRow({ item, role, currentUserId }: { item: StudentCourseP
           </span>
           {stats !== null ? (
             <span className="flex min-w-0 max-w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
-              <ScoreFigure score={item.my_total_score} max={item.my_total_max_score} />
+              {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} /> : <span className="text-muted">—</span>}
               {attendance !== null ? (
                 <span className="tabular-nums text-muted">{t("progress.attendanceShort", { value: formatNumber(attendance, i18n.language, { maximumFractionDigits: 0 }) })}</span>
               ) : null}
@@ -113,9 +113,9 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
           ) : (
             <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
               {progress.history.items.map((period: StudentJournalPeriod) => (
-                <li key={period.journal_id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 p-4">
-                  <span className="min-w-0 break-words text-sm text-ink">{period.course_title} · {periodName(period.period_label)}<span className="block text-xs text-muted tabular-nums">{formatSchoolLessonDate(period.period_start)} – {formatSchoolLessonDate(period.period_end)}</span></span>
-                  <span className="text-sm text-muted tabular-nums">{period.state === "graded" ? formatPercentage(period.percentage, i18n.language) : t("progress.rowNoData")}</span>
+                <li key={period.journal_id} title={`${periodName(period.period_label)} · ${formatSchoolLessonDate(period.period_start)} – ${formatSchoolLessonDate(period.period_end)}`} className="flex min-w-0 items-baseline justify-between gap-3 p-4">
+                  <span className="min-w-0 break-words text-sm text-ink">{period.course_title}<span className="ml-2 text-xs text-muted tabular-nums">{formatSchoolPeriodSpan(period.period_start, period.period_end, i18n.language)}</span></span>
+                  {period.state === "graded" ? <span data-testid="period-total" className="shrink-0 text-sm font-semibold text-ink tabular-nums">{formatNumber(period.sum_score, i18n.language)}</span> : <span className="shrink-0 text-xs text-muted">{t("progress.rowNoData")}</span>}
                 </li>
               ))}
             </ul>

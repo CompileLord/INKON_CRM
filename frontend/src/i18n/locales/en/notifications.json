@@ -38,7 +38,8 @@
   "unreadSummary": "Unread: {{count}}",
   "allRead": "All caught up",
   "loadFailed": "Couldn't load notifications.",
-  "inboxEmpty": "Nothing here yet. New messages from the center will show up here.",
+  "inboxEmpty": "You're all caught up",
+  "inboxEmptyNextStep": "New lessons, grades and messages will show up here.",
   "deliveryLog": {
     "failedOnly": "Failed only",
     "sent": "Sent",

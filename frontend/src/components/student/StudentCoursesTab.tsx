@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../ui/EmptyState";
-import { ScoreFigure } from "../profile/ScoreFigure";
+import { CourseScore } from "./CourseScore";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
 import { formatDate } from "../../i18n/formatters";
@@ -44,7 +44,7 @@ export function StudentCoursesTab({ courses, role, currentUserId }: StudentCours
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">
-                    <ScoreFigure score={item.my_total_score} max={item.my_total_max_score} />
+                    {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} /> : <span className="text-muted">—</span>}
                     {item.periods_total > 0 ? (
                       <span className="text-xs tabular-nums text-muted">{t("courses.periodsGraded", { graded: item.periods_graded, total: item.periods_total })}</span>
                     ) : null}

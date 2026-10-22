@@ -116,9 +116,17 @@ describe("Notifications inbox", () => {
     expect(screen.getByText("All caught up")).toBeTruthy();
   });
 
-  it("shows a one-sentence empty state, a skeleton while loading and a retry on error", () => {
+  it("shows a compact icon, short title and one-line next step instead of a large card when empty", () => {
     renderNotifications("student");
-    expect(screen.getByText("Nothing here yet. New messages from the center will show up here.")).toBeTruthy();
+    const empty: HTMLElement = screen.getByTestId("inbox-empty");
+    expect(empty.textContent).toContain("You're all caught up");
+    expect(empty.textContent).toContain("New lessons, grades and messages will show up here.");
+    expect(empty.querySelector("svg")).not.toBeNull();
+    expect(empty.closest("[data-empty-state]")).toBeNull();
+    expect(empty.className).not.toMatch(/\bpy-10\b|\bborder\b|\bbg-card\b/);
+  });
+
+  it("shows a skeleton while loading and a retry on error", () => {
     cleanup();
     mocks.inbox.isLoading = true;
     renderNotifications("student");
@@ -138,7 +146,7 @@ describe("Notifications inbox", () => {
       render(<MemoryRouter initialEntries={["/notifications?tab=log"]}><Notifications /></MemoryRouter>);
       expect(screen.queryByRole("tablist")).toBeNull();
       expect(mocks.deliveryLogCalls).toEqual([]);
-      expect(screen.getByText("Nothing here yet. New messages from the center will show up here.")).toBeTruthy();
+      expect(screen.getByTestId("inbox-empty")).toBeTruthy();
     }
   });
 });

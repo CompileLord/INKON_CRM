@@ -3,7 +3,7 @@ import type { StudentCourseProfile } from "../../lib/users/types";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { ListRow } from "../ui/ListRow";
 import { CourseThumb } from "./CourseThumb";
-import { ScoreFraction } from "./ScoreFraction";
+import { CourseScore } from "./CourseScore";
 
 interface StudentCourseListRowProps {
   entry: StudentCourseProfile;
@@ -29,9 +29,9 @@ export function StudentCourseListRow({ entry }: StudentCourseListRowProps) {
         </div>
         <div className="shrink-0 text-right text-sm" data-testid="course-score">
           {hasScore ? (
-            <ScoreFraction score={entry.my_total_score!} maximum={entry.my_total_max_score!} />
+            <CourseScore score={entry.my_total_score!} />
           ) : (
-            <span className="text-muted">{t("metricUnavailable")}</span>
+            <span className="text-xs text-muted">{t("notGradedYet")}</span>
           )}
         </div>
       </div>

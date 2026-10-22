@@ -54,22 +54,22 @@ describe("MyCourses", () => {
     expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
-  it("leads each row with the score over its maximum and keeps a recorded zero as a number", () => {
+  it("leads each row with the score only and keeps a recorded zero as a number", () => {
     profileState.current = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [entry(1, "active", 92, 130), entry(2, "active", 0, 600)] } };
     renderCourses();
     const scores = screen.getAllByTestId("course-score");
-    expect(scores[0].textContent).toBe("92/ 130");
-    expect(scores[1].textContent).toBe("0/ 600");
+    expect(scores[0].textContent).toBe("92");
+    expect(scores[1].textContent).toBe("0");
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
-  it("shows a dash when the backend has no score for a course", () => {
+  it("says Not graded yet instead of a bare dash when the backend has no score for a course", () => {
     const unscored = entry(1, "active");
     unscored.my_total_score = undefined;
     unscored.my_total_max_score = undefined;
     profileState.current = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [unscored] } };
     renderCourses();
-    expect(screen.getByTestId("course-score").textContent).toBe("—");
+    expect(screen.getByTestId("course-score").textContent).toBe("Not graded yet");
   });
 
   it("uses an initial tile without a photo and the photo when there is one", () => {
