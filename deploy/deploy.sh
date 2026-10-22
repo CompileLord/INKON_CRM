@@ -81,6 +81,7 @@ if [[ "$SKIP_MIGRATIONS" == true ]]; then
   log "Skipping migrations"
 else
   log "Running migrations"
+  compose run --rm --no-deps api python -m scripts.repair_alembic_version
   compose run --rm --no-deps api alembic upgrade head
 fi
 

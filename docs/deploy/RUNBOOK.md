@@ -20,6 +20,8 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 - On the VPS `deploy.sh <sha>` pulls the images, writes `/var/backups/imkon/pre-<sha>.dump`, runs `alembic upgrade head`, restarts `api` and `worker`, waits for API and worker container health, polls `/health` for 60 seconds and, on any startup or health failure, restarts the previous release. Current and previous release SHAs are in `/var/lib/imkon/current_release` and `/var/lib/imkon/previous_release`.
 - Production runs `deploy.sh --register-webhook` afterwards to register the Telegram webhook.
 
+Before `alembic upgrade head`, deployment runs `python -m scripts.repair_alembic_version` using only `DATABASE_URL`. In one locked transaction it removes the redundant `d4e5f6a7b8c9` row only when the version table contains exactly that revision and `d025a01b34e5`, and the RWP20 `outbox_event_kind.credentials_email` enum value exists. Missing RWP20 schema refuses deployment; all other version states are reported unchanged.
+
 ## 3. Roll back
 
 - Backend: run the `Rollback Backend` workflow with the environment and the full SHA from `previous_release`. It runs `deploy.sh --skip-migrations <sha>`. This only works because migrations follow expand/contract (AGENTS.md section 3.3). If a migration was destructive, restore the pre-deploy dump instead (section 4).
