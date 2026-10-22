@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { RoleHome } from "../../lib/postAuthRedirect";
 import { isPathAllowed } from "../../lib/auth/roleAccess";
 
 export function RoleGuard() {
@@ -9,7 +10,7 @@ export function RoleGuard() {
 
   if (!role) return <Outlet />;
   if (!isPathAllowed(role, location.pathname, userId)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={RoleHome.PATH} replace />;
   }
 
   return <Outlet />;

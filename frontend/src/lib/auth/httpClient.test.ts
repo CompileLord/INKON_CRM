@@ -104,3 +104,68 @@ describe("401 handling", () => {
     expect(refreshCallCount()).toBe(0);
   });
 });
+
+describe("wrong credentials and outages", () => {
+  const protectedChangePassword = { wrongCredentialsDetails: ["Invalid current password", "invalid_current_password"] };
+
+  it("does not refresh or log out for a wrong current password (401)", async () => {
+    tokenStorage.setTokens({ accessToken: "live-token", refreshToken: "valid-refresh" });
+    mock.onPost("/auth/change-password").reply(401, { detail: "Invalid current password" });
+    const logoutListener = vi.fn();
+    const unsubscribe = onLogout(logoutListener);
+
+    const err: unknown = await httpClient.post("/auth/change-password", {}, protectedChangePassword).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(AuthApiError);
+    expect((err as InstanceType<typeof AuthApiError>).status).toBe(401);
+    expect(refreshCallCount()).toBe(0);
+    expect(logoutListener).not.toHaveBeenCalled();
+    expect(tokenStorage.getRefreshToken()).toBe("valid-refresh");
+    unsubscribe();
+  });
+
+  it("passes a 400 invalid_current_password through untouched", async () => {
+    tokenStorage.setTokens({ accessToken: "live-token", refreshToken: "valid-refresh" });
+    mock.onPost("/auth/change-password").reply(400, { detail: "invalid_current_password" });
+    const err: unknown = await httpClient.post("/auth/change-password", {}, protectedChangePassword).catch((e: unknown) => e);
+    expect((err as InstanceType<typeof AuthApiError>).status).toBe(400);
+    expect((err as InstanceType<typeof AuthApiError>).detail).toBe("invalid_current_password");
+    expect(refreshCallCount()).toBe(0);
+  });
+
+  it("still refreshes when change-password fails with an expired session", async () => {
+    tokenStorage.setTokens({ accessToken: "expired-token", refreshToken: "valid-refresh" });
+    mock.onPost("/auth/refresh").reply(200, freshTokenPair);
+    mock.onPost("/auth/change-password").replyOnce(401, { detail: "Could not validate credentials" }).onPost("/auth/change-password").reply(200, freshTokenPair);
+    const res = await httpClient.post("/auth/change-password", {}, protectedChangePassword);
+    expect(res.status).toBe(200);
+    expect(refreshCallCount()).toBe(1);
+  });
+
+  it("keeps the session when the refresh endpoint is down (503)", async () => {
+    tokenStorage.setTokens({ accessToken: "expired-token", refreshToken: "valid-refresh" });
+    mock.onPost("/auth/refresh").reply(503, { detail: "unavailable" });
+    mock.onPost("/protected").reply(401, { detail: "expired" });
+    const logoutListener = vi.fn();
+    const unsubscribe = onLogout(logoutListener);
+
+    const err: unknown = await httpClient.post("/protected", {}).catch((e: unknown) => e);
+
+    expect((err as InstanceType<typeof AuthApiError>).status).toBe(503);
+    expect(logoutListener).not.toHaveBeenCalled();
+    expect(tokenStorage.getRefreshToken()).toBe("valid-refresh");
+    unsubscribe();
+  });
+
+  it("keeps the session on a network failure during refresh", async () => {
+    tokenStorage.setTokens({ accessToken: "expired-token", refreshToken: "valid-refresh" });
+    mock.onPost("/auth/refresh").networkError();
+    mock.onPost("/protected").reply(401, { detail: "expired" });
+    const logoutListener = vi.fn();
+    const unsubscribe = onLogout(logoutListener);
+    await httpClient.post("/protected", {}).catch((e: unknown) => e);
+    expect(logoutListener).not.toHaveBeenCalled();
+    expect(tokenStorage.getRefreshToken()).toBe("valid-refresh");
+    unsubscribe();
+  });
+});

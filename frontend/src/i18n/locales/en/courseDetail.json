@@ -1,6 +1,7 @@
 {
   "backToCourses": "Back to courses",
   "loadError": "Couldn't load the course",
+  "loadErrorHelp": "Check your connection and try again.",
   "notFound": "Course not found",
   "notFoundHelp": "This course doesn't exist or was removed.",
   "accessDenied": "No access",

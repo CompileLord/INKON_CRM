@@ -1,14 +1,15 @@
 import { useAuthStore } from "../store/authStore";
-import { refresh } from "./auth/endpoints";
 import { AuthApiError } from "./auth/errors";
+import { refreshCoordinator } from "./auth/httpClient";
+import { MissingRefreshTokenError } from "./auth/refreshCoordinator";
 import { tokenStorage } from "./auth/tokenStorage";
 
-const TRANSIENT_RETRY_DELAYS_MS: readonly number[] = [500, 1500, 3000];
+const TRANSIENT_RETRY_DELAYS_MS: readonly number[] = [500, 1500];
 
 let pendingBootstrap: Promise<void> | null = null;
 
 function isDefinitiveRejection(error: unknown): boolean {
-  return error instanceof AuthApiError && (error.status === 401 || error.status === 403);
+  return error instanceof MissingRefreshTokenError || (error instanceof AuthApiError && (error.status === 401 || error.status === 403));
 }
 
 function waitFor(delayMs: number): Promise<void> {
@@ -23,12 +24,13 @@ async function restoreSession(): Promise<void> {
   }
   for (let attempt: number = 0; attempt <= TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      const tokens = await refresh(refreshToken);
-      if (tokenStorage.getRefreshToken() !== refreshToken) return;
-      useAuthStore.getState().setAuthenticated(tokens.access_token, tokens.refresh_token, tokens.must_set_password);
+      await refreshCoordinator.refresh();
       return;
     } catch (error: unknown) {
-      if (tokenStorage.getRefreshToken() !== refreshToken) return;
+      if (tokenStorage.getRefreshToken() === null) {
+        useAuthStore.getState().setUnauthenticated();
+        return;
+      }
       if (isDefinitiveRejection(error)) {
         useAuthStore.getState().setUnauthenticated();
         return;
@@ -36,7 +38,7 @@ async function restoreSession(): Promise<void> {
       if (attempt < TRANSIENT_RETRY_DELAYS_MS.length) await waitFor(TRANSIENT_RETRY_DELAYS_MS[attempt]);
     }
   }
-  useAuthStore.setState({ status: "unauthenticated", mustSetPassword: false, role: null, userId: null });
+  useAuthStore.setState({ status: "unavailable", mustSetPassword: false, role: null, userId: null });
 }
 
 export function bootstrapAuth(): Promise<void> {
@@ -46,4 +48,9 @@ export function bootstrapAuth(): Promise<void> {
     pendingBootstrap = null;
   });
   return pendingBootstrap;
+}
+
+export function retryAuthBootstrap(): Promise<void> {
+  if (useAuthStore.getState().status === "unavailable") useAuthStore.setState({ status: "initializing" });
+  return bootstrapAuth();
 }

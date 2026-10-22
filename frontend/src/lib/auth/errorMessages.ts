@@ -194,7 +194,9 @@ export interface ChangePasswordErrorMapping {
 
 export function mapChangePasswordError(err: unknown): ChangePasswordErrorMapping {
   if (err instanceof AuthApiError) {
-    if (err.status === 401) return { field: "currentPassword", messageKey: "settings:security.currentPasswordWrong" };
+    if (err.status === 401 || (err.status === 400 && err.detail === "invalid_current_password")) {
+      return { field: "currentPassword", messageKey: "settings:security.currentPasswordWrong" };
+    }
     if (err.status === 400) return { field: "newPassword", messageKey: "auth:passwordPolicyError" };
     if (err.status === 422) return { field: "newPassword", messageKey: "validation:passwordMinLength", params: { min: 8 } };
     if (err.status === 429) return { field: null, messageKey: "auth:rateLimited" };

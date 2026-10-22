@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { AuthUnavailable } from "./AuthUnavailable";
 import { FullscreenSpinner } from "./FullscreenSpinner";
 
 export function AuthGuard() {
@@ -8,6 +9,7 @@ export function AuthGuard() {
   const location = useLocation();
 
   if (status === "initializing") return <FullscreenSpinner />;
+  if (status === "unavailable") return <AuthUnavailable />;
 
   if (status === "unauthenticated") {
     const redirect = `${location.pathname}${location.search}`;

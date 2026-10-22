@@ -34,8 +34,6 @@ export function isPathAllowed(
   pathname: string,
   userId: number | null,
 ): boolean {
-  if (role === "superadmin") return true;
-
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return true;
 
@@ -43,7 +41,11 @@ export function isPathAllowed(
 
   if (!KNOWN_TOP_LEVEL_SEGMENTS.includes(topLevel)) return true;
 
-  if (topLevel === "settings" || topLevel === "notifications" || topLevel === "my") {
+  if (topLevel === "my") return role === "student";
+
+  if (role === "superadmin") return true;
+
+  if (topLevel === "settings" || topLevel === "notifications") {
     return true;
   }
 

@@ -7,8 +7,8 @@ afterEach(() => useAuthStore.getState().setUnauthenticated());
 
 describe("identity-owned landing context", () => {
   it.each([
-    ["student", 42, "/students/42"],
-    ["mentor", 7, "/mentors/7"],
+    ["student", 42, "/"],
+    ["mentor", 7, "/"],
     ["superadmin", 1, "/"],
     ["accountant", 2, "/"],
   ] as const)("uses %s identity without probing unauthorized profile endpoints", async (role, id, path) => {
