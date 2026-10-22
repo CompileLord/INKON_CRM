@@ -77,4 +77,4 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-69 | todo | — | — | — | Audit: payment idempotency, ordered copy locks, debtor cache, SQL analytics, measured indexes. After WP-46/53. |
 | WP-70 | todo | — | — | — | WP-48 pip-audit: aiohttp, pillow, certifi, ecdsa, python-jose (20 advisories). After WP-48. |
 
-57/70 accepted; 13 remain. 2026-10-22: master 64a2ee3 full suite 1581 pass, 2 known fail (wp11 online-init, wp25 legacy metadata), 4 wp13 errors (host redis-server missing), single head rwp45_refresh_retention. In progress: WP-51, WP-57, WP-64 (Codex). Plan revisions: WP-51 +audit_logs.py/documents.py/enrollments.py (Depends wiring only); WP-57 +test_remediation_wp05.py (queued contract, auth asserts kept).
+56/70 accepted; 14 remain. 2026-10-22: master 64a2ee3 full suite 1581 pass, 2 known fail (wp11 online-init, wp25 legacy metadata), 4 wp13 errors (host redis-server missing), single head rwp45_refresh_retention. In progress: WP-51, WP-57, WP-64 (Codex). Plan revisions: WP-51 +audit_logs.py/documents.py/enrollments.py (Depends wiring only); WP-57 +test_remediation_wp05.py (queued contract, auth asserts kept).
