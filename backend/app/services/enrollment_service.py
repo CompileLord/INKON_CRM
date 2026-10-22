@@ -1,10 +1,12 @@
-from datetime import date, timedelta
+from datetime import date
 from typing import List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import Select, select, func
+from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.scoring import ScoringPolicy
+from app.core.schedule_utils import EnrollmentLessonPlan, LessonDateCalculator
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.schemas.enrollment import (
     CourseRosterItemResponse,
@@ -54,17 +56,6 @@ class EnrollmentConflictClassifier:
         return False
 
 
-def get_lesson_dates(period_start: date, period_end: date, schedules: List[CourseSchedule]) -> List[date]:
-    schedule_weekdays = {s.day_of_week for s in schedules}
-    lesson_dates = []
-    curr = period_start
-    while curr <= period_end:
-        if curr.weekday() in schedule_weekdays:
-            lesson_dates.append(curr)
-        curr += timedelta(days=1)
-    return lesson_dates
-
-
 class EnrollmentService:
     def __init__(
         self,
@@ -80,7 +71,10 @@ class EnrollmentService:
         self.user_repo: UserRepository = user_repo or SQLAlchemyUserRepository(db)
         self.conflict_classifier: EnrollmentConflictClassifier = conflict_classifier or EnrollmentConflictClassifier()
 
-    async def enroll_student(self, student_id: int, course_id: int, current_user: User) -> Enrollment:
+    async def enroll_student(
+        self, student_id: int, course_id: int, current_user: User,
+        lesson_plan: EnrollmentLessonPlan | None = None,
+    ) -> Enrollment:
         from app.services.finance_service import FinanceService
 
         await FinanceService(self.db).lock_student_accounts([student_id])
@@ -139,18 +133,22 @@ class EnrollmentService:
                 )
             raise
 
-        schedules_query = select(CourseSchedule).filter(CourseSchedule.course_id == course_id)
-        schedules_result = await self.db.execute(schedules_query)
-        schedules = list(schedules_result.scalars().all())
-
-        journals_query = select(Journal).filter(Journal.course_id == course_id)
-        journals_result = await self.db.execute(journals_query)
-        journals = list(journals_result.scalars().all())
-
-        entries_to_add = []
-        summaries_to_add = []
-        for journal in journals:
-            lesson_dates = get_lesson_dates(journal.period_start, journal.period_end, schedules)
+        if lesson_plan is None:
+            schedules_query: Select[tuple[CourseSchedule]] = select(CourseSchedule).filter(CourseSchedule.course_id == course_id)
+            schedules_result: Result[tuple[CourseSchedule]] = await self.db.execute(schedules_query)
+            schedules: list[CourseSchedule] = list(schedules_result.scalars().all())
+            journals_query: Select[tuple[Journal]] = select(Journal).filter(Journal.course_id == course_id)
+            journals_result: Result[tuple[Journal]] = await self.db.execute(journals_query)
+            journals: list[Journal] = list(journals_result.scalars().all())
+            lesson_plan = EnrollmentLessonPlan.build(course_id, journals, LessonDateCalculator.calculate(
+                course.start_date, course.end_date, [schedule.day_of_week for schedule in schedules],
+            ))
+        if lesson_plan.course_id != course_id:
+            raise ValueError("Enrollment lesson plan belongs to another course")
+        entries_to_add: list[JournalEntry] = []
+        summaries_to_add: list[JournalStudentSummary] = []
+        for journal in lesson_plan.journals:
+            lesson_dates: tuple[date, ...] = lesson_plan.dates_by_journal[journal.id]
             for l_date in lesson_dates:
                 entries_to_add.append(JournalEntry(
                     journal_id=journal.id,
