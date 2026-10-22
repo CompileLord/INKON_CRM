@@ -1,6 +1,7 @@
 import asyncio
 import json
 import random
+from dataclasses import dataclass
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -16,6 +17,12 @@ from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxReposi
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.services.sms.messages import PasswordSmsMessageFactory, PasswordSmsReason
 from app.services.sms.sender import SmsDeliveryError, SmsSender, SmsSendResult
+
+
+@dataclass(frozen=True)
+class SmsDispatchInspection:
+    invalid_reason: Optional[str]
+    parent_addressee_name: Optional[str]
 
 
 class StudentPasswordSmsDispatcher:
@@ -64,7 +71,8 @@ class StudentPasswordSmsDispatcher:
         session_factory: async_sessionmaker[AsyncSession],
     ) -> bool:
         session: AsyncSession
-        invalid_reason: Optional[str] = await self._find_invalid_reason(event, plaintext_payload, session_factory)
+        inspection: SmsDispatchInspection = await self._inspect(event, plaintext_payload, session_factory)
+        invalid_reason: Optional[str] = inspection.invalid_reason
         if invalid_reason is not None:
             async with session_factory() as session:
                 await SQLAlchemyOutboxRepository(session).mark_expired(
@@ -75,7 +83,10 @@ class StudentPasswordSmsDispatcher:
 
         payload: dict[str, Optional[str]] = json.loads(plaintext_payload)
         message: str = self._message_factory.build(
-            payload.get("language"), PasswordSmsReason(payload["reason"]), str(payload["code"])
+            payload.get("language"),
+            PasswordSmsReason(payload["reason"]),
+            str(payload["code"]),
+            inspection.parent_addressee_name,
         )
         if self._send_interval_seconds > 0:
             await asyncio.sleep(self._send_interval_seconds)
@@ -122,35 +133,50 @@ class StudentPasswordSmsDispatcher:
             await session.commit()
         return True
 
+    async def _inspect(
+        self,
+        event: OutboxEvent,
+        plaintext_payload: str,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> SmsDispatchInspection:
+        invalid_reason: Optional[str]
+        user: Optional[User]
+        invalid_reason, user = await self._find_invalid_reason(event, plaintext_payload, session_factory)
+        parent_addressee_name: Optional[str] = None
+        if invalid_reason is None and user is not None:
+            if event.recipient_phone == user.parent_phone and event.recipient_phone != user.phone:
+                parent_addressee_name = user.first_name
+        return SmsDispatchInspection(invalid_reason, parent_addressee_name)
+
     async def _find_invalid_reason(
         self,
         event: OutboxEvent,
         plaintext_payload: str,
         session_factory: async_sessionmaker[AsyncSession],
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], Optional[User]]:
         try:
             payload: dict[str, Optional[str]] = json.loads(plaintext_payload)
             code: str = str(payload["code"])
             reason: PasswordSmsReason = PasswordSmsReason(payload["reason"])
         except (json.JSONDecodeError, KeyError, ValueError, TypeError):
-            return "sms_payload_corrupted"
+            return "sms_payload_corrupted", None
         if event.target_user_id is None or not event.recipient_phone:
-            return "sms_event_incomplete"
+            return "sms_event_incomplete", None
         async with session_factory() as session:
             user: User | None = await SQLAlchemyUserRepository(session).get_by_id(event.target_user_id)
         if user is None or user.is_deleted:
-            return "user_not_found_or_deleted"
-        if event.recipient_phone != (user.phone or user.parent_phone):
-            return "sms_destination_changed"
+            return "user_not_found_or_deleted", None
+        if event.recipient_phone not in (user.phone, user.parent_phone):
+            return "sms_destination_changed", None
         password_hash: str | None = user.password_hash
         if reason == PasswordSmsReason.RESET:
             if user.pending_password_expires_at is None or user.pending_password_expires_at <= datetime.now(timezone.utc):
-                return "sms_pending_password_expired"
+                return "sms_pending_password_expired", None
             if not user.pending_password_hash or not PendingStudentPasswordHasher(settings.JWT_SECRET_KEY).verify(
                 user.id, code, user.pending_password_hash
             ):
-                return "sms_password_superseded"
-            return None
+                return "sms_password_superseded", None
+            return None, user
         if not password_hash or not await self._password_work_service.verify(code, password_hash):
-            return "sms_password_superseded"
-        return None
+            return "sms_password_superseded", None
+        return None, user
