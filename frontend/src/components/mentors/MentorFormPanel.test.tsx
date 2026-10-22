@@ -83,6 +83,24 @@ describe("MentorFormPanel", () => {
     expect(screen.queryByText(/Upload photo/i)).toBeNull();
   });
 
+  it("keeps the email required and blocks a mentor created without one", async () => {
+    const createSpy = vi.fn();
+    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
+      mutateAsync: createSpy,
+      isPending: false,
+    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
+    renderPanel();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/First Name/i), "Dilshod");
+    await user.type(screen.getByLabelText(/Last Name/i), "Aliev");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Email is required")).toBeDefined();
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Email/i).getAttribute("aria-required")).toBe("true");
+  });
+
   it("omits student-only payment and parent fields", () => {
     renderPanel();
 

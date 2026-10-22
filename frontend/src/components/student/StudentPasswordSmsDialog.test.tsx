@@ -7,6 +7,9 @@ import { StudentPasswordSmsDialog } from "./StudentPasswordSmsDialog";
 import * as userEndpoints from "../../lib/users/endpoints";
 import { AuthApiError } from "../../lib/auth/errors";
 import type { PasswordSmsDelivery } from "../../lib/users/types";
+import type { StudentContacts } from "./StudentPasswordSmsDialog";
+
+const phoneContacts: StudentContacts = { email: null, phone: "+992900004567", parent_phone: "+992900008901" };
 
 function delivery(overrides: Partial<PasswordSmsDelivery>): PasswordSmsDelivery {
   return {
@@ -25,11 +28,11 @@ function delivery(overrides: Partial<PasswordSmsDelivery>): PasswordSmsDelivery 
   };
 }
 
-function renderDialog() {
+function renderDialog(contacts: StudentContacts = phoneContacts) {
   const queryClient: QueryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <StudentPasswordSmsDialog open studentId={7} onClose={vi.fn()} />
+      <StudentPasswordSmsDialog open studentId={7} contacts={contacts} onClose={vi.fn()} />
     </QueryClientProvider>,
   );
 }
@@ -43,30 +46,57 @@ afterEach(() => {
 });
 
 describe("StudentPasswordSmsDialog resend", () => {
-  it("reports the student phone destination on success and refreshes the deliveries", async () => {
+  it("sends through the first available channel and reports the masked phone", async () => {
     const list = vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
-    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone" });
+    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone", channel: "student_phone", masked_phone: "***4567" });
     renderDialog();
     await screen.findByText(/No SMS sent yet/);
-    await userEvent.setup().click(screen.getByRole("button", { name: /Resend password SMS/ }));
-    expect(await screen.findByText("New code sent to the student phone.")).toBeDefined();
-    expect(resend).toHaveBeenCalledWith(7);
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
+    expect(await screen.findByText("New code sent by SMS to the student phone ***4567.")).toBeDefined();
+    expect(resend).toHaveBeenCalledWith(7, "student_phone");
     await waitFor(() => expect(list.mock.calls.length).toBeGreaterThanOrEqual(2));
   });
 
-  it("reports the parent phone destination", async () => {
+  it("sends through the parent phone when it is chosen", async () => {
     vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
-    vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "parent_phone" });
+    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "parent_phone", channel: "parent_phone", masked_phone: "***8901" });
     renderDialog();
-    await userEvent.setup().click(screen.getByRole("button", { name: /Resend password SMS/ }));
-    expect(await screen.findByText("New code sent to the parent phone.")).toBeDefined();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("radio", { name: /Parent phone/ }));
+    await user.click(screen.getByRole("button", { name: /^Resend password$/ }));
+    expect(await screen.findByText("New code sent by SMS to the parent phone ***8901.")).toBeDefined();
+    expect(resend).toHaveBeenCalledWith(7, "parent_phone");
+  });
+
+  it("offers only the channels the student has", () => {
+    vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
+    renderDialog({ email: "kid@example.com", phone: null, parent_phone: "+992900008901" });
+    const radios: HTMLElement[] = screen.getAllByRole("radio");
+    expect(radios.map((radio: HTMLElement) => (radio as HTMLInputElement).value)).toEqual(["email", "parent_phone"]);
+    expect((radios[0] as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("sends by email when the student has an email", async () => {
+    vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
+    const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: null, channel: "email", masked_phone: null });
+    renderDialog({ email: "kid@example.com", phone: "+992900004567", parent_phone: null });
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
+    expect(await screen.findByText("New password sent by email.")).toBeDefined();
+    expect(resend).toHaveBeenCalledWith(7, "email");
+  });
+
+  it("disables resend and explains when the student has no contact", () => {
+    vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
+    renderDialog({ email: null, phone: null, parent_phone: null });
+    expect((screen.getByRole("button", { name: /^Resend password$/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("The student has no contact for this channel.")).toBeDefined();
   });
 
   it("explains the rate limit on 429", async () => {
     vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
     vi.spyOn(userEndpoints, "resendPasswordSms").mockRejectedValue(new AuthApiError(429, "Too many"));
     renderDialog();
-    await userEvent.setup().click(screen.getByRole("button", { name: /Resend password SMS/ }));
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
     expect(await screen.findByText("Too many requests. Try again later.")).toBeDefined();
   });
 
@@ -74,15 +104,15 @@ describe("StudentPasswordSmsDialog resend", () => {
     vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
     vi.spyOn(userEndpoints, "resendPasswordSms").mockRejectedValue(new AuthApiError(400, "no phone"));
     renderDialog();
-    await userEvent.setup().click(screen.getByRole("button", { name: /Resend password SMS/ }));
-    expect(await screen.findByText("Add a student or parent phone first.")).toBeDefined();
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
+    expect(await screen.findByText("The student has no contact for this channel.")).toBeDefined();
   });
 
   it("falls back to a generic message for other failures", async () => {
     vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
     vi.spyOn(userEndpoints, "resendPasswordSms").mockRejectedValue(new AuthApiError(500, "boom"));
     renderDialog();
-    await userEvent.setup().click(screen.getByRole("button", { name: /Resend password SMS/ }));
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
     expect(await screen.findByText("Could not send the SMS. Try again.")).toBeDefined();
   });
 });

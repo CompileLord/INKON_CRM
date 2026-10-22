@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useId, useState, type KeyboardEvent, type Ref } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -140,7 +141,7 @@ export function StudentSearchField({ label, onSelect, inputRef, invalid = false,
                 {student.first_name} {student.last_name}
               </span>
               <span className="block text-xs text-muted">
-                {t("analytics.studentNumber", { id: formatNumber(student.id, i18n.language) })} · {student.email}
+                {t("analytics.studentNumber", { id: formatNumber(student.id, i18n.language) })} · {student.email ?? CanonicalPhone.prefill(student.phone)}
               </span>
             </li>
           ))}

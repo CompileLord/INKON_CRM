@@ -43,7 +43,7 @@ export interface RosterStudentIdentity {
   id: number;
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   phone?: string | null;
   photo_path?: string | null;
   thumbnail_path?: string | null;
@@ -85,7 +85,7 @@ export interface EligibleCandidateResponse {
   id: number;
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   phone?: string | null;
   photo_path?: string | null;
   thumbnail_path?: string | null;

@@ -217,9 +217,21 @@ describe("403 handling", () => {
 });
 
 describe("password SMS endpoints", () => {
-  it("posts the resend request for the student and returns the destination", async () => {
-    mock.onPost("/users/7/resend-password-sms").reply(200, { destination: "parent_phone" });
-    await expect(resendPasswordSms(7)).resolves.toEqual({ destination: "parent_phone" });
+  it("posts the chosen channel and returns the delivery summary", async () => {
+    const summary = { destination: "parent_phone", channel: "parent_phone", masked_phone: "***8901" };
+    mock.onPost("/users/7/resend-password-sms").reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({ channel: "parent_phone" });
+      return [200, summary];
+    });
+    await expect(resendPasswordSms(7, "parent_phone")).resolves.toEqual(summary);
+  });
+
+  it("posts an empty body when no channel is chosen so the server applies its priority", async () => {
+    mock.onPost("/users/7/resend-password-sms").reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({});
+      return [200, { destination: null, channel: "email", masked_phone: null }];
+    });
+    await expect(resendPasswordSms(7)).resolves.toMatchObject({ channel: "email" });
   });
 
   it("lists deliveries for one user across every status", async () => {

@@ -241,8 +241,7 @@ export function EnrollStudentModal({
                   {selectedCandidate.first_name} {selectedCandidate.last_name}
                 </p>
                 <p className="break-words text-xs text-muted">
-                  {selectedCandidate.email}
-                  {selectedCandidate.phone ? ` • ${CanonicalPhone.prefill(selectedCandidate.phone)}` : ""}
+                  {[selectedCandidate.email, selectedCandidate.phone ? CanonicalPhone.prefill(selectedCandidate.phone) : null].filter(Boolean).join(" • ")}
                 </p>
               </div>
             </div>
@@ -372,8 +371,7 @@ export function EnrollStudentModal({
                         {candidate.first_name} {candidate.last_name}
                       </span>
                       <span className="text-xs text-muted break-words block">
-                        {candidate.email}
-                        {candidate.phone ? ` • ${CanonicalPhone.prefill(candidate.phone)}` : ""}
+                        {[candidate.email, candidate.phone ? CanonicalPhone.prefill(candidate.phone) : null].filter(Boolean).join(" • ")}
                       </span>
                     </div>
                   </label>

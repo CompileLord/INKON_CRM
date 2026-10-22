@@ -101,6 +101,9 @@
     "firstNameLabel": "First Name",
     "lastNameLabel": "Last Name",
     "emailLabel": "Email",
+    "emailHelp": "If set, the password is sent by email.",
+    "emailInfoLabel": "About password delivery",
+    "emailInfo": "Optional for students. With an email, the password is sent there. Without it, the password goes by SMS to the student's phone, or to the parent's phone if there is none. The student logs in with email or phone.",
     "phoneLabel": "Phone",
     "phoneHelp": "Format: +992901234567",
     "dobLabel": "Date of Birth",
@@ -120,18 +123,17 @@
     "deleteFailedAfterWithdraw": "Active enrollments were withdrawn, but deleting the student account failed.",
     "deleteAccountError": "Failed to delete student account. The student was not deleted.",
     "contactsInfoLabel": "About contacts",
-    "contactsInfo": "Enter the student phone, the parent phone, or both. The password is sent there by SMS."
+    "contactsInfo": "Enter the student's own phone (it works as a login when there is no email) and the parent phone. Without an email, the password is sent there by SMS."
   },
   "validation": {
     "firstNameRequired": "Enter first name",
     "lastNameRequired": "Enter last name",
     "nameTooLong": "Maximum 100 characters",
-    "emailRequired": "Email is required",
     "invalidEmail": "Invalid email address",
     "invalidPhone": "Use the international format, e.g. +992901234567",
     "invalidPaymentDay": "Must be a number from 1 to 28",
     "emailTaken": "This email is already in use",
-    "phoneOrParentPhoneRequired": "Enter a student or parent phone."
+    "emailOrPhoneRequired": "Enter the student's email or their own phone; a parent phone alone is not enough."
   },
   "currencyTjs": "TJS",
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",

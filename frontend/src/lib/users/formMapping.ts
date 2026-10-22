@@ -31,7 +31,7 @@ export const userFormDefaults: UserFormValues = {
 interface ExistingUserFields {
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   date_of_birth: string | null;
   parent_phone?: string | null;
@@ -44,7 +44,7 @@ export function buildUserFormValues(user?: ExistingUserFields): UserFormValues {
   return {
     firstName: user.first_name,
     lastName: user.last_name,
-    email: user.email,
+    email: user.email ?? "",
     phone: CanonicalPhone.prefill(user.phone),
     birthDate: user.date_of_birth ?? "",
     parentPhone: CanonicalPhone.prefill(user.parent_phone),
@@ -74,7 +74,7 @@ export function buildMentorFormValues(user?: ExistingUserFields): MentorFormValu
   return {
     firstName: user.first_name,
     lastName: user.last_name,
-    email: user.email,
+    email: user.email ?? "",
     phone: CanonicalPhone.prefill(user.phone),
     birthDate: user.date_of_birth ?? "",
   };
@@ -83,8 +83,9 @@ export function buildMentorFormValues(user?: ExistingUserFields): MentorFormValu
 type UserApiFields = Omit<UserCreate, "role">;
 
 function toApiFields(values: UserFormValues): UserApiFields {
+  const email: string = values.email.trim();
   return {
-    email: values.email.trim(),
+    ...(email === "" ? {} : { email }),
     first_name: values.firstName.trim(),
     last_name: values.lastName.trim(),
     date_of_birth: values.birthDate || null,
@@ -129,7 +130,7 @@ export function buildUpdatePayload(
   for (const field of Object.keys(dirtyFields) as (keyof UserFormValues)[]) {
     if (!dirtyFields[field]) continue;
     const apiKey = FIELD_TO_API_KEY[field];
-    (update as Record<string, unknown>)[apiKey] = full[apiKey];
+    (update as Record<string, unknown>)[apiKey] = apiKey === "email" ? (full.email ?? null) : full[apiKey];
   }
 
   return update;

@@ -84,7 +84,7 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
                   <Badge status={student.parent_linked === true ? "linked" : "notLinked"} />
                 </span>
               </span>
-              <span className="truncate text-sm text-muted" title={student.email}>{student.email}</span>
+              <span className="truncate text-sm tabular-nums text-muted" title={student.email ?? CanonicalPhone.prefill(student.phone)}>{student.email ?? CanonicalPhone.prefill(student.phone)}</span>
             </span>
           </span>
           <span className="text-sm tabular-nums text-ink">{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>

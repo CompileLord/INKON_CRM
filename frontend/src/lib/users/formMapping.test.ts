@@ -61,6 +61,33 @@ describe("buildCreatePayload", () => {
   });
 });
 
+describe("email optionality in payloads", () => {
+  const emptyEmailValues = {
+    firstName: "Азиз",
+    lastName: "Рахимов",
+    email: "  ",
+    phone: "+992901234567",
+    birthDate: "",
+    parentPhone: "",
+    paymentDay: "",
+  };
+
+  it("omits the email key from the create payload when it is blank", () => {
+    expect("email" in buildCreatePayload(emptyEmailValues)).toBe(false);
+  });
+
+  it("sends null in the update payload when the email field was cleared", () => {
+    expect(buildUpdatePayload(emptyEmailValues, { email: true })).toEqual({ email: null });
+  });
+
+  it("maps a user without an email to an empty form value", () => {
+    const values = buildUserFormValues({
+      first_name: "A", last_name: "B", email: null, phone: "+992901234567", date_of_birth: null, payment_day_of_month: null,
+    });
+    expect(values.email).toBe("");
+  });
+});
+
 describe("buildUpdatePayload", () => {
   const values = {
     firstName: "Азиз",

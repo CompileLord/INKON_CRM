@@ -18,8 +18,7 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k, r
     email: z
       .string()
       .trim()
-      .min(1, t("validation.emailRequired"))
-      .email(t("validation.invalidEmail")),
+      .refine((value) => value === "" || z.string().email().safeParse(value).success, t("validation.invalidEmail")),
     phone: z
       .string()
       .refine((value) => !value || CanonicalPhone.valid(value, true), t("validation.invalidPhone")),
@@ -34,8 +33,8 @@ export function createStudentFormSchema(t: (key: string) => string = (k) => k, r
         t("validation.invalidPaymentDay"),
       ),
   }).superRefine((values, context) => {
-    if (requireContactPhone && values.phone === "" && values.parentPhone === "") {
-      context.addIssue({ code: "custom", path: ["phone"], message: t("validation.phoneOrParentPhoneRequired") });
+    if (requireContactPhone && values.email === "" && values.phone === "") {
+      context.addIssue({ code: "custom", path: ["phone"], message: t("validation.emailOrPhoneRequired") });
     }
   });
 }

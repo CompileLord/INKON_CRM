@@ -90,6 +90,16 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
   };
 }
 
+describe("StudentsTable without an email", () => {
+  it("shows the phone under the name when the student has no email", () => {
+    const emailless: User = { ...mockStudents[0], id: 103, email: null, phone: "+992900000099", first_name: "Nodira" };
+    renderTable({ students: [emailless], total: 1 });
+    const row = document.getElementById("student-row-103") as HTMLElement;
+    expect(within(row).getAllByText("+992900000099").length).toBeGreaterThanOrEqual(2);
+    expect(row.textContent).not.toContain("null");
+  });
+});
+
 describe("StudentsTable", () => {
   it("shows the parent-linked badge only for students whose parent has linked Telegram", () => {
     renderTable();

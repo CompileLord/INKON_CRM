@@ -82,7 +82,7 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
           <Input id={`${identifier}-last`} value={current.lastName} maxLength={100} autoComplete="family-name" error={dirty ? lastNameError : undefined} onChange={(event) => edit({ lastName: event.target.value })} />
         </SettingsRow>
         <SettingsRow icon={<Mail size={18} />} label={t("profile.email")} description={t("profile.emailHint")} controlId={`${identifier}-email`}>
-          <Input id={`${identifier}-email`} type="email" value={user.email} disabled readOnly />
+          <Input id={`${identifier}-email`} type="email" value={user.email ?? ""} disabled readOnly />
         </SettingsRow>
         <SettingsRow icon={<Phone size={18} />} label={t("profile.phone")} description={t(role === "student" ? "profile.phoneHintStudent" : "profile.phoneHint")} controlId={`${identifier}-phone`}>
           <Input id={`${identifier}-phone`} type="tel" inputMode="tel" value={current.phone} autoComplete="tel" error={dirty ? phoneError : undefined} onChange={(event) => edit({ phone: event.target.value })} />
