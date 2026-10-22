@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Generic, List, Optional, Type, TypeVar
-from sqlalchemy import select, update
+from sqlalchemy import Select, select, update
+from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.interfaces.base_repository import BaseRepository
 
@@ -66,17 +67,17 @@ class SQLAlchemyBaseRepository(Generic[T]):
         base_query: Any,
         page: int = 1,
         page_size: int = 20
-    ) -> dict:
+    ) -> dict[str, Any]:
         from sqlalchemy import func
         page_size = min(max(1, page_size), 100)
         
-        count_query = select(func.count()).select_from(base_query.subquery())
-        total_result = await self.session.execute(count_query)
-        total = total_result.scalar() or 0
+        count_query: Select[Any] = select(func.count()).select_from(base_query.order_by(None).subquery())
+        total_result: Result[Any] = await self.session.execute(count_query)
+        total: int = total_result.scalar() or 0
         
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+        total_pages: int = (total + page_size - 1) // page_size if total > 0 else 0
         
-        if page > total_pages and total_pages > 0:
+        if total == 0 or (page > total_pages and total_pages > 0):
             return {
                 "items": [],
                 "total": total,
@@ -85,10 +86,10 @@ class SQLAlchemyBaseRepository(Generic[T]):
                 "total_pages": total_pages
             }
             
-        offset = (page - 1) * page_size
-        query = base_query.offset(offset).limit(page_size)
-        result = await self.session.execute(query)
-        items = list(result.scalars().all())
+        offset: int = (page - 1) * page_size
+        query: Any = base_query.offset(offset).limit(page_size)
+        result: Result[Any] = await self.session.execute(query)
+        items: list[T] = list(result.scalars().all())
         
         return {
             "items": items,

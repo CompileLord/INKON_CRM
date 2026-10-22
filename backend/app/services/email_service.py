@@ -1,6 +1,10 @@
 import asyncio
 import ssl
 import smtplib
+import socket
+import threading
+import time
+from typing import Any
 from email.header import Header
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -10,10 +14,57 @@ from app.core.redis import enqueue_job
 from app.services.email_templates import InlineImage
 
 SMTP_SOCKET_TIMEOUT_SECONDS = 10.0
+SMTP_TRANSPORT_TIMEOUT_SECONDS: float = 12.0
 
 
 class EmailDeliveryError(RuntimeError):
     pass
+
+
+class DeadlineSMTP(smtplib.SMTP):
+    def __init__(self) -> None:
+        self.deadline: float = time.monotonic() + SMTP_TRANSPORT_TIMEOUT_SECONDS
+        self.expired: threading.Event = threading.Event()
+        super().__init__(timeout=SMTP_SOCKET_TIMEOUT_SECONDS)
+        self.deadline_timer: threading.Timer = threading.Timer(SMTP_TRANSPORT_TIMEOUT_SECONDS, self.abort)
+        self.deadline_timer.daemon = True
+
+    def abort(self) -> None:
+        self.expired.set()
+        active_socket: socket.socket | None = self.sock
+        if active_socket is not None:
+            try:
+                active_socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        self.close()
+
+    def check_deadline(self) -> None:
+        if self.expired.is_set() or time.monotonic() >= self.deadline:
+            self.abort()
+            raise EmailDeliveryError("SMTP transport deadline exceeded")
+
+    def send(self, data: Any) -> None:
+        self.check_deadline()
+        super().send(data)
+
+    def _get_socket(self, host: str, port: int, timeout: float) -> socket.socket:
+        self.check_deadline()
+        connected_socket: socket.socket = super()._get_socket(host, port, timeout)
+        if self.expired.is_set() or time.monotonic() >= self.deadline:
+            connected_socket.close()
+            raise EmailDeliveryError("SMTP transport deadline exceeded")
+        return connected_socket
+
+    def __enter__(self) -> "DeadlineSMTP":
+        self.deadline_timer.start()
+        return self
+
+    def __exit__(self, *arguments: Any) -> None:
+        try:
+            self.close()
+        finally:
+            self.deadline_timer.cancel()
 
 
 class EmailService:
@@ -55,11 +106,8 @@ class EmailService:
         message = self.build_message(to_email, subject, body, html_body, inline_images)
 
         try:
-            with smtplib.SMTP(
-                settings.SMTP_HOST,
-                settings.SMTP_PORT,
-                timeout=SMTP_SOCKET_TIMEOUT_SECONDS,
-            ) as server:
+            with DeadlineSMTP() as server:
+                server.connect(settings.SMTP_HOST, settings.SMTP_PORT)
                 server.ehlo()
                 try:
                     server.starttls(context=ssl.create_default_context())
@@ -75,6 +123,7 @@ class EmailService:
                 except smtplib.SMTPAuthenticationError:
                     raise EmailDeliveryError("SMTP authentication failed") from None
                 server.send_message(message)
+                server.check_deadline()
         except EmailDeliveryError:
             raise
         except (OSError, smtplib.SMTPException) as exception:

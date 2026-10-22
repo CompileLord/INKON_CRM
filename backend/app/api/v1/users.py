@@ -11,10 +11,12 @@ from app.services.telegram_link_service import IssuedLinkCode
 from app.services.storage_service import StorageService
 from app.services.user_service import UserService
 
+from app.api.v1.contract_notes import ContractNotes
+
 router = APIRouter()
 
 
-@router.post("/", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED, description=ContractNotes.USER_CREATE)
 async def create_user(
     payload: UserCreate,
     request: Request,
@@ -71,7 +73,7 @@ async def get_own_profile(
     return current_user
 
 
-@router.patch("/me", response_model=UserResponse)
+@router.patch("/me", response_model=UserResponse, description=ContractNotes.USER_SELF_UPDATE)
 async def update_own_profile(
     payload: UserSelfUpdate,
     current_user: User = Depends(get_current_user),
@@ -81,7 +83,7 @@ async def update_own_profile(
     return await user_service.update_own_profile(current_user.id, payload)
 
 
-@router.patch("/{id}", response_model=UserResponse)
+@router.patch("/{id}", response_model=UserResponse, description=ContractNotes.USER_UPDATE)
 async def update_user(
     id: int,
     payload: UserUpdate,

@@ -1,6 +1,6 @@
 from datetime import date
-from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Annotated, ClassVar, List, Optional, TypeAlias
+from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 from app.core.scoring import ScoringPolicy
 from app.models.journal import JournalPeriodType
 
@@ -54,14 +54,37 @@ class GradingQueueItemResponse(BaseModel):
     is_current: bool
 
 
+class JournalAutosavePolicy:
+    MAX_CELLS: ClassVar[int] = 250
+    MAX_COMMENT_CHARACTERS: ClassVar[int] = 1000
+
+    @staticmethod
+    def validate_unique(entries: list["JournalEntryUpdate"]) -> list["JournalEntryUpdate"]:
+        keys: set[tuple[int, date]] = set()
+        entry: JournalEntryUpdate
+        for entry in entries:
+            key: tuple[int, date] = (entry.student_id, entry.lesson_date)
+            if key in keys:
+                raise ValueError("Duplicate student/date cells are not allowed")
+            keys.add(key)
+        return entries
+
+
 class JournalEntryUpdate(BaseModel):
     model_config = {"extra": "forbid"}
     student_id: int
     lesson_date: date
     attendance: bool
     score: int = Field(ge=0, le=5)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(default=None, max_length=JournalAutosavePolicy.MAX_COMMENT_CHARACTERS)
     version: int
+
+
+JournalEntryBatchUpdate: TypeAlias = Annotated[
+    list[JournalEntryUpdate],
+    Field(max_length=JournalAutosavePolicy.MAX_CELLS),
+    AfterValidator(JournalAutosavePolicy.validate_unique),
+]
 
 
 class JournalStudentSummaryUpdate(BaseModel):

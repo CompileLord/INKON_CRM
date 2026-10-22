@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from app.core.deps import (
     get_storage_service,
+    get_course_copy_service,
     get_db_session,
     get_current_user,
     require_superadmin,
@@ -187,9 +188,8 @@ async def copy_course(
     id: int,
     payload: CourseCreate,
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    course_service: CourseService = Depends(get_course_copy_service),
 ) -> Course:
-    course_service = CourseService(db)
     return await course_service.copy_course(payload, id, current_user)
 
 

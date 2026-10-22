@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_current_user
@@ -6,7 +5,7 @@ from app.models.user import User
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from app.schemas.journal import (
-    JournalEntryUpdate,
+    JournalEntryBatchUpdate,
     JournalStudentSummaryUpdate,
     JournalStudentSummaryResponse,
     JournalExamMaxScoreUpdate,
@@ -16,6 +15,8 @@ from app.schemas.journal import (
     ClassJournalResponse,
 )
 from app.services.journal_service import JournalService, JournalCommandTransaction
+
+from app.api.v1.contract_notes import ContractNotes
 
 router = APIRouter()
 
@@ -40,10 +41,10 @@ async def get_class_journal(
     return await journal_service.get_class_journal(id, current_user)
 
 
-@router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK)
+@router.put("/{id}/entries", response_model=JournalBatchUpdateResponse, status_code=status.HTTP_200_OK, description=ContractNotes.JOURNAL_AUTOSAVE, responses={413: {"description": "Autosave request body exceeds 4194304 bytes"}})
 async def batch_update_entries(
     id: int,
-    payload: List[JournalEntryUpdate],
+    payload: JournalEntryBatchUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:

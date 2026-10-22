@@ -8,6 +8,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.schemas.common import CanonicalPhonePolicy
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
 from app.services.auth_service import AuthService
 from app.services.storage_lifecycle_service import StorageLifecycleService
@@ -16,7 +17,7 @@ from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventSta
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.sms.messages import PasswordSmsReason
 from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
-from app.services.student_password_sms_service import PasswordSmsDestination, StudentPasswordSmsService
+from app.services.student_password_sms_service import PasswordSmsDestination, StudentPasswordSmsDestinationResolver, StudentPasswordSmsService
 from app.services.storage_service import StorageService, get_storage_service
 
 
@@ -91,6 +92,8 @@ class UserService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Student needs a phone or parent phone to receive the password SMS",
             )
+        if user_create.role == UserRole.STUDENT:
+            StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user_create.phone, user_create.parent_phone)
         existing_user = await self.user_repo.get_by_email(user_create.email)
         if existing_user:
             raise HTTPException(
@@ -225,7 +228,7 @@ class UserService:
             user.parent_telegram_chat_id = user_update.parent_telegram_chat_id
         if "parent_phone" in user_update.model_fields_set:
             if (
-                user_update.parent_phone != user.parent_phone
+                not CanonicalPhonePolicy.are_equivalent(user.parent_phone, user_update.parent_phone)
                 and "parent_telegram_chat_id" not in user_update.model_fields_set
             ):
                 user.parent_telegram_chat_id = None
@@ -235,6 +238,8 @@ class UserService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="A student requires a phone or a parent phone",
             )
+        if user.role == UserRole.STUDENT and ("phone" in user_update.model_fields_set or "parent_phone" in user_update.model_fields_set):
+            StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user.phone, user.parent_phone)
         if previous_destination_phone != (user.phone or user.parent_phone):
             user.pending_password_hash = None
             user.pending_password_expires_at = None

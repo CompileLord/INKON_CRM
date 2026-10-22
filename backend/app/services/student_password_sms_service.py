@@ -13,6 +13,7 @@ from app.repositories.interfaces.user_repository import UserRepository
 from app.core.config import settings
 from app.services.outbox_service import OutboxService
 from app.services.sms.messages import PasswordSmsReason
+from app.services.sms.sender import ProviderPhoneFormatter
 
 
 class PasswordSmsDestinationKind(str, Enum):
@@ -27,12 +28,28 @@ class PasswordSmsDestination:
 
 
 class StudentPasswordSmsDestinationResolver:
+    def __init__(self) -> None:
+        self._phone_formatter: ProviderPhoneFormatter = ProviderPhoneFormatter()
+
     def resolve(self, user: User) -> Optional[PasswordSmsDestination]:
-        if user.phone:
+        if self._phone_formatter.is_deliverable(user.phone):
             return PasswordSmsDestination(PasswordSmsDestinationKind.STUDENT_PHONE, user.phone)
-        if user.parent_phone:
+        if self._phone_formatter.is_deliverable(user.parent_phone):
             return PasswordSmsDestination(PasswordSmsDestinationKind.PARENT_PHONE, user.parent_phone)
         return None
+
+    def reject_undeliverable_contacts(self, phone: Optional[str], parent_phone: Optional[str]) -> None:
+        if self._phone_formatter.is_deliverable(phone) or self._phone_formatter.is_deliverable(parent_phone):
+            return
+        offending_field: str = "phone" if phone else "parent_phone"
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=[{
+                "loc": ["body", offending_field],
+                "msg": "Password SMS needs a phone with 8 to 15 digits; provide a deliverable phone or parent phone",
+                "type": "value_error",
+            }],
+        )
 
 
 class PasswordSmsAudit(Protocol):

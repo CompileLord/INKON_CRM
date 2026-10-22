@@ -194,6 +194,7 @@ describe("StudentFormPanel", () => {
     await user.type(screen.getByLabelText(/First Name/i), "Test");
     await user.type(screen.getByLabelText(/Last Name/i), "User");
     await user.type(screen.getByLabelText(/Email/i), "dup@example.com");
+    await user.type(screen.getByLabelText(/^Phone/i), "+992901234567");
 
     const submitButton = screen.getByRole("button", { name: "Create" });
     await user.click(submitButton);
@@ -278,6 +279,7 @@ describe("StudentFormPanel", () => {
     await user.type(screen.getByLabelText(/First Name/i), "Test");
     await user.type(screen.getByLabelText(/Last Name/i), "User");
     await user.type(screen.getByLabelText(/Email/i), "valid@example.com");
+    await user.type(screen.getByLabelText(/^Phone/i), "+992901234567");
 
     const submitButton = screen.getByRole("button", { name: "Create" });
     await user.click(submitButton);
@@ -371,6 +373,7 @@ describe("StudentFormPanel", () => {
     await user.type(screen.getByLabelText(/First Name/i), "Test");
     await user.type(screen.getByLabelText(/Last Name/i), "User");
     await user.type(screen.getByLabelText(/Email/i), "test.blocked@example.com");
+    await user.type(screen.getByLabelText(/^Phone/i), "+992901234567");
 
     const submitButton = screen.getByRole("button", { name: "Create" });
     await user.click(submitButton);
@@ -469,5 +472,55 @@ describe("StudentFormPanel", () => {
       const img = avatarContainer.querySelector("img");
       expect(img?.getAttribute("src")).toContain("uploads/thumb.jpg");
     });
+  });
+
+  it("blocks creating a student without a student or parent phone and shows the translated message", async () => {
+    const createSpy = vi.fn();
+    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
+      mutateAsync: createSpy,
+      isPending: false,
+    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
+    renderPanel();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
+    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
+    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Enter a student or parent phone.")).toBeDefined();
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(document.activeElement?.id).toBe("student-phone");
+  });
+
+  it("creates a student with only a parent phone", async () => {
+    const createSpy = vi.fn().mockResolvedValue({ ...existingStudent, id: 77, password_sms_destination: "parent_phone" });
+    vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
+      mutateAsync: createSpy,
+      isPending: false,
+    } as unknown as ReturnType<typeof userHooks.useCreateUser>);
+    const { props } = renderPanel();
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
+    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
+    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
+    await user.type(screen.getByLabelText(/^Parent phone/i), "+992901112233");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(createSpy).toHaveBeenCalledTimes(1));
+    expect(createSpy.mock.calls[0][0]).toMatchObject({ phone: null, parent_phone: "+992901112233" });
+    expect(props.onSaved).toHaveBeenCalledWith("created", expect.objectContaining({ id: 77, password_sms_destination: "parent_phone" }));
+  });
+
+  it("rejects a phone without the leading plus", async () => {
+    renderPanel();
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/First Name/i), "Rustam");
+    await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
+    await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
+    await user.type(screen.getByLabelText(/^Phone/i), "992901112233");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    expect(await screen.findByText("Use the international format, e.g. +992901234567")).toBeDefined();
   });
 });

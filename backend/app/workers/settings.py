@@ -1,9 +1,12 @@
 from typing import Any
+from datetime import timezone as datetime_timezone
+from collections.abc import Awaitable, Callable
 from arq import cron, func
 from arq.connections import RedisSettings
 from app.core.config import settings
 from app.core.redis import RedisConnectionConfiguration
 from app.workers.debt_reminder_delivery import deliver_due_debt_reminders
+from app.workers.token_retention import purge_expired_refresh_tokens
 from app.workers.tasks import (
     send_verification_email_task,
     send_telegram_message,
@@ -20,34 +23,42 @@ from app.workers.tasks import (
 async def outbox_worker_startup(ctx: dict[str, Any]) -> None:
     from app.workers.outbox import OutboxWorkerManager
 
-    manager = OutboxWorkerManager(
+    from app.workers.storage_cleanup import StorageCleanupWorker
+
+    manager: OutboxWorkerManager = OutboxWorkerManager(
         database_url=settings.DATABASE_URL,
         payload_master_key=settings.JWT_SECRET_KEY,
     )
-    await manager.start()
     ctx["outbox_worker"] = manager
-    from app.workers.storage_cleanup import StorageCleanupWorker
-    cleanup: StorageCleanupWorker = StorageCleanupWorker()
-    await cleanup.start()
-    ctx["storage_cleanup"] = cleanup
+    try:
+        await manager.start()
+        cleanup: StorageCleanupWorker = StorageCleanupWorker()
+        ctx["storage_cleanup"] = cleanup
+        await cleanup.start()
+    except BaseException:
+        try:
+            await outbox_worker_shutdown(ctx)
+        except BaseException:
+            pass
+        raise
 
 
 async def outbox_worker_shutdown(ctx: dict[str, Any]) -> None:
-    cleanup: Any = ctx.get("storage_cleanup")
-    try:
-        if cleanup is not None:
-            await cleanup.stop()
-    finally:
-        manager: Any = ctx.get("outbox_worker")
-        try:
-            if manager is not None:
-                await manager.stop()
-        finally:
-            from app.core.redis import close_arq_pool
-            await close_arq_pool()
+    from app.core.resource_lifecycle import ProcessResources, ResourceCleanup
+
+    cleanup: Any = ctx.pop("storage_cleanup", None)
+    manager: Any = ctx.pop("outbox_worker", None)
+    closers: list[Callable[[], Awaitable[None]]] = []
+    if cleanup is not None:
+        closers.append(cleanup.stop)
+    if manager is not None:
+        closers.append(manager.stop)
+    closers.append(ProcessResources.close)
+    await ResourceCleanup.close_all(closers)
 
 
 class WorkerSettings:
+    timezone: datetime_timezone = datetime_timezone.utc
     redis_settings: RedisSettings = RedisConnectionConfiguration.from_url(
         settings.REDIS_URL
     ).create_arq_settings()
@@ -59,14 +70,16 @@ class WorkerSettings:
         deliver_due_exam_results,
         deliver_due_debt_reminders,
         recover_notification_deliveries,
-        send_email
+        send_email,
+        func(purge_expired_refresh_tokens, keep_result=0)
     ]
     cron_jobs = [
         cron(archive_expired_courses, hour=20, minute=0),
         cron(check_payment_reminders, hour=4, minute=0),
         cron(recover_notification_deliveries, second={15, 45}, run_at_startup=False),
         cron(deliver_due_exam_results, second={0, 30}, run_at_startup=False),
-        cron(deliver_due_debt_reminders, second={10, 40}, run_at_startup=False)
+        cron(deliver_due_debt_reminders, second={10, 40}, run_at_startup=False),
+        cron(purge_expired_refresh_tokens, minute=25, run_at_startup=False, keep_result=0)
     ]
     on_startup = outbox_worker_startup
     on_shutdown = outbox_worker_shutdown

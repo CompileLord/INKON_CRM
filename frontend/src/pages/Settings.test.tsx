@@ -65,17 +65,17 @@ beforeEach(async () => {
 afterEach(() => cleanup());
 
 describe("Settings navigation", () => {
-  it("offers Profile and Appearance to a student as vertical tabs and never the administrator sections", () => {
+  it("offers Profile, Security and Appearance to a student as vertical tabs and never the administrator sections", () => {
     renderSettings("student");
     const tabs = screen.getByRole("tablist", { name: "Settings sections" });
     expect(tabs.getAttribute("aria-orientation")).toBe("vertical");
-    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Appearance"]);
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance"]);
   });
 
   it("adds Organization and Notification rules for the superadmin", () => {
     renderSettings("superadmin");
     const tabs = screen.getByRole("tablist", { name: "Settings sections" });
-    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Appearance", "Organization", "Notification rules"]);
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Profile", "Security", "Appearance", "Organization", "Notification rules"]);
   });
 
   it("falls back to Profile for an administrator section requested by a nonadmin", () => {
@@ -235,5 +235,35 @@ describe("Notification rules section", () => {
     expect(mocks.updateOrganization).toHaveBeenCalledWith({ notify_payments: false });
     await waitFor(() => expect(screen.getByText("Couldn't save. Try again.", { selector: "[role='status']" })).toBeTruthy());
     expect(payments.getAttribute("aria-checked")).toBe("true");
+  });
+});
+
+describe("canonical profile phones", () => {
+  afterEach(() => { mocks.user.phone = "+992900000001"; });
+  it("normalizes a legacy prefill and omits unchanged phones from name edits", () => {
+    mocks.user.phone = "992900000001";
+    renderSettings("student");
+    expect((screen.getByLabelText("Phone") as HTMLInputElement).value).toBe("+992900000001");
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "New" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ first_name: "New" });
+  });
+  it("rejects whitespace and retries after correction without trimming the entered phone", () => {
+    renderSettings("superadmin");
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: " +12 " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ phone: "+12" });
+  });
+  it("retains the longer student minimum and supports explicit clearing", () => {
+    renderSettings("student");
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mocks.updateProfile.mock.calls[0][0]).toEqual({ phone: null });
   });
 });

@@ -48,8 +48,9 @@ describe("StudentProfile parent Telegram link", () => {
     expect(screen.queryByRole("button", { name: /Generate code|New code/ })).toBeNull();
   });
 
-  it("opens the popover with the one-time code right after student creation", () => {
+  it("shows the one-time code in the creation notice and keeps the popover closed", () => {
     renderStudentProfile([{ pathname: "/students/42", state: { createdStudentId: 42, createdParentLinkCode: "ZZ99ZZ" } }]);
-    expect(screen.getByLabelText("Parent link code").textContent).toBe("ZZ99ZZ");
+    expect(screen.getByText("ZZ99ZZ")).toBeDefined();
+    expect(screen.queryByLabelText("Parent link code")).toBeNull();
   });
 });

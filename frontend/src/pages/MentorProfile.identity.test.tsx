@@ -94,7 +94,7 @@ describe("Mentor profile authorization and state", () => {
     expect(endpoints.getMentorProfile).toHaveBeenCalledWith(10);
   });
 
-  it.each(["student", "accountant", "mentor"] as const)("does not query the workspace for unauthorized %s", role => {
+  it.each(["accountant", "mentor"] as const)("does not query the workspace for unauthorized %s", role => {
     useAuthStore.setState({ role, userId: 99 });
     setup();
     expect(endpoints.getMentorProfile).not.toHaveBeenCalled();

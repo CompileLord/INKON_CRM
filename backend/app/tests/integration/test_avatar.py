@@ -3,6 +3,7 @@ import io
 import pytest
 from httpx import AsyncClient
 from PIL import Image
+from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.user import User
 from app.workers.storage_cleanup import StorageCleanupWorker
@@ -32,7 +33,7 @@ async def test_avatar_upload_and_thumbnail(client: AsyncClient, test_admin: User
 
     # Check generated image dimensions on disk
     # The storage path is inside settings.STORAGE_PATH (i.e. 'storage')
-    disk_path1 = os.path.join("storage", photo_path1.removeprefix("/storage/"))
+    disk_path1 = os.path.join(settings.STORAGE_PATH, photo_path1.removeprefix("/storage/"))
     assert os.path.exists(disk_path1)
 
     disk_image1 = Image.open(disk_path1)
@@ -58,7 +59,7 @@ async def test_avatar_upload_and_thumbnail(client: AsyncClient, test_admin: User
     assert os.path.exists(disk_path1)
     await StorageCleanupWorker().run_once()
     assert not os.path.exists(disk_path1)
-    disk_path2 = os.path.join("storage", photo_path2.removeprefix("/storage/"))
+    disk_path2 = os.path.join(settings.STORAGE_PATH, photo_path2.removeprefix("/storage/"))
     assert os.path.exists(disk_path2)
 
     # 3. Try to upload txt file renamed to .png -> verify 400

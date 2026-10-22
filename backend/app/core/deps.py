@@ -218,3 +218,18 @@ def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "De
     from app.services.audit_service import AuditService
     from app.services.debt_reminder_service import DebtReminderService
     return DebtReminderService(SQLAlchemyDebtReminderRepository(db), AuditService(db))
+
+
+def get_student_journal_history_service(db: AsyncSession = Depends(get_db_session)) -> "StudentJournalHistoryService":
+    from app.core.config import settings
+    from app.repositories.sqlalchemy.student_journal_history_repository import SQLAlchemyStudentJournalHistoryRepository
+    from app.services.student_journal_history_cursor import StudentJournalHistoryCursorCodec
+    from app.services.student_journal_history_service import StudentJournalHistoryService
+
+    return StudentJournalHistoryService(SQLAlchemyStudentJournalHistoryRepository(db), StudentJournalHistoryCursorCodec(settings.JWT_SECRET_KEY))
+
+
+def get_course_copy_service(db: AsyncSession = Depends(get_db_session)) -> "CourseService":
+    from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
+    from app.services.course_service import CourseService
+    return CourseService(db, course_repo=SQLAlchemyCourseRepository(db), user_repo=SQLAlchemyUserRepository(db))

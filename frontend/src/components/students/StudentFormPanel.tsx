@@ -117,7 +117,8 @@ function StudentFormPanelInner({
   const createUser = useCreateUser("student");
   const updateUser = useUpdateUser("student");
 
-  const formSchema = useMemo(() => createStudentFormSchema((k: string) => t(k)), [t]);
+  const requireContactPhone: boolean = !isEditing || Boolean(student?.phone || student?.parent_phone);
+  const formSchema = useMemo(() => createStudentFormSchema((k: string) => t(k), requireContactPhone), [t, requireContactPhone]);
 
   const {
     register,

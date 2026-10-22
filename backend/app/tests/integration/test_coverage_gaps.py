@@ -1,6 +1,10 @@
+import json
+
 import pytest
-from httpx import AsyncClient
-from app.core.security import create_access_token
+from httpx import AsyncClient, Response
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.redis import redis_client
+from app.core.security import create_access_token, verify_password
 from app.models.user import User
 from app.models.course import Course
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
@@ -13,43 +17,99 @@ def get_auth_headers(user: User):
 
 
 @pytest.mark.asyncio
-async def test_auth_refresh_logout_resend_coverage(client: AsyncClient, test_student: User, db_session):
-    test_student.must_set_password = True
-    await db_session.commit()
-
-    # Resend code
-    res = await client.post("/api/v1/auth/resend-code", json={"email": test_student.email})
-    assert res.status_code in [204, 400], res.text
-
-    # Login to get tokens
-    res = await client.post("/api/v1/auth/login", json={"email": test_student.email, "password": "student_pass123"})
-    assert res.status_code == 200
-    data = res.json()
-    refresh_token = data["refresh_token"]
-
-    # Test refresh
-    res_ref = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
-    assert res_ref.status_code == 200
-    assert "access_token" in res_ref.json()
-
-    # Test logout
-    res_out = await client.post("/api/v1/auth/logout", json={"refresh_token": refresh_token})
-    assert res_out.status_code in [200, 204]
+async def test_logout_revokes_rotated_refresh_token(client: AsyncClient, test_student: User) -> None:
+    resend_response: Response = await client.post(
+        "/api/v1/auth/resend-code", json={"email": test_student.email}
+    )
+    assert resend_response.status_code == 400
+    assert resend_response.json()["detail"] == "Password already set"
+    login_response: Response = await client.post(
+        "/api/v1/auth/login",
+        json={"email": test_student.email, "password": "student_pass123"},
+    )
+    assert login_response.status_code == 200
+    original_refresh_token: str = login_response.json()["refresh_token"]
+    refresh_response: Response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": original_refresh_token}
+    )
+    assert refresh_response.status_code == 200
+    rotated_refresh_token: str = refresh_response.json()["refresh_token"]
+    assert rotated_refresh_token != original_refresh_token
+    logout_response: Response = await client.post(
+        "/api/v1/auth/logout", json={"refresh_token": rotated_refresh_token}
+    )
+    assert logout_response.status_code == 204
+    rejected_refresh: Response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": rotated_refresh_token}
+    )
+    assert rejected_refresh.status_code == 401
+    assert rejected_refresh.json()["detail"] == "Invalid refresh token"
 
 
 @pytest.mark.asyncio
-async def test_password_reset_flow(client: AsyncClient, test_student: User):
-    # Request password reset
-    res = await client.post("/api/v1/auth/password-reset/request", json={"email": test_student.email})
-    assert res.status_code == 200
+async def test_password_reset_invalid_token_preserves_password(
+    client: AsyncClient, test_student: User, db_session: AsyncSession
+) -> None:
+    original_password_hash: str = test_student.password_hash
+    confirm_response: Response = await client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"reset_token": "0" * 64, "new_password": "NewPassword123!"},
+    )
+    assert confirm_response.status_code == 400
+    assert confirm_response.json()["detail"] == "Invalid or expired reset token"
+    persisted_student: User | None = await db_session.get(User, test_student.id)
+    assert persisted_student is not None
+    await db_session.refresh(persisted_student)
+    assert persisted_student.password_hash == original_password_hash
 
-    # Verify code with invalid code
-    res_v = await client.post("/api/v1/auth/password-reset/verify", json={"email": test_student.email, "code": "000000"})
-    assert res_v.status_code in [400, 422]
 
-    # Confirm with invalid payload
-    res_c = await client.post("/api/v1/auth/password-reset/confirm", json={"token": "invalid", "new_password": "NewPassword123!"})
-    assert res_c.status_code in [400, 401, 422]
+@pytest.mark.asyncio
+async def test_password_reset_success_and_replay_rejection(
+    client: AsyncClient, test_mentor: User, db_session: AsyncSession
+) -> None:
+    request_response: Response = await client.post(
+        "/api/v1/auth/password-reset/request", json={"email": test_mentor.email}
+    )
+    assert request_response.status_code == 200
+    challenge_json: str | None = await redis_client.get(f"auth:reset:{test_mentor.email}")
+    assert challenge_json is not None
+    challenge: dict[str, str | int] = json.loads(challenge_json)
+    invalid_code_response: Response = await client.post(
+        "/api/v1/auth/password-reset/verify",
+        json={"email": test_mentor.email, "code": "000000"},
+    )
+    assert invalid_code_response.status_code == 400
+    assert invalid_code_response.json()["detail"] == "Invalid reset code"
+    verify_response: Response = await client.post(
+        "/api/v1/auth/password-reset/verify",
+        json={"email": test_mentor.email, "code": challenge["code"]},
+    )
+    assert verify_response.status_code == 200
+    reset_token: str = verify_response.json()["reset_token"]
+    confirm_response: Response = await client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"reset_token": reset_token, "new_password": "NewPassword123!"},
+    )
+    assert confirm_response.status_code == 200
+    assert confirm_response.json()["refresh_token"]
+    persisted_mentor: User | None = await db_session.get(User, test_mentor.id)
+    assert persisted_mentor is not None
+    await db_session.refresh(persisted_mentor)
+    assert verify_password("NewPassword123!", persisted_mentor.password_hash)
+    assert not verify_password("mentor_pass123", persisted_mentor.password_hash)
+    replay_response: Response = await client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"reset_token": reset_token, "new_password": "ReplayPassword456!"},
+    )
+    assert replay_response.status_code == 400
+    assert replay_response.json()["detail"] == "Invalid or expired reset token"
+    await db_session.refresh(persisted_mentor)
+    assert verify_password("NewPassword123!", persisted_mentor.password_hash)
+    login_response: Response = await client.post(
+        "/api/v1/auth/login",
+        json={"email": test_mentor.email, "password": "NewPassword123!"},
+    )
+    assert login_response.status_code == 200
 
 
 @pytest.mark.asyncio

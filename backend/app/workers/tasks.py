@@ -204,9 +204,9 @@ async def send_student_document_notification_task(ctx, student_id: int, journal_
     await send_exam_result_notification_task(ctx, student_id, journal_id)
 
 
-async def archive_expired_courses(ctx) -> None:
+async def archive_expired_courses(ctx: dict[str, Any] | None) -> None:
     async with AsyncSessionLocal() as db:
-        today = date.today()
+        today: date = datetime.now(zoneinfo.ZoneInfo(settings.TIMEZONE)).date()
         stmt = (
             update(Course)
             .where(Course.status == CourseStatus.ACTIVE)

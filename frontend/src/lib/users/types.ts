@@ -32,8 +32,6 @@ export interface UserSelfUpdate {
   last_name?: string;
   date_of_birth?: string | null;
   phone?: string | null;
-  parent_telegram_chat_id?: number | null;
-  parent_phone?: string | null;
 }
 
 export interface User {
@@ -203,7 +201,7 @@ export interface StudentJournalPeriod {
   state: "graded" | "in_progress" | "upcoming";
 }
 
-export interface MentorProfileResponse {
+export interface MentorStaffProfileResponse {
   user: User;
   active_courses: CourseResponse[];
   active_students_count: number;
@@ -228,4 +226,39 @@ export interface MentorAnalyticsResponse {
   average_student_score_provenance: "unknown";
   average_student_score_basis: "all_summaries_on_non_deleted_courses_including_archived_raw_points";
   average_student_score_summary_count: number;
+}
+
+export interface StudentJournalHistoryPage {
+  items: StudentJournalPeriod[];
+  next_cursor: string | null;
+  has_upcoming_periods: boolean;
+}
+
+export interface StudentMentorIdentityResponse {
+  id: number;
+  first_name: string;
+  last_name: string;
+  photo_path?: string | null;
+  thumbnail_path?: string | null;
+}
+
+export interface StudentMentorCourseResponse {
+  id: number;
+  title: string;
+  photo_path?: string | null;
+}
+
+export interface StudentMentorCardResponse {
+  user: StudentMentorIdentityResponse;
+  active_courses: StudentMentorCourseResponse[];
+}
+
+export type MentorProfileResponse = MentorStaffProfileResponse;
+export type MentorProfileResult = MentorStaffProfileResponse | StudentMentorCardResponse;
+
+export interface StudentJournalHistoryParams {
+  course_id?: number;
+  page_size?: number;
+  started_only?: boolean;
+  cursor?: string;
 }

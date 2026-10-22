@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 import zoneinfo
@@ -126,7 +127,7 @@ class ExamResultDeliveryWorker:
             return
         language: str = self._catalog.resolve_language(source.parent_language)
         card: ExamResultCardData = self.build_card(source, self._clock())
-        png_bytes: bytes = self._rasterizer.rasterize(self._renderer.render(card, language))
+        png_bytes: bytes = await asyncio.to_thread(self.render_png, card, language)
         caption: str = self._renderer.build_caption(card, language)
         async with self._session_factory() as session:
             started: bool = await SQLAlchemyExamResultNotificationRepository(session).mark_send_started(
@@ -148,6 +149,9 @@ class ExamResultDeliveryWorker:
                 notification.id, lease_owner, self._clock()
             )
             await session.commit()
+
+    def render_png(self, card: ExamResultCardData, language: str) -> bytes:
+        return self._rasterizer.rasterize(self._renderer.render(card, language))
 
     async def settle_skipped(self, notification_id: int, lease_owner: str, reason: str) -> None:
         async with self._session_factory() as session:

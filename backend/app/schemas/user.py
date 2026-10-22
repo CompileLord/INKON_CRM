@@ -2,8 +2,7 @@ from datetime import date, datetime
 from typing import Any, Literal, Optional
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from app.models.user import UserRole
-
-E164_PATTERN: str = r"^\+[1-9][0-9]{7,14}$"
+from app.schemas.common import CanonicalPhone
 
 
 class UserCreate(BaseModel):
@@ -13,9 +12,9 @@ class UserCreate(BaseModel):
     last_name: str = Field(min_length=1, max_length=100)
     role: UserRole
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=E164_PATTERN)
+    phone: Optional[CanonicalPhone] = None
     parent_telegram_chat_id: Optional[int] = None
-    parent_phone: Optional[str] = Field(None, pattern=E164_PATTERN)
+    parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
     @model_validator(mode="after")
@@ -31,9 +30,9 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=E164_PATTERN)
+    phone: Optional[CanonicalPhone] = None
     parent_telegram_chat_id: Optional[int] = None
-    parent_phone: Optional[str] = Field(None, pattern=E164_PATTERN)
+    parent_phone: Optional[CanonicalPhone] = None
     payment_day_of_month: Optional[int] = Field(None, ge=1, le=28)
 
 
@@ -42,7 +41,7 @@ class UserSelfUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
-    phone: Optional[str] = Field(None, pattern=E164_PATTERN)
+    phone: Optional[CanonicalPhone] = None
 
 
 class UserResponse(BaseModel):
@@ -209,6 +208,28 @@ class StudentJournalPeriodResponse(BaseModel):
     attendance_count: int
     total_lessons: int
     state: str
+
+
+class StudentMentorIdentityResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    first_name: str
+    last_name: str
+    photo_path: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+
+
+class StudentMentorCourseResponse(BaseModel):
+    model_config = {"extra": "forbid", "from_attributes": True}
+    id: int
+    title: str
+    photo_path: Optional[str] = None
+
+
+class StudentMentorCardResponse(BaseModel):
+    model_config = {"extra": "forbid"}
+    user: StudentMentorIdentityResponse
+    active_courses: list[StudentMentorCourseResponse]
 
 
 class MentorProfileResponse(BaseModel):

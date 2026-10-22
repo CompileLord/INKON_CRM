@@ -273,6 +273,7 @@ export function Students() {
           state: {
             createdStudentId: user.id,
             createdParentLinkCode: user.parent_link_code ?? null,
+            createdPasswordSmsDestination: user.password_sms_destination ?? null,
             fromDirectory: {
               search: searchInput,
               page,

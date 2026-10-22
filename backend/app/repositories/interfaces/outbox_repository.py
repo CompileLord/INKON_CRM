@@ -17,6 +17,14 @@ class OutboxRepository(Protocol):
     ) -> Sequence[OutboxEvent]:
         ...
 
+    async def begin_attempt(
+        self, event_id: int, lease_owner: str, now: datetime, minimum_remaining_seconds: float,
+    ) -> int | None:
+        ...
+
+    async def release_claim(self, event_id: int, lease_owner: str) -> bool:
+        ...
+
     async def is_lease_valid(
         self,
         event_id: int,

@@ -28,6 +28,9 @@ class SmsSender(Protocol):
 class ProviderPhoneFormatter:
     E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9][0-9]{7,14}$")
 
+    def is_deliverable(self, phone_e164: str | None) -> bool:
+        return phone_e164 is not None and self.E164_PATTERN.fullmatch(phone_e164) is not None
+
     def to_provider_digits(self, phone_e164: str) -> str:
         if not self.E164_PATTERN.fullmatch(phone_e164):
             raise SmsDeliveryError("invalid_phone_format", retryable=False)

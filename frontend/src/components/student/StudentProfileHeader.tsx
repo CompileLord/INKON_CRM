@@ -1,3 +1,4 @@
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../ui/Badge";
@@ -13,19 +14,18 @@ import type { User } from "../../lib/users/types";
 interface StudentProfileHeaderProps {
   user: User;
   isSuperAdmin: boolean;
-  initialLinkCode: string | null;
   editTriggerRef: RefObject<HTMLButtonElement | null>;
   onEdit: () => void;
   onDelete: () => void;
   onOpenAccess: () => void;
 }
 
-export function StudentProfileHeader({ user, isSuperAdmin, initialLinkCode, editTriggerRef, onEdit, onDelete, onOpenAccess }: StudentProfileHeaderProps) {
+export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdit, onDelete, onOpenAccess }: StudentProfileHeaderProps) {
   const { t } = useTranslation("studentProfile");
   const meta: string[] = [
     user.email,
-    ...(user.phone ? [user.phone] : []),
-    ...(user.parent_phone ? [t("header.parentPhone", { phone: user.parent_phone })] : []),
+    ...(user.phone ? [CanonicalPhone.prefill(user.phone)] : []),
+    ...(user.parent_phone ? [t("header.parentPhone", { phone: CanonicalPhone.prefill(user.parent_phone) })] : []),
     ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : []),
   ];
   const menuItems: MenuItem[] | undefined = isSuperAdmin
@@ -42,7 +42,7 @@ export function StudentProfileHeader({ user, isSuperAdmin, initialLinkCode, edit
       status={
         <>
           {user.is_deleted ? <Badge status="archived" /> : null}
-          <StudentParentLink user={user} canManage={isSuperAdmin} initialLinkCode={initialLinkCode} />
+          <StudentParentLink user={user} canManage={isSuperAdmin} />
         </>
       }
       meta={meta}
