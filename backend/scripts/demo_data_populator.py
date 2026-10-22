@@ -13,6 +13,8 @@ from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.payment import PaymentMethod
+from app.core.config import settings
+from scripts.reset_guard import ResetGuardError
 from app.core.security import hash_password
 from app.core.scoring import ScoringPolicy
 from app.services.enrollment_service import EnrollmentService
@@ -30,6 +32,11 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 class DemoDataPopulator:
     @staticmethod
+    def require_emailless_users_enabled() -> None:
+        if not settings.ALLOW_EMAILLESS_USERS:
+            raise ResetGuardError("Demo students require ALLOW_EMAILLESS_USERS=true; enable it only in disposable development environments.")
+
+    @staticmethod
     async def populate_demo_data(
         session_factory: async_sessionmaker[AsyncSession],
         storage_root: Path,
@@ -38,6 +45,7 @@ class DemoDataPopulator:
         demo_password: str,
         report: DemoSeedReport | None = None,
     ) -> None:
+        DemoDataPopulator.require_emailless_users_enabled()
         seed_report: DemoSeedReport = report if report is not None else DemoSeedReport()
         password_hash_default: str = hash_password(demo_password)
 

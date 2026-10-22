@@ -242,6 +242,7 @@ def test_reset_entrypoint_never_writes_provisioned_credentials_to_output(
 ) -> None:
     from scripts import clean_db, seed_demo_data
 
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)
     selected_script = clean_db if script_name == "clean_db" else seed_demo_data
     guard: ResetTargetGuard = make_guard(tmp_path / "backend")
     credential_values: dict[str, str] = {

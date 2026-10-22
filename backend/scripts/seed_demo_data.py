@@ -34,6 +34,7 @@ async def seed_demo_data(target: ResetTarget, administrator_password: str, demo_
     target = create_reset_guard().authorize_target(target)
     if target.dry_run:
         raise ResetGuardError("Dry-run targets cannot modify the database or storage.")
+    DemoDataPopulator.require_emailless_users_enabled()
     report: DemoSeedReport = DemoSeedReport()
     staged_assets: Dict[str, bytes] = stage_downloadable_assets()
     storage_replacement: StorageReplacement = StorageReplacement(target)
@@ -89,6 +90,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
         return
 
     try:
+        DemoDataPopulator.require_emailless_users_enabled()
         credentials = CredentialProvisioner().provision(["administrator", "demo users"])
         asyncio.run(seed_demo_data(target, credentials["administrator"], credentials["demo users"]))
     except ResetGuardError as error:

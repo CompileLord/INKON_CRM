@@ -159,3 +159,8 @@ async def test_siblings_sharing_parent_phone_get_distinct_codes(client: AsyncCli
     assert first_code != second_code
     assert (await SmsPasswordTestSupport.login(client, "+99211", first_code)).status_code == 200
     assert (await SmsPasswordTestSupport.login(client, "+99212", first_code)).status_code == 401
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

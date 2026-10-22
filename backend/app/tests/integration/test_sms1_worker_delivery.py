@@ -234,3 +234,8 @@ async def test_unconfigured_api_key_fails_permanently_without_network(
     await worker.run_once(SmsPasswordTestSupport.build_session_factory())
     event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0]
     assert event.status == OutboxEventStatus.FAILED and event.last_error == "sms_api_key_not_configured"
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

@@ -3,6 +3,8 @@ from httpx import AsyncClient, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
+
 from app.models.outbox_event import OutboxEvent
 from app.models.user import User
 from app.tests.sms_test_support import SmsPasswordTestSupport
@@ -59,3 +61,8 @@ async def test_update_to_only_short_phones_is_rejected_and_keeps_stored_contacts
     db_session.expire_all()
     stored: User = (await db_session.execute(select(User).where(User.id == student_id))).scalar_one()
     assert stored.phone == "+992900000001"
+
+
+@pytest.fixture(autouse=True)
+def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)

@@ -22,6 +22,8 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 
 Before `alembic upgrade head`, deployment runs `python -m scripts.repair_alembic_version` using only `DATABASE_URL`. In one locked transaction it removes the redundant `d4e5f6a7b8c9` row only when the version table contains exactly that revision and `d025a01b34e5`, and the RWP20 `outbox_event_kind.credentials_email` enum value exists. Missing RWP20 schema refuses deployment; all other version states are reported unchanged.
 
+Deploy this release with `ALLOW_EMAILLESS_USERS=false` (the default in every environment) so new users retain an email and the previous image can serialize them during rollback. Only after the release is stable, set `ALLOW_EMAILLESS_USERS=true` in `/etc/imkon/backend.env` and run `deploy.sh --skip-migrations <current>` to activate phone-only students. Once NULL emails exist, the previous image cannot be used for rollback; disabling the flag does not repair existing NULL emails. Demo seeds require this flag explicitly enabled in disposable local development.
+
 ## 3. Roll back
 
 - Backend: run the `Rollback Backend` workflow with the environment and the full SHA from `previous_release`. It runs `deploy.sh --skip-migrations <sha>`. This only works because migrations follow expand/contract (AGENTS.md section 3.3). If a migration was destructive, restore the pre-deploy dump instead (section 4).

@@ -7,6 +7,7 @@ from PIL import Image
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.config import settings
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.common import CanonicalPhonePolicy
@@ -90,6 +91,7 @@ class UserService:
         user_create: UserCreate,
         actor_id: int | None = None,
     ) -> tuple[User, IssuedLinkCode | None, CredentialsDelivery]:
+        self._require_email_when_disabled(user_create.email)
         if user_create.role == UserRole.STUDENT and not user_create.email:
             StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user_create.phone, user_create.parent_phone)
         await self._reject_taken_contacts(user_create.email, user_create.phone, None)
@@ -138,6 +140,9 @@ class UserService:
                 detail="Payment day of month can only be set for students"
             )
 
+        if "email" in user_update.model_fields_set:
+            self._require_email_when_disabled(user_update.email)
+
         previous_email: str | None = user.email
         email_changed: bool = "email" in user_update.model_fields_set and user_update.email != user.email
         if email_changed:
@@ -163,6 +168,14 @@ class UserService:
             await self._react_to_email_change(updated_user, previous_email, actor_id)
         await self.db.refresh(updated_user)
         return updated_user
+
+    @staticmethod
+    def _require_email_when_disabled(email: str | None) -> None:
+        if not email and not settings.ALLOW_EMAILLESS_USERS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Email is required until email-less users are enabled",
+            )
 
     async def _react_to_email_change(self, user: User, previous_email: str | None, actor_id: int | None) -> None:
         await AuditService(self.db).log(

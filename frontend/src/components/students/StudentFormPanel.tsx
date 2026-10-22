@@ -208,6 +208,11 @@ function StudentFormPanelInner({
       return;
     }
     if (err instanceof AuthApiError && err.status === 422) {
+      if (err.detail === "Email is required until email-less users are enabled") {
+        setError("email", { type: "server", message: t("validation.emailRequired") });
+        formRef.current?.querySelector<HTMLElement>("#student-email")?.focus();
+        return;
+      }
       let firstInvalidFieldName: string | null = null;
       const applied = applyFieldErrors(err.fieldErrors, (field, error) => {
         if (!firstInvalidFieldName) firstInvalidFieldName = field;
