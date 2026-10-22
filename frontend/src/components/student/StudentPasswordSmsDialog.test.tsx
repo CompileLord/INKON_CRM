@@ -46,6 +46,13 @@ afterEach(() => {
 });
 
 describe("StudentPasswordSmsDialog resend", () => {
+  it("uses a channel-neutral dialog title", async () => {
+    vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
+    renderDialog();
+    expect(await screen.findByRole("heading", { name: "Send login details" })).toBeDefined();
+    expect(screen.queryByText("Password SMS")).toBeNull();
+  });
+
   it("sends through the first available channel and reports the masked phone", async () => {
     const list = vi.spyOn(userEndpoints, "listPasswordSmsDeliveries").mockResolvedValue([]);
     const resend = vi.spyOn(userEndpoints, "resendPasswordSms").mockResolvedValue({ destination: "student_phone", channel: "student_phone", masked_phone: "***4567" });
@@ -113,7 +120,7 @@ describe("StudentPasswordSmsDialog resend", () => {
     vi.spyOn(userEndpoints, "resendPasswordSms").mockRejectedValue(new AuthApiError(500, "boom"));
     renderDialog();
     await userEvent.setup().click(screen.getByRole("button", { name: /^Resend password$/ }));
-    expect(await screen.findByText("Could not send the SMS. Try again.")).toBeDefined();
+    expect(await screen.findByText("Could not send the password. Try again.")).toBeDefined();
   });
 });
 

@@ -103,7 +103,7 @@ describe("StudentProfile Component", () => {
     renderStudentProfile();
 
     await user.click(screen.getByRole("button", { name: "Student actions" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Password SMS" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Send login details" }));
 
     expect(await screen.findByText(/No SMS sent yet/)).toBeDefined();
     expect(list).toHaveBeenCalledWith(42);
@@ -123,6 +123,6 @@ describe("StudentProfile Component", () => {
     useAuthStore.setState({ role: "mentor", userId: 7 });
     renderStudentProfile();
     expect(screen.queryByRole("button", { name: "Student actions" })).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: "Password SMS" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Send login details" })).toBeNull();
   });
 });
