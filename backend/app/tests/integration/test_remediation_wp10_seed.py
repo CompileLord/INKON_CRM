@@ -7,13 +7,16 @@ from pathlib import Path
 import pytest
 from PIL import Image
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import verify_password
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
-from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTargetGuard
 from app.tests.integration.test_remediation_wp10 import make_guard, reset_arguments
+from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTargetGuard
+
+
 @pytest.mark.asyncio
 async def test_seed_failure_rolls_back_database_and_keeps_original_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     original_storage: Path = tmp_path / "backend" / "storage"

@@ -11,8 +11,11 @@ import subprocess
 import sys
 
 import pytest
+from sqlalchemy import select
 
 from app.core.config import settings
+from app.db.session import AsyncSessionLocal
+from app.models.user import User
 from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetGuardError, ResetTargetGuard
 def make_guard(backend_root: Path, database_url: str = "postgresql+asyncpg://seed_user:seed_password@localhost:5432/imkon_test_db", environment: str = "testing", storage_path: str | None = None):
     from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTargetGuard
@@ -87,6 +90,9 @@ print("WP10_PROBE=" + json.dumps({"exit_code": exit_code, "events": events}))
     environment: dict[str, str] = os.environ.copy()
     environment.update({
         "ENVIRONMENT": "production" if scenario == "production" else "testing",
+        "TESTING": "false" if scenario == "production" else "true",
+        "OUTBOX_ENCRYPTION_KEYS": f"v1:{'11' * 32}",
+        "TELEGRAM_WEBHOOK_URL": "https://hooks.example.com/api/v1/telegram/webhook",
         "DATABASE_URL": "postgresql+asyncpg://wp10:wp10@localhost:1/imkon_test_db",
         "POSTGRES_SERVER": "localhost",
         "POSTGRES_PORT": "1",
@@ -405,3 +411,4 @@ def test_reset_entrypoint_dry_run_does_not_start_database_or_download_work(
     assert "database=localhost:5432/imkon_test_db" in dry_run_output
     assert "storage=" in dry_run_output
     assert "seed_password" not in dry_run_output
+

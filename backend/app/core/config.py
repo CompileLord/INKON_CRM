@@ -45,6 +45,40 @@ class Settings(BaseSettings, DatabaseConnectionPolicy):
 
     ENVIRONMENT: str = "development"
     TESTING: bool = False
+
+    @field_validator("TESTING")
+    @classmethod
+    def reject_production_testing(cls, value: bool, info: ValidationInfo) -> bool:
+        if value and info.data.get("ENVIRONMENT") == "production":
+            raise ValueError("TESTING must be false in production")
+        return value
+
+    OUTBOX_ENCRYPTION_KEYS: str = Field(default="", repr=False, exclude=True, validate_default=True)
+
+    @field_validator("OUTBOX_ENCRYPTION_KEYS")
+    @classmethod
+    def validate_outbox_encryption_keys(cls, value: str, info: ValidationInfo) -> str:
+        if not value.strip():
+            if info.data.get("ENVIRONMENT") == "production":
+                raise ValueError("OUTBOX_ENCRYPTION_KEYS is required in production")
+            return ""
+        versions: set[str] = set()
+        entry: str
+        for entry in value.split(","):
+            version: str
+            separator: str
+            key: str
+            version, separator, key = entry.strip().partition(":")
+            if (
+                not separator
+                or re.fullmatch(r"v[1-9][0-9]*", version) is None
+                or re.fullmatch(r"[0-9a-fA-F]{64}", key) is None
+                or version in versions
+            ):
+                raise ValueError("OUTBOX_ENCRYPTION_KEYS must contain unique versions and 32-byte hexadecimal keys")
+            versions.add(version)
+        return value.strip()
+
     API_V1_STR: str = "/api/v1"
 
     JWT_SECRET_KEY: str

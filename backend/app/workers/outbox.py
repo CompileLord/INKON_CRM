@@ -56,7 +56,7 @@ class OutboxWorkerManager:
         self.database_url = database_url
         self.payload_master_key = payload_master_key
         self.email_service = email_service or EmailService()
-        self.encryptor = OutboxPayloadEncryptor(payload_master_key)
+        self.encryptor: OutboxPayloadEncryptor = OutboxPayloadEncryptor.from_settings(payload_master_key)
         self.template_factory = OutboxEmailTemplateFactory()
         self.sms_dispatcher = StudentPasswordSmsDispatcher(
             sender=sms_sender or PayomchiSmsSender(),
