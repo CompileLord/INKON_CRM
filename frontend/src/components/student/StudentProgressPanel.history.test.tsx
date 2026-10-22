@@ -74,6 +74,35 @@ describe("history presentation and lifetime summaries", (): void => {
     const ungraded: HTMLElement = rows.find((row: HTMLElement) => row.textContent?.includes("Geometry"))!;
     expect(ungraded.querySelector("[data-testid='period-total']")).toBeNull();
   });
+  it("shows the latest graded total on the staff course row and hides attendance when no lesson is recorded", (): void => {
+    const course: StudentCourseProfile = { ...mockProfileResponse.courses[0], my_total_score: undefined, my_total_max_score: undefined, performance: { ...mockProfileResponse.courses[0].performance!, period_summaries_count: 1, attendance_denominator: 0, attended_lessons: 0, total_lessons: 0, absences: 0, attendance_percentage: null } };
+    state.progress.series = [{ courseId: course.course.id, title: course.course.title, slot: 0, periodLabels: ["W1"], values: [83], latestTotal: 83.4 }];
+    render(<MemoryRouter><StudentProgressPanel studentId={42} courses={[course]} role="superadmin" currentUserId={1} /></MemoryRouter>);
+    const row: HTMLElement = screen.getByTestId("course-progress-row");
+    expect(row.textContent).toContain("83.4");
+    expect(row.textContent).not.toContain("0 of 0");
+    expect(row.textContent).not.toContain("—");
+    expect(row.textContent).not.toContain("missed");
+    expect(row.textContent).not.toContain("attendance");
+  });
+
+  it("shows attendance on the staff row once a lesson is recorded", (): void => {
+    const base: StudentCourseProfile = mockProfileResponse.courses[0];
+    const course: StudentCourseProfile = { ...base, performance: { ...base.performance!, period_summaries_count: 1, attendance_denominator: 10, attended_lessons: 9, total_lessons: 10, absences: 1, attendance_percentage: 90 } };
+    state.progress.series = [{ courseId: course.course.id, title: course.course.title, slot: 0, periodLabels: ["W1"], values: [80], latestTotal: 80 }];
+    render(<MemoryRouter><StudentProgressPanel studentId={42} courses={[course]} role="superadmin" currentUserId={1} /></MemoryRouter>);
+    const row: HTMLElement = screen.getByTestId("course-progress-row");
+    expect(row.textContent).toContain("90% attendance");
+    expect(row.textContent).toContain("1 of 10 missed");
+  });
+
+  it("says No grades yet only when nothing is graded", (): void => {
+    const base: StudentCourseProfile = mockProfileResponse.courses[0];
+    const course: StudentCourseProfile = { ...base, my_total_score: undefined, my_total_max_score: undefined, performance: null };
+    render(<MemoryRouter><StudentProgressPanel studentId={42} courses={[course]} role="superadmin" currentUserId={1} /></MemoryRouter>);
+    expect(screen.getByTestId("course-progress-row").textContent).toContain("No grades yet");
+  });
+
   it("uses lifetime attendance, absences and score from profile even when older periods are not loaded", (): void => {
     const entry: StudentCourseProfile = { ...mockProfileResponse.courses[0], my_total_score: 900, my_total_max_score: 1000, performance: { ...mockProfileResponse.courses[0].performance!, attendance_denominator: 100, attended_lessons: 80, total_lessons: 100, absences: 20 } };
     render(<CourseDetailStats entry={entry} />);
