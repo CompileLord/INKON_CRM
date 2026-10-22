@@ -164,7 +164,7 @@ async def test_batch_update_returns_recalculated_summaries(
 
 
 @pytest.mark.asyncio
-async def test_batch_update_missing_entry_is_conflict_not_404(
+async def test_batch_update_unknown_student_is_422_not_conflict(
     client: AsyncClient, test_admin: User, test_mentor: User, db_session: AsyncSession
 ) -> None:
     admin_headers = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
@@ -189,4 +189,5 @@ async def test_batch_update_missing_entry_is_conflict_not_404(
         ],
         headers=mentor_headers
     )
-    assert put_resp.status_code == 409
+    assert put_resp.status_code == 422
+    assert put_resp.json()["detail"]["code"] == "unknown_student"
