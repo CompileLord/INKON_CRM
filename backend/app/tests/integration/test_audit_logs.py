@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from httpx import AsyncClient
 from app.core.security import create_access_token
@@ -73,7 +75,7 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
             "student_id": test_student.id,
             "course_id": course_id,
             "amount": "100.00",
-            "paid_at": "2026-07-12T12:00:00Z",
+            "paid_at": datetime.now(timezone.utc).isoformat(),
             "method": "cash"
         },
         headers=acc_headers

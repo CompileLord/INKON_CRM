@@ -141,7 +141,7 @@ async def test_replay_returns_the_original_even_when_the_enrollment_is_gone_by_t
 
 @pytest.mark.parametrize(
     "field,value",
-    [("amount", "151.00"), ("paid_at", "2026-01-02T00:00:00+00:00"), ("method", "transfer"), ("comment", "other"), ("student_id", "OTHER_STUDENT"), ("course_id", "OTHER_COURSE")],
+    [("amount", "151.00"), ("paid_at", (datetime.now(timezone.utc) - timedelta(days=1)).replace(microsecond=0).isoformat()), ("method", "transfer"), ("comment", "other"), ("student_id", "OTHER_STUDENT"), ("course_id", "OTHER_COURSE")],
 )
 @pytest.mark.asyncio
 async def test_same_key_with_a_different_payload_conflicts_and_changes_nothing(world: PaymentWorld, db_session: AsyncSession, field: str, value: str) -> None:

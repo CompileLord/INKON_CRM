@@ -47,9 +47,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(RequestInputGuard)
 app.add_middleware(JournalBodyLimitMiddleware, api_prefix=settings.API_V1_STR)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(RequestInputGuard)
 app.add_exception_handler(RequestValidationError, CredentialValidationErrorHandler())
 app.add_exception_handler(DBAPIError, DatabaseValueErrorHandler())
 

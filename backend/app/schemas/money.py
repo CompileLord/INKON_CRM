@@ -7,7 +7,7 @@ from pydantic import BeforeValidator, Field, PlainSerializer
 
 
 class MoneyParser:
-    PLAIN_DECIMAL: ClassVar[re.Pattern[str]] = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$")
+    PLAIN_DECIMAL: ClassVar[re.Pattern[str]] = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]+)?$")
     MAXIMUM: ClassVar[Decimal] = Decimal("99999999.99")
     CENTS: ClassVar[Decimal] = Decimal("0.01")
 
@@ -25,15 +25,17 @@ class MoneyParser:
             if not raw_value.is_finite():
                 raise ValueError("Money must be a finite number")
             text = format(raw_value, "f")
-            if "." in text and len(text.split(".")[1]) > 2:
-                text = text.rstrip("0").rstrip(".")
         elif isinstance(raw_value, str):
             text = raw_value
         else:
             return raw_value
         if cls.PLAIN_DECIMAL.fullmatch(text) is None:
             raise ValueError("Money must be a plain decimal with at most 2 decimal places")
-        return Decimal(text).quantize(cls.CENTS)
+        exact_amount: Decimal = Decimal(text)
+        rounded_amount: Decimal = exact_amount.quantize(cls.CENTS)
+        if rounded_amount != exact_amount:
+            raise ValueError("Money must be a plain decimal with at most 2 decimal places")
+        return rounded_amount
 
     @classmethod
     def serialize(cls, amount: Decimal) -> str:
