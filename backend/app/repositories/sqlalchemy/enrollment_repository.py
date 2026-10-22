@@ -1,13 +1,20 @@
-from typing import Optional
-from sqlalchemy import func, or_, select
+from datetime import date
+from typing import cast, Optional
+from app.models.course_schedule import CourseSchedule
+from app.models.journal import Journal
+from app.models.charge import Charge, ChargeStatus
+from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.models.course import Course
+from app.repositories.interfaces.base_repository import RepositoryPage
 from app.models.user import User, UserRole
 from app.schemas.enrollment import RosterSortOrder
 from app.repositories.interfaces.enrollment_repository import (
     EligibleCandidatesQueryResult,
     EnrollmentRepository,
+    EnrollmentFilters,
     RosterLocationQueryResult,
     RosterQueryResult,
 )
@@ -290,3 +297,41 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         )
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+    async def list_enrollments(self, filters: EnrollmentFilters, page: int, page_size: int) -> RepositoryPage[Enrollment]:
+        query: Select[tuple[Enrollment]] = select(Enrollment).where(Enrollment.is_deleted.is_(False))
+        if filters.get("course_id") is not None:
+            query = query.where(Enrollment.course_id == filters["course_id"])
+        if filters.get("student_id") is not None:
+            query = query.where(Enrollment.student_id == filters["student_id"])
+        if filters.get("mentor_id") is not None:
+            query = query.join(Course, Enrollment.course_id == Course.id).where(Course.mentor_id == filters["mentor_id"])
+        return cast(RepositoryPage[Enrollment], await self.get_paginated(query, page, page_size))
+
+    async def find_existing(self, student_id: int, course_id: int) -> Enrollment | None:
+        query: Select[tuple[Enrollment]] = select(Enrollment).where(
+            Enrollment.student_id == student_id, Enrollment.course_id == course_id,
+            Enrollment.is_deleted.is_(False),
+        )
+        return (await self.session.execute(query)).scalars().first()
+
+    async def count_existing(self, course_id: int) -> int:
+        query: Select[tuple[int]] = select(func.count(Enrollment.id)).where(
+            Enrollment.course_id == course_id, Enrollment.is_deleted.is_(False),
+        )
+        return (await self.session.scalar(query)) or 0
+
+    async def list_schedules(self, course_id: int) -> list[CourseSchedule]:
+        query: Select[tuple[CourseSchedule]] = select(CourseSchedule).where(CourseSchedule.course_id == course_id)
+        return list((await self.session.execute(query)).scalars().all())
+
+    async def list_journals(self, course_id: int) -> list[Journal]:
+        query: Select[tuple[Journal]] = select(Journal).where(Journal.course_id == course_id)
+        return list((await self.session.execute(query)).scalars().all())
+
+    async def list_future_open_charges(self, enrollment_id: int, today: date) -> list[Charge]:
+        query: Select[tuple[Charge]] = select(Charge).where(
+            Charge.enrollment_id == enrollment_id, Charge.due_date > today,
+            Charge.status == ChargeStatus.OPEN, Charge.is_deleted.is_(False),
+        )
+        return list((await self.session.execute(query)).scalars().all())

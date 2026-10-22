@@ -22,6 +22,9 @@ class SQLAlchemyAuditLogRepository(SQLAlchemyBaseRepository[AuditLog], AuditLogR
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(AuditLog, session)
 
+    def stage_log(self, log: AuditLog) -> None:
+        self.session.add(log)
+
     @staticmethod
     def _escape_like_pattern(raw_text: str) -> str:
         return raw_text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

@@ -48,6 +48,9 @@ class AuditLogRow:
 
 
 class AuditLogRepository(BaseRepository[AuditLog], Protocol):
+    def stage_log(self, log: AuditLog) -> None:
+        ...
+
     async def list_filtered_rows(
         self, filters: AuditLogFilters, page: int, page_size: int
     ) -> tuple[list[AuditLogRow], int]:
