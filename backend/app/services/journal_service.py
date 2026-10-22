@@ -21,6 +21,15 @@ from app.services.journal_query_service import JournalQueryService, get_lesson_d
 
 
 class JournalService(JournalQueryService):
+    @staticmethod
+    def authorize_mutation(course: Course, current_user: User) -> None:
+        if current_user.role == UserRole.SUPERADMIN:
+            return
+        if current_user.role != UserRole.MENTOR or course.mentor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        if course.status == CourseStatus.ARCHIVED:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot update archived course")
+
     async def batch_update_entries(self, journal_id: int, entries_updates: list, current_user: User) -> dict:
         journal = await self.db.get(Journal, journal_id)
         if not journal:
@@ -38,24 +47,7 @@ class JournalService(JournalQueryService):
                 detail="Course not found"
             )
 
-        if current_user.role == UserRole.SUPERADMIN:
-            pass
-        elif current_user.role == UserRole.MENTOR:
-            if course.mentor_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not enough permissions"
-                )
-            if course.status == CourseStatus.ARCHIVED:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Cannot update archived course"
-                )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
-            )
+        self.authorize_mutation(course, current_user)
 
         if not entries_updates:
             return {"applied": [], "conflicts": [], "summaries": []}
@@ -216,24 +208,7 @@ class JournalService(JournalQueryService):
                 detail="Course not found"
             )
 
-        if current_user.role == UserRole.SUPERADMIN:
-            pass
-        elif current_user.role == UserRole.MENTOR:
-            if course.mentor_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not enough permissions"
-                )
-            if course.status == CourseStatus.ARCHIVED:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Cannot update archived course"
-                )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
-            )
+        self.authorize_mutation(course, current_user)
 
         if exam_score < 0 or bonus_score < 0:
             raise HTTPException(
@@ -346,24 +321,7 @@ class JournalService(JournalQueryService):
                 detail="Course not found"
             )
 
-        if current_user.role == UserRole.SUPERADMIN:
-            pass
-        elif current_user.role == UserRole.MENTOR:
-            if course.mentor_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not enough permissions"
-                )
-            if course.status == CourseStatus.ARCHIVED:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Cannot update archived course"
-                )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
-            )
+        self.authorize_mutation(course, current_user)
 
         old_exam_max_score: int = journal.exam_max_score
         old_bonus_max_score: int = ScoringPolicy.resolve_bonus_max_score(journal.bonus_max_score)

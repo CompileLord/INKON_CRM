@@ -20,6 +20,7 @@ from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventSta
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxService
 from app.workers.outbox import OutboxWorkerManager, run_outbox_worker_once
@@ -45,7 +46,7 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
     db_session.add(user)
     await db_session.commit()
 
-    auth_svc = AuthService(db_session)
+    auth_svc: AuthService = AuthServiceComposition.create(db_session)
     await auth_svc.password_reset_request(LoginIdentifierParser.from_email(user.email))
     await db_session.commit()
 
@@ -89,7 +90,7 @@ async def test_worker_once_delivers_and_purges_payload(db_session: AsyncSession)
     db_session.add(user)
     await db_session.commit()
 
-    auth_svc = AuthService(db_session)
+    auth_svc: AuthService = AuthServiceComposition.create(db_session)
     await auth_svc.generate_verification_code(user.email)
     await db_session.commit()
 
@@ -132,7 +133,7 @@ async def test_worker_does_not_send_superseded_or_expired_code(db_session: Async
     db_session.add(user)
     await db_session.commit()
 
-    auth_svc = AuthService(db_session)
+    auth_svc: AuthService = AuthServiceComposition.create(db_session)
     await auth_svc.generate_verification_code(user.email)
     await db_session.commit()
 
@@ -221,7 +222,7 @@ async def test_no_db_checkout_held_during_smtp_send(db_session: AsyncSession) ->
     db_session.add(user)
     await db_session.commit()
 
-    auth_svc = AuthService(db_session)
+    auth_svc: AuthService = AuthServiceComposition.create(db_session)
     await auth_svc.generate_verification_code(user.email)
     await db_session.commit()
 
@@ -339,7 +340,7 @@ async def test_worker_stop_waits_for_inflight_smtp_thread(db_session: AsyncSessi
     test_student.must_set_password = True
     db_session.add(test_student)
     await db_session.commit()
-    await AuthService(db_session).generate_verification_code(test_student.email)
+    await AuthServiceComposition.create(db_session).generate_verification_code(test_student.email)
     await db_session.commit()
     started = threading.Event()
     finished = threading.Event()
@@ -369,7 +370,7 @@ async def test_worker_stop_timeout_does_not_cancel_transport_wrapper(db_session:
     test_student.must_set_password = True
     db_session.add(test_student)
     await db_session.commit()
-    await AuthService(db_session).generate_verification_code(test_student.email)
+    await AuthServiceComposition.create(db_session).generate_verification_code(test_student.email)
     await db_session.commit()
     started = threading.Event()
     finished = threading.Event()

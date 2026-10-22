@@ -1,59 +1,76 @@
+from __future__ import annotations
+
 import json
 import secrets
 from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from typing import Any, Optional, Protocol, TYPE_CHECKING
 from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from app.core.config import settings
 from app.core.login_identifier import LoginIdentifier
-from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.security import (
     PasswordResetPrincipal,
     create_access_token,
     create_refresh_token,
     hash_token,
-    PasswordWorkService,
 )
-from app.core.redis import redis_client
-from app.core.temporary_passwords import TemporaryPasswordGenerator
-from app.core.student_passwords import PendingStudentPasswordHasher
 from app.core.verification_codes import (
     ChallengeBackendUnavailable,
     ChallengeOutcome,
     ChallengeResult,
-    VerificationCodeStore,
 )
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
-from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.schemas.auth import TokenPair
-from app.services.email_service import EmailService
-from app.services.outbox_service import OutboxService
+from app.models.outbox_event import OutboxEvent
+from app.repositories.interfaces.user_repository import AuthUserRepository
+from app.repositories.interfaces.refresh_token_repository import AuthRefreshTokenRepository
 from app.services.sms.messages import PasswordSmsReason
-from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
-from app.services.student_password_sms_service import (
-    PasswordSmsDestination,
-    PasswordSmsDestinationKind,
-    StudentPasswordSmsService,
+from app.services.auth_collaborators import (
+    AuthChallengeConsumer, AuthChallengeWriter, AuthMailOutbox, AuthPasswordSms,
+    AuthPasswordWork, AuthPendingPasswordHasher, AuthSmsBudget, AuthTemporaryPasswordGenerator,
 )
+if TYPE_CHECKING:
+    from app.services.student_password_sms_service import (
+        PasswordSmsDestination,
+        PasswordSmsDestinationKind,
+    )
 
 
 class AuthService:
-    def __init__(self, db: AsyncSession) -> None:
-        self.password_work_service: PasswordWorkService = PasswordWorkService()
-        self.db = db
-        self.user_repo = SQLAlchemyUserRepository(db)
-        self.token_repo = SQLAlchemyRefreshTokenRepository(db)
-        self.email_service = EmailService()
-        self.outbox_repo = SQLAlchemyOutboxRepository(db)
-        self.outbox_service = OutboxService(self.outbox_repo, settings.JWT_SECRET_KEY)
-        self.temporary_password_generator = TemporaryPasswordGenerator()
+    def __init__(
+        self,
+        user_repository: AuthUserRepository,
+        token_repository: AuthRefreshTokenRepository,
+        outbox_service: AuthMailOutbox,
+        password_work_service: AuthPasswordWork,
+        temporary_password_generator: AuthTemporaryPasswordGenerator,
+        pending_password_hasher: AuthPendingPasswordHasher,
+        challenge_writer: AuthChallengeWriter,
+        challenge_consumer: AuthChallengeConsumer,
+        sms_service: AuthPasswordSms,
+        sms_budget: AuthSmsBudget,
+    ) -> None:
+        collaborators: tuple[object, ...] = (
+            user_repository, token_repository, outbox_service, password_work_service,
+            temporary_password_generator, pending_password_hasher, challenge_writer,
+            challenge_consumer, sms_service, sms_budget,
+        )
+        if any(collaborator is None for collaborator in collaborators):
+            raise ValueError("Authentication collaborators are required")
+        self.user_repo: AuthUserRepository = user_repository
+        self.token_repo: AuthRefreshTokenRepository = token_repository
+        self.outbox_service: AuthMailOutbox = outbox_service
+        self.password_work_service: AuthPasswordWork = password_work_service
+        self.temporary_password_generator: AuthTemporaryPasswordGenerator = temporary_password_generator
+        self.pending_password_hasher: AuthPendingPasswordHasher = pending_password_hasher
+        self.challenge_writer: AuthChallengeWriter = challenge_writer
+        self.challenge_consumer: AuthChallengeConsumer = challenge_consumer
+        self.sms_service: AuthPasswordSms = sms_service
+        self.sms_budget: AuthSmsBudget = sms_budget
 
     async def login(self, identifier: LoginIdentifier, password: str) -> TokenPair:
-        user = await self.user_repo.get_by_login_for_update(identifier)
+        user: User | None = await self.user_repo.get_by_login_for_update(identifier)
         if not user or user.is_deleted:
             await self.password_work_service.hash("invalid-login-placeholder")
             raise HTTPException(
@@ -68,7 +85,7 @@ class AuthService:
             user.pending_password_hash is not None
             and user.pending_password_expires_at is not None
             and user.pending_password_expires_at > datetime.now(timezone.utc)
-            and PendingStudentPasswordHasher(settings.JWT_SECRET_KEY).verify(user.id, password, user.pending_password_hash)
+            and self.pending_password_hasher.verify(user.id, password, user.pending_password_hash)
         )
         if not current_password_matches and not pending_password_matches:
             raise HTTPException(
@@ -84,14 +101,14 @@ class AuthService:
             await self.user_repo.update(user)
             await self.revoke_all_user_tokens(user.id)
 
-        scope = "must_set_password" if user.must_set_password else None
-        access_token = create_access_token(
+        scope: str | None = "must_set_password" if user.must_set_password else None
+        access_token: str = create_access_token(
             user.id,
             user.role,
             scope=scope,
             auth_version=user.auth_version,
         )
-        refresh_token = await self._issue_refresh_token(user)
+        refresh_token: str = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,
@@ -100,24 +117,24 @@ class AuthService:
         )
 
     async def refresh(self, refresh_token: str) -> TokenPair:
-        user_id = self._decode_refresh_subject(refresh_token)
-        user = await self.user_repo.get_by_id_for_update(user_id)
+        user_id: int = self._decode_refresh_subject(refresh_token)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise self._invalid_refresh_token()
-        consumed = await self.token_repo.consume_valid_token(
+        consumed: bool = await self.token_repo.consume_valid_token(
             hash_token(refresh_token), user_id, datetime.now(timezone.utc)
         )
         if not consumed:
             raise self._invalid_refresh_token()
 
-        scope = "must_set_password" if user.must_set_password else None
-        new_access_token = create_access_token(
+        scope: str | None = "must_set_password" if user.must_set_password else None
+        new_access_token: str = create_access_token(
             user.id,
             user.role,
             scope=scope,
             auth_version=user.auth_version,
         )
-        new_refresh_token = await self._issue_refresh_token(user)
+        new_refresh_token: str = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=new_access_token,
@@ -127,7 +144,7 @@ class AuthService:
 
     async def logout(self, refresh_token: str) -> None:
         try:
-            user_id = self._decode_refresh_subject(refresh_token)
+            user_id: int = self._decode_refresh_subject(refresh_token)
         except HTTPException:
             return
         await self.token_repo.consume_valid_token(
@@ -170,14 +187,14 @@ class AuthService:
         ):
             raise cls._invalid_refresh_token()
 
-        user_id = int(subject)
+        user_id: int = int(subject)
         if user_id <= 0 or str(user_id) != subject:
             raise cls._invalid_refresh_token()
         return user_id
 
     async def _issue_refresh_token(self, user: User) -> str:
-        refresh_token = create_refresh_token(user.id)
-        stored_token = RefreshToken(
+        refresh_token: str = create_refresh_token(user.id)
+        stored_token: RefreshToken = RefreshToken(
             user_id=user.id,
             token_hash=hash_token(refresh_token),
             expires_at=datetime.now(timezone.utc)
@@ -210,10 +227,10 @@ class AuthService:
         )
 
     async def generate_verification_code(self, email: str) -> str:
-        code = str(secrets.randbelow(900000) + 100000)
-        key = f"auth:code:{email}"
-        data = {"code": code, "attempts": 0}
-        await redis_client.set(key, json.dumps(data), ex=600)
+        code: str = str(secrets.randbelow(900000) + 100000)
+        key: str = f"auth:code:{email}"
+        data: dict[str, Any] = {"code": code, "attempts": 0}
+        await self.challenge_writer.set(key, json.dumps(data), ex=600)
         await self.outbox_service.enqueue_verification_email(
             recipient_email=email,
             code=code,
@@ -225,11 +242,11 @@ class AuthService:
     async def verify_code(self, email: str, code: str) -> TokenPair:
         await self._consume_challenge(f"auth:code:{email}", code, "Verification")
 
-        user = await self.user_repo.get_by_email_for_update(email)
+        user: User | None = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
             raise self._challenge_unavailable("Verification")
 
-        access_token = create_access_token(
+        access_token: str = create_access_token(
             user.id,
             user.role,
             scope="must_set_password",
@@ -253,7 +270,7 @@ class AuthService:
                 detail="Password must be at least 8 characters and contain at least 1 digit"
             )
 
-        user = await self.user_repo.get_by_id_for_update(user_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -269,12 +286,12 @@ class AuthService:
 
         await self.revoke_all_user_tokens(user.id)
 
-        access_token = create_access_token(
+        access_token: str = create_access_token(
             user.id,
             user.role,
             auth_version=user.auth_version,
         )
-        refresh_token = await self._issue_refresh_token(user)
+        refresh_token: str = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,
@@ -288,7 +305,7 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Password must be at least 8 characters and contain at least 1 digit"
             )
-        user = await self.user_repo.get_by_id_for_update(user_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(user_id)
         if not user or user.is_deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         if not user.password_hash or not await self.password_work_service.verify(
@@ -305,8 +322,8 @@ class AuthService:
         user.auth_version += 1
         await self.user_repo.update(user)
         await self.revoke_all_user_tokens(user.id)
-        access_token = create_access_token(user.id, user.role, auth_version=user.auth_version)
-        refresh_token = await self._issue_refresh_token(user)
+        access_token: str = create_access_token(user.id, user.role, auth_version=user.auth_version)
+        refresh_token: str = await self._issue_refresh_token(user)
         return TokenPair(access_token=access_token, refresh_token=refresh_token, must_set_password=False)
 
     async def password_reset_request(
@@ -318,7 +335,7 @@ class AuthService:
         user: User | None = await self.user_repo.get_by_login_for_update(identifier)
         if user is None or user.is_deleted:
             return
-        sms_service: StudentPasswordSmsService = StudentPasswordSmsServiceFactory.create(self.db)
+        sms_service: AuthPasswordSms = self.sms_service
         if channel is not None:
             await self._issue_reset_sms(sms_service, user, channel, client_ip)
             return
@@ -331,7 +348,7 @@ class AuthService:
 
     async def _issue_reset_sms(
         self,
-        sms_service: StudentPasswordSmsService,
+        sms_service: AuthPasswordSms,
         user: User,
         kind: PasswordSmsDestinationKind,
         client_ip: Optional[str],
@@ -340,7 +357,7 @@ class AuthService:
             return
         try:
             if client_ip is not None:
-                await PasswordSmsRateLimiter().consume_ip_budget(client_ip)
+                await self.sms_budget.consume_ip_budget(client_ip)
             await sms_service.issue_password(
                 user, PasswordSmsReason.RESET, None, enforce_rate_limits=True, channel=kind
             )
@@ -352,7 +369,7 @@ class AuthService:
         code: str = str(secrets.randbelow(900000) + 100000)
         key: str = f"auth:reset:{email}"
         data: dict[str, Any] = {"code": code, "attempts": 0}
-        await redis_client.set(key, json.dumps(data), ex=600)
+        await self.challenge_writer.set(key, json.dumps(data), ex=600)
         await self.outbox_service.enqueue_password_reset_email(
             recipient_email=email,
             code=code,
@@ -362,20 +379,20 @@ class AuthService:
     async def password_reset_verify(self, email: str, code: str) -> str:
         await self._consume_challenge(f"auth:reset:{email}", code, "Reset")
 
-        user = await self.user_repo.get_by_email_for_update(email)
+        user: User | None = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
             raise self._challenge_unavailable("Reset")
 
-        now = datetime.now(timezone.utc)
-        expire = now + timedelta(minutes=5)
-        to_encode = {
+        now: datetime = datetime.now(timezone.utc)
+        expire: datetime = now + timedelta(minutes=5)
+        to_encode: dict[str, Any] = {
             "sub": str(user.id),
             "type": "password_reset",
             "exp": int(expire.timestamp()),
             "iat": int(now.timestamp()),
             "auth_version": user.auth_version,
         }
-        reset_token = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
+        reset_token: str = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
         return reset_token
 
     @staticmethod
@@ -386,9 +403,8 @@ class AuthService:
         )
 
     async def _consume_challenge(self, key: str, code: str, label: str) -> None:
-        store: VerificationCodeStore = VerificationCodeStore(redis_client)
         try:
-            result: ChallengeResult = await store.consume(key, code)
+            result: ChallengeResult = await self.challenge_consumer.consume(key, code)
         except ChallengeBackendUnavailable:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -419,7 +435,7 @@ class AuthService:
                 detail="Invalid or expired reset token"
             ) from exception
 
-        user = await self.user_repo.get_by_id_for_update(principal.subject_id)
+        user: User | None = await self.user_repo.get_by_id_for_update(principal.subject_id)
         if not user or user.is_deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -439,14 +455,14 @@ class AuthService:
 
         await self.revoke_all_user_tokens(user.id)
 
-        scope = "must_set_password" if user.must_set_password else None
-        access_token = create_access_token(
+        scope: str | None = "must_set_password" if user.must_set_password else None
+        access_token: str = create_access_token(
             user.id,
             user.role,
             scope=scope,
             auth_version=user.auth_version,
         )
-        refresh_token = await self._issue_refresh_token(user)
+        refresh_token: str = await self._issue_refresh_token(user)
 
         return TokenPair(
             access_token=access_token,

@@ -12,8 +12,9 @@ from app.core.config import settings
 from app.core.redis import redis_client
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 from app.tests.conftest import RedisNamespaceClient, TEST_REDIS_PREFIX, TestingSessionLocal
-import app.services.auth_service as auth_module
+import app.core.redis as auth_module
 
 
 class IndependentChallengeClients:
@@ -51,7 +52,7 @@ class IndependentChallengeClients:
         assert task is not None
         self.tasks[task] = self.clients[index]
         async with TestingSessionLocal() as session:
-            service: AuthService = AuthService(session)
+            service: AuthService = AuthServiceComposition.create(session)
             try:
                 if namespace == 'code':
                     await service.verify_code(email, code)
@@ -102,7 +103,7 @@ async def test_invalid_or_persistent_state_never_authorizes(
         await redis_client.set(key, raw)
     else:
         await redis_client.set(key, raw, ex=600)
-    service: AuthService = AuthService(db_session)
+    service: AuthService = AuthServiceComposition.create(db_session)
     with pytest.raises(HTTPException) as caught:
         if namespace == 'code':
             await service.verify_code(test_student.email, '123456')
@@ -122,7 +123,7 @@ async def test_failed_attempt_preserves_expiry_and_other_namespace(
     await redis_client.set(key, data, px=3000)
     await redis_client.set(other_key, data, ex=600)
     before_ttl: int = await test_redis_connection.pttl(f'{TEST_REDIS_PREFIX}{key}')
-    service: AuthService = AuthService(db_session)
+    service: AuthService = AuthServiceComposition.create(db_session)
     with pytest.raises(HTTPException):
         if namespace == 'code':
             await service.verify_code(test_student.email, '000000')
@@ -163,7 +164,7 @@ async def test_backend_error_or_invalid_result_fails_closed(
     namespace: str, backend: Any, db_session: AsyncSession, test_student: User, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(auth_module, 'redis_client', backend)
-    service: AuthService = AuthService(db_session)
+    service: AuthService = AuthServiceComposition.create(db_session)
     with pytest.raises(HTTPException) as caught:
         if namespace == 'code':
             await service.verify_code(test_student.email, '123456')
@@ -180,7 +181,7 @@ async def test_database_failure_never_restores_consumed_code_and_new_request_rec
 ) -> None:
     key: str = f'auth:{namespace}:{test_mentor.email}'
     await redis_client.set(key, json.dumps({'code': '123456', 'attempts': 0}), ex=600)
-    service: AuthService = AuthService(db_session)
+    service: AuthService = AuthServiceComposition.create(db_session)
     original_lookup: Any = service.user_repo.get_by_email_for_update
 
     async def unavailable(email: str) -> User | None:
@@ -222,7 +223,7 @@ async def test_fifth_submission_is_last_available_attempt(
 ) -> None:
     key: str = f'auth:{namespace}:{test_mentor.email}'
     await redis_client.set(key, json.dumps({'code': '123456', 'attempts': attempts}), ex=600)
-    service: AuthService = AuthService(db_session)
+    service: AuthService = AuthServiceComposition.create(db_session)
     if attempts == 5:
         with pytest.raises(HTTPException) as caught:
             if namespace == 'code':

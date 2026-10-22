@@ -4,43 +4,10 @@ Sole record; failed/unrun gates block acceptance. Frontend separately owned; no 
 
 Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-audit-pod/wp30-sol-pod; one suite per pod.
 
+Accepted WP-01 to WP-35 rows are in [STATUS-ARCHIVE.md](STATUS-ARCHIVE.md).
+
 | WP | Status | Branch / PR | Date (UTC) | Tests run and result | Notes / evidence |
 |---|---|---|---|---|---|
-| WP-01 | done | remediation/wp-01-baseline | 2026-10-14 | Backend integration 100 pass (58.04s) | Disposable Conda baseline; frontend exceptions separately owned. Evidence 0d9a51d. |
-| WP-02 | done | remediation/wp-02-critical-reproductions | 2026-10-14 | Default backend 100 pass (56.51s) | Test-only expected-red exception; no fix claimed. Evidence 524999f. |
-| WP-03 | done | remediation/wp-03-refresh-identity | 2026-10-14 | Independent full backend 115 pass (60.86s) | PASS; identity/rotation and migration. Evidence a0e31a7. |
-| WP-04 | done | remediation/wp-04-private-downloads | 2026-10-14 | Backend 128 pass (67.92s) | PASS backend privacy; browser integration separately owned. Evidence eb5c613. |
-| WP-05 | done | remediation/wp-05-cron-authorization | 2026-10-14 | Backend 133 pass (65.89s) | PASS fail-closed cron. Evidence 268c92b. |
-| WP-06 | done | remediation/wp-06-onboarding-scope | 2026-10-15 | Backend 164 pass (70.42s) | PASS onboarding token scope. Evidence f69339c. |
-| WP-07 | done | remediation/wp-07-ledger-serialization | 2026-10-15 | Backend 162 pass (76.64s) | PASS ledger serialization; contention cost accepted, no speedup. Measurements 89a8033. |
-| WP-08 | done | remediation/wp-08-zero-id-reversals | 2026-10-15 | Follow-up independent backend 240 pass (146.43s) | PASS zero-ID follow-up. Evidence 78f7ea8. |
-| WP-09 | done | remediation/wp-09-test-isolation | 2026-10-15 | Backend 182 pass (92.61s) | PASS explicit disposable targets/run-owned Redis keys. Evidence 1dc548a. |
-| WP-10 | done | remediation/wp-10-reset-safety | 2026-10-15 | Backend 228 pass (119.54s) | PASS reset safety; combined 297-pass gate at 4355ac9. Evidence 9e03740. |
-| WP-11 | done | remediation/wp-11-configuration-contract | 2026-10-15 | Backend 298 pass (235.22s) | PASS portable tests; 70240e0. Logs wp11-recovery/wp11-root-*.log; original configuration evidence: f4e9eb9. |
-| WP-12 | done | remediation/wp-12-smtp-tls | 2026-10-15 | Backend 231 pass (113.52s) | PASS TLS/timeout; stall ~1.31→0.36s (test timeout). History 25890fd. |
-| WP-13 | done | remediation/wp-13-python312-compatibility | 2026-10-15 | Deployment Python3.12 backend 363 pass (157.78s) | PASS after reopening; annotation-only fixes. 8e54808. Logs wp13-compatibility/. |
-| WP-14 | done | remediation/wp-14-build-exclusions | 2026-10-15 | Backend 313 pass (180.92s) | PASS after corrections; logs wp14-recovery/evidence/. |
-| WP-15 | done | remediation/wp-15-guardian-binding | 2026-10-15 | Backend 309 pass (181.97s) | PASS; e7a5f50. Logs wp15-recovery/wp15-root-*.log. Frontend owner must remove both guardian fields from UserSelfUpdate. |
-| WP-16 | done | remediation/wp-16-mentor-directory | 2026-10-15 | Backend 313 pass (319.24s) | PASS after correction; mentor ownership applies before search/count/page, deleted relations excluded, historical enrollment retained. Logs wp15-recovery/wp16-root-*.log. |
-| WP-17 | done | remediation/wp-17-recovery-revocation | 2026-10-15 | Python3.12 backend 399 pass (222.54s) | PASS after two Luna FAILs and Sol correction; immutable reset identity, strict expiry, atomic epoch/revocation, serialized downgrade. Logs wp13-compatibility/wp17-evidence/wp17-*.log. Legacy credentials require reauthentication. |
-| WP-18 | done | main | 2026-10-16 | Combined622 and focused99 pass | PASS 7871f60; DB hold 599→28ms. No total SMTP deadline (→WP-66). Evidence wp13-compatibility/wp18-evidence/. |
-| WP-19 | done | main | 2026-10-17 | Python3.12 combined686 pass347.61s | PASS 70240e0; transaction generations, SCAN removed; no universal speedup. wp19-sol/evidence/. |
-| WP-20 | done | main | 2026-10-17 | Python3.12 full698 pass386.62s | PASS finite owner leases/atomic publish; cold recomputes 30→1. wp20-sol/evidence/. |
-| WP-21 | done | main | 2026-10-16 | Combined622 and focused99 pass | PASS beaca20; transaction audit/version retained.15trials100cells:flush102→2,SQL208→109,p95319→114ms. wp21-sol-fresh/evidence/; root-transaction-*.log. |
-| WP-22 | done | main | 2026-10-16 | Combined622 and focused99 pass | PASS a1667c6; atomic budgets retained.5trials overload50→30admitted/20denied; no speedup. wp22-sol-integration/root-audit.json; prior wp14-recovery/evidence/wp22/. |
-| WP-23 | done | main | 2026-10-17 | Python3.12 full664 pass380.05s | PASS consume-before-DB/recovery, fixedTTL/budgets. OpenAPI75paths unchanged. wp23-sol/{root-audit,source-hashes}.json; root-{mutation,restored}.log. |
-| WP-24 | done | main | 2026-10-18 | Executor backend 843 pass (462s) on rebased branch | PASS commit 239bfb0 (one typing nit corrected after audit). Decimal-string frontend inputs unchanged; CONTRACT.md byte-identical. logs wp24-sol/finish/. Post-merge combined run pending with WP-26/36. |
-| WP-25 | done | main | 2026-10-18 | Executor backend 715 pass (430.74s) | PASS after correction 8d8d704/d6fc7f6. Gaps: earlier mutations not rerun; existing untyped locals remain. Alembic heads fixed3fe0534, parentd4e5f6a7b8c9; replay/full881 pass beforeWP26. Task parent stale. logs wp25-sol/correction{2,3}-*. |
-| WP-26 | done | master | 2026-10-18 | Executor backend 778 pass/6 fail (all six known Alembic multiple-heads, reproduced on b64b617) | PASS (accepted with gaps) commit f12d2ae; registry fails closed, services/workers use configured backend, worker streams and uses expiring private URLs. Gaps: no real GCS adapter (fake client only), app/main.py still serves /storage avatar/course from local disk, DocumentDeliveryService unchanged, red phase was import failure only. Added paths: core/config.py, storage_lifecycle_service.py, storage_cleanup.py. Logs wp26-sol/. |
-| WP-27 | done | remediation/wp-27-webhook-lifecycle | 2026-10-15 | Backend 356 pass (200.44s) | PASS after one FAIL correction. Explicit registration CLI; instance shutdown closes local resources. Owner /root/wp05_executor. Logs wp13-recovery/wp27-root-*.log. Real registration not executed. |
-| WP-28 | done | remediation/wp-28-webhook-errors | 2026-10-15 | Backend 363 pass (195.18s) | PASS; malformed JSON/UTF-8 400, invalid schema 422, processing failure 503, real rollback/retry preserves one binding. earlier executor storage-override failure resolved. |
-| WP-29 | done | master | 2026-10-18 | Executor backend 909 pass | PASS; exam-result and document intents written in the business transaction, stable job IDs, retry after Redis failure, shared producer closed on shutdown. Scope revision: outbox model, repository-free migration rwp29, workers/settings, approved replacement of one WP-13 test. logs wp29-sol/. |
-| WP-30 | done | master | 2026-10-19 | Python3.12 baseline988 pass | PASS code4a5eb95, merge587d2c6. Atomic claims, finite bounded recovery, source checks; at-least-once transport and drain-before-worker-owner-switch required. Frontend owner must add queued/inflight types and translated DeliveryLog states; frontend checks excluded. Evidence wp30-sol/ and root-audit/wp30-*. |
-| WP-31 | done | master | 2026-10-20 | Python3.12 baseline1088 pass | PASS code7ed3131, merge874c46e; merged backend byte-identical to tested candidate. Separate sibling/document revisions and cross-date dedup; conservative cutover observations preserve history. Drain pending work before worker owner switch; previous-image recovery unsupported. Evidence wp31-sol/ and root-audit/wp31-*. |
-| WP-32 | done | master | 2026-10-21 | int1 full 1531 pass, 2 env fails = master (wp11/25) | Integrated 0fe2147 via remediation/integration-r1. |
-| WP-33 | done | master | 2026-10-20 | Full1103 pass645.87s/5 warnings | PASS code6d5aaa6 mergebd1d301; backend byte-identical to full-tested candidate. Explicit zero/unknown grading; SQL ranks/aggregates; client rank0 handoff pending separate frontend owner. logs wp33-sol/, root-audit/wp33-*.log. |
-| WP-34 | done | master | 2026-10-22 | Full1108 pass601.27s; focused35; cohort mutation caught | Backend PASS code9a2afe9 merge3a2fe90; client nullable types closed by FE-R34 (ux-overhaul, accepted). Reads3276000→31200. logs wp34-sol/, root-audit/wp34-*. |
-| WP-35 | done | master | 2026-10-21 | int1 full 1531 pass, 2 env fails = master (wp11/25) | Integrated 0fe2147 via remediation/integration-r1. |
 | WP-36 | done | master | 2026-10-18 | Executor backend 874 pass/7 fail vs baseline 865 pass/same 7 fail (six Alembic multiple-heads, test_avatar_upload_and_thumbnail) | PASS commit dc3018d; shared/exclusive advisory month locks, sorted order, held to commit. Gaps: no throughput/deadlock-rate measurements; the 7 failures pre-date WP-36 (multiple Alembic heads introduced by WP-25 + main credentials migration, fix in progress). Logs wp36-sol/. |
 | WP-37 | done | master | 2026-10-21 | int1 full 1531 pass, 2 env fails = master (wp11/25) | Integrated 0fe2147 via remediation/integration-r1. |
 | WP-38 | done | remediation/wp-38-seed-identities | 2026-10-15 | Independent Python3.12 365 pass (235.85s), critical 4 pass (4.81s) | PASS generated IDs with offset/default sequences, repeated guarded seed, finance/photo references and subsequent API creation. Logs wp13-recovery/wp38-root-*.log. Source/test bytes matched executed copy. |
@@ -60,7 +27,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-52 | todo | — | — | — | Pending. |
 | WP-53 | todo | — | — | — | Pending. |
 | WP-54 | todo | — | — | — | Pending. |
-| WP-55 | todo | — | — | — | Pending. |
+| WP-55 | done | master | 2026-10-22 | Full 1844 pass pre-merge (WP-11/13 env); post-merge 83 targeted | PASS 7b13865 merge 6fd72f7. Queue 501→5 queries. Sonnet. logs wp55/. |
 | WP-56 | todo | — | — | — | Pending. |
 | WP-57 | done | master | 2026-10-22 | Codex targeted + full suite once (known fails only) | PASS cdff207, merge 8fc64c5. Cron endpoints 202 + job_id, 503 Retry-After on Redis error; schedule-window job_id dedup, Redis lock, keep_result 48h, max_tries 3. |
 | WP-58 | todo | — | — | — | Pending. |
@@ -68,7 +35,7 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | WP-60 | done | master | 2026-10-19 | Executor backend 921 pass/3 fail | PASS after one audit FAIL (fail-fast 503 rejected 28/30 burst logins; fixed with 64-waiter/5s bounded queue). 2 bcrypt workers; burst-30 90 successes/0 503; mean p95 login 263/1380/4009ms at c1/10/30 (warm in-process ASGI). Residual: workers/outbox.py still verifies synchronously (out of scope). logs wp60-sol/. |
 | WP-61 | done | master | 2026-10-18 | Executor backend 913 pass/1 fail (baseline 886/14) | PASS; bounded read, dimension/pixel limits before decode, two-slot cancellation-safe worker, one encoded thumbnail. Synthetic 3 trials: resizes 24->12, decoded pixels halved, health p95 ~51->~18-24ms. logs wp61-sol/. |
 | WP-62 | todo | — | 2026-10-19 | Not run | User approved retention policy: application audit logs 7 days; deleted profiles/uploads 30-day recovery then remove/anonymize; encrypted rolling backups 30 days with deletion replay on restore; analytics caches 10 minutes plus deletion invalidation. No automatic financial/ledger deletion until accountant sets period. Implementation and operational evidence pending. No deletion implemented yet. |
-| WP-63 | todo | — | — | — | Pending. |
+| WP-63 | done | master | 2026-10-22 | Full 1825 pass pre-merge (WP-11/13 env); post-fix 178 targeted | PASS 9f41c9e+753a6b7. Narrow injected auth collaborators; composition in services. Sonnet. logs wp63/. |
 | WP-64 | done | c53d2f2 | 2026-10-22 | ~/.local/state/imkon-remediation/wp64/ | Kept partial (course_id, student_id) WHERE NOT is_deleted, CONCURRENTLY with invalid-index recovery; 1M rows roster p95 ~40-58 ms -> <1 ms, ~20 MB, small write overhead; full suite 1586 pass, known env failures only; Python 3.12 deferred to QA-1. |
 | WP-65 | done | master | 2026-10-21 | targeted 56 pass; full 1201 pass, residual fails match base (wp11/25/37 env) | PASS def63dd, merged f0d7684. Mentor docs limited to active-enrolment students; 5 mutations caught. Fixes 3/4 left to WP-41/49. wp20 lease fix not mutated. |
 | WP-66 | done | master | 2026-10-22 | prod2 targeted pass; 5 SMS mutations caught; deploy tests 0; merged-master full 1581 pass | PASS c567b92, 500f308; merge 02b29c4. SMS attempt charged at transport, send deadline, owner-fenced settle. Claim select-then-update change unproven (no repro). logs prod2/. |
@@ -82,4 +49,4 @@ Evidence: `~/.local/state/imkon-remediation/`. Disposable Python3.12 pods root-a
 | UI-1 | done | master | 2026-10-22 | About: deb349f (verified as mentor: version only); journal: 172ba09, 0e5496f, c2f6def, merge 3b7b34b; vitest targeted 226 pass, tsc 0 | User requests: About build details superadmin-only; journal icon-only attendance, name-only period picker with muted span + status icon, total max shown once in header, minimal chart (one Max label, % in tooltip). Final master regression pending. |
 | UI-2 | done | master | 2026-10-22 | 98cad23..9bce88a, merge 41dc073; vitest targeted 497 pass, tsc 0 | User requests: period grades show total only; Home shows next steps, not My courses; compact chart legend; tg "Балли максималӣ". Staff row 2f0575c, 4b8d723. |
 
-62/71 accepted (WP-69 part A merged); 9 remain. QA-1 passed 2026-10-22; single head wp69a_payment_idempotency. Awaiting user decision on master→main and production deploy. After deploy: WP-55, 58, 63, 56→54→53→52, WP-69 items 2–5, WP-62.
+64/71 accepted (WP-69 part A merged); 7 remain. QA-1 passed 2026-10-22; single head wp69a_payment_idempotency. Awaiting user decision on master→main and production deploy. After deploy: WP-55, 58, 63, 56→54→53→52, WP-69 items 2–5, WP-62.

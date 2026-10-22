@@ -4,6 +4,7 @@ from collections.abc import Collection
 from typing import ClassVar
 
 from app.models.course import CourseExamType
+from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.schemas.course import CourseCreate
 
@@ -13,6 +14,10 @@ class CourseCopyBudgetExceeded(Exception):
 
 
 class LessonDateCalculator:
+    @classmethod
+    def for_schedules(cls, period_start: date, period_end: date, schedules: Collection[CourseSchedule]) -> list[date]:
+        return list(cls.calculate(period_start, period_end, [schedule.day_of_week for schedule in schedules]))
+
     @staticmethod
     def calculate(start: date, end: date, weekdays: Collection[int]) -> tuple[date, ...]:
         selected_weekdays: set[int] = set(weekdays)
