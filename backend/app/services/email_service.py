@@ -29,6 +29,15 @@ class DeadlineSMTP(smtplib.SMTP):
         self.deadline_timer: threading.Timer = threading.Timer(SMTP_TRANSPORT_TIMEOUT_SECONDS, self.abort)
         self.deadline_timer.daemon = True
 
+    def connect(
+        self,
+        host: str = "localhost",
+        port: int = 0,
+        source_address: tuple[str, int] | None = None,
+    ) -> tuple[int, bytes]:
+        self._host: str = host
+        return super().connect(host, port, source_address)
+
     def abort(self) -> None:
         self.expired.set()
         active_socket: socket.socket | None = self.sock
@@ -115,7 +124,7 @@ class EmailService:
                     raise EmailDeliveryError(
                         "SMTP TLS certificate verification failed"
                     ) from None
-                except ssl.SSLError:
+                except (ssl.SSLError, ValueError):
                     raise EmailDeliveryError("SMTP TLS negotiation failed") from None
                 server.ehlo()
                 try:
