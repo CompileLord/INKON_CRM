@@ -21,11 +21,13 @@ interface StudentProgressPanelProps {
   currentUserId: number | null;
 }
 
-function CourseProgressRow({ item, role, currentUserId }: { item: StudentCourseProfile; role: string | null; currentUserId: number | null }) {
+function CourseProgressRow({ item, role, currentUserId, latestTotal }: { item: StudentCourseProfile; role: string | null; currentUserId: number | null; latestTotal: number | null }) {
   const { t, i18n } = useTranslation("studentProfile");
   const linkInfo = getStudentCourseLink(item.course.id, item.course.mentor_id, role, currentUserId);
   const stats = item.performance && item.performance.period_summaries_count > 0 ? item.performance : null;
   const attendance: number | null = stats !== null && stats.attendance_denominator > 0 ? stats.attendance_percentage : null;
+  const total: number | null = latestTotal ?? (typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? item.my_total_score : null);
+  const hasLessons: boolean = stats !== null && stats.total_lessons > 0;
 
   return (
     <li data-testid="course-progress-row">
@@ -35,13 +37,15 @@ function CourseProgressRow({ item, role, currentUserId }: { item: StudentCourseP
             <span className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">{item.course.title}</span>
             <StudentCourseStagePill course={item} />
           </span>
-          {stats !== null ? (
+          {total !== null || hasLessons ? (
             <span className="flex min-w-0 max-w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
-              {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} /> : <span className="text-muted">—</span>}
-              {attendance !== null ? (
+              {total !== null ? <CourseScore score={total} /> : null}
+              {hasLessons && attendance !== null ? (
                 <span className="tabular-nums text-muted">{t("progress.attendanceShort", { value: formatNumber(attendance, i18n.language, { maximumFractionDigits: 0 }) })}</span>
               ) : null}
-              <span className="tabular-nums text-muted">{t("stats.absencesOf", { absences: formatNumber(stats.absences, i18n.language), total: formatNumber(stats.total_lessons, i18n.language) })}</span>
+              {hasLessons && stats !== null ? (
+                <span className="tabular-nums text-muted">{t("stats.absencesOf", { absences: formatNumber(stats.absences, i18n.language), total: formatNumber(stats.total_lessons, i18n.language) })}</span>
+              ) : null}
             </span>
           ) : (
             <span className="text-xs text-muted">{t("progress.rowNoData")}</span>
@@ -127,7 +131,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
       {courses.length > 0 ? (
         <ul aria-label={t("progress.coursesLabel")} className="flex flex-col divide-y divide-border">
           {courses.map((item: StudentCourseProfile) => (
-            <CourseProgressRow key={item.course.id} item={item} role={role} currentUserId={currentUserId} />
+            <CourseProgressRow key={item.course.id} item={item} role={role} currentUserId={currentUserId} latestTotal={progress.series.find((series: StudentProgressSeries) => series.courseId === item.course.id)?.latestTotal ?? null} />
           ))}
         </ul>
       ) : null}

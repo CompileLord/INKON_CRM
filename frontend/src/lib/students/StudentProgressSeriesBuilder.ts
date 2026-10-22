@@ -12,6 +12,7 @@ export interface StudentProgressSeries {
   slot: number;
   periodLabels: string[];
   values: (number | null)[];
+  latestTotal: number | null;
 }
 
 export class StudentProgressSeriesBuilder {
@@ -28,12 +29,17 @@ export class StudentProgressSeriesBuilder {
       const result = studentRow?.period_results.find((entry) => entry.period_id === period.id);
       return result?.percentage ?? null;
     });
+    const latestScore: number | null = [...progress.periods]
+      .reverse()
+      .map((period) => studentRow?.period_results.find((entry) => entry.period_id === period.id)?.score ?? null)
+      .find((score: number | null) => score !== null) ?? null;
     return {
       courseId: course.id,
       title: course.title,
       slot,
       periodLabels: progress.periods.map((period) => period.period_label),
       values,
+      latestTotal: latestScore,
     };
   }
 
@@ -51,6 +57,7 @@ export class StudentProgressSeriesBuilder {
       slot,
       periodLabels: orderedPeriods.map((journal) => journal.period_label),
       values: orderedPeriods.map((journal) => (journal.state === "graded" ? journal.percentage : null)),
+      latestTotal: [...orderedPeriods].reverse().find((journal) => journal.state === "graded")?.sum_score ?? null,
     };
   }
 

@@ -59,6 +59,14 @@ describe("StudentProgressSeriesBuilder", () => {
     expect(series.slot).toBe(2);
   });
 
+  it("exposes the latest stored period total, including a zero, and null when nothing is stored", () => {
+    expect(StudentProgressSeriesBuilder.fromStaffProgress(course, 0, staffProgress, 5).latestTotal).toBe(0);
+    expect(StudentProgressSeriesBuilder.fromStaffProgress(course, 0, staffProgress, 6).latestTotal).toBe(9);
+    expect(StudentProgressSeriesBuilder.fromStaffProgress(course, 0, staffProgress, 99).latestTotal).toBeNull();
+    const own = StudentProgressSeriesBuilder.fromOwnJournals(course, 0, [journal({ sum_score: 70, period_start: "2026-01-01" }), journal({ sum_score: 83, period_start: "2026-02-01" }), journal({ sum_score: 0, state: "upcoming", period_start: "2026-03-01" })]);
+    expect(own.latestTotal).toBe(83);
+  });
+
   it("yields no graded points for a student missing from the course roster", () => {
     const series = StudentProgressSeriesBuilder.fromStaffProgress(course, 0, staffProgress, 99);
     expect(series.values).toEqual([null, null, null]);
@@ -78,11 +86,11 @@ describe("StudentProgressSeriesBuilder", () => {
 
   it("counts a chart as drawable only when some course has at least two graded periods", () => {
     const oneGradedEach = [
-      { courseId: 1, title: "A", slot: 0, periodLabels: ["a", "b"], values: [50, null] },
-      { courseId: 2, title: "B", slot: 1, periodLabels: ["a", "b"], values: [null, 60] },
+      { courseId: 1, title: "A", slot: 0, periodLabels: ["a", "b"], values: [50, null], latestTotal: null },
+      { courseId: 2, title: "B", slot: 1, periodLabels: ["a", "b"], values: [null, 60], latestTotal: null },
     ];
     expect(StudentProgressSeriesBuilder.canDrawChart(oneGradedEach)).toBe(false);
-    const oneCourseWithTwo = [...oneGradedEach, { courseId: 3, title: "C", slot: 2, periodLabels: ["a", "b"], values: [10, 20] }];
+    const oneCourseWithTwo = [...oneGradedEach, { courseId: 3, title: "C", slot: 2, periodLabels: ["a", "b"], values: [10, 20], latestTotal: null }];
     expect(StudentProgressSeriesBuilder.canDrawChart(oneCourseWithTwo)).toBe(true);
     expect(StudentProgressSeriesBuilder.canDrawChart([])).toBe(false);
   });

@@ -67,7 +67,6 @@
   "pointsUnit": "pts",
   "gradeUnavailable": "Grade unavailable",
   "notGradedYet": "Not graded yet",
-  "metricUnavailable": "—",
   "courseImagePlaceholder": "Course thumbnail",
   "noActiveCoursesContext": "No active courses",
   "mentorUnavailable": "Mentor information unavailable",
@@ -122,14 +121,6 @@
   "scoreInfoLabel": "Average of your finished periods",
   "scoreInfo": "The average of your finished periods. It matches the Average column in the class table; upcoming periods are not counted.",
   "lessonsTitle": "Lessons",
-  "card": {
-    "mentor": "Mentor",
-    "schedule": "Schedule",
-    "noNextLesson": "No upcoming lesson",
-    "attendanceValue": "Attendance {{value}}",
-    "openJournal": "Open journal",
-    "scoreUnavailable": "Score —"
-  },
   "home": {
     "continue": "Continue"
   }
