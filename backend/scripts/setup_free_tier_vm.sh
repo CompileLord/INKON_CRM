@@ -64,7 +64,15 @@ fi
 echo "[1/4] Checking and installing container runtime..."
 if ! command -v docker &>/dev/null && ! command -v podman &>/dev/null; then
     echo "Installing Docker..."
-    curl -fsSL https://get.docker.com | sh
+    if command -v apt-get &>/dev/null; then
+        apt-get update
+        apt-get install -y --no-install-recommends docker.io
+    elif command -v dnf &>/dev/null; then
+        dnf install -y docker
+    else
+        echo "No supported package manager found for installing a container runtime." >&2
+        exit 1
+    fi
     systemctl enable --now docker
 fi
 
