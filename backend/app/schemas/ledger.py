@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from app.models.ledger import LedgerEntryType
 from app.models.payment import PaymentMethod
 from app.schemas.common import PositiveMoney
+from app.schemas.payment import PaymentCommentPolicy
 
 
 class AllocationResponse(BaseModel):
@@ -35,7 +36,7 @@ class LedgerEntryResponse(BaseModel):
 class VoidPaymentPayload(BaseModel):
     model_config = {"extra": "forbid"}
     reason_code: str = Field(..., min_length=1, max_length=50)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
 
 
 class RefundPaymentPayload(BaseModel):
@@ -44,7 +45,7 @@ class RefundPaymentPayload(BaseModel):
     # False -> cash leaves the centre. True -> value is retained as wallet credit.
     to_wallet: bool = False
     reason_code: str = Field(..., min_length=1, max_length=50)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
 
 
 class DiscountCreatePayload(BaseModel):
@@ -56,7 +57,7 @@ class DiscountCreatePayload(BaseModel):
     amount: PositiveMoney
     occurred_at: Optional[datetime] = None
     reason_code: Optional[str] = Field(None, max_length=50)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
 
 
 class AdjustmentCreatePayload(BaseModel):
@@ -67,7 +68,7 @@ class AdjustmentCreatePayload(BaseModel):
     amount: PositiveMoney
     occurred_at: Optional[datetime] = None
     reason_code: str = Field(..., min_length=1, max_length=50)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
 
 
 class AllocationCreatePayload(BaseModel):
@@ -107,7 +108,7 @@ class PaymentEntryResponse(BaseModel):
     paid_at: datetime
     method: Optional[PaymentMethod] = None
     recorded_by_id: int
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
     created_at: datetime
     allocated_amount: Decimal = Decimal("0.00")
     unallocated_amount: Decimal = Decimal("0.00")

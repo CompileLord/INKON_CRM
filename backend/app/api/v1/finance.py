@@ -1,4 +1,3 @@
-from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Header, Query, Path, Response, status
@@ -31,6 +30,7 @@ from app.schemas.accounting_period import (
     ClosePeriodPayload,
     ReopenPeriodPayload,
 )
+from app.schemas.money import MoneyAmount
 from app.schemas.receipt import PaymentReceiptResponse
 from app.schemas.analytics import DetailedAnalyticsResponse
 from app.services.finance_service import FinanceService, get_dushanbe_today
@@ -249,7 +249,7 @@ async def reopen_period(
 async def get_debts(
     course_id: Optional[int] = Query(None),
     student_id: Optional[int] = Query(None, ge=1),
-    min_debt: Optional[Decimal] = Query(None, ge=0, max_digits=12, decimal_places=2),
+    min_debt: Optional[MoneyAmount] = Query(None),
     overdue_days: Optional[int] = Query(None),
     enrollment_status: Optional[EnrollmentStatus] = Query(
         None, description="Defaults to all statuses; use 'active' to exclude withdrawn students"
