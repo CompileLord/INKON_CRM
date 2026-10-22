@@ -30,3 +30,19 @@ describe("NotificationPresentation", () => {
     expect(NotificationPresentation.countUnread([item(1, "2026-10-12"), item(2, "2026-10-12", "2026-10-12T09:00:00Z")])).toBe(1);
   });
 });
+
+describe("NotificationPresentation delivery status", () => {
+  it("maps each status to its own label key and token tone, with danger only for failed", () => {
+    const labels: string[] = (["queued", "inflight", "sent", "failed"] as const).map((status) => NotificationPresentation.deliveryStatus(status).labelKey);
+    expect(labels).toEqual(["deliveryLog.queued", "deliveryLog.inflight", "deliveryLog.sent", "deliveryLog.failed"]);
+    expect(NotificationPresentation.deliveryStatus("failed").toneClassName).toContain("text-destructive");
+    expect(NotificationPresentation.deliveryStatus("queued").toneClassName).not.toContain("destructive");
+    expect(NotificationPresentation.deliveryStatus("inflight").toneClassName).not.toContain("destructive");
+    expect(NotificationPresentation.deliveryStatus("sent").toneClassName).toContain("text-success");
+  });
+
+  it("treats only sent as delivered", () => {
+    expect(NotificationPresentation.isDelivered({ status: "sent" })).toBe(true);
+    expect(NotificationPresentation.isDelivered({ status: "queued" })).toBe(false);
+  });
+});

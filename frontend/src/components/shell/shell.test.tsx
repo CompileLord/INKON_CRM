@@ -200,3 +200,31 @@ describe("top bar", () => {
     expect(within(header).getAllByRole("button").length).toBeGreaterThan(0);
   });
 });
+
+describe("current user in the shell", () => {
+  const profile = { id: 42, email: "a@b.c", first_name: "Somoni", last_name: "Rahmonov", role: "student", phone: null, photo_path: null, thumbnail_path: null };
+
+  it("shows initials and the name linking to the own student profile", async () => {
+    mock.onGet("/users/me").reply(200, profile);
+    layout("student");
+    const links = await screen.findAllByRole("link", { name: "My profile: Somoni Rahmonov" });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0].getAttribute("href")).toBe("/students/42");
+    expect(within(links[0]).getByText("Somoni Rahmonov")).toBeTruthy();
+    expect(within(links[0]).getByRole("img", { name: "Somoni Rahmonov" }).textContent).toBe("SR");
+  });
+
+  it("shows the uploaded avatar image when a photo exists", async () => {
+    mock.onGet("/users/me").reply(200, { ...profile, thumbnail_path: "https://cdn.example/a.jpg" });
+    layout("student");
+    const links = await screen.findAllByRole("link", { name: "My profile: Somoni Rahmonov" });
+    expect(within(links[0]).getByRole("img", { name: "Somoni Rahmonov" }).getAttribute("src")).toBe("https://cdn.example/a.jpg");
+  });
+
+  it.each([["mentor", "/mentors/42"], ["superadmin", "/settings"], ["accountant", "/settings"]] as const)("links %s to %s", async (role, href) => {
+    mock.onGet("/users/me").reply(200, { ...profile, role });
+    layout(role);
+    const links = await screen.findAllByRole("link", { name: "My profile: Somoni Rahmonov" });
+    expect(links[0].getAttribute("href")).toBe(href);
+  });
+});
