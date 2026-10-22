@@ -70,6 +70,8 @@
     "bonus": "Bonus",
     "exam": "Exam",
     "sum": "Total",
+    "sumMaximum": "/ {{max}}",
+    "sumMaximumTitle": "Maximum total: {{max}}",
     "comment": "Comment",
     "noStudentsInCourse": "There are no students in this course",
     "scoreCellLabel": "Score for {{name}} on {{date}}",
@@ -229,6 +231,7 @@
     "loadFailedBodyStudent": "Your results are not affected. Try again in a moment.",
     "refreshFailed": "Could not refresh progress. Showing the last loaded results.",
     "chart": {
+      "maximumLabel": "Max {{max}}",
       "label": "Scores by period",
       "hint": "Use the left and right arrow keys to move between periods.",
       "noValues": "No stored results",

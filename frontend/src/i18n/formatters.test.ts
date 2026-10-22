@@ -8,6 +8,7 @@ import {
   formatSchoolLessonTime,
   formatSchoolLessonWeekday,
   formatPercentage,
+  formatSchoolPeriodSpan,
   getActiveLocale,
   SCHOOL_TIMEZONE,
   getSchoolCalendarDate,
@@ -215,5 +216,21 @@ describe("school weekday index", () => {
     expect(getSchoolWeekdayIndex(new Date("2026-10-19T10:00:00Z"))).toBe(0);
     expect(getSchoolWeekdayIndex(new Date("2026-10-18T20:00:00Z"))).toBe(0);
     expect(getSchoolWeekdayIndex(new Date("2026-10-18T18:59:00Z"))).toBe(6);
+  });
+});
+
+describe("school period span", () => {
+  it("collapses a whole calendar month to month and year", () => {
+    expect(formatSchoolPeriodSpan("2026-06-01", "2026-06-30", "en")).toBe("Jun 2026");
+    expect(formatSchoolPeriodSpan("2028-02-01", "2028-02-29", "en")).toBe("Feb 2028");
+  });
+
+  it("writes a partial month as a short range sharing the year", () => {
+    expect(formatSchoolPeriodSpan("2026-06-01", "2026-06-29", "en")).toBe("Jun 1 – Jun 29 2026");
+    expect(formatSchoolPeriodSpan("2026-06-10", "2026-07-20", "en")).toBe("Jun 10 – Jul 20 2026");
+  });
+
+  it("keeps both years when the range crosses a year boundary", () => {
+    expect(formatSchoolPeriodSpan("2026-12-15", "2027-01-14", "en")).toBe("Dec 15 2026 – Jan 14 2027");
   });
 });

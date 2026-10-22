@@ -89,4 +89,19 @@ describe("StudentCourseJournal", () => {
     mount(() => Promise.resolve({ data: [] }));
     expect(await screen.findByText("No journal periods yet")).toBeTruthy();
   });
+
+  it("offers a minimal period picker, an icon-only status and no repeated maximum on the student page", async () => {
+    mount(happy);
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBeGreaterThan(3));
+    const trigger: HTMLElement = screen.getByRole("button", { name: "Period" });
+    expect(trigger.textContent).toBe("Month");
+    trigger.click();
+    const option: HTMLElement = await screen.findByRole("option", { name: /Month/ });
+    expect(option.textContent).toBe("MonthOct 2026");
+    expect(option.querySelector("[role='img']")?.getAttribute("aria-label")).toMatch(/^(Current|Done|Upcoming)$/);
+    expect(screen.getAllByTestId("total-maximum")).toHaveLength(1);
+    screen.getAllByTestId("total-cell").forEach((cell) => expect(cell.textContent).not.toContain("/"));
+    expect(screen.queryByText("Present")).toBeNull();
+    expect(screen.getAllByRole("img", { name: "Present" }).length).toBeGreaterThan(0);
+  });
 });

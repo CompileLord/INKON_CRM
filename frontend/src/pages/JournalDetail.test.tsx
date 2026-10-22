@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { formatSchoolLessonDate } from "../i18n/formatters";
-import { COURSE_ID, AUGUST, OCTOBER, PERIODS, getCourseMock, getCourseJournalsMock, getJournalMock, batchUpdateMock, router, renderWorkspace, periodPicker, pickerSummary, optionTextOf, choosePeriod, gradeCell, waitForGrid, registerJournalDetailHooks } from "./JournalDetailTestSupport";
+import { COURSE_ID, AUGUST, OCTOBER, PERIODS, optionStatusOf, getCourseMock, getCourseJournalsMock, getJournalMock, batchUpdateMock, router, renderWorkspace, periodPicker, pickerSummary, optionTextOf, choosePeriod, gradeCell, waitForGrid, registerJournalDetailHooks } from "./JournalDetailTestSupport";
 import { schoolToday } from "./JournalDetailTestState";
 
 vi.mock("../i18n/formatters", async (importOriginal) => {
@@ -69,7 +69,7 @@ describe("period selection", () => {
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(OCTOBER);
     expect(pickerSummary()).toContain("Month 10");
-    expect(optionTextOf("Month 10")).toContain("Current");
+    expect(optionStatusOf("Month 10")).toBe("Current");
   });
 
   it("selects the latest started period and labels it Latest when the course calendar has ended", async () => {
@@ -77,8 +77,7 @@ describe("period selection", () => {
     renderWorkspace();
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(OCTOBER);
-    expect(optionTextOf("Month 10")).toContain("Latest");
-    expect(optionTextOf("Month 10")).not.toContain("Current");
+    expect(optionStatusOf("Month 10")).toBe("Latest");
   });
 
   it("selects the earliest period and labels it Upcoming when every period is in the future", async () => {
@@ -87,17 +86,19 @@ describe("period selection", () => {
     await waitForGrid();
     expect(getJournalMock).toHaveBeenCalledWith(AUGUST);
     expect(pickerSummary()).toContain("Month 8");
-    expect(optionTextOf("Month 8")).toContain("Upcoming");
+    expect(optionStatusOf("Month 8")).toBe("Upcoming");
   });
 
-  it("shows the translated label, the dd.MM.yyyy range and the timing in the trigger and in the options", async () => {
+  it("shows only the period name in the trigger and the short range plus a status icon in the options", async () => {
     renderWorkspace();
     await waitForGrid();
-    const summary: string = pickerSummary();
-    expect(summary).toContain("Month 10");
-    expect(summary).toContain(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
-    expect(summary).toContain("Current");
-    expect(optionTextOf("Month 10")).toContain("Current");
+    expect(pickerSummary()).toBe("Month 10");
+    const option: string = optionTextOf("Month 10");
+    expect(option).toBe("Month 10Oct 2026");
+    expect(option).not.toMatch(/Current|\d{2}\.\d{2}\.\d{4}/);
+    expect(optionStatusOf("Month 10")).toBe("Current");
+    const row = within(screen.getByRole("listbox")).getByRole("option", { name: /^Month 10/ });
+    expect(row.getAttribute("title")).toBe(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
   });
 
   it("opens a listbox of rows with label, muted range, timing chip and a check on the selected period, with no fill-state badge", async () => {
@@ -108,13 +109,13 @@ describe("period selection", () => {
     const options = within(listbox).getAllByRole("option");
     expect(options).toHaveLength(3);
     expect(options[0].textContent).toContain("Month 8");
-    expect(options[0].textContent).toContain(`${formatSchoolLessonDate("2026-08-01")} – ${formatSchoolLessonDate("2026-08-31")}`);
-    expect(options[0].textContent).not.toMatch(/Current|Latest|Upcoming/);
-    expect(options[2].textContent).toContain("Current");
+    expect(options[0].textContent).toContain("Aug 2026");
+    expect(options[0].textContent).not.toMatch(/Current|Latest|Upcoming|\d{2}\.\d{2}\.\d{4}/);
+    expect(options[2].querySelector("[role='img']")?.getAttribute("aria-label")).toBe("Current");
     options.forEach((option) => expect(option.className).toContain("min-h-11"));
     expect(options.map((option) => option.getAttribute("aria-selected"))).toEqual(["false", "false", "true"]);
-    expect(options[2].querySelector("svg")).not.toBeNull();
-    expect(options[0].querySelector("svg")).toBeNull();
+    expect(options[2].querySelector("[role='img'] svg")).not.toBeNull();
+    expect(options[0].querySelector("[role='img']")).toBeNull();
     for (const fillState of ["Complete", "In progress", "Not started", "Unavailable"]) {
       expect(listbox.textContent).not.toContain(fillState);
       expect(pickerSummary()).not.toContain(fillState);

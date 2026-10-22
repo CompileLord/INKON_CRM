@@ -27,6 +27,7 @@ interface JournalStudentRowProps {
   editing: JournalRowEditing | null;
   examMaximum: number;
   bonusMaximum?: number;
+  sharedMaximum?: number;
   atRisk?: boolean;
   isSelf?: boolean;
   markUnrecorded?: boolean;
@@ -45,6 +46,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   editing,
   examMaximum,
   bonusMaximum,
+  sharedMaximum,
   atRisk = false,
   isSelf = false,
   markUnrecorded = false,
@@ -168,7 +170,9 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
             <span className="flex flex-col items-center leading-5">
               <span>
                 <span className="font-semibold text-ink">{formatNumber(summary.sum_score)}</span>
-                {summary.max_period_score > 0 && <span className="text-muted"> / {formatNumber(summary.max_period_score)}</span>}
+                {summary.max_period_score > 0 && summary.max_period_score !== sharedMaximum && (
+                  <span className="text-muted" data-testid="total-row-maximum"> {t("table.sumMaximum", { max: formatNumber(summary.max_period_score) })}</span>
+                )}
               </span>
               {summary.max_period_score > 0 && <span className="text-xs text-muted" data-testid="total-percentage">{WholePercent.format(summary.percentage)}</span>}
             </span>

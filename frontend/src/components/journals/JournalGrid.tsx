@@ -4,7 +4,7 @@ import { JournalLessonColumnMenu } from "./JournalLessonColumnMenu";
 import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
 import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
-import { formatSchoolLessonDate, formatSchoolLessonWeekday, getSchoolCalendarDate } from "../../i18n/formatters";
+import { formatNumber, formatSchoolLessonDate, formatSchoolLessonWeekday, getSchoolCalendarDate } from "../../i18n/formatters";
 import { JournalAtRiskRules } from "../../lib/journals/JournalAtRiskRules";
 import { JournalBulkFill, type JournalBulkFillKind } from "../../lib/journals/JournalBulkFill";
 import { JournalStudentOrdering, useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
@@ -77,6 +77,18 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
       : stableStudents;
     return JournalStudentOrdering.pinFirst(filtered, readOnlySelfStudentId);
   }, [stableStudents, visibleStudentIds, readOnlySelfStudentId]);
+  const sharedMaximum: number | undefined = useMemo(() => {
+    const occurrences: Map<number, number> = new Map();
+    students.forEach((student) => {
+      const maximum: number | undefined = student.summary?.max_period_score;
+      if (maximum !== undefined && maximum > 0) occurrences.set(maximum, (occurrences.get(maximum) ?? 0) + 1);
+    });
+    let winner: number | undefined;
+    occurrences.forEach((count, maximum) => {
+      if (winner === undefined || count > (occurrences.get(winner) ?? 0)) winner = maximum;
+    });
+    return winner;
+  }, [students]);
   const effectiveEditing: JournalRowEditing | null = readOnlySelfStudentId === null ? editing : null;
   const [focus, setFocus] = useState<GridFocus | null>(null);
   const regionRef = useRef<HTMLDivElement>(null);
@@ -237,7 +249,19 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 </th>
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  {t("table.sum")}
+                  <span className="inline-flex items-baseline justify-center gap-1">
+                    {t("table.sum")}
+                    {" "}
+                    {sharedMaximum !== undefined && (
+                      <span
+                        className="text-xs font-normal tabular-nums text-muted"
+                        data-testid="total-maximum"
+                        title={t("table.sumMaximumTitle", { max: formatNumber(sharedMaximum) })}
+                      >
+                        {t("table.sumMaximum", { max: formatNumber(sharedMaximum) })}
+                      </span>
+                    )}
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -278,6 +302,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   editing={effectiveEditing}
                   examMaximum={examMaximum}
                   bonusMaximum={bonusMaximum}
+                  sharedMaximum={sharedMaximum}
                   atRisk={atRiskStudentIds.has(student.student_id) && (readOnlySelfStudentId === null || student.student_id === readOnlySelfStudentId)}
                   isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
                   markUnrecorded={readOnlySelfStudentId !== null}
