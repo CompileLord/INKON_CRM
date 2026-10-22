@@ -1,8 +1,13 @@
 import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from redis.exceptions import RedisError
+
 from app.core.config import settings
+from app.schemas.maintenance import MaintenanceAccepted
+from app.workers.settings import MaintenanceScheduler
 from app.workers.tasks import archive_expired_courses, check_payment_reminders
+
 
 def verify_cron_secret(x_cloud_scheduler_secret: Optional[str] = Header(None)) -> None:
     configured_secret: Optional[str] = settings.CRON_SECRET
@@ -21,16 +26,40 @@ def verify_cron_secret(x_cloud_scheduler_secret: Optional[str] = Header(None)) -
         )
 
 
-router = APIRouter(dependencies=[Depends(verify_cron_secret)])
+router: APIRouter = APIRouter(dependencies=[Depends(verify_cron_secret)])
 
 
-@router.post("/archive-courses", status_code=status.HTTP_200_OK)
-async def trigger_archive_courses() -> dict:
-    await archive_expired_courses({})
-    return {"status": "success", "task": "archive_expired_courses"}
+@router.post(
+    "/archive-courses",
+    response_model=MaintenanceAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={503: {"description": "Maintenance queue unavailable; retry after 60 seconds"}},
+)
+async def trigger_archive_courses(scheduler: MaintenanceScheduler = Depends()) -> MaintenanceAccepted:
+    try:
+        job_id: str = await scheduler.enqueue(archive_expired_courses.__name__)
+    except (RedisError, OSError, TimeoutError) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Maintenance queue unavailable",
+            headers={"Retry-After": "60"},
+        ) from error
+    return MaintenanceAccepted(task="archive_expired_courses", job_id=job_id)
 
 
-@router.post("/payment-reminders", status_code=status.HTTP_200_OK)
-async def trigger_payment_reminders() -> dict:
-    await check_payment_reminders({})
-    return {"status": "success", "task": "check_payment_reminders"}
+@router.post(
+    "/payment-reminders",
+    response_model=MaintenanceAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={503: {"description": "Maintenance queue unavailable; retry after 60 seconds"}},
+)
+async def trigger_payment_reminders(scheduler: MaintenanceScheduler = Depends()) -> MaintenanceAccepted:
+    try:
+        job_id: str = await scheduler.enqueue(check_payment_reminders.__name__)
+    except (RedisError, OSError, TimeoutError) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Maintenance queue unavailable",
+            headers={"Retry-After": "60"},
+        ) from error
+    return MaintenanceAccepted(task="check_payment_reminders", job_id=job_id)

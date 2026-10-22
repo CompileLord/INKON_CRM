@@ -1,7 +1,8 @@
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
+from unittest.mock import AsyncMock
 
 from app.api.v1 import cron
 
@@ -76,19 +77,16 @@ async def test_cron_routes_accept_configured_secret_and_preserve_contract(
     job_name: str,
     task_name: str,
 ) -> None:
-    calls: list[dict[str, Any]] = []
-
-    async def record_job(payload: dict[str, Any]) -> None:
-        calls.append(payload)
-
+    job_id: str = f"maintenance:{task_name}:2026-10-22"
+    enqueue: AsyncMock = AsyncMock(return_value=job_id)
     monkeypatch.setattr(cron.settings, "CRON_SECRET", "configured-secret")
-    monkeypatch.setattr(cron, job_name, record_job)
+    monkeypatch.setattr(cron.MaintenanceScheduler, "enqueue", enqueue)
 
-    response = await client.post(
+    response: Response = await client.post(
         route,
         headers={"X-Cloud-Scheduler-Secret": "configured-secret"},
     )
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "success", "task": task_name}
-    assert calls == [{}]
+    assert response.status_code == 202
+    assert response.json() == {"status": "accepted", "task": task_name, "job_id": job_id}
+    enqueue.assert_awaited_once_with(task_name)
