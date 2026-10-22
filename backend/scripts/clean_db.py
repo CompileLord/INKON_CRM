@@ -25,28 +25,12 @@ import app.models.refresh_token
 import app.models.user
 from app.db.session import engine
 from app.models.user import User, UserRole
+from scripts.reset_tables import ResetTableCatalog
 from scripts.reset_guard import CredentialProvisioner, ResetGuardError, ResetTarget, ResetTargetGuard
 
 
 logging.basicConfig(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
-
-TABLES: list[str] = [
-    "refresh_tokens",
-    "audit_logs",
-    "notification_logs",
-    "documents",
-    "payments",
-    "journal_student_summaries",
-    "journal_entries",
-    "journals",
-    "enrollments",
-    "course_mentor_history",
-    "course_schedules",
-    "courses",
-    "users",
-]
-
 
 def create_reset_guard() -> ResetTargetGuard:
     backend_root: Path = Path(__file__).resolve().parents[1]
@@ -63,7 +47,7 @@ async def clean_database(target: ResetTarget, administrator_password: str) -> No
     if target.dry_run:
         raise ResetGuardError("Dry-run targets cannot modify the database.")
     async with engine.begin() as connection:
-        for table_name in TABLES:
+        for table_name in ResetTableCatalog.tables_to_truncate():
             await connection.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;"))
 
         async with AsyncSession(bind=connection, expire_on_commit=False) as session:
