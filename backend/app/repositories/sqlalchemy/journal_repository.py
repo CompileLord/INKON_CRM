@@ -5,15 +5,48 @@ from sqlalchemy.engine import Result, Row
 from sqlalchemy.sql import Select, ColumnElement
 from sqlalchemy.sql.selectable import Subquery
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.course import Course, CourseStatus
+from app.models.course_schedule import CourseSchedule
+from app.models.enrollment import Enrollment
+from app.models.journal_entry import JournalEntry
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
-from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository
+from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository, MentorJournalBatch
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
 
 class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Journal, session)
+
+    async def get_mentor_journal_batch(self, mentor_id: int, today: date) -> MentorJournalBatch:
+        courses_result: Result = await self.session.execute(select(Course).where(
+            Course.mentor_id == mentor_id, Course.status == CourseStatus.ACTIVE, Course.is_deleted.is_(False),
+        ))
+        courses: tuple[Course, ...] = tuple(courses_result.scalars().all())
+        if not courses:
+            return MentorJournalBatch((), (), (), {}, {})
+        course_ids: list[int] = [course.id for course in courses]
+        journals_result: Result = await self.session.execute(select(Journal).where(
+            Journal.course_id.in_(course_ids),
+        ).order_by(Journal.period_start.asc()))
+        journals: tuple[Journal, ...] = tuple(journals_result.scalars().all())
+        schedules_result: Result = await self.session.execute(select(CourseSchedule).where(
+            CourseSchedule.course_id.in_(course_ids),
+        ))
+        schedules: tuple[CourseSchedule, ...] = tuple(schedules_result.scalars().all())
+        students_result: Result = await self.session.execute(select(
+            Enrollment.course_id, func.count(Enrollment.id),
+        ).where(Enrollment.course_id.in_(course_ids), Enrollment.is_deleted.is_(False)).group_by(Enrollment.course_id))
+        row: Row
+        student_counts: dict[int, int] = {row[0]: row[1] for row in students_result.all()}
+        entries_result: Result = await self.session.execute(select(
+            JournalEntry.journal_id, func.count(JournalEntry.id),
+        ).join(Journal, Journal.id == JournalEntry.journal_id).where(
+            Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.is_graded.is_(True),
+        ).group_by(JournalEntry.journal_id))
+        graded_entry_counts: dict[int, int] = {row[0]: row[1] for row in entries_result.all()}
+        return MentorJournalBatch(courses, journals, schedules, student_counts, graded_entry_counts)
 
     async def get_class_statistics(self, journal_id: int, student_id: int) -> JournalClassStatistics:
         eligible: tuple[ColumnElement, ...] = (

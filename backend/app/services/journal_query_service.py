@@ -1,5 +1,6 @@
 from collections import defaultdict
-from datetime import date, timedelta
+from collections.abc import Callable, Collection
+from datetime import date
 from typing import Any, List
 from fastapi import HTTPException, status
 from sqlalchemy import Row, Select, select, func, case
@@ -14,20 +15,13 @@ from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.core.scoring import ScoringPolicy
-from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository
+from app.core.schedule_utils import LessonDateCalculator
+from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository, MentorJournalBatch
 from app.repositories.sqlalchemy.journal_repository import SQLAlchemyJournalRepository
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
 
 
-def get_lesson_dates(period_start: date, period_end: date, schedules: List[CourseSchedule]) -> List[date]:
-    schedule_weekdays = {s.day_of_week for s in schedules}
-    lesson_dates = []
-    curr = period_start
-    while curr <= period_end:
-        if curr.weekday() in schedule_weekdays:
-            lesson_dates.append(curr)
-        curr += timedelta(days=1)
-    return lesson_dates
+get_lesson_dates: Callable[[date, date, Collection[CourseSchedule]], list[date]] = LessonDateCalculator.for_schedules
 
 
 class JournalQueryService:
@@ -185,34 +179,42 @@ class JournalQueryService:
         )
 
     async def get_mentor_grading_queue(self, mentor_id: int) -> List[GradingQueueItemResponse]:
-        courses_stmt = select(Course).filter(
-            Course.mentor_id == mentor_id,
-            Course.status == CourseStatus.ACTIVE,
-            Course.is_deleted == False
-        )
-        courses_res = await self.db.execute(courses_stmt)
-        courses = list(courses_res.scalars().all())
-
-        today = date.today()
+        today: date = date.today()
+        batch: MentorJournalBatch = await self.journal_repository.get_mentor_journal_batch(mentor_id, today)
+        journals_by_course: dict[int, list[Journal]] = defaultdict(list)
+        weekdays_by_course: dict[int, list[int]] = defaultdict(list)
+        journal: Journal
+        schedule: CourseSchedule
+        course: Course
+        for journal in batch.journals:
+            journals_by_course[journal.course_id].append(journal)
+        for schedule in batch.schedules:
+            weekdays_by_course[schedule.course_id].append(schedule.day_of_week)
         queue: List[GradingQueueItemResponse] = []
-
-        for course in courses:
-            journals = await self.get_course_journals_aggregated(course.id)
-            for j in journals:
-                if j.state in ("empty", "partial") and j.period_start <= today:
-                    is_current = j.period_start <= today <= j.period_end
-                    queue.append(GradingQueueItemResponse(
-                        journal_id=j.id,
-                        course_id=course.id,
-                        course_title=course.title,
-                        period_label=j.period_label,
-                        period_start=j.period_start,
-                        period_end=j.period_end,
-                        state=j.state,
-                        cells_filled=j.cells_filled,
-                        cells_expected=j.cells_expected,
-                        is_current=is_current,
-                    ))
+        for course in batch.courses:
+            for journal in journals_by_course[course.id]:
+                if journal.period_start > today:
+                    continue
+                lesson_count: int = len(LessonDateCalculator.calculate(
+                    journal.period_start, journal.period_end, weekdays_by_course[course.id],
+                ))
+                cells_expected: int = batch.student_counts.get(course.id, 0) * lesson_count
+                cells_filled: int = batch.graded_entry_counts.get(journal.id, 0)
+                state: str = "empty" if cells_filled == 0 else "partial"
+                if cells_expected > 0 and cells_filled >= cells_expected:
+                    continue
+                queue.append(GradingQueueItemResponse(
+                    journal_id=journal.id,
+                    course_id=course.id,
+                    course_title=course.title,
+                    period_label=journal.period_label,
+                    period_start=journal.period_start,
+                    period_end=journal.period_end,
+                    state=state,
+                    cells_filled=cells_filled,
+                    cells_expected=cells_expected,
+                    is_current=journal.period_start <= today <= journal.period_end,
+                ))
 
         queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
         return queue
