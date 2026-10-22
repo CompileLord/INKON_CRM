@@ -208,7 +208,7 @@ class PasswordWorkService:
 
 def hash_password(password: str) -> str:
     pwd_bytes: bytes = password.encode("utf-8")
-    salt: bytes = bcrypt.gensalt(rounds=12)
+    salt: bytes = bcrypt.gensalt(rounds=settings.PASSWORD_BCRYPT_ROUNDS)
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 

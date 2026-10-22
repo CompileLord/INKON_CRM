@@ -54,6 +54,17 @@ class Settings(BaseSettings, DatabaseConnectionPolicy):
             raise ValueError("TESTING must be false in production")
         return value
 
+    PASSWORD_BCRYPT_ROUNDS: int = Field(default=12, ge=4, le=31)
+
+    @field_validator("PASSWORD_BCRYPT_ROUNDS")
+    @classmethod
+    def validate_password_bcrypt_rounds(cls, value: int, info: ValidationInfo) -> int:
+        environment: str = info.data.get("ENVIRONMENT", "development")
+        testing: bool = info.data.get("TESTING", False) or environment == "testing"
+        if value < 12 and (environment in {"production", "staging"} or not testing):
+            raise ValueError("PASSWORD_BCRYPT_ROUNDS must be at least 12 outside testing")
+        return value
+
     OUTBOX_ENCRYPTION_KEYS: str = Field(default="", repr=False, exclude=True, validate_default=True)
 
     @field_validator("OUTBOX_ENCRYPTION_KEYS")
