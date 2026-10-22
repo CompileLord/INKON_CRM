@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   allocateCredit,
@@ -24,6 +25,7 @@ import { listEnrollments } from "../enrollments/endpoints";
 import { getSchoolCalendarDate } from "../../i18n/formatters";
 import { PayableCourses } from "./payableCourses";
 import { PaymentDateBounds } from "./paymentDateBounds";
+import { PaymentIdempotencyKeys } from "./paymentIdempotencyKey";
 import type {
   PaymentItem,
   AdjustmentCreatePayload,
@@ -95,7 +97,13 @@ export function useQueueDebtReminders() {
 }
 
 export function useCreatePayment() {
-  return useFinanceMutation((payload: PaymentCreatePayload) => createPayment(payload));
+  const idempotencyKeys = useRef<PaymentIdempotencyKeys>(new PaymentIdempotencyKeys());
+  return useFinanceMutation(async (payload: PaymentCreatePayload) => {
+    const key: string = idempotencyKeys.current.keyFor(payload);
+    const payment: PaymentItem = await createPayment(payload, key);
+    idempotencyKeys.current.release(key);
+    return payment;
+  });
 }
 
 export function useVoidPayment() {

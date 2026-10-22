@@ -122,6 +122,7 @@ describe("Payment entry form", () => {
     await pickDate(user, "2026-03-01");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await screen.findByText("Payment #321 recorded");
+    expect(String(mock.history.post[0].headers?.["Idempotency-Key"])).toMatch(/^[0-9a-f-]{36}$/);
     expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "12345678901234567890.123456789", paid_at: "2026-02-28T19:00:00.000Z", student_id: 7, course_id: 11 });
   }, 20000);
 

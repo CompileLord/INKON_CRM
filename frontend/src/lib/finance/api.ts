@@ -115,8 +115,8 @@ export async function fetchStudentCredits(): Promise<StudentCreditItem[]> {
   return response.data;
 }
 
-export async function createPayment(payload: PaymentCreatePayload): Promise<PaymentItem> {
-  const response = await httpClient.post("/finance/payments/", payload);
+export async function createPayment(payload: PaymentCreatePayload, idempotencyKey?: string): Promise<PaymentItem> {
+  const response = await httpClient.post("/finance/payments/", payload, idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined);
   return response.data;
 }
 
