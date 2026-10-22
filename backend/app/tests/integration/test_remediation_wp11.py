@@ -29,6 +29,7 @@ class ConfigurationProbe:
             "PATH": os.environ["PATH"],
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONPATH": str(self.backend_root),
+            **({"HOME": os.environ["HOME"]} if "HOME" in os.environ else {}),
             **({"PGSSLMODE": os.environ["PGSSLMODE"]} if "PGSSLMODE" in os.environ else {}),
             **values,
         }
