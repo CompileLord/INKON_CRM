@@ -4219,9 +4219,9 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "version": string,
-    "commit_sha": string,
-    "commit_message": string,
-    "built_at": string,
+    "commit_sha?": string,
+    "commit_message?": string,
+    "built_at?": string,
   }
   ```
 

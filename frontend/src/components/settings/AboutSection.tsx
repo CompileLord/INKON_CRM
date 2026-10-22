@@ -4,6 +4,7 @@ import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { Button } from "../ui/Button";
 import { APP_VERSION, BUILD_TIME, COMMIT_HASH, COMMIT_MESSAGE, UNKNOWN_BUILD_VALUE } from "../../config/version";
 import { formatDateTime } from "../../i18n/formatters";
+import { useAuthStore } from "../../store/authStore";
 import { useServerBuildInfo } from "../../lib/system/hooks";
 
 const SHORT_HASH_LENGTH = 7;
@@ -25,7 +26,7 @@ export function commitHashesDiffer(frontendHash: string, serverHash: string): bo
   return !serverHash.startsWith(frontendHash) && !frontendHash.startsWith(serverHash);
 }
 
-function BuildDetailsList({ details }: { details: BuildDetails }) {
+function BuildDetailsList({ details, showBuildDetails }: { details: BuildDetails; showBuildDetails: boolean }) {
   const { t, i18n } = useTranslation("settings");
   const unknownLabel: string = t("about.unknown");
   const builtAtDate: Date = new Date(details.builtAt);
@@ -37,21 +38,25 @@ function BuildDetailsList({ details }: { details: BuildDetails }) {
     <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm @[34rem]:text-right">
       <dt className="text-muted">{t("about.version")}</dt>
       <dd className="min-w-0 text-ink tabular-nums">{details.version}</dd>
-      <dt className="text-muted">{t("about.commit")}</dt>
-      <dd className="min-w-0 break-words text-ink tabular-nums">{commitHash}</dd>
-      <dt className="text-muted">{t("about.commitName")}</dt>
-      <dd className="min-w-0 break-words text-ink">{commitMessage}</dd>
-      <dt className="text-muted">{t("about.builtAt")}</dt>
-      <dd className="min-w-0 text-ink tabular-nums">{builtAtLabel}</dd>
+      {showBuildDetails && (
+        <>
+          <dt className="text-muted">{t("about.commit")}</dt>
+          <dd className="min-w-0 break-words text-ink tabular-nums">{commitHash}</dd>
+          <dt className="text-muted">{t("about.commitName")}</dt>
+          <dd className="min-w-0 break-words text-ink">{commitMessage}</dd>
+          <dt className="text-muted">{t("about.builtAt")}</dt>
+          <dd className="min-w-0 text-ink tabular-nums">{builtAtLabel}</dd>
+        </>
+      )}
     </dl>
   );
 }
 
-function BuildDetailsSkeleton() {
+function BuildDetailsSkeleton({ showBuildDetails }: { showBuildDetails: boolean }) {
   const { t } = useTranslation("common");
   return (
     <div aria-busy="true" aria-label={t("loading")} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
-      {Array.from({ length: 4 }, (_, index) => (
+      {Array.from({ length: showBuildDetails ? 4 : 1 }, (_, index) => (
         <div key={index} className="contents">
           <div className="h-5 w-16 rounded bg-strip motion-safe:animate-pulse" />
           <div className="h-5 w-full rounded bg-strip motion-safe:animate-pulse" />
@@ -61,11 +66,11 @@ function BuildDetailsSkeleton() {
   );
 }
 
-function ServerBuildDetails() {
+function ServerBuildDetails({ showBuildDetails }: { showBuildDetails: boolean }) {
   const { t } = useTranslation("settings");
   const { data: serverBuild, isLoading, isError, refetch } = useServerBuildInfo();
 
-  if (isLoading) return <BuildDetailsSkeleton />;
+  if (isLoading) return <BuildDetailsSkeleton showBuildDetails={showBuildDetails} />;
   if (isError || !serverBuild) {
     return (
       <div role="alert" className="flex flex-wrap items-center justify-between gap-3">
@@ -77,14 +82,15 @@ function ServerBuildDetails() {
   return (
     <div className="space-y-2">
       <BuildDetailsList
+        showBuildDetails={showBuildDetails}
         details={{
           version: serverBuild.version,
-          commitHash: serverBuild.commit_sha,
-          commitMessage: serverBuild.commit_message,
-          builtAt: serverBuild.built_at,
+          commitHash: serverBuild.commit_sha ?? UNKNOWN_BUILD_VALUE,
+          commitMessage: serverBuild.commit_message ?? UNKNOWN_BUILD_VALUE,
+          builtAt: serverBuild.built_at ?? UNKNOWN_BUILD_VALUE,
         }}
       />
-      {commitHashesDiffer(COMMIT_HASH, serverBuild.commit_sha) && (
+      {showBuildDetails && commitHashesDiffer(COMMIT_HASH, serverBuild.commit_sha ?? UNKNOWN_BUILD_VALUE) && (
         <p className="text-sm text-muted @[34rem]:text-right">{t("about.hashDiffers")}</p>
       )}
     </div>
@@ -92,17 +98,19 @@ function ServerBuildDetails() {
 }
 
 export function AboutSection() {
+  const showBuildDetails: boolean = useAuthStore((state) => state.role === "superadmin");
   const { t } = useTranslation("settings");
 
   return (
     <SettingsGroup title={t("about.title")}>
       <SettingsRow icon={<Smartphone size={18} />} label={t("about.app")} description={t("about.appHint")}>
         <BuildDetailsList
+          showBuildDetails={showBuildDetails}
           details={{ version: APP_VERSION, commitHash: COMMIT_HASH, commitMessage: COMMIT_MESSAGE, builtAt: BUILD_TIME }}
         />
       </SettingsRow>
       <SettingsRow icon={<Server size={18} />} label={t("about.server")} description={t("about.serverHint")}>
-        <ServerBuildDetails />
+        <ServerBuildDetails showBuildDetails={showBuildDetails} />
       </SettingsRow>
     </SettingsGroup>
   );
