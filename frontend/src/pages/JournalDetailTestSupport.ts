@@ -170,6 +170,12 @@ export function optionTextOf(label: string): string {
   return option.textContent ?? "";
 }
 
+export function optionStatusOf(label: string): string | null {
+  if (!screen.queryByRole("listbox")) fireEvent.click(periodPicker());
+  const option: HTMLElement = within(screen.getByRole("listbox")).getByRole("option", { name: new RegExp(`^${label}`) });
+  return option.querySelector("[role='img']")?.getAttribute("aria-label") ?? null;
+}
+
 export function choosePeriod(periodId: number): void {
   fireEvent.click(periodPicker());
   const label: string = (PERIODS.find((period) => period.id === periodId) as JournalPeriod).period_label;

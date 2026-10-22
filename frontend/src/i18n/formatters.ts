@@ -173,3 +173,35 @@ export function formatPercentage(value: number, lng?: string): string {
 export function formatNumber(value: number, lng?: string, options: Intl.NumberFormatOptions = {}): string {
   return new Intl.NumberFormat(getActiveLocale(lng), options).format(value);
 }
+
+function parseCalendarDate(value: string): Date {
+  const [year, month, day]: number[] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function pickParts(date: Date, options: Intl.DateTimeFormatOptions, wanted: Intl.DateTimeFormatPartTypes[], lng?: string): string {
+  return new Intl.DateTimeFormat(getActiveLocale(lng), { ...options, timeZone: "UTC" })
+    .formatToParts(date)
+    .filter((part) => wanted.includes(part.type))
+    .map((part) => part.value)
+    .join(" ");
+}
+
+export function formatSchoolPeriodSpan(start: string, end: string, lng?: string): string {
+  const startDate: Date = parseCalendarDate(start);
+  const endDate: Date = parseCalendarDate(end);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return `${start} – ${end}`;
+  const lastDayOfStartMonth: number = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 0)).getUTCDate();
+  const isWholeCalendarMonth: boolean =
+    startDate.getUTCDate() === 1 &&
+    endDate.getUTCDate() === lastDayOfStartMonth &&
+    endDate.getUTCMonth() === startDate.getUTCMonth() &&
+    endDate.getUTCFullYear() === startDate.getUTCFullYear();
+  if (isWholeCalendarMonth) return pickParts(startDate, { month: "short", year: "numeric" }, ["month", "year"], lng);
+  const dayAndMonth: (date: Date) => string = (date: Date): string => pickParts(date, { day: "numeric", month: "short" }, ["day", "month"], lng);
+  const formatYear: (date: Date) => string = (date: Date): string => pickParts(date, { year: "numeric" }, ["year"], lng);
+  if (startDate.getUTCFullYear() === endDate.getUTCFullYear()) {
+    return `${dayAndMonth(startDate)} – ${dayAndMonth(endDate)} ${formatYear(endDate)}`;
+  }
+  return `${dayAndMonth(startDate)} ${formatYear(startDate)} – ${dayAndMonth(endDate)} ${formatYear(endDate)}`;
+}

@@ -152,7 +152,21 @@ describe("JournalGrid read-only", () => {
   it("still shows stored scores and attendance as text", () => {
     mountGrid({ editing: false, students: [student(1, "Anvar", { [DATES[0]]: 4 })] });
     expect(screen.getByText("4")).toBeDefined();
-    expect(screen.getAllByText("Absent").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("img", { name: "Absent" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Absent")).toBeNull();
+  });
+
+  it("shows attendance as an icon with an accessible name and no visible status word", () => {
+    const present = student(1, "Anvar", { [DATES[0]]: 4 });
+    present.entries[0] = { ...present.entries[0], attendance: true };
+    mountGrid({ editing: false, students: [present] });
+    const mark = screen.getAllByTestId("attendance-present")[0];
+    expect(mark.getAttribute("aria-label")).toBe("Present");
+    expect(mark.getAttribute("title")).toBe("Present");
+    expect(mark.querySelector("svg")).not.toBeNull();
+    expect(mark.textContent).toBe("");
+    expect(screen.queryByText("Present")).toBeNull();
+    expect(screen.getAllByTestId("attendance-absent")[0].querySelector("svg")).not.toBeNull();
   });
 });
 
@@ -177,10 +191,33 @@ describe("JournalGrid total column", () => {
     mountGrid({ students: [scored] });
     const cell = screen.getByTestId("total-cell");
     expect(cell.textContent).toContain("86");
-    expect(cell.textContent).toContain("/ 117");
+    expect(cell.textContent).not.toContain("/");
+    expect(screen.getByTestId("total-maximum").textContent).toBe("/ 117");
     expect(screen.getByTestId("total-percentage").textContent).toBe("74%");
     expect(screen.getByTestId("total-percentage").className).toContain("text-muted");
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).not.toContain("%");
+  });
+
+  it("states a shared maximum once in the header and keeps every row free of it", () => {
+    const first = student(1, "Anvar");
+    const second = student(2, "Bahor");
+    mountGrid({ students: [first, second] });
+    expect(screen.getAllByTestId("total-maximum")).toHaveLength(1);
+    expect(screen.getByTestId("total-maximum").textContent).toBe("/ 100");
+    expect(screen.queryAllByTestId("total-row-maximum")).toHaveLength(0);
+    screen.getAllByTestId("total-cell").forEach((cell) => expect(cell.textContent).not.toContain("/"));
+  });
+
+  it("falls back to the row maximum only on rows that differ from the shared header maximum", () => {
+    const first = student(1, "Anvar");
+    const second = student(2, "Bahor");
+    const odd = student(3, "Chiroq");
+    odd.summary = { ...(odd.summary as NonNullable<JournalStudentResponse["summary"]>), max_period_score: 80 };
+    mountGrid({ students: [first, second, odd] });
+    expect(screen.getByTestId("total-maximum").textContent).toBe("/ 100");
+    const rowMaximums = screen.getAllByTestId("total-row-maximum");
+    expect(rowMaximums).toHaveLength(1);
+    expect(rowMaximums[0].textContent).toContain("/ 80");
   });
 
   it("shows only the score when the period has no maximum", () => {
@@ -189,6 +226,7 @@ describe("JournalGrid total column", () => {
     mountGrid({ students: [noMaximum] });
     expect(screen.getByTestId("total-cell").textContent).toBe("5");
     expect(screen.queryByTestId("total-percentage")).toBeNull();
+    expect(screen.queryByTestId("total-maximum")).toBeNull();
   });
 });
 

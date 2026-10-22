@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Minus, MessageSquare } from "lucide-react";
+import { Check, X, MessageSquare } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
@@ -43,14 +43,12 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
           <span className="sr-only">{t("table.notRecorded")}</span>
         </span>
       ) : attendance ? (
-        <span className="inline-flex items-center gap-1 text-ink">
-          <Check className="h-4 w-4 text-success" aria-hidden="true" />
-          <span className="text-xs text-muted">{t("table.present")}</span>
+        <span role="img" aria-label={t("table.present")} title={t("table.present")} className="inline-flex items-center text-success" data-testid="attendance-present">
+          <Check className="h-4 w-4" aria-hidden="true" />
         </span>
       ) : (
-        <span className="inline-flex items-center text-muted">
-          <Minus className="h-4 w-4" aria-hidden="true" />
-          <span className="sr-only">{t("table.absent")}</span>
+        <span role="img" aria-label={t("table.absent")} title={t("table.absent")} className="inline-flex items-center text-destructive" data-testid="attendance-absent">
+          <X className="h-4 w-4" aria-hidden="true" />
         </span>
       )}
       {recorded && (
