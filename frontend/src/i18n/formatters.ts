@@ -175,7 +175,7 @@ export function formatNumber(value: number, lng?: string, options: Intl.NumberFo
 }
 
 function parseCalendarDate(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
+  const [year, month, day]: number[] = value.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));
 }
 
@@ -198,10 +198,10 @@ export function formatSchoolPeriodSpan(start: string, end: string, lng?: string)
     endDate.getUTCMonth() === startDate.getUTCMonth() &&
     endDate.getUTCFullYear() === startDate.getUTCFullYear();
   if (isWholeCalendarMonth) return pickParts(startDate, { month: "short", year: "numeric" }, ["month", "year"], lng);
-  const dayAndMonth = (date: Date): string => pickParts(date, { day: "numeric", month: "short" }, ["day", "month"], lng);
-  const year = (date: Date): string => pickParts(date, { year: "numeric" }, ["year"], lng);
+  const dayAndMonth: (date: Date) => string = (date: Date): string => pickParts(date, { day: "numeric", month: "short" }, ["day", "month"], lng);
+  const formatYear: (date: Date) => string = (date: Date): string => pickParts(date, { year: "numeric" }, ["year"], lng);
   if (startDate.getUTCFullYear() === endDate.getUTCFullYear()) {
-    return `${dayAndMonth(startDate)} – ${dayAndMonth(endDate)} ${year(endDate)}`;
+    return `${dayAndMonth(startDate)} – ${dayAndMonth(endDate)} ${formatYear(endDate)}`;
   }
-  return `${dayAndMonth(startDate)} ${year(startDate)} – ${dayAndMonth(endDate)} ${year(endDate)}`;
+  return `${dayAndMonth(startDate)} ${formatYear(startDate)} – ${dayAndMonth(endDate)} ${formatYear(endDate)}`;
 }
