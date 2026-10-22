@@ -153,7 +153,12 @@ describe("JournalStudentRow own-row not-graded state", () => {
     expect(screen.queryByText("0%")).toBeNull();
   });
 
-  it("shows the real zero once entries are recorded", () => {
+  it("treats recorded absences without a score as not graded", () => {
+    ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: false, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    expect(screen.getByTestId("total-cell").textContent).toBe("—");
+  });
+
+  it("shows the real zero once an attended lesson is recorded", () => {
     ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: true, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
     expect(screen.getByTestId("total-cell").textContent).toBe("0");
   });

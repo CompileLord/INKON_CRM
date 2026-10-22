@@ -120,6 +120,19 @@ describe("student course chart default", (): void => {
     expect(screen.getByTestId("progress-chart")).toBeDefined();
   });
 
+  it("shows the empty line when the profile reports no graded period even though zero rows are stored", () => {
+    mockClassProgress(data);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} gradedPeriodCount={0} />);
+    expect(screen.getByTestId("progress-no-graded")).toBeDefined();
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+  });
+
+  it("keeps the chart open when the profile reports graded periods", () => {
+    mockClassProgress(data);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} gradedPeriodCount={2} />);
+    expect(screen.getByTestId("progress-chart")).toBeDefined();
+  });
+
   it("shows a short empty line instead of a collapsed panel when nothing is graded", (): void => {
     mockClassProgress({ ...data, students: data.students.map((student) => ({ ...student, period_results: student.period_results.map((result) => ({ ...result, score: null, max_score: null, percentage: null })) })) });
     render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} />);

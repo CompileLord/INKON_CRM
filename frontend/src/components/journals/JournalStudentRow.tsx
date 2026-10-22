@@ -60,7 +60,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   const summary = student.summary;
   const studentName: string = `${student.first_name} ${student.last_name}`;
 
-  const nothingGraded: boolean = markUnrecorded && student.entries.length === 0 && (summary === null || summary === undefined || (summary.sum_score === 0 && summary.exam_score === 0 && summary.bonus_score === 0));
+  const nothingGraded: boolean = markUnrecorded && !student.entries.some((entry) => entry.attendance || entry.score > 0 || Boolean(entry.comment)) && (summary === null || summary === undefined || (summary.sum_score === 0 && summary.exam_score === 0 && summary.bonus_score === 0));
 
   const entriesMap = new Map(student.entries.map((e) => [e.lesson_date, e]));
 
@@ -86,7 +86,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
             </span>
           )}
           {isSelf && (
-            <span className="shrink-0 rounded-full bg-info-surface px-2 text-xs font-semibold text-ink">{t("readOnly.you")}</span>
+            <span className={compact ? "sr-only" : "shrink-0 rounded-full bg-info-surface px-2 text-xs font-semibold text-ink"}>{t("readOnly.you")}</span>
           )}
         </div>
       </th>

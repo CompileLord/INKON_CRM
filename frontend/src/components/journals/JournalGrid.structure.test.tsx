@@ -301,3 +301,18 @@ describe("JournalGrid compact columns on phones", () => {
     expect(widths.slice(0, 2)).toEqual(["200px", "128px"]);
   });
 });
+
+describe("JournalGrid own row on phones", () => {
+  it("drops the visible You badge on phones but keeps it for screen readers", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    render(
+      <JournalGrid journalId={7} periodLabel="Month 10" students={[student(1, "Anvar")]} lessonDates={DATES} selectedLesson={DATES[0]} cellStatus={new Map()} summaryStatus={new Map()} editing={null} examMaximum={24} onSelectLesson={vi.fn()} readOnlySelfStudentId={1} />,
+    );
+    const badge: HTMLElement = screen.getByText("You");
+    expect(badge.className).toContain("sr-only");
+  });
+});

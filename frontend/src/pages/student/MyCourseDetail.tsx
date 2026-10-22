@@ -119,7 +119,7 @@ export function MyCourseDetail() {
 
       {userId !== null && <StudentCourseJournal courseId={courseId} selfStudentId={userId} />}
 
-      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} />
+      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} gradedPeriodCount={entry?.periods_graded} />
 
       {course.description.trim() !== "" && <CourseDescription description={course.description} />}
     </PageContainer>

@@ -149,6 +149,13 @@ describe("student course page minimal details", () => {
     expect(screen.getByTestId("total-cell").textContent).not.toMatch(/0|%/);
   });
 
+  it("shows a short empty line instead of a zero line chart when the profile reports no graded period", () => {
+    state.profile = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [{ course: { id: 4 }, bucket: "active", periods_graded: 0 }] } };
+    renderCourse();
+    expect(screen.getByTestId("progress-no-graded")).toBeDefined();
+    expect(screen.queryByTestId("progress-chart")).toBeNull();
+  });
+
   it("hides the attendance and absence tiles until a lesson is recorded", () => {
     const { container } = renderCourse();
     expect(container.querySelectorAll("[data-stat-tile]")).toHaveLength(1);
