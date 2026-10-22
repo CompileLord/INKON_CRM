@@ -5,6 +5,7 @@ from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.selectable import Exists
+from app.core.email_normalizer import EmailNormalizer
 from app.core.login_identifier import LoginIdentifier, LoginIdentifierKind
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseStatus
@@ -21,7 +22,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         super().__init__(User, session)
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        query = select(User).filter(User.email == email, User.is_deleted == False)
+        query = select(User).filter(func.lower(User.email) == EmailNormalizer.normalize(email), User.is_deleted == False)
         result = await self.session.execute(query)
         return result.scalars().first()
 
@@ -69,7 +70,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
     async def get_by_email_for_update(self, email: str) -> Optional[User]:
         query: Select[tuple[User]] = (
             select(User)
-            .where(User.email == email, User.is_deleted.is_(False))
+            .where(func.lower(User.email) == EmailNormalizer.normalize(email), User.is_deleted.is_(False))
             .with_for_update()
             .execution_options(populate_existing=True)
         )
