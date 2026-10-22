@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from typing_extensions import Protocol
 from app.models.user import User
 from app.models.course import Course
-from app.repositories.interfaces.base_repository import BaseRepository
+from app.repositories.interfaces.base_repository import BaseRepository, RepositoryPage
 
 
 @dataclass(frozen=True)
@@ -54,7 +54,7 @@ class UserRepository(BaseRepository[User], Protocol):
         page_size: int = 20,
         search: Optional[str] = None,
         mentor_id: int | None = None,
-    ) -> dict:
+    ) -> RepositoryPage[User]:
         ...
 
     async def get_mentors_list(
@@ -62,7 +62,7 @@ class UserRepository(BaseRepository[User], Protocol):
         page: int = 1,
         page_size: int = 20,
         search: Optional[str] = None
-    ) -> dict:
+    ) -> RepositoryPage[User]:
         ...
 
     async def get_student_profile_stats(self, student_id: int) -> Dict[str, Any]:
@@ -75,4 +75,7 @@ class UserRepository(BaseRepository[User], Protocol):
         ...
 
     async def get_mentor_analytics(self, mentor_id: int) -> Dict[str, Any]:
+        ...
+
+    async def mentor_has_student(self, mentor_id: int, student_id: int) -> bool:
         ...

@@ -1,8 +1,10 @@
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.repositories.interfaces.base_repository import RepositoryPage
 from app.models.audit_log import AuditLog, AuditAction
 from app.repositories.interfaces.audit_log_repository import (
+    AuditLogRepository,
     AuditEntityReference,
     AuditEventKey,
     AuditLogFilters,
@@ -15,9 +17,9 @@ MAXIMUM_PAGE_SIZE: int = 100
 
 
 class AuditService:
-    def __init__(self, db: AsyncSession) -> None:
-        self.db = db
-        self.audit_repo = SQLAlchemyAuditLogRepository(db)
+    def __init__(self, db: AsyncSession, audit_repo: AuditLogRepository | None = None) -> None:
+        self.db: AsyncSession = db
+        self.audit_repo: AuditLogRepository = audit_repo if audit_repo is not None else SQLAlchemyAuditLogRepository(db)
 
     async def log(
         self,
@@ -38,7 +40,7 @@ class AuditService:
                 old_value=str(old_val) if old_val is not None else None,
                 new_value=str(new_val) if new_val is not None else None,
             )
-            self.db.add(audit_log)
+            self.audit_repo.stage_log(audit_log)
 
     @staticmethod
     def _dushanbe_day_start_in_utc(local_day: date) -> datetime:
@@ -76,9 +78,9 @@ class AuditService:
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         search: Optional[str] = None,
-    ) -> dict:
+    ) -> RepositoryPage[dict[str, Any]]:
         bounded_page_size: int = min(max(1, page_size), MAXIMUM_PAGE_SIZE)
-        filters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
+        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
         event_keys, total = await self.audit_repo.list_event_keys(filters, page, bounded_page_size)
         changes = await self.audit_repo.list_changes_for_events(event_keys)
         changes_by_key: dict[tuple, list[AuditLog]] = {}
@@ -147,9 +149,9 @@ class AuditService:
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         search: Optional[str] = None,
-    ) -> dict:
+    ) -> RepositoryPage[dict[str, Any]]:
         bounded_page_size: int = min(max(1, page_size), MAXIMUM_PAGE_SIZE)
-        filters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
+        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
         rows, total = await self.audit_repo.list_filtered_rows(filters, page, bounded_page_size)
         references = await self.audit_repo.resolve_entity_references(self._collect_entity_ids(rows))
         return {

@@ -1,8 +1,7 @@
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, require_superadmin
+from app.core.deps import get_audit_service, require_superadmin
 from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
@@ -24,9 +23,8 @@ async def list_audit_logs(
     date_to: Optional[date] = Query(None, description="Inclusive Dushanbe calendar day"),
     search: Optional[str] = Query(None, max_length=100, description="Matches actor name, entity type or field name"),
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    audit_service: AuditService = Depends(get_audit_service)
 ) -> dict:
-    audit_service = AuditService(db)
     return await audit_service.list_logs(
         page,
         page_size,
@@ -52,9 +50,8 @@ async def list_audit_events(
     date_to: Optional[date] = Query(None, description="Inclusive Dushanbe calendar day"),
     search: Optional[str] = Query(None, max_length=100, description="Matches actor name, entity type or field name"),
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    audit_service: AuditService = Depends(get_audit_service)
 ) -> dict:
-    audit_service = AuditService(db)
     return await audit_service.list_events(
         page,
         page_size,
@@ -71,7 +68,6 @@ async def list_audit_events(
 @router.get("/filter-options/", response_model=AuditFilterOptionsResponse)
 async def get_audit_filter_options(
     current_user: User = Depends(require_superadmin),
-    db: AsyncSession = Depends(get_db_session)
+    audit_service: AuditService = Depends(get_audit_service)
 ) -> dict:
-    audit_service = AuditService(db)
     return await audit_service.get_filter_options()

@@ -1,14 +1,13 @@
-import os
-from typing import List, Optional
+from typing import Optional
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
-from sqlalchemy import Select, and_, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.elements import ColumnElement
 from app.models.document import Document, DocumentOwnerType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
 from app.models.outbox_event import OutboxEventKind
+from app.repositories.interfaces.base_repository import RepositoryPage
+from app.repositories.interfaces.document_repository import DocumentRepository, DocumentFilters
 from app.repositories.sqlalchemy.document_repository import SQLAlchemyDocumentRepository
 from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
 from app.services.outbox_service import OutboxService
@@ -39,9 +38,9 @@ def verify_magic_bytes(content: bytes, filename: str) -> bool:
 
 
 class DocumentService:
-    def __init__(self, db: AsyncSession, storage: StorageService | None = None) -> None:
-        self.db = db
-        self.document_repo = SQLAlchemyDocumentRepository(db)
+    def __init__(self, db: AsyncSession, storage: StorageService | None = None, document_repo: DocumentRepository | None = None) -> None:
+        self.db: AsyncSession = db
+        self.document_repo: DocumentRepository = document_repo if document_repo is not None else SQLAlchemyDocumentRepository(db)
         self.storage_service: StorageService = storage or get_storage_service()
         self.upload_storage_service: StorageService = self.storage_service
 
@@ -101,12 +100,7 @@ class DocumentService:
         await self.db.flush()
 
         if owner_type == "student" and journal_id is not None:
-            summary_query = select(JournalStudentSummary).filter(
-                JournalStudentSummary.journal_id == journal_id,
-                JournalStudentSummary.student_id == owner_id
-            )
-            summary_res = await self.db.execute(summary_query)
-            summary = summary_res.scalars().first()
+            summary: JournalStudentSummary | None = await self.document_repo.get_journal_summary(journal_id, owner_id)
             if summary and summary.exam_score > 0:
                 outbox_service: OutboxService = OutboxService(
                     SQLAlchemyOutboxRepository(self.db), settings.JWT_SECRET_KEY
@@ -137,11 +131,11 @@ class DocumentService:
 
     async def list_documents(
         self,
-        filters: dict,
+        filters: DocumentFilters,
         page: int,
         page_size: int,
         current_user: User
-    ) -> dict:
+    ) -> RepositoryPage[Document]:
         requested_owner_id: int | None = filters.get("owner_id")
         if (
             current_user.role == UserRole.MENTOR
@@ -150,33 +144,12 @@ class DocumentService:
             and not await self.document_repo.mentor_has_student(current_user.id, requested_owner_id)
         ):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
-        query: Select[tuple[Document]] = select(Document).where(
-            Document.is_deleted.is_(False),
-            self._document_visibility_filter(current_user),
-        )
-
-        owner_type: str | None = filters.get("owner_type")
-        if owner_type:
-            query = query.filter(Document.owner_type == owner_type)
-
-        owner_id: int | None = filters.get("owner_id")
-        if owner_id:
-            query = query.filter(Document.owner_id == owner_id)
-
-        journal_id: int | None = filters.get("journal_id")
-        if journal_id:
-            query = query.filter(Document.journal_id == journal_id)
-
-        query = query.order_by(Document.id.desc())
-        return await self.document_repo.get_paginated(query, page, page_size)
+        self._validate_viewer(current_user)
+        return await self.document_repo.list_documents(filters, current_user.id, current_user.role, page, page_size)
 
     async def read_document(self, document_id: int, current_user: User) -> tuple[Document, bytes]:
-        query = select(Document).where(
-            Document.id == document_id,
-            Document.is_deleted.is_(False),
-            self._document_visibility_filter(current_user),
-        )
-        document: Optional[Document] = (await self.db.execute(query)).scalars().first()
+        self._validate_viewer(current_user)
+        document: Document | None = await self.document_repo.get_visible_document(document_id, current_user.id, current_user.role)
         if document is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         try:
@@ -200,26 +173,7 @@ class DocumentService:
         if owner_segment != DocumentOwnerType(document.owner_type).value or owner_identifier != str(document.owner_id):
             raise ValueError("Invalid document path")
 
-    def _document_visibility_filter(self, current_user: User) -> ColumnElement[bool]:
-        if current_user.role == UserRole.STUDENT:
-            return and_(
-                Document.owner_type == DocumentOwnerType.STUDENT,
-                Document.owner_id == current_user.id,
-            )
-        if current_user.role == UserRole.MENTOR:
-            return or_(
-                and_(
-                    Document.owner_type == DocumentOwnerType.STUDENT,
-                    self.document_repo.student_is_enrolled_with_mentor(current_user.id),
-                ),
-                and_(
-                    Document.owner_type == DocumentOwnerType.MENTOR,
-                    Document.owner_id == current_user.id,
-                ),
-            )
-        if current_user.role == UserRole.SUPERADMIN:
-            return true()
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
+    @staticmethod
+    def _validate_viewer(current_user: User) -> None:
+        if current_user.role not in (UserRole.STUDENT, UserRole.MENTOR, UserRole.SUPERADMIN):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")

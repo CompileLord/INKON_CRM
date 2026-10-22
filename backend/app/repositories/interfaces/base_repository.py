@@ -1,7 +1,15 @@
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, Generic, List, Optional, TypeVar, TypedDict
 from typing_extensions import Protocol
 
 T = TypeVar("T")
+
+
+class RepositoryPage(TypedDict, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 
 class BaseRepository(Protocol[T]):
