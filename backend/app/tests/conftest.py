@@ -218,6 +218,11 @@ deps_module.AsyncSessionLocal = TestingSessionLocal
 worker_tasks_module.AsyncSessionLocal = TestingSessionLocal
 
 
+@pytest.fixture(autouse=True)
+def test_password_bcrypt_rounds(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "PASSWORD_BCRYPT_ROUNDS", 4)
+
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()

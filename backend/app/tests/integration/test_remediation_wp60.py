@@ -25,7 +25,7 @@ class TestPasswordOffload:
         adapter: security.PasswordWorkService = security.PasswordWorkService()
         password: str = "пароль123"
         encoded: str = await adapter.hash(password)
-        assert encoded.startswith("$2b$12$")
+        assert encoded.startswith(f"$2b${settings.PASSWORD_BCRYPT_ROUNDS:02d}$")
         assert await adapter.verify(password, encoded)
         assert not await adapter.verify("wrong", encoded)
         assert not await adapter.verify(password, "invalid")
