@@ -4,7 +4,7 @@
  */
 
 export interface LoginRequest {
-  email: string;
+  login: string;
   password: string;
 }
 
@@ -21,8 +21,11 @@ export interface SetPasswordRequest {
   new_password: string;
 }
 
+export type PasswordResetSmsChannel = "student_phone" | "parent_phone";
+
 export interface PasswordResetRequest {
-  email: string;
+  login: string;
+  channel?: PasswordResetSmsChannel;
 }
 
 export interface PasswordResetVerifyRequest {
@@ -55,7 +58,7 @@ export interface PasswordResetVerifyResponse {
 }
 
 export interface PasswordResetRequestResponse {
-  message: "If the email exists, a reset code has been sent.";
+  message: "If the account exists, a reset message has been sent.";
 }
 
 export interface ValidationErrorItem {

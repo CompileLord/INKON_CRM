@@ -25,14 +25,22 @@ export const countUnicodeCodepoints = (value: string): number => Array.from(valu
 
 export const hasPythonDigit = (value: string): boolean => PYTHON_DIGIT_PATTERN.test(value);
 
+const LOGIN_PHONE_SEPARATORS: RegExp = /[\s\-()]/g;
+const LOGIN_PHONE_PATTERN: RegExp = /^\+?[1-9][0-9]{1,14}$/;
+
+export const isEmailOrPhoneLogin = (value: string): boolean =>
+  value.includes("@")
+    ? z.string().email().safeParse(value).success
+    : LOGIN_PHONE_PATTERN.test(value.replace(LOGIN_PHONE_SEPARATORS, ""));
+
 export const createLoginFormSchema = (t: TFunction) =>
   z.object({
-    email: z.string().trim().min(1, t("validation:required")).email(t("validation:invalidEmail")),
+    login: z.string().trim().min(1, t("validation:required")).refine(isEmailOrPhoneLogin, t("validation:invalidLogin")),
     password: z.string().min(1, t("validation:required")),
   });
 
 export const loginFormSchema = z.object({
-  email: z.string().trim().min(1, "Введите email").email("Некорректный email"),
+  login: z.string().trim().min(1, "Введите email или телефон").refine(isEmailOrPhoneLogin, "Некорректный email или телефон"),
   password: z.string().min(1, "Введите пароль"),
 });
 
@@ -86,3 +94,19 @@ export const createChangePasswordFormSchema = (
     });
 
 export type ChangePasswordFormValues = z.infer<ReturnType<typeof createChangePasswordFormSchema>>;
+
+export const createForgotRequestSchema = (t: TFunction) =>
+  z.object({
+    login: z.string().trim().min(1, t("validation:required")).refine(isEmailOrPhoneLogin, t("validation:invalidLogin")),
+    channel: z.enum(["student_phone", "parent_phone"]),
+  });
+
+export type ForgotRequestValues = z.infer<ReturnType<typeof createForgotRequestSchema>>;
+
+export const createResetCodeSchema = (t: TFunction) =>
+  z.object({
+    email: z.string().trim().min(1, t("validation:required")).email(t("validation:invalidEmail")),
+    code: z.string().trim().regex(/^[0-9]{6}$/, t("validation:invalidCode")),
+  });
+
+export type ResetCodeValues = z.infer<ReturnType<typeof createResetCodeSchema>>;

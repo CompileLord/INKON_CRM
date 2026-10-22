@@ -5,5 +5,7 @@
   "passwordMinLength": "Password must be at least {{min}} characters long",
   "passwordRequiresDigit": "Password must contain at least 1 digit",
   "passwordsDoNotMatch": "Passwords do not match",
-  "invalidNumber": "Value must be a number greater than 0"
+  "invalidNumber": "Value must be a number greater than 0",
+  "invalidLogin": "Enter a valid email or phone number",
+  "invalidCode": "Enter the 6-digit code"
 }
