@@ -18,6 +18,10 @@ class LessonDateCalculator:
     def for_schedules(cls, period_start: date, period_end: date, schedules: Collection[CourseSchedule]) -> list[date]:
         return list(cls.calculate(period_start, period_end, [schedule.day_of_week for schedule in schedules]))
 
+    @classmethod
+    def held_count(cls, period_start: date, period_end: date, weekdays: Collection[int], today: date) -> int:
+        return len(cls.calculate(period_start, min(period_end, today), weekdays))
+
     @staticmethod
     def calculate(start: date, end: date, weekdays: Collection[int]) -> tuple[date, ...]:
         selected_weekdays: set[int] = set(weekdays)

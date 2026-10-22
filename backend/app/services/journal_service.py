@@ -1,5 +1,5 @@
 from app.services.journal_transaction import JournalCommandTransaction as JournalCommandTransaction
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select, or_, false
@@ -15,12 +15,52 @@ from app.repositories.sqlalchemy.exam_result_notification_repository import SQLA
 from app.services.exam_result_scheduling_service import ExamResultSchedulingService
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import ScoringPolicy
+from app.core.school_calendar import SchoolCalendar
+from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.models.course_schedule import CourseSchedule
 
 
 from app.services.journal_query_service import JournalQueryService, get_lesson_dates
 
 
 class JournalService(JournalQueryService):
+    async def reject_invalid_cells(self, journal: Journal, entries_updates: list) -> None:
+        schedules_result = await self.db.execute(select(CourseSchedule).filter(CourseSchedule.course_id == journal.course_id))
+        lesson_dates: set[date] = set(get_lesson_dates(journal.period_start, journal.period_end, list(schedules_result.scalars().all())))
+        requested_student_ids: set[int] = {update.student_id for update in entries_updates}
+        known_result = await self.db.execute(select(User.id).filter(User.id.in_(requested_student_ids)))
+        known_student_ids: set[int] = set(known_result.scalars().all())
+        enrolled_result = await self.db.execute(select(Enrollment.student_id).filter(
+            Enrollment.course_id == journal.course_id,
+            Enrollment.student_id.in_(requested_student_ids),
+            Enrollment.is_deleted.is_(False),
+            Enrollment.status == EnrollmentStatus.ACTIVE,
+        ))
+        enrolled_student_ids: set[int] = set(enrolled_result.scalars().all())
+        today: date = SchoolCalendar.today()
+        rejected_cells: list[dict] = []
+        for update in entries_updates:
+            code: str | None = None
+            if update.student_id not in known_student_ids:
+                code = "unknown_student"
+            elif update.student_id not in enrolled_student_ids:
+                code = "student_not_enrolled"
+            elif update.lesson_date not in lesson_dates:
+                code = "invalid_lesson_date"
+            elif update.lesson_date > today:
+                code = "future_lesson"
+            if code is not None:
+                rejected_cells.append({"student_id": update.student_id, "lesson_date": update.lesson_date.isoformat(), "code": code})
+        if rejected_cells:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={
+                    "code": rejected_cells[0]["code"],
+                    "message": "Some journal cells cannot be updated",
+                    "cells": rejected_cells,
+                },
+            )
+
     @staticmethod
     def authorize_mutation(course: Course, current_user: User) -> None:
         if current_user.role == UserRole.SUPERADMIN:
@@ -51,6 +91,8 @@ class JournalService(JournalQueryService):
 
         if not entries_updates:
             return {"applied": [], "conflicts": [], "summaries": []}
+
+        await self.reject_invalid_cells(journal, entries_updates)
 
         student_ids = list(set(u.student_id for u in entries_updates))
         dates = list(set(u.lesson_date for u in entries_updates))
@@ -104,6 +146,7 @@ class JournalService(JournalQueryService):
                         "attendance": entry.attendance,
                         "score": entry.score,
                         "comment": entry.comment,
+                        "is_graded": entry.is_graded is True,
                         "version": entry.version
                     }
                 })
@@ -172,6 +215,7 @@ class JournalService(JournalQueryService):
                 "attendance": e.attendance,
                 "score": e.score,
                 "comment": e.comment,
+                "is_graded": e.is_graded is True,
                 "version": e.version
             }
             for e in applied_entries
