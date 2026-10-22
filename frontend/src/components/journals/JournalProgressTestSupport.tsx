@@ -80,5 +80,5 @@ export function tooltipNames(): string[] {
 }
 
 export function tooltipLabels(): string[] {
-  return screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.lastElementChild?.textContent ?? "");
+  return screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.querySelector("[data-testid='chart-tooltip-score']")?.textContent ?? "");
 }

@@ -6,7 +6,7 @@ import {
   type ProgressPeriodRow,
   type StoredPeriodResult,
 } from "../../lib/journals/JournalProgressRules";
-import { formatNumber } from "../../i18n/formatters";
+import { formatNumber, formatPercentage, formatSchoolLessonDate } from "../../i18n/formatters";
 import { usePeriodName } from "../ui/periodName";
 
 export const SERIES_STROKE: readonly string[] = [
@@ -53,6 +53,7 @@ interface TooltipEntry {
   name: string;
   value: number;
   label: string;
+  detail?: string;
   swatch: React.ReactNode;
 }
 
@@ -130,7 +131,6 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
 
   const entriesAt = (index: number): TooltipEntry[] => {
     const periodMaximum: number | null = maximumValues[index];
-    const withMaximum = (score: number): string => (periodMaximum === null ? formatScore(score) : `${formatScore(score)} / ${formatScore(periodMaximum)}`);
     const entries: TooltipEntry[] = visibleStudents.flatMap((student) => {
       const result: StoredPeriodResult | null = student.results[index];
       return result
@@ -138,17 +138,18 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
             key: `s${student.studentId}`,
             name: student.studentId === selfStudentId ? `${student.name} (${t("readOnly.you")})` : student.name,
             value: result.score,
-            label: `${formatScore(result.score)} / ${formatScore(result.maxScore)}`,
+            label: formatScore(result.score),
+            detail: result.maxScore > 0 ? formatPercentage((result.score / result.maxScore) * 100) : undefined,
             swatch: <StudentSwatch student={student} />,
           }]
         : [];
     });
     const average: number | null = averageValues[index];
     if (showAverage && average !== null) {
-      entries.push({ key: "average", name: t("progress.classAverage"), value: average, label: withMaximum(average), swatch: <AverageSwatch /> });
+      entries.push({ key: "average", name: t("progress.classAverage"), value: average, label: formatScore(average), swatch: <AverageSwatch /> });
     }
     const sorted: TooltipEntry[] = entries.sort((first, second) => second.value - first.value);
-    if (showMaximum && periodMaximum !== null) {
+    if (periodMaximum !== null) {
       sorted.push({ key: "maximum", name: t("progress.maximum"), value: periodMaximum, label: formatScore(periodMaximum), swatch: <MaximumSwatch /> });
     }
     return sorted;
@@ -177,6 +178,10 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
     Math.max(width - tooltipWidth, 0),
   );
   const shownLabel: string = periodName(periods[shownIndex].period.period_label);
+  const shownDates: string = t("period.range", { start: formatSchoolLessonDate(periods[shownIndex].period.period_start), end: formatSchoolLessonDate(periods[shownIndex].period.period_end) });
+  const presentMaximums: number[] = maximumValues.filter((value): value is number => value !== null);
+  const sharedMaximum: number | null =
+    presentMaximums.length > 0 && presentMaximums.every((value) => value === presentMaximums[0]) ? presentMaximums[0] : null;
   const liveSummary: string = !isActive
     ? ""
     : `${shownLabel}: ${
@@ -216,6 +221,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
               y1={yFor(gridValue)}
               y2={yFor(gridValue)}
               className="stroke-border"
+              strokeOpacity={gridValue === 0 ? 1 : 0.5}
               strokeWidth={1}
               strokeDasharray={gridValue === 0 ? undefined : "2 4"}
               data-testid="chart-gridline"
@@ -232,6 +238,11 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
               {periodName(row.period.period_label)}
             </text>
           ) : null,
+        )}
+        {showMaximum && sharedMaximum !== null && (
+          <text x={width - marginRight} y={yFor(sharedMaximum) - 6} textAnchor="end" className="fill-muted tabular-nums" fontSize={11} data-testid="chart-maximum-label">
+            {t("progress.chart.maximumLabel", { max: formatScore(sharedMaximum) })}
+          </text>
         )}
         <line
           x1={0}
@@ -369,6 +380,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
         className={`pointer-events-none absolute z-10 rounded-[10px] bg-card shadow-lg ring-1 ring-border ${narrow ? "p-2 text-xs" : "p-2.5 text-sm"} ${GLIDE_TRANSITION}`}
       >
         <div className="mb-1 text-xs font-semibold text-muted">{shownLabel}</div>
+        <div className="mb-1 text-xs tabular-nums text-muted" data-testid="chart-tooltip-dates">{shownDates}</div>
         {activeEntries.length === 0 ? (
           <div className="text-xs text-muted">{t("progress.chart.noValues")}</div>
         ) : (
@@ -377,7 +389,8 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
               <li key={entry.key} data-testid="chart-tooltip-entry" className="flex items-center gap-2 text-ink">
                 {entry.swatch}
                 <span className="min-w-0 flex-1 truncate" title={entry.name}>{entry.name}</span>
-                <span className="font-semibold tabular-nums">{entry.label}</span>
+                <span className="font-semibold tabular-nums" data-testid="chart-tooltip-score">{entry.label}</span>
+                {entry.detail && <span className="text-xs tabular-nums text-muted">{entry.detail}</span>}
               </li>
             ))}
           </ul>

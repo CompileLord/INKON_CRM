@@ -47,7 +47,14 @@ describe("Progress score chart", () => {
     render(<JournalProgressView courseId={1} />);
     const gridlines = Array.from(screen.getByTestId("progress-chart").querySelectorAll("[data-testid='chart-gridline']"));
     expect(gridlines.map((line) => line.getAttribute("data-value"))).toEqual(["0", "5", "10", "15", "20", "25"]);
-    expect(screen.getByTestId("progress-chart").textContent).not.toContain("%");
+    expect(screen.getByTestId("progress-chart").querySelector("svg")?.textContent).not.toContain("%");
+  });
+
+  it("states the shared maximum once as a single muted label and never prints score over maximum on the plot", () => {
+    render(<JournalProgressView courseId={1} />);
+    const svg: Element = screen.getByTestId("progress-chart").querySelector("svg") as Element;
+    expect(svg.textContent).not.toMatch(/\d+\s*\/\s*\d+/);
+    expect(svg.querySelectorAll("[data-testid='chart-maximum-label']").length).toBeLessThanOrEqual(1);
   });
 
   it("places a score above the first period maximum inside the domain and plots scores, not percentages", () => {
@@ -156,11 +163,14 @@ describe("Progress score chart", () => {
     pressKey("Home");
     expect(screen.getByTestId("chart-tooltip").textContent).toContain("Month 8");
     expect(tooltipNames()).toEqual(["Anvar Tester", "Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);
-    expect(tooltipLabels()).toEqual(["18 / 24", "12 / 24", "10 / 24", "0 / 24", "24"]);
+    expect(tooltipLabels()).toEqual(["18", "12", "10", "0", "24"]);
+    const entryTexts: string[] = screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.textContent ?? "");
+    expect(entryTexts[0]).toContain("75%");
+    expect(screen.getByTestId("chart-tooltip-dates").textContent).toContain("2026");
     pressKey("ArrowRight");
     expect(tooltipNames()).toEqual(["Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);
     pressKey("ArrowRight");
-    expect(tooltipLabels()[0]).toBe("25 / 24.5");
+    expect(tooltipLabels()[0]).toBe("25");
   });
 
   it("omits hidden students from the crosshair card", () => {
@@ -180,7 +190,7 @@ describe("Progress score chart", () => {
     pressKey("End");
     pressKey("ArrowRight");
     expect(screen.getByTestId("chart-live").textContent).toContain("Month 10");
-    expect(screen.getByTestId("chart-live").textContent).toContain("Anvar Tester 25 / 24.5");
+    expect(screen.getByTestId("chart-live").textContent).toContain("Anvar Tester 25");
     pressKey("Escape");
     expect(screen.getByTestId("chart-tooltip").getAttribute("data-active")).toBe("false");
   });
