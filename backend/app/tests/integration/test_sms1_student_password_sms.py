@@ -97,14 +97,14 @@ async def test_sent_code_logs_in_wrong_code_fails_and_password_can_be_changed(
 
     assert (await SmsPasswordTestSupport.login(client, "+992900000001", wrong_code)).status_code == 401
     ok: Response = await SmsPasswordTestSupport.login(client, "+992900000001", code)
-    assert ok.status_code == 200 and ok.json()["must_set_password"] is False
+    assert ok.status_code == 200 and ok.json()["must_set_password"] is True
     setup_headers: dict[str, str] = {"Authorization": f"Bearer {ok.json()['access_token']}"}
     blocked: Response = await client.get("/api/v1/users/me", headers=setup_headers)
-    assert blocked.status_code == 200
+    assert blocked.status_code == 403
 
     set_response: Response = await client.post(
-        "/api/v1/auth/change-password",
-        json={"current_password": code, "new_password": "first-own-pass-1"}, headers=setup_headers
+        "/api/v1/auth/set-password",
+        json={"new_password": "first-own-pass-1"}, headers=setup_headers
     )
     assert set_response.status_code == 200
     own_headers: dict[str, str] = {"Authorization": f"Bearer {set_response.json()['access_token']}"}
@@ -113,7 +113,7 @@ async def test_sent_code_logs_in_wrong_code_fails_and_password_can_be_changed(
         json={"current_password": "nope-nope-1", "new_password": "second-own-pass-2"},
         headers=own_headers,
     )
-    assert bad_change.status_code == 401
+    assert bad_change.status_code == 400
     change: Response = await client.post(
         "/api/v1/auth/change-password",
         json={"current_password": "first-own-pass-1", "new_password": "second-own-pass-2"},

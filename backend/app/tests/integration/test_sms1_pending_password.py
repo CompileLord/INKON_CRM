@@ -53,7 +53,7 @@ class TestPendingStudentPassword:
         ))
         assert [response.status_code for response in responses] == [200, 200]
         for response in responses:
-            assert (await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {response.json()['access_token']}"})).status_code == 200
+            assert (await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {response.json()['access_token']}"})).status_code == 403
         db_session.expire_all()
         student: User = (await db_session.execute(select(User).where(User.id == test_student.id))).scalar_one()
         assert student.auth_version == test_student.auth_version + 1
@@ -124,8 +124,8 @@ class TestPendingStudentPassword:
         await client.post("/api/v1/auth/password-reset/request", json={"email": test_student.email, "channel": "student_phone"})
         code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, test_student.id))[0])
         activated: Response = await SmsPasswordTestSupport.login(client, test_student.email, code)
-        assert activated.status_code == 200 and activated.json()["must_set_password"] is False
-        assert (await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {activated.json()['access_token']}"})).status_code == 200
+        assert activated.status_code == 200 and activated.json()["must_set_password"] is True
+        assert (await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {activated.json()['access_token']}"})).status_code == 403
         assert (await SmsPasswordTestSupport.login(client, test_student.email, "student_pass123")).status_code == 401
         assert (await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {original.json()['access_token']}"})).status_code == 401
         assert (await client.post("/api/v1/auth/refresh", json={"refresh_token": original.json()["refresh_token"]})).status_code == 401

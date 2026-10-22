@@ -78,7 +78,7 @@ async def test_password_reset_success_and_replay_rejection(
         json={"email": test_mentor.email, "code": "000000"},
     )
     assert invalid_code_response.status_code == 400
-    assert invalid_code_response.json()["detail"] == "Invalid reset code"
+    assert invalid_code_response.json()["detail"] == "Invalid or expired reset code"
     verify_response: Response = await client.post(
         "/api/v1/auth/password-reset/verify",
         json={"email": test_mentor.email, "code": challenge["code"]},
