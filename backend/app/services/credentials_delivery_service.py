@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.audit_service import AuditService
-from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 from app.services.credentials_channel import CredentialsChannel, CredentialsChannelPolicy
 from app.services.sms.messages import PasswordSmsReason
 from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
@@ -40,7 +40,7 @@ class CredentialsDeliveryService:
         channel: CredentialsChannel = self._policy.resolve(user, requested_channel)
         sms_kind: Optional[PasswordSmsDestinationKind] = channel.sms_kind
         if sms_kind is None:
-            await AuthService(self._db).issue_temporary_credentials(user, parent_link_code)
+            await AuthServiceComposition.create(self._db).issue_temporary_credentials(user, parent_link_code)
             await self._audit_service.log(
                 actor_id, "update", "user", user.id,
                 {"credentials_queued": (None, f"{reason.value}:{channel.value}")},

@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
+from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 
 
 @pytest.mark.asyncio
@@ -135,7 +137,7 @@ async def test_password_reset_keeps_setup_required_access_token_restricted(
         algorithm="HS256",
     )
 
-    token_pair = await AuthService(db_session).password_reset_confirm(
+    token_pair: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(
         reset_token,
         "ResetPass123",
     )

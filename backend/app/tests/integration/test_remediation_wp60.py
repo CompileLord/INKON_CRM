@@ -17,6 +17,7 @@ from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 
 
 class TestPasswordOffload:
@@ -82,7 +83,7 @@ class TestPasswordOffload:
         self, db_session: AsyncSession, test_student: User,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        service: AuthService = AuthService(db_session)
+        service: AuthService = AuthServiceComposition.create(db_session)
         adapter: type[security.PasswordWorkService] = security.PasswordWorkService
         verify: AsyncMock = AsyncMock(return_value=True)
         hashing: AsyncMock = AsyncMock(return_value=hash_password("replacement123"))
@@ -129,7 +130,7 @@ class TestPasswordOffload:
     async def test_reset_replaces_password_and_revokes_old_refresh(
         self, db_session: AsyncSession, test_student: User,
     ) -> None:
-        service: AuthService = AuthService(db_session)
+        service: AuthService = AuthServiceComposition.create(db_session)
         original_tokens: TokenPair = await service.login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
         issued_at: datetime = datetime.now(timezone.utc)
         reset_token: str = jwt.encode(

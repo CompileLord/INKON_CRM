@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.redis import redis_client
 from app.models.user import User
+from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 
 
 def _create_password_reset_grant(
@@ -61,7 +63,7 @@ async def test_reset_is_single_use_and_invalidates_existing_access_and_refresh(
     assert old_profile.status_code == 200
 
     reset_grant: str = _create_password_reset_grant(test_student.id, 0)
-    new_pair = await AuthService(db_session).password_reset_confirm(reset_grant, "RecoveredPass123")
+    new_pair: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(reset_grant, "RecoveredPass123")
     await db_session.commit()
 
     new_access_claims: dict[str, Any] = _token_claims(new_pair.access_token, settings.JWT_SECRET_KEY)
@@ -84,7 +86,7 @@ async def test_reset_is_single_use_and_invalidates_existing_access_and_refresh(
     assert old_refresh_response.status_code == 401
 
     with pytest.raises(HTTPException) as replay_failure:
-        await AuthService(db_session).password_reset_confirm(reset_grant, "SecondRecovery123")
+        await AuthServiceComposition.create(db_session).password_reset_confirm(reset_grant, "SecondRecovery123")
     assert replay_failure.value.status_code == 400
     await db_session.rollback()
 
@@ -92,7 +94,7 @@ async def test_reset_is_single_use_and_invalidates_existing_access_and_refresh(
     assert persisted_user is not None
     assert persisted_user.auth_version == 1
     assert persisted_user.password_hash is not None
-    assert await AuthService(db_session).refresh(new_pair.refresh_token)
+    assert await AuthServiceComposition.create(db_session).refresh(new_pair.refresh_token)
 
 
 @pytest.mark.asyncio
@@ -123,7 +125,7 @@ async def test_access_and_reset_tokens_without_epoch_are_rejected(
     original_password_hash: str | None = test_student.password_hash
     legacy_reset_grant: str = _create_password_reset_grant(test_student.id, None)
     with pytest.raises(HTTPException) as reset_failure:
-        await AuthService(db_session).password_reset_confirm(
+        await AuthServiceComposition.create(db_session).password_reset_confirm(
             legacy_reset_grant,
             "LegacyGrantPass123",
         )
@@ -217,7 +219,7 @@ async def test_malformed_or_expired_reset_grants_do_not_mutate_users(
     )
 
     with pytest.raises(HTTPException) as failure:
-        await AuthService(db_session).password_reset_confirm(
+        await AuthServiceComposition.create(db_session).password_reset_confirm(
             reset_grant,
             f"RejectedGrant{case_name}123",
         )
@@ -238,7 +240,7 @@ async def test_issued_reset_grant_remains_bound_to_user_after_email_reassignment
     original_student_email: str = test_student.email
     reset_key: str = f"auth:reset:{original_student_email}"
     await redis_client.set(reset_key, '{"code":"183746","attempts":0}', ex=600)
-    reset_grant: str = await AuthService(db_session).password_reset_verify(
+    reset_grant: str = await AuthServiceComposition.create(db_session).password_reset_verify(
         original_student_email,
         "183746",
     )
@@ -257,7 +259,7 @@ async def test_issued_reset_grant_remains_bound_to_user_after_email_reassignment
     )
     await db_session.commit()
 
-    reset_pair = await AuthService(db_session).password_reset_confirm(
+    reset_pair: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(
         reset_grant,
         "StudentOnlyReset123",
     )
@@ -296,7 +298,7 @@ async def test_privileged_reset_revokes_prior_access_and_issues_epoch_bound_pair
 
     reset_key: str = f"auth:reset:{test_admin.email}"
     await redis_client.set(reset_key, '{"code":"473829","attempts":0}', ex=600)
-    reset_grant: str = await AuthService(db_session).password_reset_verify(
+    reset_grant: str = await AuthServiceComposition.create(db_session).password_reset_verify(
         test_admin.email,
         "473829",
     )
@@ -305,7 +307,7 @@ async def test_privileged_reset_revokes_prior_access_and_issues_epoch_bound_pair
     assert issued_claims["auth_version"] == 0
     await db_session.commit()
 
-    new_pair = await AuthService(db_session).password_reset_confirm(
+    new_pair: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(
         reset_grant,
         "PrivilegedReset123",
     )

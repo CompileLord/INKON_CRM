@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_current_user, get_db_session, get_setup_user
+from app.core.deps import get_current_user, get_auth_service, get_setup_user
 from app.core.rate_limiter import (
     AuthenticationRateLimiter,
     LockoutReservation,
@@ -32,7 +31,7 @@ router = APIRouter()
 async def login(
     payload: LoginRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_session),
+    auth_service: AuthService = Depends(get_auth_service),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
     client_ip: str = get_client_ip(request)
@@ -40,7 +39,6 @@ async def login(
     await limiter.consume_login_budget(identifier.value, client_ip)
     reservation: LockoutReservation = await limiter.reserve_login_slot(identifier.value)
     try:
-        auth_service: AuthService = AuthService(db)
         try:
             result: TokenPair = await auth_service.login(identifier, payload.password)
             await reservation.commit_success()
@@ -66,18 +64,16 @@ async def login(
 @router.post("/refresh", response_model=TokenPair)
 async def refresh(
     payload: RefreshRequest,
-    db: AsyncSession = Depends(get_db_session)
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenPair:
-    auth_service = AuthService(db)
     return await auth_service.refresh(payload.refresh_token)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     payload: RefreshRequest,
-    db: AsyncSession = Depends(get_db_session)
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> None:
-    auth_service = AuthService(db)
     await auth_service.logout(payload.refresh_token)
 
 
@@ -85,14 +81,13 @@ async def logout(
 async def verify_code(
     payload: VerifyCodeRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_session),
+    auth_service: AuthService = Depends(get_auth_service),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
     client_ip: str = get_client_ip(request)
     await limiter.consume_verify_budget(payload.email, client_ip)
     reservation: LockoutReservation = await limiter.reserve_verify_slot(payload.email)
     try:
-        auth_service: AuthService = AuthService(db)
         try:
             result: TokenPair = await auth_service.verify_code(payload.email, payload.code)
             await reservation.commit_success()
@@ -119,13 +114,12 @@ async def verify_code(
 async def resend_code(
     payload: ResendCodeRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_session),
+    auth_service: AuthService = Depends(get_auth_service),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> None:
     client_ip: str = get_client_ip(request)
     await limiter.check_resend_cooldown(payload.email)
     await limiter.consume_resend_budgets(payload.email, client_ip)
-    auth_service: AuthService = AuthService(db)
     await auth_service.resend_code(payload.email)
 
 
@@ -133,9 +127,8 @@ async def resend_code(
 async def set_password(
     payload: SetPasswordRequest,
     current_user: User = Depends(get_setup_user),
-    db: AsyncSession = Depends(get_db_session)
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenPair:
-    auth_service = AuthService(db)
     return await auth_service.set_password(current_user.id, payload.new_password)
 
 
@@ -144,11 +137,11 @@ async def change_password(
     payload: ChangePasswordRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_session),
+    auth_service: AuthService = Depends(get_auth_service),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> TokenPair:
     await limiter.consume_login_budget(current_user.email or current_user.phone or str(current_user.id), get_client_ip(request))
-    return await AuthService(db).change_password(
+    return await auth_service.change_password(
         current_user.id, payload.current_password, payload.new_password
     )
 
@@ -160,13 +153,12 @@ async def change_password(
 async def password_reset_request(
     payload: PasswordResetRequest,
     request: Request,
-    db: AsyncSession = Depends(get_db_session),
+    auth_service: AuthService = Depends(get_auth_service),
     limiter: AuthenticationRateLimiter = Depends(get_auth_rate_limiter),
 ) -> PasswordResetRequestResponse:
     client_ip: str = get_client_ip(request)
     identifier: LoginIdentifier = payload.identifier
     await limiter.consume_password_reset_budgets(identifier.value, client_ip)
-    auth_service: AuthService = AuthService(db)
     requested_channel: PasswordSmsDestinationKind | None = (
         PasswordSmsDestinationKind(payload.channel) if payload.channel else None
     )
@@ -177,9 +169,8 @@ async def password_reset_request(
 @router.post("/password-reset/verify", response_model=dict)
 async def password_reset_verify(
     payload: PasswordResetVerifyRequest,
-    db: AsyncSession = Depends(get_db_session)
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> dict:
-    auth_service = AuthService(db)
     reset_token = await auth_service.password_reset_verify(payload.email, payload.code)
     return {"reset_token": reset_token}
 
@@ -187,7 +178,6 @@ async def password_reset_verify(
 @router.post("/password-reset/confirm", response_model=TokenPair)
 async def password_reset_confirm(
     payload: PasswordResetConfirmRequest,
-    db: AsyncSession = Depends(get_db_session)
+    auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenPair:
-    auth_service = AuthService(db)
     return await auth_service.password_reset_confirm(payload.reset_token, payload.new_password)

@@ -13,6 +13,7 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
 from app.services.auth_service import AuthService
+from app.services.auth_composition import AuthServiceComposition
 from app.tests.conftest import TestingSessionLocal
 from app.tests.integration.test_remediation_wp03 import encode_refresh_claims, issue_stored_refresh_token
 
@@ -193,7 +194,7 @@ async def test_refresh_rotation_and_replay_protection_survive_concurrent_cleanup
     try:
         await asyncio.wait_for(deleted.wait(), 5)
         async with TestingSessionLocal() as session:
-            rotated: Any = await asyncio.wait_for(AuthService(session).refresh(token), 2)
+            rotated: Any = await asyncio.wait_for(AuthServiceComposition.create(session).refresh(token), 2)
             assert rotated.refresh_token != token
             await session.commit()
         release.set()
@@ -202,7 +203,7 @@ async def test_refresh_rotation_and_replay_protection_survive_concurrent_cleanup
             evidence: RefreshToken | None = await session.get(RefreshToken, original_id)
             assert evidence is not None and evidence.revoked_at is not None
             with pytest.raises(HTTPException) as failure:
-                await AuthService(session).refresh(token)
+                await AuthServiceComposition.create(session).refresh(token)
             assert failure.value.status_code == 401
             assert await session.scalar(select(func.count()).select_from(RefreshToken)) == 2
     finally:
