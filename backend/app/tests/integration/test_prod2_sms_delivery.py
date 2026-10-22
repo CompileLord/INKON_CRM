@@ -50,7 +50,7 @@ class TestSmsDeliveryClaimModel:
     async def test_attempt_is_counted_only_when_transport_begins(
         self, client: AsyncClient, test_admin: User, db_session: AsyncSession,
     ) -> None:
-        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "attempt@example.com")
+        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
         user_id: int = created.json()["id"]
         event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, user_id))[0]
         assert event.attempt_count == 0
@@ -66,7 +66,7 @@ class TestSmsDeliveryClaimModel:
     async def test_claim_without_enough_lease_is_released_without_attempt(
         self, client: AsyncClient, test_admin: User, db_session: AsyncSession,
     ) -> None:
-        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "release@example.com")
+        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
         event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0]
         factory: async_sessionmaker[AsyncSession] = SmsPasswordTestSupport.build_session_factory()
         sender: FakeSmsSender = FakeSmsSender()
@@ -84,7 +84,7 @@ class TestSmsDeliveryClaimModel:
     async def test_hung_transport_is_aborted_at_deadline_and_retried_later(
         self, client: AsyncClient, test_admin: User, db_session: AsyncSession,
     ) -> None:
-        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "hang@example.com")
+        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
         event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0]
         factory: async_sessionmaker[AsyncSession] = SmsPasswordTestSupport.build_session_factory()
         sender: HangingSmsSender = HangingSmsSender()
@@ -106,7 +106,7 @@ class TestSmsDeliveryClaimModel:
     async def test_sms_settlement_requires_current_lease_owner(
         self, client: AsyncClient, test_admin: User, db_session: AsyncSession,
     ) -> None:
-        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "fence@example.com")
+        created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
         event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0]
         repository: SQLAlchemyOutboxRepository = SQLAlchemyOutboxRepository(db_session)
         now: datetime = datetime.now(timezone.utc)
