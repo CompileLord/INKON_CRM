@@ -4133,10 +4133,15 @@ Manually apply a student's wallet credit to a specific charge.
 - `x-cloud-scheduler-secret` [header]
 
 **Responses:**
-- **200**: Successful Response
+- **202**: Successful Response
   ```json
-  object
+  {
+    "status?": string,
+    "task": "archive_expired_courses" | "check_payment_reminders",
+    "job_id": string,
+  }
   ```
+- **503**: Maintenance queue unavailable; retry after 60 seconds
 - **422**: Validation Error
   ```json
   {
@@ -4162,10 +4167,15 @@ Manually apply a student's wallet credit to a specific charge.
 - `x-cloud-scheduler-secret` [header]
 
 **Responses:**
-- **200**: Successful Response
+- **202**: Successful Response
   ```json
-  object
+  {
+    "status?": string,
+    "task": "archive_expired_courses" | "check_payment_reminders",
+    "job_id": string,
+  }
   ```
+- **503**: Maintenance queue unavailable; retry after 60 seconds
 - **422**: Validation Error
   ```json
   {
