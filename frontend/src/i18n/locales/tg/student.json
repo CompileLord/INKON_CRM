@@ -67,7 +67,6 @@
   "pointsUnit": "хол",
   "gradeUnavailable": "Баҳо дастнорас аст",
   "notGradedYet": "Ҳоло баҳогузорӣ нашудааст",
-  "metricUnavailable": "—",
   "courseImagePlaceholder": "Тасвири курс",
   "noActiveCoursesContext": "Курси фаъол нест",
   "mentorUnavailable": "Маълумот дар бораи омӯзгор дастнорас аст",
@@ -122,14 +121,6 @@
   "scoreInfoLabel": "Холи миёна барои давраҳои анҷомёфта",
   "scoreInfo": "Миёнаи давраҳои анҷомёфтаи шумо. Бо сутуни «Миёна» дар ҷадвали гурӯҳ мувофиқ аст; давраҳои оянда ҳисоб намешаванд.",
   "lessonsTitle": "Дарсҳо",
-  "card": {
-    "mentor": "Мураббӣ",
-    "schedule": "Ҷадвал",
-    "noNextLesson": "Дарси наздик нест",
-    "attendanceValue": "Ҳузур {{value}}",
-    "openJournal": "Кушодани журнал",
-    "scoreUnavailable": "Хол —"
-  },
   "home": {
     "continue": "Идома додан"
   }

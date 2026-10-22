@@ -67,7 +67,6 @@
   "pointsUnit": "баллов",
   "gradeUnavailable": "Оценка недоступна",
   "notGradedYet": "Еще не оценено",
-  "metricUnavailable": "—",
   "courseImagePlaceholder": "Изображение курса",
   "noActiveCoursesContext": "Нет активных курсов",
   "mentorUnavailable": "Информация о преподавателе недоступна",
@@ -122,14 +121,6 @@
   "scoreInfoLabel": "Средний балл за завершённые периоды",
   "scoreInfo": "Среднее по вашим завершённым периодам. Совпадает со столбцом «Среднее» в таблице группы; предстоящие периоды не учитываются.",
   "lessonsTitle": "Занятия",
-  "card": {
-    "mentor": "Ментор",
-    "schedule": "Расписание",
-    "noNextLesson": "Нет ближайшего занятия",
-    "attendanceValue": "Посещаемость {{value}}",
-    "openJournal": "Открыть журнал",
-    "scoreUnavailable": "Баллы —"
-  },
   "home": {
     "continue": "Продолжить"
   }
