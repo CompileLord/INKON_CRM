@@ -185,7 +185,7 @@ describe("JournalGrid weekday headers", () => {
 });
 
 describe("JournalGrid total column", () => {
-  it("shows the total as score over the period maximum with the percentage muted, in one column", () => {
+  it("shows the total as the score only with no percentage line, in one column", () => {
     const scored = student(1, "Anvar");
     scored.summary = { ...(scored.summary as NonNullable<JournalStudentResponse["summary"]>), sum_score: 86, max_period_score: 117, percentage: 73.5 };
     mountGrid({ students: [scored] });
@@ -193,8 +193,9 @@ describe("JournalGrid total column", () => {
     expect(cell.textContent).toContain("86");
     expect(cell.textContent).not.toContain("/");
     expect(screen.getByTestId("total-maximum").textContent).toBe("/ 117");
-    expect(screen.getByTestId("total-percentage").textContent).toBe("74%");
-    expect(screen.getByTestId("total-percentage").className).toContain("text-muted");
+    expect(cell.textContent).toBe("86");
+    expect(cell.textContent).not.toContain("%");
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).not.toContain("%");
   });
 

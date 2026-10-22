@@ -54,12 +54,12 @@ describe("MyCourses", () => {
     expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
-  it("leads each row with the score over its maximum and keeps a recorded zero as a number", () => {
+  it("leads each row with the score only and keeps a recorded zero as a number", () => {
     profileState.current = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [entry(1, "active", 92, 130), entry(2, "active", 0, 600)] } };
     renderCourses();
     const scores = screen.getAllByTestId("course-score");
-    expect(scores[0].textContent).toBe("92/ 130");
-    expect(scores[1].textContent).toBe("0/ 600");
+    expect(scores[0].textContent).toBe("92");
+    expect(scores[1].textContent).toBe("0");
     expect(screen.queryByText(/%/)).toBeNull();
   });
 

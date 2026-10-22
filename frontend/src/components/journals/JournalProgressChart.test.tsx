@@ -165,7 +165,8 @@ describe("Progress score chart", () => {
     expect(tooltipNames()).toEqual(["Anvar Tester", "Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);
     expect(tooltipLabels()).toEqual(["18", "12", "10", "0", "24"]);
     const entryTexts: string[] = screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.textContent ?? "");
-    expect(entryTexts[0]).toContain("75%");
+    expect(entryTexts[0]).toBe("Anvar Tester18");
+    entryTexts.forEach((text) => expect(text).not.toContain("%"));
     expect(screen.getByTestId("chart-tooltip-dates").textContent).toContain("2026");
     pressKey("ArrowRight");
     expect(tooltipNames()).toEqual(["Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);

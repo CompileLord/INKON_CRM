@@ -115,8 +115,9 @@ describe("StudentProfile Component", () => {
     const rows = screen.getAllByTestId("course-progress-row");
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain("Advanced Mathematics");
-    expect(rows[0].textContent).toContain("340 / 400");
-    expect(rows[0].textContent).toContain("85%");
+    expect(rows[0].textContent).toContain("340");
+    expect(rows[0].textContent).not.toContain("340 / 400");
+    expect(rows[0].textContent).not.toContain("85%");
     expect(rows[0].textContent).toContain("95% attendance");
     expect(rows[0].textContent).toContain("1 of 12 missed");
     expect(screen.queryByText(/Recorded period summaries for this course/i)).toBeNull();

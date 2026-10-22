@@ -6,7 +6,7 @@ import {
   type ProgressPeriodRow,
   type StoredPeriodResult,
 } from "../../lib/journals/JournalProgressRules";
-import { formatNumber, formatPercentage, formatSchoolLessonDate } from "../../i18n/formatters";
+import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
 import { usePeriodName } from "../ui/periodName";
 
 export const SERIES_STROKE: readonly string[] = [
@@ -53,7 +53,6 @@ interface TooltipEntry {
   name: string;
   value: number;
   label: string;
-  detail?: string;
   swatch: React.ReactNode;
 }
 
@@ -139,7 +138,6 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
             name: student.studentId === selfStudentId ? `${student.name} (${t("readOnly.you")})` : student.name,
             value: result.score,
             label: formatScore(result.score),
-            detail: result.maxScore > 0 ? formatPercentage((result.score / result.maxScore) * 100) : undefined,
             swatch: <StudentSwatch student={student} />,
           }]
         : [];
@@ -390,7 +388,6 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
                 {entry.swatch}
                 <span className="min-w-0 flex-1 truncate" title={entry.name}>{entry.name}</span>
                 <span className="font-semibold tabular-nums" data-testid="chart-tooltip-score">{entry.label}</span>
-                {entry.detail && <span className="text-xs tabular-nums text-muted">{entry.detail}</span>}
               </li>
             ))}
           </ul>

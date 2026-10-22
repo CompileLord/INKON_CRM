@@ -8,7 +8,7 @@ import { useCourseScheduleSummary } from "../../lib/students/useCourseScheduleSu
 import { formatSchoolLessonTime, formatSchoolLessonWeekday, formatSchoolLessonDate } from "../../i18n/formatters";
 import { WholePercent } from "../../lib/students/WholePercent";
 import { CourseThumb } from "./CourseThumb";
-import { ScoreFraction } from "./ScoreFraction";
+import { CourseScore } from "./CourseScore";
 
 interface StudentCourseCardProps {
   entry: StudentCourseProfile;
@@ -58,7 +58,7 @@ export function StudentCourseCard({ entry }: StudentCourseCardProps) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
         <div data-testid="course-card-score" className="text-sm">
-          {hasScore ? <ScoreFraction score={entry.my_total_score!} maximum={entry.my_total_max_score!} showPercentage /> : <span className="text-muted">{t("card.scoreUnavailable")}</span>}
+          {hasScore ? <CourseScore score={entry.my_total_score!} /> : <span className="text-muted">{t("card.scoreUnavailable")}</span>}
         </div>
         <Link
           to={`/my/courses/${course.id}/journal`}

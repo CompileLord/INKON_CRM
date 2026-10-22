@@ -3,7 +3,7 @@ import type { StudentCourseProfile, StudentCoursePerformance } from "../../lib/u
 import { formatNumber } from "../../i18n/formatters";
 import { WholePercent } from "../../lib/students/WholePercent";
 import { StatGroup, StatTile } from "../ui/StatGroup";
-import { ScoreFraction } from "./ScoreFraction";
+import { CourseScore } from "./CourseScore";
 
 interface CourseDetailStatsProps {
   entry: StudentCourseProfile | undefined;
@@ -20,7 +20,7 @@ export function CourseDetailStats({ entry }: CourseDetailStatsProps) {
       <StatGroup>
         <StatTile
           label={t("myAverage")}
-          value={hasScore ? <ScoreFraction score={entry!.my_total_score!} maximum={entry!.my_total_max_score!} showPercentage /> : entry !== undefined ? t("notGradedYet") : null}
+          value={hasScore ? <CourseScore score={entry!.my_total_score!} /> : entry !== undefined ? t("notGradedYet") : null}
         />
         <StatTile label={t("attendance")} value={hasLessons ? WholePercent.format((performance!.attended_lessons * 100) / performance!.attendance_denominator) : null} />
         <StatTile

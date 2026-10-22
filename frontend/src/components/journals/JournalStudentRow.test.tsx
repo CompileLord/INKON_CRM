@@ -16,7 +16,7 @@ const props = {
 };
 
 function mount(value: JournalStudentResponse) {
-  return render(<table><tbody><JournalStudentRow {...props} student={value} /></tbody></table>);
+  return render(<table><tbody><JournalStudentRow {...props} sharedMaximum={100} student={value} /></tbody></table>);
 }
 
 afterEach(() => cleanup());
@@ -120,10 +120,11 @@ describe("JournalStudentRow totals", () => {
     expect(screen.getByRole("rowheader").querySelector('[style*="background"]')).toBeNull();
   });
 
-  it("shows the server total and percentage", () => {
+  it("shows the server total without a percentage", () => {
     mount(student);
     expect(screen.getAllByText("5").length).toBeGreaterThan(0);
-    expect(screen.getByText("5%")).toBeDefined();
+    expect(screen.queryByText("5%")).toBeNull();
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
   });
 
   it("reads Unavailable, never zero, when the summary is missing", () => {
@@ -133,8 +134,8 @@ describe("JournalStudentRow totals", () => {
     expect(screen.queryByText("0%")).toBeNull();
   });
 
-  it("displays a percentage above 100 as a whole number", () => {
+  it("shows no percentage even when the share is above 100", () => {
     mount({ ...student, summary: { ...student.summary!, sum_score: 110, percentage: 102.5 } });
-    expect(screen.getByText(/^10[23]%$/)).toBeDefined();
+    expect(screen.getByTestId("total-cell").textContent).toBe("110");
   });
 });

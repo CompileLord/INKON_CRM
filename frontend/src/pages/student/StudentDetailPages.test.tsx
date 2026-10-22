@@ -103,11 +103,12 @@ describe("student course page journal", () => {
 });
 
 describe("student course page", () => {
-  it("leads with score over maximum with the percentage muted and no card around a card", () => {
+  it("shows the course points as a score only and no card around a card", () => {
     const { container } = renderCourse();
     const tile = container.querySelector("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("86/ 117");
-    expect(tile.querySelector("[data-score-percentage]")?.className).toContain("text-muted");
+    expect(tile.textContent).toContain("86");
+    expect(tile.textContent).not.toContain("117");
+    expect(tile.querySelector("[data-score-percentage]")).toBeNull();
     expect(container.querySelectorAll("[data-stat-group]")).toHaveLength(1);
     expect(container.querySelectorAll("[data-page-container]")).toHaveLength(1);
   });
