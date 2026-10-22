@@ -205,3 +205,23 @@ export function formatSchoolPeriodSpan(start: string, end: string, lng?: string)
   }
   return `${dayAndMonth(startDate)} ${formatYear(startDate)} – ${dayAndMonth(endDate)} ${formatYear(endDate)}`;
 }
+
+const MINIMUM_WEEKDAY_RUN_FOR_RANGE: number = 3;
+
+export function formatWeekdayRanges(weekdayIndexes: readonly number[], lng?: string): string {
+  const sorted: number[] = [...new Set(weekdayIndexes)].sort((first: number, second: number) => first - second);
+  const runs: number[][] = [];
+  sorted.forEach((index: number) => {
+    const lastRun: number[] | undefined = runs[runs.length - 1];
+    if (lastRun !== undefined && lastRun[lastRun.length - 1] === index - 1) lastRun.push(index);
+    else runs.push([index]);
+  });
+  const nameOf = (index: number): string => i18n.t(`student:weekdays.${index}`, { lng: lng ?? i18n.language });
+  return runs
+    .map((run: number[]) =>
+      run.length >= MINIMUM_WEEKDAY_RUN_FOR_RANGE
+        ? `${nameOf(run[0])}–${nameOf(run[run.length - 1])}`
+        : run.map(nameOf).join(" · "),
+    )
+    .join(" · ");
+}

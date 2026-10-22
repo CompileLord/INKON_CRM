@@ -257,3 +257,47 @@ describe("JournalGrid initial scroll position", () => {
     expect(region.scrollLeft).toBeGreaterThan(0);
   });
 });
+
+describe("JournalGrid compact columns on phones", () => {
+  it("narrows the sticky name column to 120px and the read-only lesson columns to 112px so two lessons fit at 390px", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    const own: JournalStudentResponse = student(1, "Anvar");
+    render(
+      <JournalGrid
+        journalId={7}
+        periodLabel="Month 10"
+        students={[own]}
+        lessonDates={DATES}
+        selectedLesson={DATES[0]}
+        cellStatus={new Map()}
+        summaryStatus={new Map()}
+        editing={null}
+        examMaximum={24}
+        onSelectLesson={vi.fn()}
+        readOnlySelfStudentId={1}
+      />,
+    );
+    const widths: string[] = Array.from(document.querySelectorAll("table")[1].querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
+    expect(widths[0]).toBe("120px");
+    expect(widths[1]).toBe("112px");
+    const rowHeader: HTMLElement = screen.getAllByRole("rowheader")[0];
+    expect(rowHeader.className).toContain("min-w-[120px]");
+    expect(rowHeader.querySelector("[title]")?.getAttribute("title")).toBe("Anvar Tester");
+    expect(120 + 2 * 112).toBeLessThanOrEqual(390 - 32);
+  });
+
+  it("keeps the full 200px name column and 128px lessons on desktop", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({ matches: !query.includes("max-width"), addEventListener: () => {}, removeEventListener: () => {} }),
+    });
+    mountGrid();
+    const widths: string[] = Array.from(document.querySelectorAll("table")[1].querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
+    expect(widths.slice(0, 2)).toEqual(["200px", "128px"]);
+  });
+});

@@ -95,10 +95,10 @@ describe("student course page journal", () => {
     expect(document.querySelectorAll("input, textarea, [data-control]")).toHaveLength(0);
   });
 
-  it("keeps the progress chart collapsed by default", () => {
+  it("opens the progress chart by default when a period is graded", () => {
     renderCourse();
-    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("false");
-    expect(document.querySelectorAll("[data-testid='chart-series-student']")).toHaveLength(0);
+    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("true");
+    expect(document.querySelectorAll("[data-testid='chart-series-student']").length).toBeGreaterThan(0);
   });
 });
 
@@ -135,5 +135,41 @@ describe("student course page", () => {
     renderCourse("/my/courses/abc");
     expect(screen.getByText("Курс не найден")).toBeTruthy();
     expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+});
+
+describe("student course page minimal details", () => {
+  it("shows the not-graded state in both the points tile and the own journal row instead of 0 and 0%", () => {
+    const own: JournalStudentResponse = { ...journalStudent(42, "Demo", "Student", true), entries: [], summary: { ...journalStudent(42, "Demo", "Student", true).summary!, sum_score: 0, exam_score: 0, bonus_score: 0, homework_score: 0, attendance_score: 0, percentage: 0 } };
+    state.scopedJournal = { data: { ...classJournal, students: [own] }, isLoading: false, isError: false, isPlaceholderData: false, refetch: vi.fn() };
+    state.profile = { isLoading: false, isError: false, refetch: vi.fn(), data: { courses: [{ course: { id: 4 }, bucket: "active", my_total_score: undefined, my_total_max_score: undefined }] } };
+    const { container } = renderCourse();
+    expect((container.querySelector("[data-stat-tile]") as HTMLElement).textContent).toContain("Еще не оценено");
+    expect(screen.getByTestId("total-cell").textContent).toBe("—");
+    expect(screen.getByTestId("total-cell").textContent).not.toMatch(/0|%/);
+  });
+
+  it("hides the attendance and absence tiles until a lesson is recorded", () => {
+    const { container } = renderCourse();
+    expect(container.querySelectorAll("[data-stat-tile]")).toHaveLength(1);
+    expect(container.querySelector("[data-stat-missing]")).toBeNull();
+  });
+
+  it("uses a compact tile strip that stays on one row", () => {
+    const { container } = renderCourse();
+    const group: HTMLElement = container.querySelector("[data-stat-group]") as HTMLElement;
+    expect(group.getAttribute("data-compact")).toBe("true");
+    expect(group.className).toContain("flex");
+    expect(group.className).not.toContain("grid-cols-2");
+  });
+
+  it("stacks the meta line on phones and only draws dots from the sm breakpoint", () => {
+    renderCourse();
+    const meta: HTMLElement = screen.getByTestId("course-meta");
+    expect(meta.className).toContain("flex-col");
+    expect(meta.className).toContain("sm:flex-row");
+    const dots: HTMLElement[] = Array.from(meta.querySelectorAll("[aria-hidden='true']")) as HTMLElement[];
+    expect(dots.length).toBeGreaterThan(0);
+    dots.forEach((dot: HTMLElement) => expect(dot.className).toContain("hidden sm:inline"));
   });
 });

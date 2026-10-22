@@ -66,18 +66,19 @@ describe("StudentProfile Component", () => {
     const profileWithoutPerformance: StudentProfileResponse = { ...mockProfileResponse, avg_score: 87.5, absences: 2, total_lessons: 24, performance: undefined };
     vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: profileWithoutPerformance, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
     renderStudentProfile();
-    const tile = screen.getByText("Attendance").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.querySelector("[data-stat-missing]")).not.toBeNull();
+    expect(screen.queryByText("Attendance")).toBeNull();
+    expect(document.querySelector("[data-stat-group] [data-stat-missing]")).toBeNull();
     expect(screen.queryByText("87.5")).toBeNull();
     expect(screen.queryByText("24")).toBeNull();
   });
 
-  it("preserves a genuine zero score as 0 over the maximum", () => {
+  it("preserves a genuine zero score as 0", () => {
     const zeroScoreProfile: StudentProfileResponse = { ...mockProfileResponse, courses: mockProfileResponse.courses.map((item) => ({ ...item, my_total_score: 0, my_total_max_score: 400 })) };
     vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => ({ data: zeroScoreProfile, isLoading: false, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof userHooks.useStudentProfile>));
     renderStudentProfile();
     const tile = screen.getByText("Points, active courses").closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("0 / 400");
+    expect(tile.textContent).toContain("0");
+    expect(tile.textContent).not.toContain("400");
     expect(tile.querySelector("[data-stat-missing]")).toBeNull();
   });
 

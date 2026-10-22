@@ -111,3 +111,19 @@ describe("Progress view as staff", () => {
     expect(screen.getByTestId("progress-chart")).toBeDefined();
   });
 });
+
+describe("student course chart default", (): void => {
+  it("opens by default for a student with a graded period", (): void => {
+    mockClassProgress(data);
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} />);
+    expect(screen.getByTestId("progress-collapse-toggle").getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("progress-chart")).toBeDefined();
+  });
+
+  it("shows a short empty line instead of a collapsed panel when nothing is graded", (): void => {
+    mockClassProgress({ ...data, students: data.students.map((student) => ({ ...student, period_results: student.period_results.map((result) => ({ ...result, score: null, max_score: null, percentage: null })) })) });
+    render(<JournalProgressView courseId={1} readOnlySelfStudentId={12} />);
+    expect(screen.getByTestId("progress-no-graded").textContent).toBe("No graded periods yet");
+    expect(screen.queryByTestId("progress-collapse-toggle")).toBeNull();
+  });
+});

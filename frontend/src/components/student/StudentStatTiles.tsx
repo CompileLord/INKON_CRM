@@ -23,6 +23,7 @@ function BalanceTile({ studentId }: { studentId: number }) {
   const label: string = isDebt ? t("stats.debt") : isCredit ? t("stats.credit") : t("stats.balance");
   const amount: string | null = balance === undefined ? null : formatMoney(isDebt ? balance.net_receivable : isCredit ? balance.credit_balance : "0", { suffix });
   const overdue: string | undefined = isDebt && balance !== undefined && balance.days_overdue > 0 ? t("stats.overdueDays", { count: balance.days_overdue, formatted: formatNumber(balance.days_overdue, i18n.language) }) : undefined;
+  if (amount === null) return null;
   return <StatTile label={label} value={amount} hint={overdue} />;
 }
 
@@ -37,15 +38,14 @@ export function StudentStatTiles({ studentId, courses, performance, showBalance 
     ? t("stats.absencesOf", { absences: formatNumber(performance.absences, i18n.language), total: formatNumber(performance.total_lessons, i18n.language) })
     : undefined;
 
+  const scoreValue: string | null = totals ? ScoreFormat.points(totals.score, i18n.language) : null;
+  if (scoreValue === null && attendanceValue === null && !showBalance) return null;
+
   return (
     <div data-profile-summary>
-      <StatGroup>
-        <StatTile
-          label={t("stats.score")}
-          value={totals ? ScoreFormat.ratio(totals.score, totals.max, i18n.language) : null}
-          hint={totals ? ScoreFormat.percentHint(totals.score, totals.max, i18n.language) ?? undefined : undefined}
-        />
-        <StatTile label={t("stats.attendance")} value={attendanceValue} hint={absencesHint} />
+      <StatGroup compact>
+        {scoreValue !== null ? <StatTile label={t("stats.score")} value={scoreValue} /> : null}
+        {attendanceValue !== null ? <StatTile label={t("stats.attendance")} value={attendanceValue} hint={absencesHint} /> : null}
         {showBalance ? <BalanceTile studentId={studentId} /> : null}
       </StatGroup>
     </div>

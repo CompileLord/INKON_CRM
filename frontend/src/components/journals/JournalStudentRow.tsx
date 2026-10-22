@@ -30,6 +30,8 @@ interface JournalStudentRowProps {
   atRisk?: boolean;
   isSelf?: boolean;
   markUnrecorded?: boolean;
+  compact?: boolean;
+  compactLessons?: boolean;
   onCellFocus: (key: string, control: JournalCellControl) => void;
   onCellNavigate: (key: string, direction: CellNavDirection) => void;
 }
@@ -49,6 +51,8 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   atRisk = false,
   isSelf = false,
   markUnrecorded = false,
+  compact = false,
+  compactLessons = false,
   onCellFocus,
   onCellNavigate,
 }) => {
@@ -56,13 +60,15 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   const summary = student.summary;
   const studentName: string = `${student.first_name} ${student.last_name}`;
 
+  const nothingGraded: boolean = markUnrecorded && student.entries.length === 0 && (summary === null || summary === undefined || (summary.sum_score === 0 && summary.exam_score === 0 && summary.bonus_score === 0));
+
   const entriesMap = new Map(student.entries.map((e) => [e.lesson_date, e]));
 
   return (
     <tr className="group/row" data-self={isSelf ? "true" : undefined}>
       <th
         scope="row"
-        className={`sticky left-0 z-20 w-[200px] min-w-[200px] max-w-[200px] border-b border-r border-border bg-clip-padding px-4 shadow-[1px_0_0_0_var(--color-border)] py-2 text-left text-sm font-semibold leading-5 text-ink group-hover/row:bg-row-hover ${
+        className={`sticky left-0 z-20 ${compact ? "w-[120px] min-w-[120px] max-w-[120px] px-2" : "w-[200px] min-w-[200px] max-w-[200px] px-4"} border-b border-r border-border bg-clip-padding shadow-[1px_0_0_0_var(--color-border)] py-2 text-left text-sm font-semibold leading-5 text-ink group-hover/row:bg-row-hover ${
           isSelf ? "border-l-4 border-l-maroon bg-beige dark:border-l-accent" : "bg-card"
         }`}
       >
@@ -95,7 +101,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         return (
           <td
             key={date}
-            className={`min-w-[128px] border-b border-border px-1 py-2 text-center align-middle motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out group-hover/row:bg-row-hover ${
+            className={`${compactLessons ? "min-w-[112px]" : "min-w-[128px]"} border-b border-border px-1 py-2 text-center align-middle motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out group-hover/row:bg-row-hover ${
               date === selectedLesson ? "bg-info-surface" : isSelf ? "bg-beige" : ""
             }`}
           >
@@ -139,7 +145,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
             fieldIndex === 0 ? "border-l" : ""
           } ${isSelf ? "bg-beige" : ""}`}
         >
-          {summary ? (
+          {summary && !nothingGraded ? (
             <JournalSummaryCell
               studentName={studentName}
               field={field}
@@ -157,7 +163,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
               }
             />
           ) : (
-            <span className="text-muted">—</span>
+            <span className="text-muted" aria-label={nothingGraded ? t("table.notRecorded") : undefined}>—</span>
           )}
         </td>
       ))}
@@ -165,7 +171,9 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
       <td className={`border-b border-l border-border px-2 py-2 text-center align-middle text-sm tabular-nums group-hover/row:bg-row-hover ${isSelf ? "bg-beige" : ""}`} data-testid="total-cell">
         <span className="inline-flex items-center gap-1.5">
           {summaryStatus && <JournalSaveMarker status={summaryStatus} className="relative" />}
-          {summary ? (
+          {nothingGraded ? (
+            <span data-testid="total-not-graded" className="text-muted" aria-label={t("table.notRecorded")}>—</span>
+          ) : summary ? (
             <span className="leading-5">
               <span className="font-semibold text-ink">{formatNumber(summary.sum_score)}</span>
               {summary.max_period_score > 0 && summary.max_period_score !== sharedMaximum && (

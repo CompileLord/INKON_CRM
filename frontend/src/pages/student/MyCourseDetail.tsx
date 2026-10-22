@@ -99,10 +99,10 @@ export function MyCourseDetail() {
       <PageHeader backTo={listHref} backLabel={t("myCoursesTitle")} title={course.title} />
       <div className="flex min-w-0 items-center gap-3">
         <CourseThumb title={course.title} photoPath={course.photo_path} size="lg" />
-        <p data-testid="course-meta" className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
+        <p data-testid="course-meta" className="flex min-w-0 flex-col gap-y-0.5 text-sm text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
           {metaItems.map((item: string, index: number) => (
             <span key={`${index}-${item}`} className="flex items-center gap-2 tabular-nums">
-              {index > 0 && <span aria-hidden="true">·</span>}
+              {index > 0 && <span aria-hidden="true" className="hidden sm:inline">·</span>}
               <span>{item}</span>
             </span>
           ))}
@@ -119,7 +119,7 @@ export function MyCourseDetail() {
 
       {userId !== null && <StudentCourseJournal courseId={courseId} selfStudentId={userId} />}
 
-      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} collapsedByDefault />
+      <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} />
 
       {course.description.trim() !== "" && <CourseDescription description={course.description} />}
     </PageContainer>

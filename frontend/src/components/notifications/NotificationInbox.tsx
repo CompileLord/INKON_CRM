@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { BellOff, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "../../lib/notifications/hooks";
 import { NotificationPresentation, type NotificationEventKind } from "../../lib/notifications/NotificationPresentation";
 import type { NotificationLogItem } from "../../lib/notifications/types";
 import { Button } from "../ui/Button";
-import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
 import { Pagination } from "../ui/Pagination";
 
@@ -95,8 +94,12 @@ export function NotificationInbox() {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card">
-        <EmptyState title={t("notifications:inboxEmpty")} />
+      <div data-testid="inbox-empty" className="flex items-center gap-3 px-1 py-2">
+        <BellOff size={20} aria-hidden="true" className="shrink-0 text-muted" />
+        <div className="flex min-w-0 flex-col">
+          <p className="text-sm font-medium text-ink">{t("notifications:inboxEmpty")}</p>
+          <p className="text-sm text-muted">{t("notifications:inboxEmptyNextStep")}</p>
+        </div>
       </div>
     );
   }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { JournalLessonColumnMenu } from "./JournalLessonColumnMenu";
 import { JournalStudentRow, type JournalRowEditing } from "./JournalStudentRow";
+import { useCompactJournalColumns } from "./useCompactJournalColumns";
 import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
 import { formatNumber, formatSchoolLessonDate, formatSchoolLessonWeekday, getSchoolCalendarDate } from "../../i18n/formatters";
@@ -37,7 +38,9 @@ interface GridFocus {
 }
 
 const STICKY_STUDENT_COLUMN_PX = 200;
+const COMPACT_STICKY_STUDENT_COLUMN_PX = 120;
 const LESSON_COLUMN_PX = 128;
+const COMPACT_LESSON_COLUMN_PX = 112;
 const SUMMARY_FIELD_COLUMN_PX = 96;
 const TOTAL_COLUMN_PX = 136;
 const SHELL_HEADER_OFFSET = "calc(3.5rem + 1px + env(safe-area-inset-top))";
@@ -95,10 +98,13 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   const headerStripRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const headerRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
+  const compact: boolean = useCompactJournalColumns();
+  const stickyColumnPx: number = compact ? COMPACT_STICKY_STUDENT_COLUMN_PX : STICKY_STUDENT_COLUMN_PX;
+  const lessonColumnPx: number = compact && readOnlySelfStudentId !== null ? COMPACT_LESSON_COLUMN_PX : LESSON_COLUMN_PX;
   const viewport = useJournalGridViewport({ body: regionRef, header: headerStripRef, bar: scrollBarRef });
   const tableWidthPx: number =
-    STICKY_STUDENT_COLUMN_PX +
-    lessonDates.length * LESSON_COLUMN_PX +
+    stickyColumnPx +
+    lessonDates.length * lessonColumnPx +
     2 * SUMMARY_FIELD_COLUMN_PX +
     TOTAL_COLUMN_PX;
 
@@ -125,11 +131,11 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
     if (!region || !header) return;
     const regionBounds: DOMRect = region.getBoundingClientRect();
     const headerBounds: DOMRect = header.getBoundingClientRect();
-    const leftEdge: number = regionBounds.left + STICKY_STUDENT_COLUMN_PX + VISIBLE_EDGE_PADDING_PX;
+    const leftEdge: number = regionBounds.left + stickyColumnPx + VISIBLE_EDGE_PADDING_PX;
     const isOutsideVisibleBand: boolean =
       headerBounds.left < leftEdge || headerBounds.right > regionBounds.right - VISIBLE_EDGE_PADDING_PX;
     if (isOutsideVisibleBand) region.scrollLeft += headerBounds.left - leftEdge;
-  }, [selectedLesson]);
+  }, [selectedLesson, stickyColumnPx]);
 
   const handleCellFocus = useCallback(
     (key: string, control: JournalCellControl) => {
@@ -193,9 +199,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
         >
           <table style={{ width: tableWidthPx, minWidth: "100%", tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
             <colgroup>
-              <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
+              <col style={{ width: stickyColumnPx }} />
               {lessonDates.map((date) => (
-                <col key={date} style={{ width: LESSON_COLUMN_PX }} />
+                <col key={date} style={{ width: lessonColumnPx }} />
               ))}
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
@@ -205,7 +211,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 z-30 border-b border-r border-border bg-beige bg-clip-padding px-4 py-3 shadow-[1px_0_0_0_var(--color-border)] text-left text-sm font-semibold text-ink"
+                  className="sticky left-0 z-30 border-b border-r border-border bg-beige bg-clip-padding px-2 py-3 sm:px-4 shadow-[1px_0_0_0_var(--color-border)] text-left text-sm font-semibold text-ink"
                 >
                   {t("table.students")}
                 </th>
@@ -280,9 +286,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
         >
           <table style={{ width: tableWidthPx, minWidth: "100%", tableLayout: "fixed" }} className="border-separate border-spacing-0 text-sm">
             <colgroup>
-              <col style={{ width: STICKY_STUDENT_COLUMN_PX }} />
+              <col style={{ width: stickyColumnPx }} />
               {lessonDates.map((date) => (
-                <col key={date} style={{ width: LESSON_COLUMN_PX }} />
+                <col key={date} style={{ width: lessonColumnPx }} />
               ))}
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
               <col style={{ width: SUMMARY_FIELD_COLUMN_PX }} />
@@ -306,6 +312,8 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   atRisk={atRiskStudentIds.has(student.student_id) && (readOnlySelfStudentId === null || student.student_id === readOnlySelfStudentId)}
                   isSelf={readOnlySelfStudentId !== null && student.student_id === readOnlySelfStudentId}
                   markUnrecorded={readOnlySelfStudentId !== null}
+                  compact={compact}
+                  compactLessons={compact && readOnlySelfStudentId !== null}
                   onCellFocus={handleCellFocus}
                   onCellNavigate={handleCellNavigate}
                 />

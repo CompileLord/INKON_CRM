@@ -139,3 +139,22 @@ describe("JournalStudentRow totals", () => {
     expect(screen.getByTestId("total-cell").textContent).toBe("110");
   });
 });
+
+describe("JournalStudentRow own-row not-graded state", () => {
+  const ownRow = (value: JournalStudentResponse) =>
+    render(<table><tbody><JournalStudentRow {...props} editing={null} sharedMaximum={100} markUnrecorded isSelf student={value} /></tbody></table>);
+
+  it("shows a dash instead of 0 when nothing is graded yet", () => {
+    ownRow({ ...student, entries: [], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    const cell: HTMLElement = screen.getByTestId("total-cell");
+    expect(cell.textContent).toBe("—");
+    expect(screen.queryByTestId("total-percentage")).toBeNull();
+    expect(screen.queryByText("0")).toBeNull();
+    expect(screen.queryByText("0%")).toBeNull();
+  });
+
+  it("shows the real zero once entries are recorded", () => {
+    ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: true, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
+    expect(screen.getByTestId("total-cell").textContent).toBe("0");
+  });
+});

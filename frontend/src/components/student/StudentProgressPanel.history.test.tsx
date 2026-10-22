@@ -60,7 +60,7 @@ describe("history presentation and lifetime summaries", (): void => {
   it("shows each history row as course, short period span and only the period total", (): void => {
     state.progress.history!.items = [
       { journal_id: 1, course_id: 4, course_title: "Algebra", period_label: "Month 3", period_start: "2026-03-01", period_end: "2026-03-31", state: "graded", percentage: 82.5, sum_score: 99, max_period_score: 120, attendance_count: 0, total_lessons: 1 },
-      { journal_id: 2, course_id: 4, course_title: "Geometry", period_label: "Month 4", period_start: "2026-04-01", period_end: "2026-04-30", state: "not_graded", percentage: 0, sum_score: 0, max_period_score: 120, attendance_count: 0, total_lessons: 0 },
+      { journal_id: 2, course_id: 4, course_title: "Geometry", period_label: "Month 4", period_start: "2026-04-01", period_end: "2026-04-30", state: "in_progress", percentage: 0, sum_score: 0, max_period_score: 120, attendance_count: 0, total_lessons: 0 },
     ];
     ProgressFixture.render();
     const rows: HTMLElement[] = screen.getAllByRole("listitem").filter((row: HTMLElement) => row.textContent?.includes("Algebra") || row.textContent?.includes("Geometry"));
