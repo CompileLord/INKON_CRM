@@ -14,7 +14,7 @@ from app.core.security import verify_password
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
 from app.tests.integration.test_remediation_wp10 import make_guard, reset_arguments
-from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTargetGuard
+from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTarget, ResetTargetGuard
 
 
 @pytest.mark.asyncio
