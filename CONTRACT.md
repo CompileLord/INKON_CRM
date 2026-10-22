@@ -2070,13 +2070,26 @@ Students receive only public mentor identity and course identity for their nonde
 
 **Summary:** Get Progress Chart
 
+Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returned chronologically, and the first 30 active staff-roster series (maximum 100), ordered by student_id. Student responses contain only their own series plus cohort aggregates; roster paging is ignored. All grading counts, averages and ranks use selected periods only. Eligible grades are explicitly graded, started, and have a positive maximum. Period class means include active students with eligible grades. The final series value is the selected-range average; the final class value weights eligible active-student range means equally. Ranks order unrounded range means descending, then student_id ascending. Withdrawn students retain their own history but do not contribute to cohort means or ranks.
+
 **Parameters:**
 - `id` [path] *(required)*
+- `period_offset` [query] Periods to skip from newest, ordered by period_start then id descending. Default 0, maximum 2147483647.
+- `period_limit` [query] Maximum periods returned chronologically. Default 12, maximum 52.
+- `student_offset` [query] Active staff-roster series to skip in student_id ascending order. Ignored for students. Default 0, maximum 2147483647.
+- `student_limit` [query] Maximum staff-roster series. Ignored for students. Default 30, maximum 100.
 
 **Responses:**
 - **200**: Successful Response
   ```json
   {
+    "period_offset": integer,
+    "period_limit": integer,
+    "periods_total": integer,
+    "aggregation_scope?": string,
+    "student_offset": integer,
+    "student_limit": integer,
+    "students_total": integer,
     "labels": array[string],
     "periods": [
       {
@@ -2104,6 +2117,10 @@ Students receive only public mentor identity and course identity for their nonde
 - **200**: Alternative response (StudentChartResponse)
   ```json
   {
+    "period_offset": integer,
+    "period_limit": integer,
+    "periods_total": integer,
+    "aggregation_scope?": string,
     "periods": [
       {
         "id": integer,

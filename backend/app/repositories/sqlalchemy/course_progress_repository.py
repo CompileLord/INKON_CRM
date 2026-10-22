@@ -1,8 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from datetime import date
 from sqlalchemy import Float, case, cast, func, or_, select
 from sqlalchemy.engine import Result, Row
 from sqlalchemy.sql import Select
+from sqlalchemy.sql.selectable import Subquery
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.course import Course
@@ -172,10 +173,66 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
         )
 
     async def get_course_chart_snapshot(
-        self, course_id: int, student_id: Optional[int] = None
+        self, course_id: int, student_id: Optional[int] = None, *,
+        period_offset: int = 0, period_limit: int = 12,
+        student_offset: int = 0, student_limit: int = 30,
     ) -> CourseChartSnapshot:
-        progress: CourseProgressSnapshot = await self.get_course_progress_snapshot(course_id, student_id)
-        eligible: Any = (
+        journals_query: Select = (
+            select(Journal).where(Journal.course_id == course_id)
+            .order_by(Journal.period_start.desc(), Journal.id.desc())
+            .offset(period_offset).limit(period_limit)
+        )
+        journals_result: Result = await self.session.execute(journals_query)
+        journals: list[Journal] = list(reversed(journals_result.scalars().all()))
+        journal_ids: list[int] = [journal.id for journal in journals]
+        periods_total: int = int(await self.session.scalar(
+            select(func.count()).select_from(Journal).where(Journal.course_id == course_id)
+        ) or 0)
+        roster: Select = (
+            select(User.id.label("student_id"), User.first_name, User.last_name, Enrollment.color_hex, Enrollment.status)
+            .join(Enrollment, Enrollment.student_id == User.id)
+            .where(
+                Enrollment.course_id == course_id,
+                Enrollment.is_deleted.is_(False),
+                User.role == UserRole.STUDENT,
+                User.is_deleted.is_(False),
+            )
+        )
+        active_roster: Select = roster.where(Enrollment.status == EnrollmentStatus.ACTIVE)
+        class_size: int = int(await self.session.scalar(
+            select(func.count()).select_from(active_roster.subquery())
+        ) or 0)
+        series_query: Select = (
+            active_roster.order_by(User.id.asc()).offset(student_offset).limit(student_limit)
+            if student_id is None else roster.where(User.id == student_id).limit(1)
+        )
+        series_result: Result = await self.session.execute(series_query)
+        students: list[ProgressStudentRecord] = [
+            ProgressStudentRecord(row.student_id, row.first_name, row.last_name, row.color_hex, row.status == EnrollmentStatus.ACTIVE)
+            for row in series_result.all()
+        ]
+        student_ids: list[int] = [student.student_id for student in students]
+        summaries: list[ProgressSummaryRecord] = []
+        if journal_ids and student_ids:
+            summaries_result: Result = await self.session.execute(
+                select(JournalStudentSummary).where(
+                    JournalStudentSummary.journal_id.in_(journal_ids),
+                    JournalStudentSummary.student_id.in_(student_ids),
+                )
+            )
+            summaries = [
+                ProgressSummaryRecord(summary.student_id, summary.journal_id, summary.sum_score, summary.max_period_score, summary.is_graded)
+                for summary in summaries_result.scalars().all()
+            ]
+        progress: CourseProgressSnapshot = CourseProgressSnapshot(
+            course_id=course_id,
+            periods=[self._build_period_record(journal, None) for journal in journals],
+            students=students,
+            summaries=summaries,
+        )
+        if not journal_ids:
+            return CourseChartSnapshot(progress, [], [], {}, None, class_size, periods_total)
+        eligible: Subquery = (
             select(
                 JournalStudentSummary.student_id.label("student_id"),
                 JournalStudentSummary.journal_id.label("journal_id"),
@@ -188,6 +245,7 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             .join(Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalStudentSummary.student_id))
             .join(User, User.id == JournalStudentSummary.student_id)
             .where(
+                Journal.id.in_(journal_ids),
                 Journal.course_id == course_id,
                 Journal.period_start <= date.today(),
                 JournalStudentSummary.is_graded.is_(True),
@@ -199,7 +257,7 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             )
             .subquery()
         )
-        averages: Any = (
+        averages: Subquery = (
             select(
                 eligible.c.student_id,
                 eligible.c.status,
@@ -211,12 +269,14 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             .group_by(eligible.c.student_id, eligible.c.status)
             .subquery()
         )
-        rows: Any = (await self.session.execute(select(averages))).all()
+        rows: list[Row] = (await self.session.execute(
+            select(averages).where(averages.c.student_id.in_(student_ids))
+        )).all()
         student_aggregates: List[ChartStudentAggregate] = [
             ChartStudentAggregate(row.student_id, float(row.mean_percentage), float(row.mean_score), float(row.mean_maximum), row.eligible_count)
             for row in rows
         ]
-        period_rows: Any = (
+        period_rows: list[Row] = (
             await self.session.execute(
                 select(eligible.c.journal_id, func.avg(eligible.c.percentage).label("mean_percentage"), func.count().label("eligible_count"))
                 .where(eligible.c.status == EnrollmentStatus.ACTIVE)
@@ -226,19 +286,26 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
         period_aggregates: List[ChartPeriodAggregate] = [
             ChartPeriodAggregate(row.journal_id, float(row.mean_percentage), row.eligible_count) for row in period_rows
         ]
-        ranked_rows: Any = (
-            await self.session.execute(
-                select(
-                    averages.c.student_id,
-                    func.row_number().over(order_by=(averages.c.mean_percentage.desc(), averages.c.student_id.asc())).label("rank"),
-                    func.avg(averages.c.mean_percentage).over().label("class_mean"),
-                ).where(averages.c.status == EnrollmentStatus.ACTIVE)
+        class_mean: float | None = await self.session.scalar(
+            select(func.avg(averages.c.mean_percentage)).where(averages.c.status == EnrollmentStatus.ACTIVE)
+        )
+        ranks: dict[int, int] = {}
+        if student_id is not None:
+            ranked: Subquery = select(
+                averages.c.student_id,
+                func.row_number().over(order_by=(averages.c.mean_percentage.desc(), averages.c.student_id.asc())).label("rank"),
+            ).where(averages.c.status == EnrollmentStatus.ACTIVE).subquery()
+            own_rank: int | None = await self.session.scalar(
+                select(ranked.c.rank).where(ranked.c.student_id == student_id)
             )
-        ).all()
+            if own_rank is not None:
+                ranks[student_id] = own_rank
         return CourseChartSnapshot(
             progress=progress,
             student_aggregates=student_aggregates,
             period_aggregates=period_aggregates,
-            ranks={row.student_id: row.rank for row in ranked_rows},
-            class_mean=float(ranked_rows[0].class_mean) if ranked_rows else None,
+            ranks=ranks,
+            class_mean=float(class_mean) if class_mean is not None else None,
+            class_size=class_size,
+            periods_total=periods_total,
         )
