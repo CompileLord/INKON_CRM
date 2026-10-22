@@ -55,7 +55,7 @@ services:
     healthcheck:
       test: ["CMD", "arq", "--check", "app.workers.settings.WorkerSettings"]
       interval: 10s
-      timeout: 5s
+      timeout: 30s
       retries: 6
       start_period: 20s
 

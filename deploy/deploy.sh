@@ -19,7 +19,7 @@ done
 CURRENT_RELEASE_FILE="$IMKON_DATA_DIR/current_release"
 PREVIOUS_RELEASE_FILE="$IMKON_DATA_DIR/previous_release"
 HEALTH_URL="${HEALTH_URL:-https://$API_DOMAIN/health}"
-HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-60}"
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-120}"
 
 if [[ "$REGISTER_WEBHOOK" == true ]]; then
   IMAGE_TAG="$(cat "$CURRENT_RELEASE_FILE")" compose exec -T api python -m scripts.register_telegram_webhook

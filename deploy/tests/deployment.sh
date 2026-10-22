@@ -49,6 +49,7 @@ printf 'PASS skip migrations skips repair\n'
 
 awk '/^  worker:/{worker=1;next} /^  db:/{worker=0} worker{print}' "$repository_directory/deploy/docker-compose.prod.yml" > "$test_directory/worker.yml"
 grep -Fq 'test: ["CMD", "arq", "--check", "app.workers.settings.WorkerSettings"]' "$test_directory/worker.yml"
+grep -Fq 'timeout: 30s' "$test_directory/worker.yml"
 printf 'PASS worker healthcheck configuration\n'
 
 for scenario in success archive restic; do
