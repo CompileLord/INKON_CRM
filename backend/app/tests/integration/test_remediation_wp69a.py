@@ -46,7 +46,7 @@ class PaymentWorld:
     async def student(self, email: str) -> int:
         response: Response = await self.client.post(
             "/api/v1/users/",
-            json={"email": email, "first_name": "Idem", "last_name": "Potent", "role": "student", "phone": "+992900000999", "payment_day_of_month": 1},
+            json={"email": email, "first_name": "Idem", "last_name": "Potent", "role": "student", "phone": f"+99290{abs(hash(email)) % 10_000_000:07d}", "payment_day_of_month": 1},
             headers=self.admin_headers,
         )
         assert response.status_code == 201
@@ -289,7 +289,7 @@ async def test_insert_race_with_a_different_payload_conflicts(world: PaymentWorl
 async def test_migration_adds_columns_and_partial_unique_index_and_round_trips() -> None:
     database: DisposableMigrationDatabase
     async with DisposableMigrationDatabase(BACKEND_ROOT) as database:
-        assert database.upgrade("rwp64_roster_index").returncode == 0
+        assert database.upgrade("plink1_optional_email_phone").returncode == 0
         assert await database.fetchval("SELECT count(*) FROM information_schema.columns WHERE table_name='ledger_entries' AND column_name LIKE 'idempotency_%'") == 0
         await database.execute("INSERT INTO users(id,email,first_name,last_name,role) VALUES (1,'a@example.test','A','B','student'),(2,'r@example.test','R','S','accountant')")
         await database.execute("INSERT INTO ledger_entries(student_id,type,amount,occurred_at,recorded_by_id) VALUES (1,'payment',10,now(),2)")
@@ -319,7 +319,7 @@ async def test_migration_replaces_an_invalid_leftover_index() -> None:
     async with DisposableMigrationDatabase(BACKEND_ROOT) as database:
         assert database.upgrade("wp69a_payment_idempotency").returncode == 0
         await database.execute("UPDATE pg_index SET indisvalid=false WHERE indexrelid=to_regclass($1)", INDEX_NAME)
-        assert database.run_alembic("stamp", "rwp64_roster_index").returncode == 0
+        assert database.run_alembic("stamp", "plink1_optional_email_phone").returncode == 0
         recovered = database.upgrade("wp69a_payment_idempotency")
         assert recovered.returncode == 0, recovered.stdout + recovered.stderr
         assert await database.fetchval("SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass($1)", INDEX_NAME) is True
@@ -329,7 +329,7 @@ def test_migration_sql_is_concurrent_and_expand_only() -> None:
     environment: dict[str, str] = os.environ.copy()
     environment["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
     result: subprocess.CompletedProcess[str] = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "rwp64_roster_index:wp69a_payment_idempotency", "--sql"],
+        [sys.executable, "-m", "alembic", "upgrade", "plink1_optional_email_phone:wp69a_payment_idempotency", "--sql"],
         cwd=BACKEND_ROOT, env=environment, text=True, capture_output=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stderr

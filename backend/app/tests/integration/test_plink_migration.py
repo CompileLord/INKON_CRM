@@ -85,7 +85,7 @@ async def test_upgrade_downgrade_reupgrade_preserves_users_and_enforces_the_cons
         await PlinkMigration.insert_user(database, "c@example.test", None)
         await PlinkMigration.insert_user(database, "d@example.test", None)
 
-        PlinkMigration.assert_command(database.upgrade("head"))
+        PlinkMigration.assert_command(database.upgrade(PlinkMigration.revision))
         assert await database.fetchval("SELECT version_num FROM alembic_version") == PlinkMigration.revision
         assert await PlinkMigration.email_is_nullable(database)
         await PlinkMigration.assert_valid_unique_index(database)
@@ -110,7 +110,7 @@ async def test_upgrade_downgrade_reupgrade_preserves_users_and_enforces_the_cons
         assert await database.fetchval("SELECT to_regclass($1)::text", PlinkMigration.index_name) is None
         assert await database.fetchval("SELECT count(*) FROM users") == 5
 
-        PlinkMigration.assert_command(database.upgrade("head"))
+        PlinkMigration.assert_command(database.upgrade(PlinkMigration.revision))
         await PlinkMigration.assert_valid_unique_index(database)
         assert await database.fetchval("SELECT count(*) FROM users") == 5
 

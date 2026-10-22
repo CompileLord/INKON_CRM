@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "wp69a_payment_idempotency"
-down_revision: str = "rwp64_roster_index"
+down_revision: str = "plink1_optional_email_phone"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
