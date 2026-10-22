@@ -33,6 +33,13 @@ class LedgerEntry(Base):
             unique=True,
             postgresql_where=text("type = 'void'"),
         ),
+        Index(
+            "uq_ledger_recorder_idempotency_key",
+            "recorded_by_id",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NOT NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -49,6 +56,8 @@ class LedgerEntry(Base):
     is_cash_out: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     reason_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    idempotency_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

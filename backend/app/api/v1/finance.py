@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Header, Query, Path, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db_session, get_debt_reminder_service, require_accountant, require_superadmin
@@ -10,7 +10,7 @@ from app.models.payment import PaymentMethod
 from app.models.charge import ChargeStatus
 from app.models.enrollment import EnrollmentStatus
 from app.models.ledger import LedgerEntry
-from app.schemas.payment import PaymentCreate
+from app.schemas.payment import PaymentCreate, PaymentIdempotency
 from app.schemas.debt import DebtResponse
 from app.schemas.debt_reminder import DebtReminderRequest, DebtReminderResponse
 from app.services.debt_reminder_service import DebtReminderService
@@ -34,6 +34,7 @@ from app.schemas.accounting_period import (
 from app.schemas.receipt import PaymentReceiptResponse
 from app.schemas.analytics import DetailedAnalyticsResponse
 from app.services.finance_service import FinanceService, get_dushanbe_today
+from app.services.payment_idempotency_service import PaymentIdempotencyService, PaymentRecordResult
 
 router = APIRouter()
 
@@ -41,12 +42,22 @@ router = APIRouter()
 @router.post("/payments/", response_model=PaymentEntryResponse, status_code=status.HTTP_201_CREATED)
 async def create_payment(
     payload: PaymentCreate,
+    response: Response,
+    idempotency_key: Optional[str] = Header(
+        None,
+        alias="Idempotency-Key",
+        pattern=PaymentIdempotency.KEY_PATTERN.pattern,
+        description="1-128 characters from A-Z a-z 0-9 _ -. A retry by the same recorder with the same key and payload returns the original payment with 200 instead of 201; the same key with a different payload returns 409.",
+    ),
     current_user: User = Depends(require_accountant),
     db: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    """Record cash received. Discounts are separate — see POST /finance/discounts/."""
+    """Record cash received. Discounts are separate — see POST /finance/discounts/.
+
+    Send an Idempotency-Key header to make retries safe. A first request answers 201. A repeat by the same recorder with the same key and payload answers 200 with the original payment and records nothing new. The same key with a different payload answers 409 with detail.code idempotency_key_payload_mismatch. Requests without the header are never deduplicated.
+    """
     finance_service = FinanceService(db)
-    entry = await finance_service.create_payment(
+    recorded: PaymentRecordResult = await PaymentIdempotencyService(db, finance_service).record_payment(
         student_id=payload.student_id,
         course_id=payload.course_id,
         amount=payload.amount,
@@ -54,8 +65,11 @@ async def create_payment(
         method=payload.method,
         comment=payload.comment,
         current_user=current_user,
+        idempotency_key=idempotency_key,
     )
-    decorated = await finance_service._decorate_entries([entry])
+    if recorded.replayed:
+        response.status_code = status.HTTP_200_OK
+    decorated = await finance_service._decorate_entries([recorded.entry])
     return decorated[0]
 
 

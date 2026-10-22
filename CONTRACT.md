@@ -2788,6 +2788,11 @@ Accepted batches retain existing partial-conflict, optimistic-version and idempo
 
 Record cash received. Discounts are separate — see POST /finance/discounts/.
 
+Send an Idempotency-Key header to make retries safe. A first request answers 201. A repeat by the same recorder with the same key and payload answers 200 with the original payment and records nothing new. The same key with a different payload answers 409 with detail.code idempotency_key_payload_mismatch. Requests without the header are never deduplicated.
+
+**Parameters:**
+- `Idempotency-Key` [header] 1-128 characters from A-Z a-z 0-9 _ -. A retry by the same recorder with the same key and payload returns the original payment with 200 instead of 201; the same key with a different payload returns 409.
+
 **Request Body (JSON):**
 ```json
 {
