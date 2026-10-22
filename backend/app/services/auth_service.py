@@ -6,6 +6,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from app.core.config import settings
+from app.core.login_identifier import LoginIdentifier
+from app.core.sms_rate_limiter import PasswordSmsRateLimiter
 from app.core.security import (
     PasswordResetPrincipal,
     create_access_token,
@@ -32,7 +34,11 @@ from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxService
 from app.services.sms.messages import PasswordSmsReason
 from app.services.student_password_sms_factory import StudentPasswordSmsServiceFactory
-from app.services.student_password_sms_service import StudentPasswordSmsService
+from app.services.student_password_sms_service import (
+    PasswordSmsDestination,
+    PasswordSmsDestinationKind,
+    StudentPasswordSmsService,
+)
 
 
 class AuthService:
@@ -46,8 +52,8 @@ class AuthService:
         self.outbox_service = OutboxService(self.outbox_repo, settings.JWT_SECRET_KEY)
         self.temporary_password_generator = TemporaryPasswordGenerator()
 
-    async def login(self, email: str, password: str) -> TokenPair:
-        user = await self.user_repo.get_by_email_for_update(email)
+    async def login(self, identifier: LoginIdentifier, password: str) -> TokenPair:
+        user = await self.user_repo.get_by_login_for_update(identifier)
         if not user or user.is_deleted:
             await self.password_work_service.hash("invalid-login-placeholder")
             raise HTTPException(
@@ -184,6 +190,11 @@ class AuthService:
         await self.token_repo.revoke_all_for_user(user_id)
 
     async def issue_temporary_credentials(self, user: User, parent_link_code: Optional[str] = None) -> None:
+        if not user.email:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="The account has no email for emailed credentials",
+            )
         temporary_password: str = self.temporary_password_generator.generate()
         user.password_hash = await self.password_work_service.hash(temporary_password)
         user.must_set_password = True
@@ -216,10 +227,7 @@ class AuthService:
 
         user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            raise self._challenge_unavailable("Verification")
 
         access_token = create_access_token(
             user.id,
@@ -233,19 +241,9 @@ class AuthService:
         )
 
     async def resend_code(self, email: str) -> None:
-        user = await self.user_repo.get_by_email_for_update(email)
-        if not user or user.is_deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        if not user.must_set_password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password already set"
-            )
-
+        user: User | None = await self.user_repo.get_by_email_for_update(email)
+        if user is None or user.is_deleted or not user.must_set_password:
+            return
         await self.issue_temporary_credentials(user)
 
     async def set_password(self, user_id: int, new_password: str) -> TokenPair:
@@ -311,28 +309,49 @@ class AuthService:
         refresh_token = await self._issue_refresh_token(user)
         return TokenPair(access_token=access_token, refresh_token=refresh_token, must_set_password=False)
 
-    async def password_reset_request(self, email: str) -> None:
-        user = await self.user_repo.get_by_email(email)
-        if not user or user.is_deleted:
+    async def password_reset_request(
+        self,
+        identifier: LoginIdentifier,
+        channel: Optional[PasswordSmsDestinationKind] = None,
+        client_ip: Optional[str] = None,
+    ) -> None:
+        user: User | None = await self.user_repo.get_by_login_for_update(identifier)
+        if user is None or user.is_deleted:
             return
-
         sms_service: StudentPasswordSmsService = StudentPasswordSmsServiceFactory.create(self.db)
-        if sms_service.resolve_destination(user) is not None:
-            locked_user: User | None = await self.user_repo.get_by_id_for_update(user.id)
-            if locked_user is None or locked_user.is_deleted:
-                return
-            try:
-                await sms_service.issue_password(
-                    locked_user, PasswordSmsReason.RESET, None, enforce_rate_limits=True
-                )
-            except HTTPException as error:
-                if error.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
-                    raise
+        if channel is not None:
+            await self._issue_reset_sms(sms_service, user, channel, client_ip)
             return
+        if user.email:
+            await self._issue_reset_email(user.email)
+            return
+        default_destination: PasswordSmsDestination | None = sms_service.resolve_destination(user)
+        if default_destination is not None:
+            await self._issue_reset_sms(sms_service, user, default_destination.kind, client_ip)
 
-        code = str(secrets.randbelow(900000) + 100000)
-        key = f"auth:reset:{email}"
-        data = {"code": code, "attempts": 0}
+    async def _issue_reset_sms(
+        self,
+        sms_service: StudentPasswordSmsService,
+        user: User,
+        kind: PasswordSmsDestinationKind,
+        client_ip: Optional[str],
+    ) -> None:
+        if sms_service.resolve_channel_destination(user, kind) is None:
+            return
+        try:
+            if client_ip is not None:
+                await PasswordSmsRateLimiter().consume_ip_budget(client_ip)
+            await sms_service.issue_password(
+                user, PasswordSmsReason.RESET, None, enforce_rate_limits=True, channel=kind
+            )
+        except HTTPException as error:
+            if error.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
+                raise
+
+    async def _issue_reset_email(self, email: str) -> None:
+        code: str = str(secrets.randbelow(900000) + 100000)
+        key: str = f"auth:reset:{email}"
+        data: dict[str, Any] = {"code": code, "attempts": 0}
         await redis_client.set(key, json.dumps(data), ex=600)
         await self.outbox_service.enqueue_password_reset_email(
             recipient_email=email,
@@ -345,10 +364,7 @@ class AuthService:
 
         user = await self.user_repo.get_by_email_for_update(email)
         if not user or user.is_deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            raise self._challenge_unavailable("Reset")
 
         now = datetime.now(timezone.utc)
         expire = now + timedelta(minutes=5)
@@ -361,6 +377,13 @@ class AuthService:
         }
         reset_token = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm="HS256")
         return reset_token
+
+    @staticmethod
+    def _challenge_unavailable(label: str) -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{label} code expired or not requested",
+        )
 
     async def _consume_challenge(self, key: str, code: str, label: str) -> None:
         store: VerificationCodeStore = VerificationCodeStore(redis_client)

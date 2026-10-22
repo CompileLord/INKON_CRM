@@ -20,6 +20,10 @@ async def test_admin_explicit_null_clears_optional_fields_and_preserves_required
     db_session.add(test_student)
     await db_session.commit()
     original_identity = (test_student.first_name, test_student.last_name, test_student.email)
+    student_email: str | None = test_student.email
+    test_student.email = None
+    db_session.add(test_student)
+    await db_session.commit()
     response = await client.patch(
         f"/api/v1/users/{test_student.id}",
         headers={"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"},
@@ -27,6 +31,9 @@ async def test_admin_explicit_null_clears_optional_fields_and_preserves_required
               "payment_day_of_month": None},
     )
     assert response.status_code == 422
+    test_student.email = student_email
+    db_session.add(test_student)
+    await db_session.commit()
     response = await client.patch(
         f"/api/v1/users/{test_student.id}",
         headers={"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"},

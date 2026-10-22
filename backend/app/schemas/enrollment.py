@@ -38,7 +38,7 @@ class RosterStudentIdentity(BaseModel):
     id: int
     first_name: str
     last_name: str
-    email: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     photo_path: Optional[str] = None
     thumbnail_path: Optional[str] = None
@@ -84,7 +84,7 @@ class EligibleCandidateResponse(BaseModel):
     id: int
     first_name: str
     last_name: str
-    email: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     photo_path: Optional[str] = None
     thumbnail_path: Optional[str] = None

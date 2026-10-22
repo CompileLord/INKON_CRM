@@ -26,6 +26,10 @@ class PasswordSmsDestination:
     kind: PasswordSmsDestinationKind
     phone: str
 
+    @property
+    def masked_phone(self) -> str:
+        return f"***{self.phone[-4:]}"
+
 
 class StudentPasswordSmsDestinationResolver:
     def __init__(self) -> None:
@@ -36,6 +40,17 @@ class StudentPasswordSmsDestinationResolver:
             return PasswordSmsDestination(PasswordSmsDestinationKind.STUDENT_PHONE, user.phone)
         if self._phone_formatter.is_deliverable(user.parent_phone):
             return PasswordSmsDestination(PasswordSmsDestinationKind.PARENT_PHONE, user.parent_phone)
+        return None
+
+    def resolve_channel(self, user: User, kind: PasswordSmsDestinationKind) -> Optional[PasswordSmsDestination]:
+        if kind == PasswordSmsDestinationKind.STUDENT_PHONE and self._phone_formatter.is_deliverable(user.phone):
+            return PasswordSmsDestination(kind, user.phone)
+        if (
+            kind == PasswordSmsDestinationKind.PARENT_PHONE
+            and user.role == UserRole.STUDENT
+            and self._phone_formatter.is_deliverable(user.parent_phone)
+        ):
+            return PasswordSmsDestination(kind, user.parent_phone)
         return None
 
     def reject_undeliverable_contacts(self, phone: Optional[str], parent_phone: Optional[str]) -> None:
@@ -82,12 +97,21 @@ class StudentPasswordSmsService:
             return None
         return self._destination_resolver.resolve(user)
 
-    def require_destination(self, user: User) -> PasswordSmsDestination:
-        destination: Optional[PasswordSmsDestination] = self.resolve_destination(user)
+    def resolve_channel_destination(
+        self, user: User, kind: PasswordSmsDestinationKind
+    ) -> Optional[PasswordSmsDestination]:
+        return self._destination_resolver.resolve_channel(user, kind)
+
+    def require_destination(
+        self, user: User, kind: Optional[PasswordSmsDestinationKind] = None
+    ) -> PasswordSmsDestination:
+        destination: Optional[PasswordSmsDestination] = (
+            self.resolve_destination(user) if kind is None else self.resolve_channel_destination(user, kind)
+        )
         if destination is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Student needs a phone or parent phone to receive the password SMS",
+                detail="The account has no deliverable phone for this channel",
             )
         return destination
 
@@ -97,8 +121,9 @@ class StudentPasswordSmsService:
         reason: PasswordSmsReason,
         actor_id: Optional[int],
         enforce_rate_limits: bool,
+        channel: Optional[PasswordSmsDestinationKind] = None,
     ) -> PasswordSmsDestination:
-        destination: PasswordSmsDestination = self.require_destination(user)
+        destination: PasswordSmsDestination = self.require_destination(user, channel)
         await self._limiter.consume_budgets(user.id, destination.phone, enforce_cooldown=enforce_rate_limits)
         code: str = self._code_generator.generate()
         if reason == PasswordSmsReason.INITIAL:

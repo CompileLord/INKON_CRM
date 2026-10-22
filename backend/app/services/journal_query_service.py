@@ -373,6 +373,7 @@ class JournalQueryService:
                 "first_name": s_user.first_name,
                 "last_name": s_user.last_name,
                 "email": s_user.email,
+                "phone": s_user.phone,
                 "color_hex": color_hex,
                 "entries": entries_data,
                 "summary": summary_data

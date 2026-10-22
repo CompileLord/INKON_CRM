@@ -23,5 +23,5 @@ class ChargeResponse(BaseModel):
 class StudentCreditResponse(BaseModel):
     student_id: int
     student_name: str
-    email: str
+    email: Optional[str] = None
     credit_balance: Decimal

@@ -20,7 +20,7 @@ async def test_course_copy_flow(client: AsyncClient, test_admin: User, test_ment
 
     s2_resp = await client.post(
         "/api/v1/users/",
-        json={"email": "c2@example.com", "first_name": "C", "last_name": "Two", "role": "student", "phone": "+992900000999"},
+        json={"email": "c2@example.com", "first_name": "C", "last_name": "Two", "role": "student", "phone": "+992900000998"},
         headers=admin_headers
     )
     student2_id = s2_resp.json()["id"]

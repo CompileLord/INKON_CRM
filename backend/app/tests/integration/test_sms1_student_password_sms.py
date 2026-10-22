@@ -14,18 +14,19 @@ from app.tests.sms_test_support import SmsPasswordTestSupport
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("phone", "parent_phone", "expected_destination", "expected_number"),
+    ("phone", "parent_phone", "expected_destination", "expected_number", "message_template"),
     [
-        ("+992900000001", None, "student_phone", "+992900000001"),
-        (None, "+992900000002", "parent_phone", "+992900000002"),
-        ("+992900000001", "+992900000002", "student_phone", "+992900000001"),
+        ("+992900000001", None, "student_phone", "+992900000001", "KitobCRM: ваш пароль {code}"),
+        ("+99211", "+992900000002", "parent_phone", "+992900000002", "KitobCRM: пароль для Sam: {code}"),
+        ("+992900000001", "+992900000002", "student_phone", "+992900000001", "KitobCRM: ваш пароль {code}"),
     ],
 )
 async def test_destination_selection_and_delivery(
     client: AsyncClient, test_admin: User, db_session: AsyncSession,
     phone: str | None, parent_phone: str | None, expected_destination: str, expected_number: str,
+    message_template: str,
 ) -> None:
-    response: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "dest@example.com", phone, parent_phone)
+    response: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, phone, parent_phone)
     assert response.status_code == 201
     assert response.json()["password_sms_destination"] == expected_destination
     user_id: int = response.json()["id"]
@@ -34,7 +35,7 @@ async def test_destination_selection_and_delivery(
     code: str = SmsPasswordTestSupport.read_code(events[0])
     sender: FakeSmsSender = FakeSmsSender()
     await SmsPasswordTestSupport.build_worker(sender).run_once(SmsPasswordTestSupport.build_session_factory())
-    assert [(send.phone_e164, send.message) for send in sender.sends] == [(expected_number, f"KitobCRM: ваш пароль {code}")]
+    assert [(send.phone_e164, send.message) for send in sender.sends] == [(expected_number, message_template.format(code=code))]
     assert code not in response.text
     refreshed: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, user_id))[0]
     assert refreshed.status == OutboxEventStatus.DELIVERED
@@ -43,12 +44,14 @@ async def test_destination_selection_and_delivery(
 
 
 @pytest.mark.asyncio
-async def test_student_without_any_phone_is_rejected_with_422_and_nothing_created(
+async def test_student_with_only_a_parent_phone_is_rejected_with_422_and_nothing_created(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    response: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "nophone@example.com", None, None)
+    response: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, None, "+992900000002")
     assert response.status_code == 422
-    assert (await db_session.execute(select(User).where(User.email == "nophone@example.com"))).scalar_one_or_none() is None
+    detail: str = str(response.json()["detail"])
+    assert "email" in detail and "phone" in detail
+    assert (await db_session.execute(select(User).where(User.parent_phone == "+992900000002"))).scalar_one_or_none() is None
     assert await SmsPasswordTestSupport.sms_events(db_session) == []
 
 
@@ -61,7 +64,7 @@ async def test_non_e164_phone_is_rejected_by_schema(client: AsyncClient, test_ad
 
 @pytest.mark.asyncio
 async def test_update_cannot_remove_last_phone_of_student(client: AsyncClient, test_admin: User) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "keep@example.com", "+992900000001")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+992900000001")
     response: Response = await client.patch(
         f"/api/v1/users/{created.json()['id']}", json={"phone": None}, headers=SmsPasswordTestSupport.bearer(test_admin)
     )
@@ -88,12 +91,12 @@ async def test_staff_creation_keeps_email_credentials_flow(client: AsyncClient, 
 async def test_sent_code_logs_in_wrong_code_fails_and_password_can_be_changed(
     client: AsyncClient, test_admin: User, db_session: AsyncSession
 ) -> None:
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "login@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, created.json()["id"]))[0])
     wrong_code: str = "00000A" if code != "00000A" else "00000B"
 
-    assert (await SmsPasswordTestSupport.login(client, "login@example.com", wrong_code)).status_code == 401
-    ok: Response = await SmsPasswordTestSupport.login(client, "login@example.com", code)
+    assert (await SmsPasswordTestSupport.login(client, "+992900000001", wrong_code)).status_code == 401
+    ok: Response = await SmsPasswordTestSupport.login(client, "+992900000001", code)
     assert ok.status_code == 200 and ok.json()["must_set_password"] is False
     setup_headers: dict[str, str] = {"Authorization": f"Bearer {ok.json()['access_token']}"}
     blocked: Response = await client.get("/api/v1/users/me", headers=setup_headers)
@@ -117,8 +120,8 @@ async def test_sent_code_logs_in_wrong_code_fails_and_password_can_be_changed(
         headers=own_headers,
     )
     assert change.status_code == 200
-    assert (await SmsPasswordTestSupport.login(client, "login@example.com", "first-own-pass-1")).status_code == 401
-    assert (await SmsPasswordTestSupport.login(client, "login@example.com", "second-own-pass-2")).status_code == 200
+    assert (await SmsPasswordTestSupport.login(client, "+992900000001", "first-own-pass-1")).status_code == 401
+    assert (await SmsPasswordTestSupport.login(client, "+992900000001", "second-own-pass-2")).status_code == 200
     stale: Response = await client.get("/api/v1/users/me", headers=own_headers)
     assert stale.status_code == 401
 
@@ -128,7 +131,7 @@ async def test_plaintext_code_never_stored_logged_audited_or_returned(
     client: AsyncClient, test_admin: User, db_session: AsyncSession, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level("DEBUG")
-    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "secret@example.com")
+    created: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None)
     user_id: int = created.json()["id"]
     event: OutboxEvent = (await SmsPasswordTestSupport.sms_events(db_session, user_id))[0]
     code: str = SmsPasswordTestSupport.read_code(event)
@@ -149,10 +152,10 @@ async def test_plaintext_code_never_stored_logged_audited_or_returned(
 
 @pytest.mark.asyncio
 async def test_siblings_sharing_parent_phone_get_distinct_codes(client: AsyncClient, test_admin: User, db_session: AsyncSession) -> None:
-    first: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "sib1@example.com", None, "+992900000009")
-    second: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, "sib2@example.com", None, "+992900000009")
+    first: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+99211", "+992900000009")
+    second: Response = await SmsPasswordTestSupport.create_student_via_api(client, test_admin, None, "+99212", "+992900000009")
     first_code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, first.json()["id"]))[0])
     second_code: str = SmsPasswordTestSupport.read_code((await SmsPasswordTestSupport.sms_events(db_session, second.json()["id"]))[0])
     assert first_code != second_code
-    assert (await SmsPasswordTestSupport.login(client, "sib1@example.com", first_code)).status_code == 200
-    assert (await SmsPasswordTestSupport.login(client, "sib2@example.com", first_code)).status_code == 401
+    assert (await SmsPasswordTestSupport.login(client, "+99211", first_code)).status_code == 200
+    assert (await SmsPasswordTestSupport.login(client, "+99212", first_code)).status_code == 401
