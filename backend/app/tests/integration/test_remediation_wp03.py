@@ -14,7 +14,9 @@ from app.core.security import hash_token
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.sqlalchemy.refresh_token_repository import SQLAlchemyRefreshTokenRepository
+from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
+from app.core.deps import AuthServiceComposition
 
 
 class FrozenTokenDatetime(datetime):
@@ -104,7 +106,7 @@ async def test_refresh_rejects_invalid_identity_and_purpose_claims(
     )
     await issue_stored_refresh_token(db_session, test_student, token)
     with pytest.raises(HTTPException) as failure:
-        await AuthService(db_session).refresh(token)
+        await AuthServiceComposition.create(db_session).refresh(token)
     assert failure.value.status_code == 401
 
 
@@ -117,7 +119,7 @@ async def test_refresh_rejects_expired_credential(
     expired_token: str = encode_refresh_claims(str(test_student.id), "refresh", expired_at)
     await issue_stored_refresh_token(db_session, test_student, expired_token, expired_at)
     with pytest.raises(HTTPException) as failure:
-        await AuthService(db_session).refresh(expired_token)
+        await AuthServiceComposition.create(db_session).refresh(expired_token)
     assert failure.value.status_code == 401
 
 
@@ -134,7 +136,7 @@ async def test_refresh_rejects_valid_jwt_with_expired_database_credential(
         datetime.now(timezone.utc).timestamp()
     )
     with pytest.raises(HTTPException) as failure:
-        await AuthService(db_session).refresh(token)
+        await AuthServiceComposition.create(db_session).refresh(token)
     assert failure.value.status_code == 401
 
 
@@ -177,7 +179,7 @@ async def test_set_password_issues_identity_bound_refresh_credential(
     db_session: AsyncSession,
     test_student: User,
 ) -> None:
-    result = await AuthService(db_session).set_password(test_student.id, "changedPass123")
+    result: TokenPair = await AuthServiceComposition.create(db_session).set_password(test_student.id, "changedPass123")
     claims: dict[str, object] = jwt.decode(
         result.refresh_token,
         settings.JWT_REFRESH_SECRET_KEY,
@@ -204,7 +206,7 @@ async def test_password_reset_issues_identity_bound_refresh_credential(
         settings.JWT_SECRET_KEY,
         algorithm="HS256",
     )
-    result = await AuthService(db_session).password_reset_confirm(reset_token, "resetPass123")
+    result: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(reset_token, "resetPass123")
     claims: dict[str, object] = jwt.decode(
         result.refresh_token,
         settings.JWT_REFRESH_SECRET_KEY,
@@ -264,7 +266,7 @@ async def test_refresh_rotation_replay_has_exactly_one_successor(
             await session.execute(text("SELECT pg_backend_pid()"))
             await barrier.wait()
             try:
-                await AuthService(session).refresh(original_token)
+                await AuthServiceComposition.create(session).refresh(original_token)
                 await session.commit()
                 return True
             except HTTPException as failure:
@@ -304,8 +306,8 @@ async def test_failed_rotation_rolls_back_original_token_consumption(
 
     monkeypatch.setattr(SQLAlchemyRefreshTokenRepository, "create", fail_successor_creation)
     with pytest.raises(RuntimeError, match="synthetic successor insert failure"):
-        await AuthService(db_session).refresh(original_token)
+        await AuthServiceComposition.create(db_session).refresh(original_token)
     await db_session.rollback()
     monkeypatch.setattr(SQLAlchemyRefreshTokenRepository, "create", original_create)
-    rotated = await AuthService(db_session).refresh(original_token)
+    rotated: TokenPair = await AuthServiceComposition.create(db_session).refresh(original_token)
     assert rotated.refresh_token != original_token

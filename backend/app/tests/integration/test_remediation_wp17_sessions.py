@@ -12,7 +12,9 @@ from app.core.config import settings
 from app.core.redis import redis_client
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
+from app.schemas.auth import TokenPair
 from app.services.auth_service import AuthService
+from app.core.deps import AuthServiceComposition
 from app.tests.integration.test_remediation_wp17 import _create_password_reset_grant, _token_claims
 
 
@@ -34,7 +36,7 @@ async def test_reset_verification_and_password_setup_issue_versioned_scoped_acce
         ex=600,
     )
 
-    setup_pair = await AuthService(db_session).verify_code(test_student.email, verification_code)
+    setup_pair: TokenPair = await AuthServiceComposition.create(db_session).verify_code(test_student.email, verification_code)
     setup_claims: dict[str, Any] = _token_claims(setup_pair.access_token, settings.JWT_SECRET_KEY)
     assert setup_claims["auth_version"] == 0
     assert setup_claims["scope"] == "must_set_password"
@@ -115,7 +117,7 @@ async def test_password_reset_verification_embeds_current_auth_version(
     await db_session.commit()
     await redis_client.set(reset_key, '{"code":"827364","attempts":0}', ex=600)
 
-    reset_grant: str = await AuthService(db_session).password_reset_verify(
+    reset_grant: str = await AuthServiceComposition.create(db_session).password_reset_verify(
         test_student.email,
         reset_code,
     )
@@ -123,7 +125,7 @@ async def test_password_reset_verification_embeds_current_auth_version(
     assert reset_claims["sub"] == str(test_student.id)
     assert reset_claims["type"] == "password_reset"
     assert reset_claims["auth_version"] == 4
-    reset_pair = await AuthService(db_session).password_reset_confirm(
+    reset_pair: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(
         reset_grant,
         "NonzeroEpochReset123",
     )
@@ -142,7 +144,7 @@ async def test_setup_required_reset_keeps_setup_scope_in_new_epoch(
     )
     await db_session.commit()
     grant: str = _create_password_reset_grant(test_student.id, 0)
-    result = await AuthService(db_session).password_reset_confirm(grant, "SetupResetPass123")
+    result: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(grant, "SetupResetPass123")
     claims: dict[str, Any] = _token_claims(result.access_token, settings.JWT_SECRET_KEY)
     assert result.must_set_password is True
     assert claims["auth_version"] == 1
@@ -155,22 +157,22 @@ async def test_reset_confirmation_rollback_preserves_grant_and_refresh_state(
     test_student: User,
 ) -> None:
     original_password_hash: str | None = test_student.password_hash
-    login_result = await AuthService(db_session).login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
+    login_result: TokenPair = await AuthServiceComposition.create(db_session).login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
     await db_session.commit()
     reset_grant: str = _create_password_reset_grant(test_student.id, 0)
 
-    await AuthService(db_session).password_reset_confirm(reset_grant, "RolledBackPass123")
+    await AuthServiceComposition.create(db_session).password_reset_confirm(reset_grant, "RolledBackPass123")
     await db_session.rollback()
 
     rolled_back_user: User | None = await db_session.get(User, test_student.id)
     assert rolled_back_user is not None
     assert rolled_back_user.auth_version == 0
     assert rolled_back_user.password_hash == original_password_hash
-    refreshed_pair = await AuthService(db_session).refresh(login_result.refresh_token)
+    refreshed_pair: TokenPair = await AuthServiceComposition.create(db_session).refresh(login_result.refresh_token)
     await db_session.commit()
     assert refreshed_pair.refresh_token != login_result.refresh_token
 
-    second_confirmation = await AuthService(db_session).password_reset_confirm(
+    second_confirmation: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(
         reset_grant,
         "CommittedAfterRollback123",
     )
@@ -194,7 +196,7 @@ async def test_concurrent_reset_confirmations_have_one_winner(
         async with session_factory() as session:
             await start_barrier.wait()
             try:
-                await AuthService(session).password_reset_confirm(reset_grant, password)
+                await AuthServiceComposition.create(session).password_reset_confirm(reset_grant, password)
                 await session.commit()
                 return True
             except HTTPException as failure:
@@ -222,7 +224,7 @@ async def test_refresh_waits_for_reset_user_lock_before_consuming_token(
     test_student: User,
 ) -> None:
     async with AsyncSessionLocal() as login_session:
-        login_pair = await AuthService(login_session).login(
+        login_pair: TokenPair = await AuthServiceComposition.create(login_session).login(
             LoginIdentifierParser.from_email(test_student.email),
             "student_pass123",
         )
@@ -239,7 +241,7 @@ async def test_refresh_waits_for_reset_user_lock_before_consuming_token(
         async with session_factory() as refresh_session:
             refresh_started.set()
             try:
-                await AuthService(refresh_session).refresh(login_pair.refresh_token)
+                await AuthServiceComposition.create(refresh_session).refresh(login_pair.refresh_token)
                 await refresh_session.commit()
                 return 200
             except HTTPException as failure:
@@ -263,7 +265,7 @@ async def test_refresh_waits_for_reset_user_lock_before_consuming_token(
                 early_result = 0
             assert early_result == 0
 
-            reset_pair = await AuthService(reset_session).password_reset_confirm(
+            reset_pair: TokenPair = await AuthServiceComposition.create(reset_session).password_reset_confirm(
                 reset_grant,
                 "ResetLocksRefresh123",
             )
@@ -294,7 +296,7 @@ async def test_login_waits_for_reset_lock_and_cannot_use_old_password_after_rese
         async with session_factory() as login_session:
             login_started.set()
             try:
-                await AuthService(login_session).login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
+                await AuthServiceComposition.create(login_session).login(LoginIdentifierParser.from_email(test_student.email), "student_pass123")
                 await login_session.commit()
                 return 200
             except HTTPException as failure:
@@ -318,7 +320,7 @@ async def test_login_waits_for_reset_lock_and_cannot_use_old_password_after_rese
                 early_result = 0
             assert early_result == 0
 
-            await AuthService(reset_session).password_reset_confirm(
+            await AuthServiceComposition.create(reset_session).password_reset_confirm(
                 reset_grant,
                 "ResetFinishesBeforeLogin123",
             )

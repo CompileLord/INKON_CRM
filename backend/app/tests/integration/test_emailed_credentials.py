@@ -18,6 +18,7 @@ from app.models.user import User, UserRole
 from app.schemas.auth import TokenPair
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.auth_service import AuthService
+from app.core.deps import AuthServiceComposition
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxPayloadEncryptor
 from app.services.user_service import UserService
@@ -104,7 +105,7 @@ async def test_emailed_password_logs_in_with_must_set_password_scope(db_session:
     event: OutboxEvent = (await load_credentials_events(db_session, user.email))[0]
     temporary_password: str = decrypt_temporary_password(event)
 
-    token_pair: TokenPair = await AuthService(db_session).login(email_login(user.email), temporary_password)
+    token_pair: TokenPair = await AuthServiceComposition.create(db_session).login(email_login(user.email), temporary_password)
 
     assert token_pair.must_set_password is True
     assert len(temporary_password) == 6 and temporary_password.isdigit()
@@ -131,7 +132,7 @@ async def test_plaintext_password_never_persisted(db_session: AsyncSession) -> N
 async def test_set_password_invalidates_temporary_password(db_session: AsyncSession) -> None:
     user: User = await create_student(db_session)
     temporary_password: str = decrypt_temporary_password((await load_credentials_events(db_session, user.email))[0])
-    auth_service = AuthService(db_session)
+    auth_service: AuthService = AuthServiceComposition.create(db_session)
 
     await auth_service.set_password(user.id, "my-own-pass-42")
     await db_session.commit()
@@ -147,7 +148,7 @@ async def test_set_password_invalidates_temporary_password(db_session: AsyncSess
 async def test_resend_replaces_temporary_password(db_session: AsyncSession) -> None:
     user: User = await create_student(db_session)
     first_password: str = decrypt_temporary_password((await load_credentials_events(db_session, user.email))[0])
-    auth_service = AuthService(db_session)
+    auth_service: AuthService = AuthServiceComposition.create(db_session)
     initial_auth_version: int = user.auth_version
 
     await auth_service.resend_code(user.email)
@@ -168,13 +169,13 @@ async def test_resend_replaces_temporary_password(db_session: AsyncSession) -> N
 async def test_resend_for_user_with_password_already_set_is_silent_and_sends_nothing(
     db_session: AsyncSession, test_student: User
 ) -> None:
-    assert await AuthService(db_session).resend_code(test_student.email) is None
+    assert await AuthServiceComposition.create(db_session).resend_code(test_student.email) is None
     assert await load_credentials_events(db_session, test_student.email) == []
 
 
 @pytest.mark.asyncio
 async def test_resend_for_unknown_email_is_silent(db_session: AsyncSession) -> None:
-    assert await AuthService(db_session).resend_code("nobody@example.com") is None
+    assert await AuthServiceComposition.create(db_session).resend_code("nobody@example.com") is None
     assert await load_credentials_events(db_session, "nobody@example.com") == []
 
 
@@ -197,7 +198,7 @@ async def test_email_change_before_first_login_reissues_credentials_to_new_email
     new_events: list[OutboxEvent] = await load_credentials_events(db_session, "moved.student@example.com")
     assert len(new_events) == 1
     new_password: str = decrypt_temporary_password(new_events[0])
-    auth_service = AuthService(db_session)
+    auth_service: AuthService = AuthServiceComposition.create(db_session)
     with pytest.raises(HTTPException):
         await auth_service.login(email_login("moved.student@example.com"), old_password)
     assert (await auth_service.login(email_login("moved.student@example.com"), new_password)).must_set_password is True
@@ -208,7 +209,7 @@ async def test_email_change_after_first_login_keeps_password_and_sends_nothing(
     db_session: AsyncSession,
 ) -> None:
     user: User = await create_student(db_session)
-    await AuthService(db_session).set_password(user.id, "my-own-pass-42")
+    await AuthServiceComposition.create(db_session).set_password(user.id, "my-own-pass-42")
     await db_session.commit()
     auth_version_before: int = user.auth_version
 
@@ -219,7 +220,7 @@ async def test_email_change_after_first_login_keeps_password_and_sends_nothing(
 
     assert updated_user.auth_version == auth_version_before
     assert await load_credentials_events(db_session, "moved.student@example.com") == []
-    final_pair: TokenPair = await AuthService(db_session).login(email_login("moved.student@example.com"), "my-own-pass-42")
+    final_pair: TokenPair = await AuthServiceComposition.create(db_session).login(email_login("moved.student@example.com"), "my-own-pass-42")
     assert final_pair.must_set_password is False
 
 
@@ -258,7 +259,7 @@ async def test_worker_sends_login_and_password_then_purges_payload(db_session: A
 @pytest.mark.asyncio
 async def test_newer_credentials_supersede_older_event(db_session: AsyncSession) -> None:
     user: User = await create_student(db_session)
-    await AuthService(db_session).resend_code(user.email)
+    await AuthServiceComposition.create(db_session).resend_code(user.email)
     await db_session.commit()
     older_event, newer_event = await load_credentials_events(db_session, user.email)
     newer_password: str = decrypt_temporary_password(newer_event)
@@ -280,7 +281,7 @@ async def test_newer_credentials_supersede_older_event(db_session: AsyncSession)
 async def test_worker_drops_credentials_after_user_chose_own_password(db_session: AsyncSession) -> None:
     user: User = await create_student(db_session)
     event: OutboxEvent = (await load_credentials_events(db_session, user.email))[0]
-    await AuthService(db_session).set_password(user.id, "my-own-pass-42")
+    await AuthServiceComposition.create(db_session).set_password(user.id, "my-own-pass-42")
     await db_session.commit()
     recorder = RecordingEmailService()
     worker = OutboxWorkerManager(settings.DATABASE_URL, settings.JWT_SECRET_KEY, email_service=recorder)
