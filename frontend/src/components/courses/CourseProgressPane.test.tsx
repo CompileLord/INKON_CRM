@@ -14,6 +14,7 @@ vi.mock("../../lib/courses/hooks", async (importOriginal) => {
   return {
     ...actual,
     useCourseStaffProgress: vi.fn(),
+    useCourseProgressChart: vi.fn(() => ({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() })),
   };
 });
 

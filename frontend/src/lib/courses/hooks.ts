@@ -16,7 +16,8 @@ import {
   updateCourse,
   uploadCourseImage,
 } from "./endpoints";
-import type { CourseCreate, CourseUpdate, ListCoursesParams } from "./types";
+import { CourseProgressChartQuery } from "./CourseProgressChartQuery";
+import type { CourseCreate, CourseProgressChartOptions, CourseUpdate, ListCoursesParams } from "./types";
 
 function listQueryKey(params: ListCoursesParams) {
   return ["courses", "list", params] as const;
@@ -66,11 +67,13 @@ export function useCourseMentorHistory(id: number | undefined, enabled = true) {
   });
 }
 
-export function useCourseProgressChart(id: number | undefined) {
+export function useCourseProgressChart(id: number | undefined, options: CourseProgressChartOptions = {}) {
+  const resolved: Required<CourseProgressChartOptions> = CourseProgressChartQuery.resolve(options);
   return useQuery({
-    queryKey: ["courses", "progress-chart", id],
-    queryFn: () => getCourseProgressChart(id!),
+    queryKey: CourseProgressChartQuery.key(id, resolved),
+    queryFn: () => getCourseProgressChart(id!, resolved),
     enabled: id !== undefined,
+    placeholderData: keepPreviousData,
   });
 }
 
