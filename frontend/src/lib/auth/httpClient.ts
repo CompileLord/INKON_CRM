@@ -1,10 +1,10 @@
 import axios, { type AxiosError } from "axios";
 import { API_BASE_URL } from "./env";
-import { AuthApiError, NetworkError } from "./errors";
+import { AuthApiError, NetworkError, type ApiErrorDetail } from "./errors";
 import { MissingRefreshTokenError, RefreshCoordinator } from "./refreshCoordinator";
 import { emitLogout, emitSessionRefresh } from "./session";
 import { tokenStorage } from "./tokenStorage";
-import type { HTTPValidationError, TokenPair, ValidationErrorItem } from "./types";
+import type { TokenPair } from "./types";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -16,6 +16,8 @@ declare module "axios" {
     _retried?: boolean;
     /** A 401 whose detail is one of these means wrong credentials, not an expired session: no refresh, no logout. */
     wrongCredentialsDetails?: readonly string[];
+    /** A 401 on this call never triggers a refresh (used by logout, whose refresh token is being revoked). */
+    skipRefreshOn401?: boolean;
   }
 }
 
@@ -51,8 +53,8 @@ function isDefinitiveRejection(error: unknown): boolean {
   return error instanceof MissingRefreshTokenError || (error instanceof AuthApiError && (error.status === 401 || error.status === 403));
 }
 
-function detailFrom(data: unknown): string | ValidationErrorItem[] | undefined {
-  return (data as HTTPValidationError | { detail?: string } | undefined)?.detail;
+function detailFrom(data: unknown): ApiErrorDetail {
+  return (data as { detail?: ApiErrorDetail } | undefined)?.detail;
 }
 
 httpClient.interceptors.response.use(
@@ -66,8 +68,9 @@ httpClient.interceptors.response.use(
     const config = error.config;
 
     if (status === 401 && config && !config.skipAuth && !config._retried) {
-      const detail: string | ValidationErrorItem[] | undefined = detailFrom(data);
-      if (typeof detail === "string" && config.wrongCredentialsDetails?.includes(detail)) {
+      const detail: ApiErrorDetail = detailFrom(data);
+      const detailCode: string | null = typeof detail === "string" ? detail : detail && !Array.isArray(detail) ? detail.code : null;
+      if (config.skipRefreshOn401 || (detailCode !== null && config.wrongCredentialsDetails?.includes(detailCode))) {
         throw new AuthApiError(status, detail);
       }
       try {

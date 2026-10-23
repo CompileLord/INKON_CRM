@@ -148,6 +148,15 @@ describe("RefreshCoordinator across tabs", () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  it("rejects with 401 and does not retry when the token was reused and nobody rotated it", async () => {
+    const backend: SharedBackend = new SharedBackend();
+    backend.validRefreshToken = "someone-else";
+    const tab: Tab = openTab(backend, new FakeLockManager(), new FakeBus());
+    await expect(tab.coordinator.refresh()).rejects.toMatchObject({ status: 401 });
+    expect(backend.requestCount).toBe(1);
+    expect(tab.applied).toHaveLength(0);
+  });
+
   it("propagates an outage without touching the stored token", async () => {
     const backend: SharedBackend = new SharedBackend();
     backend.failWith = new NetworkError();

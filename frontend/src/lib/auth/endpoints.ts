@@ -28,7 +28,7 @@ export function refresh(refreshToken: string): Promise<TokenPair> {
 /** Revokes refreshToken server-side. Callers must still clear local state themselves. */
 export function logout(refreshToken: string): Promise<void> {
   const body: RefreshRequest = { refresh_token: refreshToken };
-  return httpClient.post<void>("/auth/logout", body).then(() => undefined);
+  return httpClient.post<void>("/auth/logout", body, { skipRefreshOn401: true }).then(() => undefined);
 }
 
 /** Requires an Authorization bearer token — the caller's current access token. */

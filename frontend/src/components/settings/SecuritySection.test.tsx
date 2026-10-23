@@ -87,10 +87,10 @@ describe("SecuritySection", () => {
   });
 
   it("shows the password policy on the new password for 400", async () => {
-    vi.spyOn(authEndpoints, "changePassword").mockRejectedValue(new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"));
+    vi.spyOn(authEndpoints, "changePassword").mockRejectedValue(new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password."));
     render(<SecuritySection onChanged={vi.fn()} />);
     await fillAndSubmit("OldPass123", "NewPass123");
-    expect(await screen.findByText("Password must be at least 8 characters and contain at least 1 digit")).toBeDefined();
+    expect(await screen.findByText("Password must be at least 8 characters, contain a digit, not be all digits and not be a common password.")).toBeDefined();
   });
 
   it("shows the minimum length message for a 422 on the new password", async () => {

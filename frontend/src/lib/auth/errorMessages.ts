@@ -1,4 +1,5 @@
 import { AuthApiError, NetworkError } from "./errors";
+import { PasswordPolicyViolation } from "./passwordPolicy";
 
 export type AuthErrorKind =
   | "invalidCredentials"
@@ -141,8 +142,7 @@ export function mapSetPasswordError(err: unknown): {
       };
     }
     if (err.status === 400) {
-      const detailStr = (typeof err.detail === "string" ? err.detail : err.message).trim();
-      if (detailStr === "Password must be at least 8 characters and contain at least 1 digit") {
+      if (PasswordPolicyViolation.matches(err)) {
         return {
           fieldErrors: [{ field: "newPassword", messageKey: "auth:passwordPolicyError" }],
           formErrorKey: null,
@@ -194,10 +194,11 @@ export interface ChangePasswordErrorMapping {
 
 export function mapChangePasswordError(err: unknown): ChangePasswordErrorMapping {
   if (err instanceof AuthApiError) {
-    if (err.status === 401 || (err.status === 400 && err.detail === "invalid_current_password")) {
+    if (err.status === 401 || (err.status === 400 && (err.code === "invalid_current_password" || err.detail === "invalid_current_password"))) {
       return { field: "currentPassword", messageKey: "settings:security.currentPasswordWrong" };
     }
-    if (err.status === 400) return { field: "newPassword", messageKey: "auth:passwordPolicyError" };
+    if (PasswordPolicyViolation.matches(err)) return { field: "newPassword", messageKey: "auth:passwordPolicyError" };
+    if (err.status === 400) return { field: null, messageKey: "auth:genericError" };
     if (err.status === 422) return { field: "newPassword", messageKey: "validation:passwordMinLength", params: { min: 8 } };
     if (err.status === 429) return { field: null, messageKey: "auth:rateLimited" };
     if (err.status >= 500) return { field: null, messageKey: "auth:serverError" };

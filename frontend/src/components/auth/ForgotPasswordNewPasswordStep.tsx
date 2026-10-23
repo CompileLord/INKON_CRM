@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { createSetPasswordFormSchema, type SetPasswordFormValues } from "../../lib/authSchema";
 import { passwordResetConfirm } from "../../lib/auth/endpoints";
 import { AuthApiError } from "../../lib/auth/errors";
+import { PasswordPolicyViolation } from "../../lib/auth/passwordPolicy";
 import { resolveLandingPath } from "../../lib/postAuthRedirect";
 import { useAuthStore } from "../../store/authStore";
 import { authErrorText } from "./authErrorText";
@@ -45,7 +46,8 @@ export function ForgotPasswordNewPasswordStep({ resetToken }: ForgotPasswordNewP
       navigate(await resolveLandingPath(), { replace: true });
     } catch (error) {
       const expired: boolean = error instanceof AuthApiError && error.status === 400;
-      setFormError(expired ? t("auth:forgot.codeInvalid") : authErrorText(error, t));
+      if (PasswordPolicyViolation.matches(error)) setFormError(t("auth:passwordPolicyError"));
+      else setFormError(expired ? t("auth:forgot.codeInvalid") : authErrorText(error, t));
     } finally {
       isSubmittingRef.current = false;
       setSubmitting(false);

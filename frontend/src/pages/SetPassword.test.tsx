@@ -67,7 +67,7 @@ describe("SetPassword page integration", () => {
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading.textContent).toContain("Set Password");
 
-    expect(screen.getByText("Must be at least 8 characters and contain at least 1 digit")).not.toBeNull();
+    expect(screen.getByText("At least 8 characters with a digit. Not only digits and not a common password.")).not.toBeNull();
 
     const newPasswordInput = screen.getByLabelText(/^New Password/);
     expect(newPasswordInput.getAttribute("type")).toBe("password");
@@ -250,7 +250,7 @@ describe("SetPassword page integration", () => {
   it("maps exact backend 400 password policy error to newPassword field", async () => {
     const user = userEvent.setup();
     vi.spyOn(authEndpoints, "setPassword").mockRejectedValue(
-      new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"),
+      new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password"),
     );
 
     renderSetPassword();
@@ -261,7 +261,7 @@ describe("SetPassword page integration", () => {
 
     await waitFor(() => {
       expect(document.getElementById("newPassword-error")?.textContent).toContain(
-        "Password must be at least 8 characters and contain at least 1 digit",
+        "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password.",
       );
     });
   });
@@ -286,7 +286,7 @@ describe("SetPassword page integration", () => {
   it("clears obsolete server field error when user modifies the input", async () => {
     const user = userEvent.setup();
     vi.spyOn(authEndpoints, "setPassword").mockRejectedValue(
-      new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"),
+      new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password"),
     );
 
     renderSetPassword();
@@ -330,7 +330,7 @@ describe("SetPassword page integration", () => {
   it("retranslates visible server field errors on language switch", async () => {
     const user = userEvent.setup();
     vi.spyOn(authEndpoints, "setPassword").mockRejectedValue(
-      new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"),
+      new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password"),
     );
 
     renderSetPassword();
@@ -340,7 +340,7 @@ describe("SetPassword page integration", () => {
     await user.click(screen.getByRole("button", { name: "Save Password" }));
 
     expect(
-      await screen.findByText("Must be at least 8 characters and contain at least 1 digit"),
+      await screen.findByText("Password must be at least 8 characters, contain a digit, not be all digits and not be a common password."),
     ).not.toBeNull();
 
     await act(async () => {
@@ -348,7 +348,7 @@ describe("SetPassword page integration", () => {
     });
 
     expect(
-      await screen.findByText("Пароль должен содержать не менее 8 символов и хотя бы одну цифру"),
+      await screen.findByText("Пароль должен содержать не менее 8 символов и цифру, не состоять только из цифр и не быть распространённым."),
     ).not.toBeNull();
 
     await act(async () => {
@@ -356,7 +356,7 @@ describe("SetPassword page integration", () => {
     });
 
     expect(
-      await screen.findByText("Парол бояд камаш 8 рамз ва ҳадди ақал як рақам дошта бошад"),
+      await screen.findByText("Парол бояд камаш 8 рамз ва рақам дошта бошад, танҳо аз рақамҳо иборат набошад ва маъмул набошад."),
     ).not.toBeNull();
   });
 
