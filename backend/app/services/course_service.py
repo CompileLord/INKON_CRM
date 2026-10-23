@@ -229,7 +229,7 @@ class CourseService:
         page_size: int,
         current_user: User,
         search: str | None = None,
-        sort: CourseSortOrder = CourseSortOrder.TITLE_ASC,
+        sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
     ) -> dict:
         page_result: dict = await self.course_repo.get_courses_page(
             filters, page, page_size, current_user.id, current_user.role, search, sort,

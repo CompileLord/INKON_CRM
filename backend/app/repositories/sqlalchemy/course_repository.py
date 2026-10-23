@@ -21,7 +21,7 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
 
     async def get_courses_page(
         self, filters: dict, page: int, page_size: int, user_id: int, role: UserRole,
-        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.TITLE_ASC,
+        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
     ) -> RepositoryPage[Course]:
         query: Select[tuple[Course]] = (
             select(Course).options(selectinload(Course.schedules)).where(Course.is_deleted.is_(False))
@@ -37,6 +37,8 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
         if search:
             query = query.where(Course.title.ilike(PersonSearch.pattern(search), escape="\\"))
         columns: dict[CourseSortOrder, ColumnElement[Any]] = {
+            CourseSortOrder.CREATED_AT_DESC: Course.created_at.desc(),
+            CourseSortOrder.CREATED_AT_ASC: Course.created_at.asc(),
             CourseSortOrder.TITLE_ASC: Course.title.asc(),
             CourseSortOrder.TITLE_DESC: Course.title.desc(),
             CourseSortOrder.PRICE_ASC: Course.price.asc(),

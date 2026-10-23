@@ -118,7 +118,7 @@ async def create_course(
 @router.get("/", response_model=PaginatedResponse[CourseListItemResponse])
 async def list_courses(
     search: Optional[str] = Query(None, description="Case-insensitive title search before pagination"),
-    sort: CourseSortOrder = Query(CourseSortOrder.TITLE_ASC, description="title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending"),
+    sort: CourseSortOrder = Query(CourseSortOrder.CREATED_AT_DESC, description="created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending"),
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),

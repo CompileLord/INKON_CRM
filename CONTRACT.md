@@ -1450,7 +1450,7 @@ Students receive only public mentor identity and course identity for their nonde
 
 **Parameters:**
 - `search` [query] Case-insensitive title search before pagination
-- `sort` [query] title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending
+- `sort` [query] created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending
 - `status` [query]
 - `page` [query]
 - `page_size` [query]

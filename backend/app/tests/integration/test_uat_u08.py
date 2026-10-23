@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -148,10 +148,11 @@ async def test_course_search_and_invalid_sort(client: AsyncClient, test_admin: U
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("sort", ["default", "price_asc", "price_desc", "title_asc", "title_desc", "start_date_asc", "start_date_desc"])
+@pytest.mark.parametrize("sort", ["default", "created_at_asc", "created_at_desc", "price_asc", "price_desc", "title_asc", "title_desc", "start_date_asc", "start_date_desc"])
 async def test_equal_course_values_have_id_tiebreaker(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, people: SearchFixture, sort: str,
 ) -> None:
+    people.candidate_course.created_at = people.course.created_at
     people.candidate_course.price = people.course.price
     people.candidate_course.title = people.course.title
     people.candidate_course.start_date = people.course.start_date
@@ -241,3 +242,31 @@ async def test_literal_wildcard_name_can_be_found(
     assert response.json()["total"] == 1
     item: dict[str, Any] = response.json()["items"][0]
     assert item.get("student", item)["id"] == people.target.id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("sort", ["default", "created_at_desc", "created_at_asc"])
+async def test_course_creation_order(
+    client: AsyncClient, db_session: AsyncSession, test_admin: User, people: SearchFixture, sort: str,
+) -> None:
+    people.course.title = "Zulu"
+    people.course.created_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    people.candidate_course.title = "Alpha"
+    people.candidate_course.created_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    await db_session.commit()
+    expected: list[int] = [people.course.id, people.candidate_course.id]
+    if sort == "created_at_asc":
+        expected.reverse()
+    seen: list[int] = []
+    page: int
+    for page in (1, 2):
+        parameters: dict[str, str | int] = {"page": page, "page_size": 1}
+        if sort != "default":
+            parameters["sort"] = sort
+        response: Response = await client.get(
+            "/api/v1/courses/", headers=people.headers(test_admin), params=parameters,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 2
+        seen.extend(item["id"] for item in response.json()["items"])
+    assert seen == expected

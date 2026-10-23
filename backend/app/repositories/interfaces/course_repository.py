@@ -11,7 +11,7 @@ from app.schemas.course_list import CourseSortOrder
 class CourseRepository(BaseRepository[Course], Protocol):
     async def get_courses_page(
         self, filters: dict, page: int, page_size: int, user_id: int, role: UserRole,
-        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.TITLE_ASC,
+        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
     ) -> RepositoryPage[Course]: ...
 
     async def get_by_id_for_update(self, course_id: int) -> Optional[Course]: ...
