@@ -5,6 +5,7 @@ from sqlalchemy.engine import Result, Row
 from sqlalchemy.sql import Select, ColumnElement
 from sqlalchemy.sql.selectable import Subquery
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.school_calendar import SchoolCalendar
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment
@@ -43,7 +44,8 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         entries_result: Result = await self.session.execute(select(
             JournalEntry.journal_id, func.count(JournalEntry.id),
         ).join(Journal, Journal.id == JournalEntry.journal_id).where(
-            Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.is_graded.is_(True),
+            Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.lesson_date <= today,
+            JournalEntry.is_graded.is_(True),
         ).group_by(JournalEntry.journal_id))
         graded_entry_counts: dict[int, int] = {row[0]: row[1] for row in entries_result.all()}
         return MentorJournalBatch(courses, journals, schedules, student_counts, graded_entry_counts)
@@ -52,7 +54,7 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         eligible: tuple[ColumnElement, ...] = (
             JournalStudentSummary.journal_id == journal_id,
             JournalStudentSummary.is_graded.is_(True),
-            Journal.period_start <= date.today(),
+            Journal.period_start <= SchoolCalendar.today(),
         )
         averages_result: Result = await self.session.execute(select(
             func.avg(case((

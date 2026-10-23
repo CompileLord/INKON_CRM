@@ -130,6 +130,7 @@ class JournalEntryStateResponse(BaseModel):
     attendance: bool
     score: int
     comment: Optional[str] = None
+    is_graded: bool = False
     version: int
 
     model_config = {"from_attributes": True}
@@ -161,6 +162,7 @@ class ClassJournalEntryResponse(BaseModel):
     score: int
     comment: Optional[str] = None
     has_comment: bool = False
+    is_graded: bool = False
     version: int
 
 

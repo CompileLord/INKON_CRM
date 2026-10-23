@@ -56,7 +56,7 @@ class TestMentorQueue:
             session.add(Enrollment(student_id=student.id, course_id=course.id, price_at_enrollment=Decimal("100.00"), color_hex="#123456"))
             session.add_all([CourseSchedule(course_id=course.id, day_of_week=weekday, time_start=time(9), time_end=time(10)) for weekday in range(7)])
             for label, start_offset, end_offset, graded in (
-                ("empty", -2, 0, 0), ("partial", 0, 1, 1), ("complete", -1, -1, 1),
+                ("empty", -2, 0, 0), ("partial", -1, 0, 1), ("complete", -1, -1, 1),
                 ("upcoming", 1, 2, 1), ("past", -10, -8, 0), ("ungraded", -6, -5, 0),
             ):
                 journal: Journal = Journal(course_id=course.id, period_label=label, period_start=today + timedelta(days=start_offset), period_end=today + timedelta(days=end_offset), period_type="week")
