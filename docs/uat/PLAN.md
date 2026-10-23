@@ -82,7 +82,7 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Invalid cells** (T4-14): a non-lesson date, an unknown student or a student from another course returns 422, not 409.
 - **Future lessons in counts** (T6-02, T6-03, T4-07): attendance %, absences, the grading queue and "marked" counts all exclude them.
 - **Graded vs. zero** (T4-02): `is_graded` is exposed per entry so the grid can tell "not graded" from "graded 0".
-- **Class journal for students** (T6-01, BLOCKER): see decision D1.
+- **Class journal for students** (T6-01): closed as intended by decision D1; students keep seeing classmates' names and scores.
 
 ### U05 FE: journal grid and charts
 - **Grid cells** (T4-02): shows "not graded" and "0" differently, and the picker offers 0.
@@ -144,7 +144,7 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Mobile** (T5-14, T8-01): fix the overflow.
 - **Filters** (T5-12): fix them.
 - **Price label** (T3-08, T2-19): "TJS / mo" becomes the course total, with the instalment count shown separately.
-- **Reminders** (T5-09): see decision D3. Until it is decided, the disabled reminder button explains why in a tooltip.
+- **Reminders** (T5-09): the Remind button is enabled when the debtor has a parent or student phone, and its tooltip says whether the reminder goes by Telegram or SMS (U16).
 
 ### U12 BE: notifications and message language
 - **Message language** (T7-10, T2-16, T1-10): email and SMS templates render in the recipient's language (`en`/`ru`/`tg`, defaulting to the organisation language), and so does the email footer.
@@ -174,19 +174,25 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Phone-only students** (T6-11): they see the right sign-in field and copy.
 - **Empty-state flash** (T6-12): no flash on redirect.
 - **Mobile** (T6-08): fixed.
-- **Student finance** (T6-05): see decision D2.
 - **Authorization edge cases** (T8-04):
   - Wrong-role pages redirect instead of firing repeated 400s.
   - A 403 is not retried.
 
-## Decisions needed from the owner
+### U16 BE: SMS fallback for debt reminders (decision D3)
+- **Fallback** (T5-09): when no parent Telegram is linked, a debt reminder goes by SMS through the outbox to the parent phone, or the student phone if there is no parent phone.
+- **Rate limit**: at most one reminder per enrollment per configured interval, whatever the channel; a repeat inside the interval returns 429 with a stable code.
+- **Message**: rendered in the recipient's language (after U12), with the amount formatted as money.
+- **No phone and no Telegram**: 422 with a stable code, so the UI can explain it.
+- Tests never call a real SMS gateway.
 
-| Id | Question | Recommended default |
+## Owner decisions
+
+| Id | Question | Decision (2026-10-23) |
 |---|---|---|
-| D1 | T6-01: may a student see classmates' names and scores in the class journal? | No. The student sees their own row plus an anonymous class average and rank. |
-| D2 | T6-05: should students see their own balance, due dates and payment history? | Yes, read-only, on a finance card on the student home page. |
-| D3 | T5-09: debt reminders when no parent Telegram is linked? | SMS fallback to the student or parent phone, rate-limited, through the outbox. |
-| D4 | T5-10: what happens to charges when a student withdraws? | Cancel unpaid future instalments; keep past-due debt. |
+| D1 | T6-01: may a student see classmates' names and scores in the class journal? | Keep as is. T6-01 is closed as intended. |
+| D2 | T6-05: should students see their own balance, due dates and payment history? | No student finance. T6-05 is closed. |
+| D3 | T5-09: debt reminders when no parent Telegram is linked? | SMS fallback through the outbox, rate-limited (U16). |
+| D4 | T5-10: what happens to charges when a student withdraws? | Pending: question re-asked in plain words. |
 
 Deferred, not planned without a request:
 - Late/excused attendance (T4-09).
@@ -209,8 +215,9 @@ Executors that run at the same time must have disjoint files. Migrations run one
 - U09 (after U08).
 - U11 (after U10).
 - U12, then U14.
+- U16 (after U12 and U10).
 
-**Wave 3:** U15, then the decision follow-ups D1–D4.
+**Wave 3:** U15, then the D4 follow-up once decided.
 
 When the plan is done:
 1. Run the full backend suite once on master.
