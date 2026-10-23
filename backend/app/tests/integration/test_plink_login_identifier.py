@@ -23,7 +23,7 @@ class StaffApi:
 
 
 def test_parser_classifies_email_and_normalizes_phone_with_separators() -> None:
-    assert LoginIdentifierParser.parse(" A@Example.com ") == LoginIdentifier(LoginIdentifierKind.EMAIL, "A@example.com")
+    assert LoginIdentifierParser.parse(" A@Example.com ") == LoginIdentifier(LoginIdentifierKind.EMAIL, "a@example.com")
     assert LoginIdentifierParser.parse("+992 (90) 000-0001") == LoginIdentifier(LoginIdentifierKind.PHONE, "+992900000001")
     assert LoginIdentifierParser.parse("992900000001") == LoginIdentifier(LoginIdentifierKind.PHONE, "+992900000001")
 

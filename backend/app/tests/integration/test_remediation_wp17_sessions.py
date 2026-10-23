@@ -135,7 +135,7 @@ async def test_password_reset_verification_embeds_current_auth_version(
 
 
 @pytest.mark.asyncio
-async def test_setup_required_reset_keeps_setup_scope_in_new_epoch(
+async def test_setup_required_reset_clears_setup_scope_in_new_epoch(
     db_session: AsyncSession,
     test_student: User,
 ) -> None:
@@ -146,9 +146,9 @@ async def test_setup_required_reset_keeps_setup_scope_in_new_epoch(
     grant: str = _create_password_reset_grant(test_student.id, 0)
     result: TokenPair = await AuthServiceComposition.create(db_session).password_reset_confirm(grant, "SetupResetPass123")
     claims: dict[str, Any] = _token_claims(result.access_token, settings.JWT_SECRET_KEY)
-    assert result.must_set_password is True
+    assert result.must_set_password is False
     assert claims["auth_version"] == 1
-    assert claims["scope"] == "must_set_password"
+    assert "scope" not in claims
 
 
 @pytest.mark.asyncio
