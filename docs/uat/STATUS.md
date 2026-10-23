@@ -21,8 +21,8 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U11 finance screens | FE | in progress | uat/u11 | 2026-10-23 | — | — |
 | U12 notifications and message language | BE | merged, retest pending | uat/u12 | 2026-10-23 | targeted 127 passed; full suite on branch: only known wp11/wp13 after 5 fixed cases | en/ru/tg messages; preferred_language needs FE (U09); inbox shows delivered only |
 | U13 notifications UI | FE | merged, retest pending | uat/u13 | 2026-10-23 | tsc clean; vitest targeted pass | screenshots reviewed |
-| U14 uploads and documents | BE+FE | todo | — | — | — | — |
+| U14 uploads and documents | BE+FE | in progress (BE) | uat/u14 | 2026-10-23 | — | Codex BE first, FE after |
 | U15 student cabinet | FE | todo | — | — | — | D2: no student finance |
-| U16 SMS fallback for debt reminders | BE | todo | — | — | — | D3; after U12 |
+| U16 SMS fallback for debt reminders | BE | in progress | uat/u16 | 2026-10-23 | — | Codex |
 | U17 editable weekly lesson times | BE+FE | todo | — | — | — | owner request; after U07 |
 | U18 withdrawal cancels future charges | BE+FE | todo | — | — | — | D4 = A (2026-10-23) |
