@@ -192,8 +192,8 @@ describe("Login page submission", () => {
   it.each([
     { role: "superadmin", id: 1, expectedLanding: "dashboard-landing" },
     { role: "accountant", id: 2, expectedLanding: "dashboard-landing" },
-    { role: "student", id: 10, expectedLanding: "student-landing" },
-    { role: "mentor", id: 20, expectedLanding: "mentor-landing" },
+    { role: "student", id: 10, expectedLanding: "dashboard-landing" },
+    { role: "mentor", id: 20, expectedLanding: "dashboard-landing" },
   ])("authenticates $role and redirects to canonical role landing", async ({ role, id, expectedLanding }) => {
     const user = userEvent.setup();
     const token = createMockToken(role, id);
@@ -250,10 +250,25 @@ describe("Login page submission", () => {
       must_set_password: false,
     });
     renderLogin();
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "+992931000005");
+    await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "48x920 ");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("+992931000005", "48X920"));
+  });
+
+  it("keeps a code-shaped password untouched when the identifier is an email", async () => {
+    const user = userEvent.setup();
+    const loginSpy = vi.spyOn(authEndpoints, "login").mockResolvedValue({
+      access_token: createMockToken("student", 10),
+      refresh_token: "r",
+      token_type: "bearer",
+      must_set_password: false,
+    });
+    renderLogin();
     await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "student@example.com");
     await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "12345a");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("student@example.com", "12345A"));
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("student@example.com", "12345a"));
   });
 
   it("sends a staff password exactly as typed", async () => {

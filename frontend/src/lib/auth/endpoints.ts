@@ -13,6 +13,8 @@ import type {
   TokenPair,
 } from "./types";
 
+export const WRONG_CURRENT_PASSWORD_DETAILS: readonly string[] = ["Invalid current password", "invalid_current_password"];
+
 export function login(identifier: string, password: string): Promise<TokenPair> {
   const body: LoginRequest = { login: identifier, password };
   return httpClient.post<TokenPair>("/auth/login", body, { skipAuth: true }).then((res) => res.data);
@@ -26,7 +28,7 @@ export function refresh(refreshToken: string): Promise<TokenPair> {
 /** Revokes refreshToken server-side. Callers must still clear local state themselves. */
 export function logout(refreshToken: string): Promise<void> {
   const body: RefreshRequest = { refresh_token: refreshToken };
-  return httpClient.post<void>("/auth/logout", body).then(() => undefined);
+  return httpClient.post<void>("/auth/logout", body, { skipRefreshOn401: true }).then(() => undefined);
 }
 
 /** Requires an Authorization bearer token — the caller's current access token. */
@@ -64,5 +66,7 @@ export function passwordResetConfirm(resetToken: string, newPassword: string): P
 
 export function changePassword(currentPassword: string, newPassword: string): Promise<TokenPair> {
   const body: ChangePasswordRequest = { current_password: currentPassword, new_password: newPassword };
-  return httpClient.post<TokenPair>("/auth/change-password", body).then((res) => res.data);
+  return httpClient
+    .post<TokenPair>("/auth/change-password", body, { wrongCredentialsDetails: WRONG_CURRENT_PASSWORD_DETAILS })
+    .then((res) => res.data);
 }

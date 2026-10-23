@@ -1,6 +1,7 @@
 {
   "backToCourses": "Бозгашт ба курсҳо",
   "loadError": "Курсро бор кардан муяссар нашуд",
+  "loadErrorHelp": "Пайвастшавиро санҷед ва бори дигар кӯшиш кунед.",
   "notFound": "Курс ёфт нашуд",
   "notFoundHelp": "Чунин курс нест ё нест карда шудааст.",
   "accessDenied": "Дастрасӣ нест",
@@ -139,5 +140,25 @@
     "studentsCount_one": "{{formatted}} донишҷӯ",
     "studentsCount_other": "{{formatted}} донишҷӯ",
     "tableLabel": "Натиҷаҳои донишҷӯён аз рӯи давраҳо"
+  },
+  "chart": {
+    "title": "Натиҷаҳо аз рӯи давраҳо",
+    "loading": "Боркунии намудор",
+    "loadError": "Намудорро бор кардан нашуд",
+    "emptyTitle": "Ҳоло чизе барои нишон додан нест",
+    "emptyBody": "Давраҳои баҳогузошташуда дар ин ҷо пайдо мешаванд.",
+    "range": "{{from}} – {{to}}",
+    "olderPeriods": "Давраҳои пештар",
+    "newerPeriods": "Давраҳои навтар",
+    "previousStudents": "Донишҷӯёни қаблӣ",
+    "nextStudents": "Донишҷӯёни навбатӣ",
+    "studentRange": "{{from}}–{{to}} аз {{total}}",
+    "classAverage": "Миёнаи гурӯҳ",
+    "staffAverage": "Миёнаи гурӯҳ {{value}}",
+    "scopeInfo": "Ҷой ва миёнаҳо танҳо аз рӯи давраҳои нишондодашуда ҳисоб мешаванд.",
+    "chartLabel": "Натиҷаҳои курс аз рӯи давраҳо",
+    "chartHint": "Бо тирҳо байни давраҳо гузаред.",
+    "noValues": "Баҳо нест",
+    "entry": "{{name}}: {{value}}"
   }
 }

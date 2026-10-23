@@ -6,6 +6,7 @@ import * as enrollmentHooks from "../lib/enrollments/hooks";
 import * as returnContext from "../lib/courses/returnContext";
 import { AuthApiError } from "../lib/auth/errors";
 import { mockSuccessResult, mockErrorResult, mockCourse, renderCourseProfile, registerCourseProfileHooks } from "./CourseProfileTestSupport";
+import { CourseChartFixtures } from "../lib/courses/CourseChartFixtures";
 
 vi.mock("../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/courses/hooks")>();
@@ -84,6 +85,7 @@ describe("CourseProfile Component", () => {
     it("retains progress search when toggling between tabs", () => {
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({
+          ...CourseChartFixtures.staffMetadata(1, 1),
           labels: ["Period 1"],
           periods: [{ id: 5, period_label: "Period 1" }],
           datasets: [
@@ -206,6 +208,7 @@ describe("CourseProfile Component", () => {
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
         mockSuccessResult({
+          ...CourseChartFixtures.staffMetadata(1, 1),
           labels: ["Period 5"],
           periods: [{ id: 5, period_label: "Period 5" }],
           datasets: [

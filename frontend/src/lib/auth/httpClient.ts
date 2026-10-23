@@ -1,9 +1,10 @@
 import axios, { type AxiosError } from "axios";
 import { API_BASE_URL } from "./env";
-import { AuthApiError, NetworkError } from "./errors";
+import { AuthApiError, NetworkError, type ApiErrorDetail } from "./errors";
+import { MissingRefreshTokenError, RefreshCoordinator } from "./refreshCoordinator";
 import { emitLogout, emitSessionRefresh } from "./session";
 import { tokenStorage } from "./tokenStorage";
-import type { HTTPValidationError, TokenPair, ValidationErrorItem } from "./types";
+import type { TokenPair } from "./types";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -13,6 +14,10 @@ declare module "axios" {
     skipAuth?: boolean;
     /** Internal: marks a request already retried once after a refresh. */
     _retried?: boolean;
+    /** A 401 whose detail is one of these means wrong credentials, not an expired session: no refresh, no logout. */
+    wrongCredentialsDetails?: readonly string[];
+    /** A 401 on this call never triggers a refresh (used by logout, whose refresh token is being revoked). */
+    skipRefreshOn401?: boolean;
   }
 }
 
@@ -33,35 +38,23 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshPromise: Promise<TokenPair> | null = null;
+export const refreshCoordinator: RefreshCoordinator = new RefreshCoordinator({
+  locks: RefreshCoordinator.browserLocks(),
+  bus: RefreshCoordinator.browserBus(),
+  readRefreshToken: (): string | null => tokenStorage.getRefreshToken(),
+  requestRefresh: (refreshToken: string): Promise<TokenPair> =>
+    httpClient.post<TokenPair>("/auth/refresh", { refresh_token: refreshToken }, { skipAuth: true }).then((res) => res.data),
+  persist: (tokens: TokenPair): void => tokenStorage.setTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token }),
+  apply: (tokens: TokenPair): void => emitSessionRefresh(tokens),
+  now: (): number => Date.now(),
+});
 
-class SessionChangedError extends Error {}
-
-function performRefresh(): Promise<TokenPair> {
-  const refreshToken = tokenStorage.getRefreshToken();
-  if (!refreshToken) return Promise.reject(new Error("No refresh token available"));
-
-  return httpClient
-    .post<TokenPair>("/auth/refresh", { refresh_token: refreshToken }, { skipAuth: true })
-    .then((res) => {
-      if (tokenStorage.getRefreshToken() !== refreshToken) throw new SessionChangedError();
-      const tokens = res.data;
-      tokenStorage.setTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token });
-      emitSessionRefresh(tokens);
-      return tokens;
-    });
+function isDefinitiveRejection(error: unknown): boolean {
+  return error instanceof MissingRefreshTokenError || (error instanceof AuthApiError && (error.status === 401 || error.status === 403));
 }
 
-/** Deduped: concurrent 401s across in-flight requests share one refresh call. */
-function refreshAccessToken(): Promise<TokenPair> {
-  refreshPromise ??= performRefresh().finally(() => {
-    refreshPromise = null;
-  });
-  return refreshPromise;
-}
-
-function detailFrom(data: unknown): string | ValidationErrorItem[] | undefined {
-  return (data as HTTPValidationError | { detail?: string } | undefined)?.detail;
+function detailFrom(data: unknown): ApiErrorDetail {
+  return (data as { detail?: ApiErrorDetail } | undefined)?.detail;
 }
 
 httpClient.interceptors.response.use(
@@ -75,20 +68,23 @@ httpClient.interceptors.response.use(
     const config = error.config;
 
     if (status === 401 && config && !config.skipAuth && !config._retried) {
-      const previousAccessToken = tokenStorage.getAccessToken();
-      let refreshedAccessToken: string | null = null;
+      const detail: ApiErrorDetail = detailFrom(data);
+      const detailCode: string | null = typeof detail === "string" ? detail : detail && !Array.isArray(detail) ? detail.code : null;
+      if (config.skipRefreshOn401 || (detailCode !== null && config.wrongCredentialsDetails?.includes(detailCode))) {
+        throw new AuthApiError(status, detail);
+      }
       try {
-        const tokens = await refreshAccessToken();
-        refreshedAccessToken = tokens.access_token;
-        config._retried = true;
-        return await httpClient.request(config);
-      } catch (refreshError) {
-        if (!(refreshError instanceof SessionChangedError) && tokenStorage.getAccessToken() === (refreshedAccessToken ?? previousAccessToken)) {
+        await refreshCoordinator.refresh();
+      } catch (refreshError: unknown) {
+        if (isDefinitiveRejection(refreshError)) {
           tokenStorage.clear();
           emitLogout();
+          throw new AuthApiError(401, detail);
         }
-        throw new AuthApiError(401, detailFrom(data));
+        throw refreshError;
       }
+      config._retried = true;
+      return httpClient.request(config);
     }
 
     throw new AuthApiError(status, detailFrom(data));

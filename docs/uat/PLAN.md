@@ -98,6 +98,8 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Polish:** archived-course handling, mobile, the denied page and chart tooltips (T4-10, T4-12, T4-13, T4-15, T8-13).
 
 ### U06 BE: course and people lifecycle guards
+**Cancelled by the owner (2026-10-23):** an admin must be able to archive and delete a course at any time, even before its dates. Nothing in this section is implemented.
+
 - **Course delete** (T8-07, T3-05):
   - Blocked while there are active enrollments or open charges; the API returns 409 with counts.
   - When allowed, it withdraws enrollments and cancels unpaid future charges in one transaction.
@@ -185,6 +187,28 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **No phone and no Telegram**: 422 with a stable code, so the UI can explain it.
 - Tests never call a real SMS gateway.
 
+### U17 BE+FE: editable weekly lesson times (owner request, 2026-10-23)
+- **Request**: the owner wants to change a course's weekly lesson times after the course is created.
+- **Backend**: the course edit accepts new start and end times for the existing schedule days.
+  - `time_start` must be earlier than `time_end`.
+  - The edit is audited.
+  - Lesson dates, journals and charges don't change, because the days stay the same.
+  - Changing which weekdays a course runs on stays out of scope: it would move lesson dates in existing journals. T3-07 remains deferred for price and days.
+- **Frontend**: the course edit form makes the times editable, with inline validation and translated errors, and the course page, Today widget and timetable show the new times.
+
+### U18 BE+FE: withdrawal cancels future charges (decision D4, T5-10)
+- **Rule**: on withdrawal, unpaid monthly charges whose period starts on or after the withdrawal date are cancelled. Months that started earlier stay owed.
+  - Example: a 4-month course at 100 TJS a month; month 1 is paid and month 2 is unpaid; the student withdraws at the start of month 3. The student owes 100, and months 3 and 4 are cancelled.
+- **Backend**:
+  - Cancellation happens in the same transaction as the withdrawal and is audited.
+  - Money already paid toward a cancelled month becomes student credit; there is no automatic refund.
+  - Debtor totals and caches drop the cancelled amounts.
+  - After withdrawal, payments are accepted only up to the remaining debt, else 422.
+  - Enrolling into a course that has already ended is rejected with 422, so no back-dated overdue charges are created.
+- **Frontend**:
+  - The withdraw confirmation shows the amount still owed and the amount cancelled before confirming.
+  - Strings in en/ru/tg.
+
 ## Owner decisions
 
 | Id | Question | Decision (2026-10-23) |
@@ -192,11 +216,11 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 | D1 | T6-01: may a student see classmates' names and scores in the class journal? | Keep as is. T6-01 is closed as intended. |
 | D2 | T6-05: should students see their own balance, due dates and payment history? | No student finance. T6-05 is closed. |
 | D3 | T5-09: debt reminders when no parent Telegram is linked? | SMS fallback through the outbox, rate-limited (U16). |
-| D4 | T5-10: what happens to charges when a student withdraws? | Pending: question re-asked in plain words. |
+| D4 | T5-10: what happens to charges when a student withdraws? | 2026-10-23: option A. The student owes only months that started before withdrawal; later months are cancelled (U18). |
 
 Deferred, not planned without a request:
 - Late/excused attendance (T4-09).
-- Editing price and schedule after creation (T3-07, which affects issued charges).
+- Editing price and schedule days after creation (T3-07, which affects issued charges and journal dates); lesson times are covered by U17.
 - Restoring deleted users (T2-09).
 - Private static avatars (T6-15; the known WP-26 gap).
 - Autosave latency of 0.6–2.3 s (T4-11; measure again after U04).
@@ -216,8 +240,9 @@ Executors that run at the same time must have disjoint files. Migrations run one
 - U11 (after U10).
 - U12, then U14.
 - U16 (after U12 and U10).
+- U17 (after U07, which touches the course service).
 
-**Wave 3:** U15, then the D4 follow-up once decided.
+**Wave 3:** U15, then U18.
 
 When the plan is done:
 1. Run the full backend suite once on master.
