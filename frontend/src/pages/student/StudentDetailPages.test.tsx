@@ -21,7 +21,6 @@ vi.mock("../../lib/courses/hooks", () => ({
   useCourseClassProgress: () => state.progress,
   useCourseStaffProgress: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
   useCourseJournals: () => state.courseJournals,
-  useCourseProgressChart: () => ({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() }),
 }));
 vi.mock("../../lib/users/hooks", () => ({
   useMyStudentProfile: () => state.profile,

@@ -12,7 +12,6 @@ import type {
   CourseProgressChartResponse,
   CourseProgressPeriod,
   StaffCourseProgressChartResponse,
-  StudentCourseProgressChartResponse,
 } from "../../lib/courses/types";
 
 vi.mock("../../lib/courses/endpoints", async (importOriginal) => {
@@ -40,23 +39,6 @@ function staffChart(options: CourseProgressChartOptions, studentsTotal: number):
     datasets: [{ student_id: 1, name: "Alice Smith", color_hex: "#000000", scores: values, max_scores: values, percentages: values, grading_states: periods.map(() => "graded" as const), graded_periods_count: periods.length, eligible_periods_count: periods.length }],
     class_avg_series: values,
     class_eligible_counts: periods.map(() => 1),
-  };
-}
-
-function studentChart(options: CourseProgressChartOptions): StudentCourseProgressChartResponse {
-  const periods: CourseProgressPeriod[] = periodsFor(options.periodOffset ?? 0, options.periodLimit ?? 12);
-  const values: (number | null)[] = [...periods.map(() => 80), 78];
-  return {
-    ...CourseChartFixtures.studentMetadata(PERIOD_TOTAL, options.periodOffset ?? 0),
-    periods,
-    my_series: values,
-    class_avg_series: values,
-    my_grading_states: periods.map(() => "graded" as const),
-    my_graded_periods_count: periods.length,
-    my_eligible_periods_count: periods.length,
-    class_eligible_counts: periods.map(() => 4),
-    my_rank: 2,
-    class_size: 4,
   };
 }
 
@@ -136,20 +118,11 @@ describe("CourseProgressChartPanel", () => {
     expect((screen.getByRole("button", { name: "Previous students" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("shows the student rank and range average with the scope tooltip and no student pager", async () => {
-    vi.mocked(endpoints.getCourseProgressChart).mockImplementation(async (_id: number, options?: CourseProgressChartOptions): Promise<CourseProgressChartResponse> => studentChart(options ?? {}));
-    renderPanel();
-
-    expect(await screen.findByText(/Rank 2 of 4 · Average 78%/)).toBeDefined();
-    expect(screen.queryByTestId("course-chart-student-pager")).toBeNull();
-    expect(screen.getByTestId("course-chart-period-pager")).toBeDefined();
-  });
-
   it("shows an error with a working retry", async () => {
-    vi.mocked(endpoints.getCourseProgressChart).mockRejectedValueOnce(new Error("boom")).mockImplementation(async (_id: number, options?: CourseProgressChartOptions): Promise<CourseProgressChartResponse> => studentChart(options ?? {}));
+    vi.mocked(endpoints.getCourseProgressChart).mockRejectedValueOnce(new Error("boom")).mockImplementation(async (_id: number, options?: CourseProgressChartOptions): Promise<CourseProgressChartResponse> => staffChart(options ?? {}, 5));
     renderPanel();
 
     fireEvent.click(await screen.findByRole("button", { name: i18n.t("ui:retry") }));
-    expect(await screen.findByText(/Rank 2 of 4/)).toBeDefined();
+    expect(await screen.findByText(/Class average 70%/)).toBeDefined();
   });
 });

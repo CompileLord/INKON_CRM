@@ -9,7 +9,6 @@ import { useCourseScheduleSummary } from "../../lib/students/useCourseScheduleSu
 import type { StudentCourseProfile } from "../../lib/users/types";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalProgressView } from "../../components/journals/JournalProgressView";
-import { CourseProgressChartPanel } from "../../components/courses/CourseProgressChartPanel";
 import { CourseDescription } from "../../components/student/CourseDescription";
 import { CourseDetailStats } from "../../components/student/CourseDetailStats";
 import { StudentCourseJournal } from "../../components/student/StudentCourseJournal";
@@ -119,8 +118,6 @@ export function MyCourseDetail() {
       )}
 
       {userId !== null && <StudentCourseJournal courseId={courseId} selfStudentId={userId} />}
-
-      <CourseProgressChartPanel courseId={courseId} />
 
       <JournalProgressView courseId={courseId} readOnlySelfStudentId={userId ?? undefined} gradedPeriodCount={entry?.periods_graded} />
 

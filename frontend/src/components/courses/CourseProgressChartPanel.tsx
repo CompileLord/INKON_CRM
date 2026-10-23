@@ -52,45 +52,35 @@ export function CourseProgressChartPanel({ courseId }: CourseProgressChartPanelP
     pointLabels,
   };
 
-  let series: ProgressLineSeries[];
-  let summary: string;
+  if (!CourseChartResponses.isStaff(chart)) return null;
+  const series: ProgressLineSeries[] = [
+    ...chart.datasets.map((dataset, index: number): ProgressLineSeries => ({
+      key: String(dataset.student_id),
+      name: dataset.name,
+      slot: (index + 2) % SERIES_SLOT_COUNT,
+      values: CourseChartWindow.pointValues(dataset.percentages, pointCount),
+      pointLabels,
+    })),
+    classSeries,
+  ];
+  const summary: string = t("chart.staffAverage", { value: average(CourseChartWindow.trailingAverage(chart.class_avg_series, pointCount)) });
+  const studentWindow = { offset: chart.student_offset, limit: chart.student_limit, total: chart.students_total };
   let studentStepper: ReactElement | null = null;
-  if (CourseChartResponses.isStaff(chart)) {
-    series = [
-      ...chart.datasets.map((dataset, index: number): ProgressLineSeries => ({
-        key: String(dataset.student_id),
-        name: dataset.name,
-        slot: (index + 2) % SERIES_SLOT_COUNT,
-        values: CourseChartWindow.pointValues(dataset.percentages, pointCount),
-        pointLabels,
-      })),
-      classSeries,
-    ];
-    summary = t("chart.staffAverage", { value: average(CourseChartWindow.trailingAverage(chart.class_avg_series, pointCount)) });
-    const studentWindow = { offset: chart.student_offset, limit: chart.student_limit, total: chart.students_total };
-    if (chart.students_total > chart.student_limit) {
-      const from: number = chart.student_offset + 1;
-      const to: number = Math.min(chart.student_offset + chart.student_limit, chart.students_total);
-      studentStepper = (
-        <ChartStepper
-          testId="course-chart-student-pager"
-          label={t("chart.studentRange", { from: formatNumber(from, i18n.language), to: formatNumber(to, i18n.language), total: formatNumber(chart.students_total, i18n.language) })}
-          previousLabel={t("chart.previousStudents")}
-          nextLabel={t("chart.nextStudents")}
-          previousDisabled={!CourseChartWindow.hasNewer(studentWindow)}
-          nextDisabled={!CourseChartWindow.hasOlder(studentWindow)}
-          onPrevious={() => setStudentOffset(CourseChartWindow.newer(studentWindow))}
-          onNext={() => setStudentOffset(CourseChartWindow.older(studentWindow))}
-        />
-      );
-    }
-  } else {
-    series = [
-      { key: "mine", name: t("chart.mine"), slot: 0, values: CourseChartWindow.pointValues(chart.my_series, pointCount), pointLabels },
-      classSeries,
-    ];
-    const rank: string = chart.my_rank === null ? "—" : t("chart.rank", { rank: formatNumber(chart.my_rank, i18n.language), size: formatNumber(chart.class_size, i18n.language) });
-    summary = t("chart.studentSummary", { rank, value: average(CourseChartWindow.trailingAverage(chart.my_series, pointCount)) });
+  if (chart.students_total > chart.student_limit) {
+    const from: number = chart.student_offset + 1;
+    const to: number = Math.min(chart.student_offset + chart.student_limit, chart.students_total);
+    studentStepper = (
+      <ChartStepper
+        testId="course-chart-student-pager"
+        label={t("chart.studentRange", { from: formatNumber(from, i18n.language), to: formatNumber(to, i18n.language), total: formatNumber(chart.students_total, i18n.language) })}
+        previousLabel={t("chart.previousStudents")}
+        nextLabel={t("chart.nextStudents")}
+        previousDisabled={!CourseChartWindow.hasNewer(studentWindow)}
+        nextDisabled={!CourseChartWindow.hasOlder(studentWindow)}
+        onPrevious={() => setStudentOffset(CourseChartWindow.newer(studentWindow))}
+        onNext={() => setStudentOffset(CourseChartWindow.older(studentWindow))}
+      />
+    );
   }
   const drawable: ProgressLineSeries[] = series.filter((item: ProgressLineSeries) => item.values.some((value: number | null) => value !== null));
 
