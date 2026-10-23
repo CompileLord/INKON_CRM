@@ -4,7 +4,7 @@ import { tokenStorage } from "../lib/auth/tokenStorage";
 import { decodeAccessToken } from "../lib/auth/jwt";
 import type { Role } from "../lib/users/types";
 
-export type AuthStatus = "initializing" | "authenticated" | "unauthenticated";
+export type AuthStatus = "initializing" | "authenticated" | "unauthenticated" | "unavailable";
 
 export interface AuthState {
   status: AuthStatus;

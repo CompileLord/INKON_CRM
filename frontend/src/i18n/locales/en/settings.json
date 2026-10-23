@@ -16,7 +16,9 @@
     "unsaved": "Unsaved changes",
     "discard": "Discard",
     "save": "Save",
-    "failed": "Couldn't save. Try again."
+    "failed": "Couldn't save. Try again.",
+    "network": "Can't reach the server. Try again.",
+    "rateLimited": "Too many attempts. Try again later."
   },
   "profile": {
     "photo": "Photo",
@@ -29,7 +31,8 @@
     "phoneHint": "Start with + and use 2–15 digits, without spaces.",
     "nameRequired": "Enter a name.",
     "phoneInvalid": "Use the international format, e.g. +992901234567.",
-    "phoneHintStudent": "Start with + and use 8–15 digits, without spaces."
+    "phoneHintStudent": "Start with + and use 8–15 digits, without spaces.",
+    "phoneTaken": "This phone number is already in use."
   },
   "appearance": {
     "theme": "Theme",

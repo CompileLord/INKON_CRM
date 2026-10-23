@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthStore } from "../store/authStore";
 import { AuthApiError, NetworkError } from "./auth/errors";
 import { tokenStorage } from "./auth/tokenStorage";
-import * as endpoints from "./auth/endpoints";
-import { bootstrapAuth } from "./authBootstrap";
+import { refreshCoordinator } from "./auth/httpClient";
+import type { TokenPair } from "./auth/types";
+import { bootstrapAuth, retryAuthBootstrap } from "./authBootstrap";
 
 function buildAccessToken(): string {
   const payload: string = btoa(JSON.stringify({ sub: "7", role: "mentor", exp: Math.floor(Date.now() / 1000) + 600 }));
@@ -25,9 +26,13 @@ describe("bootstrapAuth", () => {
 
   it("keeps the refresh token and retries when the network fails transiently", async () => {
     const refreshSpy = vi
-      .spyOn(endpoints, "refresh")
+      .spyOn(refreshCoordinator, "refresh")
       .mockRejectedValueOnce(new NetworkError())
-      .mockResolvedValueOnce({ access_token: buildAccessToken(), refresh_token: "rotated", token_type: "bearer", must_set_password: false });
+      .mockImplementationOnce(async (): Promise<TokenPair> => {
+        const tokens: TokenPair = { access_token: buildAccessToken(), refresh_token: "rotated", token_type: "bearer", must_set_password: false };
+        useAuthStore.getState().setAuthenticated(tokens.access_token, tokens.refresh_token, false);
+        return tokens;
+      });
     const bootstrap: Promise<void> = bootstrapAuth();
     await vi.runAllTimersAsync();
     await bootstrap;
@@ -36,17 +41,38 @@ describe("bootstrapAuth", () => {
     expect(tokenStorage.getRefreshToken()).toBe("rotated");
   });
 
-  it("does not wipe the stored refresh token when retries are exhausted", async () => {
-    vi.spyOn(endpoints, "refresh").mockRejectedValue(new NetworkError());
+  it("reports the server as unavailable, not logged out, when retries are exhausted", async () => {
+    vi.spyOn(refreshCoordinator, "refresh").mockRejectedValue(new NetworkError());
     const bootstrap: Promise<void> = bootstrapAuth();
     await vi.runAllTimersAsync();
     await bootstrap;
-    expect(useAuthStore.getState().status).toBe("unauthenticated");
+    expect(useAuthStore.getState().status).toBe("unavailable");
     expect(tokenStorage.getRefreshToken()).toBe("stored-refresh");
   });
 
+  it("reports unavailable for a 503 and recovers on retry", async () => {
+    const refreshSpy = vi.spyOn(refreshCoordinator, "refresh").mockRejectedValue(new AuthApiError(503, "down"));
+    const bootstrap: Promise<void> = bootstrapAuth();
+    await vi.runAllTimersAsync();
+    await bootstrap;
+    expect(useAuthStore.getState().status).toBe("unavailable");
+    refreshSpy.mockImplementation(async (): Promise<TokenPair> => {
+      const tokens: TokenPair = { access_token: buildAccessToken(), refresh_token: "rotated", token_type: "bearer", must_set_password: false };
+      useAuthStore.getState().setAuthenticated(tokens.access_token, tokens.refresh_token, false);
+      return tokens;
+    });
+    await retryAuthBootstrap();
+    expect(useAuthStore.getState().status).toBe("authenticated");
+  });
+
+  it("runs a single refresh when bootstrap is triggered twice (StrictMode effects)", async () => {
+    const refreshSpy = vi.spyOn(refreshCoordinator, "refresh").mockRejectedValue(new AuthApiError(401, "no"));
+    await Promise.all([bootstrapAuth(), bootstrapAuth()]);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("clears the refresh token when the server rejects it", async () => {
-    vi.spyOn(endpoints, "refresh").mockRejectedValue(new AuthApiError(401, "Invalid refresh token"));
+    vi.spyOn(refreshCoordinator, "refresh").mockRejectedValue(new AuthApiError(401, "Invalid refresh token"));
     await bootstrapAuth();
     expect(useAuthStore.getState().status).toBe("unauthenticated");
     expect(tokenStorage.getRefreshToken()).toBeNull();

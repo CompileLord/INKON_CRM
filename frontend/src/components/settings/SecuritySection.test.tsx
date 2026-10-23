@@ -76,11 +76,21 @@ describe("SecuritySection", () => {
     expect(onChanged).not.toHaveBeenCalled();
   });
 
+  it("shows the current password field error for a 400 invalid_current_password and never logs out", async () => {
+    vi.spyOn(authEndpoints, "changePassword").mockRejectedValue(new AuthApiError(400, "invalid_current_password"));
+    useAuthStore.getState().setAuthenticated(mockToken("student", 9), "kept-refresh", false);
+    render(<SecuritySection onChanged={vi.fn()} />);
+    await fillAndSubmit("WrongPass1", "NewPass123");
+    expect(await screen.findByText("The current password is incorrect.")).toBeDefined();
+    expect(useAuthStore.getState().status).toBe("authenticated");
+    expect(tokenStorage.getRefreshToken()).toBe("kept-refresh");
+  });
+
   it("shows the password policy on the new password for 400", async () => {
-    vi.spyOn(authEndpoints, "changePassword").mockRejectedValue(new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"));
+    vi.spyOn(authEndpoints, "changePassword").mockRejectedValue(new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password."));
     render(<SecuritySection onChanged={vi.fn()} />);
     await fillAndSubmit("OldPass123", "NewPass123");
-    expect(await screen.findByText("Password must be at least 8 characters and contain at least 1 digit")).toBeDefined();
+    expect(await screen.findByText("Password must be at least 8 characters, contain a digit, not be all digits and not be a common password.")).toBeDefined();
   });
 
   it("shows the minimum length message for a 422 on the new password", async () => {

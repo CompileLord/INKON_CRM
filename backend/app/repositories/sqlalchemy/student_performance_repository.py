@@ -4,6 +4,8 @@ from sqlalchemy import Select, case, func, select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Subquery
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.school_calendar import SchoolCalendar
+from app.repositories.sqlalchemy.future_lesson_counts import FutureLessonCounts
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
@@ -37,6 +39,8 @@ class SQLAlchemyStudentPerformanceRepository:
         archived_course_count = len(enrollment_pairs) - active_course_count
         course_ids = [c.id for _, c in enrollment_pairs]
 
+        today: date = SchoolCalendar.today()
+        future_by_course: dict[int, tuple[int, int]] = await FutureLessonCounts(self.session).for_student_by_course(student_id, today)
         graded: ColumnElement[bool] = JournalStudentSummary.is_graded.is_(True)
         stats_query: Select[Any] = select(
             func.avg(
@@ -54,7 +58,7 @@ class SQLAlchemyStudentPerformanceRepository:
             func.count(JournalStudentSummary.id).filter(JournalStudentSummary.is_graded.is_(None)),
         ).join(Journal, Journal.id == JournalStudentSummary.journal_id).filter(
             JournalStudentSummary.student_id == student_id,
-            Journal.period_start <= date.today(),
+            Journal.period_start <= today,
         )
 
         graded_count: int
@@ -64,8 +68,12 @@ class SQLAlchemyStudentPerformanceRepository:
 
         period_summaries_count = int(summaries_count_raw) if summaries_count_raw is not None else 0
         periods_with_max_score_count = int(max_score_count_raw) if max_score_count_raw is not None else 0
-        total_lessons = int(total_lessons_raw) if total_lessons_raw is not None else 0
-        attendance_count = int(attendance_count_raw) if attendance_count_raw is not None else 0
+        total_lessons = (int(total_lessons_raw) if total_lessons_raw is not None else 0) - sum(
+            future_lessons for future_lessons, _ in future_by_course.values()
+        )
+        attendance_count = (int(attendance_count_raw) if attendance_count_raw is not None else 0) - sum(
+            future_attended for _, future_attended in future_by_course.values()
+        )
         absences = total_lessons - attendance_count
 
         legacy_avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
@@ -107,7 +115,7 @@ class SQLAlchemyStudentPerformanceRepository:
                 func.count(Journal.id)
             ).filter(
                 Journal.course_id.in_(course_ids),
-                Journal.period_start <= date.today(),
+                Journal.period_start <= today,
             ).group_by(Journal.course_id)
             journals_count_res = await self.session.execute(journals_count_query)
             periods_total_map = dict(journals_count_res.all())
@@ -134,7 +142,7 @@ class SQLAlchemyStudentPerformanceRepository:
                 Journal, JournalStudentSummary.journal_id == Journal.id
             ).filter(
                 Journal.course_id.in_(course_ids),
-                Journal.period_start <= date.today(),
+                Journal.period_start <= today,
                 graded,
             ).group_by(Journal.course_id)
             class_avg_res = await self.session.execute(class_avg_query)
@@ -162,13 +170,16 @@ class SQLAlchemyStudentPerformanceRepository:
             ).filter(
                 JournalStudentSummary.student_id == student_id,
                 Journal.course_id.in_(course_ids),
-                Journal.period_start <= date.today(),
+                Journal.period_start <= today,
             ).group_by(Journal.course_id)
             student_course_res = await self.session.execute(student_course_query)
             student_course_map = {}
             for cid, avg_val, att_cnt, tot_les, s_cnt, p_graded, score_total, max_total, graded_count, unknown_count in student_course_res.all():
-                att_int = int(att_cnt) if att_cnt is not None else 0
-                tot_int = int(tot_les) if tot_les is not None else 0
+                future_lessons: int
+                future_attended: int
+                future_lessons, future_attended = future_by_course.get(cid, (0, 0))
+                att_int = (int(att_cnt) if att_cnt is not None else 0) - future_attended
+                tot_int = (int(tot_les) if tot_les is not None else 0) - future_lessons
                 s_int = int(s_cnt) if s_cnt is not None else 0
                 p_int = int(p_graded) if p_graded is not None else 0
                 student_course_map[cid] = {
@@ -207,7 +218,7 @@ class SQLAlchemyStudentPerformanceRepository:
                 Journal.course_id.label("course_id"), JournalStudentSummary.student_id.label("student_id"),
                 func.avg(JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).label("percentage"),
             ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(
-                Journal.course_id.in_(course_ids), Journal.period_start <= date.today(), graded,
+                Journal.course_id.in_(course_ids), Journal.period_start <= today, graded,
                 JournalStudentSummary.max_period_score > 0,
             ).group_by(Journal.course_id, JournalStudentSummary.student_id).subquery()
             ranked: Subquery = select(

@@ -22,6 +22,8 @@ from app.services.finance_service import FinanceService
 from app.services.sum_calculation_service import SumCalculationService
 
 
+from app.core.school_calendar import SchoolCalendar
+from scripts.demo_gradebook_scorer import DemoGradebookScorer
 from scripts.demo_seed_assets import TAJIK_STUDENTS, save_course_photo, save_mentor_avatar
 from scripts.demo_seed_recorder import DemoSeedRecorder
 from scripts.demo_seed_report import DemoSeedReport
@@ -264,6 +266,7 @@ class DemoDataPopulator:
         async with session_factory() as session:
             logger.info("Populating gradebook entries and journal summaries...")
             sum_service: SumCalculationService = SumCalculationService(session)
+            today: date = SchoolCalendar.today()
 
             journals_res = await session.execute(select(Journal))
             journals: List[Journal] = list(journals_res.scalars().all())
@@ -286,22 +289,7 @@ class DemoDataPopulator:
                 journal.exam_max_score = target_exam_max
 
                 for student_id, student_entries in entries_by_student.items():
-                    performance_profile: int = student_id % 3
-                    for entry_idx, entry in enumerate(student_entries):
-                        if performance_profile == 0:
-                            entry.attendance = True
-                            entry.score = 4 if entry_idx % 4 == 0 else 5
-                        elif performance_profile == 1:
-                            entry.attendance = True
-                            entry.score = 3 if entry_idx % 3 == 0 else 4
-                        else:
-                            is_absent: bool = (entry_idx == 1 or entry_idx == 5)
-                            if is_absent:
-                                entry.attendance = False
-                                entry.score = 0
-                            else:
-                                entry.attendance = True
-                                entry.score = 2 if entry_idx % 2 == 0 else 3
+                    DemoGradebookScorer.score_entries(student_id, student_entries, today)
 
                 summaries_res = await session.execute(
                     select(JournalStudentSummary).filter(JournalStudentSummary.journal_id == journal.id)
@@ -309,17 +297,7 @@ class DemoDataPopulator:
                 summaries: List[JournalStudentSummary] = list(summaries_res.scalars().all())
 
                 for summary in summaries:
-                    performance_profile: int = summary.student_id % 3
-                    if performance_profile == 0:
-                        summary.exam_score = max(0, journal.exam_max_score - (summary.student_id % 3))
-                        summary.bonus_score = min(5, summary.student_id % 4)
-                    elif performance_profile == 1:
-                        summary.exam_score = max(0, int(journal.exam_max_score * 0.8) - (summary.student_id % 4))
-                        summary.bonus_score = 0
-                    else:
-                        summary.exam_score = max(0, int(journal.exam_max_score * 0.6) - (summary.student_id % 5))
-                        summary.bonus_score = 0
-
+                    DemoGradebookScorer.score_summary(summary, journal, today)
                     await sum_service.recalculate(summary.journal_id, summary.student_id)
 
             await session.commit()

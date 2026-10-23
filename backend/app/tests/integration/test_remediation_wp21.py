@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from contextvars import ContextVar
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from typing import Any
@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.models.audit_log import AuditLog
+from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
@@ -220,11 +221,18 @@ async def test_autosave_flush_invocations_are_batch_bounded(
     _: list[JournalEntryUpdate]
     journal_id, _ = await create_journal(client, test_admin, test_mentor, test_student)
     async with TestingSessionLocal() as session:
+        journal: Journal = await session.get(Journal, journal_id)
+        journal.period_start = date(2026, 1, 1)
+        journal.period_end = date(2026, 10, 1)
+        session.add_all([
+            CourseSchedule(course_id=journal.course_id, day_of_week=weekday, time_start=time(18), time_end=time(20))
+            for weekday in (1, 3, 4, 5, 6)
+        ])
         session.add_all([
             JournalEntry(
                 journal_id=journal_id,
                 student_id=test_student.id,
-                lesson_date=date(2027, 1, 1) + timedelta(days=index),
+                lesson_date=date(2026, 1, 1) + timedelta(days=index),
                 attendance=False,
                 score=0,
                 version=1,
@@ -236,7 +244,7 @@ async def test_autosave_flush_invocations_are_batch_bounded(
     updates: list[JournalEntryUpdate] = [
         JournalEntryUpdate(
             student_id=test_student.id,
-            lesson_date=date(2027, 1, 1) + timedelta(days=index),
+            lesson_date=date(2026, 1, 1) + timedelta(days=index),
             attendance=True,
             score=3,
             comment="batch",

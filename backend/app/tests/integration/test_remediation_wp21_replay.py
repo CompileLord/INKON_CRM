@@ -46,12 +46,16 @@ async def test_partial_conflicts_replay_versions_and_exact_audit_changes(
         second_entry.comment = "other editor"
         await session.commit()
         second_version: int = second_entry.version
-    missing: JournalEntryUpdate = updates[0].model_copy(update={"lesson_date": date(2040, 1, 1)})
+    async with TestingSessionLocal() as session:
+        journal: Journal = await session.get(Journal, journal_id)
+        journal.period_end = date(2026, 8, 17)
+        await session.commit()
+    missing: JournalEntryUpdate = updates[0].model_copy(update={"lesson_date": date(2026, 8, 10)})
     async with TestingSessionLocal() as session:
         response: dict[str, object] = await batch_update_entries(journal_id, [*updates, missing], test_admin, session)
         assert response["applied"] == [{
             "student_id": test_student.id, "lesson_date": updates[0].lesson_date,
-            "attendance": True, "score": 3, "comment": "simultaneous", "version": 2,
+            "attendance": True, "score": 3, "comment": "simultaneous", "is_graded": True, "version": 2,
         }]
         assert len(response["conflicts"]) == 2
         assert response["conflicts"][0]["submitted_version"] == 1

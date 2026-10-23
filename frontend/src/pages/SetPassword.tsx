@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { useLogout } from "../lib/useLogout";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthFrame } from "../layouts/AuthFrame";
@@ -21,6 +22,8 @@ import { useAuthStore } from "../store/authStore";
 
 export function SetPassword() {
   const navigate = useNavigate();
+  const signOut = useLogout();
+  const [signingOut, setSigningOut] = useState(false);
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
   const { t, i18n } = useTranslation(["auth", "validation", "common"]);
 
@@ -200,6 +203,19 @@ export function SetPassword() {
             className="mt-2 w-full"
           >
             {submitting ? t("auth:saving") : t("auth:savePassword")}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={signingOut}
+            disabled={submitting}
+            onClick={() => {
+              setSigningOut(true);
+              void signOut();
+            }}
+            className="w-full"
+          >
+            {t("auth:signOut")}
           </Button>
         </form>
       </div>

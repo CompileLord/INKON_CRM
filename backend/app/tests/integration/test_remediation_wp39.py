@@ -86,7 +86,7 @@ async def test_profile_rank_query_count_is_constant_across_courses(
         result: dict[str, Any] = await SQLAlchemyUserRepository(db_session).get_student_profile_stats(test_student.id)
     finally:
         event.remove(test_engine.sync_engine, "after_cursor_execute", probe.capture)
-    assert len(probe.statements) == 8
+    assert len(probe.statements) == 9
     assert len(result["courses"]) == course_count
     assert {row["my_rank"] for row in result["courses"]} == {2}
 

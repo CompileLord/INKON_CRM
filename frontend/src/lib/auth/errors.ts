@@ -1,4 +1,6 @@
-import type { ValidationErrorItem } from "./types";
+import type { ApiErrorCodeDetail, ValidationErrorItem } from "./types";
+
+export type ApiErrorDetail = string | ValidationErrorItem[] | ApiErrorCodeDetail | undefined;
 
 /**
  * Carries the HTTP status and FastAPI's `detail` field verbatim (a plain
@@ -8,25 +10,36 @@ import type { ValidationErrorItem } from "./types";
  */
 export class AuthApiError extends Error {
   readonly status: number;
-  readonly detail: string | ValidationErrorItem[] | undefined;
+  readonly detail: ApiErrorDetail;
   readonly fieldErrors: Record<string, string>;
+  readonly code: string | null;
 
-  constructor(status: number, detail: string | ValidationErrorItem[] | undefined) {
+  constructor(status: number, detail: ApiErrorDetail) {
     super(AuthApiError.messageFor(detail));
     this.name = "AuthApiError";
     this.status = status;
     this.detail = detail;
     this.fieldErrors = AuthApiError.fieldErrorsFor(detail);
+    this.code = AuthApiError.codeFor(detail);
   }
 
-  private static messageFor(detail: string | ValidationErrorItem[] | undefined): string {
+  private static messageFor(detail: ApiErrorDetail): string {
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail) && detail.length > 0) return detail[0].msg;
+    if (AuthApiError.isCodeDetail(detail) && detail.message) return detail.message;
     return "Что-то пошло не так. Попробуйте ещё раз.";
   }
 
+  private static isCodeDetail(detail: ApiErrorDetail): detail is ApiErrorCodeDetail {
+    return typeof detail === "object" && detail !== null && !Array.isArray(detail) && typeof (detail as ApiErrorCodeDetail).code === "string";
+  }
+
+  private static codeFor(detail: ApiErrorDetail): string | null {
+    return AuthApiError.isCodeDetail(detail) ? detail.code : null;
+  }
+
   private static fieldErrorsFor(
-    detail: string | ValidationErrorItem[] | undefined,
+    detail: ApiErrorDetail,
   ): Record<string, string> {
     const errors: Record<string, string> = {};
     if (!Array.isArray(detail)) return errors;

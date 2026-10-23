@@ -1,8 +1,9 @@
 from app.services.journal_transaction import JournalCommandTransaction as JournalCommandTransaction
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import date, datetime, timezone
+from typing import Any, Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select, or_, false
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError as StaleObjectError
 from app.db.session import sanitize_html
 from app.models.journal import Journal
@@ -15,12 +16,60 @@ from app.repositories.sqlalchemy.exam_result_notification_repository import SQLA
 from app.services.exam_result_scheduling_service import ExamResultSchedulingService
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import ScoringPolicy
+from app.core.school_calendar import SchoolCalendar
+from app.core.schedule_utils import LessonDateCalculator
+from app.repositories.interfaces.future_lesson_counts import FutureLessonCountsRepository
+from app.repositories.interfaces.journal_cell_lookup import JournalCellLookup, JournalCellLookupRepository
+from app.repositories.interfaces.journal_repository import JournalRepository
+from app.repositories.sqlalchemy.journal_cell_lookup import SQLAlchemyJournalCellLookup
+from app.schemas.journal import JournalEntryUpdate
 
 
 from app.services.journal_query_service import JournalQueryService, get_lesson_dates
 
 
 class JournalService(JournalQueryService):
+    def __init__(
+        self,
+        db: AsyncSession,
+        journal_repository: JournalRepository | None = None,
+        future_lesson_counts: FutureLessonCountsRepository | None = None,
+        cell_lookup: JournalCellLookupRepository | None = None,
+    ) -> None:
+        super().__init__(db, journal_repository, future_lesson_counts)
+        self.cell_lookup: JournalCellLookupRepository = cell_lookup or SQLAlchemyJournalCellLookup(db)
+
+    async def reject_invalid_cells(self, journal: Journal, entries_updates: list[JournalEntryUpdate]) -> None:
+        requested_student_ids: frozenset[int] = frozenset(update.student_id for update in entries_updates)
+        lookup: JournalCellLookup = await self.cell_lookup.lookup(journal, requested_student_ids)
+        lesson_dates: set[date] = set(LessonDateCalculator.calculate(
+            journal.period_start, journal.period_end, lookup.schedule_weekdays,
+        ))
+        today: date = SchoolCalendar.today()
+        rejected_cells: list[dict[str, Any]] = []
+        update: JournalEntryUpdate
+        for update in entries_updates:
+            code: str | None = None
+            if update.student_id not in lookup.known_student_ids:
+                code = "unknown_student"
+            elif update.student_id not in lookup.enrolled_student_ids:
+                code = "student_not_enrolled"
+            elif update.lesson_date not in lesson_dates:
+                code = "invalid_lesson_date"
+            elif update.lesson_date > today:
+                code = "future_lesson"
+            if code is not None:
+                rejected_cells.append({"student_id": update.student_id, "lesson_date": update.lesson_date.isoformat(), "code": code})
+        if rejected_cells:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={
+                    "code": rejected_cells[0]["code"],
+                    "message": "Some journal cells cannot be updated",
+                    "cells": rejected_cells,
+                },
+            )
+
     @staticmethod
     def authorize_mutation(course: Course, current_user: User) -> None:
         if current_user.role == UserRole.SUPERADMIN:
@@ -51,6 +100,8 @@ class JournalService(JournalQueryService):
 
         if not entries_updates:
             return {"applied": [], "conflicts": [], "summaries": []}
+
+        await self.reject_invalid_cells(journal, entries_updates)
 
         student_ids = list(set(u.student_id for u in entries_updates))
         dates = list(set(u.lesson_date for u in entries_updates))
@@ -104,6 +155,7 @@ class JournalService(JournalQueryService):
                         "attendance": entry.attendance,
                         "score": entry.score,
                         "comment": entry.comment,
+                        "is_graded": entry.is_graded is True,
                         "version": entry.version
                     }
                 })
@@ -172,6 +224,7 @@ class JournalService(JournalQueryService):
                 "attendance": e.attendance,
                 "score": e.score,
                 "comment": e.comment,
+                "is_graded": e.is_graded is True,
                 "version": e.version
             }
             for e in applied_entries

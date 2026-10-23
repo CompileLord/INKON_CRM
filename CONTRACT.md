@@ -2561,6 +2561,7 @@ Accepted batches retain existing partial-conflict, optimistic-version and idempo
         "attendance": boolean,
         "score": integer,
         "comment?": string,
+        "is_graded?": boolean,
         "version": integer,
       }
     ],
