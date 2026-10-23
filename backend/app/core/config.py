@@ -54,6 +54,9 @@ class Settings(BaseSettings, DatabaseConnectionPolicy):
             raise ValueError("TESTING must be false in production")
         return value
 
+    PAYMENT_FUTURE_TOLERANCE_MINUTES: int = Field(default=5, ge=0, le=1440)
+    PAYMENT_BEFORE_ENROLLMENT_TOLERANCE_DAYS: int = Field(default=31, ge=0, le=3660)
+
     PASSWORD_BCRYPT_ROUNDS: int = Field(default=12, ge=4, le=31)
 
     @field_validator("PASSWORD_BCRYPT_ROUNDS")

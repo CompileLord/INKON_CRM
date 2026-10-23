@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 from typing import cast, Optional
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.charge import Charge, ChargeStatus
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Row, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -15,6 +15,7 @@ from app.repositories.interfaces.enrollment_repository import (
     EligibleCandidatesQueryResult,
     EnrollmentRepository,
     EnrollmentFilters,
+    EnrollmentStartWindow,
     RosterLocationQueryResult,
     RosterQueryResult,
 )
@@ -337,3 +338,18 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
             Charge.status == ChargeStatus.OPEN, Charge.is_deleted.is_(False),
         )
         return list((await self.session.execute(query)).scalars().all())
+
+    async def find_start_window(self, student_id: int, course_id: int) -> Optional[EnrollmentStartWindow]:
+        query: Select[tuple[datetime, date]] = (
+            select(Enrollment.enrolled_at, Course.start_date)
+            .join(Course, Course.id == Enrollment.course_id)
+            .where(
+                Enrollment.student_id == student_id,
+                Enrollment.course_id == course_id,
+                Enrollment.is_deleted.is_(False),
+            )
+        )
+        row: Optional[Row[tuple[datetime, date]]] = (await self.session.execute(query)).first()
+        if row is None:
+            return None
+        return EnrollmentStartWindow(enrolled_at=row.enrolled_at, course_start_date=row.start_date)

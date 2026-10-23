@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional, TypedDict
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
@@ -9,6 +9,12 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User
 from app.schemas.enrollment import RosterSortOrder
 from app.repositories.interfaces.base_repository import BaseRepository, RepositoryPage
+
+
+@dataclass(frozen=True)
+class EnrollmentStartWindow:
+    enrolled_at: datetime
+    course_start_date: date
 
 
 @dataclass(frozen=True)
@@ -101,4 +107,7 @@ class EnrollmentRepository(BaseRepository[Enrollment], Protocol):
         ...
 
     async def list_future_open_charges(self, enrollment_id: int, today: date) -> list[Charge]:
+        ...
+
+    async def find_start_window(self, student_id: int, course_id: int) -> Optional[EnrollmentStartWindow]:
         ...

@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated, ClassVar, Generic, List, Self, TypeAlias, TypeVar
 from pydantic import BaseModel, Field, model_validator
+from app.schemas.money import PositiveMoney
 
 
 class CanonicalPhonePolicy:
@@ -27,7 +28,6 @@ class CanonicalPhonePolicy:
 CanonicalPhone: TypeAlias = Annotated[str, Field(pattern=CanonicalPhonePolicy.input_pattern)]
 
 
-PositiveMoney: TypeAlias = Annotated[Decimal, Field(gt=0, le=Decimal("99999999.99"), max_digits=10, decimal_places=2, allow_inf_nan=False)]
 
 
 class InstallmentPriceInput(BaseModel):

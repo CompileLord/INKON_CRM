@@ -1,12 +1,17 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import hashlib
 import json
 import re
-from typing import Optional
-from pydantic import BaseModel
+from typing import ClassVar, Optional
+from pydantic import AwareDatetime, BaseModel, Field, field_validator
+from app.core.config import settings
 from app.models.payment import PaymentMethod
 from app.schemas.common import PositiveMoney
+
+
+class PaymentCommentPolicy:
+    MAX_LENGTH: ClassVar[int] = 500
 
 
 class PaymentCreate(BaseModel):
@@ -21,9 +26,17 @@ class PaymentCreate(BaseModel):
     student_id: int
     course_id: int
     amount: PositiveMoney
-    paid_at: datetime
+    paid_at: AwareDatetime
     method: PaymentMethod
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=PaymentCommentPolicy.MAX_LENGTH)
+
+    @field_validator("paid_at")
+    @classmethod
+    def reject_future_payment(cls, paid_at: AwareDatetime) -> AwareDatetime:
+        latest_allowed: datetime = datetime.now(timezone.utc) + timedelta(minutes=settings.PAYMENT_FUTURE_TOLERANCE_MINUTES)
+        if paid_at > latest_allowed:
+            raise ValueError("Payment date cannot be in the future")
+        return paid_at
 
 
 class PaymentIdempotency:

@@ -7,6 +7,8 @@ from app.core.config import settings
 from fastapi.exceptions import RequestValidationError
 from app.core.credential_validation import CredentialValidationErrorHandler
 from app.core.journal_body_limit import JournalBodyLimitMiddleware
+from app.core.request_input_guard import DatabaseValueErrorHandler, RequestInputGuard
+from sqlalchemy.exc import DBAPIError
 from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.students import router as students_router
@@ -45,9 +47,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(RequestInputGuard)
 app.add_middleware(JournalBodyLimitMiddleware, api_prefix=settings.API_V1_STR)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_exception_handler(RequestValidationError, CredentialValidationErrorHandler())
+app.add_exception_handler(DBAPIError, DatabaseValueErrorHandler())
 
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(

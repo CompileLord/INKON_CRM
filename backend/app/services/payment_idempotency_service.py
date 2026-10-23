@@ -14,6 +14,7 @@ from app.models.payment import PaymentMethod
 from app.models.user import User
 from app.schemas.payment import PaymentIdempotency
 from app.services.finance_service import FinanceService
+from app.services.payment_date_window import PaymentDateWindow
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,8 @@ class PaymentRecordResult:
 class PaymentIdempotencyService:
     INDEX_NAME: str = "uq_ledger_recorder_idempotency_key"
 
-    def __init__(self, db: AsyncSession, finance_service: FinanceService) -> None:
+    def __init__(self, db: AsyncSession, finance_service: FinanceService, date_window: PaymentDateWindow) -> None:
+        self.date_window: PaymentDateWindow = date_window
         self.db: AsyncSession = db
         self.finance_service: FinanceService = finance_service
 
@@ -40,6 +42,7 @@ class PaymentIdempotencyService:
         current_user: User,
         idempotency_key: Optional[str],
     ) -> PaymentRecordResult:
+        await self.date_window.require_after_enrollment_start(student_id, course_id, paid_at)
         if idempotency_key is None:
             recorded_entry: LedgerEntry = await self.finance_service.create_payment(
                 student_id, course_id, amount, paid_at, method, comment, current_user
