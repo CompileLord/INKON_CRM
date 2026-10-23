@@ -1,7 +1,13 @@
 import { AuditPresentation, type AuditDayRelation } from "../audit/auditPresentation";
-import type { NotificationLogItem, NotificationType } from "./types";
+import type { NotificationLogItem, NotificationStatus, NotificationType } from "./types";
 
 export type NotificationEventKind = "examResult" | "paymentTwoDays" | "paymentOneDay" | "telegramLockout" | "generic";
+
+export interface DeliveryStatusPresentation {
+  labelKey: string;
+  toneClassName: string;
+  showAttempts: boolean;
+}
 
 export interface NotificationDayGroup {
   day: string;
@@ -17,6 +23,20 @@ export class NotificationPresentation {
       telegram_link_lockout: "telegramLockout",
     };
     return known[type as NotificationType] ?? "generic";
+  }
+
+  static deliveryStatus(status: NotificationStatus): DeliveryStatusPresentation {
+    const known: Record<NotificationStatus, DeliveryStatusPresentation> = {
+      queued: { labelKey: "deliveryLog.queued", toneClassName: "bg-beige text-muted", showAttempts: false },
+      inflight: { labelKey: "deliveryLog.inflight", toneClassName: "bg-info-surface text-info", showAttempts: false },
+      sent: { labelKey: "deliveryLog.sent", toneClassName: "bg-success-surface text-success", showAttempts: false },
+      failed: { labelKey: "deliveryLog.failed", toneClassName: "bg-danger-surface text-destructive", showAttempts: true },
+    };
+    return known[status] ?? known.queued;
+  }
+
+  static isDelivered(item: Pick<NotificationLogItem, "status">): boolean {
+    return item.status === "sent";
   }
 
   static groupByDay(items: readonly NotificationLogItem[]): NotificationDayGroup[] {

@@ -1,5 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from app.core.deps import get_current_user, get_auth_service, get_setup_user
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.deps import get_current_user, get_auth_service, get_db_session, get_setup_user
+from app.core.security import AccessTokenPrincipal
+from app.services.auth_session_service import RefreshTokenReuseDetected
 from app.core.rate_limiter import (
     AuthenticationRateLimiter,
     LockoutReservation,
@@ -25,6 +30,7 @@ from app.schemas.auth import (
 from app.services.auth_service import AuthService
 
 router = APIRouter()
+optional_bearer: HTTPBearer = HTTPBearer(auto_error=False)
 
 
 @router.post("/login", response_model=TokenPair)
@@ -64,17 +70,29 @@ async def login(
 @router.post("/refresh", response_model=TokenPair)
 async def refresh(
     payload: RefreshRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    db: AsyncSession = Depends(get_db_session),
 ) -> TokenPair:
-    return await auth_service.refresh(payload.refresh_token)
+    try:
+        return await auth_service.refresh(payload.refresh_token)
+    except RefreshTokenReuseDetected:
+        await db.commit()
+        raise
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     payload: RefreshRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer),
 ) -> None:
-    await auth_service.logout(payload.refresh_token)
+    access_principal: AccessTokenPrincipal | None = None
+    if credentials is not None:
+        try:
+            access_principal = AccessTokenPrincipal.from_token(credentials.credentials)
+        except (JWTError, ValueError):
+            access_principal = None
+    await auth_service.logout(payload.refresh_token, access_principal)
 
 
 @router.post("/verify-code", response_model=TokenPair)

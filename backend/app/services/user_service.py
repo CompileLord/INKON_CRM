@@ -8,6 +8,7 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
+from app.core.email_normalizer import EmailNormalizer
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.common import CanonicalPhonePolicy
@@ -92,6 +93,7 @@ class UserService:
         user_create: UserCreate,
         actor_id: int | None = None,
     ) -> tuple[User, IssuedLinkCode | None, CredentialsDelivery]:
+        user_create.email = EmailNormalizer.normalize_optional(user_create.email)
         self._require_email_when_disabled(user_create.email)
         if user_create.role == UserRole.STUDENT and not user_create.email:
             StudentPasswordSmsDestinationResolver().reject_undeliverable_contacts(user_create.phone, user_create.parent_phone)
@@ -142,10 +144,11 @@ class UserService:
             )
 
         if "email" in user_update.model_fields_set:
+            user_update.email = EmailNormalizer.normalize_optional(user_update.email)
             self._require_email_when_disabled(user_update.email)
 
         previous_email: str | None = user.email
-        email_changed: bool = "email" in user_update.model_fields_set and user_update.email != user.email
+        email_changed: bool = "email" in user_update.model_fields_set and user_update.email != EmailNormalizer.normalize_optional(user.email)
         if email_changed:
             if user_update.email is None and user.role != UserRole.STUDENT:
                 raise HTTPException(

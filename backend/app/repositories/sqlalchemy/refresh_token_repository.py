@@ -2,7 +2,11 @@ from datetime import datetime, timezone
 from sqlalchemy import CTE, ColumnElement, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.refresh_token import RefreshToken
-from app.repositories.interfaces.refresh_token_repository import RefreshTokenRepository
+from app.repositories.interfaces.refresh_token_repository import (
+    ConsumedRefreshToken,
+    RefreshTokenRepository,
+    RotatedRefreshToken,
+)
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
 
@@ -38,6 +42,51 @@ class SQLAlchemyRefreshTokenRepository(SQLAlchemyBaseRepository[RefreshToken], R
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None
+
+    async def rotate_valid_token(
+        self, token_hash: str, user_id: int, now: datetime
+    ) -> ConsumedRefreshToken | None:
+        statement = (
+            update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at == None,
+                RefreshToken.expires_at > now,
+            )
+            .values(revoked_at=now, rotated_at=now)
+            .returning(RefreshToken.family_id)
+        )
+        result = await self.session.execute(statement)
+        row = result.first()
+        return None if row is None else ConsumedRefreshToken(family_id=row[0])
+
+    async def find_rotated_token(self, token_hash: str, user_id: int) -> RotatedRefreshToken | None:
+        statement = select(RefreshToken.family_id, RefreshToken.rotated_at).where(
+            RefreshToken.token_hash == token_hash,
+            RefreshToken.user_id == user_id,
+            RefreshToken.rotated_at.is_not(None),
+            RefreshToken.family_id.is_not(None),
+        ).order_by(RefreshToken.id.desc()).limit(1)
+        row = (await self.session.execute(statement)).first()
+        return None if row is None else RotatedRefreshToken(family_id=row[0], rotated_at=row[1])
+
+    async def family_has_active_token(self, family_id: str, now: datetime) -> bool:
+        statement = select(RefreshToken.id).where(
+            RefreshToken.family_id == family_id,
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > now,
+        ).limit(1)
+        return (await self.session.execute(statement)).first() is not None
+
+    async def revoke_family(self, family_id: str, now: datetime) -> None:
+        statement = (
+            update(RefreshToken)
+            .where(RefreshToken.family_id == family_id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=now)
+        )
+        await self.session.execute(statement)
+        await self.session.flush()
 
     async def purge_expired_before(self, cutoff: datetime, batch_size: int) -> int:
         eligibility: tuple[ColumnElement[bool], ...] = (

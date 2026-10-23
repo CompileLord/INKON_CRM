@@ -21,6 +21,8 @@ class AccessTokenPrincipal:
     purpose: str
     scope: Optional[str]
     auth_version: int
+    token_id: Optional[str] = None
+    expires_at: int = 0
 
     @classmethod
     def from_token(cls, token: str) -> "AccessTokenPrincipal":
@@ -38,10 +40,12 @@ class AccessTokenPrincipal:
         expiration: Any = payload.get("exp")
         issued_at: Any = payload.get("iat")
         auth_version: Any = payload.get("auth_version")
+        token_id: Any = payload.get("jti")
         if (
             not isinstance(subject, str)
             or not subject.isascii()
             or not subject.isdecimal()
+            or (token_id is not None and (not isinstance(token_id, str) or not token_id))
             or purpose != "access"
             or (scope is not None and scope != "must_set_password")
             or not isinstance(expiration, int)
@@ -77,6 +81,8 @@ class AccessTokenPrincipal:
             purpose=purpose,
             scope=scope,
             auth_version=auth_version,
+            token_id=token_id,
+            expires_at=expiration,
         )
 
 
@@ -253,6 +259,7 @@ def create_access_token(
         "exp": int(expire.timestamp()),
         "iat": int(now.timestamp()),
         "auth_version": auth_version,
+        "jti": secrets.token_hex(16),
     }
     if scope:
         to_encode["scope"] = scope

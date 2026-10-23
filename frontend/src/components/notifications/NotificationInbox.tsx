@@ -5,6 +5,7 @@ import { formatDate, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } fro
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "../../lib/notifications/hooks";
 import { NotificationPresentation, type NotificationEventKind } from "../../lib/notifications/NotificationPresentation";
 import type { NotificationLogItem } from "../../lib/notifications/types";
+import { DeliveryStatusChip } from "./DeliveryLog";
 import { Button } from "../ui/Button";
 import { ErrorState } from "../ui/ErrorState";
 import { Pagination } from "../ui/Pagination";
@@ -32,19 +33,24 @@ function NotificationRow({ notification }: { notification: NotificationLogItem }
   const markRead = useMarkNotificationRead();
   const kind: NotificationEventKind = NotificationPresentation.eventKind(notification.type);
   const unread: boolean = notification.read_at === null;
-  const timeText: string | null = notification.sent_at
+  const delivered: boolean = NotificationPresentation.isDelivered(notification);
+  const timeText: string = notification.sent_at
     ? formatRecentRelativeTime(notification.sent_at, i18n.language) ?? formatTime(notification.sent_at, i18n.language, SCHOOL_TIMEZONE)
-    : null;
+    : formatDate(`${notification.notification_date}T12:00:00+05:00`, i18n.language, SCHOOL_TIMEZONE);
+  const timeValue: string = notification.sent_at ?? notification.notification_date;
 
   return (
     <li data-testid="notification-item" data-unread={unread} className="flex items-start gap-3 rounded-[10px] px-3 py-3 motion-safe:transition-[background-color] motion-safe:duration-150 motion-safe:ease-out hover:bg-row-hover">
       <div className="min-w-0 flex-1">
-        <p className={`break-words text-sm text-ink ${unread ? "font-semibold" : "font-medium"}`}>{t(`events.${kind}.title`)}</p>
-        <p className="mt-0.5 break-words text-sm text-muted">{t(`events.${kind}.body`)}</p>
-        {timeText && <time dateTime={notification.sent_at ?? undefined} className="mt-1 block text-sm text-muted tabular-nums">{timeText}</time>}
+        <p className={`break-words text-sm ${delivered ? "text-ink" : "text-muted"} ${unread && delivered ? "font-semibold" : "font-medium"}`}>{t(`events.${kind}.title`)}</p>
+        {delivered && <p className="mt-0.5 break-words text-sm text-muted">{t(`events.${kind}.body`)}</p>}
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          {!delivered && <DeliveryStatusChip status={notification.status} attempts={notification.attempts} />}
+          <time dateTime={timeValue} className="text-sm text-muted tabular-nums">{timeText}</time>
+        </div>
         {markRead.isError && <p role="alert" className="mt-1 text-sm text-destructive">{t("markReadFailed")}</p>}
       </div>
-      {unread && (
+      {unread && delivered && (
         <>
           <span data-testid="unread-dot" role="img" aria-label={t("unread")} className="mt-2 size-2.5 shrink-0 rounded-full bg-maroon" />
           <Button

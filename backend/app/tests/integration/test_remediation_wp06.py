@@ -116,7 +116,7 @@ async def test_database_setup_requirement_rejects_full_token_and_setup_requires_
 
 
 @pytest.mark.asyncio
-async def test_password_reset_keeps_setup_required_access_token_restricted(
+async def test_password_reset_clears_setup_requirement_and_unrestricts_access_token(
     client: AsyncClient,
     db_session: AsyncSession,
     test_student: User,
@@ -147,8 +147,8 @@ async def test_password_reset_keeps_setup_required_access_token_restricted(
         headers={"Authorization": f"Bearer {token_pair.access_token}"},
     )
 
-    assert token_pair.must_set_password is True
-    assert response.status_code == 403
+    assert token_pair.must_set_password is False
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

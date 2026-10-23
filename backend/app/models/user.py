@@ -26,6 +26,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
             unique=True,
             postgresql_where=text("is_deleted = false AND phone IS NOT NULL"),
         ),
+        Index(
+            "ux_users_email_lower_live",
+            text("lower(email)"),
+            unique=True,
+            postgresql_where=text("is_deleted = false AND email IS NOT NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

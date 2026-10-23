@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/authStore";
 import { useLogout } from "../lib/useLogout";
 import { BrandLogo } from "./ui/BrandLogo";
+import { CurrentUserLink } from "./shell/CurrentUserLink";
 import { navigationFor } from "./shell/navigation";
 
 export function Sidebar() {
@@ -16,6 +17,6 @@ export function Sidebar() {
     <nav aria-label={t("shell.navigation")} className="min-h-0 flex-1 overflow-y-auto pb-4">
       {navigationFor(role, userId).map(({ key, to, icon: Icon }) => <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-[10px] px-3 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isActive ? "bg-beige font-semibold text-maroon-text" : "text-nav hover:bg-row-hover"}`}><Icon size={20} className="shrink-0" aria-hidden="true"/><span className="min-w-0 break-words">{t(key)}</span></NavLink>)}
     </nav>
-    <div className="border-t border-border py-4"><button type="button" onClick={logout} className="flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 text-nav hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><LogOut size={20} aria-hidden="true"/>{t("nav.logout")}</button></div>
+    <div className="border-t border-border py-4"><CurrentUserLink/><button type="button" onClick={logout} className="flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 text-nav hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><LogOut size={20} aria-hidden="true"/>{t("nav.logout")}</button></div>
   </aside>;
 }

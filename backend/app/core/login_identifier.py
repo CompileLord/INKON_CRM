@@ -4,6 +4,7 @@ from enum import Enum
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
 
+from app.core.email_normalizer import EmailNormalizer
 from app.schemas.common import CanonicalPhonePolicy
 
 
@@ -27,7 +28,10 @@ class LoginIdentifierParser:
         stripped_identifier: str = raw_identifier.strip()
         if "@" in stripped_identifier:
             try:
-                return LoginIdentifier(LoginIdentifierKind.EMAIL, cls._email_adapter.validate_python(stripped_identifier))
+                return LoginIdentifier(
+                    LoginIdentifierKind.EMAIL,
+                    EmailNormalizer.normalize(cls._email_adapter.validate_python(stripped_identifier)),
+                )
             except ValidationError as error:
                 raise ValueError("Enter a valid email address or an international phone number") from error
         normalized_phone: str | None = CanonicalPhonePolicy.normalize_historical(
@@ -39,4 +43,4 @@ class LoginIdentifierParser:
 
     @classmethod
     def from_email(cls, email: str) -> LoginIdentifier:
-        return LoginIdentifier(LoginIdentifierKind.EMAIL, email)
+        return LoginIdentifier(LoginIdentifierKind.EMAIL, EmailNormalizer.normalize(email))
