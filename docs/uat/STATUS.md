@@ -19,7 +19,7 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U09 lists, search, people admin | FE | todo | — | — | — | after U08 |
 | U10 money input validation | BE | merged, retest pending | uat/u10 | 2026-10-23 | finance/enrollment/wp69a 220 passed; full suite on branch: only known wp11/wp13 | date window moved behind repository (audit fix 71a5c8a) |
 | U11 finance screens | FE | in progress | uat/u11 | 2026-10-23 | — | — |
-| U12 notifications and message language | BE | in progress | uat/u12 | 2026-10-23 | — | Codex |
+| U12 notifications and message language | BE | merged, retest pending | uat/u12 | 2026-10-23 | targeted 127 passed; full suite on branch: only known wp11/wp13 after 5 fixed cases | en/ru/tg messages; preferred_language needs FE (U09); inbox shows delivered only |
 | U13 notifications UI | FE | merged, retest pending | uat/u13 | 2026-10-23 | tsc clean; vitest targeted pass | screenshots reviewed |
 | U14 uploads and documents | BE+FE | todo | — | — | — | — |
 | U15 student cabinet | FE | todo | — | — | — | D2: no student finance |
