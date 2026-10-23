@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from './i18n'
 import './index.css'
 import { initTheme } from './lib/theme'
+import { QueryRetryPolicy } from './lib/queryRetryPolicy'
 import App from './App.tsx'
 
 initTheme()
@@ -21,7 +22,9 @@ declare global {
   }
 }
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: (failureCount: number, error: unknown): boolean => QueryRetryPolicy.shouldRetry(failureCount, error) } },
+})
 
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.__queryClient = queryClient
