@@ -12,7 +12,7 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U02 auth correctness and sessions | BE | merged, retest pending | uat/u02 | 2026-10-23 | test_uat_u02 + auth files 113 passed; full suite on branch: only known wp11/wp13 | deny-list fails open (audit fix c473641) |
 | U03 auth and session UX | FE | merged, retest pending | uat/u03 | 2026-10-23 | tsc clean; targeted vitest 790/791 then fixed file 23/23 | follows U02 contract (8e58897) |
 | U04 journals and attendance truth | BE | merged, retest pending | uat/u04 | 2026-10-23 | U04+journal+wp21/39/55 113 passed; full suite on branch: only known wp11/wp13 | audit fixes 405c5a2, 2c4cbe6 |
-| U05 journal grid and charts | FE | in progress | uat/u05 | 2026-10-23 | — | charts after WP-58 |
+| U05 journal grid and charts | FE | in progress | uat/u05 | 2026-10-23 | — | WP-58 merged; chart follow-up next |
 | U06 course and people lifecycle guards | BE | cancelled | uat/u06 (unmerged) | 2026-10-23 | — | owner: admin can archive/delete a course any time |
 | U07 audit coverage | BE | in progress | uat/u07 | 2026-10-23 | — | Codex |
 | U08 server-side search and ordering | BE | in progress | uat/u08 | 2026-10-23 | — | Codex |
