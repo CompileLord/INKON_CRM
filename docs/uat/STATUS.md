@@ -15,10 +15,10 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U05 journal grid and charts | FE | in progress | uat/u05 | 2026-10-23 | — | WP-58 merged; chart follow-up next |
 | U06 course and people lifecycle guards | BE | cancelled | uat/u06 (unmerged) | 2026-10-23 | — | owner: admin can archive/delete a course any time |
 | U07 audit coverage | BE | audit: changes requested | uat/u07 | 2026-10-23 | targeted 74 passed; full suite on branch: only known wp11/wp13 | lost old/new values for mentor and email; timestamp override |
-| U08 server-side search and ordering | BE | audit: changes requested | uat/u08 | 2026-10-23 | targeted 144 passed; full suite: known wp11/wp13 + one wp55 flake (passes isolated on both) | needs created_at "newest" default sort |
-| U09 lists, search, people admin | FE | todo | — | — | — | after U08 |
+| U08 server-side search and ordering | BE | merged, retest pending | uat/u08 | 2026-10-23 | targeted 144 + 118 passed; full suite: known wp11/wp13 + one wp55 flake (passes isolated on both) | newest-first default (050c85f); FE switch in U09 |
+| U09 lists, search, people admin | FE | todo | — | — | — | ready; also preferred_language selects (U12), audit field labels (U07) |
 | U10 money input validation | BE | merged, retest pending | uat/u10 | 2026-10-23 | finance/enrollment/wp69a 220 passed; full suite on branch: only known wp11/wp13 | date window moved behind repository (audit fix 71a5c8a) |
-| U11 finance screens | FE | in progress | uat/u11 | 2026-10-23 | — | — |
+| U11 finance screens | FE | audit: merge master | uat/u11 | 2026-10-23 | tsc clean; vitest 1952/7 before test fixes | accepted pending master merge and perMonth removal |
 | U12 notifications and message language | BE | merged, retest pending | uat/u12 | 2026-10-23 | targeted 127 passed; full suite on branch: only known wp11/wp13 after 5 fixed cases | en/ru/tg messages; preferred_language needs FE (U09); inbox shows delivered only |
 | U13 notifications UI | FE | merged, retest pending | uat/u13 | 2026-10-23 | tsc clean; vitest targeted pass | screenshots reviewed |
 | U14 uploads and documents | BE+FE | in progress (BE) | uat/u14 | 2026-10-23 | — | Codex BE first, FE after |
