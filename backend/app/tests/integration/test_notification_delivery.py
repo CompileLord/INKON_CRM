@@ -163,13 +163,14 @@ async def test_sender_timeout_fails_with_retry_before_lease_expiry(
 
 
 @pytest.mark.asyncio
-async def test_current_schema_projects_additive_delivery_state(db_session: AsyncSession) -> None:
-    from app.schemas.notification import NotificationResponse
+async def test_delivery_log_projects_additive_delivery_state(db_session: AsyncSession) -> None:
+    from app.schemas.notification import DeliveryLogResponse
 
     await DeliveryFixture.reserve(NotificationService(SQLAlchemyNotificationLogRepository(db_session)))
     log: NotificationLog = await DeliveryFixture.load()
     assert log.status == "failed"
-    assert NotificationResponse.model_validate(log).status == "queued"
+    page: dict[str, Any] = await NotificationService(SQLAlchemyNotificationLogRepository(db_session)).get_delivery_log(1, 20, None)
+    assert DeliveryLogResponse.model_validate(page["items"][0]).status == "queued"
 
 
 @pytest.mark.asyncio
@@ -196,7 +197,8 @@ async def test_api_filters_and_projects_queued_and_inflight_states(
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     inbox: Response = await client.get("/api/v1/notifications/", headers=headers)
     assert inbox.status_code == 200
-    assert inbox.json()["items"][0]["status"] == "queued"
+    assert inbox.json()["items"] == []
+    assert inbox.json()["total"] == 0
     queued: Response = await client.get("/api/v1/notifications/delivery-log?status=queued", headers=headers)
     assert queued.status_code == 200
     assert queued.json()["total"] == 1

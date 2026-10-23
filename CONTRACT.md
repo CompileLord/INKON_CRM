@@ -272,6 +272,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 {
   "login?": string,
   "email?": string,
+  "language?": "en" | "ru" | "tg",
   "channel?": "student_phone" | "parent_phone",
 }
 ```
@@ -382,6 +383,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "email?": string,
   "first_name": string,
   "last_name": string,
@@ -397,6 +399,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **201**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -531,6 +534,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -563,6 +567,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "first_name?": string,
   "last_name?": string,
   "date_of_birth?": string,
@@ -574,6 +579,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -623,6 +629,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "email?": string,
   "first_name?": string,
   "last_name?": string,
@@ -637,6 +644,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -718,6 +726,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -770,6 +779,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
   {
     "items": [
       {
+        "preferred_language?": "en" | "ru" | "tg",
         "id": integer,
         "email?": string,
         "first_name": string,
@@ -854,6 +864,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1062,6 +1073,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1179,6 +1191,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   {
     "items": [
       {
+        "preferred_language?": "en" | "ru" | "tg",
         "id": integer,
         "email?": string,
         "first_name": string,
@@ -1231,6 +1244,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1321,6 +1335,7 @@ Students receive only public mentor identity and course identity for their nonde
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -3915,7 +3930,7 @@ Manually apply a student's wallet credit to a specific charge.
         "notification_date": string,
         "status": "queued" | "inflight" | "sent" | "failed",
         "attempts?": integer,
-        "sent_at?": string,
+        "sent_at": string,
         "read_at?": string,
       }
     ],
@@ -4036,7 +4051,7 @@ Manually apply a student's wallet credit to a specific charge.
     "notification_date": string,
     "status": "queued" | "inflight" | "sent" | "failed",
     "attempts?": integer,
-    "sent_at?": string,
+    "sent_at": string,
     "read_at?": string,
   }
   ```

@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 from app.core.config import settings
 from app.core.login_identifier import LoginIdentifier
 from app.core.email_normalizer import EmailNormalizer
+from app.services.message_language import MessageLanguage
 from app.core.password_policy import PasswordPolicy
 from app.core.security import PasswordResetPrincipal, AccessTokenPrincipal, create_access_token
 from app.core.verification_codes import (
@@ -145,10 +146,12 @@ class AuthService:
             temporary_password=temporary_password,
             correlation_key=f"credentials:{user.email}",
             parent_link_code=parent_link_code,
+            language=MessageLanguage.resolve(user.preferred_language),
         )
 
     async def generate_verification_code(self, email: str) -> str:
         email = EmailNormalizer.normalize(email)
+        recipient: User | None = await self.user_repo.get_by_email(email)
         code: str = str(secrets.randbelow(900000) + 100000)
         key: str = f"auth:code:{email}"
         data: dict[str, Any] = {"code": code, "attempts": 0}
@@ -157,6 +160,7 @@ class AuthService:
             recipient_email=email,
             code=code,
             correlation_key=f"verification:{email}",
+            language=MessageLanguage.resolve(recipient.preferred_language if recipient is not None else None),
         )
         return code
 
@@ -256,20 +260,22 @@ class AuthService:
         identifier: LoginIdentifier,
         channel: Optional[PasswordSmsDestinationKind] = None,
         client_ip: Optional[str] = None,
+        language: str | None = None,
     ) -> None:
         user: User | None = await self.user_repo.get_by_login_for_update(identifier)
         if user is None or user.is_deleted:
             return
+        resolved_language: str = MessageLanguage.resolve(user.preferred_language, language)
         sms_service: AuthPasswordSms = self.sms_service
         if channel is not None:
-            await self._issue_reset_sms(sms_service, user, channel, client_ip)
+            await self._issue_reset_sms(sms_service, user, channel, client_ip, resolved_language)
             return
         if user.email:
-            await self._issue_reset_email(user.email)
+            await self._issue_reset_email(user.email, resolved_language)
             return
         default_destination: PasswordSmsDestination | None = sms_service.resolve_destination(user)
         if default_destination is not None:
-            await self._issue_reset_sms(sms_service, user, default_destination.kind, client_ip)
+            await self._issue_reset_sms(sms_service, user, default_destination.kind, client_ip, resolved_language)
 
     async def _issue_reset_sms(
         self,
@@ -277,6 +283,7 @@ class AuthService:
         user: User,
         kind: PasswordSmsDestinationKind,
         client_ip: Optional[str],
+        language: str,
     ) -> None:
         if sms_service.resolve_channel_destination(user, kind) is None:
             return
@@ -284,13 +291,13 @@ class AuthService:
             if client_ip is not None:
                 await self.sms_budget.consume_ip_budget(client_ip)
             await sms_service.issue_password(
-                user, PasswordSmsReason.RESET, None, enforce_rate_limits=True, channel=kind
+                user, PasswordSmsReason.RESET, None, enforce_rate_limits=True, channel=kind, language=language
             )
         except HTTPException as error:
             if error.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
                 raise
 
-    async def _issue_reset_email(self, email: str) -> None:
+    async def _issue_reset_email(self, email: str, language: str | None = None) -> None:
         email = EmailNormalizer.normalize(email)
         code: str = str(secrets.randbelow(900000) + 100000)
         key: str = f"auth:reset:{email}"
@@ -300,6 +307,7 @@ class AuthService:
             recipient_email=email,
             code=code,
             correlation_key=f"reset:{email}",
+            language=language,
         )
 
     async def password_reset_verify(self, email: str, code: str) -> str:

@@ -7,6 +7,7 @@ from app.schemas.common import CanonicalPhone
 
 class UserCreate(BaseModel):
     model_config = {"extra": "forbid"}
+    preferred_language: Literal["en", "ru", "tg"] | None = None
     email: Optional[EmailStr] = None
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
@@ -28,6 +29,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     model_config = {"extra": "forbid"}
+    preferred_language: Literal["en", "ru", "tg"] | None = None
     email: Optional[EmailStr] = None
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -39,6 +41,7 @@ class UserUpdate(BaseModel):
 
 class UserSelfUpdate(BaseModel):
     model_config = {"extra": "forbid"}
+    preferred_language: Literal["en", "ru", "tg"] | None = None
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     date_of_birth: Optional[date] = None
@@ -46,6 +49,7 @@ class UserSelfUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
+    preferred_language: Literal["en", "ru", "tg"] | None = None
     id: int
     email: Optional[EmailStr] = None
     first_name: str

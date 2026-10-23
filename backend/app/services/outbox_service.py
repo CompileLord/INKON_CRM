@@ -4,13 +4,10 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
+from app.services.message_language import MessageLanguage
+from app.services.email_messages import EmailMessages
 from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.repositories.interfaces.outbox_repository import OutboxRepository
-from app.services.email_templates import (
-    CredentialsEmailTemplate,
-    PasswordResetEmailTemplate,
-    VerificationCodeEmailTemplate,
-)
 
 OUTBOX_PAYLOAD_DOMAIN_SEPARATOR = b"imkon-crm:outbox-payload:v1"
 OUTBOX_CODE_TTL_SECONDS = 600
@@ -129,15 +126,16 @@ class OutboxService:
         recipient_email: str,
         code: str,
         correlation_key: Optional[str] = None,
+        language: str | None = None,
     ) -> OutboxEvent:
-        now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
-        encrypted_payload = self._encryptor.encrypt(code)
-        event = OutboxEvent(
+        now: datetime = datetime.now(timezone.utc)
+        expires_at: datetime = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
+        encrypted_payload: str = self._encryptor.encrypt(json.dumps({"code": code, "language": MessageLanguage.resolve(language)}))
+        event: OutboxEvent = OutboxEvent(
             kind=OutboxEventKind.VERIFICATION_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject=VerificationCodeEmailTemplate.SUBJECT,
+            subject=EmailMessages(language).render("verification_subject"),
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,
@@ -151,15 +149,16 @@ class OutboxService:
         recipient_email: str,
         code: str,
         correlation_key: Optional[str] = None,
+        language: str | None = None,
     ) -> OutboxEvent:
-        now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
-        encrypted_payload = self._encryptor.encrypt(code)
-        event = OutboxEvent(
+        now: datetime = datetime.now(timezone.utc)
+        expires_at: datetime = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
+        encrypted_payload: str = self._encryptor.encrypt(json.dumps({"code": code, "language": MessageLanguage.resolve(language)}))
+        event: OutboxEvent = OutboxEvent(
             kind=OutboxEventKind.PASSWORD_RESET_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject=PasswordResetEmailTemplate.SUBJECT,
+            subject=EmailMessages(language).render("reset_subject"),
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,
@@ -175,18 +174,19 @@ class OutboxService:
         temporary_password: str,
         correlation_key: Optional[str] = None,
         parent_link_code: Optional[str] = None,
+        language: str | None = None,
     ) -> OutboxEvent:
-        now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
-        payload_fields: dict[str, str] = {"first_name": first_name, "temporary_password": temporary_password}
+        now: datetime = datetime.now(timezone.utc)
+        expires_at: datetime = now + timedelta(seconds=OUTBOX_CODE_TTL_SECONDS)
+        payload_fields: dict[str, str] = {"first_name": first_name, "temporary_password": temporary_password, "language": MessageLanguage.resolve(language)}
         if parent_link_code is not None:
             payload_fields["parent_link_code"] = parent_link_code
-        encrypted_payload = self._encryptor.encrypt(json.dumps(payload_fields))
-        event = OutboxEvent(
+        encrypted_payload: str = self._encryptor.encrypt(json.dumps(payload_fields))
+        event: OutboxEvent = OutboxEvent(
             kind=OutboxEventKind.CREDENTIALS_EMAIL,
             status=OutboxEventStatus.PENDING,
             recipient_email=recipient_email,
-            subject=CredentialsEmailTemplate.SUBJECT,
+            subject=EmailMessages(language).render("credentials_subject"),
             encrypted_payload=encrypted_payload,
             correlation_key=correlation_key,
             max_attempts=5,
