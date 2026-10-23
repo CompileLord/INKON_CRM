@@ -1,12 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { formatDate, formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { useDeliveryLog } from "../../lib/notifications/hooks";
-import { NotificationPresentation } from "../../lib/notifications/NotificationPresentation";
-import type { DeliveryLogItem } from "../../lib/notifications/types";
+import { NotificationPresentation, type DeliveryStatusPresentation } from "../../lib/notifications/NotificationPresentation";
+import type { DeliveryLogItem, NotificationStatus } from "../../lib/notifications/types";
 import { FilterChip } from "../finance/FilterChip";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { Pagination } from "../ui/Pagination";
 
 interface DeliveryLogProps {
@@ -18,16 +19,16 @@ interface DeliveryLogProps {
 
 const ROW_GRID: string = "lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_9rem_8rem_12rem] lg:items-center lg:gap-4";
 
-function StatusChip({ item }: { item: DeliveryLogItem }) {
+export function DeliveryStatusChip({ status, attempts }: { status: NotificationStatus; attempts: number }) {
   const { t } = useTranslation("notifications");
-  const sent: boolean = item.status === "sent";
+  const presentation: DeliveryStatusPresentation = NotificationPresentation.deliveryStatus(status);
   return (
     <span
       data-testid="delivery-status"
-      data-status={item.status}
-      className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${sent ? "bg-success-surface text-success" : "bg-danger-surface text-destructive"}`}
+      data-status={status}
+      className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${presentation.toneClassName}`}
     >
-      {sent ? t("deliveryLog.sent") : t("deliveryLog.failed", { count: item.attempts })}
+      {t(presentation.labelKey, { count: attempts })}
     </span>
   );
 }
@@ -40,7 +41,7 @@ function DeliveryRow({ item }: { item: DeliveryLogItem }) {
       <p className="break-words text-sm font-medium text-ink">{item.recipient_name ?? t("deliveryLog.unknownRecipient")}</p>
       <p className="break-words text-sm text-muted">{t(`events.${kind}.title`)}</p>
       <p className="text-sm text-muted tabular-nums">{formatDate(`${item.notification_date}T12:00:00+05:00`, i18n.language, SCHOOL_TIMEZONE)}</p>
-      <StatusChip item={item} />
+      <DeliveryStatusChip status={item.status} attempts={item.attempts} />
       <p className="text-sm text-muted tabular-nums">{item.sent_at ? formatDateTime(item.sent_at, i18n.language, SCHOOL_TIMEZONE) : t("deliveryLog.notSent")}</p>
     </li>
   );
@@ -70,7 +71,11 @@ export function DeliveryLog({ failedOnly, page, onFailedOnlyChange, onPageChange
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-sm text-muted">
+          {t("notifications:deliveryLog.scope")}
+          <InfoTooltip label={t("notifications:deliveryLog.scopeInfo")}>{t("notifications:deliveryLog.scopeInfo")}</InfoTooltip>
+        </p>
         {failedOnly ? (
           <FilterChip label={t("notifications:deliveryLog.failedOnly")} removeLabel={t("common:clearFilter")} onRemove={() => onFailedOnlyChange(false)} />
         ) : (

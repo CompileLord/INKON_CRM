@@ -207,3 +207,65 @@ describe("Notifications delivery log", () => {
     expect(mocks.deliveryLog.refetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Notifications delivery states and unsent inbox rows", () => {
+  function deliveryItem(id: number, status: DeliveryLogItem["status"], attempts: number): DeliveryLogItem {
+    return { id, recipient_name: `Recipient ${id}`, type: "exam_result", notification_date: "2026-10-10", status, attempts, sent_at: null };
+  }
+
+  it("labels queued, in-flight, sent and failed deliveries separately and colours only failed as danger", () => {
+    mocks.deliveryLog.data = { items: [deliveryItem(1, "queued", 0), deliveryItem(2, "inflight", 1), deliveryItem(3, "sent", 1), deliveryItem(4, "failed", 3)], total: 4, page: 1, page_size: 20, total_pages: 1 };
+    renderNotifications("superadmin", "/notifications?tab=log");
+    const chips: HTMLElement[] = screen.getAllByTestId("delivery-status");
+    expect(chips.map((chip) => chip.textContent)).toEqual(["Queued", "Sending", "Sent", "Failed · 3"]);
+    expect(chips.map((chip) => chip.className.includes("text-destructive"))).toEqual([false, false, false, true]);
+    expect(chips[1].className).toContain("text-info");
+    expect(chips[2].className).toContain("text-success");
+    expect(chips.every((chip) => chip.className.includes("tabular-nums"))).toBe(true);
+  });
+
+  it("translates the in-flight label in Russian and Tajik", async () => {
+    mocks.deliveryLog.data = { items: [deliveryItem(1, "queued", 0), deliveryItem(2, "inflight", 1)], total: 2, page: 1, page_size: 20, total_pages: 1 };
+    await i18n.changeLanguage("ru");
+    renderNotifications("superadmin", "/notifications?tab=log");
+    expect(screen.getAllByTestId("delivery-status").map((chip) => chip.textContent)).toEqual(["В очереди", "Отправляется"]);
+    cleanup();
+    await i18n.changeLanguage("tg");
+    renderNotifications("superadmin", "/notifications?tab=log");
+    expect(screen.getAllByTestId("delivery-status").map((chip) => chip.textContent)).toEqual(["Дар навбат", "Фиристода истодааст"]);
+  });
+
+  it("says the delivery log covers Telegram in the subtitle with a tooltip and in the empty state", () => {
+    renderNotifications("superadmin", "/notifications?tab=log");
+    expect(screen.getByText("Telegram deliveries")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Only Telegram messages to parents are logged here. Emails and SMS are not listed." })).toBeTruthy();
+    expect(screen.getByText("No Telegram messages have been sent yet.")).toBeTruthy();
+  });
+
+  it("shows the queued date for unsent inbox rows, marks them with their status and hides body, dot and mark-read", () => {
+    const queued: NotificationLogItem = { ...notification(21, "2026-10-10", "exam_result", true), status: "queued" };
+    const failed: NotificationLogItem = { ...notification(22, "2026-10-10", "payment_reminder_1d", true), status: "failed", attempts: 2 };
+    mocks.inbox.data = page([queued, failed]);
+    mocks.unread.data = { unread_count: 2 };
+    renderNotifications("student");
+    const rows: HTMLElement[] = screen.getAllByTestId("notification-item");
+    expect(within(rows[0]).getByTestId("delivery-status").textContent).toBe("Queued");
+    expect(within(rows[1]).getByTestId("delivery-status").textContent).toBe("Failed · 2");
+    for (const row of rows) {
+      expect(within(row).queryByText("Your exam result is ready.")).toBeNull();
+      expect(within(row).queryByTestId("unread-dot")).toBeNull();
+      expect(within(row).queryByRole("button", { name: "Mark as read" })).toBeNull();
+      const time: HTMLElement = row.querySelector("time") as HTMLElement;
+      expect(time.getAttribute("datetime")).toBe("2026-10-10");
+      expect(time.textContent).toMatch(/10/);
+    }
+  });
+
+  it("falls back to the date for delivered rows with no sent_at", () => {
+    mocks.inbox.data = page([notification(31, "2026-10-10", "exam_result", false)]);
+    renderNotifications("student");
+    const time: HTMLElement = screen.getByTestId("notification-item").querySelector("time") as HTMLElement;
+    expect(time.getAttribute("datetime")).toBe("2026-10-10");
+    expect(screen.queryByTestId("delivery-status")).toBeNull();
+  });
+});
