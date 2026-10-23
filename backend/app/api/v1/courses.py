@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from app.core.deps import (
     get_storage_service,
@@ -19,6 +19,7 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
 from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseListItemResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
+from app.schemas.course_list import CourseSortOrder
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
@@ -29,7 +30,7 @@ from app.repositories.interfaces.course_progress_repository import (
     CourseProgressRepositoryInterface,
     CourseAccessRecord,
 )
-from app.schemas.course_progress import StaffChartResponse, StudentChartResponse
+from app.schemas.course_progress import ChartQuery, StaffChartResponse, StudentChartResponse
 
 router = APIRouter()
 
@@ -116,6 +117,8 @@ async def create_course(
 
 @router.get("/", response_model=PaginatedResponse[CourseListItemResponse])
 async def list_courses(
+    search: Optional[str] = Query(None, description="Case-insensitive title search before pagination"),
+    sort: CourseSortOrder = Query(CourseSortOrder.CREATED_AT_DESC, description="created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending"),
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -123,10 +126,10 @@ async def list_courses(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     course_service = CourseService(db)
-    filters = {}
+    filters: dict = {}
     if status:
         filters["status"] = status
-    return await course_service.list_courses(filters, page, page_size, current_user)
+    return await course_service.list_courses(filters, page, page_size, current_user, search, sort)
 
 
 @router.get("/{id}", response_model=CourseResponse)
@@ -252,14 +255,28 @@ async def get_class_progress(
     return await progress_service.get_student_class_progress(id, current_user.id)
 
 
-@router.get("/{id}/progress-chart", response_model=StaffChartResponse | StudentChartResponse)
+@router.get(
+    "/{id}/progress-chart",
+    response_model=StaffChartResponse | StudentChartResponse,
+    description=(
+        "Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returned chronologically, "
+        "and the first 30 active staff-roster series (maximum 100), ordered by student_id. "
+        "Student responses contain only their own series plus cohort aggregates; roster paging is ignored. "
+        "All grading counts, averages and ranks use selected periods only. Eligible grades are explicitly graded, "
+        "started, and have a positive maximum. Period class means include active students with eligible grades. "
+        "The final series value is the selected-range average; the final class value weights eligible active-student "
+        "range means equally. Ranks order unrounded range means descending, then student_id ascending. "
+        "Withdrawn students retain their own history but do not contribute to cohort means or ranks."
+    ),
+)
 async def get_progress_chart(
     id: int,
+    bounds: Annotated[ChartQuery, Query()],
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
     progress_service: CourseProgressService = Depends(get_course_progress_service),
 ) -> StaffChartResponse | StudentChartResponse:
     await check_course_access(id, current_user, db)
     return await progress_service.get_progress_chart(
-        id, current_user.id if current_user.role == UserRole.STUDENT else None
+        id, current_user.id if current_user.role == UserRole.STUDENT else None, bounds
     )

@@ -42,7 +42,7 @@ class ChargeBalanceQuery:
                 Course.title.label("course_title"),
                 Charge.due_date,
                 func.sum(remaining).label("balance"),
-                TelegramChatPreference.language,
+                func.coalesce(User.preferred_language, TelegramChatPreference.language).label("language"),
             )
             .select_from(Charge)
             .join(Enrollment, Enrollment.id == Charge.enrollment_id)

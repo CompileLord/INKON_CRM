@@ -47,22 +47,22 @@ class AuthPasswordSms(Protocol):
 
     async def issue_password(
         self, user: User, reason: PasswordSmsReason, actor_id: int | None,
-        enforce_rate_limits: bool, channel: PasswordSmsDestinationKind,
+        enforce_rate_limits: bool, channel: PasswordSmsDestinationKind, language: str | None = None,
     ) -> PasswordSmsDestination: ...
 
 
 class AuthMailOutbox(Protocol):
     async def enqueue_verification_email(
-        self, recipient_email: str, code: str, correlation_key: str | None = None,
+        self, recipient_email: str, code: str, correlation_key: str | None = None, language: str | None = None,
     ) -> OutboxEvent: ...
 
     async def enqueue_password_reset_email(
-        self, recipient_email: str, code: str, correlation_key: str | None = None,
+        self, recipient_email: str, code: str, correlation_key: str | None = None, language: str | None = None,
     ) -> OutboxEvent: ...
 
     async def enqueue_credentials_email(
         self, recipient_email: str, first_name: str, temporary_password: str,
-        correlation_key: str | None = None, parent_link_code: str | None = None,
+        correlation_key: str | None = None, parent_link_code: str | None = None, language: str | None = None,
     ) -> OutboxEvent: ...
 
 

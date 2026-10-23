@@ -11,6 +11,7 @@ from app.models.telegram_link import TelegramChatPreference
 from app.models.user import User, UserRole
 from app.repositories.interfaces.debt_reminder_repository import DebtReminderSource
 from app.repositories.sqlalchemy.debt_query import DebtQuery
+from app.repositories.sqlalchemy.person_search import PersonSearch
 
 
 class SQLAlchemyDebtReminderRepository:
@@ -60,7 +61,7 @@ class SQLAlchemyDebtReminderRepository:
         rows: Any = (await self._session.execute(
             select(
                 User.id.label("student_id"), User.first_name, User.last_name,
-                User.parent_telegram_chat_id, TelegramChatPreference.language,
+                User.parent_telegram_chat_id, func.coalesce(User.preferred_language, TelegramChatPreference.language).label("language"),
                 balances.c.title, balances.c.debt,
                 func.coalesce(func.sum(balances.c.debt).over(partition_by=User.id), 0).label("total_debt"),
             )
@@ -95,6 +96,8 @@ class SQLAlchemyDebtReminderRepository:
         query = query.where(debt >= filters["min_debt"] if filters.get("min_debt") is not None else debt > 0)
         if filters.get("overdue_days") is not None:
             query = query.where(query.selected_columns.overdue_days >= filters["overdue_days"])
+        if filters.get("search"):
+            query = query.where(PersonSearch.matches(filters["search"]))
         total: int = await self._session.scalar(select(func.count()).select_from(query.subquery())) or 0
         latest: Any = (
             select(func.max(DebtReminderNotification.created_at))

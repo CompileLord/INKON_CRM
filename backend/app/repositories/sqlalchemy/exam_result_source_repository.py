@@ -1,5 +1,5 @@
-from typing import Optional
-from sqlalchemy import select
+from typing import Any, Optional
+from sqlalchemy import Row, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.course import Course
 from app.models.journal import Journal
@@ -14,14 +14,14 @@ class SQLAlchemyExamResultSourceRepository:
         self._session: AsyncSession = session
 
     async def load_source(self, student_id: int, journal_id: int) -> Optional[ExamResultSource]:
-        statement = (
+        statement: Select[Any] = (
             select(
                 JournalStudentSummary,
                 User.first_name,
                 User.last_name,
                 User.is_deleted,
                 User.parent_telegram_chat_id,
-                TelegramChatPreference.language,
+                func.coalesce(User.preferred_language, TelegramChatPreference.language).label("language"),
                 Course.title,
                 Course.is_deleted,
                 Journal.period_label,
@@ -36,7 +36,7 @@ class SQLAlchemyExamResultSourceRepository:
                 JournalStudentSummary.journal_id == journal_id,
             )
         )
-        row = (await self._session.execute(statement)).first()
+        row: Row[Any] | None = (await self._session.execute(statement)).first()
         if row is None:
             return None
         summary: JournalStudentSummary = row[0]

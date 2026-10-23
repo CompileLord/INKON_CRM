@@ -13,6 +13,7 @@ import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { usePeriodName } from "../ui/periodName";
 import { ButtonLink } from "../profile/ButtonLink";
 import { CourseDetailDeparture } from "./CourseDetailDeparture";
+import { CourseProgressChartPanel } from "./CourseProgressChartPanel";
 import { CourseProgressTable } from "./CourseProgressTable";
 import type { StaffProgressPeriod, StaffProgressPeriodResult, StaffProgressStudent } from "../../lib/courses/types";
 
@@ -146,6 +147,7 @@ export function CourseProgressPane({
     if (allStudents.length === 0) return <EmptyState title={t("progress.emptyStudents")} description={t("progress.emptyStudentsHelp")} />;
     return (
       <>
+        <CourseProgressChartPanel courseId={courseId} />
         <div className="flex flex-wrap items-center gap-2">
           <div className="min-w-[200px] flex-1 sm:max-w-sm">
             <Input

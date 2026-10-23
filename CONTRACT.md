@@ -272,6 +272,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 {
   "login?": string,
   "email?": string,
+  "language?": "en" | "ru" | "tg",
   "channel?": "student_phone" | "parent_phone",
 }
 ```
@@ -382,6 +383,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "email?": string,
   "first_name": string,
   "last_name": string,
@@ -397,6 +399,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **201**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -531,6 +534,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -563,6 +567,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "first_name?": string,
   "last_name?": string,
   "date_of_birth?": string,
@@ -574,6 +579,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -623,6 +629,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 **Request Body (JSON):**
 ```json
 {
+  "preferred_language?": "en" | "ru" | "tg",
   "email?": string,
   "first_name?": string,
   "last_name?": string,
@@ -637,6 +644,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -718,6 +726,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 - **200**: Successful Response
   ```json
   {
+    "preferred_language?": "en" | "ru" | "tg",
     "id": integer,
     "email?": string,
     "first_name": string,
@@ -770,6 +779,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
   {
     "items": [
       {
+        "preferred_language?": "en" | "ru" | "tg",
         "id": integer,
         "email?": string,
         "first_name": string,
@@ -854,6 +864,7 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1062,6 +1073,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1179,6 +1191,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   {
     "items": [
       {
+        "preferred_language?": "en" | "ru" | "tg",
         "id": integer,
         "email?": string,
         "first_name": string,
@@ -1231,6 +1244,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1321,6 +1335,7 @@ Students receive only public mentor identity and course identity for their nonde
   ```json
   {
     "user": {
+      "preferred_language?": "en" | "ru" | "tg",
       "id": integer,
       "email?": string,
       "first_name": string,
@@ -1449,6 +1464,8 @@ Students receive only public mentor identity and course identity for their nonde
 **Summary:** List Courses
 
 **Parameters:**
+- `search` [query] Case-insensitive title search before pagination
+- `sort` [query] created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending
 - `status` [query]
 - `page` [query]
 - `page_size` [query]
@@ -2070,13 +2087,26 @@ Students receive only public mentor identity and course identity for their nonde
 
 **Summary:** Get Progress Chart
 
+Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returned chronologically, and the first 30 active staff-roster series (maximum 100), ordered by student_id. Student responses contain only their own series plus cohort aggregates; roster paging is ignored. All grading counts, averages and ranks use selected periods only. Eligible grades are explicitly graded, started, and have a positive maximum. Period class means include active students with eligible grades. The final series value is the selected-range average; the final class value weights eligible active-student range means equally. Ranks order unrounded range means descending, then student_id ascending. Withdrawn students retain their own history but do not contribute to cohort means or ranks.
+
 **Parameters:**
 - `id` [path] *(required)*
+- `period_offset` [query] Periods to skip from newest, ordered by period_start then id descending. Default 0, maximum 2147483647.
+- `period_limit` [query] Maximum periods returned chronologically. Default 12, maximum 52.
+- `student_offset` [query] Active staff-roster series to skip in student_id ascending order. Ignored for students. Default 0, maximum 2147483647.
+- `student_limit` [query] Maximum staff-roster series. Ignored for students. Default 30, maximum 100.
 
 **Responses:**
 - **200**: Successful Response
   ```json
   {
+    "period_offset": integer,
+    "period_limit": integer,
+    "periods_total": integer,
+    "aggregation_scope?": string,
+    "student_offset": integer,
+    "student_limit": integer,
+    "students_total": integer,
     "labels": array[string],
     "periods": [
       {
@@ -2104,6 +2134,10 @@ Students receive only public mentor identity and course identity for their nonde
 - **200**: Alternative response (StudentChartResponse)
   ```json
   {
+    "period_offset": integer,
+    "period_limit": integer,
+    "periods_total": integer,
+    "aggregation_scope?": string,
     "periods": [
       {
         "id": integer,
@@ -3450,6 +3484,7 @@ Manually apply a student's wallet credit to a specific charge.
 **Summary:** Get Debts
 
 **Parameters:**
+- `search` [query] Case-insensitive name, email or phone search before pagination
 - `course_id` [query]
 - `student_id` [query]
 - `min_debt` [query]
@@ -3915,7 +3950,7 @@ Manually apply a student's wallet credit to a specific charge.
         "notification_date": string,
         "status": "queued" | "inflight" | "sent" | "failed",
         "attempts?": integer,
-        "sent_at?": string,
+        "sent_at": string,
         "read_at?": string,
       }
     ],
@@ -4036,7 +4071,7 @@ Manually apply a student's wallet credit to a specific charge.
     "notification_date": string,
     "status": "queued" | "inflight" | "sent" | "failed",
     "attempts?": integer,
-    "sent_at?": string,
+    "sent_at": string,
     "read_at?": string,
   }
   ```

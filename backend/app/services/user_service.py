@@ -105,8 +105,9 @@ class UserService:
                 detail="Payment day of month can only be set for students"
             )
 
-        user = User(
+        user: User = User(
             email=user_create.email,
+            preferred_language=user_create.preferred_language,
             first_name=user_create.first_name,
             last_name=user_create.last_name,
             role=user_create.role,
@@ -257,6 +258,8 @@ class UserService:
         return updated_user
 
     async def apply_optional_profile_fields(self, user: User, user_update: UserUpdate | UserSelfUpdate) -> None:
+        if "preferred_language" in user_update.model_fields_set:
+            user.preferred_language = user_update.preferred_language
         previous_destination_phone: str | None = user.phone or user.parent_phone
         if "date_of_birth" in user_update.model_fields_set:
             user.date_of_birth = user_update.date_of_birth

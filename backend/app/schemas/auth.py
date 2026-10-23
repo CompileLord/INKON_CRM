@@ -51,6 +51,7 @@ class ResendCodeRequest(BaseModel):
 
 
 class PasswordResetRequest(IdentifierRequest):
+    language: Literal["en", "ru", "tg"] | None = None
     channel: Optional[Literal["student_phone", "parent_phone"]] = None
 
 

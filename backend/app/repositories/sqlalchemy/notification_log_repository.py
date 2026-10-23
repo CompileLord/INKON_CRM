@@ -31,14 +31,22 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
     async def user_page(self, user_id: int, page: int, page_size: int) -> tuple[list[NotificationLog], int]:
         total: int = (
             await self._session.execute(
-                select(func.count()).select_from(NotificationLog).where(NotificationLog.user_id == user_id)
+                select(func.count()).select_from(NotificationLog).where(
+                    NotificationLog.user_id == user_id,
+                    func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == NotificationStatus.SENT,
+                    NotificationLog.sent_at.is_not(None),
+                )
             )
         ).scalar_one()
         rows: list[NotificationLog] = list(
             (
                 await self._session.execute(
                     select(NotificationLog)
-                    .where(NotificationLog.user_id == user_id)
+                    .where(
+                        NotificationLog.user_id == user_id,
+                        func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == NotificationStatus.SENT,
+                        NotificationLog.sent_at.is_not(None),
+                    )
                     .order_by(NotificationLog.notification_date.desc(), NotificationLog.id.desc())
                     .offset((page - 1) * page_size)
                     .limit(page_size)
@@ -52,7 +60,12 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
             await self._session.execute(
                 select(func.count())
                 .select_from(NotificationLog)
-                .where(NotificationLog.user_id == user_id, NotificationLog.read_at.is_(None))
+                .where(
+                    NotificationLog.user_id == user_id,
+                    func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == NotificationStatus.SENT,
+                    NotificationLog.sent_at.is_not(None),
+                    NotificationLog.read_at.is_(None),
+                )
             )
         ).scalar_one()
 
@@ -61,7 +74,12 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
             CursorResult[Any],
             await self._session.execute(
                 update(NotificationLog)
-                .where(NotificationLog.user_id == user_id, NotificationLog.read_at.is_(None))
+                .where(
+                    NotificationLog.user_id == user_id,
+                    func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == NotificationStatus.SENT,
+                    NotificationLog.sent_at.is_not(None),
+                    NotificationLog.read_at.is_(None),
+                )
                 .values(read_at=now)
             ),
         )

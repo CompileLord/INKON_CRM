@@ -48,6 +48,8 @@ class NotificationService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
         if log.user_id != user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        if (log.delivery_state or log.status) != NotificationStatus.SENT or log.sent_at is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
         if log.read_at is None:
             log.read_at = datetime.now(timezone.utc)
             await self.repo.commit()

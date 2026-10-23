@@ -10,6 +10,7 @@ import * as courseHooks from "../lib/courses/hooks";
 import * as returnContext from "../lib/courses/returnContext";
 import type { CourseProgressChartResponse } from "../lib/courses/types";
 import { mockSuccessResult, mockJournals, renderCourseProfile, registerCourseProfileHooks } from "./CourseProfileTestSupport";
+import { CourseChartFixtures } from "../lib/courses/CourseChartFixtures";
 
 vi.mock("../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/courses/hooks")>();
@@ -131,6 +132,7 @@ describe("CourseProfile Component", () => {
       } as unknown as ReturnType<typeof courseHooks.useCourseJournals>);
 
       const mockChartData: CourseProgressChartResponse = {
+        ...CourseChartFixtures.staffMetadata(2, 1),
         labels: ["Week 1", "Week 2"],
         periods: [{ id: 5, period_label: "Week 1" }, { id: 6, period_label: "Week 2" }],
         datasets: [
@@ -222,7 +224,7 @@ describe("CourseProfile Component", () => {
       window.dispatchEvent(new Event("wheel"));
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
-        mockSuccessResult({ labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
+        mockSuccessResult({ ...CourseChartFixtures.staffMetadata(1, 0), labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
       );
       vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
         mockSuccessResult({ course_id: 42, periods: [], students: [] }),
@@ -264,7 +266,7 @@ describe("CourseProfile Component", () => {
       window.dispatchEvent(new Event("keydown"));
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
-        mockSuccessResult({ labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
+        mockSuccessResult({ ...CourseChartFixtures.staffMetadata(1, 0), labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
       );
       vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
         mockSuccessResult({ course_id: 42, periods: [], students: [] }),
@@ -285,7 +287,7 @@ describe("CourseProfile Component", () => {
       });
 
       vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(
-        mockSuccessResult({ labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
+        mockSuccessResult({ ...CourseChartFixtures.staffMetadata(1, 0), labels: ["Week 1"], periods: [{ id: 5, period_label: "Week 1" }], datasets: [], class_avg_series: [null], class_eligible_counts: [0] }),
       );
       vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
         mockSuccessResult({ course_id: 42, periods: [], students: [] }),

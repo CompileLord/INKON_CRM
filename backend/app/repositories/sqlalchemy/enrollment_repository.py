@@ -3,9 +3,10 @@ from typing import cast, Optional
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.charge import Charge, ChargeStatus
-from sqlalchemy import Row, Select, func, or_, select
+from sqlalchemy import Row, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course import Course
 from app.repositories.interfaces.base_repository import RepositoryPage
@@ -20,6 +21,7 @@ from app.repositories.interfaces.enrollment_repository import (
     RosterQueryResult,
 )
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
+from app.repositories.sqlalchemy.person_search import PersonSearch
 
 
 class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], EnrollmentRepository):
@@ -33,7 +35,7 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         status: Optional[EnrollmentStatus],
         student_id: Optional[int],
     ) -> list:
-        criteria = [
+        criteria: list[ColumnElement[bool]] = [
             Enrollment.course_id == course_id,
             Enrollment.is_deleted == False,
         ]
@@ -42,16 +44,7 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         if student_id:
             criteria.append(Enrollment.student_id == student_id)
         if search:
-            search_pattern = f"%{search}%"
-            criteria.append(
-                or_(
-                    User.first_name.ilike(search_pattern),
-                    User.last_name.ilike(search_pattern),
-                    User.email.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                )
-            )
+            criteria.append(PersonSearch.matches(search))
         return criteria
 
     def _build_roster_order_criteria(self, sort: RosterSortOrder) -> list:
@@ -241,22 +234,13 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
             Enrollment.course_id == course_id,
         )
 
-        filter_criteria = [
+        filter_criteria: list[ColumnElement[bool]] = [
             User.role == UserRole.STUDENT,
             User.is_deleted == False,
             User.id.not_in(conflicting_enrollments_subquery),
         ]
         if search:
-            search_pattern = f"%{search}%"
-            filter_criteria.append(
-                or_(
-                    User.first_name.ilike(search_pattern),
-                    User.last_name.ilike(search_pattern),
-                    User.email.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                )
-            )
+            filter_criteria.append(PersonSearch.matches(search))
 
         count_query = select(func.count(User.id)).filter(*filter_criteria)
         total_result = await self.session.execute(count_query)

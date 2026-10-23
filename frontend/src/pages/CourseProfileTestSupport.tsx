@@ -11,6 +11,7 @@ import * as enrollmentHooks from "../lib/enrollments/hooks";
 import * as userHooks from "../lib/users/hooks";
 import type { CourseResponse, CourseScheduleResponse, CourseJournalMetricsResponse, JournalPeriod } from "../lib/courses/types";
 import type { User, MentorProfileResponse } from "../lib/users/types";
+import { CourseChartFixtures } from "../lib/courses/CourseChartFixtures";
 
 
 
@@ -248,7 +249,7 @@ export function registerCourseProfileHooks(): void {
     vi.mocked(courseHooks.useCourseJournalMetrics).mockReturnValue(mockSuccessResult(mockMetrics));
     vi.mocked(enrollmentHooks.useCourseEnrollmentsCount).mockReturnValue(mockSuccessResult(15));
     vi.mocked(courseHooks.useCourseMentorHistory).mockReturnValue(mockSuccessResult([]));
-    vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult({ labels: [], periods: [], datasets: [], class_avg_series: [], class_eligible_counts: [] }));
+    vi.mocked(courseHooks.useCourseProgressChart).mockReturnValue(mockSuccessResult({ ...CourseChartFixtures.staffMetadata(0, 0), labels: [], periods: [], datasets: [], class_avg_series: [], class_eligible_counts: [] }));
     vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue(
       mockSuccessResult({
         course_id: 42,

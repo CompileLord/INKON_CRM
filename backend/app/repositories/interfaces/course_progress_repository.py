@@ -72,6 +72,8 @@ class CourseChartSnapshot:
     period_aggregates: List[ChartPeriodAggregate]
     ranks: dict[int, int]
     class_mean: Optional[float]
+    class_size: int = 0
+    periods_total: int = 0
 
 
 class CourseProgressRepositoryInterface(Protocol):
@@ -86,6 +88,8 @@ class CourseProgressRepositoryInterface(Protocol):
         ...
 
     async def get_course_chart_snapshot(
-        self, course_id: int, student_id: Optional[int] = None
+        self, course_id: int, student_id: Optional[int] = None, *,
+        period_offset: int = 0, period_limit: int = 12,
+        student_offset: int = 0, student_limit: int = 30,
     ) -> CourseChartSnapshot:
         ...
