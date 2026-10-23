@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.schedule_utils import CourseCopyBudgetExceeded, CourseCopyPlan, EnrollmentLessonPlan
 from app.repositories.interfaces.course_repository import CourseRepository
@@ -15,6 +14,7 @@ from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.schemas.course_list import CourseSortOrder
 from app.schemas.course import (
     CourseCreate,
     CourseListItemResponse,
@@ -227,23 +227,13 @@ class CourseService:
         filters: dict,
         page: int,
         page_size: int,
-        current_user: User
+        current_user: User,
+        search: str | None = None,
+        sort: CourseSortOrder = CourseSortOrder.TITLE_ASC,
     ) -> dict:
-        query = select(Course).options(selectinload(Course.schedules)).filter(Course.is_deleted == False)
-
-        if current_user.role == UserRole.MENTOR:
-            query = query.filter(Course.mentor_id == current_user.id)
-        elif current_user.role == UserRole.STUDENT:
-            query = query.join(Enrollment, Enrollment.course_id == Course.id).filter(
-                Enrollment.student_id == current_user.id,
-                Enrollment.is_deleted == False
-            )
-
-        status_filter = filters.get("status")
-        if status_filter:
-            query = query.filter(Course.status == status_filter)
-
-        page_result: dict = await self.course_repo.get_paginated(query, page, page_size)
+        page_result: dict = await self.course_repo.get_courses_page(
+            filters, page, page_size, current_user.id, current_user.role, search, sort,
+        )
         courses: List[Course] = page_result["items"]
         student_counts: dict[int, int] = await self.course_repo.count_active_students_by_course(
             [course.id for course in courses]
