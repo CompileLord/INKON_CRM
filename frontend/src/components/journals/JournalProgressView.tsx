@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useCourseClassProgress, useCourseStaffProgress } from "../../lib/courses/hooks";
+import { useCourseClassProgress, useCourseJournals, useCourseStaffProgress } from "../../lib/courses/hooks";
 import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 import { JournalProgressRules, type ProgressChartStudent, type ProgressPeriodRow } from "../../lib/journals/JournalProgressRules";
 import { getSchoolCalendarDate } from "../../i18n/formatters";
@@ -23,6 +23,8 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const selfStudentId: number | null = readOnlySelfStudentId ?? null;
   const staffQuery = useCourseStaffProgress(courseId, selfStudentId === null);
   const classQuery = useCourseClassProgress(courseId, selfStudentId !== null);
+  const periodsQuery = useCourseJournals(courseId, selfStudentId === null);
+  const ungraded: Set<number> = useMemo(() => JournalProgressRules.ungradedPeriodIds(periodsQuery.data ?? []), [periodsQuery.data]);
   const query = selfStudentId === null ? staffQuery : classQuery;
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
@@ -30,13 +32,13 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readStored() ?? false);
 
   const data: CourseStaffProgressResponse | undefined = query.data;
-  const rows: ProgressPeriodRow[] = useMemo(() => (data ? JournalProgressRules.buildPeriodRows(data, getSchoolCalendarDate()) : []), [data]);
+  const rows: ProgressPeriodRow[] = useMemo(() => (data ? JournalProgressRules.buildPeriodRows(data, getSchoolCalendarDate(), ungraded) : []), [data, ungraded]);
   const started: ProgressPeriodRow[] = useMemo(() => JournalProgressRules.startedRows(rows), [rows]);
   const students: ProgressChartStudent[] = useMemo(() => {
     if (!data) return [];
-    const everyone: ProgressChartStudent[] = JournalProgressRules.chartStudents(data, started);
+    const everyone: ProgressChartStudent[] = JournalProgressRules.chartStudents(data, started, ungraded);
     return selfStudentId === null ? everyone : JournalProgressRules.onlyStudent(everyone, selfStudentId);
-  }, [data, started, selfStudentId]);
+  }, [data, started, selfStudentId, ungraded]);
   const visibleIds: Set<number> = useMemo(
     () => visibleOverride ?? JournalProgressRules.defaultVisibleIds(students, selfStudentId),
     [visibleOverride, students, selfStudentId],

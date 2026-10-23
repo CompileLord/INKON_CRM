@@ -8,7 +8,7 @@ import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 
 vi.mock("../../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/courses/hooks")>();
-  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })) };
+  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })), useCourseJournals: vi.fn(() => ({ data: undefined })) };
 });
 
 vi.mock("../../i18n/formatters", async (importOriginal) => {
