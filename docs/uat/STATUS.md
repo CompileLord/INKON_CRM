@@ -24,5 +24,5 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U14 uploads and documents | BE+FE | in progress (BE) | uat/u14 | 2026-10-23 | — | Codex BE first, FE after |
 | U15 student cabinet | FE | todo | — | — | — | D2: no student finance |
 | U16 SMS fallback for debt reminders | BE | in progress | uat/u16 | 2026-10-23 | — | Codex |
-| U17 editable weekly lesson times | BE+FE | todo | — | — | — | owner request; after U07 |
+| U17 editable weekly lesson times | BE+FE | in progress (BE) | uat/u17 | 2026-10-23 | — | Codex BE first, FE after; times only |
 | U18 withdrawal cancels future charges | BE+FE | todo | — | — | — | D4 = A (2026-10-23) |
