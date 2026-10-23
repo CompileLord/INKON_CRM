@@ -369,3 +369,40 @@ async def test_sms_code_login_forces_a_real_password(
     pending_login: Response = await AuthApi.login(client, "+992900000771", reset_code)
     assert pending_login.status_code == 200
     assert pending_login.json()["must_set_password"] is True
+
+
+class DenyListOutage:
+    @staticmethod
+    def install(monkeypatch: pytest.MonkeyPatch) -> None:
+        async def failing_redis_call(*arguments: Any, **keyword_arguments: Any) -> Any:
+            raise ConnectionError("redis down")
+
+        monkeypatch.setattr(redis_client, "get", failing_redis_call)
+        monkeypatch.setattr(redis_client, "set", failing_redis_call)
+
+
+@pytest.mark.asyncio
+async def test_authenticated_request_succeeds_when_the_deny_list_is_down(
+    client: AsyncClient, test_student: User, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    login: Response = await AuthApi.login(client, test_student.email, "student_pass123")
+    DenyListOutage.install(monkeypatch)
+    response: Response = await client.get(
+        "/api/v1/users/me", headers=AuthApi.bearer(login.json()["access_token"]),
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_logout_returns_204_and_revokes_the_family_when_the_deny_list_is_down(
+    client: AsyncClient, test_student: User, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    login: Response = await AuthApi.login(client, test_student.email, "student_pass123")
+    DenyListOutage.install(monkeypatch)
+    logout: Response = await client.post(
+        f"{AUTH}/logout",
+        json={"refresh_token": login.json()["refresh_token"]},
+        headers=AuthApi.bearer(login.json()["access_token"]),
+    )
+    assert logout.status_code == 204
+    assert (await AuthApi.refresh(client, login.json()["refresh_token"])).status_code == 401

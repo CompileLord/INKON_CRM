@@ -91,10 +91,7 @@ class AuthSessionService:
             try:
                 await self.deny_list.deny(access_principal.token_id, access_principal.expires_at)
             except AccessTokenDenyListUnavailable:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Session service is currently unavailable. Try again.",
-                ) from None
+                AccessTokenDenyList.warn_unavailable(access_principal.token_id, "logout")
         try:
             user_id: int = self.decode_refresh_subject(refresh_token)
         except HTTPException:

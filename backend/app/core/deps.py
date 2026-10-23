@@ -89,10 +89,8 @@ async def _reject_denied_token(principal: AccessTokenPrincipal) -> None:
     try:
         denied: bool = await AuthServiceComposition.deny_list().is_denied(principal.token_id)
     except AccessTokenDenyListUnavailable:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Session service is currently unavailable. Try again.",
-        ) from None
+        AccessTokenDenyList.warn_unavailable(principal.token_id, "check")
+        return
     if denied:
         raise _credentials_exception()
 
