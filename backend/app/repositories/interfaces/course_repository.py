@@ -3,10 +3,17 @@ from typing_extensions import Protocol
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.journal import Journal
-from app.repositories.interfaces.base_repository import BaseRepository
+from app.repositories.interfaces.base_repository import BaseRepository, RepositoryPage
+from app.models.user import UserRole
+from app.schemas.course_list import CourseSortOrder
 
 
 class CourseRepository(BaseRepository[Course], Protocol):
+    async def get_courses_page(
+        self, filters: dict, page: int, page_size: int, user_id: int, role: UserRole,
+        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
+    ) -> RepositoryPage[Course]: ...
+
     async def get_by_id_for_update(self, course_id: int) -> Optional[Course]: ...
 
     async def get_copy_source_enrollments(self, course_id: int, limit: int) -> list[Enrollment]: ...

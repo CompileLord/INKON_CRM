@@ -1464,6 +1464,8 @@ Students receive only public mentor identity and course identity for their nonde
 **Summary:** List Courses
 
 **Parameters:**
+- `search` [query] Case-insensitive title search before pagination
+- `sort` [query] created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending
 - `status` [query]
 - `page` [query]
 - `page_size` [query]
@@ -3482,6 +3484,7 @@ Manually apply a student's wallet credit to a specific charge.
 **Summary:** Get Debts
 
 **Parameters:**
+- `search` [query] Case-insensitive name, email or phone search before pagination
 - `course_id` [query]
 - `student_id` [query]
 - `min_debt` [query]
