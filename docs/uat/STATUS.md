@@ -14,7 +14,7 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U04 journals and attendance truth | BE | merged, retest pending | uat/u04 | 2026-10-23 | U04+journal+wp21/39/55 113 passed; full suite on branch: only known wp11/wp13 | audit fixes 405c5a2, 2c4cbe6 |
 | U05 journal grid and charts | FE | in progress | uat/u05 | 2026-10-23 | — | WP-58 merged; chart follow-up next |
 | U06 course and people lifecycle guards | BE | cancelled | uat/u06 (unmerged) | 2026-10-23 | — | owner: admin can archive/delete a course any time |
-| U07 audit coverage | BE | in progress | uat/u07 | 2026-10-23 | — | Codex |
+| U07 audit coverage | BE | audit: changes requested | uat/u07 | 2026-10-23 | targeted 74 passed; full suite on branch: only known wp11/wp13 | lost old/new values for mentor and email; timestamp override |
 | U08 server-side search and ordering | BE | in progress | uat/u08 | 2026-10-23 | — | Codex |
 | U09 lists, search, people admin | FE | todo | — | — | — | after U08 |
 | U10 money input validation | BE | merged, retest pending | uat/u10 | 2026-10-23 | finance/enrollment/wp69a 220 passed; full suite on branch: only known wp11/wp13 | date window moved behind repository (audit fix 71a5c8a) |
