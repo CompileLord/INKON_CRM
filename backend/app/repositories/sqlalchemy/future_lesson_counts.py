@@ -24,6 +24,7 @@ class FutureLessonCounts:
             .where(
                 JournalEntry.student_id == student_id,
                 JournalEntry.lesson_date > today,
+                Journal.period_start <= today,
                 JournalStudentSummary.is_graded.is_(True),
             )
             .group_by(Journal.course_id)
@@ -37,11 +38,13 @@ class FutureLessonCounts:
                 func.count(JournalEntry.id).filter(JournalEntry.attendance.is_(True)),
             )
             .select_from(JournalEntry)
+            .join(Journal, Journal.id == JournalEntry.journal_id)
             .join(JournalStudentSummary, (JournalStudentSummary.journal_id == JournalEntry.journal_id)
                   & (JournalStudentSummary.student_id == JournalEntry.student_id))
             .where(
                 JournalEntry.journal_id.in_(journal_ids),
                 JournalEntry.lesson_date > today,
+                Journal.period_start <= today,
                 JournalStudentSummary.is_graded.is_(True),
             )
         )).one()
