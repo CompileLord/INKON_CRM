@@ -90,7 +90,8 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
     # Check for mentor change log
     course_log = [l for l in logs if l["entity_type"] == "course"]
     assert len(course_log) > 0
-    assert course_log[0]["field_name"] == "mentor_id"
+    assert course_log[0]["field_name"] == "changed_fields"
+    assert course_log[0]["new_value"] == '["mentor_id"]'
 
     # Every payment is audited now, not only discounted ones.
     payment_log = [l for l in logs if l["entity_type"] == "payment"]

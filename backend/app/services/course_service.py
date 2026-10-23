@@ -22,6 +22,7 @@ from app.schemas.course import (
     CourseScheduleResponse,
     CourseUpdate,
 )
+from app.services.audit_service import AuditService
 from app.services.journal_generation_service import JournalGenerationService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
@@ -92,6 +93,9 @@ class CourseService:
         )
         self.db.add(history)
         await self.db.flush()
+        await AuditService(self.db).log_change(
+            current_user.id, "create", "course", course.id, course.title, set(data.model_dump()),
+        )
         await self.db.refresh(course)
 
         return course
@@ -104,6 +108,7 @@ class CourseService:
                 detail="Course not found"
             )
 
+        previous_values: dict[str, object] = {field: getattr(course, field) for field in data.model_fields_set}
         if data.start_date is not None or data.end_date is not None:
             journals_query = select(Journal).filter(Journal.course_id == course_id)
             journals_result = await self.db.execute(journals_query)
@@ -114,16 +119,6 @@ class CourseService:
                 )
 
         if data.mentor_id is not None and data.mentor_id != course.mentor_id:
-            from app.services.audit_service import AuditService
-            audit_service = AuditService(self.db)
-            await audit_service.log(
-                user_id=current_user.id,
-                action="update",
-                entity_type="course",
-                entity_id=course.id,
-                changes={"mentor_id": (course.mentor_id, data.mentor_id)}
-            )
-
             new_mentor = await self.user_repo.get_by_id(data.mentor_id)
             if not new_mentor or new_mentor.is_deleted:
                 raise HTTPException(
@@ -163,6 +158,10 @@ class CourseService:
             course.status = data.status
 
         await self.course_repo.update(course)
+        await AuditService(self.db).log_change(
+            current_user.id, "update", "course", course.id, course.title,
+            {field for field in previous_values if previous_values[field] != getattr(course, field)},
+        )
         await self.db.refresh(course)
         return course
 
@@ -213,14 +212,19 @@ class CourseService:
         await self.db.refresh(updated_course)
         return updated_course
 
-    async def delete_course(self, course_id: int) -> bool:
+    async def delete_course(self, course_id: int, actor_id: int | None = None) -> bool:
         course = await self.course_repo.get_by_id(course_id)
         if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found"
             )
-        return await self.course_repo.soft_delete(course_id)
+        deleted: bool = await self.course_repo.soft_delete(course_id)
+        if deleted:
+            await AuditService(self.db).log_change(
+                actor_id, "delete", "course", course.id, course.title, {"is_deleted"},
+            )
+        return deleted
 
     async def list_courses(
         self,

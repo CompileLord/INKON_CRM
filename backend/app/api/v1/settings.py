@@ -30,7 +30,7 @@ async def update_org_settings(
     db: AsyncSession = Depends(get_db_session)
 ) -> OrgSettingsResponse:
     settings_service = SettingsService(db)
-    return await settings_service.update_org_settings(data)
+    return await settings_service.update_org_settings(data, current_user.id)
 
 
 def get_telegram_status_service() -> TelegramStatusService:

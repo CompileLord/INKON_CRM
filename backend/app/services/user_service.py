@@ -125,6 +125,11 @@ class UserService:
         delivery: CredentialsDelivery = await CredentialsDeliveryService(self.db).deliver(
             created_user, PasswordSmsReason.INITIAL, None, actor_id, enforce_rate_limits=False
         )
+        await AuditService(self.db).log_change(
+            actor_id, "create", "user", created_user.id,
+            f"{created_user.first_name} {created_user.last_name}",
+            user_create.model_fields_set & {"first_name", "last_name", "email", "phone", "role", "parent_phone", "date_of_birth", "payment_day_of_month"},
+        )
         await self.db.refresh(created_user)
 
         return created_user, issued_link_code, delivery
@@ -147,6 +152,8 @@ class UserService:
             user_update.email = EmailNormalizer.normalize_optional(user_update.email)
             self._require_email_when_disabled(user_update.email)
 
+        audited_fields: set[str] = {"first_name", "last_name", "email", "phone", "parent_phone", "date_of_birth", "payment_day_of_month", "role"}
+        previous_values: dict[str, object] = {field: getattr(user, field) for field in audited_fields}
         previous_email: str | None = user.email
         email_changed: bool = "email" in user_update.model_fields_set and user_update.email != EmailNormalizer.normalize_optional(user.email)
         if email_changed:
@@ -170,6 +177,11 @@ class UserService:
         updated_user: User = await self._persist_unique(self.user_repo.update(user))
         if email_changed:
             await self._react_to_email_change(updated_user, previous_email, actor_id)
+        await AuditService(self.db).log_change(
+            actor_id, "update", "user", updated_user.id,
+            f"{updated_user.first_name} {updated_user.last_name}",
+            {field for field in audited_fields if previous_values[field] != getattr(updated_user, field)},
+        )
         await self.db.refresh(updated_user)
         return updated_user
 
@@ -182,9 +194,6 @@ class UserService:
             )
 
     async def _react_to_email_change(self, user: User, previous_email: str | None, actor_id: int | None) -> None:
-        await AuditService(self.db).log(
-            actor_id, "update", "user", user.id, {"email": (previous_email, user.email)},
-        )
         if user.must_set_password:
             await CredentialsDeliveryService(self.db).deliver(
                 user, PasswordSmsReason.INITIAL, None, actor_id, enforce_rate_limits=False
@@ -287,6 +296,10 @@ class UserService:
 
         success = await self.user_repo.soft_delete(user_id)
         if success:
+            await AuditService(self.db).log_change(
+                current_user_id, "delete", "user", user.id,
+                f"{user.first_name} {user.last_name}", {"is_deleted"},
+            )
             auth_service: AuthService = AuthServiceComposition.create(self.db)
             await auth_service.revoke_all_user_tokens(user_id)
         return success

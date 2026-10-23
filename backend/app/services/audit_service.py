@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +28,8 @@ class AuditService:
         action: str,
         entity_type: str,
         entity_id: int,
-        changes: Dict[str, Any]
+        changes: Dict[str, Any],
+        entity_label: str | None = None,
     ) -> None:
         for field, values in changes.items():
             old_val, new_val = values
@@ -36,11 +38,25 @@ class AuditService:
                 action=AuditAction(action),
                 entity_type=entity_type,
                 entity_id=entity_id,
+                entity_label=entity_label,
                 field_name=field,
                 old_value=str(old_val) if old_val is not None else None,
                 new_value=str(new_val) if new_val is not None else None,
             )
+            if entity_label is not None:
+                audit_log.created_at = datetime.now(timezone.utc)
             self.audit_repo.stage_log(audit_log)
+
+    async def log_change(
+        self, actor_id: int | None, action: str, entity_type: str,
+        entity_id: int, entity_label: str, changed_fields: set[str],
+    ) -> None:
+        if changed_fields:
+            await self.log(
+                actor_id, action, entity_type, entity_id,
+                {"changed_fields": (None, json.dumps(sorted(changed_fields)))},
+                entity_label=entity_label,
+            )
 
     @staticmethod
     def _dushanbe_day_start_in_utc(local_day: date) -> datetime:
@@ -126,7 +142,7 @@ class AuditService:
             "action": key.action,
             "entity_type": key.entity_type,
             "entity_id": key.entity_id,
-            "entity_label": reference.label if reference else None,
+            "entity_label": next((change.entity_label for change in changes if change.entity_label), reference.label if reference else None),
             "student_id": reference.student_id if reference else None,
             "course_id": course_id,
             "course_title": None,
@@ -179,7 +195,7 @@ class AuditService:
             "action": log.action,
             "entity_type": log.entity_type,
             "entity_id": log.entity_id,
-            "entity_label": reference.label if reference else None,
+            "entity_label": log.entity_label or (reference.label if reference else None),
             "student_id": reference.student_id if reference else None,
             "course_id": reference.course_id if reference else None,
             "field_name": log.field_name,

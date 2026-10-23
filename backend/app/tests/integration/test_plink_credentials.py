@@ -189,7 +189,7 @@ async def test_email_change_before_first_login_follows_priority_and_removal_fall
 
 
 @pytest.mark.asyncio
-async def test_email_change_audit_row_records_old_and_new_email(
+async def test_email_change_audit_row_records_changed_field(
     client: AsyncClient, test_admin: User, test_student: User, db_session: AsyncSession
 ) -> None:
     response: Response = await client.patch(
@@ -197,9 +197,9 @@ async def test_email_change_audit_row_records_old_and_new_email(
     )
     assert response.status_code == 200
     rows: list[AuditLog] = list((await db_session.execute(
-        select(AuditLog).where(AuditLog.entity_id == test_student.id, AuditLog.field_name == "email")
+        select(AuditLog).where(AuditLog.entity_id == test_student.id, AuditLog.field_name == "changed_fields")
     )).scalars().all())
-    assert [(row.old_value, row.new_value, row.user_id) for row in rows] == [("student@example.com", "audited.new@example.com", test_admin.id)]
+    assert [(row.old_value, row.new_value, row.user_id) for row in rows] == [(None, '["email"]', test_admin.id)]
     assert await PlinkOutbox.all_kinds(db_session) == []
 
 

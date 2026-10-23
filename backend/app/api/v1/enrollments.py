@@ -37,7 +37,7 @@ async def withdraw_student(
     db: AsyncSession = Depends(get_db_session),
     enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> Enrollment:
-    return await enrollment_service.withdraw_student(id)
+    return await enrollment_service.withdraw_student(id, current_user.id)
 
 
 @router.get("/", response_model=PaginatedResponse[EnrollmentResponse])
