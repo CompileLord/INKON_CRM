@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.audit_service import AuditService
 from app.core.scoring import ScoringPolicy
 from app.core.schedule_utils import EnrollmentLessonPlan, LessonDateCalculator
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -176,10 +177,14 @@ class EnrollmentService:
         finance_service = FinanceService(self.db)
         await finance_service.generate_schedule_for_enrollment(enrollment.id)
 
+        await AuditService(self.db).log_change(
+            current_user.id, "create", "enrollment", enrollment.id,
+            f"{student.first_name} {student.last_name}", {"student_id", "course_id"},
+        )
         await self.db.refresh(enrollment)
         return enrollment
 
-    async def withdraw_student(self, enrollment_id: int) -> Enrollment:
+    async def withdraw_student(self, enrollment_id: int, actor_id: int | None = None) -> Enrollment:
         enrollment = await self.enrollment_repo.get_by_id(enrollment_id)
         if not enrollment or enrollment.is_deleted:
             raise HTTPException(
@@ -189,6 +194,7 @@ class EnrollmentService:
         from app.services.finance_service import FinanceService
 
         await FinanceService(self.db).lock_student_accounts([enrollment.student_id])
+        previous_status: EnrollmentStatus = enrollment.status
         enrollment.status = EnrollmentStatus.WITHDRAWN
         await self.enrollment_repo.update(enrollment)
 
@@ -200,6 +206,14 @@ class EnrollmentService:
         for future_charge in future_charges:
             future_charge.status = ChargeStatus.CANCELLED
 
+        if previous_status != EnrollmentStatus.WITHDRAWN:
+            student: User | None = await self.user_repo.get_by_id(enrollment.student_id)
+            if student is None:
+                raise ValueError("Enrollment student not found")
+            await AuditService(self.db).log_change(
+                actor_id, "update", "enrollment", enrollment.id,
+                f"{student.first_name} {student.last_name}", {"status"},
+            )
         await FinanceService(self.db)._invalidate_cache()
         await self.db.refresh(enrollment)
         return enrollment

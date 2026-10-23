@@ -1,6 +1,9 @@
 from typing import Any, Optional
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
+from sqlalchemy.orm.util import AliasedClass
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.audit_log import AuditLog
 from app.models.course import Course
 from app.models.enrollment import Enrollment
@@ -49,8 +52,42 @@ class SQLAlchemyAuditLogRepository(SQLAlchemyBaseRepository[AuditLog], AuditLogR
                 AuditLog.entity_type.ilike(pattern, escape="\\")
                 | AuditLog.field_name.ilike(pattern, escape="\\")
                 | actor_full_name.ilike(pattern, escape="\\")
+                | AuditLog.entity_label.ilike(pattern, escape="\\")
+                | AuditLog.new_value.ilike(pattern, escape="\\")
+                | AuditLog.old_value.ilike(pattern, escape="\\")
+                | self._target_label_matches(pattern)
             )
         return query
+
+    @staticmethod
+    def _target_label_matches(pattern: str) -> ColumnElement[bool]:
+        target_user: AliasedClass[User] = aliased(User)
+        target_name: ColumnElement[bool] = func.concat(target_user.first_name, " ", target_user.last_name).ilike(pattern, escape="\\")
+        user_match: ColumnElement[bool] = select(target_user.id).where(
+            target_user.id == AuditLog.entity_id, target_name,
+        ).exists()
+        course_match: ColumnElement[bool] = select(Course.id).where(
+            Course.id == AuditLog.entity_id, Course.title.ilike(pattern, escape="\\"),
+        ).exists()
+        enrollment_match: ColumnElement[bool] = select(Enrollment.id).join(
+            target_user, target_user.id == Enrollment.student_id,
+        ).join(Course, Course.id == Enrollment.course_id).where(
+            Enrollment.id == AuditLog.entity_id,
+            or_(target_name, Course.title.ilike(pattern, escape="\\")),
+        ).exists()
+        ledger_match: ColumnElement[bool] = select(LedgerEntry.id).join(
+            target_user, target_user.id == LedgerEntry.student_id,
+        ).where(LedgerEntry.id == AuditLog.entity_id, target_name).exists()
+        charge_match: ColumnElement[bool] = select(Charge.id).join(
+            target_user, target_user.id == Charge.student_id,
+        ).where(Charge.id == AuditLog.entity_id, target_name).exists()
+        return or_(
+            and_(AuditLog.entity_type.in_(("user", "student")), user_match),
+            and_(AuditLog.entity_type == "course", course_match),
+            and_(AuditLog.entity_type == "enrollment", enrollment_match),
+            and_(AuditLog.entity_type.in_(("payment", "discount", "adjustment")), ledger_match),
+            and_(AuditLog.entity_type == "allocation", charge_match),
+        )
 
     async def list_filtered_rows(
         self, filters: AuditLogFilters, page: int, page_size: int

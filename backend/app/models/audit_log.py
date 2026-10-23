@@ -29,6 +29,7 @@ class AuditLog(Base):
     action: Mapped[AuditAction] = mapped_column(String(20), nullable=False)
     entity_type: Mapped[str] = mapped_column(String(100), nullable=False)
     entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    entity_label: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     field_name: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

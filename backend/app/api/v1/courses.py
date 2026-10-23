@@ -171,7 +171,7 @@ async def delete_course(
     db: AsyncSession = Depends(get_db_session)
 ) -> None:
     course_service = CourseService(db)
-    await course_service.delete_course(id)
+    await course_service.delete_course(id, current_user.id)
 
 
 @router.get("/{id}/schedule", response_model=List[CourseScheduleResponse])
