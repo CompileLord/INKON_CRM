@@ -194,6 +194,19 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
   - Changing which weekdays a course runs on stays out of scope: it would move lesson dates in existing journals. T3-07 remains deferred for price and days.
 - **Frontend**: the course edit form makes the times editable, with inline validation and translated errors, and the course page, Today widget and timetable show the new times.
 
+### U18 BE+FE: withdrawal cancels future charges (decision D4, T5-10)
+- **Rule**: on withdrawal, unpaid monthly charges whose period starts on or after the withdrawal date are cancelled. Months that started earlier stay owed.
+  - Example: a 4-month course at 100 TJS a month; month 1 is paid and month 2 is unpaid; the student withdraws at the start of month 3. The student owes 100, and months 3 and 4 are cancelled.
+- **Backend**:
+  - Cancellation happens in the same transaction as the withdrawal and is audited.
+  - Money already paid toward a cancelled month becomes student credit; there is no automatic refund.
+  - Debtor totals and caches drop the cancelled amounts.
+  - After withdrawal, payments are accepted only up to the remaining debt, else 422.
+  - Enrolling into a course that has already ended is rejected with 422, so no back-dated overdue charges are created.
+- **Frontend**:
+  - The withdraw confirmation shows the amount still owed and the amount cancelled before confirming.
+  - Strings in en/ru/tg.
+
 ## Owner decisions
 
 | Id | Question | Decision (2026-10-23) |
@@ -201,7 +214,7 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 | D1 | T6-01: may a student see classmates' names and scores in the class journal? | Keep as is. T6-01 is closed as intended. |
 | D2 | T6-05: should students see their own balance, due dates and payment history? | No student finance. T6-05 is closed. |
 | D3 | T5-09: debt reminders when no parent Telegram is linked? | SMS fallback through the outbox, rate-limited (U16). |
-| D4 | T5-10: what happens to charges when a student withdraws? | Pending: question re-asked in plain words. |
+| D4 | T5-10: what happens to charges when a student withdraws? | 2026-10-23: option A. The student owes only months that started before withdrawal; later months are cancelled (U18). |
 
 Deferred, not planned without a request:
 - Late/excused attendance (T4-09).
@@ -227,7 +240,7 @@ Executors that run at the same time must have disjoint files. Migrations run one
 - U16 (after U12 and U10).
 - U17 (after U06 and U07, which touch the course service).
 
-**Wave 3:** U15, then the D4 follow-up once decided.
+**Wave 3:** U15, then U18 (after U06 and U10, which touch finance and enrollment).
 
 When the plan is done:
 1. Run the full backend suite once on master.

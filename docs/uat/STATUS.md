@@ -25,4 +25,4 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U15 student cabinet | FE | todo | — | — | — | D2: no student finance |
 | U16 SMS fallback for debt reminders | BE | todo | — | — | — | D3; after U12 |
 | U17 editable weekly lesson times | BE+FE | todo | — | — | — | owner request; after U06/U07 |
-| D4 withdrawal and charges | — | waiting | — | — | — | owner decision pending |
+| U18 withdrawal cancels future charges | BE+FE | todo | — | — | — | D4 = A (2026-10-23); after U06/U10 |
