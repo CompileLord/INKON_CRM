@@ -43,19 +43,19 @@ class AuditService:
                 old_value=str(old_val) if old_val is not None else None,
                 new_value=str(new_val) if new_val is not None else None,
             )
-            if entity_label is not None:
-                audit_log.created_at = datetime.now(timezone.utc)
             self.audit_repo.stage_log(audit_log)
 
     async def log_change(
         self, actor_id: int | None, action: str, entity_type: str,
-        entity_id: int, entity_label: str, changed_fields: set[str],
+        entity_id: int, entity_label: str, changed_fields: set[str] | dict[str, tuple[object, object]],
     ) -> None:
         if changed_fields:
+            changes: dict[str, tuple[object, object]] = (
+                changed_fields if isinstance(changed_fields, dict)
+                else {"changed_fields": (None, json.dumps(sorted(changed_fields)))}
+            )
             await self.log(
-                actor_id, action, entity_type, entity_id,
-                {"changed_fields": (None, json.dumps(sorted(changed_fields)))},
-                entity_label=entity_label,
+                actor_id, action, entity_type, entity_id, changes, entity_label=entity_label,
             )
 
     @staticmethod

@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -6,48 +5,14 @@ import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy import select
 
-from app.core.security import create_access_token
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import User
+from app.tests.integration.uat_u07_support import U07AuditSupport
 from app.tests.conftest import TestingSessionLocal
 
 
 @pytest.mark.asyncio
-class TestU07:
-    @staticmethod
-    def headers(actor: User) -> dict[str, str]:
-        return {"Authorization": f"Bearer {create_access_token(actor.id, actor.role)}"}
-
-    async def events(self, client: AsyncClient, actor: User, **filters: Any) -> list[dict[str, Any]]:
-        response: Response = await client.get("/api/v1/audit-log/events/", params=filters, headers=self.headers(actor))
-        assert response.status_code == 200, response.text
-        return response.json()["items"]
-
-    async def course(self, client: AsyncClient, actor: User, mentor: User) -> int:
-        response: Response = await client.post("/api/v1/courses/", headers=self.headers(actor), json={
-            "title": "Web Frontend", "description": "Audit course", "start_date": "2027-01-01",
-            "end_date": "2027-03-01", "exam_type": "weekly", "price": "300.00", "mentor_id": mentor.id,
-            "schedules": [{"day_of_week": 1, "time_start": "10:00", "time_end": "11:00"}],
-        })
-        assert response.status_code == 201, response.text
-        return response.json()["id"]
-
-    async def assert_change(
-        self, client: AsyncClient, actor: User, entity: str, identifier: int, action: str,
-        label: str, fields: set[str],
-    ) -> None:
-        events: list[dict[str, Any]] = await self.events(client, actor, entity_type=entity, entity_id=identifier, action=action)
-        changes: list[dict[str, Any]] = [change for event in events for change in event["changes"] if change["field_name"] == "changed_fields"]
-        assert len(changes) == 1, events
-        assert json.loads(changes[0]["new_value"]) == sorted(fields)
-        event: dict[str, Any] = next(event for event in events if changes[0] in event["changes"])
-        assert event["user_id"] == actor.id
-        assert event["entity_label"] == label
-        async with TestingSessionLocal() as session:
-            row: AuditLog = (await session.execute(select(AuditLog).where(AuditLog.id == changes[0]["id"]))).scalar_one()
-            assert row.entity_label == label
-        assert "password" not in json.dumps(changes).lower()
-
+class TestU07(U07AuditSupport):
     @pytest.mark.parametrize("role", ["student", "mentor", "accountant"])
     async def test_user_created(self, client: AsyncClient, test_admin: User, role: str) -> None:
         response: Response = await client.post("/api/v1/users/", headers=self.headers(test_admin), json={
@@ -63,7 +28,10 @@ class TestU07:
             "first_name": "Mehrangiz", "last_name": "Hamidova", "phone": "+992901234567", "email": "changed@example.com",
         })
         assert response.status_code == 200, response.text
-        await self.assert_change(client, test_admin, "user", user.id, "update", "Mehrangiz Hamidova", {"first_name", "last_name", "phone", "email"})
+        await self.assert_change(client, test_admin, "user", user.id, "update", "Mehrangiz Hamidova", {
+            "first_name": (user.first_name, "Mehrangiz"), "last_name": (user.last_name, "Hamidova"),
+            "phone": (user.phone, "+992901234567"), "email": (user.email, "changed@example.com"),
+        })
 
     @pytest.mark.parametrize("target", ["test_student", "test_mentor", "test_accountant"])
     async def test_user_deleted(self, client: AsyncClient, test_admin: User, target: str, test_student: User, test_mentor: User, test_accountant: User) -> None:
@@ -80,7 +48,7 @@ class TestU07:
         identifier: int = await self.course(client, test_admin, test_mentor)
         response: Response = await client.patch(f"/api/v1/courses/{identifier}", headers=self.headers(test_admin), json={"title": "Edited Frontend", "description": "Updated"})
         assert response.status_code == 200, response.text
-        await self.assert_change(client, test_admin, "course", identifier, "update", "Edited Frontend", {"title", "description"})
+        await self.assert_change(client, test_admin, "course", identifier, "update", "Edited Frontend", {"title": ("Web Frontend", "Edited Frontend"), "description": ("Audit course", "Updated")})
 
     async def test_course_deleted(self, client: AsyncClient, test_admin: User, test_mentor: User) -> None:
         identifier: int = await self.course(client, test_admin, test_mentor)
@@ -103,7 +71,7 @@ class TestU07:
     async def test_settings_changed(self, client: AsyncClient, test_admin: User, payload: dict[str, Any]) -> None:
         response: Response = await client.patch("/api/v1/settings/org", headers=self.headers(test_admin), json=payload)
         assert response.status_code == 200, response.text
-        await self.assert_change(client, test_admin, "settings", 1, "update", response.json()["org_name"], set(payload))
+        await self.assert_change(client, test_admin, "settings", 1, "update", response.json()["org_name"], {key: ("Учебный центр ИМКОН" if key == "org_name" else "True", str(value)) for key, value in payload.items()})
 
     @pytest.mark.parametrize("search", ["mehrangiz", "MEHRANGIZ HAMIDOVA", "web frontend", "summary text", "admin super"])
     async def test_search(self, client: AsyncClient, test_admin: User, test_mentor: User, search: str) -> None:

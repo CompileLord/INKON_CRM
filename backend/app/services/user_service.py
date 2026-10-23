@@ -180,7 +180,7 @@ class UserService:
         await AuditService(self.db).log_change(
             actor_id, "update", "user", updated_user.id,
             f"{updated_user.first_name} {updated_user.last_name}",
-            {field for field in audited_fields if previous_values[field] != getattr(updated_user, field)},
+            {field: (previous_values[field], getattr(updated_user, field)) for field in audited_fields if previous_values[field] != getattr(updated_user, field)},
         )
         await self.db.refresh(updated_user)
         return updated_user

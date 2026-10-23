@@ -37,7 +37,7 @@ class SettingsService:
 
         await AuditService(self.db).log_change(
             actor_id, "update", "settings", settings.id, settings.org_name,
-            {field for field in previous_values if previous_values[field] != getattr(settings, field)},
+            {field: (previous_values[field], getattr(settings, field)) for field in previous_values if previous_values[field] != getattr(settings, field)},
         )
         self.db.add(settings)
         await self.db.flush()

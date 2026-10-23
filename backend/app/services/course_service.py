@@ -108,7 +108,8 @@ class CourseService:
                 detail="Course not found"
             )
 
-        previous_values: dict[str, object] = {field: getattr(course, field) for field in data.model_fields_set}
+        audited_fields: set[str] = {"title", "description", "price", "start_date", "end_date", "status", "mentor_id"}
+        previous_values: dict[str, object] = {field: getattr(course, field) for field in audited_fields}
         if data.start_date is not None or data.end_date is not None:
             journals_query = select(Journal).filter(Journal.course_id == course_id)
             journals_result = await self.db.execute(journals_query)
@@ -160,7 +161,7 @@ class CourseService:
         await self.course_repo.update(course)
         await AuditService(self.db).log_change(
             current_user.id, "update", "course", course.id, course.title,
-            {field for field in previous_values if previous_values[field] != getattr(course, field)},
+            {field: (previous_values[field], getattr(course, field)) for field in previous_values if previous_values[field] != getattr(course, field)},
         )
         await self.db.refresh(course)
         return course
