@@ -139,5 +139,28 @@
     "studentsCount_one": "{{formatted}} student",
     "studentsCount_other": "{{formatted}} students",
     "tableLabel": "Student results by period"
+  },
+  "chart": {
+    "title": "Results by period",
+    "loading": "Loading chart",
+    "loadError": "Couldn't load the chart",
+    "emptyTitle": "Nothing to chart yet",
+    "emptyBody": "Graded periods appear here.",
+    "range": "{{from}} – {{to}}",
+    "olderPeriods": "Older periods",
+    "newerPeriods": "Newer periods",
+    "previousStudents": "Previous students",
+    "nextStudents": "Next students",
+    "studentRange": "{{from}}–{{to}} of {{total}}",
+    "classAverage": "Class average",
+    "mine": "You",
+    "rank": "{{rank}} of {{size}}",
+    "studentSummary": "Rank {{rank}} · Average {{value}}",
+    "staffAverage": "Class average {{value}}",
+    "scopeInfo": "Rank and averages use only the periods shown.",
+    "chartLabel": "Course results by period",
+    "chartHint": "Use the arrow keys to move between periods.",
+    "noValues": "No grade",
+    "entry": "{{name}}: {{value}}"
   }
 }

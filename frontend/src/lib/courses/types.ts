@@ -111,7 +111,26 @@ export interface CourseProgressChartDataset {
   eligible_periods_count: number;
 }
 
-export interface StaffCourseProgressChartResponse {
+export type CourseChartAggregationScope = "selected_periods";
+
+export interface CourseProgressChartOptions {
+  periodOffset?: number;
+  periodLimit?: number;
+  studentOffset?: number;
+  studentLimit?: number;
+}
+
+export interface CourseProgressChartPeriodMetadata {
+  period_offset: number;
+  period_limit: number;
+  periods_total: number;
+  aggregation_scope: CourseChartAggregationScope;
+}
+
+export interface StaffCourseProgressChartResponse extends CourseProgressChartPeriodMetadata {
+  student_offset: number;
+  student_limit: number;
+  students_total: number;
   labels: string[];
   periods: CourseProgressPeriod[];
   datasets: CourseProgressChartDataset[];
@@ -119,7 +138,7 @@ export interface StaffCourseProgressChartResponse {
   class_eligible_counts: number[];
 }
 
-export interface StudentCourseProgressChartResponse {
+export interface StudentCourseProgressChartResponse extends CourseProgressChartPeriodMetadata {
   periods: CourseProgressPeriod[];
   my_series: (number | null)[];
   class_avg_series: (number | null)[];
