@@ -98,6 +98,8 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **Polish:** archived-course handling, mobile, the denied page and chart tooltips (T4-10, T4-12, T4-13, T4-15, T8-13).
 
 ### U06 BE: course and people lifecycle guards
+**Cancelled by the owner (2026-10-23):** an admin must be able to archive and delete a course at any time, even before its dates. Nothing in this section is implemented.
+
 - **Course delete** (T8-07, T3-05):
   - Blocked while there are active enrollments or open charges; the API returns 409 with counts.
   - When allowed, it withdraws enrollments and cancels unpaid future charges in one transaction.
@@ -238,9 +240,9 @@ Executors that run at the same time must have disjoint files. Migrations run one
 - U11 (after U10).
 - U12, then U14.
 - U16 (after U12 and U10).
-- U17 (after U06 and U07, which touch the course service).
+- U17 (after U07, which touches the course service).
 
-**Wave 3:** U15, then U18 (after U06 and U10, which touch finance and enrollment).
+**Wave 3:** U15, then U18.
 
 When the plan is done:
 1. Run the full backend suite once on master.
