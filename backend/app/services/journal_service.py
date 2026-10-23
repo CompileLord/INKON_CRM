@@ -1,8 +1,9 @@
 from app.services.journal_transaction import JournalCommandTransaction as JournalCommandTransaction
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException, status
 from sqlalchemy import select, or_, false
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError as StaleObjectError
 from app.db.session import sanitize_html
 from app.models.journal import Journal
@@ -16,34 +17,42 @@ from app.services.exam_result_scheduling_service import ExamResultSchedulingServ
 from app.services.sum_calculation_service import SumCalculationService
 from app.core.scoring import ScoringPolicy
 from app.core.school_calendar import SchoolCalendar
-from app.models.enrollment import Enrollment, EnrollmentStatus
-from app.models.course_schedule import CourseSchedule
+from app.core.schedule_utils import LessonDateCalculator
+from app.repositories.interfaces.future_lesson_counts import FutureLessonCountsRepository
+from app.repositories.interfaces.journal_cell_lookup import JournalCellLookup, JournalCellLookupRepository
+from app.repositories.interfaces.journal_repository import JournalRepository
+from app.repositories.sqlalchemy.journal_cell_lookup import SQLAlchemyJournalCellLookup
+from app.schemas.journal import JournalEntryUpdate
 
 
 from app.services.journal_query_service import JournalQueryService, get_lesson_dates
 
 
 class JournalService(JournalQueryService):
-    async def reject_invalid_cells(self, journal: Journal, entries_updates: list) -> None:
-        schedules_result = await self.db.execute(select(CourseSchedule).filter(CourseSchedule.course_id == journal.course_id))
-        lesson_dates: set[date] = set(get_lesson_dates(journal.period_start, journal.period_end, list(schedules_result.scalars().all())))
-        requested_student_ids: set[int] = {update.student_id for update in entries_updates}
-        known_result = await self.db.execute(select(User.id).filter(User.id.in_(requested_student_ids)))
-        known_student_ids: set[int] = set(known_result.scalars().all())
-        enrolled_result = await self.db.execute(select(Enrollment.student_id).filter(
-            Enrollment.course_id == journal.course_id,
-            Enrollment.student_id.in_(requested_student_ids),
-            Enrollment.is_deleted.is_(False),
-            Enrollment.status == EnrollmentStatus.ACTIVE,
+    def __init__(
+        self,
+        db: AsyncSession,
+        journal_repository: JournalRepository | None = None,
+        future_lesson_counts: FutureLessonCountsRepository | None = None,
+        cell_lookup: JournalCellLookupRepository | None = None,
+    ) -> None:
+        super().__init__(db, journal_repository, future_lesson_counts)
+        self.cell_lookup: JournalCellLookupRepository = cell_lookup or SQLAlchemyJournalCellLookup(db)
+
+    async def reject_invalid_cells(self, journal: Journal, entries_updates: list[JournalEntryUpdate]) -> None:
+        requested_student_ids: frozenset[int] = frozenset(update.student_id for update in entries_updates)
+        lookup: JournalCellLookup = await self.cell_lookup.lookup(journal, requested_student_ids)
+        lesson_dates: set[date] = set(LessonDateCalculator.calculate(
+            journal.period_start, journal.period_end, lookup.schedule_weekdays,
         ))
-        enrolled_student_ids: set[int] = set(enrolled_result.scalars().all())
         today: date = SchoolCalendar.today()
-        rejected_cells: list[dict] = []
+        rejected_cells: list[dict[str, Any]] = []
+        update: JournalEntryUpdate
         for update in entries_updates:
             code: str | None = None
-            if update.student_id not in known_student_ids:
+            if update.student_id not in lookup.known_student_ids:
                 code = "unknown_student"
-            elif update.student_id not in enrolled_student_ids:
+            elif update.student_id not in lookup.enrolled_student_ids:
                 code = "student_not_enrolled"
             elif update.lesson_date not in lesson_dates:
                 code = "invalid_lesson_date"

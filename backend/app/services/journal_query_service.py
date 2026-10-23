@@ -17,9 +17,11 @@ from app.models.user import User, UserRole
 from app.core.scoring import ScoringPolicy
 from app.core.schedule_utils import LessonDateCalculator
 from app.core.school_calendar import SchoolCalendar
+from app.repositories.interfaces.future_lesson_counts import FutureLessonCountsRepository
 from app.repositories.sqlalchemy.future_lesson_counts import FutureLessonCounts
 from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository, MentorJournalBatch
 from app.repositories.sqlalchemy.journal_repository import SQLAlchemyJournalRepository
+from app.services.mentor_grading_queue_service import MentorGradingQueueService
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse, GradingQueueItemResponse
 
 
@@ -27,9 +29,11 @@ get_lesson_dates: Callable[[date, date, Collection[CourseSchedule]], list[date]]
 
 
 class JournalQueryService:
-    def __init__(self, db: AsyncSession, journal_repository: JournalRepository | None = None) -> None:
+    def __init__(self, db: AsyncSession, journal_repository: JournalRepository | None = None,
+                 future_lesson_counts: FutureLessonCountsRepository | None = None) -> None:
         self.db: AsyncSession = db
         self.journal_repository: JournalRepository = journal_repository or SQLAlchemyJournalRepository(db)
+        self.future_lesson_counts: FutureLessonCountsRepository = future_lesson_counts or FutureLessonCounts(db)
 
     async def get_course_journals_aggregated(self, course_id: int) -> List[JournalResponse]:
         journals_stmt = select(Journal).filter(Journal.course_id == course_id).order_by(Journal.period_start.asc())
@@ -156,7 +160,7 @@ class JournalQueryService:
         class_avg_score = round(float(avg_score_raw), 1) if avg_score_raw is not None else 0.0
         class_avg_max_score = round(float(avg_max_score_raw), 1) if avg_max_score_raw is not None else 0.0
 
-        future_lessons, future_attended = await FutureLessonCounts(self.db).for_journals(journal_ids, SchoolCalendar.today())
+        future_lessons, future_attended = await self.future_lesson_counts.for_journals(journal_ids, SchoolCalendar.today())
         sum_lessons = int(sum_lessons or 0) - future_lessons
         sum_att = int(sum_att or 0) - future_attended
 
@@ -189,45 +193,7 @@ class JournalQueryService:
         )
 
     async def get_mentor_grading_queue(self, mentor_id: int) -> List[GradingQueueItemResponse]:
-        today: date = SchoolCalendar.today()
-        batch: MentorJournalBatch = await self.journal_repository.get_mentor_journal_batch(mentor_id, today)
-        journals_by_course: dict[int, list[Journal]] = defaultdict(list)
-        weekdays_by_course: dict[int, list[int]] = defaultdict(list)
-        journal: Journal
-        schedule: CourseSchedule
-        course: Course
-        for journal in batch.journals:
-            journals_by_course[journal.course_id].append(journal)
-        for schedule in batch.schedules:
-            weekdays_by_course[schedule.course_id].append(schedule.day_of_week)
-        queue: List[GradingQueueItemResponse] = []
-        for course in batch.courses:
-            for journal in journals_by_course[course.id]:
-                if journal.period_start > today:
-                    continue
-                lesson_count: int = LessonDateCalculator.held_count(
-                    journal.period_start, journal.period_end, weekdays_by_course[course.id], today,
-                )
-                cells_expected: int = batch.student_counts.get(course.id, 0) * lesson_count
-                cells_filled: int = batch.graded_entry_counts.get(journal.id, 0)
-                state: str = "empty" if cells_filled == 0 else "partial"
-                if cells_expected > 0 and cells_filled >= cells_expected:
-                    continue
-                queue.append(GradingQueueItemResponse(
-                    journal_id=journal.id,
-                    course_id=course.id,
-                    course_title=course.title,
-                    period_label=journal.period_label,
-                    period_start=journal.period_start,
-                    period_end=journal.period_end,
-                    state=state,
-                    cells_filled=cells_filled,
-                    cells_expected=cells_expected,
-                    is_current=journal.period_start <= today <= journal.period_end,
-                ))
-
-        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
-        return queue
+        return await MentorGradingQueueService(self.journal_repository).build(mentor_id)
 
     async def get_class_journal(self, journal_id: int, current_user: User) -> dict:
         if current_user.role != UserRole.STUDENT:
