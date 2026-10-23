@@ -3,7 +3,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, Header, Query, Path, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db_session, get_debt_reminder_service, require_accountant, require_superadmin
+from app.core.deps import get_db_session, get_enrollment_repository, get_debt_reminder_service, require_accountant, require_superadmin
 from app.models.user import User
 from app.models.payment import PaymentMethod
 from app.models.charge import ChargeStatus
@@ -34,6 +34,8 @@ from app.schemas.money import MoneyAmount
 from app.schemas.receipt import PaymentReceiptResponse
 from app.schemas.analytics import DetailedAnalyticsResponse
 from app.services.finance_service import FinanceService, get_dushanbe_today
+from app.repositories.interfaces.enrollment_repository import EnrollmentRepository
+from app.services.payment_date_window import PaymentDateWindow
 from app.services.payment_idempotency_service import PaymentIdempotencyService, PaymentRecordResult
 
 router = APIRouter()
@@ -51,13 +53,14 @@ async def create_payment(
     ),
     current_user: User = Depends(require_accountant),
     db: AsyncSession = Depends(get_db_session),
+    enrollment_repository: EnrollmentRepository = Depends(get_enrollment_repository),
 ) -> dict:
     """Record cash received. Discounts are separate — see POST /finance/discounts/.
 
     Send an Idempotency-Key header to make retries safe. A first request answers 201. A repeat by the same recorder with the same key and payload answers 200 with the original payment and records nothing new. The same key with a different payload answers 409 with detail.code idempotency_key_payload_mismatch. Requests without the header are never deduplicated.
     """
     finance_service = FinanceService(db)
-    recorded: PaymentRecordResult = await PaymentIdempotencyService(db, finance_service).record_payment(
+    recorded: PaymentRecordResult = await PaymentIdempotencyService(db, finance_service, PaymentDateWindow(enrollment_repository)).record_payment(
         student_id=payload.student_id,
         course_id=payload.course_id,
         amount=payload.amount,

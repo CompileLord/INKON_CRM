@@ -1,34 +1,22 @@
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
+from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.course import Course
-from app.models.enrollment import Enrollment
+from app.repositories.interfaces.enrollment_repository import EnrollmentRepository, EnrollmentStartWindow
 
 
 class PaymentDateWindow:
-    def __init__(self, db: AsyncSession) -> None:
-        self.db: AsyncSession = db
+    def __init__(self, enrollment_repository: EnrollmentRepository) -> None:
+        self.enrollment_repository: EnrollmentRepository = enrollment_repository
 
     async def require_after_enrollment_start(self, student_id: int, course_id: int, paid_at: datetime) -> None:
-        enrollment_result = await self.db.execute(
-            select(Enrollment.enrolled_at, Course.start_date)
-            .join(Course, Course.id == Enrollment.course_id)
-            .where(
-                Enrollment.student_id == student_id,
-                Enrollment.course_id == course_id,
-                Enrollment.is_deleted == False,  # noqa: E712
-            )
-        )
-        enrollment_row = enrollment_result.first()
-        if enrollment_row is None:
+        start_window: Optional[EnrollmentStartWindow] = await self.enrollment_repository.find_start_window(student_id, course_id)
+        if start_window is None:
             return
-        enrolled_at: datetime = enrollment_row.enrolled_at
-        course_start: date = enrollment_row.start_date
-        enrollment_start: datetime = min(enrolled_at, datetime.combine(course_start, time.min, tzinfo=timezone.utc))
+        course_start: datetime = datetime.combine(start_window.course_start_date, time.min, tzinfo=timezone.utc)
+        enrollment_start: datetime = min(start_window.enrolled_at, course_start)
         earliest_allowed: datetime = enrollment_start - timedelta(days=settings.PAYMENT_BEFORE_ENROLLMENT_TOLERANCE_DAYS)
         if paid_at < earliest_allowed:
             raise HTTPException(

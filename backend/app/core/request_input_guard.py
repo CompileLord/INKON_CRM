@@ -10,7 +10,6 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 class RequestInputGuard:
     MAX_INTEGER_ID: ClassVar[int] = 2147483647
-    NUL_PERCENT_ESCAPE: ClassVar[re.Pattern[bytes]] = re.compile(rb"%00")
     JSON_NUL_ESCAPE: ClassVar[re.Pattern[bytes]] = re.compile(rb"(?<!\\)(?:\\\\)*\\u0000", re.IGNORECASE)
     INTEGER_SEGMENT: ClassVar[re.Pattern[str]] = re.compile(r"^-?[0-9]+$")
 
