@@ -180,6 +180,14 @@ function parseCalendarDate(value: string): Date {
 }
 
 function pickParts(date: Date, options: Intl.DateTimeFormatOptions, wanted: Intl.DateTimeFormatPartTypes[], lng?: string): string {
+  if (isTajikRequestedWithoutIntlSupport(lng)) {
+    const tajikParts: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {
+      day: String(date.getUTCDate()),
+      month: i18n.t(`ui:monthsShort.${date.getUTCMonth()}`, { lng: "tg" }),
+      year: String(date.getUTCFullYear()),
+    };
+    return wanted.map((type: Intl.DateTimeFormatPartTypes) => tajikParts[type] ?? "").join(" ");
+  }
   return new Intl.DateTimeFormat(getActiveLocale(lng), { ...options, timeZone: "UTC" })
     .formatToParts(date)
     .filter((part) => wanted.includes(part.type))
