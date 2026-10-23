@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "u07_audit_target_label"
-down_revision: str = "u02_auth_sessions_email_case"
+down_revision: str = "u12_preferred_language"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
