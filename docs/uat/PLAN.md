@@ -185,6 +185,15 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 - **No phone and no Telegram**: 422 with a stable code, so the UI can explain it.
 - Tests never call a real SMS gateway.
 
+### U17 BE+FE: editable weekly lesson times (owner request, 2026-10-23)
+- **Request**: the owner wants to change a course's weekly lesson times after the course is created.
+- **Backend**: the course edit accepts new start and end times for the existing schedule days.
+  - `time_start` must be earlier than `time_end`.
+  - The edit is audited.
+  - Lesson dates, journals and charges don't change, because the days stay the same.
+  - Changing which weekdays a course runs on stays out of scope: it would move lesson dates in existing journals. T3-07 remains deferred for price and days.
+- **Frontend**: the course edit form makes the times editable, with inline validation and translated errors, and the course page, Today widget and timetable show the new times.
+
 ## Owner decisions
 
 | Id | Question | Decision (2026-10-23) |
@@ -196,7 +205,7 @@ Owners: **BE** is backend (Codex gpt-6.1-sol medium, or Sonnet if its quota runs
 
 Deferred, not planned without a request:
 - Late/excused attendance (T4-09).
-- Editing price and schedule after creation (T3-07, which affects issued charges).
+- Editing price and schedule days after creation (T3-07, which affects issued charges and journal dates); lesson times are covered by U17.
 - Restoring deleted users (T2-09).
 - Private static avatars (T6-15; the known WP-26 gap).
 - Autosave latency of 0.6–2.3 s (T4-11; measure again after U04).
@@ -216,6 +225,7 @@ Executors that run at the same time must have disjoint files. Migrations run one
 - U11 (after U10).
 - U12, then U14.
 - U16 (after U12 and U10).
+- U17 (after U06 and U07, which touch the course service).
 
 **Wave 3:** U15, then the D4 follow-up once decided.
 
