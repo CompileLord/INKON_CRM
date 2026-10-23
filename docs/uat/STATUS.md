@@ -15,7 +15,7 @@ This is the only record of progress on [PLAN.md](PLAN.md). The orchestrator upda
 | U05 journal grid and charts | FE | in progress | uat/u05 | 2026-10-23 | — | charts after WP-58 |
 | U06 course and people lifecycle guards | BE | cancelled | uat/u06 (unmerged) | 2026-10-23 | — | owner: admin can archive/delete a course any time |
 | U07 audit coverage | BE | in progress | uat/u07 | 2026-10-23 | — | Codex |
-| U08 server-side search and ordering | BE | todo | — | — | — | ready (U06 cancelled) |
+| U08 server-side search and ordering | BE | in progress | uat/u08 | 2026-10-23 | — | Codex |
 | U09 lists, search, people admin | FE | todo | — | — | — | after U08 |
 | U10 money input validation | BE | merged, retest pending | uat/u10 | 2026-10-23 | finance/enrollment/wp69a 220 passed; full suite on branch: only known wp11/wp13 | date window moved behind repository (audit fix 71a5c8a) |
 | U11 finance screens | FE | in progress | uat/u11 | 2026-10-23 | — | — |
