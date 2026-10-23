@@ -20,7 +20,7 @@ from app.schemas.course import (
 )
 
 from app.schemas.course_progress import (
-    ChartDataset, ChartGradingState, ChartPeriod, StaffChartResponse, StudentChartResponse,
+    ChartDataset, ChartGradingState, ChartPeriod, ChartQuery, StaffChartResponse, StudentChartResponse,
 )
 
 
@@ -114,9 +114,17 @@ class CourseProgressService:
         )
 
     async def get_progress_chart(
-        self, course_id: int, student_id: int | None = None
+        self, course_id: int, student_id: int | None = None, bounds: ChartQuery | None = None
     ) -> StaffChartResponse | StudentChartResponse:
-        snapshot: CourseChartSnapshot = await self.repo.get_course_chart_snapshot(course_id, student_id)
+        snapshot: CourseChartSnapshot
+        if bounds is None:
+            snapshot = await self.repo.get_course_chart_snapshot(course_id, student_id)
+            bounds = ChartQuery()
+        else:
+            snapshot = await self.repo.get_course_chart_snapshot(
+                course_id, student_id, period_offset=bounds.period_offset, period_limit=bounds.period_limit,
+                student_offset=bounds.student_offset, student_limit=bounds.student_limit,
+            )
         progress: CourseProgressSnapshot = snapshot.progress
         summaries: dict[tuple[int, int], ProgressSummaryRecord] = {
             (summary.student_id, summary.journal_id): summary for summary in progress.summaries
@@ -181,6 +189,9 @@ class CourseProgressService:
         if student_id is not None:
             own: ChartDataset | None = next((dataset for dataset in datasets if dataset.student_id == student_id), None)
             return StudentChartResponse(
+                period_offset=bounds.period_offset,
+                period_limit=bounds.period_limit,
+                periods_total=snapshot.periods_total,
                 periods=periods,
                 my_series=own.percentages if own else [None] * (len(periods) + 1),
                 my_grading_states=own.grading_states if own else ["missing"] * len(periods),
@@ -189,9 +200,15 @@ class CourseProgressService:
                 class_avg_series=class_series,
                 class_eligible_counts=class_counts,
                 my_rank=snapshot.ranks.get(student_id),
-                class_size=sum(student.is_active for student in progress.students),
+                class_size=snapshot.class_size,
             )
         return StaffChartResponse(
+            period_offset=bounds.period_offset,
+            period_limit=bounds.period_limit,
+            periods_total=snapshot.periods_total,
+            student_offset=bounds.student_offset,
+            student_limit=bounds.student_limit,
+            students_total=snapshot.class_size,
             labels=[period.period_label for period in periods] + ["Average"],
             periods=periods,
             datasets=datasets,

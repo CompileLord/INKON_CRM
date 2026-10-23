@@ -12,6 +12,7 @@ import type {
   StudentCourseProgressChartResponse,
 } from "./types";
 import { CourseChartResponses } from "./CourseChartResponses";
+import { CourseChartFixtures } from "./CourseChartFixtures";
 
 const { httpClient } = await import("../auth/httpClient");
 const { tokenStorage } = await import("../auth/tokenStorage");
@@ -176,6 +177,7 @@ describe("getCourseMentorHistory", () => {
 
 describe("getCourseProgressChart", () => {
   const staffChart: StaffCourseProgressChartResponse = {
+    ...CourseChartFixtures.staffMetadata(4, 2),
     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
     periods: [
       { id: 1, period_label: "Week 1" },
@@ -212,6 +214,7 @@ describe("getCourseProgressChart", () => {
   };
 
   const studentChart: StudentCourseProgressChartResponse = {
+    ...CourseChartFixtures.studentMetadata(3),
     periods: [
       { id: 1, period_label: "Week 1" },
       { id: 2, period_label: "Week 2" },
@@ -226,6 +229,14 @@ describe("getCourseProgressChart", () => {
     my_rank: null,
     class_size: 4,
   };
+
+  it("sends the paging options as query params and omits unset ones", async () => {
+    mock.onGet("/courses/1/progress-chart").reply(200, staffChart);
+    await getCourseProgressChart(1, { periodOffset: 12, periodLimit: 6, studentOffset: 30, studentLimit: 10 });
+    await getCourseProgressChart(1);
+    expect(mock.history.get[0].params).toEqual({ period_offset: 12, period_limit: 6, student_offset: 30, student_limit: 10 });
+    expect(mock.history.get[1].params).toEqual({});
+  });
 
   it("returns the complete staff payload with graded zero preserved and gaps as null", async () => {
     mock.onGet("/courses/1/progress-chart").reply(200, staffChart);

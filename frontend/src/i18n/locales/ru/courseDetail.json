@@ -142,5 +142,25 @@
     "studentsCount_many": "{{formatted}} студентов",
     "studentsCount_other": "{{formatted}} студента",
     "tableLabel": "Результаты студентов по периодам"
+  },
+  "chart": {
+    "title": "Результаты по периодам",
+    "loading": "Загрузка графика",
+    "loadError": "Не удалось загрузить график",
+    "emptyTitle": "Пока нечего показать",
+    "emptyBody": "Здесь появятся оценённые периоды.",
+    "range": "{{from}} – {{to}}",
+    "olderPeriods": "Более ранние периоды",
+    "newerPeriods": "Более поздние периоды",
+    "previousStudents": "Предыдущие студенты",
+    "nextStudents": "Следующие студенты",
+    "studentRange": "{{from}}–{{to}} из {{total}}",
+    "classAverage": "Среднее по группе",
+    "staffAverage": "Среднее по группе {{value}}",
+    "scopeInfo": "Место и средние считаются только по показанным периодам.",
+    "chartLabel": "Результаты курса по периодам",
+    "chartHint": "Стрелками переключайтесь между периодами.",
+    "noValues": "Нет оценки",
+    "entry": "{{name}}: {{value}}"
   }
 }

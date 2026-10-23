@@ -3,6 +3,7 @@ import type {
   CourseCreate,
   CourseJournalMetricsResponse,
   CourseMentorHistoryResponse,
+  CourseProgressChartOptions,
   CourseProgressChartResponse,
   CourseResponse,
   CourseScheduleResponse,
@@ -59,9 +60,14 @@ export function getCourseMentorHistory(id: number): Promise<CourseMentorHistoryR
     .then((res) => res.data);
 }
 
-export function getCourseProgressChart(id: number): Promise<CourseProgressChartResponse> {
+export function getCourseProgressChart(id: number, options: CourseProgressChartOptions = {}): Promise<CourseProgressChartResponse> {
+  const params: Record<string, number> = {};
+  if (options.periodOffset !== undefined) params.period_offset = options.periodOffset;
+  if (options.periodLimit !== undefined) params.period_limit = options.periodLimit;
+  if (options.studentOffset !== undefined) params.student_offset = options.studentOffset;
+  if (options.studentLimit !== undefined) params.student_limit = options.studentLimit;
   return httpClient
-    .get<CourseProgressChartResponse>(`/courses/${id}/progress-chart`)
+    .get<CourseProgressChartResponse>(`/courses/${id}/progress-chart`, { params })
     .then((res) => res.data);
 }
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from app.core.deps import (
     get_storage_service,
@@ -30,7 +30,7 @@ from app.repositories.interfaces.course_progress_repository import (
     CourseProgressRepositoryInterface,
     CourseAccessRecord,
 )
-from app.schemas.course_progress import StaffChartResponse, StudentChartResponse
+from app.schemas.course_progress import ChartQuery, StaffChartResponse, StudentChartResponse
 
 router = APIRouter()
 
@@ -255,14 +255,28 @@ async def get_class_progress(
     return await progress_service.get_student_class_progress(id, current_user.id)
 
 
-@router.get("/{id}/progress-chart", response_model=StaffChartResponse | StudentChartResponse)
+@router.get(
+    "/{id}/progress-chart",
+    response_model=StaffChartResponse | StudentChartResponse,
+    description=(
+        "Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returned chronologically, "
+        "and the first 30 active staff-roster series (maximum 100), ordered by student_id. "
+        "Student responses contain only their own series plus cohort aggregates; roster paging is ignored. "
+        "All grading counts, averages and ranks use selected periods only. Eligible grades are explicitly graded, "
+        "started, and have a positive maximum. Period class means include active students with eligible grades. "
+        "The final series value is the selected-range average; the final class value weights eligible active-student "
+        "range means equally. Ranks order unrounded range means descending, then student_id ascending. "
+        "Withdrawn students retain their own history but do not contribute to cohort means or ranks."
+    ),
+)
 async def get_progress_chart(
     id: int,
+    bounds: Annotated[ChartQuery, Query()],
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
     progress_service: CourseProgressService = Depends(get_course_progress_service),
 ) -> StaffChartResponse | StudentChartResponse:
     await check_course_access(id, current_user, db)
     return await progress_service.get_progress_chart(
-        id, current_user.id if current_user.role == UserRole.STUDENT else None
+        id, current_user.id if current_user.role == UserRole.STUDENT else None, bounds
     )
