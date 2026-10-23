@@ -5,7 +5,7 @@ import i18n from "../../i18n";
 import { JournalGrid } from "./JournalGrid";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import type { JournalRowEditing } from "./JournalStudentRow";
-import type { JournalStudentResponse } from "../../lib/journals/types";
+import type { JournalCellRejectionCode, JournalStudentResponse } from "../../lib/journals/types";
 
 export const DATES: string[] = ["2026-10-12", "2026-10-13", "2026-10-14"];
 
@@ -23,6 +23,7 @@ export function student(id: number, firstName: string, scores: Record<string, nu
       score: scores[date] ?? 0,
       comment: null,
       has_comment: false,
+      is_graded: (scores[date] ?? 0) > 0,
       version: 1,
     })),
     summary: {
@@ -50,7 +51,7 @@ export interface GridHarness {
   rerender: (students: JournalStudentResponse[], journalId?: number) => void;
 }
 
-export function mountGrid(options: { editing?: boolean; students?: JournalStudentResponse[]; selectedLesson?: string; examMaximum?: number } = {}): GridHarness {
+export function mountGrid(options: { editing?: boolean; students?: JournalStudentResponse[]; selectedLesson?: string; examMaximum?: number; cellRejections?: Map<string, JournalCellRejectionCode> } = {}): GridHarness {
   const onEntryCommand = vi.fn();
   const onSummaryPair = vi.fn();
   const onSelectLesson = vi.fn();
@@ -64,6 +65,7 @@ export function mountGrid(options: { editing?: boolean; students?: JournalStuden
       lessonDates={DATES}
       selectedLesson={options.selectedLesson ?? DATES[0]}
       cellStatus={new Map()}
+      cellRejections={options.cellRejections}
       summaryStatus={new Map()}
       editing={editing}
       examMaximum={options.examMaximum ?? 24}

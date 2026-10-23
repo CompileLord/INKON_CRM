@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { usePeriodName } from "../ui/periodName";
 import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
 import {
@@ -21,7 +22,6 @@ type SavePhase =
 interface JournalPeriodSettingsDialogProps {
   open: boolean;
   suspended: boolean;
-  courseTitle: string;
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
@@ -42,7 +42,6 @@ const IDLE_PHASE: SavePhase = { kind: "idle" };
 export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogProps> = ({
   open,
   suspended,
-  courseTitle,
   periodLabel,
   periodStart,
   periodEnd,
@@ -82,17 +81,29 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
     max: JournalPeriodSettingsRules.MAXIMUM_EXAM_MAXIMUM,
   };
   const text: string = editedText ?? String(currentMaximum);
-  const verdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(text);
+  const verdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(text, highestExamScore);
   const bonusText: string = editedBonusText ?? String(currentBonusMaximum);
-  const bonusVerdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(bonusText);
+  const bonusVerdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(bonusText, highestBonusScore);
   const isDirty: boolean = text !== String(currentMaximum) || bonusText !== String(currentBonusMaximum);
   const isPending: boolean = phase.kind === "draining" || phase.kind === "saving";
   const canSave: boolean = verdict.valid && bonusVerdict.valid && isDirty && !isPending;
   const inputMessage: string | null =
-    !verdict.valid && editedText !== null ? t(`journalPeriodSettings:invalid.${verdict.reason}`, rangeValues) : null;
+    !verdict.valid && editedText !== null
+      ? t(`journalPeriodSettings:invalid.${verdict.reason === "belowExisting" ? "belowExistingExam" : verdict.reason}`, {
+          ...rangeValues,
+          score: verdict.reason === "belowExisting" ? formatNumber(verdict.floor) : "",
+        })
+      : null;
   const bonusInputMessage: string | null =
     !bonusVerdict.valid && editedBonusText !== null
-      ? t(bonusVerdict.reason === "outOfRange" ? "journalPeriodSettings:invalid.bonusOutOfRange" : `journalPeriodSettings:invalid.${bonusVerdict.reason}`, rangeValues)
+      ? t(
+          bonusVerdict.reason === "outOfRange"
+            ? "journalPeriodSettings:invalid.bonusOutOfRange"
+            : bonusVerdict.reason === "belowExisting"
+              ? "journalPeriodSettings:invalid.belowExistingBonus"
+              : `journalPeriodSettings:invalid.${bonusVerdict.reason}`,
+          { ...rangeValues, score: bonusVerdict.reason === "belowExisting" ? formatNumber(bonusVerdict.floor) : "" },
+        )
       : null;
 
   const requestDismiss = (): void => {
@@ -222,23 +233,12 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
         }}
         className="flex flex-col gap-4"
       >
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted">{t("journalPeriodSettings:course")}</dt>
-          <dd className="min-w-0 break-words font-medium text-ink">{courseTitle}</dd>
-          <dt className="text-muted">{t("journalPeriodSettings:period")}</dt>
-          <dd className="min-w-0 break-words font-medium text-ink">
-            {periodName(periodLabel)}
-            <span className="block font-normal tabular-nums text-muted">
-              {formatSchoolLessonDate(periodStart)} – {formatSchoolLessonDate(periodEnd)}
-            </span>
-          </dd>
-        </dl>
-        <p className="text-sm text-ink">{t("journalPeriodSettings:explanation")}</p>
-        {highestExamScore !== null && (
-          <p className="text-sm tabular-nums text-muted">
-            {t("journalPeriodSettings:highestScore", { score: formatNumber(highestExamScore) })}
-          </p>
-        )}
+        <p className="flex items-center gap-1 text-sm tabular-nums text-muted">
+          <span>
+            {periodName(periodLabel)} · {formatSchoolLessonDate(periodStart)} – {formatSchoolLessonDate(periodEnd)}
+          </span>
+          <InfoTooltip label={t("journalPeriodSettings:infoLabel")}>{t("journalPeriodSettings:explanation")}</InfoTooltip>
+        </p>
         <div className="flex flex-col gap-1">
           <label htmlFor="journal-period-settings-input" className="text-sm font-medium text-ink">
             {t("journalPeriodSettings:inputLabel")}
@@ -266,7 +266,10 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
             role={inputMessage !== null ? "alert" : undefined}
             className={`text-sm ${inputMessage !== null ? "font-medium text-destructive" : "text-muted"}`}
           >
-            {inputMessage ?? t("journalPeriodSettings:range", rangeValues)}
+            {inputMessage ??
+              (highestExamScore !== null && highestExamScore > 0
+                ? t("journalPeriodSettings:highestScore", { score: formatNumber(highestExamScore) })
+                : t("journalPeriodSettings:range", rangeValues))}
           </p>
         </div>
         <div className="flex flex-col gap-1">

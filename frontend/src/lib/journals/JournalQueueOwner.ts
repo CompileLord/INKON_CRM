@@ -32,7 +32,7 @@ export class JournalQueueOwner extends JournalQueueReconciler {
     const record: EntryRecord = this.entryRecord(studentId, lessonDate);
     const current: JournalEntryValue = this.effectiveEntry(record);
     const next: JournalEntryValue = JournalEntryCommands.apply(current, command);
-    this.stageEntry(record, next, record.version);
+    this.stageEntry(record, next, record.version, command.kind !== "comment");
   }
 
   editEntry = (

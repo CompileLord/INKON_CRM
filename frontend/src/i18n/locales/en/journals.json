@@ -34,7 +34,8 @@
     "lessonContext": "Lesson {{date}}",
     "listTitle": "Version conflicts",
     "bonusLabel": "Bonus",
-    "examLabel": "Exam"
+    "examLabel": "Exam",
+    "serverLoading": "Loading the server value…"
   },
   "hubTitle": "Journals",
   "searchCoursePlaceholder": "Search courses…",
@@ -97,7 +98,9 @@
     "addStudents": "Add students",
     "noStudentsAdminBody": "Add students to the course roster to start grading.",
     "openComment": "Read comment for {{date}}",
-    "commentDialogTitle": "Comment, {{date}}"
+    "commentDialogTitle": "Comment, {{date}}",
+    "futureLesson": "Lesson has not happened yet",
+    "futureCellLabel": "{{name}}, {{date}}: lesson has not happened yet"
   },
   "cellStatus": {
     "dirty": "Unsaved change",
@@ -202,8 +205,7 @@
     "unavailable": "Unavailable"
   },
   "picker": {
-    "title": "Score for {{name}}, {{date}}",
-    "clear": "Clear"
+    "title": "Score for {{name}}, {{date}}"
   },
   "comment": {
     "title": "Comment for {{name}}, {{date}}",
@@ -256,5 +258,11 @@
     "menuLabel": "Bulk actions for {{date}}",
     "markPresent": "Mark all present",
     "fillHomework": "Fill homework with 5"
+  },
+  "rejection": {
+    "unknown_student": "This student is not in the system.",
+    "student_not_enrolled": "This student is not enrolled in the course.",
+    "invalid_lesson_date": "This date is not a lesson of the period.",
+    "future_lesson": "The lesson has not happened yet. Your entry is kept."
   }
 }

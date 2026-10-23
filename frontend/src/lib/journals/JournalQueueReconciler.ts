@@ -15,6 +15,7 @@ import {
 } from "./types";
 import {
   entryValueOf,
+  isGradedState,
   summaryValueOf,
   type ConflictRecord,
   type EntryRecord,
@@ -32,6 +33,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       this.conflicts.delete(key);
       record.version = current.version;
       record.confirmed = entryValueOf(current);
+      record.confirmedGraded = isGradedState(current);
       if (record.draft) {
         this.cache.writeEntry(record.studentId, record.lessonDate, record.draft, record.version);
         this.schedule();
@@ -48,8 +50,9 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
     this.savedEntryKeys.delete(key);
     if (current) {
       record.confirmed = entryValueOf(current);
+      record.confirmedGraded = isGradedState(current);
       record.version = current.version;
-      this.cache.writeEntry(record.studentId, record.lessonDate, record.confirmed, record.version);
+      this.cache.writeEntry(record.studentId, record.lessonDate, record.confirmed, record.version, record.confirmedGraded);
     } else {
       this.entries.delete(key);
       this.cache.removeEntry(stored.studentId, stored.lessonDate);
@@ -110,6 +113,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       if (!record.draft && !record.inFlight) {
         if (serverEntry) {
           record.confirmed = entryValueOf(serverEntry);
+          record.confirmedGraded = isGradedState(serverEntry);
           record.version = Math.max(record.version, serverEntry.version);
         }
         return;
@@ -122,6 +126,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       }
       const serverValue: JournalEntryValue = entryValueOf(serverEntry);
       record.confirmed = serverValue;
+      record.confirmedGraded = isGradedState(serverEntry);
       if (JournalEntryCommands.areEqual(record.draft, serverValue)) {
         record.draft = null;
         record.failed = false;
@@ -180,6 +185,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       attendance: serverEntry.attendance,
       score: serverEntry.score,
       comment: serverEntry.comment,
+      is_graded: serverEntry.is_graded,
       version: serverEntry.version,
     };
   }
@@ -245,6 +251,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
                   score: value.score,
                   comment: value.comment,
                   has_comment: value.comment !== null && value.comment.trim().length > 0,
+                  is_graded: true,
                   version: record.version,
                 }
               : candidate,
@@ -286,6 +293,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       const cached: JournalEntryResponse | undefined = this.cache.readEntry(record.studentId, record.lessonDate);
       if (!cached) return;
       record.confirmed = entryValueOf(cached);
+      record.confirmedGraded = isGradedState(cached);
       record.version = Math.max(record.version, cached.version);
     });
     this.summaries.forEach((record) => {
@@ -304,6 +312,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
       this.entries.clear();
       this.summaries.clear();
       this.conflicts.clear();
+      this.rejectedCells.clear();
       this.savedEntryKeys.clear();
       this.savedSummaryIds.clear();
       this.cache.replace(fresh);
@@ -321,6 +330,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
     revertedEntries.forEach(({ record }) => this.entries.delete(record.key));
     revertedSummaries.forEach(({ record }) => this.summaries.delete(record.studentId));
     this.conflicts.clear();
+    this.rejectedCells.clear();
 
     revertedEntries.forEach(({ record, conflict }) => {
       const serverState = conflict?.current as JournalEntryStateResponse | null | undefined;

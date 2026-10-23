@@ -10,7 +10,7 @@ function studentWith(id: number, attendance: boolean, score: number): JournalStu
     first_name: "S",
     last_name: String(id),
     color_hex: "",
-    entries: [{ id, lesson_date: LESSON, attendance, score, comment: null, has_comment: false, version: 1 }],
+    entries: [{ id, lesson_date: LESSON, attendance, score, comment: null, has_comment: false, is_graded: true, version: 1 }],
     summary: null,
   };
 }

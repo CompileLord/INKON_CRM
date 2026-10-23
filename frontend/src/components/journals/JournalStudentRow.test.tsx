@@ -78,7 +78,8 @@ describe("JournalStudentRow totals", () => {
     fireEvent.keyDown(bonus, { key: "Enter" });
     expect(onSummaryPair).toHaveBeenCalledTimes(1);
     expect(bonus.getAttribute("aria-invalid")).toBe("true");
-    expect(bonus.getAttribute("title")).toBe("Max 35");
+    expect(screen.getByRole("alert").textContent).toBe("Max 35");
+    expect((bonus as HTMLInputElement).value).toBe("36");
   });
 
   it("flags both inputs inline with the server rejection message when the summary save failed", () => {
@@ -161,5 +162,26 @@ describe("JournalStudentRow own-row not-graded state", () => {
   it("shows the real zero once an attended lesson is recorded", () => {
     ownRow({ ...student, entries: [{ lesson_date: "2026-10-01", attendance: true, score: 0, comment: null, version: 1 } as unknown as JournalStudentResponse["entries"][number]], summary: { ...student.summary!, sum_score: 0, exam_score: 0, bonus_score: 0, percentage: 0 } });
     expect(screen.getByTestId("total-cell").textContent).toBe("0");
+  });
+});
+
+describe("JournalStudentRow inline summary validation", () => {
+  it("explains an out-of-range exam value inline and keeps the typed draft after leaving the field", () => {
+    mount(student);
+    const exam = screen.getByRole("textbox", { name: "Exam score for Student One" }) as HTMLInputElement;
+    fireEvent.change(exam, { target: { value: "99" } });
+    fireEvent.blur(exam);
+    expect(screen.getByRole("alert").textContent).toBe("Max 24");
+    expect(exam.value).toBe("99");
+    expect(exam.getAttribute("aria-invalid")).toBe("true");
+    expect(props.editing.onSummaryPair).not.toHaveBeenCalled();
+  });
+
+  it("explains a non-numeric value inline", () => {
+    mount(student);
+    const bonus = screen.getByRole("textbox", { name: "Bonus score for Student One" }) as HTMLInputElement;
+    fireEvent.change(bonus, { target: { value: "abc" } });
+    expect(screen.getByRole("alert").textContent).toBe("Enter a whole number");
+    expect(bonus.value).toBe("abc");
   });
 });

@@ -1,7 +1,5 @@
 {
   "title": "Period settings",
-  "course": "Course",
-  "period": "Period",
   "inputLabel": "Exam maximum",
   "range": "Whole number from {{min}} to {{max}}",
   "explanation": "Changing the exam maximum recalculates the grading denominator of this period for every student. Exam scores cannot exceed it.",
@@ -13,7 +11,9 @@
     "empty": "Enter a whole number from {{min}} to {{max}}.",
     "notWholeNumber": "Use digits only, without decimals or signs.",
     "outOfRange": "The exam maximum must be between {{min}} and {{max}}.",
-    "bonusOutOfRange": "The bonus maximum must be between {{min}} and {{max}}."
+    "bonusOutOfRange": "The bonus maximum must be between {{min}} and {{max}}.",
+    "belowExistingExam": "Not below the highest existing exam score ({{score}}).",
+    "belowExistingBonus": "Not below the highest existing bonus ({{score}})."
   },
   "blocked": {
     "failed": "Pending grades could not be saved, so the exam maximum was not changed. Your value is kept.",
@@ -33,5 +33,6 @@
   "continueEditing": "Continue editing",
   "discard": "Discard changes",
   "bonusInputLabel": "Bonus maximum",
-  "highestBonus": "Highest existing bonus: {{score}}"
+  "highestBonus": "Highest existing bonus: {{score}}",
+  "infoLabel": "About maximums"
 }

@@ -64,6 +64,7 @@ export function buildDetail(journalId: number = 1, courseId: number = 10): Journ
     score: 0,
     comment: null,
     has_comment: false,
+    is_graded: false,
     version: 1,
   });
   return {

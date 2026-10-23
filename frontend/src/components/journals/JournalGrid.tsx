@@ -7,10 +7,11 @@ import { useJournalGridViewport } from "./useJournalGridViewport";
 import type { CellNavDirection, JournalCellControl } from "./JournalScoreCell";
 import { formatNumber, formatSchoolLessonDate, formatSchoolLessonWeekday, getSchoolCalendarDate } from "../../i18n/formatters";
 import { JournalAtRiskRules } from "../../lib/journals/JournalAtRiskRules";
+import { JournalScoringRules } from "../../lib/journals/JournalScoringRules";
 import { JournalBulkFill, type JournalBulkFillKind } from "../../lib/journals/JournalBulkFill";
 import { JournalStudentOrdering, useStableStudentOrder } from "../../lib/journals/JournalStudentOrdering";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
-import type { JournalStudentResponse } from "../../lib/journals/types";
+import type { JournalCellRejectionCode, JournalStudentResponse } from "../../lib/journals/types";
 
 interface JournalGridProps {
   journalId: number;
@@ -19,6 +20,7 @@ interface JournalGridProps {
   lessonDates: string[];
   selectedLesson: string | undefined;
   cellStatus: Map<string, CellSaveStatus>;
+  cellRejections?: Map<string, JournalCellRejectionCode>;
   summaryStatus: Map<number, CellSaveStatus>;
   editing: JournalRowEditing | null;
   onSelectLesson: (lessonDate: string) => void;
@@ -63,6 +65,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
   lessonDates,
   selectedLesson,
   cellStatus,
+  cellRejections,
   summaryStatus,
   editing,
   onSelectLesson,
@@ -235,9 +238,9 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                       className="flex min-h-14 w-full flex-col items-center justify-center px-2 py-1 hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
                       <span className="text-xs text-muted">{formatSchoolLessonWeekday(date)}</span>
-                      <span className="text-sm font-semibold tabular-nums">{formatSchoolLessonDate(date)}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${date > today ? "text-muted" : ""}`}>{formatSchoolLessonDate(date)}</span>
                     </button>
-                    {effectiveEditing && (
+                    {effectiveEditing && date <= today && (
                       <JournalLessonColumnMenu
                         formattedDate={formatSchoolLessonDate(date)}
                         onFill={(kind) => fillColumn(kind, date)}
@@ -247,11 +250,23 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 ))}
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  {t("table.exam")}
+                  <span className="inline-flex items-baseline justify-center gap-1">
+                    {t("table.exam")}
+                    {" "}
+                    <span className="text-xs font-normal tabular-nums text-muted" data-testid="exam-maximum">
+                      {t("table.sumMaximum", { max: formatNumber(examMaximum) })}
+                    </span>
+                  </span>
                 </th>
 
                 <th scope="col" className="border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  {t("table.bonus")}
+                  <span className="inline-flex items-baseline justify-center gap-1">
+                    {t("table.bonus")}
+                    {" "}
+                    <span className="text-xs font-normal tabular-nums text-muted" data-testid="bonus-maximum">
+                      {t("table.sumMaximum", { max: formatNumber(bonusMaximum ?? JournalScoringRules.DEFAULT_BONUS_MAXIMUM) })}
+                    </span>
+                  </span>
                 </th>
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
@@ -302,6 +317,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                   lessonDates={lessonDates}
                   selectedLesson={selectedLesson}
                   cellStatus={cellStatus}
+                  cellRejections={cellRejections}
                   summaryStatus={summaryStatus.get(student.student_id)}
                   focusedCellKey={focusedCellKey}
                   focusFromKeyboard={focusFromKeyboard}

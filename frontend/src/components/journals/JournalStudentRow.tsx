@@ -5,10 +5,10 @@ import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
 import { JournalSaveMarker } from "./JournalSaveMarker";
 import { JournalSummaryCell } from "./JournalSummaryCell";
-import { formatNumber } from "../../i18n/formatters";
+import { formatNumber, getSchoolCalendarDate } from "../../i18n/formatters";
 import type { JournalEntryCommand } from "../../lib/journals/journalCommands";
 import type { CellSaveStatus } from "../../lib/journals/journalQueueTypes";
-import type { JournalStudentResponse } from "../../lib/journals/types";
+import type { JournalCellRejectionCode, JournalStudentResponse } from "../../lib/journals/types";
 
 export interface JournalRowEditing {
   onEntryCommand: (studentId: number, lessonDate: string, command: JournalEntryCommand) => void;
@@ -20,6 +20,7 @@ interface JournalStudentRowProps {
   lessonDates: string[];
   selectedLesson: string | undefined;
   cellStatus: Map<string, CellSaveStatus>;
+  cellRejections?: Map<string, JournalCellRejectionCode>;
   summaryStatus?: CellSaveStatus;
   focusedCellKey: string | null;
   focusFromKeyboard: boolean;
@@ -41,6 +42,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
   lessonDates,
   selectedLesson,
   cellStatus,
+  cellRejections,
   summaryStatus,
   focusedCellKey,
   focusFromKeyboard,
@@ -62,6 +64,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
 
   const nothingGraded: boolean = markUnrecorded && !student.entries.some((entry) => entry.attendance || entry.score > 0 || Boolean(entry.comment)) && (summary === null || summary === undefined || (summary.sum_score === 0 && summary.exam_score === 0 && summary.bonus_score === 0));
 
+  const today: string = getSchoolCalendarDate();
   const entriesMap = new Map(student.entries.map((e) => [e.lesson_date, e]));
 
   return (
@@ -97,6 +100,8 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         const currentAttendance = entry ? entry.attendance : false;
         const currentScore = entry ? entry.score : 0;
         const currentComment = entry ? entry.comment : null;
+        const currentGraded: boolean = entry ? entry.is_graded : false;
+        const rejectionCode: JournalCellRejectionCode | undefined = cellRejections?.get(cellKey);
 
         return (
           <td
@@ -112,6 +117,9 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
                 lessonDate={date}
                 attendance={currentAttendance}
                 score={currentScore}
+                graded={currentGraded}
+                disabled={date > today}
+                rejectionMessage={rejectionCode ? t(`rejection.${rejectionCode}`) : undefined}
                 comment={currentComment}
                 status={cellStatus.get(cellKey)}
                 isFocused={focusedCellKey === cellKey}
@@ -126,6 +134,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
                 lessonDate={date}
                 attendance={currentAttendance}
                 score={currentScore}
+                graded={currentGraded}
                 comment={markUnrecorded && !isSelf ? null : currentComment}
                 status={cellStatus.get(cellKey)}
                 recorded={!markUnrecorded || entry !== undefined}

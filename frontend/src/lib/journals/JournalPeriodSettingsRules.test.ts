@@ -79,3 +79,16 @@ describe("JournalPeriodSettingsRules bonus maximum", () => {
     expect(JournalPeriodSettingsRules.classifyFailure(new AuthApiError(400, "x"), 70, 10, 30, 18)).toEqual({ kind: "outOfRange" });
   });
 });
+
+describe("JournalPeriodSettingsRules.judgeInput existing-score floor", () => {
+  it("rejects a maximum below the highest existing score before the server does", () => {
+    expect(JournalPeriodSettingsRules.judgeInput("1", 2)).toEqual({ valid: false, reason: "belowExisting", floor: 2 });
+    expect(JournalPeriodSettingsRules.judgeInput("2", 2)).toEqual({ valid: true, value: 2 });
+    expect(JournalPeriodSettingsRules.judgeInput("1", null)).toEqual({ valid: true, value: 1 });
+  });
+
+  it("keeps the server upper limit of 100 for both maximums", () => {
+    expect(JournalPeriodSettingsRules.judgeInput("100", 0)).toEqual({ valid: true, value: 100 });
+    expect(JournalPeriodSettingsRules.judgeInput("101", 0)).toEqual({ valid: false, reason: "outOfRange" });
+  });
+});

@@ -117,18 +117,16 @@ describe("Period settings: exam maximum", () => {
       detail.students[0].summary = { ...(detail.students[0].summary as NonNullable<typeof detail.students[0]["summary"]>), exam_score: 60 };
       return detail;
     });
-    updateExamMaxMock.mockRejectedValue(new AuthApiError(400, "Cannot lower exam max score to 40: student(s) Anvar Tester already have higher exam scores"));
     const dialog = await openSettings();
     expect(dialog.textContent).toContain("Highest existing exam score: 60");
     typeMaximum("40");
-    fireEvent.click(saveButton());
 
-    const alert = await screen.findByTestId("period-settings-alert");
-    expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 40 });
-    expect(alert.textContent).toBe("Cannot lower the exam maximum to 40: the highest existing exam score is 60. Choose 60 or more.");
+    expect(screen.getByRole("alert").textContent).toBe("Not below the highest existing exam score (60).");
+    expect(saveButton().disabled).toBe(true);
+    fireEvent.click(saveButton());
+    expect(updateExamMaxMock).not.toHaveBeenCalled();
     expect(maximumInput().value).toBe("40");
     expect(screen.getByRole("dialog", { name: "Period settings" })).toBeDefined();
-    expect(saveButton().disabled).toBe(false);
   });
 
   it.each([

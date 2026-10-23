@@ -50,6 +50,7 @@ export interface JournalEntryResponse {
   score: number;
   comment: string | null;
   has_comment: boolean;
+  is_graded: boolean;
   version: number;
 }
 
@@ -103,7 +104,26 @@ export interface JournalEntryStateResponse {
   attendance: boolean;
   score: number;
   comment?: string | null;
+  is_graded?: boolean;
   version: number;
+}
+
+export type JournalCellRejectionCode =
+  | "unknown_student"
+  | "student_not_enrolled"
+  | "invalid_lesson_date"
+  | "future_lesson";
+
+export interface JournalCellRejection {
+  student_id: number;
+  lesson_date: string;
+  code: JournalCellRejectionCode;
+}
+
+export interface JournalCellRejectionDetail {
+  code: JournalCellRejectionCode;
+  message: string;
+  cells: JournalCellRejection[];
 }
 
 export interface JournalEntryConflictResponse {

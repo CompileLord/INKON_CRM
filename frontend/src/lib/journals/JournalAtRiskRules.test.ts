@@ -14,7 +14,7 @@ function studentWith(attendance: Array<boolean | null>, percentage: number, tota
     entries: attendance.flatMap((attended, index) =>
       attended === null
         ? []
-        : [{ id: index, lesson_date: DATES[index], attendance: attended, score: 0, comment: null, has_comment: false, version: 1 }],
+        : [{ id: index, lesson_date: DATES[index], attendance: attended, score: 0, comment: null, has_comment: false, is_graded: false, version: 1 }],
     ),
     summary: {
       id: 1,

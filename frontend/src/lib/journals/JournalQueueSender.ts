@@ -6,6 +6,7 @@ import {
 } from "./journalCommands";
 import { summaryConflictKey } from "./journalQueueTypes";
 import {
+  entryKey,
   type JournalBatchUpdateResponse,
   type JournalDetailResponse,
   type JournalEntryConflictResponse,
@@ -22,6 +23,7 @@ import {
   JournalRequestErrors,
   emptyTally,
   entryValueOf,
+  isGradedState,
   summaryValueOf,
   type CycleOutcome,
   type CycleTally,
@@ -56,7 +58,7 @@ export abstract class JournalQueueSender extends JournalQueueBase {
       const claimedSummaryIds: number[] = [];
       this.entries.forEach((record, key) => {
         if (claimedEntryKeys.length >= MAX_ENTRIES_PER_REQUEST) return;
-        if (record.draft && !this.conflicts.has(key)) {
+        if (record.draft && !this.conflicts.has(key) && !this.rejectedCells.has(key)) {
           record.inFlight = { value: record.draft, version: record.version };
           record.draft = null;
           record.failed = false;
@@ -84,7 +86,7 @@ export abstract class JournalQueueSender extends JournalQueueBase {
       this.lastOutcome = outcome;
       this.publish();
       if (outcome !== "ok") {
-        if (outcome === "conflict") this.refreshUnknownSummaryConflicts();
+        if (outcome === "conflict") this.refreshUnknownConflicts();
         return;
       }
     }
@@ -146,6 +148,7 @@ export abstract class JournalQueueSender extends JournalQueueBase {
     const appliedValue: JournalEntryValue = entryValueOf(item);
     record.version = Math.max(record.version, item.version);
     record.confirmed = appliedValue;
+    record.confirmedGraded = true;
     record.inFlight = null;
     record.failed = false;
     this.acknowledgedInRun = true;
@@ -176,6 +179,7 @@ export abstract class JournalQueueSender extends JournalQueueBase {
     if (isAlreadyServerState && current) {
       record.version = Math.max(record.version, current.version);
       record.confirmed = entryValueOf(current);
+      record.confirmedGraded = isGradedState(current);
       this.acknowledgedInRun = true;
       if (hadNewerDraft) {
         this.cache.writeEntry(record.studentId, record.lessonDate, record.draft as JournalEntryValue, record.version);
@@ -233,6 +237,9 @@ export abstract class JournalQueueSender extends JournalQueueBase {
       tally.transient = true;
       return;
     }
+    JournalRequestErrors.cellRejections(error)?.forEach((cell) => {
+      this.rejectedCells.set(entryKey(cell.student_id, cell.lesson_date), cell.code);
+    });
     tally.terminal = true;
     if (JournalRequestErrors.isForbidden(error)) this.forbidden = true;
     tally.affectedEntryKeys.forEach((key) => {
@@ -400,11 +407,11 @@ export abstract class JournalQueueSender extends JournalQueueBase {
     }
   }
 
-  protected refreshUnknownSummaryConflicts(): void {
-    const hasUnknownSummary: boolean = Array.from(this.conflicts.values()).some(
-      (conflict) => conflict.type === "summary" && conflict.current === undefined,
+  protected refreshUnknownConflicts(): void {
+    const hasUnknownConflict: boolean = Array.from(this.conflicts.values()).some(
+      (conflict) => conflict.current === undefined,
     );
-    if (!hasUnknownSummary) return;
+    if (!hasUnknownConflict) return;
     void this.refetchAuthoritative().then((fresh) => {
       if (fresh && !this.disposed) this.reconcileWithServer(fresh);
     });

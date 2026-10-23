@@ -11,6 +11,7 @@ interface JournalReadOnlyCellProps {
   lessonDate: string;
   attendance: boolean;
   score: number;
+  graded?: boolean;
   comment: string | null;
   status?: CellSaveStatus;
   recorded?: boolean;
@@ -21,6 +22,7 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
   lessonDate,
   attendance,
   score,
+  graded = false,
   comment,
   status,
   recorded = true,
@@ -52,8 +54,8 @@ export const JournalReadOnlyCell: React.FC<JournalReadOnlyCellProps> = ({
         </span>
       )}
       {recorded && (
-        <span className={`min-w-6 text-center tabular-nums ${score > 0 ? "font-semibold text-ink" : "text-muted"}`}>
-          {score > 0 ? score : "—"}
+        <span className={`min-w-6 text-center tabular-nums ${graded || score > 0 ? "font-semibold text-ink" : "text-muted"}`}>
+          {graded || score > 0 ? score : "—"}
         </span>
       )}
       {hasComment && (

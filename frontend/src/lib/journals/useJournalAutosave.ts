@@ -24,6 +24,7 @@ const IDLE_SNAPSHOT: JournalQueueSnapshot = {
   revision: 0,
   cellStatus: new Map(),
   summaryStatus: new Map(),
+  cellRejections: new Map(),
   conflicts: [],
   phase: "idle",
   aggregateStatus: "idle",
@@ -87,6 +88,7 @@ export function useJournalAutosave(journalId: number | undefined, courseId?: num
   return {
     cellStatus: snapshot.cellStatus,
     summaryStatus: snapshot.summaryStatus,
+    cellRejections: snapshot.cellRejections,
     aggregateStatus: snapshot.aggregateStatus,
     conflicts: snapshot.conflicts,
     phase: snapshot.phase,
