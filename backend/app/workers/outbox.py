@@ -139,6 +139,11 @@ class OutboxWorkerManager:
         session: AsyncSession,
     ) -> tuple[bool, str]:
         user_repository: UserRepository = SQLAlchemyUserRepository(session)
+        if event.kind in (OutboxEventKind.VERIFICATION_EMAIL, OutboxEventKind.PASSWORD_RESET_EMAIL) and code.startswith("{"):
+            try:
+                code = json.loads(code)["code"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                return False, "code_payload_corrupted"
         if event.kind == OutboxEventKind.VERIFICATION_EMAIL:
             user = await user_repository.get_by_email(event.recipient_email)
             if not user or not user.must_set_password:

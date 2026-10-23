@@ -210,7 +210,7 @@ class TestAuthenticationInjection:
             budget.consume_ip_budget.assert_awaited_once()
             sms.issue_password.assert_awaited_once_with(
                 test_student, PasswordSmsReason.RESET, None,
-                enforce_rate_limits=True, channel=PasswordSmsDestinationKind.STUDENT_PHONE,
+                enforce_rate_limits=True, channel=PasswordSmsDestinationKind.STUDENT_PHONE, language="ru",
             )
             budget.consume_ip_budget.side_effect = HTTPException(429)
             sms.issue_password.reset_mock()

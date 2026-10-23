@@ -13,6 +13,7 @@ from app.repositories.interfaces.user_repository import UserRepository
 from app.core.config import settings
 from app.services.outbox_service import OutboxService
 from app.services.sms.messages import PasswordSmsReason
+from app.services.message_language import MessageLanguage
 from app.services.sms.sender import ProviderPhoneFormatter
 
 
@@ -122,6 +123,7 @@ class StudentPasswordSmsService:
         actor_id: Optional[int],
         enforce_rate_limits: bool,
         channel: Optional[PasswordSmsDestinationKind] = None,
+        language: str | None = None,
     ) -> PasswordSmsDestination:
         destination: PasswordSmsDestination = self.require_destination(user, channel)
         await self._limiter.consume_budgets(user.id, destination.phone, enforce_cooldown=enforce_rate_limits)
@@ -138,7 +140,7 @@ class StudentPasswordSmsService:
             target_user_id=user.id,
             code=code,
             reason=reason.value,
-            language=None,
+            language=MessageLanguage.resolve(user.preferred_language, language),
             expires_at=user.pending_password_expires_at if reason == PasswordSmsReason.RESET else None,
         )
         await self._audit_service.log(

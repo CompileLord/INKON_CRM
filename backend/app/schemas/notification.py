@@ -28,7 +28,7 @@ class NotificationResponse(BaseModel):
         description="Sent confirms provider success. Delivery is at least once: a crash after sending but before finalization can cause a duplicate after lease recovery."
     )
     attempts: int = 0
-    sent_at: Optional[datetime] = None
+    sent_at: datetime
     read_at: Optional[datetime] = None
 
 

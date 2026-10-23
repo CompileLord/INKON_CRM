@@ -103,6 +103,7 @@ async def test_roster_soft_deletes_and_class_sizes_survive_upgrade_downgrade_reu
     database: DisposableMigrationDatabase
     async with DisposableMigrationDatabase(RosterIndexFixture.backend_root) as database:
         RosterIndexFixture.assert_command(database.upgrade('rwp45_refresh_retention'))
+        await database.execute("ALTER TABLE users ADD COLUMN preferred_language VARCHAR(2)")
         await RosterIndexFixture.seed(database)
         before: dict[str, Any] = await RosterIndexFixture.snapshot(database)
         assert before == {'1': {'ids': [2, 3, 4, 5, 6, 7], 'total': 6, 'active_count': 4, 'located_page': 3, 'located_index': 5, 'filtered': [7]}, '2': {'ids': [9], 'total': 1, 'active_count': 1, 'located_page': None, 'located_index': None, 'filtered': []}, '3': {'ids': [], 'total': 0, 'active_count': 0, 'located_page': None, 'located_index': None, 'filtered': []}, 'class_sizes': {1: 4, 2: 1}}

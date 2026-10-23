@@ -60,7 +60,7 @@ class SQLAlchemyDebtReminderRepository:
         rows: Any = (await self._session.execute(
             select(
                 User.id.label("student_id"), User.first_name, User.last_name,
-                User.parent_telegram_chat_id, TelegramChatPreference.language,
+                User.parent_telegram_chat_id, func.coalesce(User.preferred_language, TelegramChatPreference.language).label("language"),
                 balances.c.title, balances.c.debt,
                 func.coalesce(func.sum(balances.c.debt).over(partition_by=User.id), 0).label("total_debt"),
             )

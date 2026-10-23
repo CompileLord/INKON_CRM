@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import pytest
 from httpx import AsyncClient, Response
@@ -8,7 +9,7 @@ from app.core.security import create_access_token, verify_password
 from app.models.user import User
 from app.models.course import Course
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
-from datetime import date
+from datetime import date, datetime, timezone
 
 
 def get_auth_headers(user: User):
@@ -172,34 +173,35 @@ async def test_mentor_profile_non_self_rbac(client: AsyncClient, test_student: U
 
 
 @pytest.mark.asyncio
-async def test_notifications_endpoints(client: AsyncClient, test_student: User, db_session):
+async def test_notifications_endpoints(client: AsyncClient, test_student: User, db_session: AsyncSession) -> None:
     # Seed notification log for student
-    log = NotificationLog(
+    log: NotificationLog = NotificationLog(
         user_id=test_student.id,
         recipient=test_student.email,
         type=NotificationType.EXAM_RESULT,
         related_entity_id=1,
         notification_date=date.today(),
-        status=NotificationStatus.SENT
+        status=NotificationStatus.SENT,
+        sent_at=datetime.now(timezone.utc),
     )
     db_session.add(log)
     await db_session.commit()
     await db_session.refresh(log)
 
-    headers = get_auth_headers(test_student)
+    headers: dict[str, str] = get_auth_headers(test_student)
 
     # GET /notifications/
-    res_list = await client.get("/api/v1/notifications/", headers=headers)
+    res_list: Response = await client.get("/api/v1/notifications/", headers=headers)
     assert res_list.status_code == 200
-    data = res_list.json()
+    data: dict[str, Any] = res_list.json()
     assert data["total"] >= 1
 
     # GET /notifications/unread-count
-    res_count = await client.get("/api/v1/notifications/unread-count", headers=headers)
+    res_count: Response = await client.get("/api/v1/notifications/unread-count", headers=headers)
     assert res_count.status_code == 200
     assert res_count.json()["unread_count"] >= 1
 
     # PATCH /notifications/{id}/read
-    res_read = await client.patch(f"/api/v1/notifications/{log.id}/read", headers=headers)
+    res_read: Response = await client.patch(f"/api/v1/notifications/{log.id}/read", headers=headers)
     assert res_read.status_code == 200
     assert res_read.json()["read_at"] is not None

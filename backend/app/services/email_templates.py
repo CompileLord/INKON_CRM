@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Protocol
 
 from app.core.config import settings
+from app.services.email_messages import EmailMessages
 from app.models.outbox_event import OutboxEventKind
 
 LOGO_CONTENT_ID = "kitob-logo"
@@ -83,6 +84,7 @@ class BrandedEmailLayout:
         body_lines: tuple[str, ...],
         call_to_action: CallToAction | None,
         footer_lines: tuple[str, ...],
+        language: str = "ru",
     ) -> str:
         preheader_markup: str = (
             '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;'
@@ -98,7 +100,7 @@ class BrandedEmailLayout:
         )
         logo_content_id: str = html.escape(self._logo_loader.load().content_id, quote=True)
         return (
-            '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8">'
+            f'<!DOCTYPE html><html lang="{language}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             '<meta name="color-scheme" content="light only">'
             '<meta name="supported-color-schemes" content="light only">'
@@ -187,7 +189,8 @@ class BrandedEmailLayout:
 
 
 class BaseBrandedEmailTemplate(ABC):
-    def __init__(self, layout: BrandedEmailLayout | None = None) -> None:
+    def __init__(self, layout: BrandedEmailLayout | None = None, language: str | None = None) -> None:
+        self._messages: EmailMessages = EmailMessages(language)
         self._layout: BrandedEmailLayout = layout or BrandedEmailLayout()
 
     @property
@@ -220,7 +223,7 @@ class BaseBrandedEmailTemplate(ABC):
         blocks: list[str] = ["\n".join(highlight_lines), "\n".join(message_lines)]
         if call_to_action is not None:
             blocks.append(f"{call_to_action.label}: {call_to_action.url}")
-        blocks.append("KITOB — Educational Center")
+        blocks.append("\n".join(self.build_footer_lines()))
         return "\n\n".join(blocks)
 
     def render(self) -> RenderedEmail:
@@ -231,6 +234,7 @@ class BaseBrandedEmailTemplate(ABC):
             body_lines=self.build_body_lines(),
             call_to_action=self.build_call_to_action(),
             footer_lines=self.build_footer_lines(),
+            language=self._messages.language,
         )
         return RenderedEmail(
             subject=self.subject,
@@ -252,8 +256,9 @@ class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
         parent_link_code: str | None = None,
         bot_username: str | None = None,
         layout: BrandedEmailLayout | None = None,
+        language: str | None = None,
     ) -> None:
-        super().__init__(layout)
+        super().__init__(layout, language)
         self._parent_link_code: str | None = parent_link_code
         self._bot_username: str | None = bot_username
         self._first_name: str = first_name
@@ -263,43 +268,43 @@ class CredentialsEmailTemplate(BaseBrandedEmailTemplate):
 
     @property
     def subject(self) -> str:
-        return self.SUBJECT
+        return self._messages.render("credentials_subject")
 
     @property
     def preheader(self) -> str:
-        return "Логин и пароль для входа в KITOB"
+        return self._messages.render("credentials_preheader")
 
     def build_heading(self) -> str:
-        return f"Добро пожаловать в KITOB, {self._first_name}!"
+        return self._messages.render("welcome", name=self._first_name)
 
     def build_body_lines(self) -> tuple[str, ...]:
-        sign_in_line: str = "Войдите с этими данными и при первом входе задайте новый пароль."
+        sign_in_line: str = self._messages.render("sign_in")
         if self._parent_link_code is None:
             return (sign_in_line,)
         bot_mention: str = f" @{self._bot_username}" if self._bot_username else ""
         return (
             sign_in_line,
-            f"Передайте код родителю, чтобы подключить уведомления в боте{bot_mention}.",
+            self._messages.render("parent", bot=bot_mention),
         )
 
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]:
         rows: tuple[HighlightRow, ...] = (
-            HighlightRow(label="Логин", value=self._login_email),
-            HighlightRow(label="Пароль", value=self._temporary_password, letter_spaced=True),
+            HighlightRow(label=self._messages.render("login"), value=self._login_email),
+            HighlightRow(label=self._messages.render("password"), value=self._temporary_password, letter_spaced=True),
         )
         if self._parent_link_code is None:
             return rows
         return rows + (
-            HighlightRow(label="Код для Telegram родителя", value=self._parent_link_code, letter_spaced=True),
+            HighlightRow(label=self._messages.render("parent_code"), value=self._parent_link_code, letter_spaced=True),
         )
 
     def build_call_to_action(self) -> CallToAction | None:
-        return CallToAction(label="Войти", url=self._login_url)
+        return CallToAction(label=self._messages.render("action"), url=self._login_url)
 
     def build_footer_lines(self) -> tuple[str, ...]:
         return (
-            "KITOB — Educational Center",
-            "Если вы не ожидали это письмо, просто проигнорируйте его.",
+            self._messages.render("footer"),
+            self._messages.render("ignore"),
         )
 
 
@@ -307,8 +312,8 @@ class CodeEmailTemplate(BaseBrandedEmailTemplate, ABC):
     EXPIRY_LINE: str = "Код действует 10 минут."
     SHARING_WARNING: str = "Никому не сообщайте этот код."
 
-    def __init__(self, code: str, layout: BrandedEmailLayout | None = None) -> None:
-        super().__init__(layout)
+    def __init__(self, code: str, layout: BrandedEmailLayout | None = None, language: str | None = None) -> None:
+        super().__init__(layout, language)
         self._code: str = code
 
     @property
@@ -331,7 +336,7 @@ class CodeEmailTemplate(BaseBrandedEmailTemplate, ABC):
         return f"{self.code_label}: {self._code}"
 
     def build_body_lines(self) -> tuple[str, ...]:
-        return (self.SHARING_WARNING, self.EXPIRY_LINE)
+        return (self._messages.render("sharing"), self._messages.render("expiry"))
 
     def build_highlight_rows(self) -> tuple[HighlightRow, ...]:
         return (HighlightRow(label=self.code_label, value=self._code, letter_spaced=True),)
@@ -340,7 +345,7 @@ class CodeEmailTemplate(BaseBrandedEmailTemplate, ABC):
         return None
 
     def build_footer_lines(self) -> tuple[str, ...]:
-        return ("KITOB — Educational Center", "Если это были не вы, проигнорируйте письмо.")
+        return (self._messages.render("footer"), self._messages.render("ignore"))
 
 
 class VerificationCodeEmailTemplate(CodeEmailTemplate):
@@ -348,14 +353,14 @@ class VerificationCodeEmailTemplate(CodeEmailTemplate):
 
     @property
     def subject_suffix(self) -> str:
-        return "код подтверждения KITOB"
+        return self._messages.render("verification_subject")
 
     @property
     def code_label(self) -> str:
-        return "Код подтверждения"
+        return self._messages.render("verification_label")
 
     def build_heading(self) -> str:
-        return "Подтвердите вход в KITOB"
+        return self._messages.render("verification_heading")
 
 
 class PasswordResetEmailTemplate(CodeEmailTemplate):
@@ -363,19 +368,19 @@ class PasswordResetEmailTemplate(CodeEmailTemplate):
 
     @property
     def subject_suffix(self) -> str:
-        return "код для сброса пароля KITOB"
+        return self._messages.render("reset_subject")
 
     @property
     def code_label(self) -> str:
-        return "Код для сброса пароля"
+        return self._messages.render("reset_label")
 
     def build_heading(self) -> str:
-        return "Сброс пароля в KITOB"
+        return self._messages.render("reset_heading")
 
 
 class OutboxEmailTemplateFactory:
     def __init__(self, login_url: str | None = None) -> None:
-        self._login_url: str = login_url or settings.FRONTEND_BASE_URL
+        self._login_url: str = login_url or settings.FRONTEND_BASE_URL.rstrip("/") + "/login"
 
     def create(self, kind: OutboxEventKind, recipient_email: str, payload: str) -> EmailTemplate:
         if kind == OutboxEventKind.CREDENTIALS_EMAIL:
@@ -387,9 +392,12 @@ class OutboxEmailTemplateFactory:
                 login_url=self._login_url,
                 parent_link_code=details.get("parent_link_code"),
                 bot_username=settings.TELEGRAM_BOT_USERNAME,
+                language=details.get("language"),
             )
         if kind == OutboxEventKind.VERIFICATION_EMAIL:
-            return VerificationCodeEmailTemplate(code=payload)
+            details = json.loads(payload) if payload.startswith("{") else {"code": payload}
+            return VerificationCodeEmailTemplate(code=details["code"], language=details.get("language"))
         if kind == OutboxEventKind.PASSWORD_RESET_EMAIL:
-            return PasswordResetEmailTemplate(code=payload)
+            details = json.loads(payload) if payload.startswith("{") else {"code": payload}
+            return PasswordResetEmailTemplate(code=details["code"], language=details.get("language"))
         raise ValueError(f"No email template for outbox event kind {kind}")

@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import os
 import runpy
 from typing import Any
@@ -123,4 +124,4 @@ class TestOutboxKeyRotation:
         event: OutboxEvent = await service.enqueue_verification_email("synthetic@example.test", "123456")
         assert event.encrypted_payload.startswith("v2:")
         worker: OutboxWorkerManager = OutboxWorkerManager(settings.DATABASE_URL, "changed-jwt-secret")
-        assert worker.encryptor.decrypt(event.encrypted_payload) == "123456"
+        assert json.loads(worker.encryptor.decrypt(event.encrypted_payload)) == {"code": "123456", "language": "ru"}

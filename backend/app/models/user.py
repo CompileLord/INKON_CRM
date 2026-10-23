@@ -45,6 +45,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     date_of_birth: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     parent_telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    preferred_language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
     parent_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     parent_link_code_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     photo_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
