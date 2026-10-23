@@ -162,4 +162,14 @@ i18n
     },
   });
 
+export class DocumentLanguage {
+  static apply(language: string | undefined): void {
+    if (typeof document === "undefined" || !language) return;
+    document.documentElement.lang = language.split("-")[0];
+  }
+}
+
+DocumentLanguage.apply(i18n.resolvedLanguage ?? i18n.language);
+i18n.on("languageChanged", (language: string): void => DocumentLanguage.apply(language));
+
 export default i18n;

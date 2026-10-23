@@ -107,7 +107,7 @@ describe("describeAuthError", () => {
 
   it("maps set password server errors to localized keys", () => {
     const policy400 = mapSetPasswordError(
-      new AuthApiError(400, "Password must be at least 8 characters and contain at least 1 digit"),
+      new AuthApiError(400, "Password must be at least 8 characters, contain a digit, not be all digits and not be a common password"),
     );
     expect(policy400.fieldErrors).toEqual([
       { field: "newPassword", messageKey: "auth:passwordPolicyError" },

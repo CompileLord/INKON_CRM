@@ -84,7 +84,7 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
   }
   if (isLoading && !course) return <ProfileSkeleton backLink={backLink} hasStats />;
   if (isError && !course) {
-    return <ProfileState stateName="failed" backLink={backLink} title={t("loadError")} message={tCommon("errorTryAgain")} onRetry={() => refetch()} />;
+    return <ProfileState stateName="failed" backLink={backLink} title={t("loadError")} message={t("loadErrorHelp")} onRetry={() => refetch()} />;
   }
   if (!course) return null;
 

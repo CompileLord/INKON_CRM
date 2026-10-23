@@ -1,5 +1,3 @@
-import { useAuthStore } from "../store/authStore";
-
 export function getSafeRedirect(raw: string | null | undefined, fallback = "/"): string {
   if (!raw) return fallback;
   const trimmed = raw.trim();
@@ -20,9 +18,10 @@ export function getSafeRedirect(raw: string | null | undefined, fallback = "/"):
   }
 }
 
+export class RoleHome {
+  static readonly PATH: string = "/";
+}
+
 export async function resolveLandingPath(): Promise<string> {
-  const { role, userId } = useAuthStore.getState();
-  if (userId !== null && role === "student") return `/students/${userId}`;
-  if (userId !== null && role === "mentor") return `/mentors/${userId}`;
-  return "/";
+  return RoleHome.PATH;
 }

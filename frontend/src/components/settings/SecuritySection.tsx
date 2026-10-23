@@ -9,7 +9,7 @@ import { Input } from "../ui/Input";
 import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { changePassword } from "../../lib/auth/endpoints";
 import { mapChangePasswordError, type ChangePasswordErrorMapping } from "../../lib/auth/errorMessages";
-import { normalizeStudentCode } from "../../lib/auth/studentCode";
+import { SmsCodeNormalizer } from "../../lib/auth/studentCode";
 import { createChangePasswordFormSchema, type ChangePasswordFormValues } from "../../lib/authSchema";
 import { useAuthStore } from "../../store/authStore";
 
@@ -38,7 +38,7 @@ export function SecuritySection({ onChanged }: SecuritySectionProps) {
     setSubmitting(true);
     setFormErrorKey(null);
     try {
-      const tokens = await changePassword(normalizeStudentCode(values.currentPassword), values.newPassword);
+      const tokens = await changePassword(SmsCodeNormalizer.normalize(values.currentPassword), values.newPassword);
       setAuthenticated(tokens.access_token, tokens.refresh_token, tokens.must_set_password);
       reset(EMPTY_VALUES);
       onChanged();

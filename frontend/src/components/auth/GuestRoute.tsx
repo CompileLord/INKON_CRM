@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { AuthUnavailable } from "./AuthUnavailable";
 import { FullscreenSpinner } from "./FullscreenSpinner";
 
 export function GuestRoute({ children }: { children: ReactNode }) {
@@ -8,6 +9,7 @@ export function GuestRoute({ children }: { children: ReactNode }) {
   const mustSetPassword = useAuthStore((s) => s.mustSetPassword);
 
   if (status === "initializing") return <FullscreenSpinner />;
+  if (status === "unavailable") return <AuthUnavailable />;
 
   if (status === "authenticated") {
     return <Navigate to={mustSetPassword ? "/set-password" : "/"} replace />;

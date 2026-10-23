@@ -72,3 +72,8 @@ export interface ValidationErrorItem {
 export interface HTTPValidationError {
   detail: ValidationErrorItem[];
 }
+
+export interface ApiErrorCodeDetail {
+  code: string;
+  message?: string;
+}
