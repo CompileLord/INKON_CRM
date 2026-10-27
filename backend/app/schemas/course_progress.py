@@ -1,5 +1,6 @@
 from typing import ClassVar, Literal, TypeAlias
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.course import StaffProgressPeriod
 
 
 ChartGradingState: TypeAlias = Literal["missing", "ungraded", "unknown", "graded", "upcoming"]

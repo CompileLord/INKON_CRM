@@ -54,6 +54,7 @@ class CourseProgressService:
                 class_avg_max_score=p.class_avg_max_score,
                 class_avg_percentage=p.class_avg_percentage,
                 graded_count=p.graded_count,
+                has_graded_entries=p.has_graded_entries,
             )
             for p in snapshot.periods
         ]

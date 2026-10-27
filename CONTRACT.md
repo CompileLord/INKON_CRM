@@ -2002,6 +2002,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
@@ -2054,6 +2055,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
