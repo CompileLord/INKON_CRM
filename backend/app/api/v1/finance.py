@@ -20,6 +20,7 @@ from app.schemas.ledger import (
     DiscountCreatePayload,
     LedgerEntryResponse,
     PaymentEntryResponse,
+    PaymentOptionsResponse,
     RefundPaymentPayload,
     StudentBalanceResponse,
     VoidPaymentPayload,
@@ -57,12 +58,15 @@ async def create_payment(
 ) -> dict:
     """Record cash received. Discounts are separate — see POST /finance/discounts/.
 
+    Supply targets or a legacy course_id. Invalid targets return 422 with detail.code invalid_payment_target, duplicate_payment_target, payment_target_sum_mismatch, payment_target_required or payment_target_exceeds_balance. The last includes enrollment_id and maximum as a decimal string.
+
     Send an Idempotency-Key header to make retries safe. A first request answers 201. A repeat by the same recorder with the same key and payload answers 200 with the original payment and records nothing new. The same key with a different payload answers 409 with detail.code idempotency_key_payload_mismatch. Requests without the header are never deduplicated.
     """
     finance_service = FinanceService(db)
     recorded: PaymentRecordResult = await PaymentIdempotencyService(db, finance_service, PaymentDateWindow(enrollment_repository)).record_payment(
         student_id=payload.student_id,
         course_id=payload.course_id,
+        targets=payload.targets,
         amount=payload.amount,
         paid_at=payload.paid_at,
         method=payload.method,
@@ -74,6 +78,15 @@ async def create_payment(
         response.status_code = status.HTTP_200_OK
     decorated = await finance_service._decorate_entries([recorded.entry])
     return decorated[0]
+
+
+@router.get("/students/{student_id}/payment-options", response_model=PaymentOptionsResponse)
+async def get_payment_options(
+    student_id: int,
+    current_user: User = Depends(require_accountant),
+    db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    return await FinanceService(db).get_payment_options(student_id)
 
 
 @router.get("/payments/", response_model=PaginatedResponse[PaymentEntryResponse])

@@ -76,7 +76,7 @@ async def test_withdrawal_example_preview_credit_and_payment_cap(
         await FinanceService(db_session).create_payment(test_student.id, enrollment.course_id, Decimal("101"),
             datetime.now(timezone.utc), PaymentMethod.CASH, None, test_admin)
     assert error.value.status_code == 422
-    assert error.value.detail == "withdrawn_enrollment_payment_exceeds_debt"
+    assert error.value.detail == {"code": "payment_target_exceeds_balance", "enrollment_id": enrollment.id, "maximum": "100.00"}
     refund: LedgerEntry = await FinanceService(db_session).refund_payment(
         payment.id, RefundPaymentPayload(amount=Decimal("200.00"), reason_code="test"), test_admin,
     )

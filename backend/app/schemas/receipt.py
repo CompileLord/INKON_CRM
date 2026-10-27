@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel
 from app.models.payment import PaymentMethod
+from app.schemas.ledger import PaymentTargetResponse
 
 
 class ReceiptAllocationItem(BaseModel):
@@ -23,4 +24,5 @@ class PaymentReceiptResponse(BaseModel):
     method: Optional[PaymentMethod] = None
     accepted_by_name: str
     allocations: List[ReceiptAllocationItem] = []
+    targets: List[PaymentTargetResponse] = []
     comment: Optional[str] = None

@@ -14,6 +14,7 @@ from app.models.document import Document
 from app.models.payment import Payment, PaymentMethod
 from app.models.charge import Charge, ChargeType, ChargeStatus
 from app.models.ledger import LedgerEntry, LedgerEntryType
+from app.models.payment_target import PaymentTarget
 from app.models.allocation import Allocation
 from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatus
 from app.models.notification_log import NotificationLog

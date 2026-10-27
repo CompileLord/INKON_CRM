@@ -337,6 +337,15 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         )
         return list((await self.session.execute(query)).scalars().all())
 
+    async def find_start_windows(self, student_id: int, enrollment_ids: list[int]) -> list[EnrollmentStartWindow]:
+        query: Select[tuple[datetime, date]] = (
+            select(Enrollment.enrolled_at, Course.start_date)
+            .join(Course, Course.id == Enrollment.course_id)
+            .where(Enrollment.student_id == student_id, Enrollment.id.in_(enrollment_ids), Enrollment.is_deleted.is_(False))
+        )
+        rows: list[Row[tuple[datetime, date]]] = list((await self.session.execute(query)).all())
+        return [EnrollmentStartWindow(enrolled_at=row.enrolled_at, course_start_date=row.start_date) for row in rows]
+
     async def find_start_window(self, student_id: int, course_id: int) -> Optional[EnrollmentStartWindow]:
         query: Select[tuple[datetime, date]] = (
             select(Enrollment.enrolled_at, Course.start_date)

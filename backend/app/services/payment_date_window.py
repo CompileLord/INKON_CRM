@@ -15,6 +15,14 @@ class PaymentDateWindow:
         start_window: Optional[EnrollmentStartWindow] = await self.enrollment_repository.find_start_window(student_id, course_id)
         if start_window is None:
             return
+        self._validate_start_window(start_window, paid_at)
+
+    async def require_after_enrollment_starts(self, student_id: int, enrollment_ids: list[int], paid_at: datetime) -> None:
+        windows: list[EnrollmentStartWindow] = await self.enrollment_repository.find_start_windows(student_id, enrollment_ids)
+        for window in windows:
+            self._validate_start_window(window, paid_at)
+
+    def _validate_start_window(self, start_window: EnrollmentStartWindow, paid_at: datetime) -> None:
         course_start: datetime = datetime.combine(start_window.course_start_date, time.min, tzinfo=timezone.utc)
         enrollment_start: datetime = min(start_window.enrolled_at, course_start)
         earliest_allowed: datetime = enrollment_start - timedelta(days=settings.PAYMENT_BEFORE_ENROLLMENT_TOLERANCE_DAYS)
