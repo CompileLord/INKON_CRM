@@ -1635,6 +1635,13 @@ Students receive only public mentor identity and course identity for their nonde
   "end_date?": string,
   "mentor_id?": integer,
   "status?": "active" | "archived",
+  "schedules?": [
+    {
+      "day_of_week": integer,
+      "time_start": string,
+      "time_end": string,
+    }
+  ],
 }
 ```
 
