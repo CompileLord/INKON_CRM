@@ -10,10 +10,11 @@ import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { Pagination } from "../ui/Pagination";
 import { SectionCard } from "../ui/SectionCard";
 import { EnrollStudentModal } from "./EnrollStudentModal";
+import { WithdrawalPreviewPanel } from "./WithdrawalPreviewPanel";
 import { CourseRosterRow, CourseRosterSkeleton } from "./CourseRosterRow";
 import { CourseDetailDeparture } from "./CourseDetailDeparture";
 import { useRosterEnrollFlow } from "./useRosterEnrollFlow";
-import { useCourseRosterPage, useWithdrawEnrollment } from "../../lib/enrollments/hooks";
+import { useCourseRosterPage, useWithdrawEnrollment, useWithdrawalPreview } from "../../lib/enrollments/hooks";
 import { formatNumber } from "../../i18n/formatters";
 import { DEFAULT_ROSTER_STATUS_FILTER, type CourseRosterItem, type CourseRosterParams, type RosterStatusFilter } from "../../lib/enrollments/types";
 
@@ -65,6 +66,7 @@ export function CourseRosterSection({
   const enrollButtonRef = useRef<HTMLButtonElement | null>(null);
   const isWithdrawSubmittingRef = useRef<boolean>(false);
   const withdrawMutation = useWithdrawEnrollment();
+  const withdrawalPreview = useWithdrawalPreview(withdrawTarget?.enrollment_id ?? null);
 
   const rosterParams: CourseRosterParams = { page, page_size: 10, search: searchQuery.trim() || undefined, sort: sortOption, status: statusFilter === "all" ? undefined : statusFilter };
   const { data: rosterData, isLoading, isFetching, isError, refetch } = useCourseRosterPage(courseId, rosterParams);
@@ -254,6 +256,14 @@ export function CourseRosterSection({
         open={withdrawTarget !== null}
         title={t("students.withdrawTitle")}
         message={withdrawTarget ? t("students.withdrawMessage", { name: `${withdrawTarget.student.first_name} ${withdrawTarget.student.last_name}`.trim(), course: courseTitle }) : ""}
+        details={
+          <WithdrawalPreviewPanel
+            preview={withdrawalPreview.data}
+            isLoading={withdrawalPreview.isLoading}
+            isError={withdrawalPreview.isError}
+            onRetry={() => void withdrawalPreview.refetch()}
+          />
+        }
         confirmLabel={t("students.withdrawConfirm")}
         cancelLabel={tCommon("cancel")}
         confirmVariant="destructive"

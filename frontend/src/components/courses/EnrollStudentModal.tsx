@@ -113,10 +113,13 @@ export function EnrollStudentModal({
       isSubmittingRef.current = false;
       setIsSubmitting(false);
       let status: number | undefined;
+      let detail: unknown;
       if (err instanceof AuthApiError) {
         status = err.status;
+        detail = err.detail;
       } else if (axios.isAxiosError(err)) {
         status = err.response?.status;
+        detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
       } else if (
         typeof err === "object" &&
         err !== null &&
@@ -124,9 +127,12 @@ export function EnrollStudentModal({
         typeof (err as { status?: unknown }).status === "number"
       ) {
         status = (err as { status: number }).status;
+        detail = (err as { detail?: unknown }).detail;
       }
 
-      if (status === 409) {
+      if (status === 422 && detail === "course_already_ended") {
+        setErrorMessage(t("enrollment.courseAlreadyEnded"));
+      } else if (status === 409) {
         setErrorMessage(t("enrollment.duplicateConflict"));
       } else {
         setErrorMessage(t("enrollment.genericError"));

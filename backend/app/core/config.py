@@ -23,6 +23,7 @@ def parse_cors_origins(value: Union[str, List[str]]) -> List[str]:
 
 
 class Settings(BaseSettings, DatabaseConnectionPolicy):
+    DEBT_REMINDER_INTERVAL_SECONDS: int = Field(default=86400, ge=1)
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

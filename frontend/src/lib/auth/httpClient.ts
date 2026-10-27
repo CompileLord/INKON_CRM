@@ -87,6 +87,8 @@ httpClient.interceptors.response.use(
       return httpClient.request(config);
     }
 
-    throw new AuthApiError(status, detailFrom(data));
+    const retryAfterHeader: unknown = error.response.headers?.["retry-after"];
+    const retryAfterSeconds: number = Number(retryAfterHeader);
+    throw new AuthApiError(status, detailFrom(data), retryAfterHeader !== undefined && Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : null);
   },
 );

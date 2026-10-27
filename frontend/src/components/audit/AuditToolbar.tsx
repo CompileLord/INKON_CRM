@@ -1,15 +1,20 @@
-import { Search } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { RefreshCw, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditFilterOptions, KnownAuditAction } from "../../lib/audit/api";
 import { AuditUrlState, type AuditViewState } from "../../lib/audit/auditUrlState";
+import { AUDIT_CATEGORIES, type AuditCategory } from "../../lib/audit/types";
+import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
+import { SegmentedControl, type SegmentedOption } from "../ui/SegmentedControl";
+import { AUDIT_CATEGORY_ICONS } from "./AuditCategoryIcon";
 import { FilterChip } from "../finance/FilterChip";
 import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { PaymentDateRangePicker } from "../finance/PaymentDateRangePicker";
 import { useAuditLabels } from "./useAuditLabels";
 
-export type AuditFilterChange = Partial<Pick<AuditViewState, "actorId" | "action" | "entityType" | "entityId" | "dateFrom" | "dateTo">>;
+export type AuditFilterChange = Partial<Pick<AuditViewState, "actorId" | "action" | "entityType" | "entityId" | "dateFrom" | "dateTo" | "category">>;
 
 interface AuditToolbarProps {
   view: AuditViewState;
@@ -18,15 +23,30 @@ interface AuditToolbarProps {
   onSearchChange: (value: string) => void;
   onChangeFilters: (filters: AuditFilterChange) => void;
   onClearAll: () => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
-export function AuditToolbar({ view, searchDraft, options, onSearchChange, onChangeFilters, onClearAll }: AuditToolbarProps) {
+export function AuditToolbar({ view, searchDraft, options, onSearchChange, onChangeFilters, onClearAll, onRefresh, isRefreshing }: AuditToolbarProps) {
   const { t, i18n } = useTranslation("audit");
   const labels = useAuditLabels();
   const language: string = i18n.language;
   const actors = options?.actors ?? [];
   const entityTypes: string[] = options?.entity_types ?? [];
   const knownEntityTypes: string[] = view.entityType !== null && !entityTypes.includes(view.entityType) ? [...entityTypes, view.entityType] : entityTypes;
+
+  const categoryScroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    categoryScroller.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.scrollIntoView?.({ block: "nearest", inline: "center" });
+  }, [view.category]);
+
+  const categoryOptions: SegmentedOption[] = [
+    { value: "", label: t("categories.all") },
+    ...AUDIT_CATEGORIES.map((category) => {
+      const Icon = AUDIT_CATEGORY_ICONS[category];
+      return { value: category, label: t(`categories.${category}`), icon: <Icon size={16} aria-hidden="true" className="shrink-0 max-sm:hidden" /> };
+    }),
+  ];
 
   const actorOptions: ListboxOption[] = [{ value: "", label: t("filters.allActors") }, ...actors.map((actor) => ({ value: String(actor.id), label: actor.name }))];
   const actionOptions: ListboxOption[] = [
@@ -47,13 +67,21 @@ export function AuditToolbar({ view, searchDraft, options, onSearchChange, onCha
         : view.dateTo
           ? t("chips.to", { date: formatDate(view.dateTo, language, SCHOOL_TIMEZONE) })
           : null;
-  const hasChips: boolean = AuditUrlState.hasFilters({ ...view, search: "" });
+  const hasChips: boolean = AuditUrlState.hasFilters({ ...view, search: "", category: null });
   const removeLabel = (filter: string): string => t("chips.remove", { filter });
 
   const chipFor = (label: string, onRemove: () => void) => <FilterChip key={label} label={label} removeLabel={removeLabel(label)} onRemove={onRemove} />;
 
   return (
     <div className="flex flex-col gap-3">
+      <div ref={categoryScroller} className="max-w-full overflow-x-auto [&>div]:max-w-none [&_button]:shrink-0 [&_button]:whitespace-nowrap max-sm:[&_button]:px-2">
+        <SegmentedControl
+          ariaLabel={t("categories.label")}
+          options={categoryOptions}
+          value={view.category ?? ""}
+          onChange={(value) => onChangeFilters({ category: value === "" ? null : (value as AuditCategory) })}
+        />
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-full sm:w-72">
           <Input
@@ -89,6 +117,9 @@ export function AuditToolbar({ view, searchDraft, options, onSearchChange, onCha
           onChange={(value) => onChangeFilters({ entityType: value === "" ? null : value, entityId: null })}
         />
         <PaymentDateRangePicker title={t("filters.dateTitle")} range={{ from: view.dateFrom, to: view.dateTo }} onApply={(range) => onChangeFilters({ dateFrom: range.from, dateTo: range.to })} />
+        <Button variant="secondary" aria-label={t("refresh")} title={t("refresh")} onClick={onRefresh} className="px-3">
+          <RefreshCw size={18} aria-hidden="true" className={isRefreshing ? "motion-safe:animate-spin" : ""} />
+        </Button>
       </div>
       {hasChips && (
         <div className="flex flex-wrap items-center gap-2">

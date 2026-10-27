@@ -68,6 +68,9 @@ jobs:
           else
             build_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' backend/pyproject.toml | head -n 1)"
           fi
+          if [ -z "$build_version" ]; then
+            build_version="${RESOLVED_SHA:0:12}"
+          fi
           {
             echo "version=${build_version}"
             echo "commit_sha=${RESOLVED_SHA}"

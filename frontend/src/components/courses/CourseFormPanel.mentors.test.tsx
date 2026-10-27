@@ -91,13 +91,14 @@ it("renders mentor error state with retry button", async () => {
   expect(mockRefetchMentors).toHaveBeenCalledTimes(1);
 });
 
-it("formats read-only schedule times with formatTime", () => {
+it("shows the existing weekday as a label with editable times", () => {
   renderWithClient(
     <CourseFormPanel open={true} course={sampleCourse} onClose={vi.fn()} onSaved={vi.fn()} />,
   );
 
-  expect(screen.getByText("09:00–11:00")).toBeTruthy();
-  expect(screen.getByText("Monday:")).toBeTruthy();
+  expect(screen.getByText("Monday")).toBeTruthy();
+  expect((screen.getByLabelText("Monday: start time") as HTMLInputElement).value).toBe("09:00");
+  expect((screen.getByLabelText("Monday: end time") as HTMLInputElement).value).toBe("11:00");
 });
 
 it("renders localized weekday names instead of raw numbers in the schedule day selector", async () => {

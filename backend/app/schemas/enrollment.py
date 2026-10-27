@@ -33,6 +33,12 @@ class EnrollmentResponse(BaseModel):
     is_deleted: bool
 
 
+class WithdrawalPreviewResponse(BaseModel):
+    still_owed: Decimal
+    cancelled_amount: Decimal
+    months_cancelled: int
+
+
 class RosterStudentIdentity(BaseModel):
     model_config = {"extra": "forbid"}
     id: int

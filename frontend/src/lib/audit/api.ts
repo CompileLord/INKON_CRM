@@ -1,5 +1,6 @@
 import { httpClient } from "../auth/httpClient";
 import type { Paginated } from "../pagination";
+import type { AuditCategory } from "./types";
 
 export type KnownAuditAction = "create" | "update" | "delete" | "void" | "refund" | "close_period" | "reopen_period";
 
@@ -62,6 +63,7 @@ export interface AuditFilters {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  category?: AuditCategory;
 }
 
 export async function fetchAuditLogs(page = 1, pageSize = 20, filters: AuditFilters = {}): Promise<Paginated<AuditLogItem>> {
@@ -73,6 +75,7 @@ export async function fetchAuditLogs(page = 1, pageSize = 20, filters: AuditFilt
   if (filters.dateFrom) params.append("date_from", filters.dateFrom);
   if (filters.dateTo) params.append("date_to", filters.dateTo);
   if (filters.search) params.append("search", filters.search);
+  if (filters.category) params.append("category", filters.category);
   const response = await httpClient.get(`/audit-log/?${params.toString()}`);
   return response.data;
 }
@@ -91,6 +94,7 @@ export async function fetchAuditEvents(page = 1, pageSize = 20, filters: AuditFi
   if (filters.dateFrom) params.append("date_from", filters.dateFrom);
   if (filters.dateTo) params.append("date_to", filters.dateTo);
   if (filters.search) params.append("search", filters.search);
+  if (filters.category) params.append("category", filters.category);
   const response = await httpClient.get(`/audit-log/events/?${params.toString()}`);
   return response.data;
 }

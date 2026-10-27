@@ -13,6 +13,7 @@ import {
   buildCourseUpdatePayload,
   courseFormDefaults,
   describeCourseApiError,
+  hasScheduleTimeRangeViolation,
 } from "../../lib/courses/formMapping";
 import { useCreateCourse, useUpdateCourse, useUploadCourseImage } from "../../lib/courses/hooks";
 import { AuthApiError } from "../../lib/auth/errors";
@@ -26,7 +27,10 @@ import { CourseImageUploadField } from "./CourseImageUploadField";
 import { CourseFormErrorLocator, CourseFormField } from "./CourseFormField";
 import { CourseMentorField } from "./CourseMentorField";
 import { CourseFormFooter } from "./CourseFormFooter";
-import { CourseTermsSummary } from "./CourseTermsSummary";
+import { CourseEditTerms } from "./CourseEditTerms";
+import { CourseFormBanners } from "./CourseFormBanners";
+import { CourseReadOnlyDates } from "./CourseReadOnlyDates";
+import { useCourseScheduleEdits } from "./useCourseScheduleEdits";
 import type { CourseResponse } from "../../lib/courses/types";
 import { useAuthStore } from "../../store/authStore";
 
@@ -88,6 +92,7 @@ function CourseFormPanelInner({
   const createCourse = useCreateCourse();
   const updateCourse = useUpdateCourse();
   const uploadImage = useUploadCourseImage();
+  const schedule = useCourseScheduleEdits(course?.id, isEditing);
   const formRef = useRef<HTMLFormElement>(null);
   const lastActiveFieldRef = useRef<HTMLElement | null>(null);
   const isSubmittingRef = useRef(false);
@@ -110,13 +115,13 @@ function CourseFormPanelInner({
     defaultValues: course ? buildCourseFormValues(course) : courseFormDefaults,
   });
 
-  const isFormDirty = isDirty || Boolean(selectedImageFile);
+  const isFormDirty = isDirty || Boolean(selectedImageFile) || schedule.hasChanges;
   const isPending = createCourse.isPending || updateCourse.isPending || uploadImage.isPending;
   const isLocked = isPending || isSubmitting;
   const areCourseFieldsLocked = isLocked || Boolean(partialSuccess);
   const isSaveDisabled =
     isLocked ||
-    (isEditing && !isDirty && !selectedImageFile && !partialSuccess);
+    (isEditing && !isDirty && !selectedImageFile && !schedule.hasChanges && !partialSuccess);
 
   const handleAttemptClose = () => {
     if (isSubmittingRef.current || isLocked) return;
@@ -174,7 +179,7 @@ function CourseFormPanelInner({
   };
 
   const handleError = (err: unknown) => {
-    if (err instanceof AuthApiError && err.status === 422) {
+    if (err instanceof AuthApiError && err.status === 422 && !hasScheduleTimeRangeViolation(err)) {
       const applied = applyCourseFieldErrors(
         err.fieldErrors,
         (field, error) => setError(field as Parameters<typeof setError>[0], error),
@@ -220,6 +225,11 @@ function CourseFormPanelInner({
 
       if (course) {
         const updatePayload = buildCourseUpdatePayload(values, dirtyFields);
+        if (schedule.hasChanges) {
+          const schedulesPayload = schedule.buildPayloadIfValid();
+          if (!schedulesPayload) return;
+          updatePayload.schedules = schedulesPayload;
+        }
         const hasCourseFieldChanges = Object.keys(updatePayload).length > 0;
 
         if (!hasCourseFieldChanges && selectedImageFile) {
@@ -377,18 +387,7 @@ function CourseFormPanelInner({
           noValidate
           className="flex flex-col gap-6"
         >
-          {formError && (
-            <div role="alert" className="rounded-[10px] border border-destructive p-3 text-sm text-destructive">
-              {formError}
-            </div>
-          )}
-
-          {partialSuccess && (
-            <div role="alert" className="flex flex-col gap-1 rounded-[10px] border border-border bg-strip p-4 text-sm text-ink">
-              <h3 className="font-semibold text-ink">{t("form.partialImageSuccessTitle")}</h3>
-              <p className="text-muted">{t("form.partialImageSuccessMessage")}</p>
-            </div>
-          )}
+          <CourseFormBanners formError={formError} hasPartialSuccess={Boolean(partialSuccess)} />
 
           <div className="flex flex-col gap-4">
             <CourseFormField id="course-title-field" label={t("form.titleLabel")} required error={errorText(errors.title, "form.requiredFieldError")} errorId="course-title-error">
@@ -417,6 +416,9 @@ function CourseFormPanelInner({
           <div className="flex flex-col gap-4">
             <CourseMentorField control={control} errors={errors} course={course} isEditing={isEditing} isSuperAdmin={isSuperAdmin} open={open} disabled={areCourseFieldsLocked} />
 
+            {isEditing ? (
+              <CourseReadOnlyDates startDate={course!.start_date} endDate={course!.end_date} />
+            ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <CourseFormField id="course-start-date-field" label={t("form.startDateLabel")} required error={errorText(errors.start_date, "form.requiredFieldError")} errorId="course-start-date-error">
                 <Controller
@@ -437,6 +439,7 @@ function CourseFormPanelInner({
                 />
               </CourseFormField>
             </div>
+            )}
 
             {isEditing && (
               <CourseFormField id="course-status-field" label={t("common:status")}>
@@ -452,7 +455,7 @@ function CourseFormPanelInner({
           </div>
 
           {isEditing ? (
-            <CourseTermsSummary course={course!} disabled={areCourseFieldsLocked} />
+            <CourseEditTerms course={course!} schedule={schedule} disabled={areCourseFieldsLocked} />
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

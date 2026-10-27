@@ -16,6 +16,7 @@ describe("payment submission outcome", () => {
     expect(PaymentSubmissionOutcome.classify(new AuthApiError(400, "Accounting period closed"))).toBe("closedPeriod");
     expect(PaymentSubmissionOutcome.classify(new AuthApiError(400, "Student is not enrolled in this course"))).toBe("enrollment");
     expect(PaymentSubmissionOutcome.classify(new AuthApiError(422, undefined))).toBe("rejected");
+    expect(PaymentSubmissionOutcome.classify(new AuthApiError(422, "withdrawn_enrollment_payment_exceeds_debt"))).toBe("withdrawnExceedsDebt");
     expect(PaymentSubmissionOutcome.isConfirmedRejection("rejected")).toBe(true);
   });
 });

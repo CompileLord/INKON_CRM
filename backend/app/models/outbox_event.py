@@ -12,6 +12,7 @@ class OutboxEventKind(str, enum.Enum):
     CREDENTIALS_EMAIL = "credentials_email"
     EXAM_RESULT_NOTIFICATION = "exam_result_notification"
     DOCUMENT_NOTIFICATION = "document_notification"
+    DEBT_REMINDER_SMS = "debt_reminder_sms"
     STUDENT_PASSWORD_SMS = "student_password_sms"
 
 

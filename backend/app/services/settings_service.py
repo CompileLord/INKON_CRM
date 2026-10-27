@@ -30,6 +30,10 @@ class SettingsService:
         previous_values: dict[str, object] = {field: getattr(settings, field) for field in data.model_fields_set}
         if data.org_name is not None:
             settings.org_name = data.org_name
+        if "address" in data.model_fields_set:
+            settings.address = data.address
+        if "phone" in data.model_fields_set:
+            settings.phone = data.phone
         if data.notify_payments is not None:
             settings.notify_payments = data.notify_payments
         if data.notify_debts is not None:

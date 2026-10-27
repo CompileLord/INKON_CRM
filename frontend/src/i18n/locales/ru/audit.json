@@ -40,15 +40,15 @@
     "unknown": "Другое"
   },
   "sentence": {
-    "create": "<actor>{{actor}}</actor>: создание — {{entity}}",
-    "update": "<actor>{{actor}}</actor>: изменение — {{entity}}",
-    "delete": "<actor>{{actor}}</actor>: удаление — {{entity}}",
-    "void": "<actor>{{actor}}</actor>: аннулирование — {{entity}}",
-    "refund": "<actor>{{actor}}</actor>: возврат — {{entity}}",
-    "close_period": "<actor>{{actor}}</actor>: закрытие — {{entity}}",
-    "reopen_period": "<actor>{{actor}}</actor>: повторное открытие — {{entity}}",
-    "unknown": "<actor>{{actor}}</actor>: изменение — {{entity}}",
-    "object": "<actor>{{actor}}</actor>: {{object}}"
+    "create": "<actor>{{actor}}</actor> добавил запись «{{entity}}»",
+    "update": "<actor>{{actor}}</actor> изменил запись «{{entity}}»",
+    "delete": "<actor>{{actor}}</actor> удалил запись «{{entity}}»",
+    "void": "<actor>{{actor}}</actor> аннулировал запись «{{entity}}»",
+    "refund": "<actor>{{actor}}</actor> оформил возврат по записи «{{entity}}»",
+    "close_period": "<actor>{{actor}}</actor> закрыл запись «{{entity}}»",
+    "reopen_period": "<actor>{{actor}}</actor> снова открыл запись «{{entity}}»",
+    "unknown": "<actor>{{actor}}</actor> изменил запись «{{entity}}»",
+    "unnamed": "(без названия)"
   },
   "entities": {
     "payment": "Платёж",
@@ -64,7 +64,10 @@
     "student": "Студент",
     "student_telegram_link": "Привязка Telegram родителя",
     "journal_period_settings": "Настройки периода",
-    "journal_student_summary": "Итог студента за период"
+    "journal_student_summary": "Итог студента за период",
+    "settings": "Настройки школы",
+    "debt_reminder": "Напоминание о долге",
+    "mentor": "Ментор"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -72,7 +75,10 @@
     "removed": "{{field}} удалено: {{value}}",
     "referenceSet": "{{field}} указан",
     "referenceChanged": "{{field}} изменён",
-    "referenceCleared": "{{field}} очищен"
+    "referenceCleared": "{{field}} очищен",
+    "scheduleTimes": "время занятий {{day}} {{from}} → {{to}}",
+    "scheduleStart": "начало занятий {{day}}: {{from}} → {{to}}",
+    "scheduleEnd": "конец занятий {{day}}: {{from}} → {{to}}"
   },
   "fields": {
     "amount": "Сумма",
@@ -95,7 +101,35 @@
     "role": "Роль",
     "title": "Название",
     "paid_at": "Дата оплаты",
-    "discount_percent": "Процент скидки"
+    "discount_percent": "Процент скидки",
+    "first_name": "Имя",
+    "last_name": "Фамилия",
+    "email": "Email",
+    "phone": "Телефон",
+    "parent_phone": "Телефон родителя",
+    "date_of_birth": "Дата рождения",
+    "payment_day_of_month": "День оплаты в месяце",
+    "description": "Описание",
+    "start_date": "Дата начала",
+    "end_date": "Дата окончания",
+    "is_deleted": "Удалено",
+    "changed_fields": "Изменённые поля",
+    "org_name": "Название школы",
+    "address": "Адрес",
+    "notify_payments": "Уведомления об оплатах",
+    "notify_debts": "Уведомления о долгах",
+    "is_graded": "Оценено",
+    "bonus_max_score": "Максимальный бонусный балл",
+    "exam_score": "Балл за экзамен",
+    "bonus_score": "Бонусный балл",
+    "link_code_expires_at": "Код привязки действует до",
+    "parent_telegram_chat_id": "Чат Telegram родителя",
+    "global_failed_attempt_limit": "Лимит неудачных попыток",
+    "credentials_queued": "Данные для входа",
+    "password_sms_queued": "SMS с паролем",
+    "schedules": "Расписание",
+    "scheduleStart": "Начало занятий, {{day}}",
+    "scheduleEnd": "Конец занятий, {{day}}"
   },
   "values": {
     "none": "Нет значения",
@@ -109,7 +143,8 @@
       "withdrawn": "Отчислен",
       "completed": "Завершён",
       "open": "Открыт",
-      "closed": "Закрыт"
+      "closed": "Закрыт",
+      "archived": "В архиве"
     },
     "role": {
       "superadmin": "Администратор",
@@ -120,6 +155,23 @@
     "destination": {
       "cash": "Выдано наличными",
       "wallet": "Кредит студента"
+    },
+    "boolean": {
+      "true": "Да",
+      "false": "Нет"
+    },
+    "attendance": {
+      "true": "Присутствовал",
+      "false": "Отсутствовал"
+    },
+    "queueChannel": {
+      "email": "на email",
+      "student_phone": "по SMS студенту",
+      "parent_phone": "по SMS родителю"
+    },
+    "queueReason": {
+      "initial": "Первые данные для входа",
+      "reset": "Новый пароль"
     }
   },
   "states": {
@@ -129,7 +181,8 @@
     "empty": "Изменений пока нет. Действия сотрудников появятся здесь.",
     "noMatch": "Нет изменений, подходящих под фильтры.",
     "clear": "Сбросить фильтры",
-    "pageCorrected": "Такой страницы больше нет. Показана последняя страница."
+    "pageCorrected": "Такой страницы больше нет. Показана последняя страница.",
+    "noMatchCategory": "В этой категории ничего не найдено. Выберите другую категорию или сбросьте фильтры."
   },
   "inspector": {
     "title": "Детали изменения",
@@ -149,8 +202,6 @@
     "open": "Открыть детали"
   },
   "event": {
-    "paymentRecorded": "<actor>{{actor}}</actor>: принят платёж {{amount}} от {{student}}",
-    "paymentVoided": "<actor>{{actor}}</actor>: аннулирован платёж {{amount}} от {{student}}",
     "reason": "Причина: {{reason}}",
     "fieldsChanged_one": "Изменено {{count}} поле",
     "fieldsChanged_few": "Изменено {{count}} поля",
@@ -159,38 +210,170 @@
     "fieldsList": "Изменено: {{fields}}",
     "similarCount": "Похожих изменений: {{count}}",
     "showSimilar": "Показать все",
-    "hideSimilar": "Скрыть"
+    "hideSimilar": "Скрыть",
+    "detailsSuffix": ": {{details}}"
   },
   "moneyAmount": "{{amount}} TJS",
-  "objects": {
-    "journal_entry": {
-      "update": {
-        "score": "изменена оценка",
-        "attendance": "изменена посещаемость",
-        "any": "изменена запись журнала"
-      },
+  "actor": {
+    "system": "Система"
+  },
+  "categories": {
+    "label": "Категория",
+    "all": "Все",
+    "payments": "Оплаты",
+    "students": "Студенты",
+    "courses": "Курсы",
+    "journal": "Журнал",
+    "system": "Система"
+  },
+  "statement": {
+    "payment": {
       "create": {
-        "score": "выставлена оценка",
-        "attendance": "отмечена посещаемость",
-        "any": "добавлена запись журнала"
+        "amount": "<actor>{{actor}}</actor> принял оплату {{amount}} от {{name}}",
+        "any": "<actor>{{actor}}</actor> принял оплату от {{name}}"
+      },
+      "void": {
+        "amount": "<actor>{{actor}}</actor> аннулировал платёж {{amount}} от {{name}}",
+        "any": "<actor>{{actor}}</actor> аннулировал платёж от {{name}}"
+      },
+      "refund": {
+        "amount": "<actor>{{actor}}</actor> вернул {{amount}} студенту {{name}}",
+        "any": "<actor>{{actor}}</actor> оформил возврат студенту {{name}}"
       }
     },
-    "student_telegram_link": {
-      "update": {
-        "any": "обновлён код привязки Telegram родителя"
-      },
+    "discount": {
       "create": {
-        "any": "создан код привязки Telegram родителя"
+        "amount": "<actor>{{actor}}</actor> предоставил скидку {{amount}} студенту {{name}}",
+        "any": "<actor>{{actor}}</actor> предоставил скидку студенту {{name}}"
+      }
+    },
+    "adjustment": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> провёл корректировку на {{amount}}",
+        "any": "<actor>{{actor}}</actor> провёл корректировку"
+      }
+    },
+    "allocation": {
+      "update": {
+        "amount": "<actor>{{actor}}</actor> зачёл {{amount}} из кредита студента {{name}} в счёт начисления",
+        "any": "<actor>{{actor}}</actor> зачёл кредит студента {{name}} в счёт начисления"
+      }
+    },
+    "accounting_period": {
+      "close_period": {
+        "any": "<actor>{{actor}}</actor> закрыл учётный период {{name}}"
+      },
+      "reopen_period": {
+        "any": "<actor>{{actor}}</actor> снова открыл учётный период {{name}}"
+      }
+    },
+    "student": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> создал студента {{name}}"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил данные студента {{name}}"
       },
       "delete": {
-        "any": "отвязан Telegram родителя"
+        "any": "<actor>{{actor}}</actor> удалил студента {{name}}"
+      }
+    },
+    "mentor": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> добавил ментора {{name}}"
+      }
+    },
+    "user": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> создал пользователя {{name}}"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил данные пользователя {{name}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> удалил пользователя {{name}}"
+      }
+    },
+    "enrollment": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> записал студента {{name}} на курс {{course}}"
+      },
+      "update": {
+        "status": "<actor>{{actor}}</actor> изменил статус записи студента {{name}} на курсе {{course}}",
+        "any": "<actor>{{actor}}</actor> изменил запись студента {{name}} на курсе {{course}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> удалил запись студента {{name}} с курса {{course}}"
       }
     },
     "course": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> создал курс {{name}}"
+      },
       "update": {
-        "mentor_id": "изменён преподаватель курса",
-        "status": "изменён статус курса"
+        "any": "<actor>{{actor}}</actor> изменил курс {{name}}",
+        "mentor_id": "<actor>{{actor}}</actor> сменил ментора курса {{name}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> удалил курс {{name}}"
       }
+    },
+    "journal": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил максимальные баллы журнала {{name}}"
+      }
+    },
+    "journal_entry": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> добавил запись в журнал"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил запись в журнале"
+      }
+    },
+    "journal_student_summary": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> обновил итоги студента за период"
+      }
+    },
+    "journal_period_settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил настройки периода журнала"
+      }
+    },
+    "student_telegram_link": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> создал код привязки Telegram для родителя студента {{name}}",
+        "anyUnnamed": "<actor>{{actor}}</actor> создал код привязки Telegram для родителя",
+        "system": "<actor>{{actor}}</actor>: создан код привязки Telegram родителя"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> обновил код привязки Telegram родителя студента {{name}}",
+        "parent_telegram_chat_id": "<actor>{{actor}}</actor>: Telegram родителя привязан к студенту {{name}}",
+        "global_failed_attempt_limit": "<actor>{{actor}}</actor>: привязка Telegram приостановлена из-за множества неудачных попыток",
+        "anyUnnamed": "<actor>{{actor}}</actor> обновил код привязки Telegram родителя",
+        "system": "<actor>{{actor}}</actor>: обновлён код привязки Telegram родителя"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> отвязал Telegram родителя студента {{name}}",
+        "anyUnnamed": "<actor>{{actor}}</actor> отвязал Telegram родителя",
+        "system": "<actor>{{actor}}</actor>: Telegram родителя отвязан"
+      }
+    },
+    "settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> изменил настройки школы"
+      }
+    },
+    "debt_reminder": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> отправил напоминание о долге на {{amount}}",
+        "any": "<actor>{{actor}}</actor> отправил напоминание о долге"
+      }
+    },
+    "queue": {
+      "initial": "<actor>{{actor}}</actor>: отправлены данные для входа {{channel}}",
+      "reset": "<actor>{{actor}}</actor>: отправлен новый пароль {{channel}}"
     }
   }
 }

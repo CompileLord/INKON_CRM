@@ -17,7 +17,9 @@ class DebtReminderRequest(BaseModel):
 
 class DebtReminderResult(BaseModel):
     student_id: int
-    outcome: Literal["queued", "no_parent_chat", "no_debt", "recently_reminded", "not_found"]
+    outcome: Literal["queued", "no_parent_chat", "no_debt", "recently_reminded", "not_found", "no_channel"]
+    channel: Literal["telegram", "sms"] | None = None
+    masked_destination: str | None = None
     next_allowed_at: datetime | None
 
 

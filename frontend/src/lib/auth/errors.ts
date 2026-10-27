@@ -13,14 +13,16 @@ export class AuthApiError extends Error {
   readonly detail: ApiErrorDetail;
   readonly fieldErrors: Record<string, string>;
   readonly code: string | null;
+  readonly retryAfterSeconds: number | null;
 
-  constructor(status: number, detail: ApiErrorDetail) {
+  constructor(status: number, detail: ApiErrorDetail, retryAfterSeconds: number | null = null) {
     super(AuthApiError.messageFor(detail));
     this.name = "AuthApiError";
     this.status = status;
     this.detail = detail;
     this.fieldErrors = AuthApiError.fieldErrorsFor(detail);
     this.code = AuthApiError.codeFor(detail);
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 
   private static messageFor(detail: ApiErrorDetail): string {

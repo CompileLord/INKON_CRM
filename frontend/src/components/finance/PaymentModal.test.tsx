@@ -197,6 +197,16 @@ describe("payment recording reliability", () => {
     expect(JSON.parse(mock.history.post[1].data).amount).toBe("750.123456789");
   });
 
+  it("explains a 422 withdrawn_enrollment_payment_exceeds_debt rejection and keeps the entered values", async () => {
+    mock.onPost("/finance/payments/").replyOnce(422, { detail: "withdrawn_enrollment_payment_exceeds_debt" });
+    const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
+    await user.type(screen.getByLabelText("Amount (TJS)"), "900.00");
+    await user.click(screen.getByRole("button", { name: "Accept Payment" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("This student has withdrawn from the course. A payment can't exceed the remaining debt.");
+    expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("900.00");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
   it("requires verification before resubmission after an ambiguous transport result", async () => {
     mock.onPost("/finance/payments/").networkError();
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type(screen.getByLabelText("Amount (TJS)"), "750.50"); await user.click(screen.getByRole("button", { name: "Accept Payment" }));

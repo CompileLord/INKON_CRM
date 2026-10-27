@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { Building2, Coins, Pencil, Send } from "lucide-react";
+import { Building2, Coins, MapPin, Pencil, Phone, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { InfoTooltip } from "../ui/InfoTooltip";
@@ -7,9 +7,13 @@ import { Input } from "../ui/Input";
 import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import { SettingsSectionError, SettingsSectionSkeleton } from "./SettingsSectionState";
+import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
+import type { OrgSettingsUpdate } from "../../lib/settings/types";
 import { useOrgSettings, useTestTelegramBot, useUpdateOrgSettings } from "../../lib/settings/hooks";
 
 const ORGANIZATION_NAME_MAXIMUM_LENGTH: number = 255;
+const ORGANIZATION_ADDRESS_MAXIMUM_LENGTH: number = 255;
+const PHONE_PLACEHOLDER: string = "+992901234567";
 
 interface OrganizationSectionProps {
   onSaved: () => void;
@@ -23,14 +27,24 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
   const updateOrganization = useUpdateOrgSettings();
   const telegramCheck = useTestTelegramBot();
   const [draftName, setDraftName] = useState<string | null>(null);
+  const [draftAddress, setDraftAddress] = useState<string | null>(null);
+  const [draftPhone, setDraftPhone] = useState<string | null>(null);
   const [editing, setEditing] = useState<boolean>(false);
 
   if (isLoading) return <SettingsSectionSkeleton rows={3} />;
   if (isError || !organization) return <SettingsSectionError onRetry={() => void refetch()} />;
 
+  const savedAddress: string = organization.address ?? "";
+  const savedPhone: string = CanonicalPhone.prefill(organization.phone);
   const currentName: string = draftName ?? organization.org_name;
-  const dirty: boolean = draftName !== null && draftName !== organization.org_name;
-  const nameError: string | undefined = draftName !== null && dirty && draftName.trim() === "" ? t("organization.nameRequired") : undefined;
+  const currentAddress: string = draftAddress ?? savedAddress;
+  const currentPhone: string = draftPhone ?? savedPhone;
+  const nameChanged: boolean = draftName !== null && draftName !== organization.org_name;
+  const addressChanged: boolean = currentAddress.trim() !== savedAddress;
+  const phoneChanged: boolean = currentPhone.trim() !== savedPhone;
+  const dirty: boolean = nameChanged || addressChanged || phoneChanged;
+  const nameError: string | undefined = nameChanged && currentName.trim() === "" ? t("organization.nameRequired") : undefined;
+  const phoneError: string | undefined = currentPhone.trim() !== "" && !CanonicalPhone.valid(currentPhone.trim()) ? t("organization.phoneInvalid") : undefined;
 
   const startEditing = (): void => {
     setEditing(true);
@@ -40,14 +54,22 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
   const discard = (): void => {
     updateOrganization.reset();
     setDraftName(null);
+    setDraftAddress(null);
+    setDraftPhone(null);
     setEditing(false);
   };
 
   const save = (): void => {
-    if (nameError || draftName === null) return;
-    updateOrganization.mutate({ org_name: draftName.trim() }, {
+    if (nameError || phoneError || !dirty) return;
+    const payload: OrgSettingsUpdate = {};
+    if (nameChanged) payload.org_name = currentName.trim();
+    if (addressChanged) payload.address = currentAddress.trim() === "" ? null : currentAddress.trim();
+    if (phoneChanged) payload.phone = currentPhone.trim() === "" ? null : currentPhone.trim();
+    updateOrganization.mutate(payload, {
       onSuccess: () => {
         setDraftName(null);
+        setDraftAddress(null);
+        setDraftPhone(null);
         setEditing(false);
         onSaved();
       },
@@ -79,6 +101,12 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
               </Button>
             </div>
           )}
+        </SettingsRow>
+        <SettingsRow icon={<MapPin size={18} />} label={t("organization.address")} controlId={`${identifier}-address`}>
+          <Input id={`${identifier}-address`} value={currentAddress} maxLength={ORGANIZATION_ADDRESS_MAXIMUM_LENGTH} autoComplete="street-address" onChange={(event) => setDraftAddress(event.target.value)} />
+        </SettingsRow>
+        <SettingsRow icon={<Phone size={18} />} label={t("organization.phone")} controlId={`${identifier}-phone`}>
+          <Input id={`${identifier}-phone`} type="tel" inputMode="tel" autoComplete="tel" placeholder={PHONE_PLACEHOLDER} value={currentPhone} error={phoneError} onChange={(event) => setDraftPhone(event.target.value)} />
         </SettingsRow>
         <SettingsRow
           icon={<Coins size={18} />}

@@ -24,6 +24,7 @@ from app.api.v1.telegram import router as telegram_router
 from app.api.v1.settings import router as settings_router
 from app.api.v1.cron import router as cron_router
 from app.api.v1.system import router as system_router
+from app.api.v1.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -83,6 +84,7 @@ app.include_router(notifications_router, prefix=f"{settings.API_V1_STR}/notifica
 app.include_router(telegram_router, prefix=f"{settings.API_V1_STR}/telegram", tags=["Telegram"])
 app.include_router(settings_router, prefix=f"{settings.API_V1_STR}", tags=["Settings"])
 app.include_router(cron_router, prefix=f"{settings.API_V1_STR}/cron", tags=["Cron"])
+app.include_router(dashboard_router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
 app.include_router(system_router, prefix=f"{settings.API_V1_STR}", tags=["System"])
 
 

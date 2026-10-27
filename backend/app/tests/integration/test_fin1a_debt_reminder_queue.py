@@ -3,6 +3,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import pytest
+from fastapi import HTTPException
 from httpx import AsyncClient, Response
 from sqlalchemy import event, select, update
 from app.models.audit_log import AuditLog
@@ -50,7 +51,7 @@ async def test_each_outcome_is_reported_and_only_queued_is_audited(
     response: Response = await post_reminders(client, test_accountant, [queued_id, unlinked_id, clear_id, 987654])
     assert response.status_code == 200
     assert outcomes(response) == {
-        queued_id: "queued", unlinked_id: "no_parent_chat", clear_id: "no_debt", 987654: "not_found",
+        queued_id: "queued", unlinked_id: "no_channel", clear_id: "no_debt", 987654: "not_found",
     }
     assert all(item["next_allowed_at"] is None for item in response.json()["results"])
     reminders: list[DebtReminderNotification] = await all_reminders()
@@ -71,10 +72,10 @@ async def test_second_request_within_24_hours_reports_next_allowed_time(
     await add_debt(student_id, test_mentor.id, "Python", "50.00", days_ago(3))
     assert outcomes(await post_reminders(client, test_accountant, [student_id])) == {student_id: "queued"}
     second: Response = await post_reminders(client, test_accountant, [student_id])
-    assert outcomes(second) == {student_id: "recently_reminded"}
+    assert second.status_code == 429
+    assert second.json()["detail"]["code"] == "debt_reminder_rate_limited"
     created_at: datetime = (await all_reminders())[0].created_at
-    next_allowed: datetime = datetime.fromisoformat(second.json()["results"][0]["next_allowed_at"])
-    assert next_allowed == created_at + timedelta(hours=24)
+    assert 0 < int(second.headers["Retry-After"]) <= 86400
     assert len(await all_reminders()) == 1
 
 
@@ -97,14 +98,22 @@ async def test_rate_limit_boundary_is_exactly_24_hours_from_previous_reminder(
         service: DebtReminderService
         session: Any
         service, session = await build_service(clock)
-        response: Any = await service.queue([student_id], test_accountant.id)
-        await session.close()
-        assert response.results[0].outcome == expected
+        try:
+            if expected == "recently_reminded":
+                error: pytest.ExceptionInfo[HTTPException]
+                with pytest.raises(HTTPException) as error:
+                    await service.queue([student_id], test_accountant.id)
+                assert error.value.status_code == 429
+            else:
+                response: Any = await service.queue([student_id], test_accountant.id)
+                assert response.results[0].outcome == expected
+        finally:
+            await session.close()
     assert len(await all_reminders()) == 2
 
 
 @pytest.mark.asyncio
-async def test_failed_and_skipped_reminders_do_not_block_a_new_one(
+async def test_failed_reminders_still_count_toward_the_interval(
     client: AsyncClient, test_accountant: User, test_mentor: User
 ) -> None:
     student_id: int = await create_student("failed@example.com", CHAT_ID, "ru")
@@ -114,7 +123,7 @@ async def test_failed_and_skipped_reminders_do_not_block_a_new_one(
     async with TestingSessionLocal() as session:
         await session.execute(update(DebtReminderNotification).values(status="failed"))
         await session.commit()
-    assert outcomes(await post_reminders(client, test_accountant, [student_id])) == {student_id: "queued"}
+    assert (await post_reminders(client, test_accountant, [student_id])).status_code == 429
 
 
 @pytest.mark.asyncio
@@ -126,9 +135,7 @@ async def test_concurrent_requests_for_one_student_queue_exactly_one_reminder(
     responses: list[Response] = await asyncio.gather(
         *(post_reminders(client, test_accountant, [student_id]) for _ in range(12))
     )
-    assert {response.status_code for response in responses} == {200}
-    tally: Counter[str] = Counter(outcomes(response)[student_id] for response in responses)
-    assert tally == Counter({"queued": 1, "recently_reminded": 11})
+    assert Counter(response.status_code for response in responses) == Counter({200: 1, 429: 11})
     assert len(await all_reminders()) == 1
     session: Any
     async with TestingSessionLocal() as session:
@@ -147,9 +154,9 @@ async def test_overlapping_bulk_requests_in_opposite_order_do_not_deadlock_or_du
     responses: list[Response] = await asyncio.gather(
         *(post_reminders(client, test_accountant, ids) for ids in ([first_id, second_id], [second_id, first_id]) * 4)
     )
-    assert {response.status_code for response in responses} == {200}
+    assert {response.status_code for response in responses}.issubset({200, 429})
     queued: Counter[int] = Counter(
-        item["student_id"] for response in responses for item in response.json()["results"] if item["outcome"] == "queued"
+        item["student_id"] for response in responses if response.status_code == 200 for item in response.json()["results"] if item["outcome"] == "queued"
     )
     assert queued == Counter({first_id: 1, second_id: 1})
     assert len(await all_reminders()) == 2

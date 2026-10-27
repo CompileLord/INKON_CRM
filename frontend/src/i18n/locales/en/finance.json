@@ -78,7 +78,8 @@
     "untitledCourse": "Untitled course",
     "dateToday": "Today",
     "dateYesterday": "Yesterday",
-    "dateChoose": "Choose date"
+    "dateChoose": "Choose date",
+    "withdrawnExceedsDebt": "This student has withdrawn from the course. A payment can't exceed the remaining debt."
   },
   "paymentDetail": {
     "title": "Payment #{{id}}",
@@ -239,20 +240,27 @@
     "openProfile": "Open profile: {{student}}"
   },
   "reminders": {
-    "action": "Remind in Telegram",
-    "actionFor": "Remind the parent of {{student}} in Telegram",
-    "noParent": "Parent is not linked in Telegram",
+    "action": "Remind",
+    "actionFor": "Remind the parent of {{student}}",
     "lastSent": "Last reminder: {{when}}",
     "neverSent": "No reminder sent yet",
     "bulk": "Remind all on this page ({{count}})",
-    "bulkNone": "No linked parents on this page",
-    "queuedOne": "Reminder queued for {{student}}.",
+    "bulkNone": "No debtors with a reminder channel on this page",
     "recentlyReminded": "{{student}} was reminded in the last 24 hours. Next reminder: {{when}}.",
-    "noParentChat": "{{student}} has no parent linked in Telegram.",
+    "noParentChat": "{{student}} has no reminder channel.",
     "noDebt": "{{student}} has no unpaid balance.",
     "notFound": "{{student}} was not found.",
-    "bulkResult": "Reminders queued: {{queued}}. Skipped: {{skipped}} (no linked parent, reminded in the last 24 hours, or no debt).",
+    "bulkResult": "Reminders queued: {{queued}}. Skipped: {{skipped}} (no Telegram or phone, reminded in the last 24 hours, or no debt).",
     "disabled": "Debt reminders are turned off in notification settings. Turn them on to send.",
-    "failed": "Reminders could not be sent. Try again."
+    "failed": "Reminders could not be sent. Try again.",
+    "noChannel": "No Telegram or phone: add a parent phone",
+    "destinationTelegram": "The reminder will go to the parent in Telegram",
+    "destinationSms": "The reminder will go by SMS to {{destination}}",
+    "destinationLabel": "Where the reminder goes",
+    "queuedTelegram": "Reminder queued for {{student}} in Telegram.",
+    "queuedSms": "Reminder queued for {{student}} by SMS to {{destination}}.",
+    "noChannelResult": "{{student}} has no Telegram or phone. Add a parent phone.",
+    "rateLimited": "A reminder was sent recently. The next one is allowed at {{when}}.",
+    "noChannelError": "No Telegram or phone for the selected students: add a parent phone."
   }
 }

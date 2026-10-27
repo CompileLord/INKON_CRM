@@ -2,6 +2,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Optional, List, Literal, Self
 from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 from app.models.course import CourseExamType, CourseStatus
 from app.schemas.common import InstallmentPriceInput, PositiveMoney
 
@@ -62,6 +63,26 @@ class CourseCreate(BaseModel):
         return schedules
 
 
+class CourseScheduleTimeUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+    day_of_week: int = Field(ge=0, le=6)
+    time_start: time
+    time_end: time
+
+    @field_validator("time_start", "time_end")
+    @classmethod
+    def validate_local_time(cls, value: time) -> time:
+        if value.tzinfo is not None:
+            raise PydanticCustomError("schedule_time_range_invalid", "Lesson times must be local times without a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def validate_time_range(self) -> Self:
+        if self.time_start >= self.time_end:
+            raise PydanticCustomError("schedule_time_range_invalid", "Lesson start must be before lesson end")
+        return self
+
+
 class CourseUpdate(BaseModel):
     model_config = {"extra": "forbid"}
     title: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -70,6 +91,10 @@ class CourseUpdate(BaseModel):
     end_date: Optional[date] = None
     mentor_id: Optional[int] = None
     status: Optional[CourseStatus] = None
+    schedules: list[CourseScheduleTimeUpdate] = Field(
+        default_factory=list,
+        description="When provided, must contain every existing weekday exactly once; only times may change.",
+    )
 
 
 class CourseResponse(BaseModel):

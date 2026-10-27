@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Optional, Sequence
-from sqlalchemy import cast, case, literal, select, update
+from typing import Any, Optional, Sequence
+from sqlalchemy import Integer, cast, case, func, literal, select, update
+from app.models.debt_reminder_notification import DebtReminderNotification
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.engine import Result
 from sqlalchemy.sql.dml import Update
@@ -131,6 +132,8 @@ class SQLAlchemyOutboxRepository:
         )
         result = await self._session.execute(statement)
         await self._session.flush()
+        if (result.rowcount or 0) > 0:
+            await self.sync_debt_reminder(event_id, "sent", now)
         return (result.rowcount or 0) > 0
 
     async def mark_failed(
@@ -174,6 +177,8 @@ class SQLAlchemyOutboxRepository:
         )
         result = await self._session.execute(statement)
         await self._session.flush()
+        if (result.rowcount or 0) > 0:
+            await self.sync_debt_reminder(event_id, "failed" if terminal else "outbox", now)
         return (result.rowcount or 0) > 0
 
     async def mark_expired(
@@ -201,6 +206,8 @@ class SQLAlchemyOutboxRepository:
         )
         result = await self._session.execute(statement)
         await self._session.flush()
+        if (result.rowcount or 0) > 0:
+            await self.sync_debt_reminder(event_id, "failed", now)
         return (result.rowcount or 0) > 0
 
     async def expire_stale(self, now: datetime) -> int:
@@ -220,6 +227,8 @@ class SQLAlchemyOutboxRepository:
         )
         result = await self._session.execute(statement)
         await self._session.flush()
+        if (result.rowcount or 0) > 0:
+            await self.sync_terminal_debt_reminders()
         return result.rowcount or 0
 
     async def release_stale_leases(self, now: datetime) -> int:
@@ -254,6 +263,8 @@ class SQLAlchemyOutboxRepository:
         )
         result = await self._session.execute(statement)
         await self._session.flush()
+        if (result.rowcount or 0) > 0:
+            await self.sync_terminal_debt_reminders()
         return result.rowcount or 0
 
     async def purge_sensitive_payload(self, event_id: int) -> None:
@@ -282,3 +293,21 @@ class SQLAlchemyOutboxRepository:
             statement = statement.where(OutboxEvent.target_user_id == target_user_id)
         result = await self._session.execute(statement)
         return result.scalars().all()
+
+    async def sync_debt_reminder(self, event_id: int, status: str, now: datetime) -> None:
+        notification_id: Any = select(cast(func.split_part(OutboxEvent.correlation_key, ":", 2), Integer)).where(
+            OutboxEvent.id == event_id, OutboxEvent.kind == OutboxEventKind.DEBT_REMINDER_SMS,
+        ).scalar_subquery()
+        values: dict[str, Any] = {"status": status}
+        if status == "sent":
+            values["sent_at"] = now
+        await self._session.execute(update(DebtReminderNotification).where(DebtReminderNotification.id == notification_id).values(**values))
+
+    async def sync_terminal_debt_reminders(self) -> None:
+        notification_ids: Any = select(cast(func.split_part(OutboxEvent.correlation_key, ":", 2), Integer)).where(
+            OutboxEvent.kind == OutboxEventKind.DEBT_REMINDER_SMS,
+            OutboxEvent.status.in_([OutboxEventStatus.FAILED, OutboxEventStatus.EXPIRED]),
+        )
+        await self._session.execute(update(DebtReminderNotification).where(
+            DebtReminderNotification.status == "outbox", DebtReminderNotification.id.in_(notification_ids),
+        ).values(status="failed"))

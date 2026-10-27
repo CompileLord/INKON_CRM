@@ -1,5 +1,5 @@
 import { AuthApiError, NetworkError } from "../auth/errors";
-import type { CourseCreate, CourseExamType, CourseResponse, CourseStatus, CourseUpdate } from "./types";
+import type { CourseCreate, CourseExamType, CourseResponse, CourseScheduleCreate, CourseScheduleResponse, CourseStatus, CourseUpdate } from "./types";
 
 export interface CourseScheduleFormRow {
   day_of_week: string;
@@ -70,6 +70,47 @@ export function buildCourseCreatePayload(values: CourseFormValues): CourseCreate
       time_end: toTimeOfDay(row.time_end),
     })),
   };
+}
+
+export interface ScheduleTimeEdit {
+  time_start: string;
+  time_end: string;
+}
+
+export type ScheduleTimeEdits = Record<number, ScheduleTimeEdit>;
+
+export function toTimeInputValue(value: string): string {
+  return value.slice(0, 5);
+}
+
+export function resolveScheduleTimes(row: CourseScheduleResponse, edits: ScheduleTimeEdits): ScheduleTimeEdit {
+  return edits[row.id] ?? { time_start: toTimeInputValue(row.time_start), time_end: toTimeInputValue(row.time_end) };
+}
+
+export function isScheduleTimeRangeValid(times: ScheduleTimeEdit): boolean {
+  return Boolean(times.time_start) && Boolean(times.time_end) && times.time_end > times.time_start;
+}
+
+export function hasScheduleTimeChanges(rows: readonly CourseScheduleResponse[], edits: ScheduleTimeEdits): boolean {
+  return rows.some((row) => {
+    const times = resolveScheduleTimes(row, edits);
+    return times.time_start !== toTimeInputValue(row.time_start) || times.time_end !== toTimeInputValue(row.time_end);
+  });
+}
+
+export function areScheduleTimesValid(rows: readonly CourseScheduleResponse[], edits: ScheduleTimeEdits): boolean {
+  return rows.every((row) => isScheduleTimeRangeValid(resolveScheduleTimes(row, edits)));
+}
+
+export function buildScheduleUpdatePayload(rows: readonly CourseScheduleResponse[], edits: ScheduleTimeEdits): CourseScheduleCreate[] {
+  return rows.map((row) => {
+    const times = resolveScheduleTimes(row, edits);
+    return {
+      day_of_week: row.day_of_week,
+      time_start: toTimeOfDay(times.time_start),
+      time_end: toTimeOfDay(times.time_end),
+    };
+  });
 }
 
 type EditableField = "title" | "description" | "start_date" | "end_date" | "mentor_id" | "status";
@@ -149,12 +190,18 @@ export function applyCourseFieldErrors(
   return applied;
 }
 
+export function hasScheduleTimeRangeViolation(err: AuthApiError): boolean {
+  return Array.isArray(err.detail) && err.detail.some((item) => item.type.includes("schedule_time_range_invalid"));
+}
+
 export function describeCourseApiError(
   err: unknown,
   translator?: (key: string) => string,
 ): string {
   const t = translator ?? ((key: string) => key);
   if (err instanceof AuthApiError) {
+    if (err.code === "schedule_weekdays_immutable") return t("courses:form.errors.scheduleWeekdaysImmutable");
+    if (hasScheduleTimeRangeViolation(err)) return t("courses:form.errors.scheduleTimeRangeInvalid");
     if (err.status === 403) return t("courses:form.errors.forbidden");
     if (err.status === 404) return t("courses:form.errors.notFound");
     if (err.status === 409) return t("courses:form.errors.conflict");

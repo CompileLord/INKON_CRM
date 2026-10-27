@@ -21,13 +21,14 @@ Money semantics:
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from fastapi import HTTPException, status
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import Date, Result, Select, and_, case, cast, func, literal, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatus
 from app.models.allocation import Allocation
@@ -75,6 +76,26 @@ def _to_dushanbe(dt: datetime) -> datetime:
 
 def _q(value: Decimal) -> Decimal:
     return Decimal(value or 0).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+class CourseMonthCalendar:
+    @staticmethod
+    def start(start_date: date, month_index: int) -> date:
+        month_number: int = start_date.year * 12 + start_date.month - 1 + month_index
+        year: int = month_number // 12
+        month: int = month_number % 12 + 1
+        return date(year, month, min(start_date.day, calendar.monthrange(year, month)[1]))
+
+    @classmethod
+    def billed_starts(cls, start_date: date, end_date: date, enrollment_date: date) -> list[date]:
+        starts: list[date] = []
+        month_index: int = 0
+        while cls.start(start_date, month_index) < end_date:
+            month_start: date = cls.start(start_date, month_index)
+            if cls.start(start_date, month_index + 1) > enrollment_date:
+                starts.append(month_start)
+            month_index += 1
+        return starts
 
 
 class FinanceService:
@@ -208,12 +229,24 @@ class FinanceService:
                     detail="Payment has been refunded and can no longer be voided",
                 )
 
+    @staticmethod
+    def _consumed_credit_allocation() -> ColumnElement[bool]:
+        reversal: Any = aliased(LedgerEntry)
+        return or_(
+            Allocation.reversed_by_entry_id.is_(None),
+            and_(LedgerEntry.type == LedgerEntryType.ADJUSTMENT,
+                 Allocation.reversed_by_entry_id.in_(select(reversal.id).where(
+                     reversal.type == LedgerEntryType.WITHDRAWAL_REVERSAL))),
+        )
+
     async def _active_allocated(self, entry_ids: Sequence[int]) -> Decimal:
         if not entry_ids:
             return ZERO
-        q = select(func.coalesce(func.sum(Allocation.amount), ZERO)).filter(
+        q = select(func.coalesce(func.sum(Allocation.amount), ZERO)).join(
+            LedgerEntry, LedgerEntry.id == Allocation.ledger_entry_id,
+        ).filter(
             Allocation.ledger_entry_id.in_(entry_ids),
-            Allocation.reversed_by_entry_id.is_(None),
+            self._consumed_credit_allocation(),
         )
         res = await self.db.execute(q)
         return Decimal(res.scalar() or 0)
@@ -454,7 +487,7 @@ class FinanceService:
                 LedgerEntry.student_id == student_id,
                 LedgerEntry.type.in_(CREDIT_TYPES),
                 LedgerEntry.id.notin_(voided),
-                Allocation.reversed_by_entry_id.is_(None),
+                self._consumed_credit_allocation(),
             )
         )
         allocated = Decimal(allocated_res.scalar() or 0)
@@ -509,21 +542,14 @@ class FinanceService:
         payment_day: int = student.payment_day_of_month or min(28, course.start_date.day)
 
         charges: List[Charge] = []
-        month_index: int = 0
-        while True:
-            month_number: int = start_date.year * 12 + start_date.month - 1 + month_index
-            year: int = month_number // 12
-            month: int = month_number % 12 + 1
-            course_month_start: date = date(year, month, min(start_date.day, calendar.monthrange(year, month)[1]))
-            if course_month_start >= end_date:
-                break
-            next_month_number: int = month_number + 1
-            next_year: int = next_month_number // 12
-            next_month: int = next_month_number % 12 + 1
-            next_course_month_start: date = date(next_year, next_month, min(start_date.day, calendar.monthrange(next_year, next_month)[1]))
-            month_index += 1
-            if next_course_month_start <= enrollment_date:
-                continue
+        course_month_start: date
+        for course_month_start in CourseMonthCalendar.billed_starts(start_date, end_date, enrollment_date):
+            year: int = course_month_start.year
+            month: int = course_month_start.month
+            month_index: int = (year - start_date.year) * 12 + month - start_date.month
+            next_course_month_start: date = CourseMonthCalendar.start(start_date, month_index + 1)
+            next_year: int = next_course_month_start.year
+            next_month: int = next_course_month_start.month
             due_date: date = date(year, month, min(payment_day, calendar.monthrange(year, month)[1]))
             if due_date < course_month_start:
                 due_date = date(next_year, next_month, min(payment_day, calendar.monthrange(next_year, next_month)[1]))
@@ -548,6 +574,72 @@ class FinanceService:
         await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
         await self._invalidate_cache()
         return charges
+
+    async def withdrawal_calculation(
+        self, enrollment: Enrollment, course: Course, withdrawal_date: date,
+    ) -> tuple[list[Charge], list[Allocation], Decimal, Decimal]:
+        starts: list[date] = CourseMonthCalendar.billed_starts(
+            course.start_date, course.end_date, _to_dushanbe(enrollment.enrolled_at).date(),
+        )
+        charges: list[Charge] = list((await self.db.scalars(select(Charge).where(
+            Charge.enrollment_id == enrollment.id,
+            Charge.is_deleted.is_(False),
+            Charge.status != ChargeStatus.CANCELLED,
+        ))).all())
+        allocations: list[Allocation] = list((await self.db.scalars(select(Allocation).join(
+            Charge, Charge.id == Allocation.charge_id,
+        ).where(
+            Charge.enrollment_id == enrollment.id,
+            Charge.is_deleted.is_(False),
+            Charge.status != ChargeStatus.CANCELLED,
+            Allocation.reversed_by_entry_id.is_(None),
+        ))).all())
+        cancelled: list[Charge] = []
+        cancelled_ids: set[int] = set()
+        charge: Charge
+        for charge in charges:
+            if charge.type != ChargeType.TUITION:
+                continue
+            if charge.sequence_no < 1 or charge.sequence_no > len(starts):
+                raise ValueError("Tuition charge cannot be matched to a course month")
+            if starts[charge.sequence_no - 1] >= withdrawal_date:
+                cancelled.append(charge)
+                cancelled_ids.add(charge.id)
+        allocation_totals: Any = select(
+            Allocation.charge_id, func.sum(Allocation.amount).label("amount"),
+        ).where(Allocation.reversed_by_entry_id.is_(None)).group_by(Allocation.charge_id).subquery()
+        totals: Any = (await self.db.execute(select(
+            func.coalesce(func.sum(case(
+                (Charge.id.not_in(cancelled_ids), func.greatest(
+                    Charge.amount - func.coalesce(allocation_totals.c.amount, ZERO), ZERO)), else_=ZERO,
+            )), ZERO),
+            func.coalesce(func.sum(case((Charge.id.in_(cancelled_ids), Charge.amount), else_=ZERO)), ZERO),
+        ).outerjoin(allocation_totals, allocation_totals.c.charge_id == Charge.id).where(
+            Charge.enrollment_id == enrollment.id, Charge.is_deleted.is_(False),
+            Charge.status != ChargeStatus.CANCELLED,
+        ))).one()
+        owed: Decimal = Decimal(totals[0])
+        cancelled_amount: Decimal = Decimal(totals[1])
+        return cancelled, [allocation for allocation in allocations if allocation.charge_id in cancelled_ids], owed, cancelled_amount
+
+    async def reverse_withdrawal_allocations(
+        self, student_id: int, actor_id: int, allocations: list[Allocation],
+    ) -> None:
+        if not allocations:
+            return
+        amount: Decimal = Decimal(await self.db.scalar(select(func.sum(Allocation.amount)).where(
+            Allocation.id.in_([allocation.id for allocation in allocations]),
+        )) or ZERO)
+        reversal: LedgerEntry = LedgerEntry(
+            student_id=student_id, type=LedgerEntryType.WITHDRAWAL_REVERSAL,
+            amount=amount, occurred_at=datetime.now(timezone.utc), recorded_by_id=actor_id,
+        )
+        self.db.add(reversal)
+        await self.db.flush()
+        allocation: Allocation
+        for allocation in allocations:
+            allocation.reversed_by_entry_id = reversal.id
+        await self.db.flush()
 
     # ------------------------------------------------------------------
     # Mutations
@@ -588,6 +680,22 @@ class FinanceService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Student is not enrolled in this course",
             )
+
+        if enrollment.status == EnrollmentStatus.WITHDRAWN:
+            allocation_totals: Any = select(
+                Allocation.charge_id, func.sum(Allocation.amount).label("amount"),
+            ).where(Allocation.reversed_by_entry_id.is_(None)).group_by(Allocation.charge_id).subquery()
+            remaining_debt: Decimal = Decimal(await self.db.scalar(
+                select(func.coalesce(func.sum(Charge.amount - func.coalesce(allocation_totals.c.amount, ZERO)), ZERO))
+                .outerjoin(allocation_totals, allocation_totals.c.charge_id == Charge.id)
+                .where(Charge.enrollment_id == enrollment.id, Charge.status == ChargeStatus.OPEN,
+                       Charge.is_deleted.is_(False))
+            ) or ZERO)
+            if amount > remaining_debt:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="withdrawn_enrollment_payment_exceeds_debt",
+                )
 
         entry = LedgerEntry(
             student_id=student_id,
@@ -1228,7 +1336,7 @@ class FinanceService:
             .join(Course, Course.id == Enrollment.course_id)
             .outerjoin(billed_sub, billed_sub.c.enrollment_id == Enrollment.id)
             .outerjoin(alloc_sub, alloc_sub.c.enrollment_id == Enrollment.id)
-            .filter(Enrollment.is_deleted == False)  # noqa: E712
+            .filter(Enrollment.is_deleted.is_(False), User.is_deleted.is_(False))
         )
 
         if filters.get("course_id"):
@@ -1310,8 +1418,9 @@ class FinanceService:
     async def _compute_analytics(self, date_from: date, date_to: date) -> dict[str, object]:
         today = get_dushanbe_today()
         active_enrollment = and_(
-            Enrollment.status == EnrollmentStatus.ACTIVE,
-            Enrollment.is_deleted == False,  # noqa: E712
+            Enrollment.status.in_([EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN]),
+            Enrollment.is_deleted.is_(False),
+            Enrollment.student.has(User.is_deleted.is_(False)),
         )
         billed_to_date_clause = and_(Charge.due_date <= today, Charge.status != ChargeStatus.CANCELLED)
 
@@ -1459,7 +1568,7 @@ class FinanceService:
             .filter(
                 LedgerEntry.type.in_(CREDIT_TYPES),
                 LedgerEntry.id.notin_(voided),
-                Allocation.reversed_by_entry_id.is_(None),
+                self._consumed_credit_allocation(),
             )
             .group_by(LedgerEntry.student_id)
         )
@@ -1492,8 +1601,9 @@ class FinanceService:
             .join(Enrollment, Enrollment.id == Charge.enrollment_id)
             .outerjoin(alloc_sub, alloc_sub.c.charge_id == Charge.id)
             .filter(
-                Enrollment.status == EnrollmentStatus.ACTIVE,
-                Enrollment.is_deleted == False,  # noqa: E712
+                Enrollment.status.in_([EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN]),
+                Enrollment.is_deleted.is_(False),
+                Enrollment.student.has(User.is_deleted.is_(False)),
                 Charge.is_deleted == False,  # noqa: E712
                 Charge.status == ChargeStatus.OPEN,
                 Charge.due_date <= today,
@@ -1606,7 +1716,7 @@ class FinanceService:
             .filter(
                 LedgerEntry.type.in_(CREDIT_TYPES),
                 LedgerEntry.id.notin_(voided),
-                Allocation.reversed_by_entry_id.is_(None),
+                self._consumed_credit_allocation(),
             )
             .group_by(LedgerEntry.student_id)
         )

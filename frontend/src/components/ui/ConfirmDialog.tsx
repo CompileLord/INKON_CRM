@@ -1,4 +1,4 @@
-import { type ComponentProps } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@base-ui/react/dialog";
 import { Modal } from "./Modal";
@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
   open: boolean;
   title: string;
   message: string;
+  details?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmVariant?: "primary" | "destructive";
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   open,
   title,
   message,
+  details,
   confirmLabel,
   cancelLabel,
   confirmVariant = "destructive",
@@ -55,6 +57,7 @@ export function ConfirmDialog({
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-ink">{message}</p>
+        {details}
         {errorMessage ? (
           <p role="alert" className="text-sm text-destructive break-words">
             {errorMessage}

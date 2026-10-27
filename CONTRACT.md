@@ -1635,6 +1635,13 @@ Students receive only public mentor identity and course identity for their nonde
   "end_date?": string,
   "mentor_id?": integer,
   "status?": "active" | "archived",
+  "schedules?": [
+    {
+      "day_of_week": integer,
+      "time_start": string,
+      "time_end": string,
+    }
+  ],
 }
 ```
 
@@ -2245,6 +2252,39 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
     "enrolled_at": string,
     "status": "active" | "withdrawn" | "completed",
     "is_deleted": boolean,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/enrollments/{id}/withdraw-preview
+
+**Summary:** Preview Withdrawal
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "still_owed": string,
+    "cancelled_amount": string,
+    "months_cancelled": integer,
   }
   ```
 - **422**: Validation Error
@@ -2920,7 +2960,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -2982,7 +3022,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3043,7 +3083,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3105,7 +3145,7 @@ Post a correcting credit — the sanctioned fix for a closed period.
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3165,7 +3205,7 @@ Manually apply a student's wallet credit to a specific charge.
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3516,6 +3556,8 @@ Manually apply a student's wallet credit to a specific charge.
         "total_paid": string,
         "debt": string,
         "overdue_days": integer,
+        "reminder_channel?": "telegram" | "sms",
+        "reminder_masked_destination?": string,
         "parent_telegram_linked": boolean,
         "last_reminder_at": string,
       }
@@ -3561,7 +3603,9 @@ Manually apply a student's wallet credit to a specific charge.
     "results": [
       {
         "student_id": integer,
-        "outcome": "queued" | "no_parent_chat" | "no_debt" | "recently_reminded" | "not_found",
+        "outcome": "queued" | "no_parent_chat" | "no_debt" | "recently_reminded" | "not_found" | "no_channel",
+        "channel?": "telegram" | "sms",
+        "masked_destination?": string,
         "next_allowed_at": string,
       }
     ],
@@ -3799,6 +3843,7 @@ Manually apply a student's wallet credit to a specific charge.
 - `page` [query]
 - `page_size` [query]
 - `actor_id` [query]
+- `category` [query]
 - `action` [query]
 - `entity_type` [query]
 - `entity_id` [query]
@@ -3858,6 +3903,7 @@ Manually apply a student's wallet credit to a specific charge.
 - `page` [query]
 - `page_size` [query]
 - `actor_id` [query]
+- `category` [query]
 - `action` [query]
 - `entity_type` [query]
 - `entity_id` [query]
@@ -4114,6 +4160,8 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "org_name": string,
+    "address?": string,
+    "phone?": string,
     "notify_payments": boolean,
     "notify_debts": boolean,
     "updated_at?": string,
@@ -4132,6 +4180,8 @@ Manually apply a student's wallet credit to a specific charge.
 ```json
 {
   "org_name?": string,
+  "address?": string,
+  "phone?": string,
   "notify_payments?": boolean,
   "notify_debts?": boolean,
 }
@@ -4142,6 +4192,8 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "org_name": string,
+    "address?": string,
+    "phone?": string,
     "notify_payments": boolean,
     "notify_debts": boolean,
     "updated_at?": string,
@@ -4240,6 +4292,64 @@ Manually apply a student's wallet credit to a specific charge.
         "type": string,
         "input?": any,
         "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/dashboard/attention
+
+**Summary:** Attention
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "lessons_in_progress": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+      }
+    ],
+    "attendance_not_marked": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+      }
+    ],
+    "absent_students": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+        "students": array[],
+      }
+    ],
+    "payments": [
+      {
+        "student_id": integer,
+        "student_name": string,
+        "course_id": integer,
+        "course_title": string,
+        "enrollment_id": integer,
+        "due_date": string,
+        "remaining_amount": string,
       }
     ],
   }

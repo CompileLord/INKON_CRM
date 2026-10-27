@@ -19,6 +19,12 @@ export interface EnrollmentCreate {
   course_id: number;
 }
 
+export interface WithdrawalPreviewResponse {
+  still_owed: string;
+  cancelled_amount: string;
+  months_cancelled: number;
+}
+
 export interface EnrollmentResponse {
   id: number;
   student_id: number;

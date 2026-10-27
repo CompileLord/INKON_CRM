@@ -89,5 +89,27 @@ async def test_version_defaults_when_build_variables_are_unset(client: AsyncClie
         response: Response = await client.get(VERSION_URL, headers=headers)
         assert response.json()["version"] == "dev"
         assert response.json()["commit_sha"] == "unknown"
+        assert response.json()["commit_message"] == "unknown"
+        assert response.json()["built_at"] == "unknown"
     finally:
         app.dependency_overrides.pop(get_build_info, None)
+
+
+@pytest.mark.asyncio
+async def test_version_reads_build_environment(client: AsyncClient, test_admin: User, monkeypatch: pytest.MonkeyPatch) -> None:
+    values: dict[str, str] = {
+        "BUILD_VERSION": "2.3.4", "BUILD_COMMIT_SHA": "abcdef", "BUILD_COMMIT_MESSAGE": "release",
+        "BUILD_TIME": "2026-10-27T00:00:00Z",
+    }
+    for key, value in values.items():
+        monkeypatch.setenv(key, value)
+    get_build_info.cache_clear()
+    try:
+        headers: dict[str, str] = await login_headers(client, test_admin.email, "admin_pass123")
+        response: Response = await client.get(VERSION_URL, headers=headers)
+        assert response.json() == {
+            "version": values["BUILD_VERSION"], "commit_sha": values["BUILD_COMMIT_SHA"],
+            "commit_message": values["BUILD_COMMIT_MESSAGE"], "built_at": values["BUILD_TIME"],
+        }
+    finally:
+        get_build_info.cache_clear()

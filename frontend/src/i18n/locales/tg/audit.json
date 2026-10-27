@@ -40,15 +40,15 @@
     "unknown": "Дигар"
   },
   "sentence": {
-    "create": "<actor>{{actor}}</actor>: {{entity}} сохта шуд",
-    "update": "<actor>{{actor}}</actor>: {{entity}} тағйир ёфт",
-    "delete": "<actor>{{actor}}</actor>: {{entity}} нест карда шуд",
-    "void": "<actor>{{actor}}</actor>: {{entity}} бекор карда шуд",
-    "refund": "<actor>{{actor}}</actor>: {{entity}} баргардонида шуд",
-    "close_period": "<actor>{{actor}}</actor>: {{entity}} баста шуд",
-    "reopen_period": "<actor>{{actor}}</actor>: {{entity}} аз нав кушода шуд",
-    "unknown": "<actor>{{actor}}</actor>: {{entity}} дигаргун шуд",
-    "object": "<actor>{{actor}}</actor>: {{object}}"
+    "create": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро илова кард",
+    "update": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро тағйир дод",
+    "delete": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро нест кард",
+    "void": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро бекор кард",
+    "refund": "<actor>{{actor}}</actor> барои сабти «{{entity}}» бозгардонӣ расмӣ кард",
+    "close_period": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро баст",
+    "reopen_period": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро аз нав кушод",
+    "unknown": "<actor>{{actor}}</actor> сабти «{{entity}}»-ро тағйир дод",
+    "unnamed": "(беном)"
   },
   "entities": {
     "payment": "Пардохт",
@@ -64,7 +64,10 @@
     "student": "Донишҷӯ",
     "student_telegram_link": "Пайвасти Telegram-и волид",
     "journal_period_settings": "Танзимоти давра",
-    "journal_student_summary": "Натиҷаи донишҷӯ барои давра"
+    "journal_student_summary": "Натиҷаи донишҷӯ барои давра",
+    "settings": "Танзимоти мактаб",
+    "debt_reminder": "Ёдраскунии қарз",
+    "mentor": "Мураббӣ"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -72,7 +75,10 @@
     "removed": "{{field}} хориҷ шуд: {{value}}",
     "referenceSet": "{{field}} сабт шуд",
     "referenceChanged": "{{field}} тағйир ёфт",
-    "referenceCleared": "{{field}} тоза карда шуд"
+    "referenceCleared": "{{field}} тоза карда шуд",
+    "scheduleTimes": "вақти дарс {{day}} {{from}} → {{to}}",
+    "scheduleStart": "оғози дарс {{day}}: {{from}} → {{to}}",
+    "scheduleEnd": "анҷоми дарс {{day}}: {{from}} → {{to}}"
   },
   "fields": {
     "amount": "Маблағ",
@@ -95,7 +101,35 @@
     "role": "Нақш",
     "title": "Ном",
     "paid_at": "Санаи пардохт",
-    "discount_percent": "Фоизи тахфиф"
+    "discount_percent": "Фоизи тахфиф",
+    "first_name": "Ном",
+    "last_name": "Насаб",
+    "email": "Email",
+    "phone": "Телефон",
+    "parent_phone": "Телефони волид",
+    "date_of_birth": "Санаи таваллуд",
+    "payment_day_of_month": "Рӯзи пардохт дар моҳ",
+    "description": "Тавсиф",
+    "start_date": "Санаи оғоз",
+    "end_date": "Санаи анҷом",
+    "is_deleted": "Нест карда шуд",
+    "changed_fields": "Майдонҳои тағйирёфта",
+    "org_name": "Номи мактаб",
+    "address": "Суроға",
+    "notify_payments": "Огоҳиномаҳо дар бораи пардохтҳо",
+    "notify_debts": "Огоҳиномаҳо дар бораи қарзҳо",
+    "is_graded": "Баҳогузорӣ шуд",
+    "bonus_max_score": "Баҳои ҳадди аксари бонус",
+    "exam_score": "Баҳои имтиҳон",
+    "bonus_score": "Баҳои бонус",
+    "link_code_expires_at": "Рамзи пайваст эътибор дорад то",
+    "parent_telegram_chat_id": "Чати Telegram-и волид",
+    "global_failed_attempt_limit": "Ҳадди кӯшишҳои нокомёб",
+    "credentials_queued": "Маълумоти воридшавӣ",
+    "password_sms_queued": "SMS бо рамз",
+    "schedules": "Ҷадвал",
+    "scheduleStart": "Оғози дарс, {{day}}",
+    "scheduleEnd": "Анҷоми дарс, {{day}}"
   },
   "values": {
     "none": "Арзиш нест",
@@ -109,7 +143,8 @@
       "withdrawn": "Хориҷшуда",
       "completed": "Анҷомёфта",
       "open": "Кушода",
-      "closed": "Баста"
+      "closed": "Баста",
+      "archived": "Дар бойгонӣ"
     },
     "role": {
       "superadmin": "Маъмур",
@@ -120,6 +155,23 @@
     "destination": {
       "cash": "Бо пули нақд баргардонида шуд",
       "wallet": "Кредити донишҷӯ"
+    },
+    "boolean": {
+      "true": "Бале",
+      "false": "Не"
+    },
+    "attendance": {
+      "true": "Ҳозир",
+      "false": "Ғоиб"
+    },
+    "queueChannel": {
+      "email": "ба email",
+      "student_phone": "бо SMS ба донишҷӯ",
+      "parent_phone": "бо SMS ба волид"
+    },
+    "queueReason": {
+      "initial": "Маълумоти аввалини воридшавӣ",
+      "reset": "Рамзи нав"
     }
   },
   "states": {
@@ -129,7 +181,8 @@
     "empty": "Ҳоло тағйирот сабт нашудааст. Амалҳои кормандон дар ин ҷо пайдо мешаванд.",
     "noMatch": "Тағйироте, ки ба филтрҳо мувофиқ бошад, нест.",
     "clear": "Тоза кардани филтрҳо",
-    "pageCorrected": "Чунин саҳифа дигар нест. Саҳифаи охирин нишон дода мешавад."
+    "pageCorrected": "Чунин саҳифа дигар нест. Саҳифаи охирин нишон дода мешавад.",
+    "noMatchCategory": "Дар ин гурӯҳ чизе ёфт нашуд. Гурӯҳи дигарро интихоб кунед ё филтрҳоро тоза намоед."
   },
   "inspector": {
     "title": "Тафсилоти тағйир",
@@ -149,46 +202,176 @@
     "open": "Кушодани тафсилот"
   },
   "event": {
-    "paymentRecorded": "<actor>{{actor}}</actor>: {{amount}} аз {{student}} қабул шуд",
-    "paymentVoided": "<actor>{{actor}}</actor>: пардохти {{amount}} аз {{student}} бекор карда шуд",
     "reason": "Сабаб: {{reason}}",
     "fieldsChanged_one": "{{count}} майдон тағйир ёфт",
     "fieldsChanged_other": "{{count}} майдон тағйир ёфт",
     "fieldsList": "Тағйир ёфт: {{fields}}",
     "similarCount": "Тағйироти монанд: {{count}}",
     "showSimilar": "Ҳамаро нишон диҳед",
-    "hideSimilar": "Пинҳон кардан"
+    "hideSimilar": "Пинҳон кардан",
+    "detailsSuffix": ": {{details}}"
   },
   "moneyAmount": "{{amount}} TJS",
-  "objects": {
-    "journal_entry": {
-      "update": {
-        "score": "баҳо тағйир ёфт",
-        "attendance": "ҳозирӣ тағйир ёфт",
-        "any": "сабти журнал тағйир ёфт"
-      },
+  "actor": {
+    "system": "Система"
+  },
+  "categories": {
+    "label": "Категория",
+    "all": "Ҳама",
+    "payments": "Пардохтҳо",
+    "students": "Донишҷӯён",
+    "courses": "Курсҳо",
+    "journal": "Журнал",
+    "system": "Система"
+  },
+  "statement": {
+    "payment": {
       "create": {
-        "score": "баҳо гузошта шуд",
-        "attendance": "ҳозирӣ қайд шуд",
-        "any": "сабти журнал илова шуд"
+        "amount": "<actor>{{actor}}</actor> аз {{name}} пардохти {{amount}} қабул кард",
+        "any": "<actor>{{actor}}</actor> аз {{name}} пардохт қабул кард"
+      },
+      "void": {
+        "amount": "<actor>{{actor}}</actor> пардохти {{amount}}-и {{name}}-ро бекор кард",
+        "any": "<actor>{{actor}}</actor> пардохти {{name}}-ро бекор кард"
+      },
+      "refund": {
+        "amount": "<actor>{{actor}}</actor> ба {{name}} {{amount}} баргардонд",
+        "any": "<actor>{{actor}}</actor> ба {{name}} бозгардонӣ расмӣ кард"
       }
     },
-    "student_telegram_link": {
-      "update": {
-        "any": "рамзи пайвасти Telegram-и волид нав шуд"
-      },
+    "discount": {
       "create": {
-        "any": "рамзи пайвасти Telegram-и волид сохта шуд"
+        "amount": "<actor>{{actor}}</actor> ба {{name}} тахфифи {{amount}} дод",
+        "any": "<actor>{{actor}}</actor> ба {{name}} тахфиф дод"
+      }
+    },
+    "adjustment": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> ислоҳро ба маблағи {{amount}} ворид кард",
+        "any": "<actor>{{actor}}</actor> ислоҳ ворид кард"
+      }
+    },
+    "allocation": {
+      "update": {
+        "amount": "<actor>{{actor}}</actor> {{amount}}-и кредити {{name}}-ро ба ҳисоби ҳаққи таҳсил гузаронд",
+        "any": "<actor>{{actor}}</actor> кредити {{name}}-ро ба ҳисоби ҳаққи таҳсил гузаронд"
+      }
+    },
+    "accounting_period": {
+      "close_period": {
+        "any": "<actor>{{actor}}</actor> давраи ҳисобдории {{name}}-ро баст"
+      },
+      "reopen_period": {
+        "any": "<actor>{{actor}}</actor> давраи ҳисобдории {{name}}-ро аз нав кушод"
+      }
+    },
+    "student": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> донишҷӯ {{name}}-ро сохт"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> маълумоти донишҷӯ {{name}}-ро тағйир дод"
       },
       "delete": {
-        "any": "Telegram-и волид ҷудо шуд"
+        "any": "<actor>{{actor}}</actor> донишҷӯ {{name}}-ро нест кард"
+      }
+    },
+    "mentor": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> мураббӣ {{name}}-ро илова кард"
+      }
+    },
+    "user": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> корбар {{name}}-ро сохт"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> маълумоти корбар {{name}}-ро тағйир дод"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> корбар {{name}}-ро нест кард"
+      }
+    },
+    "enrollment": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> донишҷӯ {{name}}-ро ба курси {{course}} сабти ном кард"
+      },
+      "update": {
+        "status": "<actor>{{actor}}</actor> ҳолати сабти номи {{name}}-ро дар курси {{course}} тағйир дод",
+        "any": "<actor>{{actor}}</actor> сабти номи {{name}}-ро дар курси {{course}} тағйир дод"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> сабти номи {{name}}-ро аз курси {{course}} нест кард"
       }
     },
     "course": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> курси {{name}}-ро сохт"
+      },
       "update": {
-        "mentor_id": "омӯзгори курс тағйир ёфт",
-        "status": "ҳолати курс тағйир ёфт"
+        "any": "<actor>{{actor}}</actor> курси {{name}}-ро тағйир дод",
+        "mentor_id": "<actor>{{actor}}</actor> мураббии курси {{name}}-ро иваз кард"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> курси {{name}}-ро нест кард"
       }
+    },
+    "journal": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> баҳои ҳадди аксари журнали {{name}}-ро тағйир дод"
+      }
+    },
+    "journal_entry": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> ба журнал сабт илова кард"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> сабти журналро тағйир дод"
+      }
+    },
+    "journal_student_summary": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> натиҷаи донишҷӯро барои давра нав кард"
+      }
+    },
+    "journal_period_settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> танзимоти давраи журналро тағйир дод"
+      }
+    },
+    "student_telegram_link": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> барои волидони {{name}} рамзи пайвасти Telegram сохт",
+        "anyUnnamed": "<actor>{{actor}}</actor> барои волид рамзи пайвасти Telegram сохт",
+        "system": "<actor>{{actor}}</actor>: рамзи пайвасти Telegram-и волид сохта шуд"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> рамзи пайвасти Telegram-и волидони {{name}}-ро нав кард",
+        "parent_telegram_chat_id": "<actor>{{actor}}</actor>: Telegram-и волид ба {{name}} пайваст шуд",
+        "global_failed_attempt_limit": "<actor>{{actor}}</actor>: пайвасти Telegram аз сабаби кӯшишҳои зиёди нокомёб боздошта шуд",
+        "anyUnnamed": "<actor>{{actor}}</actor> рамзи пайвасти Telegram-и волидро нав кард",
+        "system": "<actor>{{actor}}</actor>: рамзи пайвасти Telegram-и волид нав карда шуд"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> Telegram-и волидони {{name}}-ро ҷудо кард",
+        "anyUnnamed": "<actor>{{actor}}</actor> Telegram-и волидро ҷудо кард",
+        "system": "<actor>{{actor}}</actor>: Telegram-и волид ҷудо карда шуд"
+      }
+    },
+    "settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> танзимоти мактабро тағйир дод"
+      }
+    },
+    "debt_reminder": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> ёдраскунии қарзро ба маблағи {{amount}} фиристод",
+        "any": "<actor>{{actor}}</actor> ёдраскунии қарзро фиристод"
+      }
+    },
+    "queue": {
+      "initial": "<actor>{{actor}}</actor>: маълумоти воридшавӣ {{channel}} фиристода шуд",
+      "reset": "<actor>{{actor}}</actor>: рамзи нав {{channel}} фиристода шуд"
     }
   }
 }

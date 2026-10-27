@@ -20,6 +20,7 @@ from app.services.email_service import EmailDeliveryError, EmailService, SMTP_TR
 from app.services.email_templates import OutboxEmailTemplateFactory, RenderedEmail
 from app.services.outbox_service import NotificationIntentPayload, OutboxPayloadEncryptor
 from app.services.sms.sender import PayomchiSmsSender, SmsSender
+from app.workers.debt_reminder_sms import DebtReminderSmsDispatcher
 from app.workers.sms_delivery import StudentPasswordSmsDispatcher
 
 logger = logging.getLogger(__name__)
@@ -58,11 +59,16 @@ class OutboxWorkerManager:
         self.email_service = email_service or EmailService()
         self.encryptor: OutboxPayloadEncryptor = OutboxPayloadEncryptor.from_settings(payload_master_key)
         self.template_factory = OutboxEmailTemplateFactory()
+        sms_sender = sms_sender or PayomchiSmsSender()
         self.sms_dispatcher = StudentPasswordSmsDispatcher(
-            sender=sms_sender or PayomchiSmsSender(),
+            sender=sms_sender,
             send_interval_seconds=sms_send_interval_seconds,
             jitter_fraction=sms_jitter_fraction,
             backoff_base_seconds=backoff_base_seconds,
+        )
+        self.debt_sms_dispatcher: DebtReminderSmsDispatcher = DebtReminderSmsDispatcher(
+            sender=sms_sender, send_interval_seconds=sms_send_interval_seconds,
+            jitter_fraction=sms_jitter_fraction, backoff_base_seconds=backoff_base_seconds,
         )
         self.batch_size = batch_size
         self.lease_duration_seconds = lease_duration_seconds
@@ -214,7 +220,7 @@ class OutboxWorkerManager:
                 await session.commit()
             return True
 
-        if event.kind not in self.notification_tasks and event.kind != OutboxEventKind.STUDENT_PASSWORD_SMS and (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
+        if event.kind not in self.notification_tasks and event.kind not in (OutboxEventKind.STUDENT_PASSWORD_SMS, OutboxEventKind.DEBT_REMINDER_SMS) and (now - event.created_at).total_seconds() > self.max_queue_age_seconds:
             async with session_factory() as session:
                 repo = SQLAlchemyOutboxRepository(session)
                 await repo.mark_expired(event.id, lease_owner, "event_exceeded_maximum_queue_age", now)
@@ -260,6 +266,9 @@ class OutboxWorkerManager:
 
         if event.kind in self.notification_tasks:
             return await self.dispatch_notification(event, code, lease_owner, session_factory)
+
+        if event.kind == OutboxEventKind.DEBT_REMINDER_SMS:
+            return await self.debt_sms_dispatcher.dispatch(event, code, lease_owner, session_factory)
 
         if event.kind == OutboxEventKind.STUDENT_PASSWORD_SMS:
             return await self.sms_dispatcher.dispatch(event, code, lease_owner, session_factory)

@@ -7,7 +7,7 @@ export interface DebtReminderTally {
 
 export class DebtReminders {
   static canRemind(debt: DebtItem): boolean {
-    return debt.parent_telegram_linked === true;
+    return debt.reminder_channel === "telegram" || debt.reminder_channel === "sms";
   }
 
   static eligibleStudentIds(debts: readonly DebtItem[]): number[] {

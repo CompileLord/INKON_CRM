@@ -109,12 +109,23 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
       const response = await queueReminders.mutateAsync(studentIds);
       setReminderFeedback({ message: describeReminders(response.results, single), failed: false });
     } catch (error) {
-      const policyDisabled: boolean = error instanceof AuthApiError && error.status === 409;
-      setReminderFeedback({ message: t(policyDisabled ? "finance:reminders.disabled" : "finance:reminders.failed"), failed: true });
+      setReminderFeedback({ message: describeReminderFailure(error), failed: true });
     } finally {
       setRemindingIds(new Set());
       setBulkRunning(false);
     }
+  };
+
+  const describeReminderFailure = (error: unknown): string => {
+    if (error instanceof AuthApiError) {
+      if (error.status === 409) return t("finance:reminders.disabled");
+      if (error.status === 429 && error.code === "debt_reminder_rate_limited") {
+        const nextAllowedAt: Date = new Date(Date.now() + (error.retryAfterSeconds ?? 0) * 1000);
+        return t("finance:reminders.rateLimited", { when: formatDateTime(nextAllowedAt, i18n.language) });
+      }
+      if (error.status === 422 && error.code === "debt_reminder_no_channel") return t("finance:reminders.noChannelError");
+    }
+    return t("finance:reminders.failed");
   };
 
   const describeReminders = (results: DebtReminderResult[], single: DebtItem | null): string => {
@@ -124,10 +135,15 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
       return t("finance:reminders.bulkResult", { queued: formatNumber(tally.queued, i18n.language), skipped: formatNumber(tally.skipped, i18n.language) });
     }
     const student: string = `${single.student.first_name} ${single.student.last_name}`;
-    const outcomeKeys: Record<DebtReminderResult["outcome"], string> = {
-      queued: "queuedOne",
+    if (first.outcome === "queued") {
+      return first.channel === "sms"
+        ? t("finance:reminders.queuedSms", { student, destination: (first.masked_destination ?? "").replaceAll(" ", "\u00A0") })
+        : t("finance:reminders.queuedTelegram", { student });
+    }
+    const outcomeKeys: Record<Exclude<DebtReminderResult["outcome"], "queued">, string> = {
       recently_reminded: "recentlyReminded",
       no_parent_chat: "noParentChat",
+      no_channel: "noChannelResult",
       no_debt: "noDebt",
       not_found: "notFound",
     };

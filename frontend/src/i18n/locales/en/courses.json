@@ -106,8 +106,7 @@
     "examTypeLabel": "Exam Type",
     "priceLabel": "Monthly price, TJS",
     "pricePlaceholder": "1500",
-    "immutableNotice": "Exam type, price, and schedule cannot be changed after the course is created.",
-    "scheduleLabel": "Schedule",
+    "immutableNotice": "Exam type and price cannot be changed after the course is created.",
     "saving": "Saving…",
     "creating": "Creating…",
     "scheduleSection": "Weekly schedule",
@@ -162,8 +161,12 @@
       "conflict": "A course with this title or configuration already exists.",
       "notFound": "The requested course or teacher was not found.",
       "mentorNotFound": "The selected teacher was not found.",
-      "titleAlreadyExists": "A course with this title already exists."
-    }
+      "titleAlreadyExists": "A course with this title already exists.",
+      "scheduleWeekdaysImmutable": "Lesson days cannot be added, removed or changed. Only lesson times can be edited.",
+      "scheduleTimeRangeInvalid": "End time must be after start time."
+    },
+    "dayTimeStartLabel": "{{day}}: start time",
+    "dayTimeEndLabel": "{{day}}: end time"
   },
   "searchPageScope": "Found on this page: {{count}} of {{total}}",
   "sortLabel": "Sort",
@@ -259,7 +262,8 @@
     "enrolling": "Enrolling…",
     "successToast": "Student successfully enrolled in course",
     "duplicateConflict": "This student is already enrolled in this course.",
-    "genericError": "Failed to enroll student. Please try again."
+    "genericError": "Failed to enroll student. Please try again.",
+    "courseAlreadyEnded": "This course has already ended. Students can't be enrolled in it."
   },
   "progress": {
     "title": "Course Progress",

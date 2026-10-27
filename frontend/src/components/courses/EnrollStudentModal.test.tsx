@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { I18nextProvider } from "react-i18next";
 import { QueryClient, QueryClientProvider, type UseQueryResult } from "@tanstack/react-query";
 import i18n from "../../i18n";
+import { AuthApiError } from "../../lib/auth/errors";
 import { EnrollStudentModal } from "./EnrollStudentModal";
 import * as enrollmentHooks from "../../lib/enrollments/hooks";
 import type {
@@ -10,6 +11,7 @@ import type {
   CourseRosterResponse,
   EligibleCandidateResponse,
   PaginatedEligibleCandidates,
+  WithdrawalPreviewResponse,
 } from "../../lib/enrollments/types";
 
 vi.mock("../../lib/enrollments/hooks", async (importOriginal) => {
@@ -20,6 +22,7 @@ vi.mock("../../lib/enrollments/hooks", async (importOriginal) => {
     useEligibleCandidates: vi.fn(),
     useEnrollStudent: vi.fn(),
     useWithdrawEnrollment: vi.fn(),
+    useWithdrawalPreview: vi.fn(),
   };
 });
 
@@ -149,6 +152,10 @@ describe("EnrollStudentModal workflows", () => {
       mutateAsync: mockMutateWithdrawAsync,
       isPending: false,
     } as unknown as ReturnType<typeof enrollmentHooks.useWithdrawEnrollment>);
+
+    vi.mocked(enrollmentHooks.useWithdrawalPreview).mockReturnValue(
+      mockQueryResult<WithdrawalPreviewResponse>({ still_owed: "500.00", cancelled_amount: "0.00", months_cancelled: 0 }),
+    );
 
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(
       mockQueryResult<CourseRosterResponse>({
@@ -294,6 +301,25 @@ describe("EnrollStudentModal workflows", () => {
     expect(screen.getAllByText("Zara Karimova").length).toBeGreaterThan(0);
     expect(screen.getByText("Change student")).toBeDefined();
     expect(enrollSubmitButton.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("shows the course-already-ended message for a 422 course_already_ended rejection", async () => {
+    mockMutateEnrollAsync.mockRejectedValueOnce(new AuthApiError(422, "course_already_ended"));
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <EnrollStudentModal open={true} courseId={42} courseTitle="Frontend Mastery" coursePrice="1200.00" onClose={vi.fn()} onEnrolled={vi.fn()} />
+        </I18nextProvider>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: /Zara Karimova/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Enroll student" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain("This course has already ended. Students can't be enrolled in it.");
+    });
   });
 
   it("handles candidate pagination across page two and preserves selection", () => {

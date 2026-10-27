@@ -6,7 +6,7 @@ from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
 from app.schemas.audit_log import AuditEventResponse, AuditFilterOptionsResponse, AuditLogResponse
-from app.services.audit_service import AuditService
+from app.services.audit_service import AuditCategory, AuditService
 
 router = APIRouter()
 
@@ -16,6 +16,7 @@ async def list_audit_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     actor_id: Optional[int] = Query(None, ge=1),
+    category: Optional[AuditCategory] = Query(None),
     action: Optional[AuditAction] = Query(None),
     entity_type: Optional[str] = Query(None, min_length=1, max_length=100),
     entity_id: Optional[int] = Query(None, ge=1),
@@ -29,6 +30,7 @@ async def list_audit_logs(
         page,
         page_size,
         actor_id=actor_id,
+        category=category,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
@@ -43,6 +45,7 @@ async def list_audit_events(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     actor_id: Optional[int] = Query(None, ge=1),
+    category: Optional[AuditCategory] = Query(None),
     action: Optional[AuditAction] = Query(None),
     entity_type: Optional[str] = Query(None, min_length=1, max_length=100),
     entity_id: Optional[int] = Query(None, ge=1),
@@ -56,6 +59,7 @@ async def list_audit_events(
         page,
         page_size,
         actor_id=actor_id,
+        category=category,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,

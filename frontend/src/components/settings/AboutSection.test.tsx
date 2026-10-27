@@ -17,6 +17,7 @@ vi.mock("../../config/version", () => ({
   COMMIT_MESSAGE: "fix(settings): show build",
   BUILD_TIME: "2026-10-16T08:00:00.000Z",
   UNKNOWN_BUILD_VALUE: "unknown",
+  APP_ENVIRONMENT: "production",
 }));
 
 vi.mock("../../lib/system/hooks", () => ({
@@ -39,48 +40,29 @@ afterEach(() => {
 });
 
 describe("AboutSection", () => {
-  it.each(["mentor", "student", "accountant", null] as const)("shows only versions for %s", (role) => {
+  it.each(["mentor", "student", "accountant", null] as const)("shows only versions and no details block for %s", (role) => {
     useAuthStore.setState({ role });
     mocks.query = { data: serverBuild("abcdef1234567890"), isLoading: false, isError: false };
     const view: RenderResult = render(<AboutSection />);
     expect(screen.getByText("1.0.1")).toBeTruthy();
     expect(screen.getByText("0.1.0")).toBeTruthy();
-    expect(view.container.querySelectorAll("dt")).toHaveLength(2);
-    expect(view.container.querySelectorAll("dd")).toHaveLength(2);
+    expect(screen.getByText("Production")).toBeTruthy();
+    expect(view.container.querySelector("details")).toBeNull();
     expect(screen.queryByText("abc1234")).toBeNull();
-    expect(screen.queryByText("abcdef1")).toBeNull();
     expect(screen.queryByText("fix(settings): show build")).toBeNull();
-    expect(screen.queryByText("feat(system): serve version")).toBeNull();
-    expect(screen.queryByText("Commit")).toBeNull();
-    expect(screen.queryByText("Change")).toBeNull();
-    expect(screen.queryByText("Built")).toBeNull();
-    expect(screen.queryByText(/different commits/)).toBeNull();
+    expect(screen.queryByText("Details")).toBeNull();
   });
 
-  it.each(["mentor", "student", "accountant", "superadmin"] as const)("matches loading geometry for %s", (role) => {
-    useAuthStore.setState({ role });
+  it("matches loading geometry for the server row", () => {
     mocks.query = { data: undefined, isLoading: true, isError: false };
     render(<AboutSection />);
-    expect(screen.getByLabelText(i18n.t("common:loading")).children).toHaveLength(role === "superadmin" ? 4 : 1);
+    const skeleton: HTMLElement = screen.getByLabelText(i18n.t("common:loading"));
+    expect(skeleton.getAttribute("aria-busy")).toBe("true");
+    expect(skeleton.children).toHaveLength(2);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("renders a version-only server response", () => {
-    useAuthStore.setState({ role: "student" });
-    mocks.query = { data: { version: "0.1.0", commit_sha: null, commit_message: null, built_at: null }, isLoading: false, isError: false };
-    render(<AboutSection />);
-    expect(screen.getByText("0.1.0")).toBeTruthy();
-    expect(screen.queryByText("Built")).toBeNull();
-  });
-
-  it("shows a skeleton for the server row while loading", () => {
-    mocks.query = { data: undefined, isLoading: true, isError: false };
-    render(<AboutSection />);
-    expect(screen.getByLabelText(i18n.t("common:loading")).getAttribute("aria-busy")).toBe("true");
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-
-  it.each(["superadmin", "student", "mentor", "accountant"] as const)("shows an error with a working retry for %s", (role) => {
+  it.each(["superadmin", "student"] as const)("shows an error with a working retry for %s", (role) => {
     useAuthStore.setState({ role });
     mocks.query = { data: undefined, isLoading: false, isError: true };
     render(<AboutSection />);
@@ -90,31 +72,53 @@ describe("AboutSection", () => {
     expect(mocks.refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the server version, short hash, commit name and build time", () => {
-    mocks.query = { data: serverBuild("abcdef1234567890"), isLoading: false, isError: false };
-    render(<AboutSection />);
-    expect(screen.getByText("abcdef1")).toBeTruthy();
-    expect(screen.getByText("feat(system): serve version")).toBeTruthy();
-    expect(screen.getByText("0.1.0")).toBeTruthy();
-    expect(screen.getAllByText("Built")).toHaveLength(2);
-    expect(screen.getByText(formatDateTime(new Date("2026-10-16T08:00:00.000Z"), "en"))).toBeTruthy();
-    expect(screen.getByText(formatDateTime(new Date("2026-10-17T10:00:00Z"), "en"))).toBeTruthy();
-    expect(screen.getAllByText("Commit")).toHaveLength(2);
-    expect(screen.getAllByText("Change")).toHaveLength(2);
-    expect(screen.getByText("abc1234")).toBeTruthy();
-    expect(screen.getByText("fix(settings): show build")).toBeTruthy();
-  });
-
-  it("hints that the app and server differ when the commits differ", () => {
+  it("keeps commit details inside a collapsed Details block for a superadmin", () => {
     mocks.query = { data: serverBuild("0123456789abcdef"), isLoading: false, isError: false };
-    render(<AboutSection />);
-    expect(screen.queryByText(/different commits/)).not.toBeNull();
+    const view: RenderResult = render(<AboutSection />);
+    const details: HTMLDetailsElement = view.container.querySelector("details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(within(details).getByText("Details")).toBeTruthy();
+    fireEvent.click(within(details).getByText("Details"));
+    expect(details.open).toBe(true);
   });
 
-  it("shows no hint when the commits match", () => {
+  it("lists the app and server builds separately when the commits differ", () => {
+    mocks.query = { data: serverBuild("0123456789abcdef"), isLoading: false, isError: false };
+    const view: RenderResult = render(<AboutSection />);
+    const details: HTMLElement = view.container.querySelector("details") as HTMLElement;
+    expect(within(details).getByText("App build")).toBeTruthy();
+    expect(within(details).getByText("Server build")).toBeTruthy();
+    expect(within(details).getByText("abc1234")).toBeTruthy();
+    expect(within(details).getByText("0123456")).toBeTruthy();
+    expect(within(details).getByText("fix(settings): show build")).toBeTruthy();
+    expect(within(details).getByText("feat(system): serve version")).toBeTruthy();
+    expect(within(details).getByText(formatDateTime(new Date("2026-10-16T08:00:00.000Z"), "en"))).toBeTruthy();
+    expect(within(details).getByText(formatDateTime(new Date("2026-10-17T10:00:00Z"), "en"))).toBeTruthy();
+  });
+
+  it("shows the commit once when the app and server are on the same build", () => {
     mocks.query = { data: serverBuild("abc1234ffffffff"), isLoading: false, isError: false };
-    render(<AboutSection />);
-    expect(screen.queryByText(/different commits/)).toBeNull();
+    const view: RenderResult = render(<AboutSection />);
+    const details: HTMLElement = view.container.querySelector("details") as HTMLElement;
+    expect(within(details).getByText("App and server are on the same build.")).toBeTruthy();
+    expect(within(details).getAllByText("abc1234")).toHaveLength(1);
+    expect(within(details).queryByText("Server build")).toBeNull();
+  });
+
+  it("hides the server build when the server reports no commit details", () => {
+    mocks.query = { data: { version: "0.1.0", commit_sha: null, commit_message: null, built_at: null }, isLoading: false, isError: false };
+    const view: RenderResult = render(<AboutSection />);
+    const details: HTMLElement = view.container.querySelector("details") as HTMLElement;
+    expect(within(details).queryByText("Server build")).toBeNull();
+    expect(within(details).queryByText("Unknown")).toBeNull();
+  });
+
+  it("shows only the app build when the server build is unavailable", () => {
+    mocks.query = { data: undefined, isLoading: false, isError: true };
+    const view: RenderResult = render(<AboutSection />);
+    const details: HTMLElement = view.container.querySelector("details") as HTMLElement;
+    expect(within(details).getByText("abc1234")).toBeTruthy();
+    expect(within(details).queryByText("Server build")).toBeNull();
   });
 });
 

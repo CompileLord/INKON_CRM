@@ -96,7 +96,15 @@ jobs:
 
       - name: Build production bundle
         working-directory: frontend
-        run: npm run build
+        env:
+          BUILD_COMMIT_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          VITE_APP_VERSION="$(node -p "require('./package.json').version")"
+          VITE_COMMIT_HASH="$(git rev-parse --short=7 "${BUILD_COMMIT_SHA}" 2>/dev/null || echo "${BUILD_COMMIT_SHA}" | cut -c1-7)"
+          VITE_COMMIT_MESSAGE="$(git log -1 --format=%s "${BUILD_COMMIT_SHA}" 2>/dev/null || echo unknown)"
+          VITE_BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export VITE_APP_VERSION VITE_COMMIT_HASH VITE_COMMIT_MESSAGE VITE_BUILD_TIME
+          npm run build
 
       - name: Verify build output
         run: |
