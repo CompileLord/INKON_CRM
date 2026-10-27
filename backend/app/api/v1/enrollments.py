@@ -9,6 +9,7 @@ from app.repositories.interfaces.enrollment_repository import EnrollmentFilters
 from app.schemas.enrollment import (
     EnrollmentCreate,
     EnrollmentResponse,
+    WithdrawalPreviewResponse,
     CourseRosterResponse,
     RosterLocationResponse,
     EligibleCandidateResponse,
@@ -28,6 +29,15 @@ async def enroll_student(
     enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> Enrollment:
     return await enrollment_service.enroll_student(payload.student_id, payload.course_id, current_user)
+
+
+@router.get("/{id}/withdraw-preview", response_model=WithdrawalPreviewResponse)
+async def preview_withdrawal(
+    id: int,
+    current_user: User = Depends(require_superadmin),
+    enrollment_service: EnrollmentService = Depends(get_enrollment_service),
+) -> WithdrawalPreviewResponse:
+    return await enrollment_service.preview_withdrawal(id)
 
 
 @router.patch("/{id}/withdraw", response_model=EnrollmentResponse)

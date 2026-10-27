@@ -15,7 +15,7 @@
 
 export type PaymentMethod = "cash" | "transfer";
 
-export type LedgerEntryType = "payment" | "discount" | "refund" | "adjustment" | "void";
+export type LedgerEntryType = "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal";
 export type ChargeStatus = "open" | "settled" | "cancelled";
 export type ChargeType = "tuition" | "fee" | "late_fee";
 export type AccountingPeriodStatus = "open" | "closed";

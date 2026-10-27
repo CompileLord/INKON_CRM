@@ -1,5 +1,8 @@
 from datetime import date, datetime
 from typing import List, Optional
+from decimal import Decimal
+from app.models.allocation import Allocation
+from app.models.charge import Charge
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +17,7 @@ from app.schemas.enrollment import (
     RosterLocationResponse,
     RosterSortOrder,
     RosterStudentIdentity,
+    WithdrawalPreviewResponse,
 )
 from app.schemas.common import PaginatedResponse
 from app.models.course import Course, CourseStatus
@@ -76,7 +80,7 @@ class EnrollmentService:
         lesson_plan: EnrollmentLessonPlan | None = None,
         enrolled_at: datetime | None = None,
     ) -> Enrollment:
-        from app.services.finance_service import FinanceService
+        from app.services.finance_service import FinanceService, get_dushanbe_today
 
         await FinanceService(self.db).lock_student_accounts([student_id])
         course = await self.course_repo.get_by_id(course_id)
@@ -84,6 +88,12 @@ class EnrollmentService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Course is archived/inactive"
+            )
+
+        if course.end_date <= get_dushanbe_today():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="course_already_ended",
             )
 
         FinanceService.validate_installment_price(course.price, course.start_date, course.end_date)
@@ -198,37 +208,64 @@ class EnrollmentService:
             withdrawn_enrollments.append(await self.withdraw_student(enrollment.id, actor_id))
         return withdrawn_enrollments
 
-    async def withdraw_student(self, enrollment_id: int, actor_id: int | None = None) -> Enrollment:
-        enrollment = await self.enrollment_repo.get_by_id(enrollment_id)
-        if not enrollment or enrollment.is_deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Enrollment not found"
-            )
-        from app.services.finance_service import FinanceService
+    async def preview_withdrawal(self, enrollment_id: int) -> WithdrawalPreviewResponse:
+        from app.services.finance_service import FinanceService, get_dushanbe_today
 
-        await FinanceService(self.db).lock_student_accounts([enrollment.student_id])
-        previous_status: EnrollmentStatus = enrollment.status
+        enrollment: Enrollment | None = await self.enrollment_repo.get_by_id(enrollment_id)
+        if not enrollment or enrollment.is_deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
+        course: Course | None = await self.course_repo.get_by_id(enrollment.course_id)
+        if course is None:
+            raise ValueError("Enrollment course not found")
+        charges: list[Charge]
+        allocations: list[Allocation]
+        owed: Decimal
+        cancelled: Decimal
+        charges, allocations, owed, cancelled = await FinanceService(self.db).withdrawal_calculation(
+            enrollment, course, get_dushanbe_today(),
+        )
+        return WithdrawalPreviewResponse(still_owed=owed, cancelled_amount=cancelled, months_cancelled=len(charges))
+
+    async def withdraw_student(self, enrollment_id: int, actor_id: int | None = None) -> Enrollment:
+        from app.services.finance_service import FinanceService, get_dushanbe_today
+        from app.models.charge import ChargeStatus
+
+        enrollment: Enrollment | None = await self.enrollment_repo.get_by_id(enrollment_id)
+        if not enrollment or enrollment.is_deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
+        finance_service: FinanceService = FinanceService(self.db)
+        await finance_service.lock_student_accounts([enrollment.student_id])
+        if enrollment.status == EnrollmentStatus.WITHDRAWN:
+            return enrollment
+        course: Course | None = await self.course_repo.get_by_id(enrollment.course_id)
+        if course is None:
+            raise ValueError("Enrollment course not found")
+        charges: list[Charge]
+        allocations: list[Allocation]
+        owed: Decimal
+        cancelled: Decimal
+        charges, allocations, owed, cancelled = await finance_service.withdrawal_calculation(
+            enrollment, course, get_dushanbe_today(),
+        )
+        if allocations and actor_id is None:
+            raise ValueError("Withdrawal of allocated charges requires an actor")
+        if allocations and actor_id is not None:
+            await finance_service.reverse_withdrawal_allocations(enrollment.student_id, actor_id, allocations)
+        charge: Charge
+        for charge in charges:
+            charge.status = ChargeStatus.CANCELLED
         enrollment.status = EnrollmentStatus.WITHDRAWN
         await self.enrollment_repo.update(enrollment)
-
-        from app.models.charge import Charge, ChargeStatus
-        from app.services.finance_service import get_dushanbe_today
-        today: date = get_dushanbe_today()
-        future_charges: list[Charge] = await self.enrollment_repo.list_future_open_charges(enrollment_id, today)
-        future_charge: Charge
-        for future_charge in future_charges:
-            future_charge.status = ChargeStatus.CANCELLED
-
-        if previous_status != EnrollmentStatus.WITHDRAWN:
-            student: User | None = await self.user_repo.get_by_id(enrollment.student_id)
-            if student is None:
-                raise ValueError("Enrollment student not found")
-            await AuditService(self.db).log_change(
-                actor_id, "update", "enrollment", enrollment.id,
-                f"{student.first_name} {student.last_name}", {"status"},
-            )
-        await FinanceService(self.db)._invalidate_cache()
+        student: User | None = await self.user_repo.get_by_id(enrollment.student_id)
+        if student is None:
+            raise ValueError("Enrollment student not found")
+        await AuditService(self.db).log_change(
+            actor_id, "update", "enrollment", enrollment.id,
+            f"{student.first_name} {student.last_name}",
+            {"changed_fields": (None, '["status"]'),
+             "cancelled_amount": (None, str(cancelled)), "months_cancelled": (None, len(charges))},
+        )
+        await finance_service._invalidate_cache()
         await self.db.refresh(enrollment)
         return enrollment
 
