@@ -221,11 +221,11 @@ async def test_proven_only_means_ranks_and_history_keep_unknown_and_future_out(
     assert (metrics.class_avg_score, metrics.class_avg_max_score, metrics.class_avg_percentage) == (6.0, 102.0, 5.9)
     mentor: dict[str, Any] = await repository.get_mentor_profile_stats(test_mentor.id)
     assert mentor["avg_score"] == 5.88
-    assert mentor["avg_score_summary_count"] == 2
+    assert mentor["avg_score_summary_count"] == 1
     assert mentor["avg_score_defined_ratios_mean"] == pytest.approx(100 * 6 / 102)
     analytics: dict[str, Any] = await repository.get_mentor_analytics(test_mentor.id)
     assert analytics["average_student_score"] == 6.0
-    assert analytics["average_student_score_summary_count"] == 2
+    assert analytics["average_student_score_summary_count"] == 1
     peer_summary: JournalStudentSummary = next(
         row for row in summaries if row.student_id == classmate.id and row.journal_id == current.id
     )

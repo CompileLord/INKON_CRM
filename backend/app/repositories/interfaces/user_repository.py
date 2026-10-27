@@ -71,7 +71,9 @@ class UserRepository(BaseRepository[User], Protocol):
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        *,
+        include_courses: bool = False,
     ) -> RepositoryPage[User]:
         ...
 

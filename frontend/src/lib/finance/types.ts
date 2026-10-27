@@ -104,6 +104,7 @@ export interface ChargeItem {
   allocated_amount: string;
   remaining_balance: string;
   course_title?: string | null;
+  billing_mode?: "paid" | "grant";
 }
 
 export interface AccountingPeriodItem {
@@ -186,6 +187,7 @@ export interface DebtItem {
     title: string;
   };
   price_at_enrollment: string;
+  billing_mode?: "paid" | "grant";
   /** Installments that have come due. */
   billed_to_date: string;
   total_paid: string;

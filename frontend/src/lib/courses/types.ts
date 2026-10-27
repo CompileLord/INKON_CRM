@@ -160,6 +160,7 @@ export interface StaffProgressPeriod {
   class_avg_max_score?: number | null;
   class_avg_percentage?: number | null;
   graded_count?: number | null;
+  has_graded_entries?: boolean;
 }
 
 export interface StaffProgressPeriodResult {

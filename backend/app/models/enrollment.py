@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint, func, text
+from typing import Optional
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, SoftDeleteMixin
 
@@ -12,10 +13,16 @@ class EnrollmentStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class BillingMode(str, Enum):
+    PAID = "paid"
+    GRANT = "grant"
+
+
 class Enrollment(Base, SoftDeleteMixin):
     __tablename__ = "enrollments"
     __table_args__ = (
         UniqueConstraint("student_id", "course_id", name="uq_student_course"),
+        CheckConstraint("billing_mode IN ('paid', 'grant')", name="check_enrollment_billing_mode"),
         Index(
             "ix_enrollments_course_student_live",
             "course_id",
@@ -40,6 +47,16 @@ class Enrollment(Base, SoftDeleteMixin):
         server_default="active",
         nullable=False
     )
+    billing_mode: Mapped[Optional[BillingMode]] = mapped_column(
+        String(20),
+        default=BillingMode.PAID,
+        server_default="paid",
+        nullable=True
+    )
 
     student: Mapped["User"] = relationship("User")
     course: Mapped["Course"] = relationship("Course")
+
+    @property
+    def effective_billing_mode(self) -> BillingMode:
+        return BillingMode(self.billing_mode) if self.billing_mode is not None else BillingMode.PAID

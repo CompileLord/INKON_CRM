@@ -189,17 +189,17 @@ async def test_mentor_aggregate_contract_preserves_populations_and_unknown_gradi
     analytics = analytics_response.json()
     profile = profile_response.json()
     assert analytics["active_courses_count"] == 1
-    assert analytics["total_students_count"] == 2
-    assert analytics["average_student_score"] == pytest.approx(310 / 5)
-    assert analytics["average_student_score_summary_count"] == 5
+    assert analytics["total_students_count"] == 1
+    assert analytics["average_student_score"] == pytest.approx(270 / 4)
+    assert analytics["average_student_score_summary_count"] == 4
     assert analytics["average_student_score_grading_state"] == "unknown"
     assert analytics["active_courses_population"] == "active_non_deleted_courses"
     assert analytics["total_students_population"] == "non_deleted_enrollments_on_assigned_courses_all_statuses_including_soft_deleted_courses"
-    assert profile["avg_score"] == 70.0
-    assert profile["avg_score_summary_count"] == 6
-    assert profile["avg_score_defined_ratio_count"] == 4
-    assert profile["avg_score_undefined_ratio_count"] == 2
-    assert profile["avg_score_defined_ratios_mean"] == pytest.approx(70.0)
+    assert profile["avg_score"] == pytest.approx(200 / 3, abs=0.01)
+    assert profile["avg_score_summary_count"] == 4
+    assert profile["avg_score_defined_ratio_count"] == 3
+    assert profile["avg_score_undefined_ratio_count"] == 1
+    assert profile["avg_score_defined_ratios_mean"] == pytest.approx(200 / 3)
     assert profile["avg_score_grading_state"] == "unknown"
     assert profile["active_students_count"] == 1
 

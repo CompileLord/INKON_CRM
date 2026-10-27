@@ -332,7 +332,12 @@ class UserService:
         page_size: int = 20,
         search: Optional[str] = None
     ) -> dict:
-        return await self.user_repo.get_mentors_list(page=page, page_size=page_size, search=search)
+        return await self.user_repo.get_mentors_list(
+            page=page,
+            page_size=page_size,
+            search=search,
+            include_courses=True,
+        )
 
     async def upload_avatar(self, user_id: int, file: UploadFile) -> User:
         user: User | None = await self.user_repo.get_by_id_for_update(user_id)

@@ -1210,6 +1210,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "active_courses?": array[],
       }
     ],
     "total": integer,
@@ -2008,6 +2009,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
@@ -2060,6 +2062,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
@@ -2203,6 +2206,7 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
         "enrolled_at": string,
         "status": "active" | "withdrawn" | "completed",
         "is_deleted": boolean,
+        "billing_mode": "paid" | "grant",
       }
     ],
     "total": integer,
@@ -2237,6 +2241,8 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
 {
   "student_id": integer,
   "course_id": integer,
+  "price_at_enrollment?": number,
+  "billing_mode?": "paid" | "grant",
 }
 ```
 
@@ -2252,6 +2258,106 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
     "enrolled_at": string,
     "status": "active" | "withdrawn" | "completed",
     "is_deleted": boolean,
+    "billing_mode": "paid" | "grant",
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## POST /api/v1/enrollments/preview
+
+**Summary:** Preview Enrollment
+
+**Request Body (JSON):**
+```json
+{
+  "student_id": integer,
+  "course_id": integer,
+  "price_at_enrollment?": number,
+  "billing_mode?": "paid" | "grant",
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "billing_mode": "paid" | "grant",
+    "price_at_enrollment": string,
+    "billed_months": integer,
+    "total_amount": string,
+    "first_charge?": {
+      "period_start": string,
+      "due_date": string,
+      "amount": string,
+    },
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## PATCH /api/v1/enrollments/{id}/billing-mode
+
+**Summary:** Change Billing Mode
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Request Body (JSON):**
+```json
+{
+  "billing_mode": "paid" | "grant",
+  "reason": string,
+}
+```
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "enrollment": {
+      "id": integer,
+      "student_id": integer,
+      "course_id": integer,
+      "price_at_enrollment": string,
+      "color_hex": string,
+      "enrolled_at": string,
+      "status": "active" | "withdrawn" | "completed",
+      "is_deleted": boolean,
+      "billing_mode": "paid" | "grant",
+    },
+    "cancelled_months": integer,
+    "cancelled_amount": string,
+    "written_off_amount": string,
+    "generated_months": integer,
   }
   ```
 - **422**: Validation Error
@@ -2323,6 +2429,7 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
     "enrolled_at": string,
     "status": "active" | "withdrawn" | "completed",
     "is_deleted": boolean,
+    "billing_mode": "paid" | "grant",
   }
   ```
 - **422**: Validation Error
@@ -2370,6 +2477,7 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
         "color_hex": string,
         "enrolled_at": string,
         "status": "active" | "withdrawn" | "completed",
+        "billing_mode": "paid" | "grant",
         "student": {
           "id": any,
           "first_name": any,
@@ -2437,6 +2545,7 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
       "color_hex": string,
       "enrolled_at": string,
       "status": "active" | "withdrawn" | "completed",
+      "billing_mode": "paid" | "grant",
       "student": {
         "id": integer,
         "first_name": string,
@@ -3338,6 +3447,7 @@ Manually apply a student's wallet credit to a specific charge.
         "remaining_balance?": string,
         "student_name?": string,
         "course_title?": string,
+        "billing_mode?": "paid" | "grant",
       }
     ],
     "total": integer,
@@ -3552,6 +3662,7 @@ Manually apply a student's wallet credit to a specific charge.
           "title": any,
         },
         "price_at_enrollment": string,
+        "billing_mode": "paid" | "grant",
         "billed_to_date": string,
         "total_paid": string,
         "debt": string,

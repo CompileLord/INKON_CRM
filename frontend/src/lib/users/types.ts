@@ -33,6 +33,11 @@ export interface UserSelfUpdate {
   phone?: string | null;
 }
 
+export interface MentorCoursePillResponse {
+  id: number;
+  title: string;
+}
+
 export interface User {
   id: number;
   email: string | null;
@@ -52,6 +57,11 @@ export interface User {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  active_courses?: MentorCoursePillResponse[];
+}
+
+export interface MentorListItemResponse extends User {
+  active_courses: MentorCoursePillResponse[];
 }
 
 export type PasswordSmsDestination = 'student_phone' | 'parent_phone';
