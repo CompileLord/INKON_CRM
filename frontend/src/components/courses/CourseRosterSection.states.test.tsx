@@ -12,6 +12,7 @@ import type {
   CourseRosterResponse,
   EligibleCandidateResponse,
   PaginatedEligibleCandidates,
+  WithdrawalPreviewResponse,
 } from "../../lib/enrollments/types";
 
 vi.mock("../../lib/enrollments/hooks", async (importOriginal) => {
@@ -22,6 +23,7 @@ vi.mock("../../lib/enrollments/hooks", async (importOriginal) => {
     useEligibleCandidates: vi.fn(),
     useEnrollStudent: vi.fn(),
     useWithdrawEnrollment: vi.fn(),
+    useWithdrawalPreview: vi.fn(),
   };
 });
 
@@ -151,6 +153,10 @@ describe("Course roster section", () => {
       mutateAsync: mockMutateWithdrawAsync,
       isPending: false,
     } as unknown as ReturnType<typeof enrollmentHooks.useWithdrawEnrollment>);
+
+    vi.mocked(enrollmentHooks.useWithdrawalPreview).mockReturnValue(
+      mockQueryResult<WithdrawalPreviewResponse>({ still_owed: "500.00", cancelled_amount: "0.00", months_cancelled: 0 }),
+    );
 
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(
       mockQueryResult<CourseRosterResponse>({

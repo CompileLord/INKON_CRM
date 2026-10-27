@@ -114,7 +114,19 @@
     "withdrawError": "Не удалось отчислить студента",
     "withdrawMessage": "Отчислить {{name}} с курса «{{course}}»? Студент потеряет доступ к занятиям и журналу. Аккаунт останется.",
     "withdrawSuccess": "Студент отчислен",
-    "withdrawTitle": "Отчислить студента"
+    "withdrawTitle": "Отчислить студента",
+    "withdrawPreview": {
+      "stillOwed": "Останется к оплате",
+      "cancelled": "Будет отменено",
+      "amount": "{{amount}} TJS",
+      "months_one": "{{formatted}} месяц",
+      "months_few": "{{formatted}} месяца",
+      "months_many": "{{formatted}} месяцев",
+      "months_other": "{{formatted}} месяца",
+      "creditNote": "Уже внесённая оплата за отменённые месяцы станет кредитом студента.",
+      "error": "Не удалось узнать, что изменится при отчислении",
+      "retry": "Повторить"
+    }
   },
   "progress": {
     "emptyPeriods": "Периодов журнала пока нет",

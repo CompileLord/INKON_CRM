@@ -78,7 +78,8 @@
     "untitledCourse": "Курси беном",
     "dateToday": "Имрӯз",
     "dateYesterday": "Дирӯз",
-    "dateChoose": "Санаро интихоб кунед"
+    "dateChoose": "Санаро интихоб кунед",
+    "withdrawnExceedsDebt": "Донишҷӯ аз курс хориҷ карда шудааст. Пардохт аз қарзи боқимонда зиёд буда наметавонад."
   },
   "paymentDetail": {
     "title": "Пардохт №{{id}}",

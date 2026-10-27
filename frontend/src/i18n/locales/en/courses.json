@@ -259,7 +259,8 @@
     "enrolling": "Enrolling…",
     "successToast": "Student successfully enrolled in course",
     "duplicateConflict": "This student is already enrolled in this course.",
-    "genericError": "Failed to enroll student. Please try again."
+    "genericError": "Failed to enroll student. Please try again.",
+    "courseAlreadyEnded": "This course has already ended. Students can't be enrolled in it."
   },
   "progress": {
     "title": "Course Progress",

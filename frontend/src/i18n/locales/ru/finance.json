@@ -78,7 +78,8 @@
     "untitledCourse": "Курс без названия",
     "dateToday": "Сегодня",
     "dateYesterday": "Вчера",
-    "dateChoose": "Выберите дату"
+    "dateChoose": "Выберите дату",
+    "withdrawnExceedsDebt": "Студент отчислен с курса. Оплата не может превышать оставшийся долг."
   },
   "paymentDetail": {
     "title": "Оплата №{{id}}",

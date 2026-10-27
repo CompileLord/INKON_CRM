@@ -78,7 +78,8 @@
     "untitledCourse": "Untitled course",
     "dateToday": "Today",
     "dateYesterday": "Yesterday",
-    "dateChoose": "Choose date"
+    "dateChoose": "Choose date",
+    "withdrawnExceedsDebt": "This student has withdrawn from the course. A payment can't exceed the remaining debt."
   },
   "paymentDetail": {
     "title": "Payment #{{id}}",
