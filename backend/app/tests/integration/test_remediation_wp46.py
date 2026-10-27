@@ -22,6 +22,11 @@ from app.schemas.course import CourseCreate
 from app.services.course_service import CourseService
 
 
+@pytest.fixture(autouse=True)
+def school_day_2025_12_20(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2025, 12, 20))
+
+
 class CourseCopyFixture:
     @staticmethod
     def destination(mentor_id: int, end_date: str = "2026-01-02", daily: bool = False) -> CourseCreate:

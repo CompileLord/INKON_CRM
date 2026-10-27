@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, date, timezone, timedelta
 from decimal import Decimal
+from unittest.mock import Mock
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -110,6 +111,7 @@ async def test_void_and_refund_lifecycle(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("app.services.finance_service._to_dushanbe", HistoricalEnrollmentClock.to_dushanbe)
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 10)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -226,8 +228,10 @@ async def test_void_and_refund_lifecycle(
 
 @pytest.mark.asyncio
 async def test_period_close_enforcement(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 7, 15)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -310,8 +314,10 @@ async def test_period_close_enforcement(
 
 @pytest.mark.asyncio
 async def test_receipt_generation(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 10)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)

@@ -1,3 +1,5 @@
+from datetime import date
+from unittest.mock import Mock
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +27,9 @@ def test_scoring_rules_unit() -> None:
 
 
 @pytest.mark.asyncio
-async def test_journal_operations(client: AsyncClient, test_admin: User, test_mentor: User, test_student: User, db_session: AsyncSession) -> None:
+async def test_journal_operations(client: AsyncClient, test_admin: User, test_mentor: User, test_student: User, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 30)))
+    monkeypatch.setattr("app.core.school_calendar.SchoolCalendar.today", Mock(return_value=date(2026, 8, 30)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 

@@ -3,7 +3,8 @@ import os
 import sys
 import uuid
 from datetime import date, datetime, timezone
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Callable, Generator
+from unittest.mock import Mock
 from types import TracebackType
 from urllib.parse import urlsplit
 
@@ -221,6 +222,14 @@ worker_tasks_module.AsyncSessionLocal = TestingSessionLocal
 @pytest.fixture(autouse=True)
 def test_password_bcrypt_rounds(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "PASSWORD_BCRYPT_ROUNDS", 4)
+
+
+@pytest.fixture
+def freeze_school_today(monkeypatch: pytest.MonkeyPatch) -> Callable[[date], None]:
+    def freeze(school_day: date) -> None:
+        monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=school_day))
+
+    return freeze
 
 
 @pytest.fixture(scope="session")

@@ -1,3 +1,4 @@
+from typing import Callable
 import asyncio
 from datetime import date, time, timedelta
 from contextvars import ContextVar
@@ -26,6 +27,11 @@ from app.services.sum_calculation_service import SumCalculationService
 from app.services.journal_service import JournalService
 from app.api.v1.journals import batch_update_entries
 from app.tests.conftest import TestingSessionLocal
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 async def create_journal(client: AsyncClient, admin: User, mentor: User, student: User) -> tuple[int, list[JournalEntryUpdate]]:
