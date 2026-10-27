@@ -10,3 +10,4 @@ export const COMMIT_HASH: string = typeof __COMMIT_HASH__ !== "undefined" ? __CO
 export const COMMIT_MESSAGE: string = typeof __COMMIT_MESSAGE__ !== "undefined" ? __COMMIT_MESSAGE__ : UNKNOWN_BUILD_VALUE;
 export const BUILD_TIME: string = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : UNKNOWN_BUILD_VALUE;
 export const FULL_VERSION_STRING = `v${APP_VERSION} (${COMMIT_HASH})`;
+export const APP_ENVIRONMENT: "production" | "development" = import.meta.env.PROD ? "production" : "development";
