@@ -15,11 +15,13 @@ import type {
   EligibleCandidatesParams,
   EnrollmentCreate,
   EnrollmentResponse,
+  EnrollmentStatus,
   PaginatedEligibleCandidates,
   RosterLocationResponse,
 } from "./types";
 
 const PAGE_SIZE = 100;
+const ACTIVE_STATUS: EnrollmentStatus = "active";
 
 interface EnrollmentFilter {
   student_id?: number;
@@ -77,9 +79,11 @@ export function useEnrollmentsTotal(enabled: boolean = true) {
 
 export function useCourseEnrollmentsCount(courseId: number | undefined, enabled: boolean = true) {
   return useQuery({
-    queryKey: ["enrollments", "count-by-course", courseId],
+    queryKey: ["enrollments", "count-by-course", courseId, ACTIVE_STATUS],
     queryFn: () =>
-      listEnrollments({ course_id: courseId!, page: 1, page_size: 1 }).then((res) => res.total),
+      listEnrollments({ course_id: courseId!, status: ACTIVE_STATUS, page: 1, page_size: 1 }).then(
+        (res) => res.total,
+      ),
     enabled: courseId !== undefined && enabled,
   });
 }
