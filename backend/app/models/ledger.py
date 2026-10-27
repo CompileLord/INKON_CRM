@@ -14,6 +14,7 @@ class LedgerEntryType(str, Enum):
     REFUND = "refund"
     ADJUSTMENT = "adjustment"
     VOID = "void"
+    WITHDRAWAL_REVERSAL = "withdrawal_reversal"
 
 
 class LedgerEntry(Base):

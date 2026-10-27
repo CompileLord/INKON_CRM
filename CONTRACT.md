@@ -2271,6 +2271,39 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
 
 ---
 
+## GET /api/v1/enrollments/{id}/withdraw-preview
+
+**Summary:** Preview Withdrawal
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "still_owed": string,
+    "cancelled_amount": string,
+    "months_cancelled": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## PATCH /api/v1/enrollments/{id}/withdraw
 
 **Summary:** Withdraw Student
@@ -2927,7 +2960,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -2989,7 +3022,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3050,7 +3083,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3112,7 +3145,7 @@ Post a correcting credit — the sanctioned fix for a closed period.
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
@@ -3172,7 +3205,7 @@ Manually apply a student's wallet credit to a specific charge.
   {
     "id": integer,
     "student_id": integer,
-    "type": "payment" | "discount" | "refund" | "adjustment" | "void",
+    "type": "payment" | "discount" | "refund" | "adjustment" | "void" | "withdrawal_reversal",
     "amount": string,
     "method?": "cash" | "transfer",
     "occurred_at": string,
