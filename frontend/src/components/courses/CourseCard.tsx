@@ -42,21 +42,13 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
             to={`/courses/${course.id}`}
             onClick={onNavigate}
             onKeyDown={(event) => { if (event.key === "Enter") onNavigate?.(); }}
-            className="break-words text-base font-semibold text-ink after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:rounded-2xl"
+            className="line-clamp-2 break-words text-base font-semibold text-ink after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:rounded-2xl"
           >
             {course.title}
           </Link>
-          <span className="flex min-w-0 flex-wrap gap-x-1.5 text-sm text-muted">
-            <span>{t(`examTypeLabel.${course.exam_type}`)}</span>
-            {mentorName !== null && <span aria-hidden="true">·</span>}
-            {mentorName !== null && <span className="break-words">{mentorName}</span>}
-          </span>
+          <span className="truncate text-sm text-muted">{t(`examTypeLabel.${course.exam_type}`)}</span>
+          {mentorName !== null && <span className="truncate text-sm text-muted">{mentorName}</span>}
         </div>
-        {course.status === "active" ? (
-          <Badge status="active" label={t("statusActive")} />
-        ) : (
-          <Badge status="archived" />
-        )}
         {menu.items.length > 0 && <Menu items={menu.items} label={menu.label} />}
       </div>
 
@@ -96,8 +88,15 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
       </div>
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-        <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
-          {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
+            {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
+          </span>
+          {course.status === "active" ? (
+            <Badge status="active" label={t("statusActive")} />
+          ) : (
+            <Badge status="archived" />
+          )}
         </span>
         {isMentor && (
           <Link
