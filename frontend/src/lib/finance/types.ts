@@ -185,13 +185,14 @@ export interface DebtItem {
     id: number;
     title: string;
   };
-  /** Contracted total — not the amount owed. */
   price_at_enrollment: string;
   /** Installments that have come due. */
   billed_to_date: string;
   total_paid: string;
   debt: string;
   overdue_days: number;
+  reminder_channel?: "telegram" | "sms" | null;
+  reminder_masked_destination?: string | null;
   parent_telegram_linked?: boolean;
   last_reminder_at?: string | null;
 }
@@ -201,7 +202,8 @@ export type DebtReminderOutcome =
   | "no_parent_chat"
   | "no_debt"
   | "recently_reminded"
-  | "not_found";
+  | "not_found"
+  | "no_channel";
 
 export interface DebtReminderRequest {
   student_ids: number[];
@@ -210,6 +212,8 @@ export interface DebtReminderRequest {
 export interface DebtReminderResult {
   student_id: number;
   outcome: DebtReminderOutcome;
+  channel?: "telegram" | "sms" | null;
+  masked_destination?: string | null;
   next_allowed_at: string | null;
 }
 

@@ -82,12 +82,7 @@ class StudentPasswordSmsDispatcher:
             return True
 
         payload: dict[str, Optional[str]] = json.loads(plaintext_payload)
-        message: str = self._message_factory.build(
-            payload.get("language"),
-            PasswordSmsReason(payload["reason"]),
-            str(payload["code"]),
-            inspection.parent_addressee_name,
-        )
+        message: str = self.render_message(payload, inspection)
         if self._send_interval_seconds > 0:
             await asyncio.sleep(self._send_interval_seconds)
         async with session_factory() as session:
@@ -132,6 +127,12 @@ class StudentPasswordSmsDispatcher:
                 )
             await session.commit()
         return True
+
+    def render_message(self, payload: dict[str, Optional[str]], inspection: SmsDispatchInspection) -> str:
+        return self._message_factory.build(
+            payload.get("language"), PasswordSmsReason(payload["reason"]), str(payload["code"]),
+            inspection.parent_addressee_name,
+        )
 
     async def _inspect(
         self,

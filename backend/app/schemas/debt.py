@@ -1,6 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel
 
 
@@ -20,12 +20,12 @@ class DebtCourseInfo(BaseModel):
 class DebtResponse(BaseModel):
     student: DebtStudentInfo
     course: DebtCourseInfo
-    # Contracted total for the enrollment — not the amount currently owed.
     price_at_enrollment: Decimal
-    # Charges that have come due so far.
     billed_to_date: Decimal
     total_paid: Decimal
     debt: Decimal
     overdue_days: int
+    reminder_channel: Literal["telegram", "sms"] | None = None
+    reminder_masked_destination: str | None = None
     parent_telegram_linked: bool
     last_reminder_at: Optional[datetime]

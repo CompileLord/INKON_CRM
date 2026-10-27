@@ -292,7 +292,15 @@ def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "De
     from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
     from app.services.audit_service import AuditService
     from app.services.debt_reminder_service import DebtReminderService
-    return DebtReminderService(SQLAlchemyDebtReminderRepository(db), AuditService(db))
+    from app.core.config import settings
+    from app.services.debt_reminder_sms import DebtReminderSms
+    from app.services.outbox_service import OutboxPayloadEncryptor
+    from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
+    return DebtReminderService(
+        SQLAlchemyDebtReminderRepository(db), AuditService(db),
+        sms=DebtReminderSms(SQLAlchemyOutboxRepository(db), OutboxPayloadEncryptor.from_settings(settings.JWT_SECRET_KEY)),
+        interval_seconds=settings.DEBT_REMINDER_INTERVAL_SECONDS,
+    )
 
 
 def get_student_journal_history_service(db: AsyncSession = Depends(get_db_session)) -> "StudentJournalHistoryService":
