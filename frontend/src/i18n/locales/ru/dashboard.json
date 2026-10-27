@@ -172,5 +172,20 @@
   "noLessonsToday": "Сегодня занятий нет",
   "noLessonsTodayHelp": "Занятия, запланированные на сегодня, появятся здесь.",
   "todayLessonsLoadFailed": "Не удалось загрузить сегодняшние занятия",
-  "openJournal": "Открыть журнал"
+  "openJournal": "Открыть журнал",
+  "addStudent": "Добавить студента",
+  "attentionLessonsInProgress": "Занятия идут сейчас",
+  "attentionAttendanceNotMarked": "Посещаемость не отмечена",
+  "attentionAbsentStudents": "Отсутствуют сегодня",
+  "attentionPayments": "Оплаты к сроку",
+  "payAction": "Оплатить",
+  "errorLoadingAttention": "Не удалось загрузить дела на сегодня",
+  "attentionAllClear": "Сегодня всё в порядке",
+  "nextLesson": "Следующее: {{when}}",
+  "nextLessonToday": "сегодня, {{time}}",
+  "nextLessonTomorrow": "завтра, {{time}}",
+  "nextLessonOnDay": "{{day}}, {{time}}",
+  "noLessonsTodaySlim": "Сегодня занятий нет",
+  "noLessonsTodayNext": "Сегодня занятий нет · Следующее: {{when}}",
+  "absenceStreak_ordinal_other": "{{count}}-й пропуск подряд"
 }

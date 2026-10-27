@@ -93,10 +93,14 @@ describe("TodayLessons", () => {
     expect(screen.getByText(/8 students/)).toBeTruthy();
   });
 
-  it("renders the empty state when nothing is scheduled today", () => {
-    vi.mocked(courseHooks.useCourses).mockReturnValue(coursesResult({ data: { items: [] } }));
+  it("renders one slim line with the next lesson instead of a card when nothing is scheduled today", () => {
+    vi.mocked(courseHooks.useCourses).mockReturnValue(
+      coursesResult({ data: { items: [courseFixture(3, "Tuesday Group", 5, "09:00:00", "10:30:00", 1)] } }),
+    );
     renderToday(false);
-    expect(screen.getByText("No lessons today")).toBeTruthy();
+    expect(screen.getByText("No lessons today · Next: tomorrow, 09:00")).toBeTruthy();
+    expect(document.querySelector("[data-section-card]")).toBeNull();
+    expect(document.querySelector("[data-empty-state]")).toBeNull();
   });
 
   it("renders the loading state", () => {

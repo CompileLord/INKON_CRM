@@ -51,4 +51,10 @@ describe("dashboard i18n key parity", () => {
     expect(getKeys(ruDashboard)).toEqual(expect.arrayContaining(["overdueDays_one", "overdueDays_few", "overdueDays_many", "overdueDays_other"]));
     expect(getKeys(tgDashboard)).toEqual(expect.arrayContaining(["overdueDays_one", "overdueDays_other"]));
   });
+
+  it("defines the ordinal absence streak forms each language needs", () => {
+    expect(getKeys(enDashboard)).toEqual(expect.arrayContaining(["absenceStreak_ordinal_one", "absenceStreak_ordinal_two", "absenceStreak_ordinal_few", "absenceStreak_ordinal_other"]));
+    expect(getKeys(ruDashboard)).toContain("absenceStreak_ordinal_other");
+    expect(getKeys(tgDashboard)).toContain("absenceStreak_ordinal_other");
+  });
 });

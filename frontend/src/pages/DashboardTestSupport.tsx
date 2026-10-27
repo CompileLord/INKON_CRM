@@ -10,6 +10,8 @@ import * as financeHooks from "../lib/finance/hooks";
 import * as courseHooks from "../lib/courses/hooks";
 import * as userHooks from "../lib/users/hooks";
 import * as auditHooks from "../lib/audit/hooks";
+import * as dashboardHooks from "../lib/dashboard/hooks";
+import type { DashboardAttention } from "../lib/dashboard/types";
 import type { FinanceAnalyticsResponse, DebtItem } from "../lib/finance/types";
 import type { CourseListItemResponse } from "../lib/courses/types";
 import type { User } from "../lib/users/types";
@@ -234,6 +236,15 @@ export const mockAuditLogsPaginated: Paginated<AuditEvent> = {
 };
 
 
+export const mockAttention: DashboardAttention = {
+  lessons_in_progress: [],
+  attendance_not_marked: [],
+  absent_students: [],
+  payments: [
+    { student_id: 101, student_name: "Ali Valiev", course_id: 11, course_title: "Python Advanced", enrollment_id: 1, due_date: "2026-10-10", remaining_amount: "800.00" },
+  ],
+};
+
 export function configureAdminDashboardMocks(): void {
   i18n.changeLanguage("en");
   useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1, mustSetPassword: false });
@@ -243,4 +254,5 @@ export function configureAdminDashboardMocks(): void {
   vi.mocked(userHooks.useStudents).mockReturnValue(mockSuccessResult(mockStudentsPaginated));
   vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(mockDebtsPaginated));
   vi.mocked(auditHooks.useAuditEvents).mockReturnValue(mockSuccessResult(mockAuditLogsPaginated));
+  vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(mockSuccessResult(mockAttention));
 }

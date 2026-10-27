@@ -9,12 +9,13 @@ import * as financeHooks from "../lib/finance/hooks";
 import * as courseHooks from "../lib/courses/hooks";
 import * as userHooks from "../lib/users/hooks";
 import * as auditHooks from "../lib/audit/hooks";
-import type { DebtItem, FinanceAnalyticsResponse } from "../lib/finance/types";
+import * as dashboardHooks from "../lib/dashboard/hooks";
+import type { FinanceAnalyticsResponse } from "../lib/finance/types";
 import type { CourseListItemResponse } from "../lib/courses/types";
 import type { User } from "../lib/users/types";
 import type { AuditEvent } from "../lib/audit/api";
 import type { Paginated } from "../lib/pagination";
-import { configureAdminDashboardMocks, mockAnalytics, mockAuditLogsPaginated, mockDebtsPaginated, mockErrorResult, mockStaleErrorResult, mockSuccessResult, renderDashboard } from "./DashboardTestSupport";
+import { configureAdminDashboardMocks, mockAnalytics, mockAuditLogsPaginated, mockAttention, mockErrorResult, mockStaleErrorResult, mockSuccessResult, renderDashboard } from "./DashboardTestSupport";
 
 vi.mock("../components/dashboard/AccountantDashboard", () => ({
   AccountantDashboard: () => <div data-testid="accountant-dashboard">Accountant</div>,
@@ -30,6 +31,7 @@ vi.mock("../lib/finance/hooks");
 vi.mock("../lib/courses/hooks");
 vi.mock("../lib/users/hooks");
 vi.mock("../lib/audit/hooks");
+vi.mock("../lib/dashboard/hooks");
 
 
 describe("Superadmin Dashboard (/)", () => {
@@ -153,44 +155,6 @@ describe("Superadmin Dashboard (/)", () => {
     fireEvent.click(retryStudentsBtn);
     expect(refetchStudents).toHaveBeenCalledTimes(1);
   });
-
-  it("renders repeated students across debts independently without aggregating balances", () => {
-    const repeatedDebts: Paginated<DebtItem> = {
-      items: [
-        {
-          student: { id: 101, first_name: "Ali", last_name: "Valiev", email: "ali@example.com", payment_day_of_month: 5 },
-          course: { id: 1, title: "Web Development" },
-          price_at_enrollment: "1000.00",
-          billed_to_date: "1000.00",
-          total_paid: "200.00",
-          debt: "800.00",
-          overdue_days: 12,
-        },
-        {
-          student: { id: 101, first_name: "Ali", last_name: "Valiev", email: "ali@example.com", payment_day_of_month: 5 },
-          course: { id: 2, title: "Mobile App Design" },
-          price_at_enrollment: "500.00",
-          billed_to_date: "500.00",
-          total_paid: "50.00",
-          debt: "450.00",
-          overdue_days: 5,
-        },
-      ],
-      total: 2,
-      page: 1,
-      page_size: 5,
-      total_pages: 1,
-    };
-    vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(repeatedDebts));
-
-    renderDashboard();
-
-    const studentNames = screen.getAllByText("Ali Valiev");
-    expect(studentNames.length).toBe(2);
-    expect(screen.getByText("800.00 TJS")).toBeTruthy();
-    expect(screen.getByText("450.00 TJS")).toBeTruthy();
-    expect(screen.queryByText("1250.00 TJS")).toBeNull();
-  });
 });
 
 describe("independent retained collection audit", () => {
@@ -208,13 +172,13 @@ describe("independent retained collection audit", () => {
     fireEvent.click(screen.getByRole("button",{name:"Retry"}));
     expect(result.refetch).toHaveBeenCalledTimes(1);
   });
-  it("retains loaded debt balances and retries only that collection", () => {
-    const result=mockStaleErrorResult(mockDebtsPaginated);
-    vi.mocked(financeHooks.useDebts).mockReturnValue(result);
-    render(<I18nextProvider i18n={i18n}><MemoryRouter><AttentionList /></MemoryRouter></I18nextProvider>);
+  it("retains loaded attention items during refetch failure and retries only that collection", () => {
+    const result=mockStaleErrorResult(mockAttention);
+    vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(result);
+    render(<I18nextProvider i18n={i18n}><MemoryRouter><AttentionList onPay={vi.fn()} /></MemoryRouter></I18nextProvider>);
     expect(screen.getByText("Update failed — showing cached data")).toBeTruthy();
     expect(screen.getByText("800.00 TJS")).toBeTruthy();
-    expect(screen.queryByText("Failed to load debtors")).toBeNull();
+    expect(screen.queryByText("Failed to load today's items")).toBeNull();
     fireEvent.click(screen.getByRole("button",{name:"Retry"}));
     expect(result.refetch).toHaveBeenCalledTimes(1);
   });

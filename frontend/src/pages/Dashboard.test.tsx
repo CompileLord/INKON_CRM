@@ -7,9 +7,7 @@ import i18n from "../i18n";
 import { Dashboard } from "./Dashboard";
 import { useAuthStore } from "../store/authStore";
 import * as financeHooks from "../lib/finance/hooks";
-import type { DebtItem } from "../lib/finance/types";
-import type { Paginated } from "../lib/pagination";
-import { configureAdminDashboardMocks, createTestQueryClient, mockAnalytics, mockDebtsPaginated, mockErrorResult, mockStaleErrorResult, mockSuccessResult, renderDashboard } from "./DashboardTestSupport";
+import { configureAdminDashboardMocks, createTestQueryClient, mockAnalytics, mockErrorResult, mockStaleErrorResult, renderDashboard } from "./DashboardTestSupport";
 
 vi.mock("../components/dashboard/AccountantDashboard", () => ({
   AccountantDashboard: () => <div data-testid="accountant-dashboard">Accountant</div>,
@@ -24,7 +22,12 @@ vi.mock("../components/dashboard/StudentDashboard", () => ({
 vi.mock("../lib/finance/hooks");
 vi.mock("../lib/courses/hooks");
 vi.mock("../lib/users/hooks");
+vi.mock("../components/finance/PaymentModal", () => ({
+  PaymentModal: ({ isOpen, defaultStudentId, defaultStudentName, defaultCourseId }: { isOpen: boolean; defaultStudentId?: number; defaultStudentName?: string; defaultCourseId?: number }) =>
+    isOpen ? <div role="dialog">{`payment ${defaultStudentId ?? "none"} ${defaultStudentName ?? ""} ${defaultCourseId ?? ""}`.trim()}</div> : null,
+}));
 vi.mock("../lib/audit/hooks");
+vi.mock("../lib/dashboard/hooks");
 
 
 describe("Superadmin Dashboard (/)", () => {
@@ -85,67 +88,26 @@ describe("Superadmin Dashboard (/)", () => {
     expect(screen.getByText("Update failed — showing cached data")).toBeTruthy();
   });
 
-  it("renders debt items with truthful overdue duration, whole-row debtor links, and neutral due today", () => {
+  it("links the attention block to the debtors tab and offers the quick actions", () => {
     renderDashboard();
-
+    expect(screen.getByRole("link", { name: /All debts/ }).getAttribute("href")).toBe("/finance?tab=debtors");
+    expect(screen.getByRole("button", { name: "Accept Payment" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add student" })).toBeTruthy();
     expect(screen.getByText("Ali Valiev")).toBeTruthy();
-    const overdueMoney = screen.getByText("800.00 TJS");
-    expect(overdueMoney.className).toContain("text-destructive");
-    expect(screen.getByText(/Overdue 12 days/)).toBeTruthy();
-
-    expect(screen.getByText("Zara Karimova")).toBeTruthy();
-    const dueTodayMoney = screen.getByText("600.00 TJS");
-    expect(dueTodayMoney.className).toContain("text-ink");
-    expect(dueTodayMoney.className).not.toContain("text-destructive");
-    expect(screen.getByText(/Due today/)).toBeTruthy();
-    expect(screen.queryByText(/Overdue 0 days/)).toBeNull();
-
-    const perRowActions = screen.getAllByRole("link", { name: /(Ali Valiev|Zara Karimova)/ });
-    expect(perRowActions.length).toBe(2);
-    expect(perRowActions[0].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=11&dstudent=101&dname=Ali+Valiev");
-    expect(perRowActions[1].getAttribute("href")).toBe("/finance?tab=debtors&dcourse=12&dstudent=102&dname=Zara+Karimova");
-
-    const financeFooterLink = screen.getByRole("link", { name: /All debts/ });
-    expect(financeFooterLink.getAttribute("href")).toBe("/finance?tab=debtors");
   });
 
-  it("uses the singular form for a one day overdue balance", () => {
-    const oneDay: Paginated<DebtItem> = { ...mockDebtsPaginated, items: [{ ...mockDebtsPaginated.items[0], overdue_days: 1 }] };
-    vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(oneDay));
+  it("opens the payment modal for the student chosen from the attention block", () => {
     renderDashboard();
-    expect(screen.getByText(/Overdue 1 day$/)).toBeTruthy();
-    expect(screen.queryByText(/Overdue 1 days/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Pay" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("dialog").textContent).toBe("payment 101 Ali Valiev 11");
   });
 
-  it("displays successful empty state when no debts exist", () => {
-    const emptyDebts: Paginated<DebtItem> = {
-      items: [],
-      total: 0,
-      page: 1,
-      page_size: 5,
-      total_pages: 0,
-    };
-    vi.mocked(financeHooks.useDebts).mockReturnValue(mockSuccessResult(emptyDebts));
-
+  it("opens an empty payment modal from the header action", () => {
     renderDashboard();
-    expect(screen.getByText("No current unpaid course balances")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Accept Payment" }));
+    expect(screen.getByRole("dialog").textContent).toBe("payment none");
   });
-
-  it("retains empty state and shows stale error notice when background refetch fails on empty debts", () => {
-    const emptyDebts: Paginated<DebtItem> = {
-      items: [],
-      total: 0,
-      page: 1,
-      page_size: 5,
-      total_pages: 0,
-    };
-    vi.mocked(financeHooks.useDebts).mockReturnValue(mockStaleErrorResult(emptyDebts));
-
-    renderDashboard();
-    expect(screen.getByText("No current unpaid course balances")).toBeTruthy();
-    expect(screen.getAllByText("Update failed — showing cached data").length).toBeGreaterThan(0);
-  });
-
 
   it("triggers refetch when clicking retry in stale error state", () => {
     const refetchFinance = vi.fn();
