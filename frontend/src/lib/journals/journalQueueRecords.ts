@@ -3,6 +3,7 @@ import { batchUpdateJournalEntries, getJournal, updateJournalStudentSummary } fr
 import { type JournalEntryValue, type JournalSummaryValue } from "./journalCommands";
 import { type JournalQueueApi } from "./journalQueueTypes";
 import {
+  type JournalCellRejection,
   type JournalEmbeddedSummary,
   type JournalEntryResponse,
   type JournalEntryStateResponse,
@@ -28,6 +29,7 @@ export interface EntryRecord {
   studentId: number;
   lessonDate: string;
   confirmed: JournalEntryValue | undefined;
+  confirmedGraded: boolean;
   version: number;
   draft: JournalEntryValue | null;
   inFlight: { value: JournalEntryValue; version: number } | null;
@@ -78,6 +80,14 @@ export class JournalRequestErrors {
     return JournalRequestErrors.statusOf(error) === 403;
   }
 
+  static cellRejections(error: unknown): JournalCellRejection[] | null {
+    if (JournalRequestErrors.statusOf(error) !== 422) return null;
+    const detail: unknown = typeof error === "object" && error !== null && "detail" in error ? (error as { detail: unknown }).detail : null;
+    if (typeof detail !== "object" || detail === null || !("cells" in detail)) return null;
+    const cells: unknown = (detail as { cells: unknown }).cells;
+    return Array.isArray(cells) && cells.length > 0 ? (cells as JournalCellRejection[]) : null;
+  }
+
   private static statusOf(error: unknown): number | undefined {
     if (error instanceof AuthApiError) return error.status;
     if (typeof error === "object" && error !== null && "status" in error) {
@@ -90,6 +100,10 @@ export class JournalRequestErrors {
 
 export function entryValueOf(entry: JournalEntryResponse | JournalEntryStateResponse): JournalEntryValue {
   return { attendance: entry.attendance, score: entry.score, comment: entry.comment ?? null };
+}
+
+export function isGradedState(entry: JournalEntryResponse | JournalEntryStateResponse): boolean {
+  return entry.is_graded !== false;
 }
 
 export function summaryValueOf(summary: JournalEmbeddedSummary | JournalStudentSummaryResponse): JournalSummaryValue {

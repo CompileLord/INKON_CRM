@@ -4,9 +4,10 @@ import {
   JournalProgressRules,
   type ProgressChartStudent,
   type ProgressPeriodRow,
+  type ScoreDomain,
   type StoredPeriodResult,
 } from "../../lib/journals/JournalProgressRules";
-import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
+import { formatNumber, formatSchoolPeriodSpan } from "../../i18n/formatters";
 import { usePeriodName } from "../ui/periodName";
 
 export const SERIES_STROKE: readonly string[] = [
@@ -22,10 +23,9 @@ export const SERIES_BACKGROUND: readonly string[] = [
   "bg-series-5", "bg-series-6", "bg-series-7", "bg-series-8",
 ];
 
-const GLIDE_EASING: string = "ease-[cubic-bezier(0.16,1,0.3,1)]";
-const GLIDE_TRANSITION: string = `transition-opacity duration-150 ${GLIDE_EASING} motion-safe:transition-[transform,opacity]`;
-const FADE_DURATION_MILLISECONDS: number = 200;
-const FADE_EASING: string = "cubic-bezier(0.16, 1, 0.3, 1)";
+const GLIDE_TRANSITION: string = "transition-opacity duration-150 ease-out motion-safe:transition-[transform,opacity]";
+const FADE_DURATION_MILLISECONDS: number = 150;
+const FADE_EASING: string = "ease-out";
 const SCORE_DIGITS: Intl.NumberFormatOptions = { maximumFractionDigits: 1 };
 
 interface StudentSwatchProps {
@@ -63,10 +63,9 @@ interface ProgressChartProps {
   showAverage: boolean;
   showMaximum: boolean;
   selfStudentId: number | null;
-  dense?: boolean;
 }
 
-export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage, showMaximum, selfStudentId, dense = false }) => {
+export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students, visibleIds, showAverage, showMaximum, selfStudentId }) => {
   const { t } = useTranslation("journals");
   const periodName: (label: string) => string = usePeriodName();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,7 +102,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
   }, [dataSignature]);
 
   const compact: boolean = width < 520;
-  const height: number = dense ? (compact ? 160 : 190) : compact ? 240 : 300;
+  const height: number = compact ? 280 : 300;
   const marginLeft: number = compact ? 34 : 42;
   const marginRight: number = compact ? 16 : 24;
   const marginTop: number = 16;
@@ -119,17 +118,17 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
     ...(showAverage ? averageValues : []),
     ...visibleStudents.flatMap((student) => student.results.map((result) => (result ? result.score : null))),
   ];
-  const ticks: number[] = JournalProgressRules.scoreTicks(drawn);
-  const domainMaximum: number = ticks[ticks.length - 1];
+  const presentMaximums: number[] = maximumValues.filter((value): value is number => value !== null);
+  const domain: ScoreDomain = JournalProgressRules.fittedDomain(drawn, presentMaximums.length > 0 ? Math.max(...presentMaximums) : null);
+  const ticks: number[] = JournalProgressRules.domainTicks(domain);
   const xFor = (index: number): number =>
     periods.length === 1 ? marginLeft + plotWidth / 2 : marginLeft + (plotWidth * index) / (periods.length - 1);
-  const yFor = (value: number): number => marginTop + plotHeight * (1 - value / domainMaximum);
+  const yFor = (value: number): number => marginTop + plotHeight * (1 - (value - domain.lower) / (domain.upper - domain.lower));
   const spacing: number = periods.length > 1 ? plotWidth / (periods.length - 1) : plotWidth;
   const labelStep: number = Math.max(1, Math.ceil((compact ? 64 : 84) / spacing));
   const formatScore = (value: number): string => formatNumber(value, undefined, SCORE_DIGITS);
 
   const entriesAt = (index: number): TooltipEntry[] => {
-    const periodMaximum: number | null = maximumValues[index];
     const entries: TooltipEntry[] = visibleStudents.flatMap((student) => {
       const result: StoredPeriodResult | null = student.results[index];
       return result
@@ -143,14 +142,12 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
         : [];
     });
     const average: number | null = averageValues[index];
-    if (showAverage && average !== null) {
-      entries.push({ key: "average", name: t("progress.classAverage"), value: average, label: formatScore(average), swatch: <AverageSwatch /> });
-    }
-    const sorted: TooltipEntry[] = entries.sort((first, second) => second.value - first.value);
-    if (periodMaximum !== null) {
-      sorted.push({ key: "maximum", name: t("progress.maximum"), value: periodMaximum, label: formatScore(periodMaximum), swatch: <MaximumSwatch /> });
-    }
-    return sorted;
+    const averageEntry: TooltipEntry | null =
+      showAverage && average !== null
+        ? { key: "average", name: t("progress.classAverage"), value: average, label: formatScore(average), swatch: <AverageSwatch /> }
+        : null;
+    const ranked: TooltipEntry[] = entries.sort((first, second) => second.value - first.value);
+    return averageEntry === null ? ranked : [...ranked, averageEntry];
   };
 
   const activate = (index: number | null): void => {
@@ -168,7 +165,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
   const isActive: boolean = activeIndex !== null;
   const activeEntries: TooltipEntry[] = entriesAt(shownIndex);
   const narrow: boolean = width < 640;
-  const tooltipWidth: number = narrow ? 176 : 252;
+  const tooltipWidth: number = narrow ? 192 : 252;
   const guideX: number = xFor(shownIndex);
   const flipped: boolean = narrow ? guideX > width / 2 : guideX + 12 + tooltipWidth > width - 4;
   const tooltipLeft: number = Math.min(
@@ -176,8 +173,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
     Math.max(width - tooltipWidth, 0),
   );
   const shownLabel: string = periodName(periods[shownIndex].period.period_label);
-  const shownDates: string = t("period.range", { start: formatSchoolLessonDate(periods[shownIndex].period.period_start), end: formatSchoolLessonDate(periods[shownIndex].period.period_end) });
-  const presentMaximums: number[] = maximumValues.filter((value): value is number => value !== null);
+  const shownSpan: string = formatSchoolPeriodSpan(periods[shownIndex].period.period_start, periods[shownIndex].period.period_end);
   const sharedMaximum: number | null =
     presentMaximums.length > 0 && presentMaximums.every((value) => value === presentMaximums[0]) ? presentMaximums[0] : null;
   const liveSummary: string = !isActive
@@ -219,9 +215,9 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
               y1={yFor(gridValue)}
               y2={yFor(gridValue)}
               className="stroke-border"
-              strokeOpacity={gridValue === 0 ? 1 : 0.5}
+              strokeOpacity={gridValue === domain.lower ? 1 : 0.5}
               strokeWidth={1}
-              strokeDasharray={gridValue === 0 ? undefined : "2 4"}
+              strokeDasharray={gridValue === domain.lower ? undefined : "2 4"}
               data-testid="chart-gridline"
               data-value={gridValue}
             />
@@ -258,7 +254,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
             data-testid="chart-series-maximum"
             data-visible={showMaximum}
             aria-hidden={!showMaximum}
-            className="transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="transition-opacity duration-150 ease-out"
             style={{ opacity: showMaximum ? 1 : 0 }}
           >
             {JournalProgressRules.lineRuns(maximumValues).map((run) => (
@@ -278,7 +274,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
             data-testid="chart-series-average"
             data-visible={showAverage}
             aria-hidden={!showAverage}
-            className="transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="transition-opacity duration-150 ease-out"
             style={{ opacity: showAverage ? 1 : 0 }}
           >
             {JournalProgressRules.lineRuns(averageValues).map((run) =>
@@ -306,7 +302,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
                 data-student-id={student.studentId}
                 data-visible={visible}
                 aria-hidden={!visible}
-                className="transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                className="transition-opacity duration-150 ease-out"
                 style={{ opacity: visible ? 1 : 0, pointerEvents: "none" }}
               >
                 {JournalProgressRules.lineRuns(scores).map((run) =>
@@ -333,7 +329,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
                       cx={xFor(index)}
                       cy={yFor(value)}
                       r={pointRadius}
-                      className={`${SERIES_FILL[student.slot]} stroke-card origin-center [transform-box:fill-box] motion-safe:transition-transform motion-safe:duration-150 ${GLIDE_EASING}`}
+                      className={`${SERIES_FILL[student.slot]} stroke-card origin-center [transform-box:fill-box] motion-safe:transition-transform motion-safe:duration-150 ease-out`}
                       style={{ transform: activeIndex === index ? "scale(1.4)" : "scale(1)" }}
                       strokeWidth={1.5}
                     />
@@ -377,8 +373,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
         style={{ left: 0, top: marginTop, width: tooltipWidth, transform: `translateX(${tooltipLeft}px)`, opacity: isActive ? 1 : 0 }}
         className={`pointer-events-none absolute z-10 rounded-[10px] bg-card shadow-lg ring-1 ring-border ${narrow ? "p-2 text-xs" : "p-2.5 text-sm"} ${GLIDE_TRANSITION}`}
       >
-        <div className="mb-1 text-xs font-semibold text-muted">{shownLabel}</div>
-        <div className="mb-1 text-xs tabular-nums text-muted" data-testid="chart-tooltip-dates">{shownDates}</div>
+        <div className="mb-1 text-xs font-semibold text-muted" data-testid="chart-tooltip-period">{shownSpan}</div>
         {activeEntries.length === 0 ? (
           <div className="text-xs text-muted">{t("progress.chart.noValues")}</div>
         ) : (
@@ -386,7 +381,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
             {activeEntries.map((entry) => (
               <li key={entry.key} data-testid="chart-tooltip-entry" className="flex items-center gap-2 text-ink">
                 {entry.swatch}
-                <span className="min-w-0 flex-1 truncate" title={entry.name}>{entry.name}</span>
+                <span className="min-w-0 flex-1 break-words" title={entry.name}>{entry.name}</span>
                 <span className="font-semibold tabular-nums" data-testid="chart-tooltip-score">{entry.label}</span>
               </li>
             ))}

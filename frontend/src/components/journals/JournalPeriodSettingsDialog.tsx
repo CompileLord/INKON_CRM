@@ -2,8 +2,9 @@ import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { usePeriodName } from "../ui/periodName";
-import { formatNumber, formatSchoolLessonDate } from "../../i18n/formatters";
+import { formatNumber } from "../../i18n/formatters";
 import {
   JournalPeriodSettingsRules,
   type ExamMaximumVerdict,
@@ -21,10 +22,7 @@ type SavePhase =
 interface JournalPeriodSettingsDialogProps {
   open: boolean;
   suspended: boolean;
-  courseTitle: string;
   periodLabel: string;
-  periodStart: string;
-  periodEnd: string;
   currentMaximum: number;
   currentBonusMaximum: number;
   highestExamScore: number | null;
@@ -42,10 +40,7 @@ const IDLE_PHASE: SavePhase = { kind: "idle" };
 export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogProps> = ({
   open,
   suspended,
-  courseTitle,
   periodLabel,
-  periodStart,
-  periodEnd,
   currentMaximum,
   currentBonusMaximum,
   highestExamScore,
@@ -82,17 +77,29 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
     max: JournalPeriodSettingsRules.MAXIMUM_EXAM_MAXIMUM,
   };
   const text: string = editedText ?? String(currentMaximum);
-  const verdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(text);
+  const verdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(text, highestExamScore);
   const bonusText: string = editedBonusText ?? String(currentBonusMaximum);
-  const bonusVerdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(bonusText);
+  const bonusVerdict: ExamMaximumVerdict = JournalPeriodSettingsRules.judgeInput(bonusText, highestBonusScore);
   const isDirty: boolean = text !== String(currentMaximum) || bonusText !== String(currentBonusMaximum);
   const isPending: boolean = phase.kind === "draining" || phase.kind === "saving";
   const canSave: boolean = verdict.valid && bonusVerdict.valid && isDirty && !isPending;
   const inputMessage: string | null =
-    !verdict.valid && editedText !== null ? t(`journalPeriodSettings:invalid.${verdict.reason}`, rangeValues) : null;
+    !verdict.valid && editedText !== null
+      ? t(`journalPeriodSettings:invalid.${verdict.reason === "belowExisting" ? "belowExistingExam" : verdict.reason}`, {
+          ...rangeValues,
+          score: verdict.reason === "belowExisting" ? formatNumber(verdict.floor) : "",
+        })
+      : null;
   const bonusInputMessage: string | null =
     !bonusVerdict.valid && editedBonusText !== null
-      ? t(bonusVerdict.reason === "outOfRange" ? "journalPeriodSettings:invalid.bonusOutOfRange" : `journalPeriodSettings:invalid.${bonusVerdict.reason}`, rangeValues)
+      ? t(
+          bonusVerdict.reason === "outOfRange"
+            ? "journalPeriodSettings:invalid.bonusOutOfRange"
+            : bonusVerdict.reason === "belowExisting"
+              ? "journalPeriodSettings:invalid.belowExistingBonus"
+              : `journalPeriodSettings:invalid.${bonusVerdict.reason}`,
+          { ...rangeValues, score: bonusVerdict.reason === "belowExisting" ? formatNumber(bonusVerdict.floor) : "" },
+        )
       : null;
 
   const requestDismiss = (): void => {
@@ -222,27 +229,23 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
         }}
         className="flex flex-col gap-4"
       >
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted">{t("journalPeriodSettings:course")}</dt>
-          <dd className="min-w-0 break-words font-medium text-ink">{courseTitle}</dd>
-          <dt className="text-muted">{t("journalPeriodSettings:period")}</dt>
-          <dd className="min-w-0 break-words font-medium text-ink">
-            {periodName(periodLabel)}
-            <span className="block font-normal tabular-nums text-muted">
-              {formatSchoolLessonDate(periodStart)} – {formatSchoolLessonDate(periodEnd)}
-            </span>
-          </dd>
-        </dl>
-        <p className="text-sm text-ink">{t("journalPeriodSettings:explanation")}</p>
-        {highestExamScore !== null && (
-          <p className="text-sm tabular-nums text-muted">
-            {t("journalPeriodSettings:highestScore", { score: formatNumber(highestExamScore) })}
-          </p>
-        )}
+        <p className="text-sm text-muted" data-testid="period-settings-subtitle">
+          {periodName(periodLabel)}
+        </p>
         <div className="flex flex-col gap-1">
-          <label htmlFor="journal-period-settings-input" className="text-sm font-medium text-ink">
-            {t("journalPeriodSettings:inputLabel")}
-          </label>
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1">
+              <label htmlFor="journal-period-settings-input" className="text-sm font-medium text-ink">
+                {t("journalPeriodSettings:inputLabel")}
+              </label>
+              <InfoTooltip label={t("journalPeriodSettings:infoLabel")}>{t("journalPeriodSettings:explanation")}</InfoTooltip>
+            </span>
+            {highestExamScore !== null && highestExamScore > 0 && (
+              <span id="journal-period-settings-hint" className="text-sm tabular-nums text-muted" data-testid="period-settings-current-maximum">
+                {t("journalPeriodSettings:currentMaximum", { score: formatNumber(highestExamScore) })}
+              </span>
+            )}
+          </div>
           <input
             id="journal-period-settings-input"
             ref={inputRef}
@@ -256,23 +259,28 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
               if (phase.kind === "failed") setPhase(IDLE_PHASE);
             }}
             aria-invalid={inputMessage !== null}
-            aria-describedby="journal-period-settings-hint"
+            aria-describedby={`journal-period-settings-hint${inputMessage !== null ? " journal-period-settings-message" : ""}`}
             className={`h-12 w-full rounded-[10px] border bg-card px-3 text-base tabular-nums text-ink focus:outline-none focus:ring-2 focus:ring-ring ${
               inputMessage !== null ? "border-destructive" : "border-control-border"
             }`}
           />
-          <p
-            id="journal-period-settings-hint"
-            role={inputMessage !== null ? "alert" : undefined}
-            className={`text-sm ${inputMessage !== null ? "font-medium text-destructive" : "text-muted"}`}
-          >
-            {inputMessage ?? t("journalPeriodSettings:range", rangeValues)}
-          </p>
+          {inputMessage !== null && (
+            <p id="journal-period-settings-message" role="alert" className="text-sm font-medium text-destructive">
+              {inputMessage}
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="journal-period-settings-bonus-input" className="text-sm font-medium text-ink">
-            {t("journalPeriodSettings:bonusInputLabel")}
-          </label>
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="journal-period-settings-bonus-input" className="text-sm font-medium text-ink">
+              {t("journalPeriodSettings:bonusInputLabel")}
+            </label>
+            {highestBonusScore !== null && highestBonusScore > 0 && (
+              <span id="journal-period-settings-bonus-hint" className="text-sm tabular-nums text-muted" data-testid="period-settings-current-bonus-maximum">
+                {t("journalPeriodSettings:currentMaximum", { score: formatNumber(highestBonusScore) })}
+              </span>
+            )}
+          </div>
           <input
             id="journal-period-settings-bonus-input"
             type="text"
@@ -285,21 +293,16 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
               if (phase.kind === "failed") setPhase(IDLE_PHASE);
             }}
             aria-invalid={bonusInputMessage !== null}
-            aria-describedby="journal-period-settings-bonus-hint"
+            aria-describedby={`journal-period-settings-bonus-hint${bonusInputMessage !== null ? " journal-period-settings-bonus-message" : ""}`}
             className={`h-12 w-full rounded-[10px] border bg-card px-3 text-base tabular-nums text-ink focus:outline-none focus:ring-2 focus:ring-ring ${
               bonusInputMessage !== null ? "border-destructive" : "border-control-border"
             }`}
           />
-          <p
-            id="journal-period-settings-bonus-hint"
-            role={bonusInputMessage !== null ? "alert" : undefined}
-            className={`text-sm ${bonusInputMessage !== null ? "font-medium text-destructive" : "text-muted"}`}
-          >
-            {bonusInputMessage ??
-              (highestBonusScore !== null
-                ? t("journalPeriodSettings:highestBonus", { score: formatNumber(highestBonusScore) })
-                : t("journalPeriodSettings:range", rangeValues))}
-          </p>
+          {bonusInputMessage !== null && (
+            <p id="journal-period-settings-bonus-message" role="alert" className="text-sm font-medium text-destructive">
+              {bonusInputMessage}
+            </p>
+          )}
         </div>
         {alertMessage !== null && (
           <p

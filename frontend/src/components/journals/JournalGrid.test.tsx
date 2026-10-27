@@ -125,7 +125,7 @@ describe("JournalGrid keyboard", () => {
   it("ends every period with Exam, Bonus and Total columns after the last lesson day", () => {
     mountGrid();
     const names: string[] = screen.getAllByRole("columnheader").map((header) => header.textContent ?? "");
-    expect(names.slice(-3)).toEqual(["Exam", "Bonus", "Total / 100"]);
+    expect(names.slice(-3)).toEqual(["Exam / 24", "Bonus / 20", "Total / 100"]);
     expect(names).toHaveLength(1 + DATES.length + 3);
     expect(screen.getAllByRole("textbox", { name: /^Exam score for/ })).toHaveLength(STUDENTS.length);
     expect(screen.getAllByRole("textbox", { name: /^Bonus score for/ })).toHaveLength(STUDENTS.length);
@@ -149,7 +149,7 @@ describe("JournalGrid keyboard", () => {
 
   it("keeps exam and bonus visible but not editable when the journal is read-only", () => {
     mountGrid({ editing: false });
-    expect(screen.getAllByRole("columnheader").slice(-3).map((header) => header.textContent)).toEqual(["Exam", "Bonus", "Total / 100"]);
+    expect(screen.getAllByRole("columnheader").slice(-3).map((header) => header.textContent)).toEqual(["Exam / 24", "Bonus / 20", "Total / 100"]);
     expect(screen.queryAllByRole("textbox")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: /Bulk actions/ })).toBeNull();
   });

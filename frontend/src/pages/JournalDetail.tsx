@@ -87,9 +87,9 @@ function JournalDetailContent() {
   const { journalQuery } = route;
   const journal = journalQuery.data;
 
-  const isArchivedForMentor: boolean = role === "mentor" && course?.status === "archived";
+  const isArchived: boolean = course?.status === "archived";
   const canEditByRole: boolean = role === "superadmin" || role === "mentor";
-  const autosave = useJournalAutosave(canEditByRole && !isArchivedForMentor ? journalId : undefined, courseId);
+  const autosave = useJournalAutosave(canEditByRole && !isArchived ? journalId : undefined, courseId);
   const updateExamMaxScore = useUpdateJournalExamMaxScore(journalId, courseId);
 
   const orderedStudents = useStableStudentOrder(journal?.journal_id ?? 0, journal?.students ?? []);
@@ -98,7 +98,7 @@ function JournalDetailContent() {
   const matchedCount: number = visibleStudentIds ? visibleStudentIds.size : orderedStudents.length;
   const rosterSearchVisible: boolean = orderedStudents.length > 0;
   const isSwitchingPeriod: boolean = journalQuery.isPlaceholderData;
-  const editorsMounted: boolean = canEditByRole && !isArchivedForMentor && !queueStatus.forbidden && !isSwitchingPeriod;
+  const editorsMounted: boolean = canEditByRole && !isArchived && !queueStatus.forbidden && !isSwitchingPeriod;
   const { applyEntryCommand, editSummary } = autosave;
   const editing: JournalRowEditing | null = useMemo(
     () => (editorsMounted && !settingsBusy ? { onEntryCommand: applyEntryCommand, onSummaryPair: editSummary } : null),
@@ -129,7 +129,7 @@ function JournalDetailContent() {
   if (courseDenial) {
     return (
       <PageContainer>
-        {backLink}
+        <PageHeader title={t("hubTitle")} backTo="/journals" backLabel={t("backToJournals")} />
         <JournalPanelMessage
           tone="empty"
           title={courseDenial === "forbidden" ? t("accessDenied") : t("notFound")}
@@ -208,6 +208,7 @@ function JournalDetailContent() {
           lessonDates={JournalWorkspaceSelection.orderLessonDates(journal.lesson_dates)}
           selectedLesson={lessonSelection.lesson}
           cellStatus={autosave.cellStatus}
+          cellRejections={autosave.cellRejections}
           summaryStatus={autosave.summaryStatus}
           editing={editing}
           examMaximum={journal.exam_max_score}
@@ -283,7 +284,7 @@ function JournalDetailContent() {
               {t("workspace.notice.lesson", { date: formatSchoolLessonDate(lessonSelection.lesson) })}
             </JournalNotice>
           )}
-          {isArchivedForMentor && (
+          {isArchived && (
             <JournalNotice tone="info" testId="journal-archived-notice">
               {t("workspace.readOnlyArchived")}
             </JournalNotice>
@@ -310,7 +311,7 @@ function JournalDetailContent() {
               )}
             </JournalPanelMessage>
           ) : (
-            <>
+            <div className="flex min-w-0 flex-col gap-4">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="journal-toolbar">
                 <div className="flex w-full items-center gap-2 sm:w-auto">
                   <JournalPeriodSelect
@@ -342,7 +343,9 @@ function JournalDetailContent() {
                 </div>
               </div>
 
-              <JournalProgressView courseId={courseId} />
+              <div className="order-last sm:order-none" data-testid="journal-progress-slot">
+                <JournalProgressView courseId={courseId} />
+              </div>
 
               <section className="flex min-w-0 flex-col gap-3" aria-label={t("workspace.tabs.gradebook")}>
                 <JournalPeriodTransition
@@ -353,7 +356,7 @@ function JournalDetailContent() {
                   {renderGradebookBody()}
                 </JournalPeriodTransition>
               </section>
-            </>
+            </div>
           )}
         </>
       )}
@@ -362,10 +365,7 @@ function JournalDetailContent() {
         <JournalPeriodSettingsDialog
           open={settingsOpen}
           suspended={reviewOpen}
-          courseTitle={course.title}
           periodLabel={journal.period_label}
-          periodStart={journal.period_start}
-          periodEnd={journal.period_end}
           currentMaximum={journal.exam_max_score}
           currentBonusMaximum={journal.bonus_max_score ?? JournalScoringRules.DEFAULT_BONUS_MAXIMUM}
           highestExamScore={JournalPeriodSettingsRules.highestExamScore(journal.students)}

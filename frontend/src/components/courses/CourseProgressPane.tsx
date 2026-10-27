@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
-import { useCourseStaffProgress } from "../../lib/courses/hooks";
+import { useCourseJournals, useCourseStaffProgress } from "../../lib/courses/hooks";
 import { buildCourseJournalUrl } from "../../lib/courses/returnContext";
-import { formatNumber, getActiveLocale } from "../../i18n/formatters";
+import { formatNumber, getActiveLocale, getSchoolCalendarDate } from "../../i18n/formatters";
+import { JournalProgressRules } from "../../lib/journals/JournalProgressRules";
 import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
@@ -107,7 +108,16 @@ export function CourseProgressPane({
 
   const periods: StaffProgressPeriod[] = useMemo(() => staffProgress?.periods ?? [], [staffProgress?.periods]);
   const allStudents: StaffProgressStudent[] = useMemo(() => staffProgress?.students ?? [], [staffProgress?.students]);
-  const defaultPeriodId: number | undefined = periods.length > 0 ? periods[periods.length - 1].id : undefined;
+  const journalPeriodsQuery = useCourseJournals(courseId, role !== "student");
+  const gradedDefaultId: number | undefined = journalPeriodsQuery.data
+    ? JournalProgressRules.latestGradedPeriodId(journalPeriodsQuery.data, getSchoolCalendarDate())
+    : undefined;
+  const defaultPeriodId: number | undefined =
+    gradedDefaultId !== undefined && periods.some((period: StaffProgressPeriod) => period.id === gradedDefaultId)
+      ? gradedDefaultId
+      : periods.length > 0
+        ? periods[periods.length - 1].id
+        : undefined;
   const knownPeriod = (periodId: number | undefined): boolean => periodId !== undefined && periods.some((period: StaffProgressPeriod) => period.id === periodId);
   const activePeriodId: number | undefined = knownPeriod(externalSelectedPeriodId) ? externalSelectedPeriodId : knownPeriod(internalSelectedPeriodId) ? internalSelectedPeriodId : defaultPeriodId;
 

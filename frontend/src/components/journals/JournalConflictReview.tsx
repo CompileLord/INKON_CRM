@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../ui/Modal";
@@ -41,6 +41,20 @@ export const JournalConflictReview: React.FC<JournalConflictReviewProps> = ({
 }) => {
   const { t } = useTranslation("journals");
   const queryClient = useQueryClient();
+  const requestedJournalIds = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (!open) {
+      requestedJournalIds.current.clear();
+      return;
+    }
+    if (refetching) return;
+    conflicts.forEach(({ journalId, conflict }) => {
+      if (conflict.current !== undefined || requestedJournalIds.current.has(journalId)) return;
+      requestedJournalIds.current.add(journalId);
+      onRefetch(journalId);
+    });
+  }, [open, conflicts, refetching, onRefetch]);
 
   const renderEntryValue = (value: JournalEntryValue | JournalEntryStateResponse) => (
     <>
@@ -48,7 +62,7 @@ export const JournalConflictReview: React.FC<JournalConflictReviewProps> = ({
         {t("conflict.attendanceLabel")}: {value.attendance ? t("conflict.attendancePresent") : t("conflict.attendanceAbsent")}
       </div>
       <div className="tabular-nums">
-        {t("conflict.scoreLabel")}: {value.score}
+        {t("conflict.scoreLabel")}: {"is_graded" in value && value.is_graded === false ? "—" : value.score}
       </div>
       <div className="whitespace-pre-wrap break-words">
         {t("conflict.commentLabel")}: {value.comment && value.comment.length > 0 ? value.comment : t("conflict.noComment")}
@@ -119,7 +133,7 @@ export const JournalConflictReview: React.FC<JournalConflictReviewProps> = ({
                       : renderEntryValue(conflict.current as JournalEntryStateResponse)
                     : isUnavailable
                       ? t("conflict.entryUnavailable")
-                      : t("conflict.serverNotLoaded")}
+                      : refetching ? t("conflict.serverLoading") : t("conflict.serverNotLoaded")}
                 </ValueColumn>
               </div>
 

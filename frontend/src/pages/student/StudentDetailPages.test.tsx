@@ -50,7 +50,7 @@ const progress: CourseStaffProgressResponse = {
 function journalStudent(id: number, firstName: string, lastName: string, isSelf: boolean): JournalStudentResponse {
   return {
     student_id: id, first_name: firstName, last_name: lastName, color_hex: "#123456", is_self: isSelf,
-    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : null, has_comment: isSelf, version: 1 }],
+    entries: [{ id: id, lesson_date: "2026-08-29", attendance: true, score: 4, comment: isSelf ? "Keep going" : null, has_comment: isSelf, is_graded: true, version: 1 }],
     summary: { id, homework_score: 20, attendance_score: 2, exam_score: 60, bonus_score: 4, sum_score: 86, max_period_score: 117, percentage: 73.5, attendance_count: 1, total_lessons: 1, version: 1 },
   };
 }

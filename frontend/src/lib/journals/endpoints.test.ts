@@ -41,7 +41,7 @@ describe("getJournal", () => {
           email: "ayub@example.com",
           color_hex: "#FF0000",
           entries: [
-            { id: 1, lesson_date: "2026-01-05", attendance: true, score: 5, comment: null, has_comment: false, version: 1 },
+            { id: 1, lesson_date: "2026-01-05", attendance: true, score: 5, comment: null, has_comment: false, is_graded: true, version: 1 },
           ],
           summary: {
             id: 1,

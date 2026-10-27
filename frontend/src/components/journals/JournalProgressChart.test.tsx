@@ -8,7 +8,7 @@ import type { CourseStaffProgressResponse } from "../../lib/courses/types";
 
 vi.mock("../../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/courses/hooks")>();
-  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })) };
+  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })), useCourseJournals: vi.fn(() => ({ data: undefined })) };
 });
 
 vi.mock("../../i18n/formatters", async (importOriginal) => {
@@ -67,6 +67,8 @@ describe("Progress score chart", () => {
 
   it("draws the per-period maximum as a step line that differs between periods and can be toggled", () => {
     render(<JournalProgressView courseId={1} />);
+    expect(screen.getByTestId("chart-series-maximum").getAttribute("data-visible")).toBe("false");
+    fireEvent.click(screen.getByTestId("legend-maximum"));
     const path = screen.getByTestId("chart-maximum-line").getAttribute("d") ?? "";
     expect(path).toMatch(/^M[\d.-]+,[\d.]+H[\d.]+V[\d.]+H[\d.]+V[\d.]+H[\d.]+$/);
     const [startX, endX] = [Number(path.match(/^M([\d.-]+),/)?.[1]), Number(path.match(/H([\d.]+)$/)?.[1])];
@@ -95,7 +97,8 @@ describe("Progress score chart", () => {
     expect(visibleSeries()).toHaveLength(2);
     const hidden = screen.getAllByTestId("chart-series-student").find((node) => node.getAttribute("data-visible") === "false") as HTMLElement;
     expect(hidden.style.opacity).toBe("0");
-    expect(hidden.getAttribute("class")).toContain("duration-200");
+    expect(hidden.getAttribute("class")).toContain("duration-150");
+    expect(hidden.getAttribute("class")).toContain("ease-out");
     fireEvent.click(screen.getByTestId("legend-more"));
     fireEvent.click(within(screen.getByRole("listbox", { name: "Choose students to plot" })).getByRole("option", { name: /Bahor Tester/ }));
     expect(visibleSeries()).toHaveLength(3);
@@ -157,19 +160,20 @@ describe("Progress score chart", () => {
     expect(screen.getAllByTestId("swatch-dashed").length).toBeGreaterThan(0);
   });
 
-  it("lists every visible score over the period maximum sorted high to low, then the maximum itself", () => {
+  it("lists the students ranked high to low and keeps the class average as the last row without a maximum row", () => {
     render(<JournalProgressView courseId={1} />);
     fireEvent.focus(chart());
     pressKey("Home");
-    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Month 8");
-    expect(tooltipNames()).toEqual(["Anvar Tester", "Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);
-    expect(tooltipLabels()).toEqual(["18", "12", "10", "0", "24"]);
+    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Aug 2026");
+    expect(tooltipNames()).toEqual(["Anvar Tester", "Bahor Tester", "Cyrus Tester", "Class average"]);
+    expect(tooltipLabels()).toEqual(["18", "12", "0", "10"]);
     const entryTexts: string[] = screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.textContent ?? "");
     expect(entryTexts[0]).toBe("Anvar Tester18");
     entryTexts.forEach((text) => expect(text).not.toContain("%"));
-    expect(screen.getByTestId("chart-tooltip-dates").textContent).toContain("2026");
+    expect(screen.queryByTestId("chart-tooltip-dates")).toBeNull();
+    expect(tooltipNames()).not.toContain("Maximum");
     pressKey("ArrowRight");
-    expect(tooltipNames()).toEqual(["Bahor Tester", "Class average", "Cyrus Tester", "Maximum"]);
+    expect(tooltipNames()).toEqual(["Bahor Tester", "Cyrus Tester", "Class average"]);
     pressKey("ArrowRight");
     expect(tooltipLabels()[0]).toBe("25");
   });
@@ -187,7 +191,7 @@ describe("Progress score chart", () => {
     fireEvent.focus(chart());
     pressKey("Home");
     pressKey("ArrowLeft");
-    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Month 8");
+    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Aug 2026");
     pressKey("End");
     pressKey("ArrowRight");
     expect(screen.getByTestId("chart-live").textContent).toContain("Month 10");
@@ -241,10 +245,10 @@ describe("Progress score chart", () => {
     fireEvent.focus(chart());
     pressKey("Home");
     const card = screen.getByTestId("chart-tooltip");
-    expect(card.style.width).toBe("176px");
+    expect(card.style.width).toBe("192px");
     expect(card.getAttribute("class")).toContain("text-xs");
     for (const entry of screen.getAllByTestId("chart-tooltip-entry")) {
-      const name = entry.querySelector("span.truncate") as HTMLElement;
+      const name = entry.querySelector("span.break-words") as HTMLElement;
       expect(name.getAttribute("title")).toBe(name.textContent);
       expect((entry.lastElementChild as HTMLElement).className).toContain("tabular-nums");
     }
@@ -256,19 +260,19 @@ describe("Progress score chart", () => {
     const area = screen.getByTestId("chart-hit-area");
     vi.spyOn(area, "getBoundingClientRect").mockReturnValue({ left: 0, width: 100, top: 0, right: 100, bottom: 10, height: 10, x: 0, y: 0, toJSON: () => ({}) });
     fireEvent.pointerMove(area, { clientX: 100 });
-    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Month 10");
+    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Oct 2026");
     fireEvent.pointerMove(area, { clientX: 0 });
-    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Month 8");
+    expect(screen.getByTestId("chart-tooltip").textContent).toContain("Aug 2026");
     fireEvent.pointerLeave(area, { pointerType: "mouse" });
     expect(screen.getByTestId("chart-tooltip").getAttribute("data-active")).toBe("false");
   });
 
-  it("crossfades the lines over 200ms on mount and on data change", () => {
+  it("crossfades the lines over 150ms ease-out on mount and on data change", () => {
     const cancel = vi.fn();
     const animate = vi.fn(() => ({ cancel }));
     (Element.prototype as unknown as { animate: unknown }).animate = animate;
     const { rerender } = render(<JournalProgressView courseId={1} />);
-    expect(animate).toHaveBeenLastCalledWith([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+    expect(animate).toHaveBeenLastCalledWith([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out" });
     mockProgress(manyStudents);
     rerender(<JournalProgressView courseId={1} />);
     expect(animate).toHaveBeenCalledTimes(2);

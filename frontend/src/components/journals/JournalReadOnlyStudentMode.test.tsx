@@ -14,7 +14,7 @@ function student(id: number, firstName: string, comment: string | null = null, w
     last_name: "Tester",
     color_hex: "#123456",
     entries: withEntries
-      ? DATES.map((date, index) => ({ id: id * 10 + index, lesson_date: date, attendance: true, score: 4, comment: index === 0 ? comment : null, has_comment: index === 0 && comment !== null, version: 1 }))
+      ? DATES.map((date, index) => ({ id: id * 10 + index, lesson_date: date, attendance: true, score: 4, comment: index === 0 ? comment : null, has_comment: index === 0 && comment !== null, is_graded: true, version: 1 }))
       : [],
     summary: { id, bonus_score: 0, exam_score: 0, sum_score: 8, max_period_score: 100, percentage: 8, version: 1, homework_score: 8, attendance_score: 0, attendance_count: 2, total_lessons: 2 },
   };

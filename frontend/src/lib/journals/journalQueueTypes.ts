@@ -1,6 +1,7 @@
 import type { JournalEntryValue, JournalSummaryValue } from "./journalCommands";
 import type {
   JournalBatchUpdateResponse,
+  JournalCellRejectionCode,
   JournalDetailResponse,
   JournalEntryStateResponse,
   JournalEntryUpdate,
@@ -43,6 +44,7 @@ export interface JournalQueueSnapshot {
   revision: number;
   cellStatus: Map<string, CellSaveStatus>;
   summaryStatus: Map<number, CellSaveStatus>;
+  cellRejections: Map<string, JournalCellRejectionCode>;
   conflicts: JournalAutosaveConflict[];
   phase: JournalSavePhase;
   aggregateStatus: AggregateSaveStatus;

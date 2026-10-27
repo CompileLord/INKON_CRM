@@ -19,6 +19,7 @@ import {
 } from "./journalQueueTypes";
 import {
   entryKey,
+  type JournalCellRejectionCode,
   type JournalEmbeddedSummary,
   type JournalEntryResponse,
   type JournalEntryStateResponse,
@@ -29,6 +30,7 @@ import {
   DEFAULT_JOURNAL_QUEUE_API,
   MAX_LATENCY_MS,
   entryValueOf,
+  isGradedState,
   summaryValueOf,
   type ConflictRecord,
   type CycleOutcome,
@@ -50,6 +52,7 @@ export abstract class JournalQueueBase {
   protected readonly entries: Map<string, EntryRecord> = new Map();
   protected readonly summaries: Map<number, SummaryRecord> = new Map();
   protected readonly conflicts: Map<string, ConflictRecord> = new Map();
+  protected readonly rejectedCells: Map<string, JournalCellRejectionCode> = new Map();
   protected readonly savedEntryKeys: Set<string> = new Set();
   protected readonly savedSummaryIds: Set<number> = new Set();
   protected readonly listeners: Set<() => void> = new Set();
@@ -138,6 +141,7 @@ export abstract class JournalQueueBase {
       studentId,
       lessonDate,
       confirmed: cached ? entryValueOf(cached) : undefined,
+      confirmedGraded: cached ? isGradedState(cached) : false,
       version: cached?.version ?? 0,
       draft: null,
       inFlight: null,
@@ -179,15 +183,17 @@ export abstract class JournalQueueBase {
     return record.draft ?? record.inFlight?.value ?? record.confirmed ?? { bonus_score: 0, exam_score: 0 };
   }
 
-  protected stageEntry(record: EntryRecord, next: JournalEntryValue, minimumVersion: number): void {
+  protected stageEntry(record: EntryRecord, next: JournalEntryValue, minimumVersion: number, isGrading: boolean = false): void {
     record.version = Math.max(record.version, minimumVersion);
     const matchesConfirmed: boolean =
-      record.confirmed !== undefined && JournalEntryCommands.areEqual(next, record.confirmed);
+      record.confirmed !== undefined && (record.confirmedGraded || !isGrading) && JournalEntryCommands.areEqual(next, record.confirmed);
     if (matchesConfirmed && !record.inFlight && !record.draft && !this.conflicts.has(record.key)) return;
     record.draft = matchesConfirmed && !record.inFlight && !this.conflicts.has(record.key) ? null : next;
     record.failed = false;
+    this.rejectedCells.delete(record.key);
     this.savedEntryKeys.delete(record.key);
-    this.cache.writeEntry(record.studentId, record.lessonDate, next, record.version);
+    const isGraded: boolean = record.draft !== null || record.inFlight !== null || record.confirmedGraded;
+    this.cache.writeEntry(record.studentId, record.lessonDate, next, record.version, isGraded);
     this.afterStaging(this.conflicts.has(record.key));
   }
 
@@ -243,7 +249,7 @@ export abstract class JournalQueueBase {
   protected hasSendableWork(): boolean {
     if (this.forbidden) return false;
     for (const [key, record] of this.entries) {
-      if (record.draft && !this.conflicts.has(key)) return true;
+      if (record.draft && !this.conflicts.has(key) && !this.rejectedCells.has(key)) return true;
     }
     for (const [studentId, record] of this.summaries) {
       if (record.draft && !this.conflicts.has(summaryConflictKey(studentId))) return true;
@@ -321,6 +327,7 @@ export abstract class JournalQueueBase {
       revision: this.revision,
       cellStatus,
       summaryStatus,
+      cellRejections: new Map(this.rejectedCells),
       conflicts: this.buildConflictList(),
       phase,
       aggregateStatus: this.legacyAggregate(phase),

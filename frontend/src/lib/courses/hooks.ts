@@ -78,11 +78,11 @@ export function useCourseProgressChart(id: number | undefined, options: CoursePr
 }
 
 /** Ordered list of a course's weekly/monthly periods — one per journal generated at course creation. */
-export function useCourseJournals(id: number | undefined) {
+export function useCourseJournals(id: number | undefined, enabled: boolean = true) {
   return useQuery({
     queryKey: ["courses", "journals", id],
     queryFn: () => getCourseJournals(id!),
-    enabled: id !== undefined,
+    enabled: id !== undefined && enabled,
   });
 }
 

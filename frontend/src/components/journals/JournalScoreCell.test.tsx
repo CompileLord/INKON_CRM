@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "../../i18n";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { JournalScoreCell } from "./JournalScoreCell";
@@ -15,7 +15,7 @@ beforeAll(() => {
 
 afterEach(() => cleanup());
 
-function renderCell(overrides: { attendance?: boolean; score?: number; comment?: string | null; status?: CellSaveStatus } = {}) {
+function renderCell(overrides: { attendance?: boolean; score?: number; graded?: boolean; disabled?: boolean; rejectionMessage?: string; comment?: string | null; status?: CellSaveStatus } = {}) {
   const onCommand = vi.fn();
   const onNavigate = vi.fn();
   render(
@@ -24,6 +24,9 @@ function renderCell(overrides: { attendance?: boolean; score?: number; comment?:
       lessonDate="2026-08-01"
       attendance={overrides.attendance ?? true}
       score={overrides.score ?? 4}
+      graded={overrides.graded ?? (overrides.score ?? 4) > 0}
+      disabled={overrides.disabled}
+      rejectionMessage={overrides.rejectionMessage}
       comment={overrides.comment ?? "Note"}
       status={overrides.status}
       isFocused
@@ -32,7 +35,7 @@ function renderCell(overrides: { attendance?: boolean; score?: number; comment?:
       onCommand={onCommand}
     />,
   );
-  return { onCommand, onNavigate, cell: screen.getByLabelText(`Score for Aziza Rahimova on ${formatSchoolLessonDate("2026-08-01")}`) };
+  return { onCommand, onNavigate, cell: screen.queryByLabelText(`Score for Aziza Rahimova on ${formatSchoolLessonDate("2026-08-01")}`) ?? screen.getByTestId("future-cell") };
 }
 
 describe("JournalScoreCell commands", () => {
@@ -138,8 +141,8 @@ describe("JournalScoreCell overlays", () => {
     fireEvent.keyDown(choice("5"), { key: "ArrowLeft" });
     expect(document.activeElement).toBe(choice("4"));
     fireEvent.keyDown(choice("4"), { key: "Home" });
-    expect(document.activeElement).toBe(choice("1"));
-    fireEvent.keyDown(choice("1"), { key: "End" });
+    expect(document.activeElement).toBe(choice("0"));
+    fireEvent.keyDown(choice("0"), { key: "End" });
     expect(document.activeElement).toBe(choice("5"));
   });
 
@@ -151,13 +154,13 @@ describe("JournalScoreCell overlays", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("is a minimal popover: one segmented row of five choices plus Clear, no title, student, date, current-score line, help text or close button", () => {
+  it("is a minimal popover: one segmented row of six choices from 0 to 5, no title, student, date, current-score line, help text or close button", () => {
     const { onCommand } = renderCell({ score: 3, attendance: true });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     const menu = screen.getByRole("menu", { name: /Score for Aziza Rahimova, / });
-    expect(menu.textContent).toBe("12345");
+    expect(menu.textContent).toBe("012345");
     const popover = menu.parentElement as HTMLElement;
-    expect(popover.textContent).toBe("12345");
+    expect(popover.textContent).toBe("012345");
     expect(screen.queryByRole("dialog", { name: /Score for/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
     expect(screen.queryByText(/Current score/)).toBeNull();
@@ -170,49 +173,29 @@ describe("JournalScoreCell overlays", () => {
     expect(onCommand).not.toHaveBeenCalled();
   });
 
-  it("offers scores 1 to 5 only and no 0 option", () => {
+  it("offers 0 as a real choice next to 1 to 5", () => {
     renderCell({ score: 0 });
     fireEvent.click(screen.getByRole("button", { name: "—" }));
     const choices: string[] = screen.getAllByRole("menuitemradio").map((choice) => choice.textContent ?? "");
-    expect(choices).toEqual(["1", "2", "3", "4", "5"]);
-    expect(screen.queryByRole("menuitemradio", { name: "0" })).toBeNull();
+    expect(choices).toEqual(["0", "1", "2", "3", "4", "5"]);
+    expect(screen.queryByRole("menuitem", { name: "Clear" })).toBeNull();
   });
 
-  it("clears the score from the picker Clear control and from Backspace or Delete inside the picker", () => {
-    const { onCommand } = renderCell({ score: 3 });
+  it("grades zero from the picker and from Backspace, Delete and the 0 key", () => {
+    const { cell, onCommand } = renderCell({ score: 3 });
     fireEvent.click(screen.getByRole("button", { name: "3" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Clear" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "0" }));
     expect(onCommand).toHaveBeenLastCalledWith({ kind: "score", score: 0 });
     expect(screen.queryByRole("menu")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "3" }));
     fireEvent.keyDown(screen.getByRole("menuitemradio", { name: "3" }), { key: "Backspace" });
-    expect(onCommand).toHaveBeenCalledTimes(2);
     expect(onCommand).toHaveBeenLastCalledWith({ kind: "score", score: 0 });
-  });
-
-  it("keeps the clear control inside the picker as an icon-only button with an accessible name", () => {
-    renderCell({ score: 3 });
-    fireEvent.click(screen.getByRole("button", { name: "3" }));
-    const menu = screen.getByRole("menu", { name: /Score for/ });
-    const clear = within(menu).getByRole("menuitem", { name: "Clear" });
-    expect(menu.contains(clear)).toBe(true);
-    expect(clear.textContent).toBe("");
-    expect(clear.querySelector("svg")).not.toBeNull();
-    expect(clear.getAttribute("title")).toBe("Clear");
-    expect(clear.className).toContain("h-8");
-    expect((menu.parentElement as HTMLElement).style.width).toBe("max-content");
-  });
-
-  it("does not treat the 0 key as a score but clears with Backspace and Delete", () => {
-    const { cell, onCommand } = renderCell({ score: 3 });
     cell.focus();
     fireEvent.keyDown(cell, { key: "0" });
-    expect(onCommand).not.toHaveBeenCalled();
-    fireEvent.keyDown(cell, { key: "Backspace" });
     fireEvent.keyDown(cell, { key: "Delete" });
-    expect(onCommand).toHaveBeenCalledTimes(2);
-    expect(onCommand).toHaveBeenNthCalledWith(1, { kind: "score", score: 0 });
-    expect(onCommand).toHaveBeenNthCalledWith(2, { kind: "score", score: 0 });
+    expect(onCommand).toHaveBeenCalledTimes(4);
+    expect(onCommand).toHaveBeenNthCalledWith(3, { kind: "score", score: 0 });
+    expect(onCommand).toHaveBeenNthCalledWith(4, { kind: "score", score: 0 });
   });
 
   it("applies the dirty-dismissal rule to the desktop comment editor and returns focus to the cell", async () => {
@@ -278,5 +261,41 @@ describe("JournalScoreCell desktop score popover", () => {
     fireEvent.keyDown(choice, { key: "Tab" });
     expect(screen.queryByRole("menuitemradio", { name: "3" })).toBeNull();
     expect(document.activeElement).toBe(scoreButton);
+  });
+});
+
+describe("JournalScoreCell grading states", () => {
+  it("shows a dash for a cell that is not graded and 0 for a cell graded zero", () => {
+    renderCell({ attendance: false, score: 0, graded: false });
+    const ungraded: HTMLElement = screen.getByRole("button", { name: "—" });
+    expect(ungraded.getAttribute("data-graded")).toBe("false");
+    cleanup();
+    renderCell({ attendance: true, score: 0, graded: true });
+    const zero: HTMLElement = screen.getByRole("button", { name: "0" });
+    expect(zero.getAttribute("data-graded")).toBe("true");
+    expect(zero.textContent).toBe("0");
+  });
+
+  it("renders a future lesson as a disabled cell without attendance, score or comment controls", () => {
+    const { cell, onCommand } = renderCell({ disabled: true, attendance: false, score: 0 });
+    expect(screen.getByTestId("future-cell").getAttribute("aria-disabled")).toBe("true");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    fireEvent.keyDown(screen.getByTestId("future-cell"), { key: "4" });
+    fireEvent.keyDown(screen.getByTestId("future-cell"), { key: " ", code: "Space" });
+    expect(onCommand).not.toHaveBeenCalled();
+    expect(cell).toBeTruthy();
+  });
+
+  it("still moves focus off a disabled future cell with the arrow keys", () => {
+    const { onNavigate } = renderCell({ disabled: true });
+    fireEvent.keyDown(screen.getByTestId("future-cell"), { key: "ArrowDown" });
+    expect(onNavigate).toHaveBeenCalledWith("down");
+  });
+
+  it("exposes the server rejection message on the cell and keeps the score control", () => {
+    renderCell({ rejectionMessage: "The lesson has not happened yet. Your entry is kept.", status: "error" });
+    expect(screen.getByRole("alert").textContent).toBe("The lesson has not happened yet. Your entry is kept.");
+    expect(screen.getByRole("button", { name: "4" })).toBeTruthy();
   });
 });

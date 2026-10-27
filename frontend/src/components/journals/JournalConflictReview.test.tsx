@@ -108,3 +108,34 @@ describe("JournalConflictReview", () => {
     expect((screen.getByRole("button", { name: "Discard my change" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe("JournalConflictReview server value loading", () => {
+  const unknownConflict: JournalRegistryConflict = {
+    journalId: 1,
+    conflict: {
+      type: "entry",
+      student_id: 101,
+      lesson_date: FIRST_DATE,
+      submitted_version: 1,
+      mine: { attendance: true, score: 5, comment: null },
+      current: undefined,
+    },
+  };
+
+  it("asks for the current server value once on open without any button press", () => {
+    const handlers = renderReview([unknownConflict]);
+    expect(handlers.onRefetch).toHaveBeenCalledTimes(1);
+    expect(handlers.onRefetch).toHaveBeenCalledWith(1);
+  });
+
+  it("shows a loading state instead of asking the user to reload while refetching", () => {
+    renderReview([unknownConflict], true);
+    expect(screen.getByTestId("conflict-server-value").textContent).toContain("Loading the server value");
+    expect(screen.queryByText("Server value not loaded yet")).toBeNull();
+  });
+
+  it("does not refetch when the server value is already known", () => {
+    const handlers = renderReview([entryConflict]);
+    expect(handlers.onRefetch).not.toHaveBeenCalled();
+  });
+});

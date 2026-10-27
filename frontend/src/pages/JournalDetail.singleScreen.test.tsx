@@ -97,7 +97,7 @@ describe("single-screen journal page", () => {
     renderWorkspace();
     await waitForGrid();
     const names: string[] = screen.getAllByRole("columnheader").map((header) => header.textContent ?? "");
-    expect(names.slice(-3)).toEqual(["Exam", "Bonus", "Total / 100"]);
+    expect(names.slice(-3)).toEqual(["Exam / 100", "Bonus / 20", "Total / 100"]);
     const exam = screen.getByRole("textbox", { name: "Exam score for Anvar Tester" });
     fireEvent.change(exam, { target: { value: "30" } });
     fireEvent.blur(exam);

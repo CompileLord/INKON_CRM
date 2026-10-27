@@ -32,7 +32,7 @@ describe("journalPeriodSettings i18n key parity", () => {
   it("keeps the bonus maximum copy in every locale", () => {
     for (const source of [enPeriodSettings, ruPeriodSettings, tgPeriodSettings]) {
       expect(readLeaf(source, "bonusInputLabel")).toBeTruthy();
-      expect(readLeaf(source, "highestBonus")).toContain("{{score}}");
+      expect(readLeaf(source, "currentMaximum")).toContain("{{score}}");
       expect(readLeaf(source, "invalid.bonusOutOfRange")).toBeTruthy();
     }
   });

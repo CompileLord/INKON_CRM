@@ -38,7 +38,7 @@ export class JournalDetailCache {
     this.queryClient.setQueryData<JournalDetailResponse>(this.queryKey, detail);
   }
 
-  writeEntry(studentId: number, lessonDate: string, value: JournalEntryValue, version: number): void {
+  writeEntry(studentId: number, lessonDate: string, value: JournalEntryValue, version: number, graded: boolean = true): void {
     this.updateStudent(studentId, (student) => {
       const hasEntry: boolean = student.entries.some((entry) => entry.lesson_date === lessonDate);
       if (!hasEntry) return student;
@@ -52,6 +52,7 @@ export class JournalDetailCache {
                 score: value.score,
                 comment: value.comment,
                 has_comment: value.comment !== null && value.comment.trim().length > 0,
+                is_graded: graded,
                 version,
               }
             : entry,

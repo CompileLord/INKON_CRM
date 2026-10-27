@@ -52,30 +52,39 @@ export const JournalSummaryCell: React.FC<JournalSummaryCellProps> = ({
     if (verdict.valid) setDraft(null);
   };
 
+  const message: string | undefined = draft !== null && !verdict.valid ? invalidMessage(verdict) : undefined;
+
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      autoComplete="off"
-      data-control={field === "exam_score" ? "exam" : "bonus"}
-      aria-label={label}
-      aria-invalid={invalid}
-      title={invalidTitle}
-      value={text}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          commit();
-        } else if (event.key === "Escape") {
-          event.preventDefault();
-          setDraft(null);
-        }
-      }}
-      className={`h-8 w-16 rounded-full border bg-card px-2 text-center text-sm tabular-nums text-ink hover:bg-row-hover focus:outline-none focus:ring-2 focus:ring-ring pointer-coarse:h-11 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
-        invalid ? "border-destructive" : "border-control-border"
-      }`}
-    />
+    <div className="flex flex-col items-center gap-0.5">
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        data-control={field === "exam_score" ? "exam" : "bonus"}
+        aria-label={label}
+        aria-invalid={invalid}
+        title={message === undefined ? invalidTitle : undefined}
+        value={text}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setDraft(null);
+          }
+        }}
+        className={`h-8 w-16 rounded-full border bg-card px-2 text-center text-sm tabular-nums text-ink hover:bg-row-hover focus:outline-none focus:ring-2 focus:ring-ring pointer-coarse:h-11 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
+          invalid ? "border-destructive" : "border-control-border"
+        }`}
+      />
+      {message !== undefined && (
+        <span role="alert" data-testid="summary-inline-error" className="text-xs leading-tight text-destructive">
+          {message}
+        </span>
+      )}
+    </div>
   );
 };

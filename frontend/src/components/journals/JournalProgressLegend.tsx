@@ -67,7 +67,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full z-20 mt-1 flex w-[min(18rem,calc(100vw-2rem))] origin-top-right flex-col rounded-[12px] bg-card p-2 shadow-lg ring-1 ring-border motion-safe:animate-[card-scale-in_150ms_cubic-bezier(0.16,1,0.3,1)]"
+          className="absolute right-0 top-full z-20 mt-1 flex w-[min(18rem,calc(100vw-2rem))] origin-top-right flex-col rounded-[12px] bg-card p-2 shadow-lg ring-1 ring-border motion-safe:animate-[card-scale-in_150ms_ease-out]"
           data-testid="legend-more-popover"
         >
           {showBulkActions && (
@@ -126,7 +126,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
                     {selected && <Check size={12} strokeWidth={3} />}
                   </span>
                   <StudentSwatch student={student} muted={!selected} />
-                  <span className="min-w-0 flex-1 truncate" title={student.name}>{student.name}</span>
+                  <span className="min-w-0 flex-1 break-words" title={student.name}>{student.name}</span>
                 </button>
               );
             })}
@@ -138,7 +138,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
 };
 
 const legendItemClass = (pressed: boolean): string =>
-  `inline-flex min-h-6 max-w-[12rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 ${
+  `inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-[6px] text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 ${
     pressed ? "text-ink" : "text-muted line-through"
   }`;
 
@@ -195,10 +195,10 @@ export const JournalProgressLegend: React.FC<JournalProgressLegendProps> = ({
           </button>
         </li>
         {plottedStudents.map((student) => (
-          <li key={student.studentId} className="shrink-0">
+          <li key={student.studentId} className="min-w-0 max-w-full">
             <button type="button" aria-pressed onClick={() => onToggleStudent(student.studentId)} className={legendItemClass(true)} title={student.name}>
               <StudentSwatch student={student} />
-              <span className="min-w-0 truncate">{student.name}</span>
+              <span className="min-w-0 break-words text-left">{student.name}</span>
               {youBadge(student)}
             </button>
           </li>

@@ -68,6 +68,7 @@ export function buildJournal(journalId: number): JournalDetailResponse {
       score: 0,
       comment: null,
       has_comment: false,
+      is_graded: false,
       version: 1,
     })),
     summary: {

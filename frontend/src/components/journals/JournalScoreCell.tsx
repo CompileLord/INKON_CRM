@@ -18,6 +18,9 @@ interface JournalScoreCellProps {
   lessonDate: string;
   attendance: boolean;
   score: number;
+  graded: boolean;
+  disabled?: boolean;
+  rejectionMessage?: string;
   comment: string | null;
   status?: CellSaveStatus;
   isFocused: boolean;
@@ -54,6 +57,9 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
   lessonDate,
   attendance,
   score,
+  graded,
+  disabled = false,
+  rejectionMessage,
   comment,
   status,
   isFocused,
@@ -85,6 +91,14 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.target !== event.currentTarget) return;
+    if (disabled) {
+      const disabledDirection: CellNavDirection | undefined = NAVIGATION_KEYS[event.key];
+      if (disabledDirection) {
+        event.preventDefault();
+        onNavigate?.(disabledDirection);
+      }
+      return;
+    }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     const direction: CellNavDirection | undefined = NAVIGATION_KEYS[event.key];
@@ -92,7 +106,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       event.preventDefault();
       setPopoverOpen(false);
       onNavigate?.(direction);
-    } else if (event.key.length === 1 && event.key >= "1" && event.key <= "5") {
+    } else if (event.key.length === 1 && event.key >= "0" && event.key <= "5") {
       event.preventDefault();
       onCommand({ kind: "score", score: parseInt(event.key, 10) });
       JournalMotion.settle(scoreButtonRef.current);
@@ -111,7 +125,27 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
     }
   };
 
-  const ringStyle: string = status ? STATUS_RING[status] : "";
+  const ringStyle: string = rejectionMessage ? "ring-2 ring-destructive" : status ? STATUS_RING[status] : "";
+
+  if (disabled) {
+    return (
+      <div
+        ref={cellRef}
+        tabIndex={controlTabIndex}
+        data-control="cell"
+        data-anchor={`${studentId}:${lessonDate}`}
+        data-testid="future-cell"
+        aria-disabled="true"
+        onFocus={(event) => onFocus(controlOf(event.target))}
+        onKeyDown={handleKeyDown}
+        title={t("table.futureLesson")}
+        className="flex h-9 pointer-coarse:h-11 items-center justify-center rounded-[10px] bg-strip/60 text-sm text-muted/50 outline-none cursor-not-allowed focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={t("table.futureCellLabel", { name: studentName, date: formattedDate })}
+      >
+        <span aria-hidden="true">—</span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -121,10 +155,12 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
       data-anchor={`${studentId}:${lessonDate}`}
       onFocus={(event) => onFocus(controlOf(event.target))}
       onKeyDown={handleKeyDown}
+      title={rejectionMessage}
       className={`relative group/cell flex items-center justify-center gap-0.5 rounded-[10px] p-0.5 outline-none scroll-ml-[216px] scroll-mt-36 scroll-mb-8 focus-visible:ring-2 focus-visible:ring-ring ${ringStyle}`}
       aria-label={t("table.scoreCellLabel", { name: studentName, date: formattedDate })}
     >
       {status && <JournalSaveMarker status={status} className="absolute -top-1.5 -right-1.5" />}
+      {rejectionMessage && <span role="alert" className="sr-only">{rejectionMessage}</span>}
 
       <label className="relative flex h-9 w-9 pointer-coarse:h-11 pointer-coarse:w-11 shrink-0 cursor-pointer items-center justify-center rounded-[10px] hover:bg-row-hover">
         <input
@@ -148,14 +184,14 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         aria-haspopup="menu"
         aria-expanded={popoverOpen}
         className={`flex h-9 min-w-9 pointer-coarse:h-11 pointer-coarse:min-w-11 shrink-0 items-center justify-center rounded-[10px] px-1.5 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96] ${
-          !attendance && score === 0
+          !graded
             ? "border border-transparent text-muted/60 hover:bg-row-hover"
-            : score > 0
-              ? "border border-control-border bg-card font-semibold text-ink hover:bg-row-hover"
-              : "border border-border bg-card text-muted hover:bg-beige hover:text-ink"
+            : "border border-control-border bg-card font-semibold text-ink hover:bg-row-hover"
         }`}
+        data-graded={graded ? "true" : "false"}
+        title={rejectionMessage}
       >
-        {score > 0 ? score : "—"}
+        {graded ? score : "—"}
       </button>
 
       <button
@@ -184,7 +220,7 @@ export const JournalScoreCell: React.FC<JournalScoreCellProps> = ({
         <JournalScorePicker
           studentName={studentName}
           formattedDate={formattedDate}
-          score={score}
+          score={graded ? score : null}
           anchorRef={scoreButtonRef}
           onChoose={(chosen) => {
             onCommand({ kind: "score", score: chosen });

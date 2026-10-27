@@ -122,12 +122,13 @@ describe("read-only and permission loss", () => {
     expect(batchUpdateMock).not.toHaveBeenCalled();
   });
 
-  it("keeps an archived course editable for a superadmin, as the endpoint allows", async () => {
+  it("keeps an archived course read-only for a superadmin too, with the same explanation", async () => {
     getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
     renderWorkspace();
     await waitForGrid();
-    expect(screen.queryByTestId("journal-archived-notice")).toBeNull();
-    expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("journal-archived-notice").textContent).toContain("read-only");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it("preserves unacknowledged work for review after a 403 and blocks every further write", async () => {

@@ -7,7 +7,7 @@ import tgJournals from "../../i18n/locales/tg/journals.json";
 
 vi.mock("../../lib/courses/hooks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/courses/hooks")>();
-  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })) };
+  return { ...actual, useCourseStaffProgress: vi.fn(), useCourseClassProgress: vi.fn(() => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() })), useCourseJournals: vi.fn(() => ({ data: undefined })) };
 });
 
 vi.mock("../../i18n/formatters", async (importOriginal) => {
@@ -47,11 +47,14 @@ describe("compact chart legend", (): void => {
     expect(average.className).toContain("text-muted");
   });
 
-  it("truncates a long student name and keeps the full name in a title", (): void => {
+  it("wraps a long student name instead of truncating it and keeps the full name in a title", (): void => {
     render(<JournalProgressView courseId={1} />);
     const bahor: HTMLElement = screen.getByRole("button", { name: /Bahor Tester/ });
     expect(bahor.getAttribute("title")).toBe("Bahor Tester");
-    expect(bahor.querySelector("span.truncate")?.textContent).toBe("Bahor Tester");
+    const nameSpan: Element | null = bahor.querySelector("span.break-words");
+    expect(nameSpan?.textContent).toBe("Bahor Tester");
+    expect(nameSpan?.className).not.toContain("truncate");
+    expect(bahor.className).not.toMatch(/whitespace-nowrap|max-w-\[/);
   });
 
   it("keeps the +N more control as a compact button", (): void => {

@@ -3,7 +3,8 @@ import type { JournalStudentResponse } from "./types";
 
 export type ExamMaximumVerdict =
   | { valid: true; value: number }
-  | { valid: false; reason: "empty" | "notWholeNumber" | "outOfRange" };
+  | { valid: false; reason: "empty" | "notWholeNumber" | "outOfRange" }
+  | { valid: false; reason: "belowExisting"; floor: number };
 
 export type PeriodSettingsFailure =
   | { kind: "belowExistingScore"; highestExamScore: number }
@@ -18,13 +19,16 @@ export class JournalPeriodSettingsRules {
   static readonly MINIMUM_EXAM_MAXIMUM: number = 0;
   static readonly MAXIMUM_EXAM_MAXIMUM: number = 100;
 
-  static judgeInput(rawInput: string): ExamMaximumVerdict {
+  static judgeInput(rawInput: string, existingFloor: number | null = null): ExamMaximumVerdict {
     const trimmedInput: string = rawInput.trim();
     if (trimmedInput.length === 0) return { valid: false, reason: "empty" };
     if (!/^\d{1,9}$/.test(trimmedInput)) return { valid: false, reason: "notWholeNumber" };
     const parsedValue: number = Number(trimmedInput);
     if (parsedValue < JournalPeriodSettingsRules.MINIMUM_EXAM_MAXIMUM || parsedValue > JournalPeriodSettingsRules.MAXIMUM_EXAM_MAXIMUM) {
       return { valid: false, reason: "outOfRange" };
+    }
+    if (existingFloor !== null && parsedValue < existingFloor) {
+      return { valid: false, reason: "belowExisting", floor: existingFloor };
     }
     return { valid: true, value: parsedValue };
   }

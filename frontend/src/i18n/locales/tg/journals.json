@@ -34,7 +34,8 @@
     "lessonContext": "Дарс {{date}}",
     "listTitle": "Низоъҳои нусха",
     "bonusLabel": "Бонус",
-    "examLabel": "Имтиҳон"
+    "examLabel": "Имтиҳон",
+    "serverLoading": "Боркунии арзиши сервер…"
   },
   "hubTitle": "Журналҳо",
   "searchCoursePlaceholder": "Ҷустуҷӯи курсҳо…",
@@ -97,7 +98,9 @@
     "addStudents": "Илова кардани донишҷӯён",
     "noStudentsAdminBody": "Донишҷӯёнро ба рӯйхати курс илова кунед, то баҳогузориро оғоз кунед.",
     "openComment": "Хондани шарҳ барои {{date}}",
-    "commentDialogTitle": "Шарҳ, {{date}}"
+    "commentDialogTitle": "Шарҳ, {{date}}",
+    "futureLesson": "Дарс ҳанӯз нагузаштааст",
+    "futureCellLabel": "{{name}}, {{date}}: дарс ҳанӯз нагузаштааст"
   },
   "cellStatus": {
     "dirty": "Тағйироти захиранашуда",
@@ -202,8 +205,7 @@
     "unavailable": "Дастрас нест"
   },
   "picker": {
-    "title": "Баҳо: {{name}}, {{date}}",
-    "clear": "Тоза кардан"
+    "title": "Баҳо: {{name}}, {{date}}"
   },
   "comment": {
     "title": "Шарҳ: {{name}}, {{date}}",
@@ -223,7 +225,7 @@
     "noMatchBody": "Дар рӯйхати ин давра касе бо «{{query}}» мувофиқат намекунад. Барои дидани ҳама ҷустуҷӯро тоза кунед."
   },
   "progress": {
-    "scope": "Тамоми курс, ҳамаи давраҳо",
+    "title": "Динамикаи пешрафт",
     "scopeNote": "Миёна аз ҷамъҳои захирашуда барои ҳамаи давраҳои курс. Натиҷаҳои вуҷуд надошта «Дастнорас» нишон дода мешаванд.",
     "classAverage": "Миёнаи синф",
     "legendLabel": "Хатҳои диаграмма",
@@ -256,5 +258,11 @@
     "menuLabel": "Амалҳои оммавӣ барои {{date}}",
     "markPresent": "Ҳамаро ҳозир қайд кардан",
     "fillHomework": "Барои вазифаи хонагӣ 5 мондан"
+  },
+  "rejection": {
+    "unknown_student": "Ин хонанда дар низом нест.",
+    "student_not_enrolled": "Хонанда ба курс сабт нашудааст.",
+    "invalid_lesson_date": "Ин сана дарси давра нест.",
+    "future_lesson": "Дарс ҳанӯз нагузаштааст. Арзиши воридшуда нигоҳ дошта шуд."
   }
 }
