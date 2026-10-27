@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.audit_service import AuditService
 from app.core.scoring import ScoringPolicy
 from app.core.schedule_utils import EnrollmentLessonPlan, LessonDateCalculator
-from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.models.enrollment import BillingMode, Enrollment, EnrollmentStatus
 from app.schemas.enrollment import (
     CourseRosterItemResponse,
     CourseRosterResponse,
@@ -79,6 +79,8 @@ class EnrollmentService:
         self, student_id: int, course_id: int, current_user: User,
         lesson_plan: EnrollmentLessonPlan | None = None,
         enrolled_at: datetime | None = None,
+        price_at_enrollment: Decimal | None = None,
+        billing_mode: BillingMode = BillingMode.PAID,
     ) -> Enrollment:
         from app.services.finance_service import FinanceService, get_dushanbe_today
 
@@ -96,7 +98,8 @@ class EnrollmentService:
                 detail="course_already_ended",
             )
 
-        FinanceService.validate_installment_price(course.price, course.start_date, course.end_date)
+        monthly_price: Decimal = price_at_enrollment if price_at_enrollment is not None else course.price
+        FinanceService.validate_installment_price(monthly_price, course.start_date, course.end_date)
 
         student = await self.user_repo.get_by_id(student_id)
         if not student or student.is_deleted or student.role != UserRole.STUDENT:
@@ -117,9 +120,10 @@ class EnrollmentService:
         enrollment = Enrollment(
             student_id=student_id,
             course_id=course_id,
-            price_at_enrollment=course.price,
+            price_at_enrollment=monthly_price,
             color_hex=color_hex,
-            status=EnrollmentStatus.ACTIVE
+            status=EnrollmentStatus.ACTIVE,
+            billing_mode=billing_mode,
         )
         if enrolled_at is not None:
             enrollment.enrolled_at = enrolled_at
@@ -194,6 +198,12 @@ class EnrollmentService:
             current_user.id, "create", "enrollment", enrollment.id,
             f"{student.first_name} {student.last_name}", {"student_id", "course_id"},
         )
+        if billing_mode == BillingMode.GRANT or monthly_price != course.price:
+            await AuditService(self.db).log_change(
+                current_user.id, "create", "enrollment", enrollment.id,
+                f"{student.first_name} {student.last_name}",
+                {"billing_mode": (None, billing_mode.value), "price_at_enrollment": (None, str(monthly_price))},
+            )
         await self.db.refresh(enrollment)
         return enrollment
 
@@ -331,6 +341,7 @@ class EnrollmentService:
                 color_hex=enrollment.color_hex,
                 enrolled_at=enrollment.enrolled_at,
                 status=enrollment.status,
+                billing_mode=enrollment.effective_billing_mode,
                 student=RosterStudentIdentity(
                     id=enrollment.student.id,
                     first_name=enrollment.student.first_name,
@@ -411,6 +422,7 @@ class EnrollmentService:
             color_hex=enrollment.color_hex,
             enrolled_at=enrollment.enrolled_at,
             status=enrollment.status,
+            billing_mode=enrollment.effective_billing_mode,
             student=RosterStudentIdentity(
                 id=student_user.id,
                 first_name=student_user.first_name,

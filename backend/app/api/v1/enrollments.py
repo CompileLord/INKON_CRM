@@ -1,12 +1,16 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import get_db_session, get_enrollment_service, get_current_user, require_superadmin
+from app.core.deps import get_db_session, get_enrollment_billing_service, get_enrollment_service, get_current_user, require_superadmin
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.repositories.interfaces.enrollment_repository import EnrollmentFilters
 from app.schemas.enrollment import (
+    BillingModeChangeRequest,
+    BillingModeChangeResponse,
+    EnrollmentPreviewRequest,
+    EnrollmentPreviewResponse,
     EnrollmentCreate,
     EnrollmentResponse,
     WithdrawalPreviewResponse,
@@ -16,6 +20,7 @@ from app.schemas.enrollment import (
     RosterSortOrder,
 )
 from app.schemas.common import PaginatedResponse
+from app.services.enrollment_billing_service import EnrollmentBillingService
 from app.services.enrollment_service import EnrollmentService
 
 router = APIRouter()
@@ -28,7 +33,31 @@ async def enroll_student(
     db: AsyncSession = Depends(get_db_session),
     enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> Enrollment:
-    return await enrollment_service.enroll_student(payload.student_id, payload.course_id, current_user)
+    return await enrollment_service.enroll_student(
+        payload.student_id, payload.course_id, current_user,
+        price_at_enrollment=payload.price_at_enrollment, billing_mode=payload.billing_mode,
+    )
+
+
+@router.post("/preview", response_model=EnrollmentPreviewResponse)
+async def preview_enrollment(
+    payload: EnrollmentPreviewRequest,
+    current_user: User = Depends(require_superadmin),
+    billing_service: EnrollmentBillingService = Depends(get_enrollment_billing_service),
+) -> EnrollmentPreviewResponse:
+    return await billing_service.preview_enrollment(
+        payload.student_id, payload.course_id, payload.price_at_enrollment, payload.billing_mode,
+    )
+
+
+@router.patch("/{id}/billing-mode", response_model=BillingModeChangeResponse)
+async def change_billing_mode(
+    id: int,
+    payload: BillingModeChangeRequest,
+    current_user: User = Depends(require_superadmin),
+    billing_service: EnrollmentBillingService = Depends(get_enrollment_billing_service),
+) -> BillingModeChangeResponse:
+    return await billing_service.change_billing_mode(id, payload.billing_mode, payload.reason, current_user)
 
 
 @router.get("/{id}/withdraw-preview", response_model=WithdrawalPreviewResponse)

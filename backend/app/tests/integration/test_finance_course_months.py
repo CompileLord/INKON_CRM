@@ -28,7 +28,7 @@ from app.models.charge import Charge
 async def test_course_month_schedule(
     start_date: date, end_date: date, enrolled_date: date, payment_day: int, expected_dates: list[date],
 ) -> None:
-    enrollment: SimpleNamespace = SimpleNamespace(id=1, price_at_enrollment=Decimal("500.00"), enrolled_at=datetime.combine(enrolled_date, datetime.min.time(), tzinfo=timezone.utc))
+    enrollment: SimpleNamespace = SimpleNamespace(id=1, price_at_enrollment=Decimal("500.00"), billing_mode=None, enrolled_at=datetime.combine(enrolled_date, datetime.min.time(), tzinfo=timezone.utc))
     student: SimpleNamespace = SimpleNamespace(id=2, payment_day_of_month=payment_day)
     course: SimpleNamespace = SimpleNamespace(start_date=start_date, end_date=end_date, price=Decimal("900.00"))
     enrollment_result: MagicMock = MagicMock()
