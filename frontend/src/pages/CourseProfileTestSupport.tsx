@@ -163,7 +163,7 @@ export function mentorProfileContractMetadata(avgScore: number): Pick<
   | "avg_score_defined_ratios_mean"
 > {
   return {
-    active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses",
+    active_students_population: "active_enrollments_on_active_non_deleted_courses",
     avg_score_grading_state: "unknown",
     avg_score_provenance: "unknown",
     avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived",

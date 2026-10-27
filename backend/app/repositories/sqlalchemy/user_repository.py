@@ -227,6 +227,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             .join(User, User.id == Enrollment.student_id)
             .filter(
                 Course.mentor_id == mentor_id,
+                Course.status == CourseStatus.ACTIVE,
                 Course.is_deleted.is_(False),
                 Enrollment.status == EnrollmentStatus.ACTIVE,
                 Enrollment.is_deleted.is_(False),
