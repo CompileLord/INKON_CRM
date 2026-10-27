@@ -114,10 +114,13 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             )
             aggregates_query: Select = select(
                 JournalStudentSummary.journal_id,
-                func.avg(JournalStudentSummary.sum_score).filter(StudentCourseProgressQuery.is_graded_condition()).label("class_avg_score"),
-                func.avg(JournalStudentSummary.max_period_score).filter(StudentCourseProgressQuery.is_graded_condition()).label("class_avg_max_score"),
-                func.avg(StudentCourseProgressQuery.percentage_expr()).label("class_avg_percentage"),
-                func.count(JournalStudentSummary.id).filter(StudentCourseProgressQuery.is_graded_condition()).label("graded_count"),
+                func.avg(JournalStudentSummary.sum_score).label("class_avg_score"),
+                func.avg(JournalStudentSummary.max_period_score).label("class_avg_max_score"),
+                func.avg(case((
+                    JournalStudentSummary.max_period_score > 0,
+                    JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
+                ))).label("class_avg_percentage"),
+                func.count(JournalStudentSummary.id).label("graded_count"),
             ).where(
                 JournalStudentSummary.journal_id.in_(journal_ids),
                 JournalStudentSummary.student_id.in_(enrolled_student_ids),

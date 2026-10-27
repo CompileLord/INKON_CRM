@@ -121,9 +121,13 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        *,
+        include_courses: bool = False,
     ) -> RepositoryPage[User]:
-        query: Select[tuple[User]] = select(User).options(selectinload(User.active_courses)).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
+        query: Select[tuple[User]] = select(User).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
+        if include_courses:
+            query = query.options(selectinload(User.active_courses))
         if search:
             query = query.where(PersonSearch.matches(search))
         return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
