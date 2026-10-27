@@ -106,8 +106,13 @@ describe("Audit registry rows", () => {
     expect(screen.getAllByText(/5 minutes ago/).length).toBeGreaterThan(0);
   });
 
-  it("never invents an actor when the name is unavailable", async () => {
+  it("shows System for an event without a user and never invents a name for a deleted user", async () => {
     mock.onGet(logsUrl).reply(200, listing([log({ id: 31, user_id: null, actor_name: null })]));
+    renderAudit();
+    expect(await screen.findByText("System")).toBeTruthy();
+    expect(screen.queryByText("Actor unavailable")).toBeNull();
+    cleanup();
+    mock.onGet(logsUrl).reply(200, listing([log({ id: 33, user_id: 5, actor_name: null })]));
     renderAudit();
     expect(await screen.findByText("Actor unavailable")).toBeTruthy();
   });
@@ -269,7 +274,7 @@ describe("Audit events", () => {
 describe("Audit inspector", () => {
   it("shows a before/after comparison and returns focus to the row on Escape", async () => {
     renderAudit();
-    const row = (await screen.findByText(/updated course/)).closest("button") as HTMLButtonElement;
+    const row = (await screen.findByText(/changed the course Python Advanced/)).closest("button") as HTMLButtonElement;
     await userEvent.click(row);
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Before").nextSibling?.textContent).toBe("800.00");
@@ -281,13 +286,13 @@ describe("Audit inspector", () => {
     await waitFor(() => expect(document.activeElement).toBe(row));
   });
 
-  it("distinguishes no value, empty text, the literal string null, zero and false", async () => {
+  it("distinguishes no value, empty text, the literal string null, zero and a translated false", async () => {
     const cases: [{ old_value: string | null; new_value: string | null }, string][] = [
       [{ old_value: null, new_value: "x" }, "No value"],
       [{ old_value: "", new_value: "x" }, "Empty text"],
       [{ old_value: "null", new_value: "x" }, "null"],
       [{ old_value: "0", new_value: "x" }, "0"],
-      [{ old_value: "false", new_value: "x" }, "false"],
+      [{ old_value: "false", new_value: "x" }, "No"],
     ];
     for (const [overrides, expected] of cases) {
       mock.onGet(logsUrl).reply(200, listing([log({ id: 40, action: "update", field_name: "score", ...overrides })]));
@@ -305,7 +310,7 @@ describe("Audit inspector", () => {
       log({ id: 42, field_name: "mystery_field", new_value: "transfer" }),
     ]));
     renderAudit();
-    await screen.findAllByText(/created payment/);
+    await screen.findAllByText(/recorded a payment from/);
     expect(screen.getByText(/Method: Bank transfer/)).toBeTruthy();
     expect(screen.getByText(/Mystery field: transfer/)).toBeTruthy();
   });
@@ -317,7 +322,7 @@ describe("Audit inspector", () => {
       log({ id: 52, action: "void", field_name: "reason_code", old_value: null, new_value: "entry_error" }),
     ]));
     renderAudit();
-    await screen.findAllByText(/created payment/);
+    await screen.findAllByText(/recorded a payment from/);
     expect(screen.getByText(/Method: Bank transfer/)).toBeTruthy();
     expect(screen.getByText(/Student recorded/)).toBeTruthy();
     expect(screen.getByText(/Reason: Entry error/)).toBeTruthy();

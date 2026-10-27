@@ -5,7 +5,7 @@ import { formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditChange, AuditEvent } from "../../lib/audit/api";
 import { QUIET_ACTION_CLASSES } from "../finance/quietActionClasses";
 import { SlideOver } from "../ui/SlideOver";
-import { AuditActionChip } from "./AuditActionChip";
+import { AuditCategoryIcon } from "./AuditCategoryIcon";
 import { AuditSentence } from "./AuditSentence";
 import { useAuditLabels } from "./useAuditLabels";
 
@@ -53,7 +53,7 @@ export function AuditInspector({ event, onClose, onShowRecord, returnFocusTo }: 
       {event !== null && (
         <div className="@container flex flex-col gap-5">
           <div className="flex items-start gap-3">
-            <AuditActionChip action={event.action} />
+            <AuditCategoryIcon event={event} />
             <p className="min-w-0 break-words text-base text-ink">
               <AuditSentence event={event} />
             </p>

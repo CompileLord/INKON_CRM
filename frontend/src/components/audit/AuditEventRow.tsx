@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { formatDateTime, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditEvent } from "../../lib/audit/api";
-import { AuditActionChip } from "./AuditActionChip";
+import { AuditCategoryIcon } from "./AuditCategoryIcon";
 import { AuditSentence } from "./AuditSentence";
 import { useAuditEventText } from "./useAuditEventText";
 
@@ -31,7 +31,7 @@ export function AuditEventRow({ event, onOpen, similarCount = 1, onToggleSimilar
           onClick={(click) => onOpen(event, click.currentTarget)}
           className="flex min-h-[4.5rem] min-w-0 flex-1 items-start gap-3 rounded-[10px] px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          <AuditActionChip action={event.action} />
+          <AuditCategoryIcon event={event} />
           <span className="min-w-0 flex-1">
             <span className="block break-words text-sm text-ink">
               <AuditSentence event={event} />

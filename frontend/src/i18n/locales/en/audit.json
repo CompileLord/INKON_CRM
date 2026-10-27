@@ -48,7 +48,7 @@
     "close_period": "<actor>{{actor}}</actor> closed {{entity}}",
     "reopen_period": "<actor>{{actor}}</actor> reopened {{entity}}",
     "unknown": "<actor>{{actor}}</actor> changed {{entity}}",
-    "object": "<actor>{{actor}}</actor>: {{object}}"
+    "unnamed": "(unnamed)"
   },
   "entities": {
     "payment": "Payment",
@@ -64,7 +64,10 @@
     "student": "Student",
     "student_telegram_link": "Parent Telegram link",
     "journal_period_settings": "Period settings",
-    "journal_student_summary": "Student period summary"
+    "journal_student_summary": "Student period summary",
+    "settings": "School settings",
+    "debt_reminder": "Debt reminder",
+    "mentor": "Mentor"
   },
   "change": {
     "created": "{{field}}: {{value}}",
@@ -72,7 +75,10 @@
     "removed": "{{field}} removed: {{value}}",
     "referenceSet": "{{field}} recorded",
     "referenceChanged": "{{field}} changed",
-    "referenceCleared": "{{field}} cleared"
+    "referenceCleared": "{{field}} cleared",
+    "scheduleTimes": "lesson time {{day}} {{from}} → {{to}}",
+    "scheduleStart": "lesson start {{day}}: {{from}} → {{to}}",
+    "scheduleEnd": "lesson end {{day}}: {{from}} → {{to}}"
   },
   "fields": {
     "amount": "Amount",
@@ -95,7 +101,35 @@
     "role": "Role",
     "title": "Title",
     "paid_at": "Paid on",
-    "discount_percent": "Discount percent"
+    "discount_percent": "Discount percent",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "parent_phone": "Parent phone",
+    "date_of_birth": "Date of birth",
+    "payment_day_of_month": "Payment day of the month",
+    "description": "Description",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "is_deleted": "Deleted",
+    "changed_fields": "Changed fields",
+    "org_name": "School name",
+    "address": "Address",
+    "notify_payments": "Payment notifications",
+    "notify_debts": "Debt notifications",
+    "is_graded": "Graded",
+    "bonus_max_score": "Maximum bonus score",
+    "exam_score": "Exam score",
+    "bonus_score": "Bonus score",
+    "link_code_expires_at": "Link code valid until",
+    "parent_telegram_chat_id": "Parent Telegram chat",
+    "global_failed_attempt_limit": "Failed attempt limit",
+    "credentials_queued": "Login details",
+    "password_sms_queued": "Password SMS",
+    "schedules": "Schedule",
+    "scheduleStart": "Lesson start, {{day}}",
+    "scheduleEnd": "Lesson end, {{day}}"
   },
   "values": {
     "none": "No value",
@@ -109,7 +143,8 @@
       "withdrawn": "Withdrawn",
       "completed": "Completed",
       "open": "Open",
-      "closed": "Closed"
+      "closed": "Closed",
+      "archived": "Archived"
     },
     "role": {
       "superadmin": "Administrator",
@@ -120,6 +155,23 @@
     "destination": {
       "cash": "Cash out",
       "wallet": "Student credit"
+    },
+    "boolean": {
+      "true": "Yes",
+      "false": "No"
+    },
+    "attendance": {
+      "true": "Present",
+      "false": "Absent"
+    },
+    "queueChannel": {
+      "email": "by email",
+      "student_phone": "by SMS to the student",
+      "parent_phone": "by SMS to the parent"
+    },
+    "queueReason": {
+      "initial": "First login details",
+      "reset": "New password"
     }
   },
   "states": {
@@ -129,7 +181,8 @@
     "empty": "No changes recorded yet. Changes made by staff will appear here.",
     "noMatch": "No changes match these filters.",
     "clear": "Clear filters",
-    "pageCorrected": "That page no longer exists. Showing the last page."
+    "pageCorrected": "That page no longer exists. Showing the last page.",
+    "noMatchCategory": "Nothing in this category matches. Choose another category or clear the filters."
   },
   "inspector": {
     "title": "Change details",
@@ -149,46 +202,176 @@
     "open": "Open details"
   },
   "event": {
-    "paymentRecorded": "<actor>{{actor}}</actor> recorded {{amount}} from {{student}}",
-    "paymentVoided": "<actor>{{actor}}</actor> voided {{amount}} payment from {{student}}",
     "reason": "Reason: {{reason}}",
     "fieldsChanged_one": "{{count}} field changed",
     "fieldsChanged_other": "{{count}} fields changed",
     "fieldsList": "Changed: {{fields}}",
     "similarCount": "{{count}} similar changes",
     "showSimilar": "Show all",
-    "hideSimilar": "Hide"
+    "hideSimilar": "Hide",
+    "detailsSuffix": ": {{details}}"
   },
   "moneyAmount": "{{amount}} TJS",
-  "objects": {
-    "journal_entry": {
-      "update": {
-        "score": "grade changed",
-        "attendance": "attendance changed",
-        "any": "journal entry changed"
-      },
+  "actor": {
+    "system": "System"
+  },
+  "categories": {
+    "label": "Category",
+    "all": "All",
+    "payments": "Payments",
+    "students": "Students",
+    "courses": "Courses",
+    "journal": "Journal",
+    "system": "System"
+  },
+  "statement": {
+    "payment": {
       "create": {
-        "score": "grade set",
-        "attendance": "attendance marked",
-        "any": "journal entry added"
+        "amount": "<actor>{{actor}}</actor> recorded {{amount}} from {{name}}",
+        "any": "<actor>{{actor}}</actor> recorded a payment from {{name}}"
+      },
+      "void": {
+        "amount": "<actor>{{actor}}</actor> voided {{amount}} payment from {{name}}",
+        "any": "<actor>{{actor}}</actor> voided a payment from {{name}}"
+      },
+      "refund": {
+        "amount": "<actor>{{actor}}</actor> refunded {{amount}} to {{name}}",
+        "any": "<actor>{{actor}}</actor> made a refund to {{name}}"
       }
     },
-    "student_telegram_link": {
-      "update": {
-        "any": "parent Telegram link code renewed"
-      },
+    "discount": {
       "create": {
-        "any": "parent Telegram link code created"
+        "amount": "<actor>{{actor}}</actor> gave {{name}} a discount of {{amount}}",
+        "any": "<actor>{{actor}}</actor> gave {{name}} a discount"
+      }
+    },
+    "adjustment": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> posted a correction of {{amount}}",
+        "any": "<actor>{{actor}}</actor> posted a correction"
+      }
+    },
+    "allocation": {
+      "update": {
+        "amount": "<actor>{{actor}}</actor> applied {{amount}} of {{name}}'s credit to a charge",
+        "any": "<actor>{{actor}}</actor> applied {{name}}'s credit to a charge"
+      }
+    },
+    "accounting_period": {
+      "close_period": {
+        "any": "<actor>{{actor}}</actor> closed the accounting period {{name}}"
+      },
+      "reopen_period": {
+        "any": "<actor>{{actor}}</actor> reopened the accounting period {{name}}"
+      }
+    },
+    "student": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> created the student {{name}}"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed the details of the student {{name}}"
       },
       "delete": {
-        "any": "parent Telegram unlinked"
+        "any": "<actor>{{actor}}</actor> deleted the student {{name}}"
+      }
+    },
+    "mentor": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> added the mentor {{name}}"
+      }
+    },
+    "user": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> created the user {{name}}"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed the details of the user {{name}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> deleted the user {{name}}"
+      }
+    },
+    "enrollment": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> enrolled {{name}} in {{course}}"
+      },
+      "update": {
+        "status": "<actor>{{actor}}</actor> changed the enrollment status of {{name}} in {{course}}",
+        "any": "<actor>{{actor}}</actor> changed the enrollment of {{name}} in {{course}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> removed the enrollment of {{name}} in {{course}}"
       }
     },
     "course": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> created the course {{name}}"
+      },
       "update": {
-        "mentor_id": "course teacher changed",
-        "status": "course status changed"
+        "any": "<actor>{{actor}}</actor> changed the course {{name}}",
+        "mentor_id": "<actor>{{actor}}</actor> changed the mentor of the course {{name}}"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> deleted the course {{name}}"
       }
+    },
+    "journal": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed the maximum scores of the journal {{name}}"
+      }
+    },
+    "journal_entry": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> added a journal entry"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed a journal entry"
+      }
+    },
+    "journal_student_summary": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> updated a student's period totals"
+      }
+    },
+    "journal_period_settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed the journal period settings"
+      }
+    },
+    "student_telegram_link": {
+      "create": {
+        "any": "<actor>{{actor}}</actor> created a Telegram link code for the parent of {{name}}",
+        "anyUnnamed": "<actor>{{actor}}</actor> created a Telegram link code for a parent",
+        "system": "<actor>{{actor}}</actor>: a parent's Telegram link code was created"
+      },
+      "update": {
+        "any": "<actor>{{actor}}</actor> renewed the Telegram link code for the parent of {{name}}",
+        "parent_telegram_chat_id": "<actor>{{actor}}</actor>: parent Telegram linked to {{name}}",
+        "global_failed_attempt_limit": "<actor>{{actor}}</actor>: Telegram linking paused after too many failed attempts",
+        "anyUnnamed": "<actor>{{actor}}</actor> renewed a parent's Telegram link code",
+        "system": "<actor>{{actor}}</actor>: a parent's Telegram link code was renewed"
+      },
+      "delete": {
+        "any": "<actor>{{actor}}</actor> unlinked the parent Telegram of {{name}}",
+        "anyUnnamed": "<actor>{{actor}}</actor> unlinked a parent's Telegram",
+        "system": "<actor>{{actor}}</actor>: a parent's Telegram was unlinked"
+      }
+    },
+    "settings": {
+      "update": {
+        "any": "<actor>{{actor}}</actor> changed the school settings"
+      }
+    },
+    "debt_reminder": {
+      "create": {
+        "amount": "<actor>{{actor}}</actor> sent a debt reminder for {{amount}}",
+        "any": "<actor>{{actor}}</actor> sent a debt reminder"
+      }
+    },
+    "queue": {
+      "initial": "<actor>{{actor}}</actor>: login details sent {{channel}}",
+      "reset": "<actor>{{actor}}</actor>: new password sent {{channel}}"
     }
   }
 }
