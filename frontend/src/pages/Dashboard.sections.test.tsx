@@ -12,7 +12,7 @@ import * as auditHooks from "../lib/audit/hooks";
 import * as dashboardHooks from "../lib/dashboard/hooks";
 import type { FinanceAnalyticsResponse } from "../lib/finance/types";
 import type { CourseListItemResponse } from "../lib/courses/types";
-import type { User } from "../lib/users/types";
+import type { StudentListItemResponse } from "../lib/users/types";
 import type { AuditEvent } from "../lib/audit/api";
 import type { Paginated } from "../lib/pagination";
 import { configureAdminDashboardMocks, mockAnalytics, mockAuditLogsPaginated, mockAttention, mockErrorResult, mockStaleErrorResult, mockSuccessResult, renderDashboard } from "./DashboardTestSupport";
@@ -102,7 +102,7 @@ describe("Superadmin Dashboard (/)", () => {
       page_size: 20,
       total_pages: 0,
     };
-    const zeroStudents: Paginated<User> = {
+    const zeroStudents: Paginated<StudentListItemResponse> = {
       items: [],
       total: 0,
       page: 1,

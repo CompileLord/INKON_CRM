@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { UNSAFE_DataRouterContext } from "react-router-dom";
 import { StudentNavigationGuard, type NavigationDecision } from "./StudentNavigationGuard";
 import { StudentParentLink } from "../student/StudentParentLink";
-import { StudentContactFields } from "./StudentContactFields";
+import { StudentParentPhoneField, StudentPaymentFields, StudentPhoneField } from "./StudentContactFields";
 import { StudentEmailField } from "./StudentEmailField";
 import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
@@ -388,12 +388,8 @@ function StudentFormPanelInner({
             </div>
           )}
 
-          <div className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-ink border-b border-border pb-2">
-              {t("form.sectionIdentity")}
-            </h3>
-
-            <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <label htmlFor="student-firstName" className={labelClass}>
                 {t("form.firstNameLabel")} <span className="text-destructive">*</span>
               </label>
@@ -417,7 +413,7 @@ function StudentFormPanelInner({
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <label htmlFor="student-lastName" className={labelClass}>
                 {t("form.lastNameLabel")} <span className="text-destructive">*</span>
               </label>
@@ -437,9 +433,9 @@ function StudentFormPanelInner({
               )}
             </div>
 
-            <StudentEmailField register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
+            <StudentPhoneField register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <label htmlFor="student-birthDate" className={labelClass}>
                 {t("form.dobLabel")}
               </label>
@@ -463,9 +459,13 @@ function StudentFormPanelInner({
                 </span>
               )}
             </div>
+
+            <StudentParentPhoneField register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
+
+            <StudentEmailField register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
           </div>
 
-          <StudentContactFields register={register} errors={errors} />
+          <StudentPaymentFields register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
           {student && <StudentParentLink user={student} canManage />}
         </form>
       </SlideOver>

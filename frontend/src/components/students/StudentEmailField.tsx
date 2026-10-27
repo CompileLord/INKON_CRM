@@ -1,6 +1,5 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { InfoTooltip } from "../ui/InfoTooltip";
 import type { StudentFormValues } from "../../lib/studentFormSchema";
 
 interface StudentEmailFieldProps {
@@ -15,13 +14,10 @@ export function StudentEmailField({ register, errors, inputClass, labelClass }: 
   const describedBy: string = errors.email ? "student-email-error" : "student-email-help";
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <label htmlFor="student-email" className={labelClass}>
-          {t("form.emailLabel")}
-        </label>
-        <InfoTooltip label={t("form.emailInfoLabel")}>{t("form.emailInfo")}</InfoTooltip>
-      </div>
+    <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
+      <label htmlFor="student-email" className={labelClass}>
+        {t("form.emailLabel")}
+      </label>
       <input
         id="student-email"
         type="email"
