@@ -17,4 +17,11 @@ describe("strict organization payload", (): void => {
     await updateOrgSettings({ org_name: null });
     expect(JSON.parse(mock.history.patch[0].data)).toEqual({ org_name: null });
   });
+  it("sends address and phone and sends null when they are cleared", async (): Promise<void> => {
+    mock.onPatch("/settings/org").reply(200, {});
+    await updateOrgSettings({ address: "Dushanbe, Rudaki 1", phone: "+992901234567" });
+    await updateOrgSettings({ address: null, phone: null });
+    expect(JSON.parse(mock.history.patch[0].data)).toEqual({ address: "Dushanbe, Rudaki 1", phone: "+992901234567" });
+    expect(JSON.parse(mock.history.patch[1].data)).toEqual({ address: null, phone: null });
+  });
 });

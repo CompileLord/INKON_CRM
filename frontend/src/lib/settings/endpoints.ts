@@ -10,6 +10,8 @@ export function fetchOrgSettings(): Promise<OrgSettings> {
 export function updateOrgSettings(payload: OrgSettingsUpdate): Promise<OrgSettings> {
   const allowed: OrgSettingsUpdate = {};
   if (payload.org_name !== undefined) allowed.org_name = payload.org_name;
+  if (payload.address !== undefined) allowed.address = payload.address;
+  if (payload.phone !== undefined) allowed.phone = payload.phone;
   if (payload.notify_payments !== undefined) allowed.notify_payments = payload.notify_payments;
   if (payload.notify_debts !== undefined) allowed.notify_debts = payload.notify_debts;
   return httpClient
