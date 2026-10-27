@@ -14,9 +14,47 @@ export type EnrollmentStatus = "active" | "withdrawn" | "completed";
 export type RosterStatusFilter = EnrollmentStatus | "all";
 export const DEFAULT_ROSTER_STATUS_FILTER: RosterStatusFilter = "active";
 
+export type BillingMode = "paid" | "grant";
+
 export interface EnrollmentCreate {
   student_id: number;
   course_id: number;
+  price_at_enrollment?: string;
+  billing_mode?: BillingMode;
+}
+
+export interface EnrollmentPreviewRequest {
+  student_id: number;
+  course_id: number;
+  price_at_enrollment?: string;
+  billing_mode?: BillingMode;
+}
+
+export interface EnrollmentPreviewCharge {
+  period_start: string;
+  due_date: string;
+  amount: string;
+}
+
+export interface EnrollmentPreviewResponse {
+  billing_mode: BillingMode;
+  price_at_enrollment: string;
+  billed_months: number;
+  total_amount: string;
+  first_charge: EnrollmentPreviewCharge | null;
+}
+
+export interface BillingModeChangeRequest {
+  billing_mode: BillingMode;
+  reason: string;
+}
+
+export interface BillingModeChangeResponse {
+  enrollment: EnrollmentResponse;
+  cancelled_months: number;
+  cancelled_amount: string;
+  written_off_amount: string;
+  generated_months: number;
 }
 
 export interface WithdrawalPreviewResponse {
@@ -34,6 +72,7 @@ export interface EnrollmentResponse {
   enrolled_at: string; // date-time
   status: EnrollmentStatus;
   is_deleted: boolean;
+  billing_mode?: BillingMode;
 }
 
 export interface ListEnrollmentsParams {
@@ -67,6 +106,7 @@ export interface CourseRosterItem {
   color_hex: string;
   enrolled_at: string;
   status: EnrollmentStatus;
+  billing_mode?: BillingMode;
   student: RosterStudentIdentity;
 }
 
