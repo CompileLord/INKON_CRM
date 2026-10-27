@@ -1210,6 +1210,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "active_courses?": array[],
       }
     ],
     "total": integer,

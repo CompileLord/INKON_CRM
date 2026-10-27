@@ -5,7 +5,7 @@ from app.core.deps import get_db_session, get_current_user, get_mentor_analytics
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
-from app.schemas.user import MentorAnalyticsResponse, MentorProfileResponse, StudentMentorCardResponse, StudentMentorCourseResponse, StudentMentorIdentityResponse, UserResponse
+from app.schemas.user import MentorAnalyticsResponse, MentorListItemResponse, MentorProfileResponse, StudentMentorCardResponse, StudentMentorCourseResponse, StudentMentorIdentityResponse, UserResponse
 from app.services.user_service import UserService
 from app.services.mentor_analytics_service import MentorAnalyticsService
 
@@ -16,7 +16,7 @@ router = APIRouter()
 
 from app.schemas.common import PaginatedResponse, PaginationParams
 
-@router.get("/", response_model=PaginatedResponse[UserResponse])
+@router.get("/", response_model=PaginatedResponse[MentorListItemResponse])
 async def get_mentors(
     search: Optional[str] = None,
     pagination: PaginationParams = Depends(),

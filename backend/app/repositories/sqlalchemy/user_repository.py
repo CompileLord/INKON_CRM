@@ -4,6 +4,7 @@ from typing import cast, Any, Dict, List, Optional
 from sqlalchemy import Select, case, func, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Exists
 from app.core.email_normalizer import EmailNormalizer
 from app.core.login_identifier import LoginIdentifier, LoginIdentifierKind
@@ -122,7 +123,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         page_size: int = 20,
         search: Optional[str] = None
     ) -> RepositoryPage[User]:
-        query: Select[tuple[User]] = select(User).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
+        query: Select[tuple[User]] = select(User).options(selectinload(User.active_courses)).filter(User.role == UserRole.MENTOR, User.is_deleted == False).order_by(User.id)
         if search:
             query = query.where(PersonSearch.matches(search))
         return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
