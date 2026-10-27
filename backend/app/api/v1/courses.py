@@ -19,6 +19,7 @@ from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course_mentor_history import CourseMentorHistory
 from app.models.journal import Journal
 from app.schemas.course import CourseCreate, CourseUpdate, CourseResponse, CourseListItemResponse, CourseScheduleResponse, CourseMentorHistoryResponse, CourseStaffProgressResponse
+from app.schemas.course_list import CourseSortOrder
 from app.schemas.journal import JournalResponse, CourseJournalMetricsResponse
 from app.schemas.common import PaginatedResponse
 from app.services.course_service import CourseService
@@ -116,6 +117,8 @@ async def create_course(
 
 @router.get("/", response_model=PaginatedResponse[CourseListItemResponse])
 async def list_courses(
+    search: Optional[str] = Query(None, description="Case-insensitive title search before pagination"),
+    sort: CourseSortOrder = Query(CourseSortOrder.CREATED_AT_DESC, description="created_at_desc (default), created_at_asc, title_asc, title_desc, price_asc, price_desc, start_date_asc or start_date_desc; ties use id ascending"),
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -123,10 +126,10 @@ async def list_courses(
     db: AsyncSession = Depends(get_db_session)
 ) -> dict:
     course_service = CourseService(db)
-    filters = {}
+    filters: dict = {}
     if status:
         filters["status"] = status
-    return await course_service.list_courses(filters, page, page_size, current_user)
+    return await course_service.list_courses(filters, page, page_size, current_user, search, sort)
 
 
 @router.get("/{id}", response_model=CourseResponse)
@@ -168,7 +171,7 @@ async def delete_course(
     db: AsyncSession = Depends(get_db_session)
 ) -> None:
     course_service = CourseService(db)
-    await course_service.delete_course(id)
+    await course_service.delete_course(id, current_user.id)
 
 
 @router.get("/{id}/schedule", response_model=List[CourseScheduleResponse])

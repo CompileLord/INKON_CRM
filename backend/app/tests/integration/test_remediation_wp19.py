@@ -378,6 +378,6 @@ async def test_analytics_uses_existing_auth_checkout_in_a_single_connection_pool
             result: dict[str, object] = await asyncio.wait_for(
                 FinanceService(session).get_analytics(date(2020, 1, 1), date(2099, 12, 31)), timeout=3,
             )
-            assert result["gross_contract_value"] == "100.00"
+            assert result["gross_contract_value"] == "300.00"
     finally:
         await engine.dispose()

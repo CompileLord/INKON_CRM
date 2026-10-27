@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.schedule_utils import CourseCopyBudgetExceeded, CourseCopyPlan, EnrollmentLessonPlan
 from app.repositories.interfaces.course_repository import CourseRepository
@@ -15,6 +14,7 @@ from app.models.enrollment import Enrollment
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from app.schemas.course_list import CourseSortOrder
 from app.schemas.course import (
     CourseCreate,
     CourseListItemResponse,
@@ -22,6 +22,7 @@ from app.schemas.course import (
     CourseScheduleResponse,
     CourseUpdate,
 )
+from app.services.audit_service import AuditService
 from app.services.journal_generation_service import JournalGenerationService
 from app.services.storage_lifecycle_service import StorageLifecycleService
 from app.services.storage_service import StorageService, get_storage_service
@@ -92,6 +93,9 @@ class CourseService:
         )
         self.db.add(history)
         await self.db.flush()
+        await AuditService(self.db).log_change(
+            current_user.id, "create", "course", course.id, course.title, set(data.model_dump()),
+        )
         await self.db.refresh(course)
 
         return course
@@ -104,6 +108,8 @@ class CourseService:
                 detail="Course not found"
             )
 
+        audited_fields: set[str] = {"title", "description", "price", "start_date", "end_date", "status", "mentor_id"}
+        previous_values: dict[str, object] = {field: getattr(course, field) for field in audited_fields}
         if data.start_date is not None or data.end_date is not None:
             journals_query = select(Journal).filter(Journal.course_id == course_id)
             journals_result = await self.db.execute(journals_query)
@@ -114,16 +120,6 @@ class CourseService:
                 )
 
         if data.mentor_id is not None and data.mentor_id != course.mentor_id:
-            from app.services.audit_service import AuditService
-            audit_service = AuditService(self.db)
-            await audit_service.log(
-                user_id=current_user.id,
-                action="update",
-                entity_type="course",
-                entity_id=course.id,
-                changes={"mentor_id": (course.mentor_id, data.mentor_id)}
-            )
-
             new_mentor = await self.user_repo.get_by_id(data.mentor_id)
             if not new_mentor or new_mentor.is_deleted:
                 raise HTTPException(
@@ -163,6 +159,10 @@ class CourseService:
             course.status = data.status
 
         await self.course_repo.update(course)
+        await AuditService(self.db).log_change(
+            current_user.id, "update", "course", course.id, course.title,
+            {field: (previous_values[field], getattr(course, field)) for field in previous_values if previous_values[field] != getattr(course, field)},
+        )
         await self.db.refresh(course)
         return course
 
@@ -213,37 +213,32 @@ class CourseService:
         await self.db.refresh(updated_course)
         return updated_course
 
-    async def delete_course(self, course_id: int) -> bool:
+    async def delete_course(self, course_id: int, actor_id: int | None = None) -> bool:
         course = await self.course_repo.get_by_id(course_id)
         if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Course not found"
             )
-        return await self.course_repo.soft_delete(course_id)
+        deleted: bool = await self.course_repo.soft_delete(course_id)
+        if deleted:
+            await AuditService(self.db).log_change(
+                actor_id, "delete", "course", course.id, course.title, {"is_deleted"},
+            )
+        return deleted
 
     async def list_courses(
         self,
         filters: dict,
         page: int,
         page_size: int,
-        current_user: User
+        current_user: User,
+        search: str | None = None,
+        sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
     ) -> dict:
-        query = select(Course).options(selectinload(Course.schedules)).filter(Course.is_deleted == False)
-
-        if current_user.role == UserRole.MENTOR:
-            query = query.filter(Course.mentor_id == current_user.id)
-        elif current_user.role == UserRole.STUDENT:
-            query = query.join(Enrollment, Enrollment.course_id == Course.id).filter(
-                Enrollment.student_id == current_user.id,
-                Enrollment.is_deleted == False
-            )
-
-        status_filter = filters.get("status")
-        if status_filter:
-            query = query.filter(Course.status == status_filter)
-
-        page_result: dict = await self.course_repo.get_paginated(query, page, page_size)
+        page_result: dict = await self.course_repo.get_courses_page(
+            filters, page, page_size, current_user.id, current_user.role, search, sort,
+        )
         courses: List[Course] = page_result["items"]
         student_counts: dict[int, int] = await self.course_repo.count_active_students_by_course(
             [course.id for course in courses]

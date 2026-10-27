@@ -3,9 +3,10 @@ from typing import cast, Optional
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.charge import Charge, ChargeStatus
-from sqlalchemy import Row, Select, func, or_, select
+from sqlalchemy import Row, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.course import Course
 from app.repositories.interfaces.base_repository import RepositoryPage
@@ -20,11 +21,20 @@ from app.repositories.interfaces.enrollment_repository import (
     RosterQueryResult,
 )
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
+from app.repositories.sqlalchemy.person_search import PersonSearch
 
 
 class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], EnrollmentRepository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Enrollment, session)
+
+    async def list_active_for_student(self, student_id: int) -> list[Enrollment]:
+        statement: Select[tuple[Enrollment]] = select(Enrollment).where(
+            Enrollment.student_id == student_id,
+            Enrollment.status == EnrollmentStatus.ACTIVE,
+            Enrollment.is_deleted.is_(False),
+        ).order_by(Enrollment.id)
+        return list((await self.session.execute(statement)).scalars().all())
 
     def _build_roster_filter_criteria(
         self,
@@ -33,25 +43,17 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         status: Optional[EnrollmentStatus],
         student_id: Optional[int],
     ) -> list:
-        criteria = [
+        criteria: list[ColumnElement[bool]] = [
             Enrollment.course_id == course_id,
             Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         ]
         if status:
             criteria.append(Enrollment.status == status)
         if student_id:
             criteria.append(Enrollment.student_id == student_id)
         if search:
-            search_pattern = f"%{search}%"
-            criteria.append(
-                or_(
-                    User.first_name.ilike(search_pattern),
-                    User.last_name.ilike(search_pattern),
-                    User.email.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                )
-            )
+            criteria.append(PersonSearch.matches(search))
         return criteria
 
     def _build_roster_order_criteria(self, sort: RosterSortOrder) -> list:
@@ -241,22 +243,13 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
             Enrollment.course_id == course_id,
         )
 
-        filter_criteria = [
+        filter_criteria: list[ColumnElement[bool]] = [
             User.role == UserRole.STUDENT,
             User.is_deleted == False,
             User.id.not_in(conflicting_enrollments_subquery),
         ]
         if search:
-            search_pattern = f"%{search}%"
-            filter_criteria.append(
-                or_(
-                    User.first_name.ilike(search_pattern),
-                    User.last_name.ilike(search_pattern),
-                    User.email.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                    User.phone.ilike(search_pattern),
-                )
-            )
+            filter_criteria.append(PersonSearch.matches(search))
 
         count_query = select(func.count(User.id)).filter(*filter_criteria)
         total_result = await self.session.execute(count_query)
@@ -293,10 +286,11 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         )
 
     async def get_active_enrollments_count(self, course_id: int) -> int:
-        query = select(func.count(Enrollment.id)).filter(
+        query = select(func.count(Enrollment.id)).join(User, User.id == Enrollment.student_id).filter(
             Enrollment.course_id == course_id,
             Enrollment.status == EnrollmentStatus.ACTIVE,
             Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         )
         result = await self.session.execute(query)
         return result.scalar() or 0

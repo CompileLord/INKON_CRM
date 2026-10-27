@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +10,8 @@ from app.models.notification_log import NotificationLog, NotificationStatus, Not
 async def test_personal_inbox_and_read_commands_enforce_ownership(
     client: AsyncClient, db_session: AsyncSession, test_student: User, test_mentor: User,
 ) -> None:
-    own: NotificationLog = NotificationLog(user_id=test_student.id, recipient="student-fixture", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), status=NotificationStatus.SENT)
-    other: NotificationLog = NotificationLog(user_id=test_mentor.id, recipient="mentor-fixture", type=NotificationType.EXAM_RESULT, related_entity_id=2, notification_date=date(2026, 10, 10), status=NotificationStatus.SENT)
+    own: NotificationLog = NotificationLog(user_id=test_student.id, recipient="student-fixture", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT)
+    other: NotificationLog = NotificationLog(user_id=test_mentor.id, recipient="mentor-fixture", type=NotificationType.EXAM_RESULT, related_entity_id=2, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT)
     db_session.add_all([own, other])
     await db_session.commit()
     login = await client.post("/api/v1/auth/login", json={"email": test_student.email, "password": "student_pass123"})
@@ -45,7 +45,7 @@ async def login_headers(client: AsyncClient, email: str, password: str) -> dict[
 async def test_personal_inbox_never_discloses_internal_error_markers(
     client: AsyncClient, db_session: AsyncSession, test_student: User,
 ) -> None:
-    db_session.add(NotificationLog(user_id=test_student.id, recipient="chat-1", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), status=NotificationStatus.FAILED, error_message="score:97 Traceback secret"))
+    db_session.add(NotificationLog(user_id=test_student.id, recipient="chat-1", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT, error_message="score:97 Traceback secret"))
     await db_session.commit()
     headers = await login_headers(client, test_student.email, "student_pass123")
     listing = await client.get("/api/v1/notifications/", headers=headers)
@@ -58,8 +58,8 @@ async def test_personal_inbox_never_discloses_internal_error_markers(
 async def test_mark_all_read_changes_only_the_callers_notifications(
     client: AsyncClient, db_session: AsyncSession, test_student: User, test_mentor: User,
 ) -> None:
-    mine = [NotificationLog(user_id=test_student.id, recipient=f"s-{index}", type=NotificationType.EXAM_RESULT, related_entity_id=index, notification_date=date(2026, 10, 10), status=NotificationStatus.SENT) for index in range(3)]
-    theirs = NotificationLog(user_id=test_mentor.id, recipient="m-1", type=NotificationType.EXAM_RESULT, related_entity_id=99, notification_date=date(2026, 10, 10), status=NotificationStatus.SENT)
+    mine = [NotificationLog(user_id=test_student.id, recipient=f"s-{index}", type=NotificationType.EXAM_RESULT, related_entity_id=index, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT) for index in range(3)]
+    theirs = NotificationLog(user_id=test_mentor.id, recipient="m-1", type=NotificationType.EXAM_RESULT, related_entity_id=99, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT)
     db_session.add_all([*mine, theirs])
     await db_session.commit()
     headers = await login_headers(client, test_student.email, "student_pass123")
@@ -80,9 +80,9 @@ async def test_delivery_log_is_superadmin_only_filterable_and_hides_internal_fie
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_student: User, test_mentor: User,
 ) -> None:
     db_session.add_all([
-        NotificationLog(user_id=test_student.id, recipient="chat-secret-1", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), status=NotificationStatus.SENT, attempts=1),
+        NotificationLog(user_id=test_student.id, recipient="chat-secret-1", type=NotificationType.EXAM_RESULT, related_entity_id=1, notification_date=date(2026, 10, 10), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT, attempts=1),
         NotificationLog(user_id=test_mentor.id, recipient="chat-secret-2", type=NotificationType.PAYMENT_REMINDER_1D, related_entity_id=2, notification_date=date(2026, 10, 11), status=NotificationStatus.FAILED, attempts=3, error_message="Traceback boom"),
-        NotificationLog(user_id=None, recipient="chat-secret-3", type=NotificationType.PAYMENT_REMINDER_2D, related_entity_id=3, notification_date=date(2026, 10, 9), status=NotificationStatus.SENT, attempts=1),
+        NotificationLog(user_id=None, recipient="chat-secret-3", type=NotificationType.PAYMENT_REMINDER_2D, related_entity_id=3, notification_date=date(2026, 10, 9), sent_at=datetime.now(timezone.utc), status=NotificationStatus.SENT, attempts=1),
     ])
     await db_session.commit()
     for email, password in ((test_student.email, "student_pass123"), (test_mentor.email, "mentor_pass123")):

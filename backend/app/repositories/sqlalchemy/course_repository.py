@@ -1,7 +1,13 @@
 from datetime import date
-from typing import Dict, List, Optional, Sequence
+from typing import Any, cast, Dict, List, Optional, Sequence
 from sqlalchemy import func, or_, select, Select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.elements import ColumnElement
+from app.models.user import User, UserRole
+from app.schemas.course_list import CourseSortOrder
+from app.repositories.interfaces.base_repository import RepositoryPage
+from app.repositories.sqlalchemy.person_search import PersonSearch
 from app.models.course import Course, CourseStatus
 from app.models.journal import Journal
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -12,6 +18,36 @@ from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseRepository):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Course, session)
+
+    async def get_courses_page(
+        self, filters: dict, page: int, page_size: int, user_id: int, role: UserRole,
+        search: str | None = None, sort: CourseSortOrder = CourseSortOrder.CREATED_AT_DESC,
+    ) -> RepositoryPage[Course]:
+        query: Select[tuple[Course]] = (
+            select(Course).options(selectinload(Course.schedules)).where(Course.is_deleted.is_(False))
+        )
+        if role == UserRole.MENTOR:
+            query = query.where(Course.mentor_id == user_id)
+        elif role == UserRole.STUDENT:
+            query = query.join(Enrollment, Enrollment.course_id == Course.id).where(
+                Enrollment.student_id == user_id, Enrollment.is_deleted.is_(False),
+            )
+        if filters.get("status"):
+            query = query.where(Course.status == filters["status"])
+        if search:
+            query = query.where(Course.title.ilike(PersonSearch.pattern(search), escape="\\"))
+        columns: dict[CourseSortOrder, ColumnElement[Any]] = {
+            CourseSortOrder.CREATED_AT_DESC: Course.created_at.desc(),
+            CourseSortOrder.CREATED_AT_ASC: Course.created_at.asc(),
+            CourseSortOrder.TITLE_ASC: Course.title.asc(),
+            CourseSortOrder.TITLE_DESC: Course.title.desc(),
+            CourseSortOrder.PRICE_ASC: Course.price.asc(),
+            CourseSortOrder.PRICE_DESC: Course.price.desc(),
+            CourseSortOrder.START_DATE_ASC: Course.start_date.asc(),
+            CourseSortOrder.START_DATE_DESC: Course.start_date.desc(),
+        }
+        query = query.order_by(columns[sort], Course.id.asc())
+        return cast(RepositoryPage[Course], await self.get_paginated(query, page, page_size))
 
     async def get_by_id_for_update(self, course_id: int) -> Optional[Course]:
         statement: Select[tuple[Course]] = select(Course).where(Course.id == course_id).with_for_update().execution_options(populate_existing=True)
@@ -54,10 +90,12 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
             return {}
         statement: Select[tuple[int, int]] = (
             select(Enrollment.course_id, func.count(Enrollment.id))
+            .join(User, User.id == Enrollment.student_id)
             .where(
                 Enrollment.course_id.in_(course_ids),
                 Enrollment.status == EnrollmentStatus.ACTIVE,
                 Enrollment.is_deleted == False,
+                User.is_deleted.is_(False),
             )
             .group_by(Enrollment.course_id)
         )

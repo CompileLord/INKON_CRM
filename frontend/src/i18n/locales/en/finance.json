@@ -228,7 +228,7 @@
     "details": "Details",
     "hideDetails": "Hide details",
     "detailsFor": "Details for {{student}}, {{course}}",
-    "contracted": "Contracted total",
+    "contracted": "Monthly price",
     "billed": "Billed to date",
     "settled": "Settled against due charges",
     "settledInfo": "Everything applied to charges that are already due: cash, discounts and credit, not only cash.",

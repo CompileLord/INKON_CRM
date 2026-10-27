@@ -250,6 +250,7 @@ async def reopen_period(
 
 @router.get("/debts/", response_model=PaginatedResponse[DebtResponse])
 async def get_debts(
+    search: Optional[str] = Query(None, description="Case-insensitive name, email or phone search before pagination"),
     course_id: Optional[int] = Query(None),
     student_id: Optional[int] = Query(None, ge=1),
     min_debt: Optional[MoneyAmount] = Query(None),
@@ -262,7 +263,9 @@ async def get_debts(
     current_user: User = Depends(require_accountant),
     reminder_service: DebtReminderService = Depends(get_debt_reminder_service),
 ) -> dict:
-    filters = {}
+    filters: dict = {}
+    if search is not None:
+        filters["search"] = search
     if course_id is not None:
         filters["course_id"] = course_id
     if student_id is not None:

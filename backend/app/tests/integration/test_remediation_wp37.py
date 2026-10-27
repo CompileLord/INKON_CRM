@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from importlib.machinery import ModuleSpec
 import importlib.util
@@ -48,6 +48,7 @@ class InstallmentFixture:
             course_id=course.id,
             price_at_enrollment=course.price,
             color_hex="#000000",
+            enrolled_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
         )
         session.add(enrollment)
         await session.commit()
@@ -189,7 +190,7 @@ async def test_concurrent_first_schedule_waits_on_account_and_returns_winning_sc
     repeated: list[Charge] = await FinanceService(db_session).generate_schedule_for_enrollment(enrollment.id)
     assert sorted(charge.id for charge in repeated) == results[0]
     assert (await db_session.scalar(select(func.count()).select_from(Charge))) == 3
-    assert (await db_session.scalar(select(func.sum(Charge.amount)))) == Decimal("100.00")
+    assert (await db_session.scalar(select(func.sum(Charge.amount)))) == Decimal("300.00")
 
 
 @pytest.mark.asyncio

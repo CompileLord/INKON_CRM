@@ -170,7 +170,7 @@ def test_factory_uses_frontend_base_url_setting(monkeypatch: pytest.MonkeyPatch)
         OutboxEventKind.CREDENTIALS_EMAIL, LOGIN_EMAIL, payload
     ).render()
 
-    assert 'href="https://configured.example"' in rendered.html_body
+    assert 'href="https://configured.example/login"' in rendered.html_body
     assert LOGIN_EMAIL in rendered.html_body
 
 

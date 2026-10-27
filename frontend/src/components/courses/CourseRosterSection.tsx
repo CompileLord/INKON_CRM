@@ -15,7 +15,7 @@ import { CourseDetailDeparture } from "./CourseDetailDeparture";
 import { useRosterEnrollFlow } from "./useRosterEnrollFlow";
 import { useCourseRosterPage, useWithdrawEnrollment } from "../../lib/enrollments/hooks";
 import { formatNumber } from "../../i18n/formatters";
-import type { CourseRosterItem, CourseRosterParams, EnrollmentStatus } from "../../lib/enrollments/types";
+import { DEFAULT_ROSTER_STATUS_FILTER, type CourseRosterItem, type CourseRosterParams, type RosterStatusFilter } from "../../lib/enrollments/types";
 
 export type CourseRosterSortOption = "enrolled_desc" | "enrolled_asc" | "name_asc" | "name_desc" | "price_desc" | "price_asc";
 
@@ -34,8 +34,8 @@ interface CourseRosterSectionProps {
   onSortOptionChange: (sort: CourseRosterSortOption) => void;
   page: number;
   onPageChange: (page: number) => void;
-  statusFilter: EnrollmentStatus | undefined;
-  onStatusFilterChange: (status: EnrollmentStatus | undefined) => void;
+  statusFilter: RosterStatusFilter;
+  onStatusFilterChange: (status: RosterStatusFilter) => void;
   onToast: (message: string, variant: "success" | "error") => void;
   onReady?: () => void;
 }
@@ -66,7 +66,7 @@ export function CourseRosterSection({
   const isWithdrawSubmittingRef = useRef<boolean>(false);
   const withdrawMutation = useWithdrawEnrollment();
 
-  const rosterParams: CourseRosterParams = { page, page_size: 10, search: searchQuery.trim() || undefined, sort: sortOption, status: statusFilter };
+  const rosterParams: CourseRosterParams = { page, page_size: 10, search: searchQuery.trim() || undefined, sort: sortOption, status: statusFilter === "all" ? undefined : statusFilter };
   const { data: rosterData, isLoading, isFetching, isError, refetch } = useCourseRosterPage(courseId, rosterParams);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export function CourseRosterSection({
   const total: number = rosterData?.total ?? 0;
   const totalPages: number = rosterData?.total_pages ?? 1;
   const hasRefreshError: boolean = flow.enrollRefreshErrorStudentId !== null;
-  const isFiltered: boolean = searchQuery !== "" || statusFilter !== undefined;
+  const isFiltered: boolean = searchQuery !== "" || statusFilter !== DEFAULT_ROSTER_STATUS_FILTER;
 
   const statusOptions: ListboxOption[] = STATUS_VALUES.map((value: string) => ({ value, label: t(`students.status.${value}`) }));
   const sortChoices: ListboxOption[] = SORT_OPTIONS.map((value: CourseRosterSortOption) => ({ value, label: t(`students.sort.${value}`) }));
@@ -151,8 +151,8 @@ export function CourseRosterSection({
           ariaLabel={t("students.statusLabel")}
           icon={null}
           options={statusOptions}
-          value={statusFilter ?? "all"}
-          onChange={(value: string) => onStatusFilterChange(value === "active" || value === "withdrawn" || value === "completed" ? value : undefined)}
+          value={statusFilter}
+          onChange={(value: string) => onStatusFilterChange(value === "active" || value === "withdrawn" || value === "completed" ? value : "all")}
         />
         <ListboxPicker
           label={t("students.sortLabel")}
@@ -210,7 +210,7 @@ export function CourseRosterSection({
               action={
                 <span className="flex items-center gap-2">
                   {searchQuery ? <Button type="button" variant="secondary" onClick={() => onSearchQueryChange("")}>{t("students.resetSearch")}</Button> : null}
-                  {statusFilter ? <Button type="button" variant="secondary" onClick={() => onStatusFilterChange(undefined)}>{t("students.resetFilter")}</Button> : null}
+                  {statusFilter !== DEFAULT_ROSTER_STATUS_FILTER ? <Button type="button" variant="secondary" onClick={() => onStatusFilterChange(DEFAULT_ROSTER_STATUS_FILTER)}>{t("students.resetFilter")}</Button> : null}
                 </span>
               }
             />

@@ -193,17 +193,17 @@ describe("Debtors rows", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     await userEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    for (const label of ["Contracted total", "Billed to date", "Settled against due charges", "Due unpaid", "Days overdue"]) {
+    for (const label of ["Monthly price", "Billed to date", "Settled against due charges", "Due unpaid", "Days overdue"]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
     expect(screen.getByText("150.00 TJS")).toBeTruthy();
-    expect(screen.queryByText(/^Paid$|Amount paid|Cash paid/)).toBeNull();
+    expect(screen.queryByText(/^Paid$|Amount paid|Cash paid|Contracted total/)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" }));
     const dialog = await screen.findByRole("dialog");
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("button", { name: "Details for Anisa Karimova, Python Advanced" }).getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText("Contracted total")).toBeTruthy();
+    expect(screen.getByText("Monthly price")).toBeTruthy();
   });
 
   it("opens the payment dialog for the exact student and course of the row", async () => {

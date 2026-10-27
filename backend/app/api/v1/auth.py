@@ -14,6 +14,7 @@ from app.core.rate_limiter import (
 from app.core.login_identifier import LoginIdentifier
 from app.models.user import User
 from app.services.student_password_sms_service import PasswordSmsDestinationKind
+from app.services.message_language import MessageLanguage
 from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
@@ -180,7 +181,10 @@ async def password_reset_request(
     requested_channel: PasswordSmsDestinationKind | None = (
         PasswordSmsDestinationKind(payload.channel) if payload.channel else None
     )
-    await auth_service.password_reset_request(identifier, requested_channel, client_ip)
+    await auth_service.password_reset_request(
+        identifier, requested_channel, client_ip,
+        language=payload.language or MessageLanguage.from_accept_language(request.headers.get("Accept-Language")),
+    )
     return PasswordResetRequestResponse(message="If the account exists, a reset message has been sent.")
 
 

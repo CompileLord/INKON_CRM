@@ -230,7 +230,8 @@ async def test_overpayment_becomes_visible_credit(
 
     student_id, course_id = await _setup(client, admin_headers, test_mentor.id, "over@example.com", price="300.00")
 
-    await _pay(client, acc_headers, student_id, course_id, "500.00")
+    total_charges: Decimal = Decimal(await db_session.scalar(select(func.sum(Charge.amount)).where(Charge.student_id == student_id)))
+    await _pay(client, acc_headers, student_id, course_id, str(total_charges + Decimal("200.00")))
 
     balance = (
         await client.get(f"/api/v1/finance/students/{student_id}/balance", headers=acc_headers)
