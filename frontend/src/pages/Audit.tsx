@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuditClusterList } from "../components/audit/AuditClusterList";
 import { AuditInspector } from "../components/audit/AuditInspector";
@@ -110,11 +109,6 @@ export function Audit() {
           </span>
         }
         count={logs.data ? formatNumber(total, i18n.language) : undefined}
-        actions={
-          <Button variant="secondary" aria-label={t("audit:refresh")} title={t("audit:refresh")} onClick={() => void logs.refetch()} className="px-3">
-            <RefreshCw size={18} aria-hidden="true" className={logs.isFetching ? "motion-safe:animate-spin" : ""} />
-          </Button>
-        }
       />
       <AuditToolbar
         view={state}
@@ -123,6 +117,8 @@ export function Audit() {
         onSearchChange={setSearchDraft}
         onChangeFilters={changeFilters}
         onClearAll={clearAll}
+        onRefresh={() => void logs.refetch()}
+        isRefreshing={logs.isFetching}
       />
       <p role="status" ref={announcementRef} className="sr-only" />
       {logs.isPending ? (
@@ -147,7 +143,7 @@ export function Audit() {
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card">
           <EmptyState
-            title={t(hasFilters ? "audit:states.noMatch" : "audit:states.empty")}
+            title={t(!hasFilters ? "audit:states.empty" : state.category !== null ? "audit:states.noMatchCategory" : "audit:states.noMatch")}
             action={hasFilters ? <Button variant="secondary" onClick={clearAll}>{t("audit:states.clear")}</Button> : undefined}
           />
         </div>

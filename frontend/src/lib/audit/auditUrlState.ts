@@ -1,5 +1,6 @@
 import type { AuditFilters, KnownAuditAction } from "./api";
 import { FinanceUrlState } from "../finance/urlState";
+import { AUDIT_CATEGORIES, type AuditCategory } from "./types";
 
 export interface AuditViewState {
   page: number;
@@ -10,6 +11,7 @@ export interface AuditViewState {
   dateFrom: string | null;
   dateTo: string | null;
   search: string;
+  category: AuditCategory | null;
 }
 
 export class AuditUrlState {
@@ -34,6 +36,7 @@ export class AuditUrlState {
       entityId: entityType === null ? null : AuditUrlState.parsePositiveInteger(params.get("ref")),
       dateFrom: invertedRange ? null : dateFrom,
       dateTo: invertedRange ? null : dateTo,
+      category: AUDIT_CATEGORIES.find((candidate) => candidate === params.get("category")) ?? null,
       search: (params.get("q") ?? "").trim().slice(0, AuditUrlState.maximumSearchLength),
     };
   }
@@ -50,6 +53,7 @@ export class AuditUrlState {
     if (state.dateFrom) params.set("from", state.dateFrom);
     if (state.dateTo) params.set("to", state.dateTo);
     if (state.search !== "") params.set("q", state.search);
+    if (state.category !== null) params.set("category", state.category);
     return params;
   }
 
@@ -62,6 +66,7 @@ export class AuditUrlState {
       ...(state.dateFrom ? { dateFrom: state.dateFrom } : {}),
       ...(state.dateTo ? { dateTo: state.dateTo } : {}),
       ...(state.search !== "" ? { search: state.search } : {}),
+      ...(state.category !== null ? { category: state.category } : {}),
     };
   }
 
@@ -70,7 +75,7 @@ export class AuditUrlState {
   }
 
   static cleared(state: AuditViewState): AuditViewState {
-    return { ...state, page: 1, actorId: null, action: null, entityType: null, entityId: null, dateFrom: null, dateTo: null, search: "" };
+    return { ...state, page: 1, actorId: null, action: null, entityType: null, entityId: null, dateFrom: null, dateTo: null, search: "", category: null };
   }
 
   private static parsePositiveInteger(raw: string | null): number | null {

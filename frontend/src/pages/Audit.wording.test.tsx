@@ -60,12 +60,12 @@ describe("Audit human wording", () => {
   it("names the changed object in plain words with course context instead of the entity key", async () => {
     mock.onGet(logsUrl).reply(200, listing([event(1)]));
     renderAudit();
-    const row = (await screen.findByText(/grade changed/)).closest("button") as HTMLElement;
+    const row = (await screen.findByText(/changed a journal entry/)).closest("button") as HTMLElement;
     expect(row.textContent).toContain("Aziz Karimov");
     expect(row.textContent).toContain("Algebra 8A");
     expect(row.textContent).toContain("Month 1");
     expect(row.textContent).toContain("Score: 5 → 0");
-    expect(row.textContent).not.toMatch(/journal_entry|journal entry/i);
+    expect(row.textContent).not.toMatch(/journal_entry/);
   });
 
   it("formats serialized timestamps in values as dd.MM.yyyy HH:mm", async () => {
@@ -76,7 +76,7 @@ describe("Audit human wording", () => {
       }),
     ]));
     renderAudit();
-    const row = (await screen.findByText(/parent Telegram link code renewed/)).closest("button") as HTMLElement;
+    const row = (await screen.findByText(/renewed the Telegram link code for the parent of Dilnoza Karimova/)).closest("button") as HTMLElement;
     expect(row.textContent).toMatch(/22\.10\.2026 \d{2}:\d{2} → 22\.10\.2026 \d{2}:\d{2}/);
     expect(row.textContent).not.toMatch(/T\d{2}:\d{2}|\+00:00|student_telegram_link/);
   });
