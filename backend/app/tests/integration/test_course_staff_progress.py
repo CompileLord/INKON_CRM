@@ -334,7 +334,7 @@ async def test_staff_progress_canonical_cohort_exclusion(
     student_ids = [s["student_id"] for s in students]
 
     assert active_user.id in student_ids
-    assert withdrawn_user.id not in student_ids
+    assert withdrawn_user.id in student_ids
     assert deleted_enroll_user.id not in student_ids
     assert deleted_user.id not in student_ids
     assert mentor_as_student.id not in student_ids

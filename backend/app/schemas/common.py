@@ -1,8 +1,8 @@
 import re
 from datetime import date
 from decimal import Decimal
-from typing import Annotated, ClassVar, Generic, List, Self, TypeAlias, TypeVar
-from pydantic import BaseModel, Field, model_validator
+from typing import Annotated, ClassVar, Generic, List, TypeAlias, TypeVar
+from pydantic import BaseModel, Field
 from app.schemas.money import PositiveMoney
 
 
@@ -35,14 +35,6 @@ class InstallmentPriceInput(BaseModel):
     price: PositiveMoney
     start_date: date
     end_date: date
-
-    @model_validator(mode="after")
-    def validate_positive_installments(self) -> Self:
-        installment_count: int = max(1, (self.end_date.year - self.start_date.year) * 12 + self.end_date.month - self.start_date.month + 1)
-        if int(self.price * 100) < installment_count:
-            raise ValueError("Course price must cover at least one cent per monthly installment")
-        return self
-
 
 T = TypeVar("T")
 

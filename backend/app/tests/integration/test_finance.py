@@ -118,11 +118,9 @@ async def _setup_student_course(
 async def test_schedule_sums_to_contract_price(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
-    """Installments must reconcile to the contracted price to the cent."""
     admin_headers = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     acc_headers = {"Authorization": f"Bearer {create_access_token(test_accountant.id, test_accountant.role)}"}
 
-    # 1000 / 3 does not divide evenly — the remainder must land somewhere.
     student_id, _ = await _setup_student_course(
         client, admin_headers, test_mentor.id, email="sched@example.com", price="1000.00"
     )
@@ -133,7 +131,7 @@ async def test_schedule_sums_to_contract_price(
     assert charges_resp.status_code == 200
     charges = charges_resp.json()["items"]
     assert len(charges) >= 1
-    assert sum(Decimal(c["amount"]) for c in charges) == Decimal("1000.00")
+    assert all(Decimal(c["amount"]) == Decimal("1000.00") for c in charges)
 
 
 @pytest.mark.asyncio

@@ -227,6 +227,7 @@ async def test_seeded_course_ids_preserve_references_and_leave_api_sequence_read
         assert enrollment.course_id == course_id_by_student_id[payment_entry.student_id]
     for charge in charges:
         assert charge.enrollment_id in enrollment_by_id
+        assert charge.amount == enrollment_by_id[charge.enrollment_id].price_at_enrollment
         assert enrollment_by_id[charge.enrollment_id].course_id in seeded_course_ids
     for course in seeded_courses:
         assert course.photo_path is not None

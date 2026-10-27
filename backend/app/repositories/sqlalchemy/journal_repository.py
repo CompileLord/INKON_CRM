@@ -12,6 +12,7 @@ from app.models.enrollment import Enrollment
 from app.models.journal_entry import JournalEntry
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
+from app.models.user import User
 from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository, MentorJournalBatch
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
@@ -38,14 +39,16 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         schedules: tuple[CourseSchedule, ...] = tuple(schedules_result.scalars().all())
         students_result: Result = await self.session.execute(select(
             Enrollment.course_id, func.count(Enrollment.id),
-        ).where(Enrollment.course_id.in_(course_ids), Enrollment.is_deleted.is_(False)).group_by(Enrollment.course_id))
+        ).join(User, User.id == Enrollment.student_id).where(
+            Enrollment.course_id.in_(course_ids), Enrollment.is_deleted.is_(False), User.is_deleted.is_(False),
+        ).group_by(Enrollment.course_id))
         row: Row
         student_counts: dict[int, int] = {row[0]: row[1] for row in students_result.all()}
         entries_result: Result = await self.session.execute(select(
             JournalEntry.journal_id, func.count(JournalEntry.id),
-        ).join(Journal, Journal.id == JournalEntry.journal_id).where(
+        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).where(
             Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.lesson_date <= today,
-            JournalEntry.is_graded.is_(True),
+            JournalEntry.is_graded.is_(True), User.is_deleted.is_(False),
         ).group_by(JournalEntry.journal_id))
         graded_entry_counts: dict[int, int] = {row[0]: row[1] for row in entries_result.all()}
         return MentorJournalBatch(courses, journals, schedules, student_counts, graded_entry_counts)
@@ -55,6 +58,7 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
             JournalStudentSummary.journal_id == journal_id,
             JournalStudentSummary.is_graded.is_(True),
             Journal.period_start <= SchoolCalendar.today(),
+            User.is_deleted.is_(False),
         )
         averages_result: Result = await self.session.execute(select(
             func.avg(case((
@@ -62,7 +66,7 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
                 JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
             ))),
             func.avg(JournalStudentSummary.sum_score),
-        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(*eligible))
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).where(*eligible))
         averages: Row = averages_result.one()
         ranked_students: Subquery = select(
             JournalStudentSummary.student_id.label("student_id"),
@@ -70,7 +74,7 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
                 (JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).desc(),
                 JournalStudentSummary.student_id.asc(),
             )).label("student_rank"),
-        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).where(
             *eligible, JournalStudentSummary.max_period_score > 0,
         ).subquery()
         rank_result: Result = await self.session.execute(

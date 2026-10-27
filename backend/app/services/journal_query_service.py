@@ -46,9 +46,10 @@ class JournalQueryService:
         schedules_res = await self.db.execute(schedules_stmt)
         schedules = list(schedules_res.scalars().all())
 
-        enrolled_count_stmt = select(func.count(Enrollment.id)).filter(
+        enrolled_count_stmt = select(func.count(Enrollment.id)).join(User, User.id == Enrollment.student_id).filter(
             Enrollment.course_id == course_id,
-            Enrollment.is_deleted == False
+            Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         )
         enrolled_res = await self.db.execute(enrolled_count_stmt)
         student_count = enrolled_res.scalar() or 0
@@ -59,9 +60,10 @@ class JournalQueryService:
         entry_counts_stmt: Select[Any] = select(
             JournalEntry.journal_id,
             func.count(JournalEntry.id)
-        ).join(Journal, Journal.id == JournalEntry.journal_id).filter(
+        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).filter(
             JournalEntry.journal_id.in_(journal_ids),
             JournalEntry.is_graded.is_(True),
+            User.is_deleted.is_(False),
             JournalEntry.lesson_date <= today,
             Journal.period_start <= today,
         ).group_by(JournalEntry.journal_id)
@@ -74,9 +76,10 @@ class JournalQueryService:
             JournalStudentSummary.journal_id,
             func.avg(pct_expr),
             func.avg(JournalStudentSummary.sum_score)
-        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).filter(
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).filter(
             JournalStudentSummary.journal_id.in_(journal_ids),
             JournalStudentSummary.is_graded.is_(True),
+            User.is_deleted.is_(False),
             Journal.period_start <= today,
         ).group_by(JournalStudentSummary.journal_id)
         summary_avg_res = await self.db.execute(summary_avg_stmt)
@@ -152,7 +155,10 @@ class JournalQueryService:
             func.sum(JournalStudentSummary.total_lessons),
             func.avg(JournalStudentSummary.sum_score),
             func.avg(JournalStudentSummary.max_period_score)
-        ).filter(JournalStudentSummary.journal_id.in_(journal_ids), JournalStudentSummary.is_graded.is_(True))
+        ).join(User, User.id == JournalStudentSummary.student_id).filter(
+            JournalStudentSummary.journal_id.in_(journal_ids), JournalStudentSummary.is_graded.is_(True),
+            User.is_deleted.is_(False),
+        )
         summary_res = await self.db.execute(summary_totals_stmt)
         avg_pct, sum_att, sum_lessons, avg_score_raw, avg_max_score_raw = summary_res.first() or (0.0, 0, 0, None, None)
 
@@ -171,9 +177,10 @@ class JournalQueryService:
         student_avg_stmt: Select[Any] = select(
             JournalStudentSummary.student_id,
             func.avg(pct_expr)
-        ).filter(
+        ).join(User, User.id == JournalStudentSummary.student_id).filter(
             JournalStudentSummary.journal_id.in_(journal_ids),
             JournalStudentSummary.is_graded.is_(True),
+            User.is_deleted.is_(False),
         ).group_by(JournalStudentSummary.student_id)
         student_avg_res = await self.db.execute(student_avg_stmt)
         at_risk_count = 0
@@ -275,11 +282,13 @@ class JournalQueryService:
         if current_user.role == UserRole.STUDENT and not include_all_students:
             students_query = select(User, Enrollment.color_hex).join(Enrollment, Enrollment.student_id == User.id).filter(
                 User.id == current_user.id,
+                User.is_deleted.is_(False),
                 Enrollment.course_id == course.id,
                 Enrollment.is_deleted == False
             )
         else:
             students_query = select(User, Enrollment.color_hex).join(Enrollment, Enrollment.student_id == User.id).filter(
+                User.is_deleted.is_(False),
                 Enrollment.course_id == course.id,
                 Enrollment.is_deleted == False
             )
@@ -372,9 +381,10 @@ class JournalQueryService:
         }
 
         if current_user.role == UserRole.STUDENT:
-            all_course_enrollments_query = select(func.count(Enrollment.id)).filter(
+            all_course_enrollments_query = select(func.count(Enrollment.id)).join(User, User.id == Enrollment.student_id).filter(
                 Enrollment.course_id == course.id,
-                Enrollment.is_deleted == False
+                Enrollment.is_deleted == False,
+                User.is_deleted.is_(False),
             )
             class_size_res = await self.db.execute(all_course_enrollments_query)
             class_size = class_size_res.scalar() or 0

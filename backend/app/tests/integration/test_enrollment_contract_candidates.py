@@ -1,4 +1,5 @@
 import asyncio
+from datetime import date, timedelta
 from typing import List, Optional, Tuple
 import pytest
 from httpx import AsyncClient
@@ -11,6 +12,7 @@ from app.models.course import CourseStatus
 from app.models.enrollment import Enrollment
 from app.models.charge import Charge
 from app.models.journal_entry import JournalEntry
+from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User
 from app.services.enrollment_service import EnrollmentConflictClassifier, EnrollmentService
@@ -136,6 +138,15 @@ async def test_duplicate_enrollment_simultaneous_race(
     db_session: AsyncSession,
 ) -> None:
     course = await create_helper_course(db_session, test_mentor.id)
+    new_start: date = date(date.today().year + 1, 8, 1)
+    shift: timedelta = new_start - course.start_date
+    course.start_date = new_start
+    course.end_date += shift
+    journals: list[Journal] = list((await db_session.scalars(select(Journal).where(Journal.course_id == course.id))).all())
+    journal: Journal
+    for journal in journals:
+        journal.period_start += shift
+        journal.period_end += shift
     await db_session.commit()
 
     lock_acquisition_barrier = asyncio.Barrier(2)

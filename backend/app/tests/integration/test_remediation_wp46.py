@@ -147,7 +147,8 @@ async def test_copy_computes_dates_once_and_matches_ordinary_enrollment(
     copied_snapshot: tuple[list[tuple[Any, ...]], ...] = await CourseCopySnapshot.capture(db_session, copied.id, source_student_id)
     ordinary_snapshot: tuple[list[tuple[Any, ...]], ...] = await CourseCopySnapshot.capture(db_session, ordinary.id, source_student_id)
     assert copied_snapshot == ordinary_snapshot
-    assert sum(charge[1] for charge in copied_snapshot[2]) == Decimal("120.01")
+    assert copied_snapshot[2]
+    assert all(charge[1] == Decimal("120.01") for charge in copied_snapshot[2])
     await db_session.commit()
     with pytest.raises(HTTPException) as error:
         await EnrollmentService(db_session).enroll_student(source_student_id, copied.id, test_admin)

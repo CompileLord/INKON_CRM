@@ -472,15 +472,10 @@ class FinanceService:
         except ValidationError as error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Contract price must be valid money and cover at least one cent per monthly installment",
+                detail="Monthly price must be positive valid money",
             ) from error
 
     async def generate_schedule_for_enrollment(self, enrollment_id: int) -> List[Charge]:
-        """Generate the monthly installment schedule for an enrollment.
-
-        Integer cents are divided evenly, with one extra cent in each of the
-        final remainder installments. Existing schedules are returned unchanged.
-        """
         res = await self.db.execute(
             select(Enrollment, User, Course)
             .join(User, User.id == Enrollment.student_id)
@@ -503,51 +498,51 @@ class FinanceService:
         if existing:
             return existing
 
-        start_date = course.start_date
-        end_date = course.end_date
-
-        total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
-        total_months = max(1, total_months)
+        start_date: date = course.start_date
+        end_date: date = course.end_date
 
         price: Decimal = Decimal(enrollment.price_at_enrollment)
         self.validate_installment_price(price, start_date, end_date)
-        price_cents: int = int(price * 100)
-        base_cents: int = price_cents // total_months
-        remainder_cents: int = price_cents % total_months
-
-        payment_day = student.payment_day_of_month or min(28, course.start_date.day)
+        enrollment_date: date = _to_dushanbe(enrollment.enrolled_at).date()
+        if enrollment_date >= end_date:
+            return []
+        payment_day: int = student.payment_day_of_month or min(28, course.start_date.day)
 
         charges: List[Charge] = []
-        year, month = start_date.year, start_date.month
+        month_index: int = 0
+        while True:
+            month_number: int = start_date.year * 12 + start_date.month - 1 + month_index
+            year: int = month_number // 12
+            month: int = month_number % 12 + 1
+            course_month_start: date = date(year, month, min(start_date.day, calendar.monthrange(year, month)[1]))
+            if course_month_start >= end_date:
+                break
+            next_month_number: int = month_number + 1
+            next_year: int = next_month_number // 12
+            next_month: int = next_month_number % 12 + 1
+            next_course_month_start: date = date(next_year, next_month, min(start_date.day, calendar.monthrange(next_year, next_month)[1]))
+            month_index += 1
+            if next_course_month_start <= enrollment_date:
+                continue
+            due_date: date = date(year, month, min(payment_day, calendar.monthrange(year, month)[1]))
+            if due_date < course_month_start:
+                due_date = date(next_year, next_month, min(payment_day, calendar.monthrange(next_year, next_month)[1]))
+            if due_date >= next_course_month_start:
+                due_date = next_course_month_start - timedelta(days=1)
+            if not charges:
+                due_date = max(due_date, enrollment_date)
 
-        for index in range(total_months):
-            sequence_no = index + 1
-            additional_cent: int = 1 if index >= total_months - remainder_cents else 0
-            amount: Decimal = Decimal(base_cents + additional_cent) * Decimal("0.01")
-
-            _, max_days = calendar.monthrange(year, month)
-            due_date = date(year, month, min(payment_day, max_days))
-            if sequence_no == 1:
-                # A student joining after their payment day owes the first
-                # installment on joining, never retroactively.
-                due_date = max(due_date, start_date)
-
-            charge = Charge(
+            charge: Charge = Charge(
                 enrollment_id=enrollment.id,
                 student_id=student.id,
-                sequence_no=sequence_no,
-                amount=amount,
+                sequence_no=len(charges) + 1,
+                amount=price,
                 due_date=due_date,
                 type=ChargeType.TUITION,
                 status=ChargeStatus.OPEN,
             )
             self.db.add(charge)
             charges.append(charge)
-
-            month += 1
-            if month > 12:
-                month = 1
-                year += 1
 
         await self.db.flush()
         await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)

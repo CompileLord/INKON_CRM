@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -74,6 +74,7 @@ class EnrollmentService:
     async def enroll_student(
         self, student_id: int, course_id: int, current_user: User,
         lesson_plan: EnrollmentLessonPlan | None = None,
+        enrolled_at: datetime | None = None,
     ) -> Enrollment:
         from app.services.finance_service import FinanceService
 
@@ -110,6 +111,8 @@ class EnrollmentService:
             color_hex=color_hex,
             status=EnrollmentStatus.ACTIVE
         )
+        if enrolled_at is not None:
+            enrollment.enrolled_at = enrolled_at
         try:
             self.db.add(enrollment)
             await self.db.flush()
@@ -183,6 +186,17 @@ class EnrollmentService:
         )
         await self.db.refresh(enrollment)
         return enrollment
+
+    async def withdraw_active_enrollments_for_student(self, student_id: int, actor_id: int) -> list[Enrollment]:
+        from app.services.finance_service import FinanceService
+
+        await FinanceService(self.db).lock_student_accounts([student_id])
+        active_enrollments: list[Enrollment] = await self.enrollment_repo.list_active_for_student(student_id)
+        withdrawn_enrollments: list[Enrollment] = []
+        enrollment: Enrollment
+        for enrollment in active_enrollments:
+            withdrawn_enrollments.append(await self.withdraw_student(enrollment.id, actor_id))
+        return withdrawn_enrollments
 
     async def withdraw_student(self, enrollment_id: int, actor_id: int | None = None) -> Enrollment:
         enrollment = await self.enrollment_repo.get_by_id(enrollment_id)
