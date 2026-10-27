@@ -76,7 +76,7 @@ export function pressKey(key: string): void {
 }
 
 export function tooltipNames(): string[] {
-  return screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.querySelector("span.truncate")?.textContent ?? "");
+  return screen.getAllByTestId("chart-tooltip-entry").map((entry) => entry.querySelector("span.break-words")?.textContent ?? "");
 }
 
 export function tooltipLabels(): string[] {

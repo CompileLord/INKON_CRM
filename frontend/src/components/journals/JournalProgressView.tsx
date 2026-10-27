@@ -28,7 +28,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   const query = selfStudentId === null ? staffQuery : classQuery;
   const [visibleOverride, setVisibleOverride] = useState<Set<number> | null>(null);
   const [showAverage, setShowAverage] = useState<boolean>(true);
-  const [showMaximum, setShowMaximum] = useState<boolean>(true);
+  const [showMaximum, setShowMaximum] = useState<boolean>(false);
   const [collapsed, setCollapsed] = useState<boolean>(() => JournalChartPreference.readStored() ?? false);
 
   const data: CourseStaffProgressResponse | undefined = query.data;
@@ -58,7 +58,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
 
   if (query.isError && !data) {
     return (
-      <SectionCard title={t("journals:progress.scope")}>
+      <SectionCard title={t("journals:progress.title")}>
         <ErrorState
           title={t("journals:workspace.progressLoadFailed")}
           message={t(selfStudentId === null ? "journals:progress.loadFailedBody" : "journals:progress.loadFailedBodyStudent")}
@@ -70,7 +70,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   if (query.isLoading || !data) {
     return (
       <div data-testid="journal-progress-skeleton">
-        <SectionCard title={t("journals:progress.scope")}>
+        <SectionCard title={t("journals:progress.title")}>
           <PanelSkeleton label={t("common:loading")} rows={3} />
         </SectionCard>
       </div>
@@ -83,13 +83,13 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
   return (
     <div data-testid="journal-progress">
       <SectionCard
-        title={t("journals:progress.scope")}
+        title={t("journals:progress.title")}
         info={t("journals:progress.scopeNote")}
         actions={
           <button
             type="button"
             aria-expanded={!collapsed}
-            aria-label={t("journals:progress.scope")}
+            aria-label={t("journals:progress.title")}
             onClick={toggleCollapsed}
             data-testid="progress-collapse-toggle"
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] text-muted hover:bg-strip hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -101,7 +101,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
         {query.isError && <StaleNotice message={t("journals:progress.refreshFailed")} onRetry={() => void query.refetch()} />}
         {!collapsed && (
           <>
-            <ProgressChart periods={started} students={students} visibleIds={visibleIds} showAverage={showAverage} showMaximum={showMaximum} selfStudentId={selfStudentId} dense={selfStudentId === null} />
+            <ProgressChart periods={started} students={students} visibleIds={visibleIds} showAverage={showAverage} showMaximum={showMaximum} selfStudentId={selfStudentId} />
             <JournalProgressLegend
               students={students}
               visibleIds={visibleIds}

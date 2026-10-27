@@ -225,7 +225,7 @@
     "noMatchBody": "Nobody in this period's roster matches “{{query}}”. Clear the search to see everyone."
   },
   "progress": {
-    "scope": "Whole course, all periods",
+    "title": "Performance trend",
     "scopeNote": "Average of stored totals for every period of this course. Missing results show as Unavailable.",
     "classAverage": "Class average",
     "legendLabel": "Chart series",

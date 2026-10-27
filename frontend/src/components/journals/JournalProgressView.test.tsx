@@ -85,7 +85,7 @@ describe("Progress view as staff", () => {
     vi.mocked(courseHooks.useCourseStaffProgress).mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() } as unknown as ReturnType<typeof courseHooks.useCourseStaffProgress>);
     render(<JournalProgressView courseId={1} />);
     expect(screen.getByTestId("journal-progress-skeleton")).toBeDefined();
-    expect(screen.getByRole("heading", { name: "Whole course, all periods" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Performance trend" })).toBeDefined();
   });
 
   it("keeps the loaded chart and offers a retry when a refresh fails", () => {

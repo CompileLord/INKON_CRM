@@ -89,12 +89,22 @@ describe("JournalProgressRules", () => {
     expect(students[17].dashVariant).toBe(2);
   });
 
-  it("picks round score ticks that always cover the highest value, whatever the period maximum is", () => {
-    expect(JournalProgressRules.scoreTicks([10, null, 50])).toEqual([0, 10, 20, 30, 40, 50]);
-    expect(JournalProgressRules.scoreTicks([117, 86])).toEqual([0, 25, 50, 75, 100, 125]);
-    expect(JournalProgressRules.scoreTicks([600])).toEqual([0, 200, 400, 600]);
-    expect(JournalProgressRules.scoreTicks([null])).toEqual([0, 1]);
-    expect(JournalProgressRules.scoreTicks([123]).at(-1)).toBeGreaterThanOrEqual(123);
+  it("fits the y-domain to the data in multiples of ten and never above the period maximum", () => {
+    expect(JournalProgressRules.fittedDomain([40, 62, null, 90], 100)).toEqual({ lower: 40, upper: 90 });
+    expect(JournalProgressRules.fittedDomain([43, 87], 100)).toEqual({ lower: 40, upper: 90 });
+    expect(JournalProgressRules.fittedDomain([43, 98], 100)).toEqual({ lower: 40, upper: 100 });
+    expect(JournalProgressRules.fittedDomain([43, 97], 98)).toEqual({ lower: 40, upper: 98 });
+    expect(JournalProgressRules.fittedDomain([3, 24.5], 24)).toEqual({ lower: 0, upper: 24.5 });
+    expect(JournalProgressRules.fittedDomain([100], 100)).toEqual({ lower: 90, upper: 100 });
+    expect(JournalProgressRules.fittedDomain([55], 100)).toEqual({ lower: 50, upper: 60 });
+    expect(JournalProgressRules.fittedDomain([null], null)).toEqual({ lower: 0, upper: 10 });
+  });
+
+  it("places round ticks inside the fitted domain and always ends on its upper bound", () => {
+    expect(JournalProgressRules.domainTicks({ lower: 40, upper: 90 })).toEqual([40, 50, 60, 70, 80, 90]);
+    expect(JournalProgressRules.domainTicks({ lower: 0, upper: 25 })).toEqual([0, 5, 10, 15, 20, 25]);
+    expect(JournalProgressRules.domainTicks({ lower: 40, upper: 98 }).at(-1)).toBe(98);
+    expect(JournalProgressRules.domainTicks({ lower: 90, upper: 100 })[0]).toBe(90);
   });
 
   it("reports the average score and the per-period maximum next to the average percentage", () => {

@@ -31,6 +31,11 @@ export interface ProgressChartStudent {
   latestPercentage: number | null;
 }
 
+export interface ScoreDomain {
+  lower: number;
+  upper: number;
+}
+
 export interface ProgressLineVertex {
   index: number;
   value: number;
@@ -151,14 +156,29 @@ export class JournalProgressRules {
 
   static readonly NICE_STEPS: readonly number[] = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000];
   static readonly MAXIMUM_TICK_INTERVALS: number = 5;
+  static readonly DOMAIN_ROUNDING: number = 10;
 
-  static scoreTicks(values: (number | null)[]): number[] {
-    const highest: number = Math.max(1, ...values.filter((value): value is number => value !== null));
+  static fittedDomain(values: (number | null)[], periodMaximum: number | null): ScoreDomain {
+    const present: number[] = values.filter((value): value is number => value !== null);
+    if (present.length === 0) return { lower: 0, upper: JournalProgressRules.DOMAIN_ROUNDING };
+    const rounding: number = JournalProgressRules.DOMAIN_ROUNDING;
+    const highest: number = Math.max(...present);
+    const ceiling: number = Math.max(periodMaximum ?? highest, highest);
+    const upper: number = Math.max(Math.min(Math.ceil(highest / rounding) * rounding, ceiling), highest, 1);
+    let lower: number = Math.max(Math.floor(Math.min(...present) / rounding) * rounding, 0);
+    if (lower >= upper) lower = Math.max(upper - rounding, 0);
+    return { lower, upper };
+  }
+
+  static domainTicks(domain: ScoreDomain): number[] {
+    const span: number = domain.upper - domain.lower;
     const step: number =
-      JournalProgressRules.NICE_STEPS.find((candidate) => highest / candidate <= JournalProgressRules.MAXIMUM_TICK_INTERVALS) ??
+      JournalProgressRules.NICE_STEPS.find((candidate) => span / candidate <= JournalProgressRules.MAXIMUM_TICK_INTERVALS) ??
       JournalProgressRules.NICE_STEPS[JournalProgressRules.NICE_STEPS.length - 1];
-    const intervals: number = Math.ceil(highest / step);
-    return Array.from({ length: intervals + 1 }, (_, index) => index * step);
+    const ticks: number[] = [];
+    for (let tick = domain.lower; tick <= domain.upper; tick += step) ticks.push(tick);
+    if (ticks[ticks.length - 1] < domain.upper) ticks.push(domain.upper);
+    return ticks;
   }
 
   static stepPath(coordinates: ChartCoordinate[], minimumX: number = -Infinity, maximumX: number = Infinity): string {
