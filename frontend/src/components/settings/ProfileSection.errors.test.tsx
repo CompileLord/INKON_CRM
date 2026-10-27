@@ -82,3 +82,24 @@ describe("ProfileSaveErrorMapper", () => {
     expect(ProfileSaveErrorMapper.map(new AuthApiError(500, "boom")).formKey).toBe("saveBar.failed");
   });
 });
+
+describe("profile layout", () => {
+  it("shows the phone format once as a placeholder and the email with the student form label", async () => {
+    renderSection();
+    const phone: HTMLInputElement = (await screen.findByLabelText("Phone")) as HTMLInputElement;
+    expect(phone.placeholder).toBe("+992901234567");
+    expect(screen.queryByText(/Start with \+/)).toBeNull();
+    expect(screen.queryByText(/international format/)).toBeNull();
+    expect(screen.getByLabelText(i18n.t("students:form.emailLabel"))).toBeTruthy();
+    expect(phone.closest(".md\\:grid-cols-2")).not.toBeNull();
+  });
+
+  it("shows the translated phone error only for an invalid value", async () => {
+    renderSection();
+    const user = userEvent.setup();
+    const phone: HTMLElement = await screen.findByLabelText("Phone");
+    await user.clear(phone);
+    await user.type(phone, "123");
+    expect(screen.getByText("Use the international format, e.g. +992901234567.")).toBeTruthy();
+  });
+});
