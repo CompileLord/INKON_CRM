@@ -4295,6 +4295,64 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## GET /api/v1/dashboard/attention
+
+**Summary:** Attention
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "lessons_in_progress": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+      }
+    ],
+    "attendance_not_marked": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+      }
+    ],
+    "absent_students": [
+      {
+        "course_id": integer,
+        "course_title": string,
+        "time_start": string,
+        "time_end": string,
+        "mentor_name": string,
+        "mentor_phone": string,
+        "journal_id": integer,
+        "students": array[],
+      }
+    ],
+    "payments": [
+      {
+        "student_id": integer,
+        "student_name": string,
+        "course_id": integer,
+        "course_title": string,
+        "enrollment_id": integer,
+        "due_date": string,
+        "remaining_amount": string,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/system/version
 
 **Summary:** Get Build Version
