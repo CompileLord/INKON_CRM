@@ -67,6 +67,12 @@ class UserRepository(BaseRepository[User], Protocol):
     ) -> RepositoryPage[User]:
         ...
 
+    async def get_student_directory(
+        self, page: int, page_size: int, search: str | None, mentor_id: int | None,
+        course_id: int | None, payment_status: str | None,
+    ) -> RepositoryPage[dict[str, Any]]:
+        ...
+
     async def get_mentors_list(
         self,
         page: int = 1,
