@@ -59,8 +59,8 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             .filter(
                 Enrollment.course_id == course_id,
                 or_(
-                    Enrollment.status == EnrollmentStatus.ACTIVE,
-                    Enrollment.student_id == always_include_student_id
+                    Enrollment.status.in_([EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN]),
+                    Enrollment.student_id == always_include_student_id,
                 ),
                 Enrollment.is_deleted == False
             )
@@ -199,11 +199,12 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             )
         )
         active_roster: Select = roster.where(Enrollment.status == EnrollmentStatus.ACTIVE)
+        visible_roster: Select = roster.where(Enrollment.status.in_([EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN]))
         class_size: int = int(await self.session.scalar(
             select(func.count()).select_from(active_roster.subquery())
         ) or 0)
         series_query: Select = (
-            active_roster.order_by(User.id.asc()).offset(student_offset).limit(student_limit)
+            visible_roster.order_by(User.id.asc()).offset(student_offset).limit(student_limit)
             if student_id is None else roster.where(User.id == student_id).limit(1)
         )
         series_result: Result = await self.session.execute(series_query)

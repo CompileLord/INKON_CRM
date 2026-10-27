@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
+from app.models.user import User
 
 
 class FutureLessonCounts:
@@ -19,10 +20,12 @@ class FutureLessonCounts:
             )
             .select_from(JournalEntry)
             .join(Journal, Journal.id == JournalEntry.journal_id)
+            .join(User, User.id == JournalEntry.student_id)
             .join(JournalStudentSummary, (JournalStudentSummary.journal_id == JournalEntry.journal_id)
                   & (JournalStudentSummary.student_id == JournalEntry.student_id))
             .where(
                 JournalEntry.student_id == student_id,
+                User.is_deleted.is_(False),
                 JournalEntry.lesson_date > today,
                 Journal.period_start <= today,
                 JournalStudentSummary.is_graded.is_(True),
@@ -39,10 +42,12 @@ class FutureLessonCounts:
             )
             .select_from(JournalEntry)
             .join(Journal, Journal.id == JournalEntry.journal_id)
+            .join(User, User.id == JournalEntry.student_id)
             .join(JournalStudentSummary, (JournalStudentSummary.journal_id == JournalEntry.journal_id)
                   & (JournalStudentSummary.student_id == JournalEntry.student_id))
             .where(
                 JournalEntry.journal_id.in_(journal_ids),
+                User.is_deleted.is_(False),
                 JournalEntry.lesson_date > today,
                 Journal.period_start <= today,
                 JournalStudentSummary.is_graded.is_(True),
