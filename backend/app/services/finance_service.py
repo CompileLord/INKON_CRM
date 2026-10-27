@@ -600,7 +600,6 @@ class FinanceService:
         self.db.add_all(charges)
 
         await self.db.flush()
-        await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
         await self._invalidate_cache()
         return charges
 
@@ -723,7 +722,6 @@ class FinanceService:
         ]
         self.db.add_all(new_charges)
         await self.db.flush()
-        await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
         await self._invalidate_cache()
         return BillingModeChangeOutcome(0, ZERO, ZERO, len(new_charges))
 
@@ -903,8 +901,6 @@ class FinanceService:
         )
         self.db.add(entry)
         await self.db.flush()
-
-        await self.auto_allocate_student_credit(payload.student_id)
 
         await self._log_audit(
             user_id=current_user.id,
