@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider, type UseQueryResult } from "@tanstack/react-query";
 import i18n from "../../i18n";
 import { CourseStudentsPane } from "./CourseStudentsPane";
+import { recordCourseDetailNavigation } from "../../lib/courses/returnContext";
 import * as enrollmentHooks from "../../lib/enrollments/hooks";
 import type {
   CourseRosterItem,
@@ -194,7 +195,7 @@ describe("Course roster section", () => {
               onSortOptionChange={vi.fn()}
               page={1}
               onPageChange={vi.fn()}
-              statusFilter={undefined}
+              statusFilter="active"
               onStatusFilterChange={vi.fn()}
               onToast={vi.fn()}
               onReady={vi.fn()}
@@ -256,9 +257,48 @@ describe("Course roster section", () => {
     renderPane({ searchQuery: "zzz", statusFilter: "withdrawn", onStatusFilterChange, onSearchQueryChange });
     expect(screen.getByText("No students match “zzz”")).toBeDefined();
     fireEvent.click(screen.getByRole("button", { name: "Reset filter" }));
-    expect(onStatusFilterChange).toHaveBeenCalledWith(undefined);
+    expect(onStatusFilterChange).toHaveBeenCalledWith("active");
     fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
     expect(onSearchQueryChange).toHaveBeenCalledWith("");
+  });
+
+  it("requests only active students by default and sends no status for All", () => {
+    renderPane();
+    expect(enrollmentHooks.useCourseRosterPage).toHaveBeenLastCalledWith(42, expect.objectContaining({ status: "active" }));
+    expect(screen.getByRole("button", { name: "Status" }).textContent).toContain("Active");
+    cleanup();
+    renderPane({ statusFilter: "all" });
+    const lastParams = vi.mocked(enrollmentHooks.useCourseRosterPage).mock.calls.at(-1)?.[1];
+    expect(lastParams?.status).toBeUndefined();
+    expect(lastParams).toHaveProperty("status", undefined);
+    expect(screen.getByRole("button", { name: "Status" }).textContent).toContain("All");
+  });
+
+  it("selecting All reports the explicit all choice and withdrawn requests withdrawn", () => {
+    const onStatusFilterChange = vi.fn();
+    renderPane({ onStatusFilterChange });
+    fireEvent.click(screen.getByRole("button", { name: "Status" }));
+    fireEvent.click(screen.getByRole("option", { name: "All" }));
+    expect(onStatusFilterChange).toHaveBeenCalledWith("all");
+    cleanup();
+    renderPane({ statusFilter: "withdrawn" });
+    expect(enrollmentHooks.useCourseRosterPage).toHaveBeenLastCalledWith(42, expect.objectContaining({ status: "withdrawn" }));
+  });
+
+  it("records the active default in the departure context and shows no reset while on the default", () => {
+    renderPane();
+    expect(screen.queryByRole("button", { name: "Reset filter" })).toBeNull();
+    fireEvent.click(screen.getAllByRole("link")[0]);
+    expect(recordCourseDetailNavigation).toHaveBeenLastCalledWith(42, expect.objectContaining({ rosterStatus: "active" }));
+  });
+
+  it("shows the withdrawn badge on a withdrawn row in Russian", async () => {
+    await i18n.changeLanguage("ru");
+    vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue(mockQueryResult<CourseRosterResponse>({ items: [mockRosterItemTwo], total: 1, page: 1, page_size: 10, total_pages: 1, active_count: 0 }));
+    renderPane({ statusFilter: "withdrawn" });
+    const badge = document.querySelector("[data-badge-status='withdrawn']") as HTMLElement;
+    expect(badge.textContent).toBe("Отчислен");
+    await i18n.changeLanguage("en");
   });
 
   it("changes status and sort through the shared pickers instead of native selects", () => {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { QueryObserverResult } from "@tanstack/react-query";
 import { locateRosterStudent } from "../../lib/enrollments/endpoints";
-import type { CourseRosterResponse, EnrollmentStatus } from "../../lib/enrollments/types";
+import type { CourseRosterResponse, RosterStatusFilter } from "../../lib/enrollments/types";
 import type { CourseRosterSortOption } from "./CourseRosterSection";
 
 interface RosterEnrollFlowInput {
@@ -15,7 +15,7 @@ interface RosterEnrollFlowInput {
   refetch: () => Promise<QueryObserverResult<CourseRosterResponse, Error>>;
   onToast: (message: string, variant: "success" | "error") => void;
   onSearchQueryChange: (query: string) => void;
-  onStatusFilterChange: (status: EnrollmentStatus | undefined) => void;
+  onStatusFilterChange: (status: RosterStatusFilter) => void;
   onPageChange: (page: number) => void;
   focusEnrollButton: () => void;
 }
@@ -109,7 +109,7 @@ export function useRosterEnrollFlow(input: RosterEnrollFlowInput): RosterEnrollF
       setPendingRevealStudentId(targetId);
       setNewlyEnrolledStudentId(null);
       input.onSearchQueryChange("");
-      input.onStatusFilterChange(undefined);
+      input.onStatusFilterChange("all");
       input.onPageChange(location.page);
     } catch {
       input.onToast(t("students.loadError"), "error");
