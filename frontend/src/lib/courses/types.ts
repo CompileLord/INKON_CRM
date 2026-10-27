@@ -32,11 +32,6 @@ export interface CourseCreate {
   schedules: CourseScheduleCreate[]; // min 1
 }
 
-/**
- * The spec's CourseUpdate has no `price`, `exam_type`, or `schedules` field
- * at all — those are immutable after creation via this endpoint, not just
- * optional. Only these six fields are patchable.
- */
 export interface CourseUpdate {
   title?: string;
   description?: string;
@@ -44,6 +39,7 @@ export interface CourseUpdate {
   end_date?: string;
   mentor_id?: number;
   status?: CourseStatus;
+  schedules?: CourseScheduleCreate[];
 }
 
 export interface CourseResponse {

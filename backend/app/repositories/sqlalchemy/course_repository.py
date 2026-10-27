@@ -9,6 +9,7 @@ from app.schemas.course_list import CourseSortOrder
 from app.repositories.interfaces.base_repository import RepositoryPage
 from app.repositories.sqlalchemy.person_search import PersonSearch
 from app.models.course import Course, CourseStatus
+from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.repositories.interfaces.course_repository import CourseRepository
@@ -63,6 +64,10 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
 
     async def get_course_journals(self, course_id: int) -> list[Journal]:
         statement: Select[tuple[Journal]] = select(Journal).where(Journal.course_id == course_id).order_by(Journal.period_start)
+        return list((await self.session.execute(statement)).scalars().all())
+
+    async def get_course_schedules(self, course_id: int) -> list[CourseSchedule]:
+        statement: Select[tuple[CourseSchedule]] = select(CourseSchedule).where(CourseSchedule.course_id == course_id)
         return list((await self.session.execute(statement)).scalars().all())
 
     async def get_active_courses(self, skip: int = 0, limit: int = 100) -> List[Course]:

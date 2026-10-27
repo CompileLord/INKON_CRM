@@ -20,6 +20,7 @@ from app.schemas.course import (
     CourseListItemResponse,
     CourseResponse,
     CourseScheduleResponse,
+    CourseScheduleTimeUpdate,
     CourseUpdate,
 )
 from app.services.audit_service import AuditService
@@ -110,6 +111,23 @@ class CourseService:
 
         audited_fields: set[str] = {"title", "description", "price", "start_date", "end_date", "status", "mentor_id"}
         previous_values: dict[str, object] = {field: getattr(course, field) for field in audited_fields}
+        schedule_changes: dict[str, tuple[object, object]] = {}
+        if "schedules" in data.model_fields_set:
+            schedules: list[CourseSchedule] = await self.course_repo.get_course_schedules(course_id)
+            schedules_by_weekday: dict[int, CourseSchedule] = {schedule.day_of_week: schedule for schedule in schedules}
+            requested_weekdays: list[int] = [schedule.day_of_week for schedule in data.schedules]
+            if len(requested_weekdays) != len(schedules_by_weekday) or set(requested_weekdays) != set(schedules_by_weekday):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "schedule_weekdays_immutable"})
+            requested_schedule: CourseScheduleTimeUpdate
+            for requested_schedule in data.schedules:
+                existing_schedule: CourseSchedule = schedules_by_weekday[requested_schedule.day_of_week]
+                field_name: str
+                for field_name in ("time_start", "time_end"):
+                    old_value: object = getattr(existing_schedule, field_name)
+                    new_value: object = getattr(requested_schedule, field_name)
+                    if old_value != new_value:
+                        schedule_changes[f"schedules.{requested_schedule.day_of_week}.{field_name}"] = (old_value, new_value)
+                        setattr(existing_schedule, field_name, new_value)
         if data.start_date is not None or data.end_date is not None:
             journals_query = select(Journal).filter(Journal.course_id == course_id)
             journals_result = await self.db.execute(journals_query)
@@ -161,7 +179,7 @@ class CourseService:
         await self.course_repo.update(course)
         await AuditService(self.db).log_change(
             current_user.id, "update", "course", course.id, course.title,
-            {field: (previous_values[field], getattr(course, field)) for field in previous_values if previous_values[field] != getattr(course, field)},
+            {**{field: (previous_values[field], getattr(course, field)) for field in previous_values if previous_values[field] != getattr(course, field)}, **schedule_changes},
         )
         await self.db.refresh(course)
         return course
