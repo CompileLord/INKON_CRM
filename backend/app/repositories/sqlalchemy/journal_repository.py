@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.school_calendar import SchoolCalendar
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
-from app.models.enrollment import Enrollment
+from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal_entry import JournalEntry
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
@@ -40,15 +40,19 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         students_result: Result = await self.session.execute(select(
             Enrollment.course_id, func.count(Enrollment.id),
         ).join(User, User.id == Enrollment.student_id).where(
-            Enrollment.course_id.in_(course_ids), Enrollment.is_deleted.is_(False), User.is_deleted.is_(False),
+            Enrollment.course_id.in_(course_ids), Enrollment.is_deleted.is_(False),
+            Enrollment.status == EnrollmentStatus.ACTIVE, User.is_deleted.is_(False),
         ).group_by(Enrollment.course_id))
         row: Row
         student_counts: dict[int, int] = {row[0]: row[1] for row in students_result.all()}
         entries_result: Result = await self.session.execute(select(
             JournalEntry.journal_id, func.count(JournalEntry.id),
-        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).where(
+        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).join(
+            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalEntry.student_id),
+        ).where(
             Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.lesson_date <= today,
             JournalEntry.is_graded.is_(True), User.is_deleted.is_(False),
+            Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
         ).group_by(JournalEntry.journal_id))
         graded_entry_counts: dict[int, int] = {row[0]: row[1] for row in entries_result.all()}
         return MentorJournalBatch(courses, journals, schedules, student_counts, graded_entry_counts)
@@ -59,6 +63,8 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
             JournalStudentSummary.is_graded.is_(True),
             Journal.period_start <= SchoolCalendar.today(),
             User.is_deleted.is_(False),
+            Enrollment.is_deleted.is_(False),
+            Enrollment.status == EnrollmentStatus.ACTIVE,
         )
         averages_result: Result = await self.session.execute(select(
             func.avg(case((
@@ -66,7 +72,9 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
                 JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score,
             ))),
             func.avg(JournalStudentSummary.sum_score),
-        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).where(*eligible))
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).join(
+            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalStudentSummary.student_id),
+        ).where(*eligible))
         averages: Row = averages_result.one()
         ranked_students: Subquery = select(
             JournalStudentSummary.student_id.label("student_id"),
@@ -74,7 +82,9 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
                 (JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).desc(),
                 JournalStudentSummary.student_id.asc(),
             )).label("student_rank"),
-        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).where(
+        ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(User, User.id == JournalStudentSummary.student_id).join(
+            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalStudentSummary.student_id),
+        ).where(
             *eligible, JournalStudentSummary.max_period_score > 0,
         ).subquery()
         rank_result: Result = await self.session.execute(

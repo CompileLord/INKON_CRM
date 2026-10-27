@@ -100,6 +100,7 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             ).where(
                 Enrollment.course_id == course_id,
                 Enrollment.is_deleted == False,
+                Enrollment.status == EnrollmentStatus.ACTIVE,
                 User.role == UserRole.STUDENT,
                 User.is_deleted == False,
             )

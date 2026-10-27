@@ -298,7 +298,11 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
     async def list_enrollments(self, filters: EnrollmentFilters, page: int, page_size: int) -> RepositoryPage[Enrollment]:
         query: Select[tuple[Enrollment]] = select(Enrollment).where(Enrollment.is_deleted.is_(False))
         if filters.get("course_id") is not None:
-            query = query.where(Enrollment.course_id == filters["course_id"])
+            query = query.join(User, User.id == Enrollment.student_id).where(
+                Enrollment.course_id == filters["course_id"],
+                Enrollment.status == EnrollmentStatus.ACTIVE,
+                User.is_deleted.is_(False),
+            )
         if filters.get("student_id") is not None:
             query = query.where(Enrollment.student_id == filters["student_id"])
         if filters.get("mentor_id") is not None:

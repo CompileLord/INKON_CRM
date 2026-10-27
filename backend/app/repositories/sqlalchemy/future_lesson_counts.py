@@ -5,6 +5,7 @@ from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User
+from app.models.enrollment import Enrollment, EnrollmentStatus
 
 
 class FutureLessonCounts:
@@ -43,11 +44,13 @@ class FutureLessonCounts:
             .select_from(JournalEntry)
             .join(Journal, Journal.id == JournalEntry.journal_id)
             .join(User, User.id == JournalEntry.student_id)
+            .join(Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalEntry.student_id))
             .join(JournalStudentSummary, (JournalStudentSummary.journal_id == JournalEntry.journal_id)
                   & (JournalStudentSummary.student_id == JournalEntry.student_id))
             .where(
                 JournalEntry.journal_id.in_(journal_ids),
                 User.is_deleted.is_(False),
+                Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
                 JournalEntry.lesson_date > today,
                 Journal.period_start <= today,
                 JournalStudentSummary.is_graded.is_(True),
