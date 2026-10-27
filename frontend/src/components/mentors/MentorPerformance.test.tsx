@@ -55,7 +55,7 @@ describe("MentorPerformance", () => {
 
   afterEach(cleanup);
 
-  it("renders compact performance tab with progress bar and tooltips, without sentences under numbers", async () => {
+  it("shows only points per period with a graded-periods tooltip and repeats nothing from the profile header", async () => {
     const user = userEvent.setup();
     render(
       <MentorPerformance
@@ -67,24 +67,14 @@ describe("MentorPerformance", () => {
       />
     );
 
-    const title: HTMLElement = screen.getByRole("heading", { level: 2 });
-    expect(title.textContent).toContain("Успеваемость");
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/Средний результат/)).toBeNull();
+    expect(screen.queryByText("61%")).toBeNull();
+    expect(screen.getByText("62,1")).toBeDefined();
 
-    const pointsValue: HTMLElement = screen.getByText("62,1");
-    expect(pointsValue).toBeDefined();
-
-    expect(screen.queryByText(/Все, кто записан на курсы/)).toBeNull();
-    expect(screen.queryByText(/^Студентов$/)).toBeNull();
-
-    const progressbar: HTMLElement = screen.getByRole("progressbar");
-    expect(progressbar.getAttribute("aria-valuenow")).toBe("61");
-    expect(progressbar.getAttribute("aria-valuemin")).toBe("0");
-    expect(progressbar.getAttribute("aria-valuemax")).toBe("100");
-
-    const tooltipButtons: HTMLElement[] = screen.getAllByRole("button", { name: /Сколько баллов|Доля от максимума/ });
-    expect(tooltipButtons.length).toBeGreaterThanOrEqual(1);
-
-    await user.click(tooltipButtons[0]);
+    const tooltipButton: HTMLElement = screen.getByRole("button", { name: /Сколько баллов/ });
+    await user.click(tooltipButton);
     const tooltipContent: HTMLElement = await screen.findByRole("tooltip");
     expect(tooltipContent.textContent).toContain("Считано по 24 оценённым периодам.");
   });
