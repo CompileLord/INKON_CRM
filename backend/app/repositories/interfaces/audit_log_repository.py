@@ -8,6 +8,9 @@ from app.repositories.interfaces.base_repository import BaseRepository
 
 @dataclass(frozen=True)
 class AuditLogFilters:
+    category_entity_types: Optional[tuple[str, ...]] = None
+    category_system: bool = False
+    category_system_fields: tuple[str, ...] = ()
     actor_id: Optional[int] = None
     action: Optional[str] = None
     entity_type: Optional[str] = None
