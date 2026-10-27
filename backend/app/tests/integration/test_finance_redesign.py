@@ -269,11 +269,14 @@ async def test_period_close_enforcement(
     )
     course_id = c_resp.json()["id"]
 
-    await client.post(
-        "/api/v1/enrollments/",
-        json={"student_id": student_id, "course_id": course_id},
-        headers=admin_headers,
-    )
+    with monkeypatch.context() as enrollment_clock:
+        enrollment_clock.setattr("app.services.finance_service._to_dushanbe", lambda timestamp: datetime(2026, 7, 1, tzinfo=timezone.utc))
+        enrollment_resp = await client.post(
+            "/api/v1/enrollments/",
+            json={"student_id": student_id, "course_id": course_id},
+            headers=admin_headers,
+        )
+    assert enrollment_resp.status_code == 201, enrollment_resp.text
 
     pmt_resp = await client.post(
         "/api/v1/finance/payments/",
@@ -346,14 +349,17 @@ async def test_receipt_generation(
     )
     course_id = c_resp.json()["id"]
 
-    await client.post(
-        "/api/v1/enrollments/",
-        json={"student_id": student_id, "course_id": course_id},
-        headers=admin_headers,
-    )
+    with monkeypatch.context() as enrollment_clock:
+        enrollment_clock.setattr("app.services.finance_service._to_dushanbe", lambda timestamp: datetime(2026, 8, 1, tzinfo=timezone.utc))
+        enrollment_resp = await client.post(
+            "/api/v1/enrollments/",
+            json={"student_id": student_id, "course_id": course_id},
+            headers=admin_headers,
+        )
+    assert enrollment_resp.status_code == 201, enrollment_resp.text
 
     # Post payment
-    await client.post(
+    payment_resp = await client.post(
         "/api/v1/finance/payments/",
         json={
             "student_id": student_id,
@@ -365,6 +371,8 @@ async def test_receipt_generation(
         },
         headers=acc_headers,
     )
+
+    assert payment_resp.status_code == 201, payment_resp.text
 
     payment_q = select(LedgerEntry).filter(LedgerEntry.student_id == student_id, LedgerEntry.type == LedgerEntryType.PAYMENT)
     p_res = await db_session.execute(payment_q)

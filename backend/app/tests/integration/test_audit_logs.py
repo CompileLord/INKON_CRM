@@ -14,7 +14,7 @@ def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
 
 
 @pytest.mark.asyncio
-async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, test_student: User) -> None:
+async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, test_student: User, monkeypatch: pytest.MonkeyPatch) -> None:
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -64,19 +64,23 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
 
     # 2. Register payment with discount
     # Enroll student first
-    await client.post(
-        "/api/v1/enrollments/",
-        json={
-            "student_id": test_student.id,
-            "course_id": course_id
-        },
-        headers=admin_headers
-    )
+    with monkeypatch.context() as enrollment_clock:
+        enrollment_clock.setattr("app.services.finance_service._to_dushanbe", lambda timestamp: datetime(2026, 8, 10, tzinfo=timezone.utc))
+        enrollment_resp = await client.post(
+            "/api/v1/enrollments/",
+            json={
+                "student_id": test_student.id,
+                "course_id": course_id
+            },
+            headers=admin_headers
+        )
+
+    assert enrollment_resp.status_code == 201, enrollment_resp.text
 
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
     acc_headers = {"Authorization": f"Bearer {acc_token}"}
 
-    await client.post(
+    payment_resp = await client.post(
         "/api/v1/finance/payments/",
         json={
             "student_id": test_student.id,
@@ -87,6 +91,8 @@ async def test_audit_logs_workflow(client: AsyncClient, test_admin: User, test_a
         },
         headers=acc_headers
     )
+
+    assert payment_resp.status_code == 201, payment_resp.text
 
     # 3. Retrieve audit logs as SuperAdmin
     logs_resp = await client.get("/api/v1/audit-log/", headers=admin_headers)
