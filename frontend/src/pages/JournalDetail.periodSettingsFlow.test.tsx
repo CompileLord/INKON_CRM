@@ -39,16 +39,18 @@ describe("Period settings: exam maximum", () => {
     updateExamMaxMock.mockImplementation(async (_journalId, payload) => examResponse(payload.exam_max_score ?? 100));
   });
 
-  it("shows one period line, the maximum only in the input, the allowed range and the explanation behind an info tooltip", async () => {
+  it("shows only the period as subtitle, the explanation behind an info tooltip next to the exam label and no range text", async () => {
     const dialog = await openSettings();
     expect(within(dialog).queryByText("Algebra Intensive")).toBeNull();
-    expect(dialog.textContent).toContain("Month 10");
-    expect(dialog.textContent).toContain(`${formatSchoolLessonDate("2026-10-01")} – ${formatSchoolLessonDate("2026-10-31")}`);
+    expect(within(dialog).getByTestId("period-settings-subtitle").textContent).toBe("Month 10");
+    expect(dialog.textContent).not.toContain(formatSchoolLessonDate("2026-10-01"));
+    expect(dialog.textContent).not.toContain(formatSchoolLessonDate("2026-10-31"));
     expect(within(dialog).queryByText("Current exam maximum")).toBeNull();
     expect(dialog.querySelectorAll("dt")).toHaveLength(0);
     expect(within(dialog).getByRole("button", { name: "About maximums" })).toBeDefined();
-    expect(within(dialog).getByText("Whole number from 0 to 100")).toBeDefined();
+    expect(dialog.textContent).not.toContain("Whole number from");
     expect(dialog.textContent).not.toContain("recalculates the grading denominator of this period");
+    expect(dialog.textContent).not.toContain("Highest existing");
     expect(maximumInput().value).toBe("100");
     expect(saveButton().disabled).toBe(true);
   });

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import i18n from "../i18n";
 import { useAuthStore } from "../store/authStore";
 import { AuthApiError } from "../lib/auth/errors";
@@ -118,7 +118,8 @@ describe("Period settings: exam maximum", () => {
       return detail;
     });
     const dialog = await openSettings();
-    expect(dialog.textContent).toContain("Highest existing exam score: 60");
+    expect(within(dialog).getByTestId("period-settings-current-maximum").textContent).toBe("current max: 60");
+    expect(dialog.textContent).not.toContain("Highest existing");
     typeMaximum("40");
 
     expect(screen.getByRole("alert").textContent).toBe("Not below the highest existing exam score (60).");
@@ -156,6 +157,36 @@ describe("Period settings: exam maximum", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Параметрҳои давра" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Танзимоти давра" }));
     expect(await screen.findByRole("dialog", { name: "Танзимоти давра" })).toBeDefined();
+  });
+
+  it.each([
+    ["en", "Period options", "Period settings", "Month 10", "current max: 60"],
+    ["ru", "Параметры периода", "Настройки периода", "Месяц 10", "текущий макс: 60"],
+    ["tg", "Параметрҳои давра", "Танзимоти давра", "Моҳи 10", "ҳадди ҷорӣ: 60"],
+  ])("shows the period subtitle and one inline current-maximum hint in %s", async (language, optionsLabel, dialogName, subtitle, hint) => {
+    getJournalMock.mockImplementation(async (journalId: number) => {
+      const detail = buildJournal(journalId);
+      detail.students[0].summary = { ...(detail.students[0].summary as NonNullable<typeof detail.students[0]["summary"]>), exam_score: 60 };
+      return detail;
+    });
+    await i18n.changeLanguage(language);
+    renderWorkspace();
+    await screen.findByRole("region", { name: /./ });
+    fireEvent.click(await screen.findByRole("button", { name: optionsLabel }));
+    fireEvent.click(screen.getByRole("menuitem", { name: dialogName }));
+    const dialog: HTMLElement = await screen.findByRole("dialog", { name: dialogName });
+    expect(within(dialog).getByTestId("period-settings-subtitle").textContent).toBe(subtitle);
+    expect(within(dialog).getByTestId("period-settings-current-maximum").textContent).toBe(hint);
+    expect(within(dialog).getAllByText(/60/)).toHaveLength(1);
+  });
+
+  it("keeps the integer range in validation messages instead of hint text", async () => {
+    const dialog = await openSettings();
+    expect(dialog.textContent).not.toContain("Whole number from");
+    typeMaximum("abc");
+    expect(screen.getByRole("alert").textContent).toBe("Use digits only, without decimals or signs.");
+    typeMaximum("101");
+    expect(screen.getByRole("alert").textContent).toBe("The exam maximum must be between 0 and 100.");
   });
 
   it("offers no Period settings to an assigned mentor on an archived course", async () => {

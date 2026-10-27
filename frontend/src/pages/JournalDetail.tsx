@@ -366,8 +366,6 @@ function JournalDetailContent() {
           open={settingsOpen}
           suspended={reviewOpen}
           periodLabel={journal.period_label}
-          periodStart={journal.period_start}
-          periodEnd={journal.period_end}
           currentMaximum={journal.exam_max_score}
           currentBonusMaximum={journal.bonus_max_score ?? JournalScoringRules.DEFAULT_BONUS_MAXIMUM}
           highestExamScore={JournalPeriodSettingsRules.highestExamScore(journal.students)}

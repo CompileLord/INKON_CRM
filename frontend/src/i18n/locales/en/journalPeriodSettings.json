@@ -1,9 +1,7 @@
 {
   "title": "Period settings",
   "inputLabel": "Exam maximum",
-  "range": "Whole number from {{min}} to {{max}}",
   "explanation": "Changing the exam maximum recalculates the grading denominator of this period for every student. Exam scores cannot exceed it.",
-  "highestScore": "Highest existing exam score: {{score}}",
   "save": "Save",
   "saving": "Saving…",
   "checking": "Saving pending grades first…",
@@ -33,6 +31,6 @@
   "continueEditing": "Continue editing",
   "discard": "Discard changes",
   "bonusInputLabel": "Bonus maximum",
-  "highestBonus": "Highest existing bonus: {{score}}",
-  "infoLabel": "About maximums"
+  "infoLabel": "About maximums",
+  "currentMaximum": "current max: {{score}}"
 }
