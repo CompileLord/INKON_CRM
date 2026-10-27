@@ -136,7 +136,7 @@ async def test_replay_returns_the_original_even_when_the_enrollment_is_gone_by_t
 
     assert replay.status_code == 200
     assert replay.json() == first.json()
-    assert fresh.status_code == 400
+    assert fresh.status_code == 422
 
 
 @pytest.mark.parametrize(

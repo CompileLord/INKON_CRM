@@ -23,7 +23,8 @@ export type EnrollmentStatus = "active" | "withdrawn" | "completed";
 
 export interface PaymentCreatePayload {
   student_id: number;
-  course_id: number;
+  course_id?: number;
+  targets?: { enrollment_id: number; amount: string }[];
   /** Cash received. Never reduced by a discount. */
   amount: string;
   paid_at: string;
@@ -125,6 +126,28 @@ export interface PaymentAllocationItem {
   amount: string;
 }
 
+export interface PaymentTarget {
+  enrollment_id: number;
+  course_id: number;
+  course_title: string;
+  amount: string;
+}
+
+export interface PaymentOption {
+  enrollment_id: number;
+  course_id: number;
+  course_title: string;
+  open_debt: string;
+  overdue_days: number;
+  remaining_contract_maximum: string;
+  billing_mode: string;
+}
+
+export interface PaymentOptions {
+  wallet_credit: string;
+  enrollments: PaymentOption[];
+}
+
 export interface PaymentItem {
   id: number;
   student_id: number;
@@ -144,6 +167,7 @@ export interface PaymentItem {
   refunded_amount: string;
   /** Which charges this payment settled — a payment can span courses. */
   allocations: PaymentAllocationItem[];
+  targets?: PaymentTarget[];
 }
 
 export interface StudentCreditItem {
@@ -171,6 +195,7 @@ export interface PaymentReceipt {
   method?: PaymentMethod | null;
   accepted_by_name: string;
   allocations: ReceiptAllocationItem[];
+  targets?: PaymentTarget[];
   comment?: string | null;
 }
 

@@ -9,7 +9,7 @@ import pytest
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -221,31 +221,23 @@ async def test_wallet_refund_increases_wallet_cash_refund_does_not(
 
 
 @pytest.mark.asyncio
-async def test_overpayment_becomes_visible_credit(
+async def test_targeted_overpayment_is_rejected(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
 ) -> None:
-    """Overpayment must surface as credit, not vanish from every report."""
+    """Payments above the remaining contract balance are rejected."""
     admin_headers = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     acc_headers = {"Authorization": f"Bearer {create_access_token(test_accountant.id, test_accountant.role)}"}
 
     student_id, course_id = await _setup(client, admin_headers, test_mentor.id, "over@example.com", price="300.00")
 
     total_charges: Decimal = Decimal(await db_session.scalar(select(func.sum(Charge.amount)).where(Charge.student_id == student_id)))
-    await _pay(client, acc_headers, student_id, course_id, str(total_charges + Decimal("200.00")))
-
-    balance = (
-        await client.get(f"/api/v1/finance/students/{student_id}/balance", headers=acc_headers)
-    ).json()
-    assert Decimal(balance["net_receivable"]) == Decimal("0.00")
-    assert Decimal(balance["credit_balance"]) == Decimal("200.00")
-
-    credits = (await client.get("/api/v1/finance/credits/", headers=acc_headers)).json()
-    mine = [c for c in credits if c["student_id"] == student_id]
-    assert len(mine) == 1
-    assert Decimal(mine[0]["credit_balance"]) == Decimal("200.00")
-
-    analytics = (await client.get("/api/v1/finance/analytics/", headers=acc_headers)).json()
-    assert Decimal(analytics["outstanding_credit"]) >= Decimal("200.00")
+    response: Response = await client.post("/api/v1/finance/payments/", headers=acc_headers, json={
+        "student_id": student_id, "course_id": course_id, "amount": str(total_charges + Decimal("200.00")),
+        "paid_at": datetime.now(timezone.utc).isoformat(), "method": "cash",
+    })
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "payment_target_exceeds_balance"
+    assert Decimal(response.json()["detail"]["maximum"]) == total_charges
     await _assert_no_charge_over_allocated(db_session)
 
 

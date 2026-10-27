@@ -231,6 +231,10 @@ async def test_http_valid_payment_boundaries_persist_exactly(
     payload.update(student_id=test_student.id, course_id=course.id, paid_at=datetime.now(timezone.utc).isoformat())
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     response: Response = await client.post("/api/v1/finance/payments/", json=payload, headers=headers)
-    assert response.status_code == 201, response.text
-    assert response.json()["amount"] == amount
-    assert await db_session.scalar(select(LedgerEntry.amount).where(LedgerEntry.id == response.json()["id"])) == Decimal(amount)
+    if amount == "99999999.99":
+        assert response.status_code == 422
+        assert response.json()["detail"]["code"] == "payment_target_exceeds_balance"
+    else:
+        assert response.status_code == 201, response.text
+        assert response.json()["amount"] == amount
+        assert await db_session.scalar(select(LedgerEntry.amount).where(LedgerEntry.id == response.json()["id"])) == Decimal(amount)
