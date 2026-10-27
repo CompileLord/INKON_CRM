@@ -246,6 +246,18 @@ def get_enrollment_service(
     return EnrollmentService(db, enrollment_repo=repository, course_repo=SQLAlchemyCourseRepository(db), user_repo=user_repository)
 
 
+def get_enrollment_billing_service(
+    db: AsyncSession = Depends(get_db_session),
+    repository: EnrollmentRepository = Depends(get_enrollment_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
+) -> "EnrollmentBillingService":
+    from app.repositories.sqlalchemy.course_repository import SQLAlchemyCourseRepository
+    from app.services.enrollment_billing_service import EnrollmentBillingService
+    return EnrollmentBillingService(
+        db, enrollment_repo=repository, course_repo=SQLAlchemyCourseRepository(db), user_repo=user_repository,
+    )
+
+
 def get_student_profile_service(
     user_repo: UserRepository = Depends(get_user_repository)
 ) -> "StudentProfileService":

@@ -3,6 +3,8 @@ from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel
 from app.models.charge import ChargeType, ChargeStatus
+from app.models.enrollment import BillingMode
+from app.schemas.enrollment import EffectiveBillingMode
 
 
 class ChargeResponse(BaseModel):
@@ -18,6 +20,7 @@ class ChargeResponse(BaseModel):
     remaining_balance: Decimal = Decimal("0.00")
     student_name: Optional[str] = None
     course_title: Optional[str] = None
+    billing_mode: EffectiveBillingMode = BillingMode.PAID
 
 
 class StudentCreditResponse(BaseModel):

@@ -1,9 +1,16 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional
-from pydantic import BaseModel
-from app.models.enrollment import EnrollmentStatus
+from typing import Annotated, List, Optional
+from pydantic import BaseModel, BeforeValidator, StringConstraints
+from app.models.enrollment import BillingMode, EnrollmentStatus
+from app.schemas.money import PositiveMoney
+from app.schemas.payment import PaymentCommentPolicy
+
+EffectiveBillingMode = Annotated[BillingMode, BeforeValidator(lambda raw: BillingMode.PAID if raw is None else raw)]
+BillingModeReason = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=PaymentCommentPolicy.MAX_LENGTH)
+]
 
 
 class RosterSortOrder(str, Enum):
@@ -19,6 +26,36 @@ class EnrollmentCreate(BaseModel):
     model_config = {"extra": "forbid"}
     student_id: int
     course_id: int
+    price_at_enrollment: Optional[PositiveMoney] = None
+    billing_mode: BillingMode = BillingMode.PAID
+
+
+class EnrollmentPreviewRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    student_id: int
+    course_id: int
+    price_at_enrollment: Optional[PositiveMoney] = None
+    billing_mode: BillingMode = BillingMode.PAID
+
+
+class EnrollmentPreviewCharge(BaseModel):
+    period_start: date
+    due_date: date
+    amount: Decimal
+
+
+class EnrollmentPreviewResponse(BaseModel):
+    billing_mode: BillingMode
+    price_at_enrollment: Decimal
+    billed_months: int
+    total_amount: Decimal
+    first_charge: Optional[EnrollmentPreviewCharge] = None
+
+
+class BillingModeChangeRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    billing_mode: BillingMode
+    reason: BillingModeReason
 
 
 class EnrollmentResponse(BaseModel):
@@ -31,6 +68,15 @@ class EnrollmentResponse(BaseModel):
     enrolled_at: datetime
     status: EnrollmentStatus
     is_deleted: bool
+    billing_mode: EffectiveBillingMode
+
+
+class BillingModeChangeResponse(BaseModel):
+    enrollment: EnrollmentResponse
+    cancelled_months: int
+    cancelled_amount: Decimal
+    written_off_amount: Decimal
+    generated_months: int
 
 
 class WithdrawalPreviewResponse(BaseModel):
@@ -60,6 +106,7 @@ class CourseRosterItemResponse(BaseModel):
     color_hex: str
     enrolled_at: datetime
     status: EnrollmentStatus
+    billing_mode: EffectiveBillingMode
     student: RosterStudentIdentity
 
 

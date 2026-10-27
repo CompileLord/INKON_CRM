@@ -18,6 +18,7 @@ Money semantics:
   direct it with an explicit allocation.
 """
 
+from dataclasses import dataclass
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
@@ -34,7 +35,7 @@ from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatu
 from app.models.allocation import Allocation
 from app.models.charge import Charge, ChargeStatus, ChargeType
 from app.models.course import Course
-from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.models.enrollment import BillingMode, Enrollment, EnrollmentStatus
 from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.models.payment import PaymentMethod
 from app.models.user import User, UserRole
@@ -56,6 +57,7 @@ from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCa
 # The centre operates on Asia/Dushanbe (UTC+5, no DST).
 DUSHANBE_TZ_OFFSET = timedelta(hours=5)
 
+GRANT_WRITE_OFF_REASON_CODE: str = "grant_write_off"
 ANALYTICS_CACHE_KEY_PREFIX: str = "finance:analytics:v3:"
 ZERO = Decimal("0.00")
 
@@ -96,6 +98,22 @@ class CourseMonthCalendar:
                 starts.append(month_start)
             month_index += 1
         return starts
+
+
+@dataclass(frozen=True)
+class PlannedCharge:
+    sequence_no: int
+    period_start: date
+    due_date: date
+    amount: Decimal
+
+
+@dataclass(frozen=True)
+class BillingModeChangeOutcome:
+    cancelled_months: int
+    cancelled_amount: Decimal
+    written_off_amount: Decimal
+    generated_months: int
 
 
 class FinanceService:
@@ -508,6 +526,47 @@ class FinanceService:
                 detail="Monthly price must be positive valid money",
             ) from error
 
+    @classmethod
+    def plan_schedule(
+        cls, course: Course, student: User, price: Decimal, enrollment_date: date,
+    ) -> list[PlannedCharge]:
+        cls.validate_installment_price(price, course.start_date, course.end_date)
+        if enrollment_date >= course.end_date:
+            return []
+        payment_day: int = student.payment_day_of_month or min(28, course.start_date.day)
+        planned: list[PlannedCharge] = []
+        course_month_start: date
+        for course_month_start in CourseMonthCalendar.billed_starts(course.start_date, course.end_date, enrollment_date):
+            year: int = course_month_start.year
+            month: int = course_month_start.month
+            month_index: int = (year - course.start_date.year) * 12 + month - course.start_date.month
+            next_course_month_start: date = CourseMonthCalendar.start(course.start_date, month_index + 1)
+            next_year: int = next_course_month_start.year
+            next_month: int = next_course_month_start.month
+            due_date: date = date(year, month, min(payment_day, calendar.monthrange(year, month)[1]))
+            if due_date < course_month_start:
+                due_date = date(next_year, next_month, min(payment_day, calendar.monthrange(next_year, next_month)[1]))
+            if due_date >= next_course_month_start:
+                due_date = next_course_month_start - timedelta(days=1)
+            if not planned:
+                due_date = max(due_date, enrollment_date)
+            planned.append(PlannedCharge(
+                sequence_no=len(planned) + 1, period_start=course_month_start, due_date=due_date, amount=price,
+            ))
+        return planned
+
+    @staticmethod
+    def _charge_from_plan(enrollment_id: int, student_id: int, planned_charge: PlannedCharge) -> Charge:
+        return Charge(
+            enrollment_id=enrollment_id,
+            student_id=student_id,
+            sequence_no=planned_charge.sequence_no,
+            amount=planned_charge.amount,
+            due_date=planned_charge.due_date,
+            type=ChargeType.TUITION,
+            status=ChargeStatus.OPEN,
+        )
+
     async def generate_schedule_for_enrollment(self, enrollment_id: int) -> List[Charge]:
         res = await self.db.execute(
             select(Enrollment, User, Course)
@@ -521,6 +580,9 @@ class FinanceService:
         enrollment, student, course = row
         await self.lock_student_accounts([student.id])
 
+        if enrollment.billing_mode == BillingMode.GRANT:
+            return []
+
         existing_res = await self.db.execute(
             select(Charge).filter(
                 Charge.enrollment_id == enrollment.id,
@@ -531,44 +593,11 @@ class FinanceService:
         if existing:
             return existing
 
-        start_date: date = course.start_date
-        end_date: date = course.end_date
-
-        price: Decimal = Decimal(enrollment.price_at_enrollment)
-        self.validate_installment_price(price, start_date, end_date)
-        enrollment_date: date = _to_dushanbe(enrollment.enrolled_at).date()
-        if enrollment_date >= end_date:
-            return []
-        payment_day: int = student.payment_day_of_month or min(28, course.start_date.day)
-
-        charges: List[Charge] = []
-        course_month_start: date
-        for course_month_start in CourseMonthCalendar.billed_starts(start_date, end_date, enrollment_date):
-            year: int = course_month_start.year
-            month: int = course_month_start.month
-            month_index: int = (year - start_date.year) * 12 + month - start_date.month
-            next_course_month_start: date = CourseMonthCalendar.start(start_date, month_index + 1)
-            next_year: int = next_course_month_start.year
-            next_month: int = next_course_month_start.month
-            due_date: date = date(year, month, min(payment_day, calendar.monthrange(year, month)[1]))
-            if due_date < course_month_start:
-                due_date = date(next_year, next_month, min(payment_day, calendar.monthrange(next_year, next_month)[1]))
-            if due_date >= next_course_month_start:
-                due_date = next_course_month_start - timedelta(days=1)
-            if not charges:
-                due_date = max(due_date, enrollment_date)
-
-            charge: Charge = Charge(
-                enrollment_id=enrollment.id,
-                student_id=student.id,
-                sequence_no=len(charges) + 1,
-                amount=price,
-                due_date=due_date,
-                type=ChargeType.TUITION,
-                status=ChargeStatus.OPEN,
-            )
-            self.db.add(charge)
-            charges.append(charge)
+        planned: list[PlannedCharge] = self.plan_schedule(
+            course, student, Decimal(enrollment.price_at_enrollment), _to_dushanbe(enrollment.enrolled_at).date(),
+        )
+        charges: List[Charge] = [self._charge_from_plan(enrollment.id, student.id, planned_charge) for planned_charge in planned]
+        self.db.add_all(charges)
 
         await self.db.flush()
         await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
@@ -640,6 +669,63 @@ class FinanceService:
         for allocation in allocations:
             allocation.reversed_by_entry_id = reversal.id
         await self.db.flush()
+
+    async def convert_future_charges_to_grant(
+        self, enrollment: Enrollment, course: Course, actor: User, reason: str, today: date,
+    ) -> BillingModeChangeOutcome:
+        future_charges: list[Charge]
+        future_allocations: list[Allocation]
+        future_charges, future_allocations, _, _ = await self.withdrawal_calculation(enrollment, course, today)
+        allocated_by_charge: dict[int, Decimal] = {}
+        allocation: Allocation
+        for allocation in future_allocations:
+            allocated_by_charge[allocation.charge_id] = allocated_by_charge.get(allocation.charge_id, ZERO) + allocation.amount
+        cancelled_months: int = 0
+        cancelled_amount: Decimal = ZERO
+        written_off_amount: Decimal = ZERO
+        charge: Charge
+        for charge in future_charges:
+            allocated: Decimal = allocated_by_charge.get(charge.id, ZERO)
+            if allocated <= ZERO:
+                charge.status = ChargeStatus.CANCELLED
+                cancelled_months += 1
+                cancelled_amount += charge.amount
+                continue
+            remainder: Decimal = charge.amount - allocated
+            if remainder > ZERO:
+                await self.create_discount(
+                    DiscountCreatePayload(
+                        student_id=enrollment.student_id, charge_id=charge.id, amount=remainder,
+                        reason_code=GRANT_WRITE_OFF_REASON_CODE, comment=reason,
+                    ),
+                    actor,
+                )
+                written_off_amount += remainder
+        await self.db.flush()
+        await self._invalidate_cache()
+        return BillingModeChangeOutcome(cancelled_months, cancelled_amount, written_off_amount, 0)
+
+    async def resume_billing_after_grant(
+        self, enrollment: Enrollment, student: User, course: Course, today: date,
+    ) -> BillingModeChangeOutcome:
+        existing_sequences: set[int] = set((await self.db.scalars(select(Charge.sequence_no).where(
+            Charge.enrollment_id == enrollment.id,
+            Charge.is_deleted.is_(False),
+            Charge.type == ChargeType.TUITION,
+            Charge.status != ChargeStatus.CANCELLED,
+        ))).all())
+        planned: list[PlannedCharge] = self.plan_schedule(
+            course, student, Decimal(enrollment.price_at_enrollment), _to_dushanbe(enrollment.enrolled_at).date(),
+        )
+        new_charges: list[Charge] = [
+            self._charge_from_plan(enrollment.id, student.id, planned_charge) for planned_charge in planned
+            if planned_charge.period_start > today and planned_charge.sequence_no not in existing_sequences
+        ]
+        self.db.add_all(new_charges)
+        await self.db.flush()
+        await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
+        await self._invalidate_cache()
+        return BillingModeChangeOutcome(0, ZERO, ZERO, len(new_charges))
 
     # ------------------------------------------------------------------
     # Mutations
@@ -1387,6 +1473,7 @@ class FinanceService:
                     },
                     "course": {"id": course.id, "title": course.title},
                     "price_at_enrollment": enrollment.price_at_enrollment,
+                    "billing_mode": enrollment.effective_billing_mode,
                     "billed_to_date": Decimal(billed or 0),
                     "total_paid": Decimal(allocated or 0),
                     "debt": Decimal(debt or 0),
@@ -1423,11 +1510,15 @@ class FinanceService:
             Enrollment.student.has(User.is_deleted.is_(False)),
         )
         billed_to_date_clause = and_(Charge.due_date <= today, Charge.status != ChargeStatus.CANCELLED)
+        expected_revenue_enrollment = and_(
+            active_enrollment,
+            or_(Enrollment.billing_mode.is_(None), Enrollment.billing_mode != BillingMode.GRANT.value),
+        )
 
         gross_res = await self.db.execute(
             select(func.coalesce(func.sum(Charge.amount), ZERO))
             .join(Enrollment, Enrollment.id == Charge.enrollment_id)
-            .filter(active_enrollment, Charge.is_deleted == False, Charge.status != ChargeStatus.CANCELLED)  # noqa: E712
+            .filter(expected_revenue_enrollment, Charge.is_deleted == False, Charge.status != ChargeStatus.CANCELLED)  # noqa: E712
         )
         gross_contract_value = Decimal(gross_res.scalar() or 0)
 
@@ -1483,7 +1574,7 @@ class FinanceService:
             select(func.coalesce(func.sum(Charge.amount), ZERO))
             .join(Enrollment, Enrollment.id == Charge.enrollment_id)
             .filter(
-                active_enrollment,
+                expected_revenue_enrollment,
                 Charge.is_deleted == False,  # noqa: E712
                 Charge.status != ChargeStatus.CANCELLED,
                 Charge.due_date >= date_from,
@@ -1638,7 +1729,7 @@ class FinanceService:
         )
 
         query = (
-            select(Charge, Course.title, func.coalesce(alloc_sub.c.allocated, ZERO))
+            select(Charge, Course.title, Enrollment.billing_mode, func.coalesce(alloc_sub.c.allocated, ZERO))
             .join(Enrollment, Enrollment.id == Charge.enrollment_id)
             .join(Course, Course.id == Enrollment.course_id)
             .outerjoin(alloc_sub, alloc_sub.c.charge_id == Charge.id)
@@ -1664,7 +1755,7 @@ class FinanceService:
         res = await self.db.execute(query.offset(offset).limit(page_size))
 
         items = []
-        for charge, course_title, allocated in res.all():
+        for charge, course_title, billing_mode, allocated in res.all():
             allocated = Decimal(allocated or 0)
             items.append(
                 {
@@ -1679,6 +1770,7 @@ class FinanceService:
                     "allocated_amount": allocated,
                     "remaining_balance": max(ZERO, charge.amount - allocated),
                     "course_title": course_title,
+                    "billing_mode": billing_mode,
                 }
             )
 
