@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { Badge } from "../ui/Badge";
 import { ListRow } from "../ui/ListRow";
@@ -50,7 +50,7 @@ export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandle
             </span>
           </span>
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink md:text-right">
-            {formatMoney(course.price)} {t("currencyPerMonth")}
+            {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
           </span>
         </span>
       </ListRow>

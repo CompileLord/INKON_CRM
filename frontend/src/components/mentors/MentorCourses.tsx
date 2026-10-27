@@ -4,7 +4,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
 import { formatDate } from "../../i18n/formatters";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import type { CourseResponse } from "../../lib/courses/types";
 
 export function MentorCourses({ courses }: { courses: CourseResponse[] }) {
@@ -29,7 +29,7 @@ export function MentorCourses({ courses }: { courses: CourseResponse[] }) {
                   <Badge status={course.status} />
                 </span>
                 <span className="text-xs tabular-nums text-muted">
-                  {formatDate(course.start_date)} – {formatDate(course.end_date)} · {formatMoney(course.price, { suffix: t("courses.currency") })}
+                  {formatDate(course.start_date)} – {formatDate(course.end_date)} · {formatTjs(course.price, { perMonth: true })}
                 </span>
               </span>
             </span>

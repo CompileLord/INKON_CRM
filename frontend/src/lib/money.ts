@@ -1,4 +1,5 @@
 import Big from "big.js";
+import i18n from "../i18n";
 
 /**
  * Server amounts are Python `Decimal` values serialized as strings with
@@ -11,13 +12,27 @@ import Big from "big.js";
 Big.DP = 100;
 Big.RM = Big.roundHalfUp;
 
-const MONEY_PATTERN = /^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$/;
+const MONEY_PATTERN: RegExp = /^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$/;
 
 export function isValidMoneyString(value: unknown): boolean {
   if (value === null || value === undefined) return false;
-  const str = typeof value === "string" ? value.trim() : typeof value === "number" ? value.toString() : "";
+  const str: string = typeof value === "string" ? value.trim() : typeof value === "number" ? value.toString() : "";
   if (!str) return false;
   return MONEY_PATTERN.test(str);
+}
+
+export function getPerMonthSuffix(lng?: string): string {
+  const current: string = lng || i18n.language || "ru";
+  if (current.startsWith("en")) return "/ mo";
+  if (current.startsWith("tg")) return "/ моҳ";
+  return "/ мес";
+}
+
+export interface FormatMoneyOptions {
+  suffix?: string;
+  perMonth?: boolean;
+  trimZeroCents?: boolean;
+  lng?: string;
 }
 
 /**
@@ -25,19 +40,45 @@ export function isValidMoneyString(value: unknown): boolean {
  * Never feed this output back into a request — always resend the original
  * server string untouched.
  */
-export function formatMoney(value: unknown, options: { suffix?: string } = {}): string {
-  if (value === null || value === undefined) return "0.00";
-  const str = typeof value === "number" ? value.toString() : String(value);
+export function formatMoney(value: unknown, options: FormatMoneyOptions = {}): string {
+  if (value === null || value === undefined) {
+    const zero: string = options.trimZeroCents ? "0" : "0.00";
+    if (options.perMonth) {
+      const suffix: string = options.suffix ?? "TJS";
+      return `${zero} ${suffix} ${getPerMonthSuffix(options.lng)}`;
+    }
+    return options.suffix ? `${zero} ${options.suffix}` : zero;
+  }
+  const str: string = typeof value === "number" ? value.toString() : String(value);
   if (!isValidMoneyString(str)) return str;
 
-  const big = new Big(str);
-  const [wholePart, fractionPart = ""] = big.toFixed(2).split(".");
-  const negative = wholePart.startsWith("-");
-  const digits = negative ? wholePart.slice(1) : wholePart;
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const big: Big = new Big(str);
+  const parts: string[] = big.toFixed(2).split(".");
+  const wholePart: string = parts[0];
+  const fractionPart: string = parts[1] ?? "";
+  const negative: boolean = wholePart.startsWith("-");
+  const digits: string = negative ? wholePart.slice(1) : wholePart;
+  const grouped: string = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-  const formatted = `${negative ? "-" : ""}${grouped}.${fractionPart}`;
+  const hasCents: boolean = fractionPart !== "" && fractionPart !== "00";
+  const formatted: string = options.trimZeroCents && !hasCents
+    ? `${negative ? "-" : ""}${grouped}`
+    : `${negative ? "-" : ""}${grouped}.${fractionPart}`;
+
+  if (options.perMonth) {
+    const suffix: string = options.suffix ?? "TJS";
+    return `${formatted} ${suffix} ${getPerMonthSuffix(options.lng)}`;
+  }
   return options.suffix ? `${formatted} ${options.suffix}` : formatted;
+}
+
+export function formatTjs(value: unknown, options: { perMonth?: boolean; lng?: string } = {}): string {
+  return formatMoney(value, {
+    suffix: "TJS",
+    trimZeroCents: true,
+    perMonth: options.perMonth,
+    lng: options.lng,
+  });
 }
 
 export function formatSum(value: unknown): string {

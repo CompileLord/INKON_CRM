@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { Badge } from "../ui/Badge";
 import { Menu } from "../ui/Menu";
@@ -56,7 +56,7 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
         <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
-          {formatMoney(course.price)} {t("currencyPerMonth")}
+          {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
         </span>
         {isMentor && (
           <Link

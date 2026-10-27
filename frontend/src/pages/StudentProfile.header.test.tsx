@@ -109,7 +109,7 @@ describe("StudentProfile Component", () => {
   it("shows the debt with money formatting and the overdue days", async () => {
     renderStudentProfile();
     const tile = (await screen.findByText("Debt")).closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("250.00 TJS");
+    expect(tile.textContent).toContain("250 TJS");
     expect(tile.textContent).toContain("3 days overdue");
   });
 
@@ -122,7 +122,7 @@ describe("StudentProfile Component", () => {
     vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "0", total_settled: "0", net_receivable: "0.00", credit_balance: "0.00", days_overdue: 0 });
     renderStudentProfile();
     const balanceTile = (await screen.findByText("Balance")).closest("[data-stat-tile]") as HTMLElement;
-    await waitFor(() => expect(balanceTile.textContent).toContain("0.00 TJS"));
+    await waitFor(() => expect(balanceTile.textContent).toContain("0 TJS"));
   });
 
   it("hides the balance tile and never requests the balance for a mentor", () => {

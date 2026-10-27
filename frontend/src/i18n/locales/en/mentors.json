@@ -103,7 +103,6 @@
       "active": "Active",
       "archived": "Archived"
     },
-    "currencyTjs": "TJS",
     "performanceTitle": "Recorded performance",
     "normalizedBasis": "Mean of recorded percentages on currently assigned courses, including archived and deleted courses. A percentage is available only when the period’s maximum score is positive.",
     "ratioEligibility": "{{included}} percentages available · {{excluded}} unavailable · {{total}} recorded summaries",

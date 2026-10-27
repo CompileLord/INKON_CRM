@@ -136,7 +136,6 @@
     "emailTaken": "This email is already in use",
     "emailOrPhoneRequired": "Enter the student's email or their own phone; a parent phone alone is not enough."
   },
-  "currencyTjs": "TJS",
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",
   "missingScoreValue": "—",
   "profileState": {

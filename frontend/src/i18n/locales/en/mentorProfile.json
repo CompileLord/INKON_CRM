@@ -25,8 +25,7 @@
   },
   "courses": {
     "empty": "No active courses",
-    "emptyHelp": "Courses assigned to this teacher will appear here.",
-    "currency": "TJS"
+    "emptyHelp": "Courses assigned to this teacher will appear here."
   },
   "performance": {
     "title": "How the groups are doing",

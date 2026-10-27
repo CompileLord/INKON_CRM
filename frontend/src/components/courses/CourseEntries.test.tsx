@@ -61,7 +61,7 @@ describe("course entries on shared primitives", () => {
     expect(screen.getByText("Mon, Wed · 14:00–15:30")).toBeTruthy();
     expect(screen.getByText("12 students")).toBeTruthy();
     expect(screen.getByText("Sitora Alieva")).toBeTruthy();
-    expect(screen.getByText("700.00 TJS / mo")).toBeTruthy();
+    expect(screen.getByText("700 TJS / mo")).toBeTruthy();
   });
 
   it("marks only archived courses with a status badge", () => {
@@ -105,7 +105,7 @@ describe("course entries on shared primitives", () => {
     expect(grid?.className).toContain("md:grid-cols-[");
     expect(container.querySelectorAll("a")).toHaveLength(1);
     expect(container.textContent).toContain("Sitora Alieva");
-    expect(container.textContent).toContain("700.00 TJS / mo");
+    expect(container.textContent).toContain("700 TJS / mo");
   });
 
   it("gives mentors the journal action in the row menu", async () => {
