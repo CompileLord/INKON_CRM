@@ -1,5 +1,9 @@
 import { httpClient } from "../auth/httpClient";
 import type {
+  BillingModeChangeRequest,
+  BillingModeChangeResponse,
+  EnrollmentPreviewRequest,
+  EnrollmentPreviewResponse,
   CourseRosterParams,
   CourseRosterResponse,
   EligibleCandidatesParams,
@@ -53,4 +57,12 @@ export function getEligibleCandidates(
   return httpClient
     .get<PaginatedEligibleCandidates>(`/enrollments/courses/${courseId}/eligible-candidates`, { params })
     .then((res) => res.data);
+}
+
+export function previewEnrollment(payload: EnrollmentPreviewRequest): Promise<EnrollmentPreviewResponse> {
+  return httpClient.post<EnrollmentPreviewResponse>("/enrollments/preview", payload).then((res) => res.data);
+}
+
+export function changeBillingMode(id: number, payload: BillingModeChangeRequest): Promise<BillingModeChangeResponse> {
+  return httpClient.patch<BillingModeChangeResponse>(`/enrollments/${id}/billing-mode`, payload).then((res) => res.data);
 }

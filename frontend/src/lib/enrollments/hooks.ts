@@ -2,15 +2,21 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { getStudentProfile } from "../users/endpoints";
 import type { StudentProfileResponse, User } from "../users/types";
 import {
+  changeBillingMode,
   createEnrollment,
   getCourseRoster,
   getEligibleCandidates,
   getWithdrawalPreview,
   listEnrollments,
   locateRosterStudent,
+  previewEnrollment,
   withdrawEnrollment,
 } from "./endpoints";
 import type {
+  BillingMode,
+  BillingModeChangeRequest,
+  EnrollmentPreviewRequest,
+  EnrollmentPreviewResponse,
   CourseRosterParams,
   CourseRosterResponse,
   EligibleCandidatesParams,
@@ -261,5 +267,48 @@ export function useWithdrawEnrollment() {
       });
       queryClient.invalidateQueries({ queryKey: ["finance"] });
     },
+  });
+}
+
+export function useEnrollmentPreview(request: EnrollmentPreviewRequest | null) {
+  return useQuery<EnrollmentPreviewResponse>({
+    queryKey: ["enrollments", "preview", request],
+    queryFn: () => previewEnrollment(request!),
+    enabled: request !== null,
+    retry: false,
+    staleTime: 0,
+  });
+}
+
+interface ChangeBillingModeInput extends BillingModeChangeRequest {
+  id: number;
+  studentId: number;
+  courseId: number;
+}
+
+export function useChangeBillingMode() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, billing_mode, reason }: ChangeBillingModeInput) => changeBillingMode(id, { billing_mode, reason }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "by-course", variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "by-student", variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "billing-modes", variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "courses", variables.courseId] });
+      queryClient.invalidateQueries({ queryKey: ["users", "students", "profile", variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useStudentBillingModes(studentId: number | undefined) {
+  return useQuery({
+    queryKey: ["enrollments", "billing-modes", studentId],
+    queryFn: async (): Promise<Map<number, BillingMode | undefined>> => {
+      const page = await listEnrollments({ student_id: studentId!, status: ACTIVE_STATUS, page: 1, page_size: PAGE_SIZE });
+      return new Map(page.items.map((enrollment: EnrollmentResponse) => [enrollment.course_id, enrollment.billing_mode]));
+    },
+    enabled: studentId !== undefined,
   });
 }

@@ -1,18 +1,20 @@
 import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { AlertCircle, RotateCcw, Search, UserRound, X } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { EnrollBillingFields, isAcceptableFee } from "../enrollments/EnrollBillingFields";
+import { EnrollmentPreviewPanel } from "../enrollments/EnrollmentPreviewPanel";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { resolveMediaUrl } from "../../lib/users/media";
 import { formatMoney } from "../../lib/money";
 import { AuthApiError } from "../../lib/auth/errors";
-import { useEligibleCandidates, useEnrollStudent } from "../../lib/enrollments/hooks";
-import type { EligibleCandidateResponse } from "../../lib/enrollments/types";
+import { useEligibleCandidates, useEnrollmentPreview, useEnrollStudent } from "../../lib/enrollments/hooks";
+import type { EligibleCandidateResponse, EnrollmentPreviewRequest } from "../../lib/enrollments/types";
 
 interface EnrollStudentModalProps {
   open: boolean;
@@ -37,11 +39,30 @@ export function EnrollStudentModal({
   const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGrant, setIsGrant] = useState<boolean>(false);
+  const [monthlyFee, setMonthlyFee] = useState<string>(coursePrice);
 
   const isSubmittingRef = useRef(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const enrollMutation = useEnrollStudent();
+
+  const feeIsValid: boolean = isGrant || isAcceptableFee(monthlyFee);
+  const previewRequest: EnrollmentPreviewRequest | null = useMemo(
+    () =>
+      open && selectedCandidate && feeIsValid
+        ? {
+            student_id: selectedCandidate.id,
+            course_id: courseId,
+            billing_mode: isGrant ? "grant" : "paid",
+            ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
+          }
+        : null,
+    [open, selectedCandidate, feeIsValid, courseId, isGrant, monthlyFee],
+  );
+  const debouncedPreviewRequest: EnrollmentPreviewRequest | null = useDebouncedValue(previewRequest, 400);
+  const previewIsSettled: boolean = JSON.stringify(previewRequest) === JSON.stringify(debouncedPreviewRequest);
+  const preview = useEnrollmentPreview(debouncedPreviewRequest);
 
   const {
     data: candidateData,
@@ -66,6 +87,8 @@ export function EnrollStudentModal({
       setSelectedCandidate(null);
       setErrorMessage(null);
       setIsSubmitting(false);
+      setIsGrant(false);
+      setMonthlyFee(coursePrice);
       isSubmittingRef.current = false;
     }
   }, [open, courseId]);
@@ -105,6 +128,8 @@ export function EnrollStudentModal({
       await enrollMutation.mutateAsync({
         course_id: courseId,
         student_id: studentToEnrollId,
+        billing_mode: isGrant ? "grant" : "paid",
+        ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
       });
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -172,7 +197,7 @@ export function EnrollStudentModal({
             type="button"
             variant="primary"
             onClick={handleSubmit}
-            disabled={!selectedCandidate || isPendingOrSubmitting || isSubmittingRef.current}
+            disabled={!selectedCandidate || !feeIsValid || isPendingOrSubmitting || isSubmittingRef.current}
             loading={isPendingOrSubmitting}
             className="w-full sm:w-auto min-h-[44px]"
           >
@@ -195,6 +220,15 @@ export function EnrollStudentModal({
             {t("enrollment.readOnlyTermsNotice")}
           </p>
         </div>
+
+        <EnrollBillingFields
+          isGrant={isGrant}
+          onGrantChange={setIsGrant}
+          monthlyFee={monthlyFee}
+          onMonthlyFeeChange={setMonthlyFee}
+          feeIsValid={feeIsValid}
+          disabled={isPendingOrSubmitting}
+        />
 
         {errorMessage ? (
           <div
@@ -261,6 +295,15 @@ export function EnrollStudentModal({
               {t("enrollment.changeCandidate")}
             </Button>
           </div>
+        ) : null}
+
+        {selectedCandidate && previewRequest !== null ? (
+          <EnrollmentPreviewPanel
+            preview={preview.data}
+            isLoading={!previewIsSettled || preview.isLoading}
+            isError={previewIsSettled && preview.isError}
+            onRetry={() => void preview.refetch()}
+          />
         ) : null}
 
         <div className="flex flex-col gap-2 min-h-[220px]">

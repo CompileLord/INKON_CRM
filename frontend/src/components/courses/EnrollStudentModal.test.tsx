@@ -218,6 +218,8 @@ describe("EnrollStudentModal workflows", () => {
       expect(mockMutateEnrollAsync).toHaveBeenCalledWith({
         course_id: 42,
         student_id: 201,
+        billing_mode: "paid",
+        price_at_enrollment: "1200.00",
       });
     });
   });
