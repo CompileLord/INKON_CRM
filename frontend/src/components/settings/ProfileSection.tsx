@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Camera, Mail, Phone, User as UserIcon } from "lucide-react";
+import { Camera } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AvatarUploadField } from "../ui/AvatarUploadField";
 import { Input } from "../ui/Input";
@@ -11,6 +11,8 @@ import { resolveMediaUrl } from "../../lib/users/media";
 import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { ProfileSaveErrorMapper, type ProfileField, type ProfileSaveFailure } from "../../lib/users/profileSaveError";
 import type { Role, UserSelfUpdate } from "../../lib/users/types";
+
+const PHONE_PLACEHOLDER: string = "+992901234567";
 
 interface ProfileDraft {
   firstName: string;
@@ -91,18 +93,12 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
             hideLabel
           />
         </SettingsRow>
-        <SettingsRow icon={<UserIcon size={18} />} label={t("profile.firstName")} controlId={`${identifier}-first`}>
-          <Input id={`${identifier}-first`} value={current.firstName} maxLength={100} autoComplete="given-name" error={(dirty ? firstNameError : undefined) ?? serverError("firstName")} onChange={(event) => edit({ firstName: event.target.value })} />
-        </SettingsRow>
-        <SettingsRow icon={<UserIcon size={18} />} label={t("profile.lastName")} controlId={`${identifier}-last`}>
-          <Input id={`${identifier}-last`} value={current.lastName} maxLength={100} autoComplete="family-name" error={(dirty ? lastNameError : undefined) ?? serverError("lastName")} onChange={(event) => edit({ lastName: event.target.value })} />
-        </SettingsRow>
-        <SettingsRow icon={<Mail size={18} />} label={t("profile.email")} description={t("profile.emailHint")} controlId={`${identifier}-email`}>
-          <Input id={`${identifier}-email`} type="email" value={user.email ?? ""} disabled readOnly />
-        </SettingsRow>
-        <SettingsRow icon={<Phone size={18} />} label={t("profile.phone")} description={t(role === "student" ? "profile.phoneHintStudent" : "profile.phoneHint")} controlId={`${identifier}-phone`}>
-          <Input id={`${identifier}-phone`} type="tel" inputMode="tel" value={current.phone} autoComplete="tel" error={(dirty ? phoneError : undefined) ?? serverError("phone")} onChange={(event) => edit({ phone: event.target.value })} />
-        </SettingsRow>
+        <div className="grid gap-4 py-4 md:grid-cols-2">
+          <Input label={t("profile.firstName")} id={`${identifier}-first`} value={current.firstName} maxLength={100} autoComplete="given-name" error={(dirty ? firstNameError : undefined) ?? serverError("firstName")} onChange={(event) => edit({ firstName: event.target.value })} />
+          <Input label={t("profile.lastName")} id={`${identifier}-last`} value={current.lastName} maxLength={100} autoComplete="family-name" error={(dirty ? lastNameError : undefined) ?? serverError("lastName")} onChange={(event) => edit({ lastName: event.target.value })} />
+          <Input label={t("students:form.emailLabel")} id={`${identifier}-email`} type="email" value={user.email ?? ""} disabled readOnly />
+          <Input label={t("profile.phone")} id={`${identifier}-phone`} type="tel" inputMode="tel" placeholder={PHONE_PLACEHOLDER} value={current.phone} autoComplete="tel" error={(dirty ? phoneError : undefined) ?? serverError("phone")} onChange={(event) => edit({ phone: event.target.value })} />
+        </div>
       </SettingsGroup>
       <SettingsSaveBar
         visible={dirty}
