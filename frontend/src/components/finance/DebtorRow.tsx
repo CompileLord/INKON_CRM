@@ -7,6 +7,7 @@ import { formatExactMoney } from "../../lib/money";
 import { formatDateTime, formatNumber } from "../../i18n/formatters";
 import { DebtReminders } from "../../lib/finance/debtReminders";
 import { Button } from "../ui/Button";
+import { GrantBadge } from "../enrollments/GrantBadge";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { DebtorDetails } from "./DebtorDetails";
 import { DebtorOverdue } from "./DebtorOverdue";
@@ -49,7 +50,7 @@ export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isE
             <p className="font-medium text-ink">{studentName}</p>
           )}
           {showStudentNumber && <p className="text-muted tabular-nums">{t("analytics.studentNumber", { id: formatNumber(debt.student.id, i18n.language) })}</p>}
-          <p className="text-muted"><span>{debt.course.title}</span> · <DebtorOverdue days={debt.overdue_days} /></p>
+          <p className="text-muted"><span>{debt.course.title}</span> <GrantBadge billingMode={debt.billing_mode} /> · <DebtorOverdue days={debt.overdue_days} /></p>
           {onRemind && (
             <p className="text-muted tabular-nums">
               {debt.last_reminder_at ? t("reminders.lastSent", { when: formatDateTime(debt.last_reminder_at, i18n.language) }) : t("reminders.neverSent")}

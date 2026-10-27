@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../ui/EmptyState";
+import { GrantBadge } from "../enrollments/GrantBadge";
+import { useStudentBillingModes } from "../../lib/enrollments/hooks";
 import { CourseScore } from "./CourseScore";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
@@ -10,12 +12,14 @@ import type { StudentCourseProfile } from "../../lib/users/types";
 
 interface StudentCoursesTabProps {
   courses: StudentCourseProfile[];
+  studentId: number;
   role: string | null;
   currentUserId: number | null;
 }
 
-export function StudentCoursesTab({ courses, role, currentUserId }: StudentCoursesTabProps) {
+export function StudentCoursesTab({ courses, studentId, role, currentUserId }: StudentCoursesTabProps) {
   const { t, i18n } = useTranslation("studentProfile");
+  const billingModes = useStudentBillingModes(role === "superadmin" ? studentId : undefined);
 
   if (courses.length === 0) {
     return (
@@ -38,6 +42,7 @@ export function StudentCoursesTab({ courses, role, currentUserId }: StudentCours
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">{item.course.title}</span>
                       <StudentCourseStagePill course={item} />
+                      <GrantBadge billingMode={billingModes.data?.get(item.course.id)} />
                     </span>
                     <span className="text-xs tabular-nums text-muted">
                       {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {formatMoney(item.course.price, { suffix: t("stats.currency") })}
