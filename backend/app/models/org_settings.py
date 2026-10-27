@@ -9,6 +9,8 @@ class OrgSettings(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     org_name: Mapped[str] = mapped_column(String(255), nullable=False, default="Учебный центр ИМКОН")
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(16), nullable=True)
     notify_payments: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     notify_debts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     updated_at: Mapped[datetime] = mapped_column(

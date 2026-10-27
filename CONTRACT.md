@@ -4114,6 +4114,8 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "org_name": string,
+    "address?": string,
+    "phone?": string,
     "notify_payments": boolean,
     "notify_debts": boolean,
     "updated_at?": string,
@@ -4132,6 +4134,8 @@ Manually apply a student's wallet credit to a specific charge.
 ```json
 {
   "org_name?": string,
+  "address?": string,
+  "phone?": string,
   "notify_payments?": boolean,
   "notify_debts?": boolean,
 }
@@ -4142,6 +4146,8 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "org_name": string,
+    "address?": string,
+    "phone?": string,
     "notify_payments": boolean,
     "notify_debts": boolean,
     "updated_at?": string,
