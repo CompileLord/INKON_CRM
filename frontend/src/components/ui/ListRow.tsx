@@ -8,14 +8,16 @@ interface ListRowProps {
   menuItems?: readonly MenuItem[];
   menuLabel?: string;
   linkState?: unknown;
+  action?: ReactNode;
 }
 
-export function ListRow({ to, children, menuItems, menuLabel, linkState }: ListRowProps) {
+export function ListRow({ to, children, menuItems, menuLabel, linkState, action }: ListRowProps) {
   return (
     <div data-list-row className="relative flex items-center gap-3 rounded-[10px] px-3 py-2 hover:bg-row-hover motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out">
       <Link to={to} state={linkState} className="min-w-0 flex-1 py-1 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring after:absolute after:inset-0 after:content-['']">
         {children}
       </Link>
+      {action !== undefined && <div className="relative z-10 shrink-0">{action}</div>}
       {menuItems !== undefined && menuItems.length > 0 && <Menu items={menuItems} label={menuLabel} />}
     </div>
   );

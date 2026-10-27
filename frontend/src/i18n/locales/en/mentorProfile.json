@@ -25,7 +25,8 @@
   },
   "courses": {
     "empty": "No active courses",
-    "emptyHelp": "Courses assigned to this teacher will appear here."
+    "emptyHelp": "Courses assigned to this teacher will appear here.",
+    "toJournal": "To journal"
   },
   "performance": {
     "title": "Performance",
