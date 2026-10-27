@@ -770,6 +770,8 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 
 **Parameters:**
 - `search` [query]
+- `course_id` [query]
+- `payment_status` [query]
 - `page` [query]
 - `page_size` [query]
 
@@ -798,6 +800,9 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "courses": array[],
+        "debt_amount": string,
+        "payment_status": "debt" | "ok" | "grant",
       }
     ],
     "total": integer,

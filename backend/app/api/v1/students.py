@@ -1,11 +1,11 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Literal, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_user_repository, get_current_user, get_student_journal_history_service, get_student_profile_service, require_superadmin
 from app.models.user import User, UserRole
 from app.repositories.interfaces.base_repository import RepositoryPage
 from app.repositories.interfaces.user_repository import UserRepository
-from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, TelegramLinkCodeResponse, UserResponse
+from app.schemas.user import StudentProfileResponse, StudentJournalPeriodResponse, TelegramLinkCodeResponse, UserResponse, StudentListItemResponse
 from app.services.student_profile_service import StudentProfileService
 from app.services.telegram_link_service import IssuedLinkCode, TelegramLinkService
 
@@ -19,24 +19,28 @@ router = APIRouter()
 
 from app.schemas.common import PaginatedResponse, PaginationParams
 
-@router.get("/", response_model=PaginatedResponse[UserResponse])
+@router.get("/", response_model=PaginatedResponse[StudentListItemResponse])
 async def get_students(
     search: Optional[str] = None,
+    course_id: Annotated[int | None, Query(gt=0)] = None,
+    payment_status: Literal["debt", "ok", "grant"] | None = None,
     pagination: PaginationParams = Depends(),
     current_user: User = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository)
-) -> RepositoryPage[User]:
+) -> RepositoryPage[dict[str, Any]]:
     if current_user.role not in [UserRole.SUPERADMIN, UserRole.ACCOUNTANT, UserRole.MENTOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
     mentor_id: int | None = current_user.id if current_user.role == UserRole.MENTOR else None
-    return await user_repo.get_students_list(
+    return await user_repo.get_student_directory(
         page=pagination.page,
         page_size=pagination.page_size,
         search=search,
         mentor_id=mentor_id,
+        course_id=course_id,
+        payment_status=payment_status,
     )
 
 
