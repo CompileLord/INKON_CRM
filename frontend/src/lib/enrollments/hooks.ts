@@ -5,6 +5,7 @@ import {
   createEnrollment,
   getCourseRoster,
   getEligibleCandidates,
+  getWithdrawalPreview,
   listEnrollments,
   locateRosterStudent,
   withdrawEnrollment,
@@ -18,6 +19,7 @@ import type {
   EnrollmentStatus,
   PaginatedEligibleCandidates,
   RosterLocationResponse,
+  WithdrawalPreviewResponse,
 } from "./types";
 
 const PAGE_SIZE = 100;
@@ -226,6 +228,17 @@ export function useEnrollStudent() {
   });
 }
 
+export function useWithdrawalPreview(enrollmentId: number | null) {
+  return useQuery<WithdrawalPreviewResponse>({
+    queryKey: ["enrollments", "withdraw-preview", enrollmentId],
+    queryFn: () => getWithdrawalPreview(enrollmentId as number),
+    enabled: enrollmentId !== null,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
+}
+
 interface WithdrawInput {
   id: number;
   studentId: number;
@@ -246,6 +259,7 @@ export function useWithdrawEnrollment() {
       queryClient.invalidateQueries({
         queryKey: ["users", "students", "profile", variables.studentId],
       });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
     },
   });
 }

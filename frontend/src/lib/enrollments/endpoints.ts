@@ -9,6 +9,7 @@ import type {
   PaginatedEligibleCandidates,
   PaginatedEnrollments,
   RosterLocationResponse,
+  WithdrawalPreviewResponse,
 } from "./types";
 
 export function createEnrollment(payload: EnrollmentCreate): Promise<EnrollmentResponse> {
@@ -21,6 +22,10 @@ export function listEnrollments(params: ListEnrollmentsParams = {}): Promise<Pag
 
 export function withdrawEnrollment(id: number): Promise<EnrollmentResponse> {
   return httpClient.patch<EnrollmentResponse>(`/enrollments/${id}/withdraw`).then((res) => res.data);
+}
+
+export function getWithdrawalPreview(id: number): Promise<WithdrawalPreviewResponse> {
+  return httpClient.get<WithdrawalPreviewResponse>(`/enrollments/${id}/withdraw-preview`).then((res) => res.data);
 }
 
 export function getCourseRoster(courseId: number, params: CourseRosterParams = {}): Promise<CourseRosterResponse> {

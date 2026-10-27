@@ -48,6 +48,7 @@ const FAILURE_MESSAGE_KEYS: Record<PaymentFailureKind, string> = {
   permission: "paymentModal.permissionError",
   closedPeriod: "paymentModal.closedPeriod",
   enrollment: "paymentModal.enrollmentError",
+  withdrawnExceedsDebt: "paymentModal.withdrawnExceedsDebt",
   rejected: "paymentModal.saveError",
 };
 

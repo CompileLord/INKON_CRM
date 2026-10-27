@@ -114,7 +114,17 @@
     "withdrawError": "Couldn't withdraw the student",
     "withdrawMessage": "Withdraw {{name}} from “{{course}}”? They lose access to lessons and the journal. Their account is kept.",
     "withdrawSuccess": "Student withdrawn",
-    "withdrawTitle": "Withdraw student"
+    "withdrawTitle": "Withdraw student",
+    "withdrawPreview": {
+      "stillOwed": "Remaining to pay",
+      "cancelled": "Will be cancelled",
+      "amount": "{{amount}} TJS",
+      "months_one": "{{formatted}} month",
+      "months_other": "{{formatted}} months",
+      "creditNote": "Money already paid for cancelled months becomes the student's credit.",
+      "error": "Couldn't load what withdrawal changes",
+      "retry": "Retry"
+    }
   },
   "progress": {
     "emptyPeriods": "No journal periods yet",
