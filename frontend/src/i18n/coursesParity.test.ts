@@ -87,3 +87,18 @@ describe("courses i18n key parity", () => {
     }
   });
 });
+
+describe("courses schedule edit keys", () => {
+  it.each([
+    ["en", enCourses],
+    ["ru", ruCourses],
+    ["tg", tgCourses],
+  ])("%s defines the lesson time labels and both backend error messages", (_locale, bundle) => {
+    const form = (bundle as { form: Record<string, unknown> }).form;
+    const errors = form.errors as Record<string, string>;
+    expect(form.dayTimeStartLabel).toContain("{{day}}");
+    expect(form.dayTimeEndLabel).toContain("{{day}}");
+    expect(errors.scheduleWeekdaysImmutable).toBeTruthy();
+    expect(errors.scheduleTimeRangeInvalid).toBeTruthy();
+  });
+});
