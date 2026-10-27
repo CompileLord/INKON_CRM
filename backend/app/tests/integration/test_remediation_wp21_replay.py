@@ -1,3 +1,4 @@
+from typing import Callable
 import asyncio
 from datetime import date, timedelta
 from contextvars import ContextVar
@@ -28,6 +29,11 @@ from app.tests.conftest import TestingSessionLocal
 
 
 from app.tests.integration.test_remediation_wp21 import create_journal
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 @pytest.mark.asyncio

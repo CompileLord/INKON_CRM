@@ -1,9 +1,16 @@
+from datetime import date
+from typing import Callable
 from datetime import datetime, timezone
 
 import pytest
 from httpx import AsyncClient
 from app.core.security import create_access_token
 from app.models.user import User
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 @pytest.mark.asyncio

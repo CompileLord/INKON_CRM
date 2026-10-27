@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
+from app.core.school_calendar import SchoolCalendar
 from app.models.user import User, UserRole
 from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -79,8 +80,8 @@ async def test_student_progress_chart_privacy_and_anonymity(
         json={
             "title": "Privacy Course",
             "description": "Test privacy",
-            "start_date": "2026-01-01",
-            "end_date": "2026-06-01",
+            "start_date": (SchoolCalendar.today() - timedelta(days=120)).isoformat(),
+            "end_date": (SchoolCalendar.today() + timedelta(days=30)).isoformat(),
             "exam_type": "weekly",
             "price": "100.00",
             "mentor_id": test_mentor.id,
@@ -133,8 +134,8 @@ async def test_student_course_bucket_rule_and_rank_computation(
         json={
             "title": "Active Course",
             "description": "Active course test",
-            "start_date": "2026-01-01",
-            "end_date": "2026-06-01",
+            "start_date": (SchoolCalendar.today() - timedelta(days=120)).isoformat(),
+            "end_date": (SchoolCalendar.today() + timedelta(days=30)).isoformat(),
             "exam_type": "weekly",
             "price": "150.00",
             "mentor_id": test_mentor.id,
@@ -173,8 +174,8 @@ async def test_journal_detail_student_roster_narrowing_and_rank(
         json={
             "title": "Journal Detail Course",
             "description": "Testing journal detail narrowing",
-            "start_date": "2026-01-01",
-            "end_date": "2026-06-01",
+            "start_date": (SchoolCalendar.today() - timedelta(days=120)).isoformat(),
+            "end_date": (SchoolCalendar.today() + timedelta(days=30)).isoformat(),
             "exam_type": "weekly",
             "price": "200.00",
             "mentor_id": test_mentor.id,

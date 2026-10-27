@@ -1,3 +1,5 @@
+from datetime import date
+from typing import Callable
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +10,11 @@ from app.models.course import Course
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 @pytest.mark.asyncio

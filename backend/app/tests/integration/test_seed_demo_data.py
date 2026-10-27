@@ -1,3 +1,5 @@
+from datetime import date
+from typing import Callable
 import re
 from collections import Counter
 from datetime import datetime, timezone
@@ -25,6 +27,11 @@ ADMINISTRATOR_PASSWORD: str = "synthetic seed administrator credential"
 DEMO_PASSWORD: str = "synthetic seed demo credential"
 E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9][0-9]{7,14}$")
 LINK_CODE_LINE: re.Pattern[str] = re.compile(r"^\s+([0-9A-HJ-NP-Z]{6})\s+(.+?)\s+expires\s", re.MULTILINE)
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 class SeededDatabase:

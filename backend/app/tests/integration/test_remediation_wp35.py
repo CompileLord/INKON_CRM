@@ -1,3 +1,5 @@
+from datetime import date
+from typing import Callable
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 import pytest
@@ -8,6 +10,11 @@ from app.models.user import User
 from app.schemas.journal import JournalEntryUpdate
 from app.services.journal_service import JournalService
 from app.tests.integration.test_remediation_wp21 import create_journal
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 class AutosaveBoundsFixture:

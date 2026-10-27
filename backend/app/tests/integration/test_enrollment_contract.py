@@ -1,3 +1,4 @@
+from typing import Callable
 import zlib
 from datetime import date, time
 from decimal import Decimal
@@ -11,6 +12,11 @@ from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.user import User, UserRole
 from app.tests.conftest import test_engine
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 async def create_helper_course(

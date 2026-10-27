@@ -1,4 +1,5 @@
 from datetime import date, time
+from unittest.mock import Mock
 
 import pytest
 from httpx import AsyncClient
@@ -14,6 +15,12 @@ from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User
 from app.services.journal_service import get_lesson_dates
 from scripts.report_over_limit_bonuses import OverLimitBonus, OverLimitBonusReport
+
+
+@pytest.fixture(autouse=True)
+def historical_course_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 9, 29)))
+    monkeypatch.setattr("app.core.school_calendar.SchoolCalendar.today", Mock(return_value=date(2026, 9, 29)))
 
 
 def schedule_on(weekdays: list[int]) -> list[CourseSchedule]:
