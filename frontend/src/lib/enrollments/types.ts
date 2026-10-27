@@ -37,6 +37,7 @@ export interface ListEnrollmentsParams {
   student_id?: number;
   /** Undocumented in the spec — sent optimistically, see module doc comment. */
   course_id?: number;
+  status?: EnrollmentStatus;
 }
 
 export type PaginatedEnrollments = Paginated<EnrollmentResponse>;

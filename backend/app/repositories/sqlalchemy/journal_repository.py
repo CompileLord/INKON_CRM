@@ -46,15 +46,18 @@ class SQLAlchemyJournalRepository(SQLAlchemyBaseRepository[Journal], JournalRepo
         row: Row
         student_counts: dict[int, int] = {row[0]: row[1] for row in students_result.all()}
         entries_result: Result = await self.session.execute(select(
-            JournalEntry.journal_id, func.count(JournalEntry.id),
-        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).join(
-            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalEntry.student_id),
+            JournalEntry.journal_id, Journal.course_id, func.count(JournalEntry.id),
+            func.count(Enrollment.id).filter(User.is_deleted.is_(False)),
+        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).outerjoin(
+            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == JournalEntry.student_id)
+            & Enrollment.is_deleted.is_(False) & (Enrollment.status == EnrollmentStatus.ACTIVE),
         ).where(
             Journal.course_id.in_(course_ids), Journal.period_start <= today, JournalEntry.lesson_date <= today,
-            JournalEntry.is_graded.is_(True), User.is_deleted.is_(False),
-            Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
-        ).group_by(JournalEntry.journal_id))
-        graded_entry_counts: dict[int, int] = {row[0]: row[1] for row in entries_result.all()}
+            JournalEntry.is_graded.is_(True),
+        ).group_by(JournalEntry.journal_id, Journal.course_id))
+        graded_entry_counts: dict[int, int] = {
+            row[0]: row[3] if student_counts.get(row[1], 0) else row[2] for row in entries_result.all()
+        }
         return MentorJournalBatch(courses, journals, schedules, student_counts, graded_entry_counts)
 
     async def get_class_statistics(self, journal_id: int, student_id: int) -> JournalClassStatistics:

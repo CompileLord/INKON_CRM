@@ -44,6 +44,7 @@ async def withdraw_student(
 async def list_enrollments(
     course_id: Optional[int] = Query(None),
     student_id: Optional[int] = Query(None),
+    status: Optional[EnrollmentStatus] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -51,6 +52,8 @@ async def list_enrollments(
     enrollment_service: EnrollmentService = Depends(get_enrollment_service),
 ) -> dict:
     filters: EnrollmentFilters = {}
+    if status is not None:
+        filters["status"] = status
     if current_user.role == UserRole.MENTOR:
         if not course_id:
             raise HTTPException(

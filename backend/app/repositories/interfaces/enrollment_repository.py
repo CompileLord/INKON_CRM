@@ -52,6 +52,7 @@ class EnrollmentFilters(TypedDict, total=False):
     course_id: int
     student_id: int
     mentor_id: int
+    status: EnrollmentStatus
 
 
 class EnrollmentRepository(BaseRepository[Enrollment], Protocol):

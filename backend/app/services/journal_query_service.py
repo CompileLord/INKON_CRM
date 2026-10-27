@@ -48,7 +48,7 @@ class JournalQueryService:
 
         enrolled_count_stmt = select(func.count(Enrollment.id)).join(User, User.id == Enrollment.student_id).filter(
             Enrollment.course_id == course_id,
-            Enrollment.is_deleted == False,
+            ~Enrollment.is_deleted,
             Enrollment.status == EnrollmentStatus.ACTIVE,
             ~User.is_deleted,
         )
@@ -59,19 +59,16 @@ class JournalQueryService:
         today: date = SchoolCalendar.today()
 
         entry_counts_stmt: Select[Any] = select(
-            JournalEntry.journal_id,
-            func.count(JournalEntry.id)
-        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).join(
-            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == User.id)).filter(
+            JournalEntry.journal_id, func.count(JournalEntry.id), func.count(Enrollment.id).filter(~User.is_deleted)
+        ).join(Journal, Journal.id == JournalEntry.journal_id).join(User, User.id == JournalEntry.student_id).outerjoin(
+            Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == User.id)
+            & ~Enrollment.is_deleted & (Enrollment.status == EnrollmentStatus.ACTIVE)).filter(
             JournalEntry.journal_id.in_(journal_ids),
             JournalEntry.is_graded.is_(True),
-            ~User.is_deleted,
-            ~Enrollment.is_deleted, Enrollment.status == EnrollmentStatus.ACTIVE,
             JournalEntry.lesson_date <= today,
             Journal.period_start <= today,
         ).group_by(JournalEntry.journal_id)
-        entry_counts_res = await self.db.execute(entry_counts_stmt)
-        entry_counts_map = dict(entry_counts_res.all())
+        entry_counts_map: dict[int, int] = {jid: active if student_count else total for jid, total, active in await self.db.execute(entry_counts_stmt)}
 
         pct_expr = case((JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score), else_=None)
 

@@ -2178,6 +2178,7 @@ Bounded chart: defaults to the newest 12 scheduled periods (maximum 52), returne
 **Parameters:**
 - `course_id` [query]
 - `student_id` [query]
+- `status` [query]
 - `page` [query]
 - `page_size` [query]
 
