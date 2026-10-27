@@ -277,6 +277,17 @@ class MentorAnalyticsResponse(BaseModel):
 
 
 
+class MentorCoursePillResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    id: int
+    title: str
+
+
+class MentorListItemResponse(UserResponse):
+    model_config = {"from_attributes": True}
+    active_courses: list[MentorCoursePillResponse] = []
+
+
 class TelegramLinkCodeResponse(BaseModel):
     code: str
     expires_at: datetime

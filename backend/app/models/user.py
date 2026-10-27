@@ -1,9 +1,12 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from sqlalchemy import BigInteger, DateTime, Index, Integer, String, Date, CheckConstraint, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.course import Course
 
 
 class UserRole(str, Enum):
@@ -53,6 +56,13 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     payment_day_of_month: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     must_set_password: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     auth_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"), nullable=False)
+    active_courses: Mapped[list["Course"]] = relationship(
+        "Course",
+        primaryjoin="and_(Course.mentor_id == User.id, Course.status == 'active', Course.is_deleted.is_(False))",
+        foreign_keys="[Course.mentor_id]",
+        viewonly=True,
+        order_by="Course.id.asc()",
+    )
 
     @property
     def parent_linked(self) -> bool:

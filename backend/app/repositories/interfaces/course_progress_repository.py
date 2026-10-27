@@ -21,6 +21,7 @@ class ProgressPeriodRecord:
     class_avg_max_score: Optional[float] = None
     class_avg_percentage: Optional[float] = None
     graded_count: int = 0
+    has_graded_entries: bool = False
 
 
 @dataclass(frozen=True)

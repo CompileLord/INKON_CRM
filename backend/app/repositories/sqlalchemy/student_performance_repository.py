@@ -10,6 +10,7 @@ from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
+from app.repositories.sqlalchemy.student_course_progress_query import StudentCourseProgressQuery
 from app.repositories.interfaces.user_repository import StudentCourseRawRecord, StudentTotalsRawRecord
 from collections import defaultdict
 from app.core.scoring import ScoringPolicy
@@ -41,13 +42,9 @@ class SQLAlchemyStudentPerformanceRepository:
 
         today: date = SchoolCalendar.today()
         future_by_course: dict[int, tuple[int, int]] = await FutureLessonCounts(self.session).for_student_by_course(student_id, today)
-        graded: ColumnElement[bool] = JournalStudentSummary.is_graded.is_(True)
+        graded: ColumnElement[bool] = StudentCourseProgressQuery.is_graded_condition()
         stats_query: Select[Any] = select(
-            func.avg(
-                case(
-                    ((graded & (JournalStudentSummary.max_period_score > 0)), (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score)
-                )
-            ),
+            func.avg(StudentCourseProgressQuery.percentage_expr()),
             func.sum(JournalStudentSummary.attendance_count).filter(graded),
             func.sum(JournalStudentSummary.total_lessons).filter(graded),
             func.count(JournalStudentSummary.id),
@@ -132,11 +129,7 @@ class SQLAlchemyStudentPerformanceRepository:
 
             class_avg_query: Select[Any] = select(
                 Journal.course_id,
-                func.avg(
-                    case(
-                        ((graded & (JournalStudentSummary.max_period_score > 0)), (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score)
-                    )
-                ),
+                func.avg(StudentCourseProgressQuery.percentage_expr()),
                 func.sum(JournalStudentSummary.sum_score).filter(graded) * 1.0 / func.nullif(func.count(func.distinct(JournalStudentSummary.student_id)), 0)
             ).join(
                 Journal, JournalStudentSummary.journal_id == Journal.id
@@ -152,11 +145,7 @@ class SQLAlchemyStudentPerformanceRepository:
 
             student_course_query: Select[Any] = select(
                 Journal.course_id,
-                func.avg(
-                    case(
-                        ((graded & (JournalStudentSummary.max_period_score > 0)), (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score)
-                    )
-                ),
+                func.avg(StudentCourseProgressQuery.percentage_expr()),
                 func.sum(JournalStudentSummary.attendance_count).filter(graded),
                 func.sum(JournalStudentSummary.total_lessons).filter(graded),
                 func.count(JournalStudentSummary.id),

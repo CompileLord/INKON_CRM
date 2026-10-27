@@ -9,8 +9,10 @@ from sqlalchemy.orm import joinedload
 from app.models.course import Course
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
+from app.models.journal_entry import JournalEntry
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
+from app.repositories.sqlalchemy.student_course_progress_query import StudentCourseProgressQuery
 from app.repositories.interfaces.course_progress_repository import (
     ChartPeriodAggregate,
     ChartStudentAggregate,
@@ -45,13 +47,19 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
         course_id: int,
         always_include_student_id: Optional[int] = None
     ) -> CourseProgressSnapshot:
+        has_graded_expr = or_(
+            select(1).where(JournalEntry.journal_id == Journal.id, JournalEntry.is_graded.is_(True)).exists(),
+            select(1).where(JournalStudentSummary.journal_id == Journal.id, StudentCourseProgressQuery.is_graded_condition()).exists(),
+        )
         journals_stmt = (
-            select(Journal)
+            select(Journal, has_graded_expr.label("has_graded_entries"))
             .filter(Journal.course_id == course_id)
             .order_by(Journal.period_start.asc(), Journal.id.asc())
         )
         journals_res = await self.session.execute(journals_stmt)
-        journals = list(journals_res.scalars().all())
+        journal_rows = journals_res.all()
+        journals = [row[0] for row in journal_rows]
+        has_graded_by_journal: Dict[int, bool] = {row[0].id: bool(row[1]) for row in journal_rows}
 
         enrollments_stmt = (
             select(Enrollment)
@@ -121,7 +129,11 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
             aggregates_by_journal = {row.journal_id: row for row in aggregates_result.all()}
 
         periods: List[ProgressPeriodRecord] = [
-            self._build_period_record(journal, aggregates_by_journal.get(journal.id))
+            self._build_period_record(
+                journal,
+                aggregates_by_journal.get(journal.id),
+                has_graded_entries=has_graded_by_journal.get(journal.id, False),
+            )
             for journal in journals
         ]
 
@@ -152,25 +164,32 @@ class SqlAlchemyCourseProgressRepository(CourseProgressRepositoryInterface):
         )
 
     @staticmethod
-    def _build_period_record(journal: Journal, aggregate: Optional[Row]) -> ProgressPeriodRecord:
+    def _build_period_record(
+        journal: Journal,
+        aggregate: Optional[Row],
+        *,
+        has_graded_entries: bool = False,
+    ) -> ProgressPeriodRecord:
         if aggregate is None:
             return ProgressPeriodRecord(
                 id=journal.id,
                 period_label=journal.period_label,
                 period_start=journal.period_start,
                 period_end=journal.period_end,
+                has_graded_entries=has_graded_entries,
             )
         return ProgressPeriodRecord(
             id=journal.id,
             period_label=journal.period_label,
             period_start=journal.period_start,
             period_end=journal.period_end,
-            class_avg_score=float(aggregate.class_avg_score),
-            class_avg_max_score=float(aggregate.class_avg_max_score),
+            class_avg_score=float(aggregate.class_avg_score) if aggregate.class_avg_score is not None else None,
+            class_avg_max_score=float(aggregate.class_avg_max_score) if aggregate.class_avg_max_score is not None else None,
             class_avg_percentage=(
                 float(aggregate.class_avg_percentage) if aggregate.class_avg_percentage is not None else None
             ),
             graded_count=int(aggregate.graded_count),
+            has_graded_entries=has_graded_entries,
         )
 
     async def get_course_chart_snapshot(

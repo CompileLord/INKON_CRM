@@ -1210,6 +1210,7 @@ The legacy `/students/me/journals` array preserves complete responses for at mos
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "active_courses?": array[],
       }
     ],
     "total": integer,
@@ -2008,6 +2009,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
@@ -2060,6 +2062,7 @@ Students receive only public mentor identity and course identity for their nonde
         "class_avg_max_score?": number,
         "class_avg_percentage?": number,
         "graded_count?": integer,
+        "has_graded_entries?": boolean,
       }
     ],
     "students": [
