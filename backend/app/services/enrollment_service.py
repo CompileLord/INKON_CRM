@@ -76,7 +76,7 @@ class EnrollmentService:
         lesson_plan: EnrollmentLessonPlan | None = None,
         enrolled_at: datetime | None = None,
     ) -> Enrollment:
-        from app.services.finance_service import FinanceService
+        from app.services.finance_service import FinanceService, get_dushanbe_today
 
         await FinanceService(self.db).lock_student_accounts([student_id])
         course = await self.course_repo.get_by_id(course_id)
@@ -84,6 +84,12 @@ class EnrollmentService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Course is archived/inactive"
+            )
+
+        if course.end_date <= get_dushanbe_today():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="course_already_ended",
             )
 
         FinanceService.validate_installment_price(course.price, course.start_date, course.end_date)
