@@ -28,7 +28,7 @@
     "emptyHelp": "Courses assigned to this teacher will appear here."
   },
   "performance": {
-    "title": "How the groups are doing",
+    "title": "Performance",
     "formula": "The result is each graded period's points divided by that period's maximum, averaged over all graded periods of the teacher's courses.",
     "loading": "Loading results",
     "error": "Couldn't load the results.",
@@ -38,8 +38,6 @@
     "pointsHelp": "What a student scores in one period on average.",
     "shareLabel": "Average result",
     "shareHelp": "The share of the maximum, across all graded periods.",
-    "studentsLabel": "Students",
-    "studentsHelp": "Everyone enrolled in the teacher's courses.",
     "basis_one": "Based on {{formatted}} graded period.",
     "basis_other": "Based on {{formatted}} graded periods."
   },
