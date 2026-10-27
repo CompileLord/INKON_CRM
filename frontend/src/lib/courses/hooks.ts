@@ -107,6 +107,7 @@ export function useUpdateCourse() {
       queryClient.invalidateQueries({ queryKey: ["courses", "list"] });
       queryClient.invalidateQueries({ queryKey: ["courses", "detail", course.id] });
       queryClient.invalidateQueries({ queryKey: ["courses", "mentor-history", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["courses", "schedule", course.id] });
     },
   });
 }
