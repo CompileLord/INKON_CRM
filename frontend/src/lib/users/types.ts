@@ -242,7 +242,7 @@ export interface MentorStaffProfileResponse {
   active_courses: CourseResponse[];
   active_students_count: number;
   avg_score: number;
-  active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses";
+  active_students_population: "active_enrollments_on_active_non_deleted_courses";
   avg_score_grading_state: "missing" | "unknown";
   avg_score_provenance: "unknown";
   avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived";
