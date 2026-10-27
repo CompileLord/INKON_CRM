@@ -1,6 +1,6 @@
 import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useRef, type ReactNode } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { Pagination } from "../ui/Pagination";
@@ -11,21 +11,23 @@ import { ErrorState } from "../ui/ErrorState";
 import { ListRow } from "../ui/ListRow";
 import type { MenuItem } from "../ui/Menu";
 import { StudentStatusPill } from "./StudentStatusPill";
-import { Badge } from "../ui/Badge";
-import { formatDate, formatNumber } from "../../i18n/formatters";
+import { StudentBalanceCell } from "./StudentBalanceCell";
+import { StudentCoursePills } from "./StudentCoursePills";
+import { formatNumber } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
-import type { User } from "../../lib/users/types";
+import type { StudentListItemResponse, User } from "../../lib/users/types";
 
 const SKELETON_ROW_COUNT = 5;
-const ROW_GRID = "md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_5.5rem_6.5rem]";
+const ROW_GRID = "md:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,1.6fr)_9rem]";
 
 interface StudentsTableProps {
-  students: User[];
+  students: StudentListItemResponse[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
   search: string;
+  hasActiveFilters: boolean;
   isLoading: boolean;
   isError: boolean;
   hasLoadedOnce?: boolean;
@@ -37,11 +39,12 @@ interface StudentsTableProps {
   onDeleteRequest: (student: User, triggerElement?: HTMLElement | null) => void;
   onAddStudent: () => void;
   onClearSearch: () => void;
+  onClearFilters: () => void;
   onStudentNavigate?: (student: User) => void;
 }
 
 interface StudentRowProps {
-  student: User;
+  student: StudentListItemResponse;
   search: string;
   page: number;
   pageSize: number;
@@ -51,7 +54,7 @@ interface StudentRowProps {
 }
 
 function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, onStudentNavigate }: StudentRowProps) {
-  const { t, i18n } = useTranslation(["students", "common"]);
+  const { t } = useTranslation(["students", "common"]);
   const rootRef = useRef<HTMLLIElement | null>(null);
   const fullName: string = `${student.first_name} ${student.last_name}`;
   const photoUrl: string | undefined = resolveMediaUrl(student.thumbnail_path ?? student.photo_path) ?? undefined;
@@ -73,25 +76,28 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
         menuItems={menuItems}
         menuLabel={`${t("studentActions")}: ${fullName}`}
       >
-        <span className={`grid items-center gap-x-4 gap-y-1 ${ROW_GRID}`}>
+        <span className={`grid items-center gap-x-4 gap-y-1.5 ${ROW_GRID}`}>
           <span className="flex min-w-0 items-center gap-3">
             <PersonAvatar firstName={student.first_name} lastName={student.last_name} photoUrl={photoUrl} />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className="min-w-0 break-words text-sm font-semibold text-ink">{fullName}</span>
                 <StudentStatusPill isDeleted={student.is_deleted} />
-                <span title={student.parent_linked === true ? t("parentLink.linkedInfo") : t("parentLink.notLinkedInfo")} className="inline-flex shrink-0">
-                  <Badge status={student.parent_linked === true ? "linked" : "notLinked"} />
+                <span
+                  role="img"
+                  title={student.parent_linked === true ? t("table.telegramLinked") : t("table.telegramNotLinked")}
+                  aria-label={student.parent_linked === true ? t("table.telegramLinked") : t("table.telegramNotLinked")}
+                  className={`inline-flex shrink-0 ${student.parent_linked === true ? "text-success" : "text-muted opacity-50"}`}
+                >
+                  <Send size={14} aria-hidden="true" />
                 </span>
               </span>
-              <span className="truncate text-sm tabular-nums text-muted" title={student.email ?? CanonicalPhone.prefill(student.phone)}>{student.email ?? CanonicalPhone.prefill(student.phone)}</span>
+              {student.email != null && <span className="truncate text-sm text-muted" title={student.email}>{student.email}</span>}
             </span>
           </span>
           <span className="text-sm tabular-nums text-ink">{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>
-          <span className="text-sm tabular-nums text-muted">
-            {student.payment_day_of_month ? t("table.paymentDayChip", { day: formatNumber(student.payment_day_of_month, i18n.language) }) : <span aria-label={t("table.paymentDayNone")}>—</span>}
-          </span>
-          <span className="text-sm tabular-nums text-muted">{formatDate(student.created_at, i18n.language)}</span>
+          <StudentCoursePills courses={student.courses} />
+          <span className="md:text-right"><StudentBalanceCell paymentStatus={student.payment_status} debtAmount={student.debt_amount} /></span>
         </span>
       </ListRow>
     </li>
@@ -99,8 +105,8 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
 }
 
 export function StudentsTable({
-  students, total, page, pageSize, totalPages, search, isLoading, isError, hasLoadedOnce, pageSizeOptions,
-  onRetry, onPageChange, onPageSizeChange, onEdit, onDeleteRequest, onAddStudent, onClearSearch, onStudentNavigate,
+  students, total, page, pageSize, totalPages, search, hasActiveFilters, isLoading, isError, hasLoadedOnce, pageSizeOptions,
+  onRetry, onPageChange, onPageSizeChange, onEdit, onDeleteRequest, onAddStudent, onClearSearch, onClearFilters, onStudentNavigate,
 }: StudentsTableProps) {
   const { t, i18n } = useTranslation(["students", "common"]);
   const from: number = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -128,8 +134,8 @@ export function StudentsTable({
                   </div>
                 </div>
                 <div className="hidden h-4 w-28 rounded bg-border md:block" />
-                <div className="hidden h-4 w-16 rounded bg-border md:block" />
-                <div className="hidden h-4 w-20 rounded bg-border md:block" />
+                <div className="hidden h-5 w-32 rounded-full bg-border md:block" />
+                <div className="hidden h-4 w-16 rounded bg-border md:ml-auto md:block" />
               </div>
             </li>
           ))}
@@ -138,13 +144,25 @@ export function StudentsTable({
     }
     if (showInitialError) return <ErrorState title={t("table.error")} message={t("table.errorDescription")} onRetry={onRetry} />;
     if (showEmpty) {
+      if (hasActiveFilters || isSearchActive) {
+        return (
+          <EmptyState
+            title={hasActiveFilters ? t("table.emptyFilteredTitle") : t("emptyNoResultsTitle")}
+            description={hasActiveFilters ? t("table.emptyFilteredDescription") : t("emptyNoResultsDescription")}
+            action={
+              <Button type="button" variant="secondary" onClick={hasActiveFilters ? onClearFilters : onClearSearch}>
+                <RotateCcw size={16} aria-hidden="true" />
+                {hasActiveFilters ? t("filters.reset") : t("clearSearch")}
+              </Button>
+            }
+          />
+        );
+      }
       return (
         <EmptyState
-          title={isSearchActive ? t("emptyNoResultsTitle") : t("emptyNoStudentsTitle")}
-          description={isSearchActive ? t("emptyNoResultsDescription") : t("emptyNoStudentsDescription")}
-          action={isSearchActive
-            ? <Button type="button" variant="secondary" onClick={onClearSearch}><RotateCcw size={16} aria-hidden="true" />{t("clearSearch")}</Button>
-            : <Button type="button" onClick={onAddStudent}>{t("addStudent")}</Button>}
+          title={t("emptyNoStudentsTitle")}
+          description={t("emptyNoStudentsDescription")}
+          action={<Button type="button" onClick={onAddStudent}>{t("addStudent")}</Button>}
         />
       );
     }
@@ -167,11 +185,11 @@ export function StudentsTable({
       )}
       <div className="rounded-2xl border border-border bg-card p-1">
         {hasRows && (
-          <div aria-hidden="true" className={`hidden gap-x-4 py-2 pl-3 pr-14 text-sm text-muted md:grid ${ROW_GRID}`}>
+          <div aria-hidden="true" className={`hidden gap-x-4 py-2 pl-3 pr-[4.25rem] text-sm text-muted md:grid ${ROW_GRID}`}>
             <span className="pl-[3.25rem]">{t("table.student")}</span>
             <span>{t("table.phone")}</span>
-            <span>{t("table.paymentDay")}</span>
-            <span>{t("table.created")}</span>
+            <span>{t("table.courses")}</span>
+            <span className="text-right">{t("table.balance")}</span>
           </div>
         )}
         {renderBody()}

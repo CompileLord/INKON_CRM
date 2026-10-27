@@ -126,10 +126,17 @@ export interface TelegramLinkCode {
 
 export type PaginatedUsers<T = User> = Paginated<T>;
 
+export type StudentPaymentStatus = StudentListItemResponse["payment_status"];
+
 export interface ListUsersParams {
   search?: string;
   page?: number;
   page_size?: number;
+}
+
+export interface ListStudentsParams extends ListUsersParams {
+  course_id?: number;
+  payment_status?: StudentPaymentStatus;
 }
 
 export type StudentGradingState = "missing" | "unknown";

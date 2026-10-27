@@ -2,12 +2,15 @@ import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
+import { vi } from "vitest";
 import i18n from "../i18n";
+import * as courseHooks from "../lib/courses/hooks";
+import type { CourseListItemResponse, PaginatedCourses } from "../lib/courses/types";
 import { Students } from "./Students";
 import { StudentProfile } from "./StudentProfile";
-import type { PaginatedUsers, User } from "../lib/users/types";
+import type { PaginatedUsers, StudentListItemResponse } from "../lib/users/types";
 
-export const mockStudentsList: User[] = [
+export const mockStudentsList: StudentListItemResponse[] = [
   {
     id: 11,
     email: "student11@example.com",
@@ -25,6 +28,9 @@ export const mockStudentsList: User[] = [
     updated_at: "2026-01-01T00:00:00Z",
     photo_path: null,
     thumbnail_path: null,
+    courses: [{ course_id: 5, title: "Python", enrollment_id: 51, billing_mode: "paid" }],
+    debt_amount: "250.00",
+    payment_status: "debt",
   },
   {
     id: 12,
@@ -43,10 +49,13 @@ export const mockStudentsList: User[] = [
     updated_at: "2026-02-01T00:00:00Z",
     photo_path: null,
     thumbnail_path: null,
+    courses: [],
+    debt_amount: "0.00",
+    payment_status: "ok",
   },
 ];
 
-export const mockPaginatedData: PaginatedUsers<User> = {
+export const mockPaginatedData: PaginatedUsers<StudentListItemResponse> = {
   items: mockStudentsList,
   total: 2,
   page: 1,
@@ -97,4 +106,13 @@ export function renderStudentsPage(initialEntries = ["/students"]) {
     navigate: (path: string) => capturedNavigate?.(path),
     queryClient,
   };
+}
+
+export function mockCoursePicker(courses: CourseListItemResponse[] = []): void {
+  const coursesPage = { items: courses, total: courses.length, page: 1, page_size: 100, total_pages: 1 } as PaginatedCourses;
+  vi.spyOn(courseHooks, "useCourses").mockReturnValue({
+    data: coursesPage,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof courseHooks.useCourses>);
 }

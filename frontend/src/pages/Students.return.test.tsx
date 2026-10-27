@@ -8,10 +8,11 @@ import * as enrollmentHooks from "../lib/enrollments/hooks";
 import type { User } from "../lib/users/types";
 import type { EnrollmentResponse } from "../lib/enrollments/types";
 import { getSavedStudentsReturnContext, recordStudentsNavigation } from "../lib/users/returnContext";
-import { mockStudentsList, mockPaginatedData, renderStudentsPage } from "./StudentsTestSupport";
+import { mockCoursePicker, mockStudentsList, mockPaginatedData, renderStudentsPage } from "./StudentsTestSupport";
 
 beforeEach(() => {
   useAuthStore.setState({ role: "superadmin" });
+  mockCoursePicker();
 });
 
 afterEach(() => {

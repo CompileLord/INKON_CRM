@@ -5,11 +5,11 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { I18nextProvider } from "react-i18next";
 import i18n from "../../i18n";
 import { StudentsTable } from "./StudentsTable";
-import type { User } from "../../lib/users/types";
+import type { StudentListItemResponse } from "../../lib/users/types";
 
 afterEach(cleanup);
 
-const mockStudents: User[] = [
+const mockStudents: StudentListItemResponse[] = [
   {
     id: 101,
     email: "sarah.connor@example.com",
@@ -27,6 +27,14 @@ const mockStudents: User[] = [
     updated_at: "2026-01-10T10:00:00Z",
     photo_path: null,
     thumbnail_path: null,
+    courses: [
+      { course_id: 1, title: "Python", enrollment_id: 11, billing_mode: "paid" },
+      { course_id: 2, title: "Design", enrollment_id: 12, billing_mode: "paid" },
+      { course_id: 3, title: "Math", enrollment_id: 13, billing_mode: "paid" },
+      { course_id: 4, title: "English", enrollment_id: 14, billing_mode: "grant" },
+    ],
+    debt_amount: "250.00",
+    payment_status: "debt",
   },
   {
     id: 102,
@@ -45,6 +53,9 @@ const mockStudents: User[] = [
     updated_at: "2026-02-14T11:00:00Z",
     photo_path: null,
     thumbnail_path: null,
+    courses: [],
+    debt_amount: "0.00",
+    payment_status: "ok",
   },
 ];
 
@@ -61,6 +72,7 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
     pageSize: 20,
     totalPages: 1,
     search: "",
+    hasActiveFilters: false,
     isLoading: false,
     isError: false,
     onRetry: vi.fn(),
@@ -71,6 +83,7 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
     onDeleteRequest: vi.fn(),
     onAddStudent: vi.fn(),
     onClearSearch: vi.fn(),
+    onClearFilters: vi.fn(),
     ...props,
   };
 
@@ -91,28 +104,27 @@ function renderTable(props: Partial<Parameters<typeof StudentsTable>[0]> = {}) {
 }
 
 describe("StudentsTable without an email", () => {
-  it("shows the phone under the name when the student has no email", () => {
-    const emailless: User = { ...mockStudents[0], id: 103, email: null, phone: "+992900000099", first_name: "Nodira" };
+  it("shows the phone once when the student has no email", () => {
+    const emailless: StudentListItemResponse = { ...mockStudents[0], id: 103, email: null, phone: "+992900000099", first_name: "Nodira" };
     renderTable({ students: [emailless], total: 1 });
     const row = document.getElementById("student-row-103") as HTMLElement;
-    expect(within(row).getAllByText("+992900000099").length).toBeGreaterThanOrEqual(2);
+    expect(within(row).getAllByText("+992900000099")).toHaveLength(1);
     expect(row.textContent).not.toContain("null");
   });
 });
 
 describe("StudentsTable", () => {
-  it("shows the parent-linked badge only for students whose parent has linked Telegram", () => {
+  it("shows the Telegram state as a small icon with a tooltip and no badge", () => {
     renderTable();
-    const desktop = screen.getAllByText("Linked");
-    expect(desktop.length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Not linked").length).toBeGreaterThan(0);
     const sarahRow = document.getElementById("student-row-101") as HTMLElement;
     const johnRow = document.getElementById("student-row-102") as HTMLElement;
-    expect(within(sarahRow).getByText("Linked")).toBeTruthy();
-    expect(within(johnRow).getByText("Not linked")).toBeTruthy();
+    expect(within(sarahRow).getByRole("img", { name: "Telegram linked" }).getAttribute("title")).toBe("Telegram linked");
+    expect(within(johnRow).getByRole("img", { name: "Telegram not linked" }).getAttribute("title")).toBe("Telegram not linked");
+    expect(screen.queryByText("Not linked")).toBeNull();
+    expect(screen.queryByText("Linked")).toBeNull();
   });
 
-  it("renders each student as one row link with phone text, payment day and a menu button", async () => {
+  it("renders each student as one row link with phone text and a menu button", async () => {
     const { props } = renderTable();
 
     const row = document.getElementById("student-row-101") as HTMLElement;
@@ -128,23 +140,42 @@ describe("StudentsTable", () => {
     expect(props.onEdit).toHaveBeenCalledWith(mockStudents[0], menuButton);
   });
 
-  it("renders the payment day as text and no status pill for active students", () => {
+  it("has courses and balance columns and no payment day column", () => {
     renderTable();
-
-    expect(screen.getByText("Day 12")).toBeTruthy();
-    expect(screen.getByText("Day 25")).toBeTruthy();
-
-    const activeRow = document.getElementById("student-row-101") as HTMLElement;
-    expect(within(activeRow).queryByText("Archived")).toBeNull();
-
+    expect(screen.getByText("Courses")).toBeTruthy();
+    expect(screen.getByText("Balance")).toBeTruthy();
+    expect(screen.queryByText("Payment day")).toBeNull();
+    expect(screen.queryByText(/^Day \d+/)).toBeNull();
     const archivedRow = document.getElementById("student-row-102") as HTMLElement;
     expect(within(archivedRow).getByText("Archived")).toBeDefined();
+    const activeRow = document.getElementById("student-row-101") as HTMLElement;
+    expect(within(activeRow).queryByText("Archived")).toBeNull();
   });
 
-  it("does not add a filler tooltip to the payment day header", () => {
+  it("renders at most two course pills and a +N overflow pill", () => {
     renderTable();
-    expect(screen.queryByRole("button", { name: "Payment day" })).toBeNull();
-    expect(screen.getByText("Payment day")).toBeTruthy();
+    const row = document.getElementById("student-row-101") as HTMLElement;
+    expect(within(row).getByText("Python")).toBeTruthy();
+    expect(within(row).getByText("Design")).toBeTruthy();
+    expect(within(row).queryByText("Math")).toBeNull();
+    const overflow = within(row).getByText("+2");
+    expect(overflow.getAttribute("title")).toBe("Math, English");
+  });
+
+  it("renders the balance as debt, zero and grant", () => {
+    const grantStudent: StudentListItemResponse = { ...mockStudents[1], id: 104, is_deleted: false, payment_status: "grant" };
+    renderTable({ students: [...mockStudents, grantStudent], total: 3 });
+    const debtText = within(document.getElementById("student-row-101") as HTMLElement).getByText("Debt 250 TJS");
+    expect(debtText.className).toContain("text-destructive");
+    expect(debtText.className).toContain("tabular-nums");
+    expect(within(document.getElementById("student-row-102") as HTMLElement).getByText("0 TJS")).toBeTruthy();
+    expect(within(document.getElementById("student-row-104") as HTMLElement).getByText("Grant")).toBeTruthy();
+  });
+
+  it("keeps fractional debt amounts exact and groups thousands", () => {
+    const fractional: StudentListItemResponse = { ...mockStudents[0], id: 105, debt_amount: "1250.50" };
+    renderTable({ students: [fractional], total: 1 });
+    expect(screen.getByText("Debt 1 250.50 TJS")).toBeTruthy();
   });
 
   it("truncates the email on one line with a title", () => {
@@ -189,7 +220,7 @@ describe("StudentsTable", () => {
     renderTable();
     const row = document.getElementById("student-row-101") as HTMLElement;
     expect(within(row).getByText("sarah.connor@example.com")).toBeDefined();
-    expect(within(row).getByText("Day 12")).toBeDefined();
+    expect(within(row).getByText("Python")).toBeDefined();
     expect(row.parentElement?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
     expect(document.querySelector("table")).toBeNull();
   });
@@ -198,7 +229,7 @@ describe("StudentsTable", () => {
     const { container } = renderTable({ isLoading: true, students: [], total: 0 });
 
     expect(container.querySelectorAll('ul[aria-hidden="true"] > li')).toHaveLength(5);
-    expect(container.querySelector("ul[aria-hidden='true'] .md\\:grid-cols-\\[minmax\\(0\\,2\\.2fr\\)_minmax\\(0\\,1\\.2fr\\)_5\\.5rem_6\\.5rem\\]")).not.toBeNull();
+    expect(container.querySelector("ul[aria-hidden='true'] .md\\:grid-cols-\\[minmax\\(0\\,2fr\\)_minmax\\(0\\,1\\.1fr\\)_minmax\\(0\\,1\\.6fr\\)_9rem\\]")).not.toBeNull();
     expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
   });
 
@@ -224,6 +255,17 @@ describe("StudentsTable", () => {
     const user = userEvent.setup();
     await user.click(addButtons[0]);
     expect(onAddStudent).toHaveBeenCalled();
+  });
+
+  it("renders a filter-specific empty state with a working reset", async () => {
+    const onClearFilters = vi.fn();
+    renderTable({ students: [], total: 0, hasActiveFilters: true, onClearFilters });
+
+    expect(screen.getByText("No students match")).toBeTruthy();
+    expect(screen.getByText(/Reset them to see everyone/)).toBeTruthy();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Reset filters/i }));
+    expect(onClearFilters).toHaveBeenCalledTimes(1);
   });
 
   it("renders empty state with Clear Search button when search returns zero results", async () => {
