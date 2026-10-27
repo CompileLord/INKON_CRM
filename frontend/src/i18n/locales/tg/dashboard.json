@@ -170,5 +170,20 @@
   "noLessonsToday": "Имрӯз дарс нест",
   "noLessonsTodayHelp": "Дарсҳои имрӯза дар ин ҷо пайдо мешаванд.",
   "todayLessonsLoadFailed": "Боркунии дарсҳои имрӯза ноком шуд",
-  "openJournal": "Кушодани журнал"
+  "openJournal": "Кушодани журнал",
+  "addStudent": "Илова кардани донишҷӯ",
+  "attentionLessonsInProgress": "Дарсҳо ҳозир идома доранд",
+  "attentionAttendanceNotMarked": "Ҳозирӣ қайд нашудааст",
+  "attentionAbsentStudents": "Имрӯз ғоибанд",
+  "attentionPayments": "Пардохтҳои муҳлатдор",
+  "payAction": "Пардохт",
+  "errorLoadingAttention": "Корҳои имрӯза бор нашуданд",
+  "attentionAllClear": "Имрӯз ҳама чиз хуб аст",
+  "nextLesson": "Навбатӣ: {{when}}",
+  "nextLessonToday": "имрӯз, {{time}}",
+  "nextLessonTomorrow": "фардо, {{time}}",
+  "nextLessonOnDay": "{{day}}, {{time}}",
+  "noLessonsTodaySlim": "Имрӯз дарс нест",
+  "noLessonsTodayNext": "Имрӯз дарс нест · Навбатӣ: {{when}}",
+  "absenceStreak_ordinal_other": "Ғоибии {{count}}-ум пай дар пай"
 }
