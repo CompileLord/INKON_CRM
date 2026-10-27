@@ -1,6 +1,4 @@
 from __future__ import annotations
-from datetime import date
-from typing import Callable
 
 import secrets
 import io
@@ -17,11 +15,6 @@ from app.db.session import AsyncSessionLocal
 from app.models.user import User
 from app.tests.integration.test_remediation_wp10 import make_guard, reset_arguments
 from scripts.reset_guard import STORAGE_MARKER_NAME, STORAGE_MARKER_VERSION, ResetTarget, ResetTargetGuard
-
-
-@pytest.fixture(autouse=True)
-def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
-    freeze_school_today(date(2026, 8, 10))
 
 
 @pytest.mark.asyncio

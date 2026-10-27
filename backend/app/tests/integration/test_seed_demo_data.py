@@ -1,8 +1,7 @@
-from datetime import date
-from typing import Callable
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from typing import Callable
 from pathlib import Path
 
 import pytest
@@ -12,6 +11,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.school_calendar import SchoolCalendar
+from app.models.course import Course
+from app.models.journal import Journal
+from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.core.telegram_link_codes import TelegramLinkCodeHasher
 from app.db.session import AsyncSessionLocal
 from app.models.notification_log import NotificationLog
@@ -27,11 +30,6 @@ ADMINISTRATOR_PASSWORD: str = "synthetic seed administrator credential"
 DEMO_PASSWORD: str = "synthetic seed demo credential"
 E164_PATTERN: re.Pattern[str] = re.compile(r"^\+[1-9][0-9]{7,14}$")
 LINK_CODE_LINE: re.Pattern[str] = re.compile(r"^\s+([0-9A-HJ-NP-Z]{6})\s+(.+?)\s+expires\s", re.MULTILINE)
-
-
-@pytest.fixture(autouse=True)
-def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
-    freeze_school_today(date(2026, 8, 10))
 
 
 class SeededDatabase:
@@ -162,3 +160,25 @@ async def test_reseeding_removes_stale_outbox_events_of_the_previous_dataset(see
 @pytest.fixture(autouse=True)
 def enable_email_less_users(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "ALLOW_EMAILLESS_USERS", True)
+
+
+@pytest.fixture(params=[None, date(2026, 8, 10)])
+def seed_school_day(request: pytest.FixtureRequest, freeze_school_today: Callable[[date], None], monkeypatch: pytest.MonkeyPatch) -> date:
+    school_day: date | None = request.param
+    if school_day is not None:
+        freeze_school_today(school_day)
+        monkeypatch.setattr(SchoolCalendar, "today", staticmethod(lambda: school_day))
+    return SchoolCalendar.today()
+
+
+@pytest.mark.asyncio
+async def test_seed_courses_remain_current_with_history(seed_school_day: date, seeded: SeededDatabase) -> None:
+    async with AsyncSessionLocal() as session:
+        courses: list[Course] = list((await session.scalars(select(Course).order_by(Course.id))).all())
+        assert len(courses) == 4
+        assert all(course.start_date <= seed_school_day <= course.end_date for course in courses)
+        assert all(course.start_date < seed_school_day for course in courses[:2])
+        assert all(course.start_date == seed_school_day.replace(day=1) for course in courses[2:])
+        assert all('2026' not in course.title for course in courses)
+        assert await session.scalar(select(func.count()).select_from(Journal)) > 0
+        assert await session.scalar(select(func.count()).select_from(LedgerEntry).where(LedgerEntry.type == LedgerEntryType.PAYMENT)) == 28
