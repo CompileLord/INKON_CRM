@@ -15,19 +15,35 @@ Part of [`docs/finance-spec/`](README.md). Revision 2, 2026-10-27.
 ### 1.0 Monthly Price Semantics (Phase 0)
 1. `generate_schedule_for_enrollment` creates one tuition charge per billed month, each equal to `price_at_enrollment`. Remove the cent-splitting logic and its docstring.
 2. `InstallmentPriceInput` / `validate_installment_price`: the rule "at least one cent per monthly installment" becomes "price is positive money". Update the error text.
-3. First billed month follows Q2/Q3.
+3. Billing months and due dates follow §1.0a.
+
+### 1.0a Billing Rule (Q2, Q3, Q10)
+* **Course month k** starts at `start_date + k months` (computed from the original start date each time, clamped to the month length, so a 31st start gives 30.04, 31.05 …). Course months that start on or after `end_date` are not billed.
+* **Billed months:** from the course month that contains the enrollment date (or the course start, if enrolled before it) to the last course month. Each gets one charge equal to `price_at_enrollment`.
+* **Due date:** the first date on or after the course month's start whose day equals the student's `payment_day_of_month` (clamped to the month length). For the first billed month of a late enrollment: if that date is before the enrollment date, it is due on the enrollment date.
+* No course month ever gets two due dates, and no course month is skipped.
+
+| Course | Payment day | Due dates |
+|---|---|---|
+| 19.10–19.01 | 26 | 26.10, 26.11, 26.12 |
+| 19.10–19.01 | 5 | 05.11, 05.12, 05.01 |
+| 21.10–21.11 | 26 | 26.10 |
+| 01.06–31.08 | 26 | 26.06, 26.07, 26.08 |
+| 19.10–19.01, enrolled 05.11 | 26 | 05.11, 26.11, 26.12 |
+
+These rows are the backend test table for Phase 0.
 4. Every UI place that shows `price_at_enrollment` as a contract total must say "в месяц" or show `price × months`. Known place: `DebtorDetails.tsx` labels it `debtorsTab.contracted`.
 5. Course form price label: "Цена в месяц, TJS".
 6. No data repair tool (L6). Before deploying, re-run the read-only prod count; if any active enrollment with charges exists, stop and ask the owner.
 
 **Before starting Phase 0:**
-1. Q1–Q3 and L6 are decided (§0.1): full price per started month, billing from the enrollment month, no repair tool.
+1. Q1–Q3, Q10 and L6 are decided (§0.1): course months from the start date, billing from the course month of enrollment, no repair tool.
 2. **Production (read-only check 2026-10-27):** 3 live courses, 7 students, 2 enrollments (both withdrawn), 0 payments. The open 112.50 TJS charge was deleted on owner instruction; the other 5 charges are cancelled.
 3. **Expect many existing tests to change.** About 18 backend integration test files reference schedule generation or cent splitting (`test_finance_precision.py`, `test_finance.py`, `test_finance_redesign.py`, several `test_remediation_wp*.py`). Each test that asserts a divided amount is updated to the monthly rule, not deleted. The cent-remainder tests go away with the remainder logic.
 4. **Other readers of `price_at_enrollment`:** `debt_reminder_repository.py:119` (reminder payload) and the debtor "contracted" field. Any text that presents it as a total must say "в месяц".
 5. Invalidate the analytics cache through the existing `_invalidate_cache()` path (already called by schedule generation).
 
-**Acceptance:** a 3-month course at 500 TJS produces three 500.00 charges; a backend test fails if any charge differs from the monthly price; a late enrollment's first charge is in the enrollment month.
+**Acceptance:** a 3-month course at 500 TJS produces three 500.00 charges; a backend test fails if any charge differs from the monthly price; the §1.0a table passes as written.
 
 ### 1.0b Removed Students Still in the Course Roster (B-1, Phase 0)
 Reported by the owner on production. Cause, from the code:

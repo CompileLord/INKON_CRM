@@ -42,11 +42,11 @@ New columns (`billing_mode`, organization address/phone) and table `payment_targ
 Each phase lists its definition of done in addition to AGENTS.md §6 (backend suite on the disposable pod, `npx vitest run`, `npx tsc -p tsconfig.app.json --noEmit`, `CONTRACT.md` regenerated when a schema changes).
 
 ### Phase 0: Monthly price (OD-1) — first
-- [ ] `generate_schedule_for_enrollment`: one charge per billed month equal to `price_at_enrollment`; first month per Q2/Q3.
+- [ ] `generate_schedule_for_enrollment`: course months and due dates per §1.0a; each charge equals `price_at_enrollment`.
 - [ ] `InstallmentPriceInput` and error text: positive money only.
 - [ ] Course form label "Цена в месяц"; `DebtorDetails` "contracted" label fixed; en/ru/tg.
 - [ ] Roster and student-deletion bug (§1.0b, B-1).
-- **Tests:** 1-, 3- and 13-month courses; late enrollment; custom fee. **Accept:** no charge differs from the monthly price.
+- **Tests:** the §1.0a table; 31st start date; payment day 28 in February; late enrollment before and after the payment day; custom fee. **Accept:** no charge differs from the monthly price.
 
 ### Phase 1: Journal chart & period dialog
 - [ ] Capture the open period settings dialog (missing screenshot 23).
