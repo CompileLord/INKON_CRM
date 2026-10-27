@@ -10,6 +10,7 @@ import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import { Pagination } from "../ui/Pagination";
 import { SectionCard } from "../ui/SectionCard";
 import { EnrollStudentModal } from "./EnrollStudentModal";
+import { BillingModeDialog, type BillingModeTarget } from "../enrollments/BillingModeDialog";
 import { WithdrawalPreviewPanel } from "./WithdrawalPreviewPanel";
 import { CourseRosterRow, CourseRosterSkeleton } from "./CourseRosterRow";
 import { CourseDetailDeparture } from "./CourseDetailDeparture";
@@ -63,6 +64,7 @@ export function CourseRosterSection({
   const [enrollModalOpen, setEnrollModalOpen] = useState<boolean>(false);
   const [withdrawTarget, setWithdrawTarget] = useState<CourseRosterItem | null>(null);
   const [withdrawErrorMessage, setWithdrawErrorMessage] = useState<string | undefined>(undefined);
+  const [billingModeTarget, setBillingModeTarget] = useState<BillingModeTarget | null>(null);
   const enrollButtonRef = useRef<HTMLButtonElement | null>(null);
   const isWithdrawSubmittingRef = useRef<boolean>(false);
   const withdrawMutation = useWithdrawEnrollment();
@@ -224,9 +226,20 @@ export function CourseRosterSection({
                   item={item}
                   canOpenProfile={isSuperAdmin || isMentor}
                   canWithdraw={isSuperAdmin && item.status === "active"}
+                  canSwitchBillingMode={isSuperAdmin && item.status === "active"}
                   isHighlighted={flow.highlightedStudentId === item.student_id}
                   registerName={flow.registerStudentName}
                   onStudentOpen={recordDeparture}
+                  onSwitchBillingMode={(target: CourseRosterItem) =>
+                    setBillingModeTarget({
+                      enrollmentId: target.enrollment_id,
+                      studentId: target.student_id,
+                      courseId: target.course_id,
+                      studentName: `${target.student.first_name} ${target.student.last_name}`.trim(),
+                      courseTitle,
+                      currentMode: target.billing_mode,
+                    })
+                  }
                   onWithdraw={(target: CourseRosterItem) => {
                     setWithdrawErrorMessage(undefined);
                     setWithdrawTarget(target);
@@ -251,6 +264,8 @@ export function CourseRosterSection({
           void flow.handleEnrolled(studentId);
         }}
       />
+
+      <BillingModeDialog target={billingModeTarget} onClose={() => setBillingModeTarget(null)} onToast={onToast} />
 
       <ConfirmDialog
         open={withdrawTarget !== null}
