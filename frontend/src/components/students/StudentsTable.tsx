@@ -18,7 +18,7 @@ import { resolveMediaUrl } from "../../lib/users/media";
 import type { StudentListItemResponse, User } from "../../lib/users/types";
 
 const SKELETON_ROW_COUNT = 5;
-const ROW_GRID = "md:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,1.6fr)_9rem]";
+const ROW_GRID = "md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2.2fr)_9rem]";
 
 interface StudentsTableProps {
   students: StudentListItemResponse[];
@@ -83,19 +83,16 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
               <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className="min-w-0 break-words text-sm font-semibold text-ink">{fullName}</span>
                 <StudentStatusPill isDeleted={student.is_deleted} />
-                <span
-                  role="img"
-                  title={student.parent_linked === true ? t("table.telegramLinked") : t("table.telegramNotLinked")}
-                  aria-label={student.parent_linked === true ? t("table.telegramLinked") : t("table.telegramNotLinked")}
-                  className={`inline-flex shrink-0 ${student.parent_linked === true ? "text-success" : "text-muted opacity-50"}`}
-                >
-                  <Send size={14} aria-hidden="true" />
-                </span>
+                {student.parent_linked === true && (
+                  <span role="img" title={t("table.telegramLinked")} aria-label={t("table.telegramLinked")} className="inline-flex shrink-0 text-success">
+                    <Send size={14} aria-hidden="true" />
+                  </span>
+                )}
               </span>
               {student.email != null && <span className="truncate text-sm text-muted" title={student.email}>{student.email}</span>}
             </span>
           </span>
-          <span className="text-sm tabular-nums text-ink">{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>
+          <span className={`text-sm tabular-nums text-ink ${student.phone == null ? "hidden md:block" : ""}`}>{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>
           <StudentCoursePills courses={student.courses} />
           <span className="md:text-right"><StudentBalanceCell paymentStatus={student.payment_status} debtAmount={student.debt_amount} /></span>
         </span>

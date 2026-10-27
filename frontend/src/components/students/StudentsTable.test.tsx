@@ -114,14 +114,35 @@ describe("StudentsTable without an email", () => {
 });
 
 describe("StudentsTable", () => {
-  it("shows the Telegram state as a small icon with a tooltip and no badge", () => {
+  it("shows the Telegram icon with a tooltip only for linked parents", () => {
     renderTable();
     const sarahRow = document.getElementById("student-row-101") as HTMLElement;
     const johnRow = document.getElementById("student-row-102") as HTMLElement;
-    expect(within(sarahRow).getByRole("img", { name: "Telegram linked" }).getAttribute("title")).toBe("Telegram linked");
-    expect(within(johnRow).getByRole("img", { name: "Telegram not linked" }).getAttribute("title")).toBe("Telegram not linked");
+    expect(within(sarahRow).getByRole("img", { name: "Parent linked in Telegram" }).getAttribute("title")).toBe("Parent linked in Telegram");
+    expect(within(johnRow).queryByRole("img", { name: /Telegram/ })).toBeNull();
+    expect(screen.getAllByRole("img", { name: /Telegram/ })).toHaveLength(1);
     expect(screen.queryByText("Not linked")).toBeNull();
-    expect(screen.queryByText("Linked")).toBeNull();
+  });
+
+  it("hides the phone line on phones when there is no phone but keeps the dash on desktop", () => {
+    renderTable();
+    const dash = within(document.getElementById("student-row-102") as HTMLElement).getAllByText("—")[0];
+    expect(dash.parentElement?.className).toContain("hidden md:block");
+    const withPhone = within(document.getElementById("student-row-101") as HTMLElement).getByText("+992900000001");
+    expect(withPhone.className).not.toContain("hidden");
+  });
+
+  it("hides the empty courses dash on phones", () => {
+    renderTable();
+    const dashes = within(document.getElementById("student-row-102") as HTMLElement).getAllByText("—");
+    expect(dashes.some((dash) => dash.className.includes("hidden") && dash.className.includes("md:block"))).toBe(true);
+  });
+
+  it("lets course pills use the column width and keeps the full title", () => {
+    renderTable();
+    const pill = within(document.getElementById("student-row-101") as HTMLElement).getByText("Python");
+    expect(pill.className).toContain("max-w-full");
+    expect(pill.getAttribute("title")).toBe("Python");
   });
 
   it("renders each student as one row link with phone text and a menu button", async () => {
@@ -229,7 +250,7 @@ describe("StudentsTable", () => {
     const { container } = renderTable({ isLoading: true, students: [], total: 0 });
 
     expect(container.querySelectorAll('ul[aria-hidden="true"] > li')).toHaveLength(5);
-    expect(container.querySelector("ul[aria-hidden='true'] .md\\:grid-cols-\\[minmax\\(0\\,2fr\\)_minmax\\(0\\,1\\.1fr\\)_minmax\\(0\\,1\\.6fr\\)_9rem\\]")).not.toBeNull();
+    expect(container.querySelector("ul[aria-hidden='true'] .md\\:grid-cols-\\[minmax\\(0\\,2fr\\)_minmax\\(0\\,1fr\\)_minmax\\(0\\,2\\.2fr\\)_9rem\\]")).not.toBeNull();
     expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
   });
 

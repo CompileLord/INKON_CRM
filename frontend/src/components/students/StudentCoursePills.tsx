@@ -10,14 +10,14 @@ interface StudentCoursePillsProps {
 
 export function StudentCoursePills({ courses }: StudentCoursePillsProps) {
   const { t, i18n } = useTranslation("students");
-  if (courses.length === 0) return <span className="text-sm text-muted">—</span>;
+  if (courses.length === 0) return <span className="hidden text-sm text-muted md:block">—</span>;
   const visible: readonly StudentCoursePillResponse[] = courses.slice(0, VISIBLE_PILL_COUNT);
   const hidden: readonly StudentCoursePillResponse[] = courses.slice(VISIBLE_PILL_COUNT);
 
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1">
       {visible.map((course) => (
-        <span key={course.enrollment_id} title={course.title} className="max-w-[11rem] truncate rounded-full bg-strip px-2.5 py-0.5 text-xs font-medium text-ink">
+        <span key={course.enrollment_id} title={course.title} className="max-w-full truncate rounded-full bg-strip px-2.5 py-0.5 text-xs font-medium text-ink">
           {course.title}
         </span>
       ))}
