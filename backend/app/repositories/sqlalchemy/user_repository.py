@@ -130,7 +130,8 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             select(Enrollment.student_id.label("student_id"), func.count(Enrollment.id).label("count"),
                    func.sum(case((func.coalesce(Enrollment.billing_mode, "paid") != "grant", 1), else_=0)).label("paid"))
             .join(Course, Course.id == Enrollment.course_id)
-            .where(Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE, Course.is_deleted.is_(False))
+            .where(Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
+                   Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE)
             .group_by(Enrollment.student_id).subquery()
         )
         debt: Any = func.coalesce(debts.c.debt, Decimal("0.00"))
@@ -150,7 +151,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             query = query.where(select(Enrollment.id).join(Course, Course.id == Enrollment.course_id).where(
                 Enrollment.student_id == User.id, Enrollment.course_id == course_id,
                 Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
-                Course.is_deleted.is_(False)).exists())
+                Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE).exists())
         if payment_status is not None:
             query = query.where(status == payment_status)
         total: int = int(await self.session.scalar(select(func.count()).select_from(query.subquery())) or 0)
@@ -162,7 +163,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
                 select(Enrollment.student_id, Course.id, Course.title, Enrollment.id, Enrollment.billing_mode)
                 .join(Course, Course.id == Enrollment.course_id)
                 .where(Enrollment.student_id.in_(student_ids), Enrollment.status == EnrollmentStatus.ACTIVE,
-                       Enrollment.is_deleted.is_(False), Course.is_deleted.is_(False))
+                       Enrollment.is_deleted.is_(False), Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE)
                 .order_by(Course.title, Course.id)
             )).all()
             for student_id, course, title, enrollment, billing_mode in courses:

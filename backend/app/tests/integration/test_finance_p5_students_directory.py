@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.school_calendar import SchoolCalendar
 from app.models.charge import Charge, ChargeStatus, ChargeType
-from app.models.course import Course, CourseExamType
+from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User, UserRole
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
@@ -75,6 +75,46 @@ async def test_student_directory_filters_balances_and_debtor_agreement(
     finally:
         event.remove(db_session.bind.sync_engine, "before_cursor_execute", count_statement)
     assert counts == [3, 3]
+
+
+@pytest.mark.asyncio
+async def test_student_directory_excludes_archived_courses_but_keeps_their_debt(
+    db_session: AsyncSession, test_mentor: User,
+) -> None:
+    today: Any = SchoolCalendar.today()
+    students: list[User] = [User(first_name=name, last_name="Archived", email=f"{name}@archived.com", role=UserRole.STUDENT)
+                            for name in ("debtor", "grant", "mixed")]
+    courses: list[Course] = [Course(title=title, description="Course", start_date=today, end_date=today + timedelta(days=90),
+                                  exam_type=CourseExamType.MONTHLY, price=Decimal("100.00"), mentor_id=test_mentor.id,
+                                  status=status)
+                             for title, status in (("Archived", CourseStatus.ARCHIVED), ("Active", CourseStatus.ACTIVE))]
+    db_session.add_all(students + courses)
+    await db_session.flush()
+    enrollments: list[Enrollment] = [
+        Enrollment(student_id=students[0].id, course_id=courses[0].id, price_at_enrollment=Decimal("100"), color_hex="#112233", status=EnrollmentStatus.ACTIVE),
+        Enrollment(student_id=students[1].id, course_id=courses[0].id, price_at_enrollment=Decimal("100"), color_hex="#112233", status=EnrollmentStatus.ACTIVE, billing_mode="grant"),
+        Enrollment(student_id=students[2].id, course_id=courses[0].id, price_at_enrollment=Decimal("100"), color_hex="#112233", status=EnrollmentStatus.ACTIVE, billing_mode="paid"),
+        Enrollment(student_id=students[2].id, course_id=courses[1].id, price_at_enrollment=Decimal("100"), color_hex="#112233", status=EnrollmentStatus.ACTIVE, billing_mode="grant"),
+    ]
+    db_session.add_all(enrollments)
+    await db_session.flush()
+    db_session.add(Charge(enrollment_id=enrollments[0].id, student_id=students[0].id, sequence_no=1,
+                          due_date=today, amount=Decimal("50"), type=ChargeType.TUITION, status=ChargeStatus.OPEN))
+    await db_session.flush()
+    repository: SQLAlchemyUserRepository = SQLAlchemyUserRepository(db_session)
+    result: Any = await repository.get_student_directory(1, 20, None, None, None, None)
+    items: dict[int, Any] = {item["id"]: item for item in result["items"]}
+    assert items[students[0].id]["courses"] == []
+    assert Decimal(items[students[0].id]["debt_amount"]) == Decimal("50")
+    assert items[students[0].id]["payment_status"] == "debt"
+    assert items[students[1].id]["courses"] == []
+    assert items[students[1].id]["payment_status"] == "ok"
+    assert [course["course_id"] for course in items[students[2].id]["courses"]] == [courses[1].id]
+    assert items[students[2].id]["payment_status"] == "grant"
+    archived: Any = await repository.get_student_directory(1, 20, None, None, courses[0].id, None)
+    assert archived["total"] == 0
+    grants: Any = await repository.get_student_directory(1, 20, None, None, None, "grant")
+    assert {item["id"] for item in grants["items"]} == {students[2].id}
 
 
 @pytest.mark.asyncio
