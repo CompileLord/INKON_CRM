@@ -104,7 +104,7 @@
     "mentorLabel": "Ментор",
     "selectMentor": "Выберите ментора",
     "examTypeLabel": "Тип экзамена",
-    "priceLabel": "Цена, TJS",
+    "priceLabel": "Цена в месяц, TJS",
     "pricePlaceholder": "1500",
     "immutableNotice": "Тип экзамена, цену и расписание нельзя изменить после создания курса.",
     "scheduleLabel": "Расписание",

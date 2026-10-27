@@ -11,6 +11,8 @@
 import type { Paginated } from "../pagination";
 
 export type EnrollmentStatus = "active" | "withdrawn" | "completed";
+export type RosterStatusFilter = EnrollmentStatus | "all";
+export const DEFAULT_ROSTER_STATUS_FILTER: RosterStatusFilter = "active";
 
 export interface EnrollmentCreate {
   student_id: number;

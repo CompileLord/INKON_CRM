@@ -228,7 +228,7 @@ describe("Course roster section", () => {
               onSortOptionChange={vi.fn()}
               page={1}
               onPageChange={vi.fn()}
-              statusFilter={undefined}
+              statusFilter="active"
               onStatusFilterChange={vi.fn()}
               onToast={vi.fn()}
               onReady={vi.fn()}
@@ -345,7 +345,7 @@ describe("Course roster section", () => {
         sort: "enrolled_desc",
       });
       expect(onSearchQueryChange).toHaveBeenCalledWith("");
-      expect(onStatusFilterChange).toHaveBeenCalledWith(undefined);
+      expect(onStatusFilterChange).toHaveBeenCalledWith("all");
       expect(onPageChange).toHaveBeenCalledWith(2);
     });
   });

@@ -6,7 +6,7 @@ import {
   isInternalReturnSignal,
   type CourseDetailReturnContext,
 } from "../../lib/courses/returnContext";
-import type { EnrollmentStatus } from "../../lib/enrollments/types";
+import { DEFAULT_ROSTER_STATUS_FILTER, type RosterStatusFilter } from "../../lib/enrollments/types";
 import type { CourseRosterSortOption } from "./CourseRosterSection";
 import type { ProgressSortOption } from "./CourseProgressPane";
 
@@ -54,9 +54,9 @@ class SavedContextReader {
     return saved?.tab === "students" && saved.rosterPage ? saved.rosterPage : 1;
   }
 
-  rosterStatus(): EnrollmentStatus | undefined {
+  rosterStatus(): RosterStatusFilter {
     const saved: CourseDetailReturnContext | null = this.saved();
-    return saved?.tab === "students" ? saved.rosterStatus : undefined;
+    return saved?.tab === "students" ? (saved.rosterStatus ?? DEFAULT_ROSTER_STATUS_FILTER) : DEFAULT_ROSTER_STATUS_FILTER;
   }
 
   static normalizeProgressSort(sort: string | undefined): ProgressSortOption {
@@ -81,8 +81,8 @@ export interface CourseDetailContext {
   setRosterSort: (sort: CourseRosterSortOption) => void;
   rosterPage: number;
   setRosterPage: (page: number) => void;
-  rosterStatus: EnrollmentStatus | undefined;
-  setRosterStatus: (status: EnrollmentStatus | undefined) => void;
+  rosterStatus: RosterStatusFilter;
+  setRosterStatus: (status: RosterStatusFilter) => void;
   markPaneReady: (tab: CourseTabId) => void;
   resetPaneReadiness: () => void;
   cancelScrollRestore: () => void;
@@ -98,7 +98,7 @@ export function useCourseDetailContext(courseId: number | undefined, activeTab: 
   const [rosterSearch, setRosterSearch] = useState<string>(() => initialReader.rosterSearch());
   const [rosterSort, setRosterSort] = useState<CourseRosterSortOption>(() => initialReader.rosterSort());
   const [rosterPage, setRosterPage] = useState<number>(() => initialReader.rosterPage());
-  const [rosterStatus, setRosterStatus] = useState<EnrollmentStatus | undefined>(() => initialReader.rosterStatus());
+  const [rosterStatus, setRosterStatus] = useState<RosterStatusFilter>(() => initialReader.rosterStatus());
   const [readyTab, setReadyTab] = useState<CourseTabId | null>(null);
 
   const restoredContextRef = useRef<number | null>(null);
@@ -158,7 +158,7 @@ export function useCourseDetailContext(courseId: number | undefined, activeTab: 
     setRosterSearch("");
     setRosterSort("enrolled_desc");
     setRosterPage(1);
-    setRosterStatus(undefined);
+    setRosterStatus(DEFAULT_ROSTER_STATUS_FILTER);
     setProgressSearch("");
     setProgressSort("score_desc");
   }, [courseId, location.state, searchParams]);

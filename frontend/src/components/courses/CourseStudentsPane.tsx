@@ -1,5 +1,5 @@
 import { CourseRosterSection, type CourseRosterSortOption } from "./CourseRosterSection";
-import type { EnrollmentStatus } from "../../lib/enrollments/types";
+import type { RosterStatusFilter } from "../../lib/enrollments/types";
 
 interface CourseStudentsPaneProps {
   courseId: number;
@@ -13,8 +13,8 @@ interface CourseStudentsPaneProps {
   onSortOptionChange: (s: CourseRosterSortOption) => void;
   page: number;
   onPageChange: (p: number) => void;
-  statusFilter: EnrollmentStatus | undefined;
-  onStatusFilterChange: (s: EnrollmentStatus | undefined) => void;
+  statusFilter: RosterStatusFilter;
+  onStatusFilterChange: (s: RosterStatusFilter) => void;
   onToast: (message: string, variant: "success" | "error") => void;
   onReady?: () => void;
 }

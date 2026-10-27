@@ -299,6 +299,24 @@ describe("CourseProfile Component", () => {
       });
     });
 
+    it("defaults the Students roster to active and restores an explicit All choice", async () => {
+      returnContext.recordCourseDetailNavigation(42, { tab: "students", rosterPage: 1 });
+      renderCourseProfile([{ pathname: "/courses/42", state: { fromInternalReturn: true } }]);
+      await waitFor(() => {
+        expect(enrollmentHooks.useCourseRosterPage).toHaveBeenLastCalledWith(42, expect.objectContaining({ status: "active" }));
+      });
+    });
+
+    it("keeps All when the user chose All before leaving the roster", async () => {
+      returnContext.recordCourseDetailNavigation(42, { tab: "students", rosterStatus: "all" });
+      renderCourseProfile([{ pathname: "/courses/42", state: { fromInternalReturn: true } }]);
+      await waitFor(() => {
+        const lastParams = vi.mocked(enrollmentHooks.useCourseRosterPage).mock.calls.at(-1)?.[1];
+        expect(lastParams).toHaveProperty("status", undefined);
+        expect(lastParams?.page).toBe(1);
+      });
+    });
+
     it("restores Students tab return context with page, status, search, sort, and scroll without progress leakage or cross-course carryover", async () => {
       const scrollToSpy = vi.fn();
       window.scrollTo = scrollToSpy;

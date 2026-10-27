@@ -185,6 +185,14 @@ describe("course detail return context and journal URL building", () => {
     expect(saved?.rosterStatus).toBe("withdrawn");
   });
 
+  it("keeps an explicit all-statuses roster choice distinct from nothing stored", () => {
+    recordCourseDetailNavigation(42, { tab: "students", rosterStatus: "all" });
+    expect(getSavedCourseDetailContext(42)?.rosterStatus).toBe("all");
+    sessionStorage.clear();
+    recordCourseDetailNavigation(43, { tab: "students" });
+    expect(getSavedCourseDetailContext(43)?.rosterStatus).toBeUndefined();
+  });
+
   it("rejects invalid rosterPage and rosterStatus in stored payload", () => {
     sessionStorage.setItem(
       "kitob_course_detail_return:42",

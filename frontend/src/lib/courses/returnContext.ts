@@ -199,7 +199,7 @@ export interface CourseDetailReturnContext {
   sort?: string;
   view?: "matrix" | "table";
   rosterPage?: number;
-  rosterStatus?: "active" | "withdrawn" | "completed";
+  rosterStatus?: "all" | "active" | "withdrawn" | "completed";
   scrollY: number;
   timestamp: number;
 }
@@ -229,7 +229,7 @@ export function recordCourseDetailNavigation(
     sort?: string;
     view?: "matrix" | "table";
     rosterPage?: number;
-    rosterStatus?: "active" | "withdrawn" | "completed";
+    rosterStatus?: "all" | "active" | "withdrawn" | "completed";
     scrollY?: number;
   } = {},
 ): CourseDetailReturnContext {
@@ -265,6 +265,7 @@ export function recordCourseDetailNavigation(
       : undefined;
 
   const validRosterStatus =
+    options.rosterStatus === "all" ||
     options.rosterStatus === "active" ||
     options.rosterStatus === "withdrawn" ||
     options.rosterStatus === "completed"
@@ -386,9 +387,10 @@ export function getSavedCourseDetailContext(courseId: number): CourseDetailRetur
       validRosterPage = candidate.rosterPage;
     }
 
-    let validRosterStatus: "active" | "withdrawn" | "completed" | undefined = undefined;
+    let validRosterStatus: "all" | "active" | "withdrawn" | "completed" | undefined = undefined;
     if ("rosterStatus" in candidate && candidate.rosterStatus !== undefined) {
       if (
+        candidate.rosterStatus !== "all" &&
         candidate.rosterStatus !== "active" &&
         candidate.rosterStatus !== "withdrawn" &&
         candidate.rosterStatus !== "completed"
