@@ -149,115 +149,134 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         return list(result.scalars().all())
 
     async def get_mentor_profile_stats(self, mentor_id: int) -> Dict[str, Any]:
-        courses_query = select(Course).filter(
+        courses_query: Select[tuple[Course]] = select(Course).filter(
             Course.mentor_id == mentor_id,
             Course.status == CourseStatus.ACTIVE,
-            Course.is_deleted == False
+            Course.is_deleted.is_(False),
         )
-        courses_result = await self.session.execute(courses_query)
-        active_courses = list(courses_result.scalars().all())
+        courses_result: Result[tuple[Course]] = await self.session.execute(courses_query)
+        active_courses: list[Course] = list(courses_result.scalars().all())
 
-        active_students_query = select(func.count(func.distinct(Enrollment.student_id))).join(Course).join(User, User.id == Enrollment.student_id).filter(
-            Course.mentor_id == mentor_id,
-            Enrollment.status == EnrollmentStatus.ACTIVE,
-            Enrollment.is_deleted == False,
-            User.is_deleted.is_(False),
-        )
-        active_students_result = await self.session.execute(active_students_query)
-        active_students_count = active_students_result.scalar() or 0
-
-        avg_score_query = select(
-            func.avg(
-                case(
-                    (JournalStudentSummary.max_period_score > 0, (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
-                    else_=None
-                )
+        active_students_query: Select[tuple[int]] = (
+            select(func.count(func.distinct(Enrollment.student_id)))
+            .join(Course, Course.id == Enrollment.course_id)
+            .join(User, User.id == Enrollment.student_id)
+            .filter(
+                Course.mentor_id == mentor_id,
+                Course.is_deleted.is_(False),
+                Enrollment.status == EnrollmentStatus.ACTIVE,
+                Enrollment.is_deleted.is_(False),
+                User.is_deleted.is_(False),
             )
-        ).join(
-            Journal, JournalStudentSummary.journal_id == Journal.id
-        ).join(Course, Journal.course_id == Course.id).filter(
-            Course.mentor_id == mentor_id,
-            Journal.period_start <= date.today(),
-            JournalStudentSummary.is_graded.is_(True),
         )
-        avg_score_result = await self.session.execute(avg_score_query)
-        avg_score = avg_score_result.scalar()
+        active_students_result: Result[tuple[int]] = await self.session.execute(active_students_query)
+        active_students_count: int = int(active_students_result.scalar() or 0)
 
-        profile_summary_counts_query = select(
-            func.count(JournalStudentSummary.id),
-            func.count(case((JournalStudentSummary.max_period_score > 0, JournalStudentSummary.id))),
-            func.count(case((JournalStudentSummary.max_period_score <= 0, JournalStudentSummary.id))),
-            func.avg(case(
-                (JournalStudentSummary.is_graded.is_(True) & (JournalStudentSummary.max_period_score > 0),
-                 (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
-                else_=None
-            ))
-        ).join(
-            Journal, JournalStudentSummary.journal_id == Journal.id
-        ).join(Course, Journal.course_id == Course.id).filter(
-            Course.mentor_id == mentor_id,
-            Journal.period_start <= date.today(),
+        mentor_graded_query: Select[tuple[int, Any, Any, int]] = (
+            select(
+                func.count(JournalStudentSummary.id),
+                func.avg(JournalStudentSummary.sum_score),
+                func.avg(case(
+                    (JournalStudentSummary.max_period_score > 0,
+                     (JournalStudentSummary.sum_score * 100.0) / JournalStudentSummary.max_period_score),
+                    else_=None
+                )),
+                func.count(case((JournalStudentSummary.max_period_score > 0, JournalStudentSummary.id))),
+            )
+            .join(Journal, JournalStudentSummary.journal_id == Journal.id)
+            .join(Course, Journal.course_id == Course.id)
+            .join(Enrollment, (Enrollment.course_id == Course.id) & (Enrollment.student_id == JournalStudentSummary.student_id))
+            .join(User, User.id == Enrollment.student_id)
+            .filter(
+                Course.mentor_id == mentor_id,
+                Course.is_deleted.is_(False),
+                Enrollment.status == EnrollmentStatus.ACTIVE,
+                Enrollment.is_deleted.is_(False),
+                User.is_deleted.is_(False),
+                Journal.period_start <= date.today(),
+                JournalStudentSummary.is_graded.is_(True),
+            )
         )
-        profile_summary_counts_result: Any = await self.session.execute(profile_summary_counts_query)
-        summary_count: int
-        defined_ratio_count: int
-        undefined_ratio_count: int
-        defined_ratios_mean: Any
-        summary_count, defined_ratio_count, undefined_ratio_count, defined_ratios_mean = profile_summary_counts_result.one()
+        mentor_graded_result: Result[tuple[int, Any, Any, int]] = await self.session.execute(mentor_graded_query)
+        summary_count_raw: Any
+        points_mean_raw: Any
+        ratios_mean_raw: Any
+        defined_count_raw: Any
+        summary_count_raw, points_mean_raw, ratios_mean_raw, defined_count_raw = mentor_graded_result.one()
+        summary_count: int = int(summary_count_raw or 0)
+        defined_ratio_count: int = int(defined_count_raw or 0)
+        undefined_ratio_count: int = summary_count - defined_ratio_count
+        defined_ratios_mean: float | None = float(ratios_mean_raw) if ratios_mean_raw is not None else None
+        avg_score: float = round(defined_ratios_mean, 2) if defined_ratios_mean is not None else 0.0
 
         return {
             "active_courses": active_courses,
             "active_students_count": active_students_count,
-            "avg_score": round(float(avg_score), 2) if avg_score is not None else 0.0,
+            "avg_score": avg_score,
             "avg_score_grading_state": "unknown" if summary_count else "missing",
             "avg_score_provenance": "unknown",
             "avg_score_basis": "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived",
             "avg_score_summary_count": summary_count,
             "avg_score_defined_ratio_count": defined_ratio_count,
             "avg_score_undefined_ratio_count": undefined_ratio_count,
-            "avg_score_defined_ratios_mean": float(defined_ratios_mean) if defined_ratios_mean is not None else None
+            "avg_score_defined_ratios_mean": defined_ratios_mean,
         }
 
     async def get_mentor_analytics(self, mentor_id: int) -> Dict[str, Any]:
-        active_courses_result: Any = await self.session.execute(select(func.count(Course.id)).filter(
+        active_courses_result: Result[tuple[int]] = await self.session.execute(select(func.count(Course.id)).filter(
             Course.mentor_id == mentor_id,
             Course.status == CourseStatus.ACTIVE,
-            Course.is_deleted == False
+            Course.is_deleted.is_(False),
         ))
-        active_courses_count: int = active_courses_result.scalar() or 0
+        active_courses_count: int = int(active_courses_result.scalar() or 0)
 
-        students_result: Any = await self.session.execute(select(
+        students_result: Result[tuple[int]] = await self.session.execute(select(
             func.count(func.distinct(Enrollment.student_id))
-        ).join(Course).filter(
+        ).join(Course, Course.id == Enrollment.course_id).join(User, User.id == Enrollment.student_id).filter(
             Course.mentor_id == mentor_id,
-            Enrollment.is_deleted == False
+            Course.is_deleted.is_(False),
+            Enrollment.status == EnrollmentStatus.ACTIVE,
+            Enrollment.is_deleted.is_(False),
+            User.is_deleted.is_(False),
         ))
-        total_students_count: int = students_result.scalar() or 0
+        total_students_count: int = int(students_result.scalar() or 0)
 
-        score_result: Any = await self.session.execute(select(
-            func.avg(JournalStudentSummary.sum_score).filter(JournalStudentSummary.is_graded.is_(True)),
-            func.count(JournalStudentSummary.id)
-        ).join(
-            Journal, JournalStudentSummary.journal_id == Journal.id
-        ).join(Course, Journal.course_id == Course.id).filter(
-            Course.mentor_id == mentor_id,
-            Course.is_deleted == False,
-            Journal.period_start <= date.today(),
-        ))
-        average_score: Any
-        summary_count: int
-        average_score, summary_count = score_result.one()
+        mentor_graded_query: Select[tuple[int, Any]] = (
+            select(
+                func.count(JournalStudentSummary.id),
+                func.avg(JournalStudentSummary.sum_score),
+            )
+            .join(Journal, JournalStudentSummary.journal_id == Journal.id)
+            .join(Course, Journal.course_id == Course.id)
+            .join(Enrollment, (Enrollment.course_id == Course.id) & (Enrollment.student_id == JournalStudentSummary.student_id))
+            .join(User, User.id == Enrollment.student_id)
+            .filter(
+                Course.mentor_id == mentor_id,
+                Course.is_deleted.is_(False),
+                Enrollment.status == EnrollmentStatus.ACTIVE,
+                Enrollment.is_deleted.is_(False),
+                User.is_deleted.is_(False),
+                Journal.period_start <= date.today(),
+                JournalStudentSummary.is_graded.is_(True),
+            )
+        )
+        score_result: Result[tuple[int, Any]] = await self.session.execute(mentor_graded_query)
+        summary_count_raw: Any
+        average_score_raw: Any
+        summary_count_raw, average_score_raw = score_result.one()
+        summary_count: int = int(summary_count_raw or 0)
+        average_score: float = float(average_score_raw) if average_score_raw is not None else 0.0
 
         return {
             "active_courses_count": active_courses_count,
             "active_courses_population": "active_non_deleted_courses",
             "total_students_count": total_students_count,
             "total_students_population": "non_deleted_enrollments_on_assigned_courses_all_statuses_including_soft_deleted_courses",
-            "average_student_score": float(average_score) if average_score is not None else 0.0,
+            "average_student_score": average_score,
             "average_student_score_grading_state": "unknown" if summary_count else "missing",
             "average_student_score_provenance": "unknown",
             "average_student_score_basis": "all_summaries_on_non_deleted_courses_including_archived_raw_points",
-            "average_student_score_summary_count": summary_count
+            "average_student_score_summary_count": summary_count,
         }
 
     async def mentor_has_student(self, mentor_id: int, student_id: int) -> bool:
