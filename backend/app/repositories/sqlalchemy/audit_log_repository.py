@@ -33,6 +33,15 @@ class SQLAlchemyAuditLogRepository(SQLAlchemyBaseRepository[AuditLog], AuditLogR
         return raw_text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     def _apply_filters(self, query: Any, filters: AuditLogFilters) -> Any:
+        if filters.category_entity_types is not None:
+            if filters.category_system:
+                query = query.where(or_(AuditLog.user_id.is_(None),
+                                        AuditLog.entity_type.not_in(filters.category_entity_types),
+                                        AuditLog.field_name.in_(filters.category_system_fields)))
+            else:
+                query = query.where(and_(AuditLog.user_id.is_not(None),
+                                         AuditLog.entity_type.in_(filters.category_entity_types),
+                                         AuditLog.field_name.not_in(filters.category_system_fields)))
         if filters.actor_id is not None:
             query = query.where(AuditLog.user_id == filters.actor_id)
         if filters.action is not None:

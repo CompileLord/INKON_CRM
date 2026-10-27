@@ -122,7 +122,7 @@ class UserService:
 
         issued_link_code: IssuedLinkCode | None = None
         if created_user.role == UserRole.STUDENT:
-            issued_link_code = await TelegramLinkService(self.db).issue_code(created_user, None)
+            issued_link_code = await TelegramLinkService(self.db).issue_code(created_user, actor_id)
 
         delivery: CredentialsDelivery = await CredentialsDeliveryService(self.db).deliver(
             created_user, PasswordSmsReason.INITIAL, None, actor_id, enforce_rate_limits=False

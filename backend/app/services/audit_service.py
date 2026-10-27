@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime, time, timedelta, timezone
+from enum import Enum
 from typing import Any, Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.interfaces.base_repository import RepositoryPage
@@ -15,6 +16,24 @@ from app.repositories.sqlalchemy.audit_log_repository import SQLAlchemyAuditLogR
 
 DUSHANBE_UTC_OFFSET: timedelta = timedelta(hours=5)
 MAXIMUM_PAGE_SIZE: int = 100
+
+
+class AuditCategory(str, Enum):
+    PAYMENTS = "payments"
+    STUDENTS = "students"
+    COURSES = "courses"
+    JOURNAL = "journal"
+    SYSTEM = "system"
+
+
+class AuditCategoryPolicy:
+    entity_types: dict[AuditCategory, tuple[str, ...]] = {
+        AuditCategory.PAYMENTS: ("payment", "discount", "adjustment", "allocation", "accounting_period"),
+        AuditCategory.STUDENTS: ("user", "student", "enrollment"),
+        AuditCategory.COURSES: ("course",),
+        AuditCategory.JOURNAL: ("journal", "journal_entry"),
+    }
+    system_fields: tuple[str, ...] = ("credentials_queued", "password_sms_queued")
 
 
 class AuditService:
@@ -71,9 +90,14 @@ class AuditService:
         date_from: Optional[date],
         date_to: Optional[date],
         search: Optional[str],
+        category: Optional[AuditCategory],
     ) -> AuditLogFilters:
         normalized_search: Optional[str] = search.strip() if search and search.strip() else None
         return AuditLogFilters(
+            category_entity_types=(tuple(entity for entities in AuditCategoryPolicy.entity_types.values() for entity in entities)
+                                   if category == AuditCategory.SYSTEM else AuditCategoryPolicy.entity_types.get(category)),
+            category_system=category == AuditCategory.SYSTEM,
+            category_system_fields=AuditCategoryPolicy.system_fields if category is not None else (),
             actor_id=actor_id,
             action=action.value if action is not None else None,
             entity_type=entity_type,
@@ -94,9 +118,10 @@ class AuditService:
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         search: Optional[str] = None,
+        category: Optional[AuditCategory] = None,
     ) -> RepositoryPage[dict[str, Any]]:
         bounded_page_size: int = min(max(1, page_size), MAXIMUM_PAGE_SIZE)
-        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
+        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search, category)
         event_keys, total = await self.audit_repo.list_event_keys(filters, page, bounded_page_size)
         changes = await self.audit_repo.list_changes_for_events(event_keys)
         changes_by_key: dict[tuple, list[AuditLog]] = {}
@@ -165,9 +190,10 @@ class AuditService:
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         search: Optional[str] = None,
+        category: Optional[AuditCategory] = None,
     ) -> RepositoryPage[dict[str, Any]]:
         bounded_page_size: int = min(max(1, page_size), MAXIMUM_PAGE_SIZE)
-        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search)
+        filters: AuditLogFilters = self._build_filters(actor_id, action, entity_type, entity_id, date_from, date_to, search, category)
         rows, total = await self.audit_repo.list_filtered_rows(filters, page, bounded_page_size)
         references = await self.audit_repo.resolve_entity_references(self._collect_entity_ids(rows))
         return {
