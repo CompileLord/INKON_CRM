@@ -106,7 +106,7 @@ async def test_roster_soft_deletes_and_class_sizes_survive_upgrade_downgrade_reu
         await database.execute("ALTER TABLE users ADD COLUMN preferred_language VARCHAR(2)")
         await RosterIndexFixture.seed(database)
         before: dict[str, Any] = await RosterIndexFixture.snapshot(database)
-        assert before == {'1': {'ids': [2, 3, 4, 5, 6, 7], 'total': 6, 'active_count': 4, 'located_page': 3, 'located_index': 5, 'filtered': [7]}, '2': {'ids': [9], 'total': 1, 'active_count': 1, 'located_page': None, 'located_index': None, 'filtered': []}, '3': {'ids': [], 'total': 0, 'active_count': 0, 'located_page': None, 'located_index': None, 'filtered': []}, 'class_sizes': {1: 4, 2: 1}}
+        assert before == {'1': {'ids': [2, 3, 4, 5, 6], 'total': 5, 'active_count': 3, 'located_page': None, 'located_index': None, 'filtered': []}, '2': {'ids': [9], 'total': 1, 'active_count': 1, 'located_page': None, 'located_index': None, 'filtered': []}, '3': {'ids': [], 'total': 0, 'active_count': 0, 'located_page': None, 'located_index': None, 'filtered': []}, 'class_sizes': {1: 3, 2: 1}}
         RosterIndexFixture.assert_command(database.upgrade('rwp64_roster_index'))
         assert await database.fetchval('SELECT version_num FROM alembic_version') == 'rwp64_roster_index'
         await RosterIndexFixture.assert_valid_index(database)

@@ -4,7 +4,7 @@ from sqlalchemy import func, or_, select, Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 from app.schemas.course_list import CourseSortOrder
 from app.repositories.interfaces.base_repository import RepositoryPage
 from app.repositories.sqlalchemy.person_search import PersonSearch
@@ -90,10 +90,12 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
             return {}
         statement: Select[tuple[int, int]] = (
             select(Enrollment.course_id, func.count(Enrollment.id))
+            .join(User, User.id == Enrollment.student_id)
             .where(
                 Enrollment.course_id.in_(course_ids),
                 Enrollment.status == EnrollmentStatus.ACTIVE,
                 Enrollment.is_deleted == False,
+                User.is_deleted.is_(False),
             )
             .group_by(Enrollment.course_id)
         )

@@ -55,6 +55,9 @@ class EnrollmentFilters(TypedDict, total=False):
 
 
 class EnrollmentRepository(BaseRepository[Enrollment], Protocol):
+    async def list_active_for_student(self, student_id: int) -> list[Enrollment]:
+        ...
+
     async def get_course_roster(
         self,
         course_id: int,

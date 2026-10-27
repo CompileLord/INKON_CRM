@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.email_normalizer import EmailNormalizer
 from app.models.user import User, UserRole
+from app.models.enrollment import Enrollment
+from app.services.enrollment_service import EnrollmentService
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.schemas.common import CanonicalPhonePolicy
 from app.schemas.user import UserCreate, UserUpdate, UserSelfUpdate
@@ -296,6 +298,16 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+
+        if user.role == UserRole.STUDENT:
+            from app.services.finance_service import FinanceService
+
+            await FinanceService(self.db).lock_student_accounts([user_id])
+            enrollment_service: EnrollmentService = EnrollmentService(self.db)
+            active_enrollments: list[Enrollment] = await enrollment_service.enrollment_repo.list_active_for_student(user_id)
+            enrollment: Enrollment
+            for enrollment in active_enrollments:
+                await enrollment_service.withdraw_student(enrollment.id, current_user_id)
 
         success = await self.user_repo.soft_delete(user_id)
         if success:

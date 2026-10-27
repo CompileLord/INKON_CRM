@@ -28,6 +28,14 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Enrollment, session)
 
+    async def list_active_for_student(self, student_id: int) -> list[Enrollment]:
+        statement: Select[tuple[Enrollment]] = select(Enrollment).where(
+            Enrollment.student_id == student_id,
+            Enrollment.status == EnrollmentStatus.ACTIVE,
+            Enrollment.is_deleted.is_(False),
+        ).order_by(Enrollment.id)
+        return list((await self.session.execute(statement)).scalars().all())
+
     def _build_roster_filter_criteria(
         self,
         course_id: int,
@@ -38,6 +46,7 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         criteria: list[ColumnElement[bool]] = [
             Enrollment.course_id == course_id,
             Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         ]
         if status:
             criteria.append(Enrollment.status == status)
@@ -277,10 +286,11 @@ class SQLAlchemyEnrollmentRepository(SQLAlchemyBaseRepository[Enrollment], Enrol
         )
 
     async def get_active_enrollments_count(self, course_id: int) -> int:
-        query = select(func.count(Enrollment.id)).filter(
+        query = select(func.count(Enrollment.id)).join(User, User.id == Enrollment.student_id).filter(
             Enrollment.course_id == course_id,
             Enrollment.status == EnrollmentStatus.ACTIVE,
             Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         )
         result = await self.session.execute(query)
         return result.scalar() or 0

@@ -157,10 +157,11 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         courses_result = await self.session.execute(courses_query)
         active_courses = list(courses_result.scalars().all())
 
-        active_students_query = select(func.count(func.distinct(Enrollment.student_id))).join(Course).filter(
+        active_students_query = select(func.count(func.distinct(Enrollment.student_id))).join(Course).join(User, User.id == Enrollment.student_id).filter(
             Course.mentor_id == mentor_id,
             Enrollment.status == EnrollmentStatus.ACTIVE,
-            Enrollment.is_deleted == False
+            Enrollment.is_deleted == False,
+            User.is_deleted.is_(False),
         )
         active_students_result = await self.session.execute(active_students_query)
         active_students_count = active_students_result.scalar() or 0
