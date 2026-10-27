@@ -307,5 +307,6 @@
   },
   "studentsCount_one": "{{count}} донишҷӯ",
   "studentsCount_other": "{{count}} донишҷӯ",
-  "statusLabel": "Ҳолат"
+  "statusLabel": "Ҳолат",
+  "statusActive": "Идома дорад"
 }

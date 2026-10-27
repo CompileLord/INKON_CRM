@@ -64,13 +64,13 @@ describe("course entries on shared primitives", () => {
     expect(screen.getByText("700 TJS / mo")).toBeTruthy();
   });
 
-  it("marks only archived courses with a status badge", () => {
+  it("marks active courses with emerald status badge and archived courses with archived badge", () => {
     const { rerender, container } = render(
       <MemoryRouter>
         <CourseCard course={baseCourse} isMentor={false} menuHandlers={null} />
       </MemoryRouter>,
     );
-    expect(container.querySelector("[data-badge-status]")).toBeNull();
+    expect(container.querySelector("[data-badge-status='active']")).not.toBeNull();
     rerender(
       <MemoryRouter>
         <CourseCard course={{ ...baseCourse, status: "archived" }} isMentor={false} menuHandlers={null} />

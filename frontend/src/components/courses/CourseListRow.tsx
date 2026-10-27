@@ -31,7 +31,7 @@ export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandle
       <ListRow to={`/courses/${course.id}`} menuItems={menu.items} menuLabel={menu.label}>
         <span className={`grid items-center gap-x-4 gap-y-1 ${columns}`}>
           <span className="flex min-w-0 items-center gap-3">
-            <CourseThumb title={course.title} photoPath={course.photo_path} />
+            <CourseThumb title={course.title} photoPath={course.photo_path} size="md" />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 flex-wrap items-center gap-x-2">
                 <span className="break-words text-sm font-semibold text-ink">{course.title}</span>

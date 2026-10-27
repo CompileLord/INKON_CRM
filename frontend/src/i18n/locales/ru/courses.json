@@ -309,5 +309,6 @@
   "studentsCount_few": "{{count}} студента",
   "studentsCount_many": "{{count}} студентов",
   "studentsCount_other": "{{count}} студента",
-  "statusLabel": "Статус"
+  "statusLabel": "Статус",
+  "statusActive": "Идёт"
 }
