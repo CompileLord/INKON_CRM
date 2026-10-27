@@ -65,7 +65,17 @@ class TestU07(U07AuditSupport):
         if withdraw:
             response = await client.patch(f"/api/v1/enrollments/{enrollment_id}/withdraw", headers=self.headers(test_admin))
             assert response.status_code == 200, response.text
-        await self.assert_change(client, test_admin, "enrollment", enrollment_id, "update" if withdraw else "create", "Student One", {"status"} if withdraw else {"student_id", "course_id"})
+        if withdraw:
+            events: list[dict[str, Any]] = await self.events(client, test_admin, entity_type="enrollment", entity_id=enrollment_id, action="update")
+            assert len(events) == 1
+            changes: dict[str, tuple[str | None, str | None]] = {change["field_name"]: (change["old_value"], change["new_value"]) for change in events[0]["changes"]}
+            assert set(changes) == {"changed_fields", "cancelled_amount", "months_cancelled"}
+            assert changes["changed_fields"] == (None, '["status"]')
+            assert changes["cancelled_amount"][0] is None and changes["cancelled_amount"][1] is not None
+            assert changes["months_cancelled"][0] is None and changes["months_cancelled"][1] is not None
+            await self.assert_change(client, test_admin, "enrollment", enrollment_id, "update", "Student One", changes)
+        else:
+            await self.assert_change(client, test_admin, "enrollment", enrollment_id, "create", "Student One", {"student_id", "course_id"})
 
     @pytest.mark.parametrize("payload", [{"org_name": "Audit Academy"}, {"notify_payments": False, "notify_debts": False}])
     async def test_settings_changed(self, client: AsyncClient, test_admin: User, payload: dict[str, Any]) -> None:
