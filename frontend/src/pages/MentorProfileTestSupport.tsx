@@ -8,6 +8,7 @@ import { MentorProfile } from "./MentorProfile";
 import { useAuthStore } from "../store/authStore";
 import * as endpoints from "../lib/users/endpoints";
 import * as documentEndpoints from "../lib/documents/endpoints";
+import * as courseEndpoints from "../lib/courses/endpoints";
 import type { MentorProfileResponse, MentorAnalyticsResponse, User } from "../lib/users/types";
 import { clearSavedMentorsReturnContext } from "../lib/users/returnContext";
 
@@ -38,6 +39,7 @@ export function registerMentorProfileHooks(): void {
     useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1 });
     clearSavedMentorsReturnContext();
     vi.spyOn(endpoints, "getMentorProfile").mockImplementation(async id => ({ ...profile, user: { ...mentor, id } }));
+    vi.spyOn(courseEndpoints, "getCourseSchedule").mockResolvedValue([]);
     vi.spyOn(endpoints, "getMentorAnalytics").mockResolvedValue(analytics);
     vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
   });

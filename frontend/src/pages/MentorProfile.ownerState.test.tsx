@@ -187,11 +187,11 @@ describe("Mentor profile authorization and state", () => {
     expect(fact?.textContent).not.toContain("%");
   });
 
-  it("shows a genuine zero average result as exactly 0%", async () => {
+  it("shows a genuine zero average result as exactly 0% in the header", async () => {
     vi.mocked(endpoints.getMentorProfile).mockResolvedValue({ ...profile, active_students_count: 7, avg_score_defined_ratios_mean: 0 });
     setup({ profileTab: "performance" });
-    await screen.findByText("19");
-    const fact = within(screen.getByRole("tabpanel")).getByText("Average result").closest("div");
+    await screen.findByText("62");
+    const fact = document.querySelector("[data-profile-summary]");
     expect(fact?.textContent).toContain("0%");
     expect(fact?.textContent).not.toContain("—");
   });

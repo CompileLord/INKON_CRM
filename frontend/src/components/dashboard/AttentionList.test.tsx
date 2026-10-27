@@ -109,7 +109,7 @@ describe("AttentionList", () => {
     const rows: HTMLElement[] = within(payments).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(rows[0].textContent).toContain("Due today");
-    expect(rows[0].textContent).toContain("150.00 TJS");
+    expect(rows[0].textContent).toContain("150 TJS");
     expect(rows[1].textContent).toContain("Overdue 3 days");
     expect(rows[2].textContent).toContain("Overdue 7 days");
     expect(within(rows[1]).getByRole("link", { name: "Gulnora Saidova" }).getAttribute("href")).toBe("/students/52");

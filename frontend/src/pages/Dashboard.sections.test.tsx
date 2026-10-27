@@ -48,7 +48,7 @@ describe("Superadmin Dashboard (/)", () => {
     renderDashboard();
 
     expect(screen.getAllByText("Dilnoza Karimova", { selector: "strong" })).toHaveLength(4);
-    expect(screen.getByText(/recorded 250\.00 TJS from Aziz Rahimov/)).toBeTruthy();
+    expect(screen.getByText(/recorded 250 TJS from Aziz Rahimov/)).toBeTruthy();
     expect(screen.queryByText(/User #/)).toBeNull();
     expect(screen.queryByText(/Payment #/)).toBeNull();
     expect(screen.queryByText(/#\d+/)).toBeNull();
@@ -115,7 +115,7 @@ describe("Superadmin Dashboard (/)", () => {
 
     renderDashboard();
 
-    expect(screen.getByText("0.00 TJS")).toBeTruthy();
+    expect(screen.getByText("0 TJS")).toBeTruthy();
     expect(screen.getByText("0 debtors")).toBeTruthy();
     const zeroElements = screen.getAllByText("0");
     expect(zeroElements.length).toBeGreaterThanOrEqual(2);
@@ -177,7 +177,7 @@ describe("independent retained collection audit", () => {
     vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(result);
     render(<I18nextProvider i18n={i18n}><MemoryRouter><AttentionList onPay={vi.fn()} /></MemoryRouter></I18nextProvider>);
     expect(screen.getByText("Update failed — showing cached data")).toBeTruthy();
-    expect(screen.getByText("800.00 TJS")).toBeTruthy();
+    expect(screen.getByText("800 TJS")).toBeTruthy();
     expect(screen.queryByText("Failed to load today's items")).toBeNull();
     fireEvent.click(screen.getByRole("button",{name:"Retry"}));
     expect(result.refetch).toHaveBeenCalledTimes(1);
