@@ -104,7 +104,7 @@
     "mentorLabel": "Mentor",
     "selectMentor": "Select mentor",
     "examTypeLabel": "Exam Type",
-    "priceLabel": "Price, TJS",
+    "priceLabel": "Monthly price, TJS",
     "pricePlaceholder": "1500",
     "immutableNotice": "Exam type, price, and schedule cannot be changed after the course is created.",
     "scheduleLabel": "Schedule",
