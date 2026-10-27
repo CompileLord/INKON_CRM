@@ -1,14 +1,19 @@
-from httpx import AsyncClient
+from datetime import date, timedelta
+from httpx import AsyncClient, Response
+from app.core.school_calendar import SchoolCalendar
 
 
-async def _create_course(client: AsyncClient, headers: dict, mentor_id: int, exam_type: str) -> int:
-    resp = await client.post(
+async def _create_course(client: AsyncClient, headers: dict[str, str], mentor_id: int, exam_type: str) -> int:
+    today: date = SchoolCalendar.today()
+    course_start: date = today - timedelta(days=today.weekday() + 28)
+    course_end: date = today + timedelta(days=35)
+    resp: Response = await client.post(
         "/api/v1/courses/",
         json={
             "title": f"Course {exam_type}",
             "description": "Scoring fixture course",
-            "start_date": "2026-08-01",
-            "end_date": "2026-09-30",
+            "start_date": course_start.isoformat(),
+            "end_date": course_end.isoformat(),
             "exam_type": exam_type,
             "price": "300.00",
             "mentor_id": mentor_id,

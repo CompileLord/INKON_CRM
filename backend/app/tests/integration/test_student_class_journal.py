@@ -1,4 +1,6 @@
 import json
+from datetime import date
+from unittest.mock import Mock
 from typing import Any, Dict, List
 import pytest
 import pytest_asyncio
@@ -58,7 +60,10 @@ async def classroom(
     test_admin: User,
     test_mentor: User,
     test_student: User,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> ClassRoom:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 30)))
+    monkeypatch.setattr("app.core.school_calendar.SchoolCalendar.today", Mock(return_value=date(2026, 8, 30)))
     classmate: User = await create_student(db_session, CLASSMATE_EMAIL, "Classmate", CLASSMATE_PHONE, CLASSMATE_PARENT_PHONE, 810001)
     second_classmate: User = await create_student(db_session, "second@example.com", "SecondClassmate", "+992900000555", "+992900000666", 820002)
     outsider: User = await create_student(db_session, "outsider@example.com", "Outsider", "+992900000333", "+992900000444")

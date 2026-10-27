@@ -60,6 +60,19 @@ export interface User {
   active_courses?: MentorCoursePillResponse[];
 }
 
+export interface StudentCoursePillResponse {
+  course_id: number;
+  title: string;
+  enrollment_id: number;
+  billing_mode: "paid" | "grant";
+}
+
+export interface StudentListItemResponse extends User {
+  courses: StudentCoursePillResponse[];
+  debt_amount: string;
+  payment_status: "debt" | "ok" | "grant";
+}
+
 export interface MentorListItemResponse extends User {
   active_courses: MentorCoursePillResponse[];
 }

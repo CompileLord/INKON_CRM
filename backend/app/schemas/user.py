@@ -71,6 +71,19 @@ class UserResponse(BaseModel):
 
 
 
+class StudentCoursePillResponse(BaseModel):
+    course_id: int
+    title: str
+    enrollment_id: int
+    billing_mode: Literal["paid", "grant"]
+
+
+class StudentListItemResponse(UserResponse):
+    courses: list[StudentCoursePillResponse]
+    debt_amount: str
+    payment_status: Literal["debt", "ok", "grant"]
+
+
 class UserCreateResponse(UserResponse):
     parent_link_code: Optional[str] = None
     password_sms_destination: Optional[Literal["student_phone", "parent_phone"]] = None

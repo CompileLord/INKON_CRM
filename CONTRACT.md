@@ -770,6 +770,8 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
 
 **Parameters:**
 - `search` [query]
+- `course_id` [query]
+- `payment_status` [query]
 - `page` [query]
 - `page_size` [query]
 
@@ -798,6 +800,9 @@ Accepts login (email or E.164 phone) or the legacy email field, plus an optional
         "is_deleted": boolean,
         "created_at": string,
         "updated_at": string,
+        "courses": array[],
+        "debt_amount": string,
+        "payment_status": "debt" | "ok" | "grant",
       }
     ],
     "total": integer,
@@ -2954,6 +2959,7 @@ Accepted batches retain existing partial-conflict, optimistic-version and idempo
         "is_voided?": boolean,
         "refunded_amount?": string,
         "allocations?": array[],
+        "targets?": array[],
       }
     ],
     "total": integer,
@@ -2985,6 +2991,8 @@ Accepted batches retain existing partial-conflict, optimistic-version and idempo
 
 Record cash received. Discounts are separate — see POST /finance/discounts/.
 
+Supply targets or a legacy course_id. Invalid targets return 422 with detail.code invalid_payment_target, duplicate_payment_target, payment_target_sum_mismatch, payment_target_required or payment_target_exceeds_balance. The last includes enrollment_id and maximum as a decimal string.
+
 Send an Idempotency-Key header to make retries safe. A first request answers 201. A repeat by the same recorder with the same key and payload answers 200 with the original payment and records nothing new. The same key with a different payload answers 409 with detail.code idempotency_key_payload_mismatch. Requests without the header are never deduplicated.
 
 **Parameters:**
@@ -2994,7 +3002,13 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
 ```json
 {
   "student_id": integer,
-  "course_id": integer,
+  "course_id?": integer,
+  "targets?": [
+    {
+      "enrollment_id": integer,
+      "amount": string,
+    }
+  ],
   "amount": number,
   "paid_at": string,
   "method": "cash" | "transfer",
@@ -3027,6 +3041,56 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
         "course_title": string,
         "due_date": string,
         "amount": string,
+      }
+    ],
+    "targets?": [
+      {
+        "enrollment_id": integer,
+        "course_id": integer,
+        "course_title": string,
+        "amount": string,
+      }
+    ],
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
+## GET /api/v1/finance/students/{student_id}/payment-options
+
+**Summary:** Get Payment Options
+
+**Parameters:**
+- `student_id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "wallet_credit": string,
+    "enrollments": [
+      {
+        "enrollment_id": integer,
+        "course_id": integer,
+        "course_title": string,
+        "open_debt": string,
+        "overdue_days": integer,
+        "remaining_contract_maximum": string,
+        "billing_mode": string,
       }
     ],
   }
@@ -3518,6 +3582,14 @@ Manually apply a student's wallet credit to a specific charge.
         "course_title": string,
         "due_date": string,
         "allocated_amount": string,
+      }
+    ],
+    "targets?": [
+      {
+        "enrollment_id": integer,
+        "course_id": integer,
+        "course_title": string,
+        "amount": string,
       }
     ],
     "comment?": string,

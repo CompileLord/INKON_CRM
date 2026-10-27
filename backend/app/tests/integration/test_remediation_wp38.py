@@ -31,6 +31,11 @@ from scripts.reset_guard import (
 )
 
 
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
+
+
 class DemoSeedTestFixture:
     @staticmethod
     def create_disposable_reset_target(
