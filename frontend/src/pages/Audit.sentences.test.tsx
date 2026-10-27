@@ -151,12 +151,12 @@ describe("Audit category control", () => {
 describe("Audit plain sentences", () => {
   it("names the actor, the action and the object in Russian for every entity type", async () => {
     const cases: [AuditEvent, RegExp][] = [
-      [event(1, { entity_type: "payment", action: "create", amount: "500.00", entity_label: "Камила Юсупова", changes: [change("amount", null, "500.00")] }), /Администратор Школы принял оплату 500\.00 TJS от Камила Юсупова/],
-      [event(2, { entity_type: "payment", action: "void", amount: "500.00", entity_label: "Камила Юсупова", changes: [change("reason_code", null, "entry_error")] }), /аннулировал платёж 500\.00 TJS от Камила Юсупова/],
-      [event(3, { entity_type: "payment", action: "refund", amount: "100.00", entity_label: "Камила Юсупова", changes: [change("destination", null, "wallet")] }), /вернул 100\.00 TJS студенту Камила Юсупова/],
-      [event(4, { entity_type: "discount", action: "create", amount: "50.00", entity_label: "Камила Юсупова", changes: [change("amount", null, "50.00")] }), /предоставил скидку 50\.00 TJS студенту Камила Юсупова/],
-      [event(5, { entity_type: "adjustment", action: "create", amount: "20.00", changes: [change("reason_code", null, "fix")] }), /провёл корректировку на 20\.00 TJS/],
-      [event(6, { entity_type: "allocation", action: "update", entity_label: "Камила Юсупова", changes: [change("allocated", null, "30.00")] }), /зачёл 30\.00 TJS из кредита студента Камила Юсупова/],
+      [event(1, { entity_type: "payment", action: "create", amount: "500.00", entity_label: "Камила Юсупова", changes: [change("amount", null, "500.00")] }), /Администратор Школы принял оплату 500 TJS от Камила Юсупова/],
+      [event(2, { entity_type: "payment", action: "void", amount: "500.00", entity_label: "Камила Юсупова", changes: [change("reason_code", null, "entry_error")] }), /аннулировал платёж 500 TJS от Камила Юсупова/],
+      [event(3, { entity_type: "payment", action: "refund", amount: "100.00", entity_label: "Камила Юсупова", changes: [change("destination", null, "wallet")] }), /вернул 100 TJS студенту Камила Юсупова/],
+      [event(4, { entity_type: "discount", action: "create", amount: "50.00", entity_label: "Камила Юсупова", changes: [change("amount", null, "50.00")] }), /предоставил скидку 50 TJS студенту Камила Юсупова/],
+      [event(5, { entity_type: "adjustment", action: "create", amount: "20.00", changes: [change("reason_code", null, "fix")] }), /провёл корректировку на 20 TJS/],
+      [event(6, { entity_type: "allocation", action: "update", entity_label: "Камила Юсупова", changes: [change("allocated", null, "30.00")] }), /зачёл 30 TJS из кредита студента Камила Юсупова/],
       [event(7, { entity_type: "accounting_period", action: "close_period", changes: [change("year", null, "2026"), change("month", null, "10"), change("status", "open", "closed")] }), /закрыл учётный период 10\.2026/],
       [event(8, { entity_type: "user", action: "create", student_id: 7, entity_label: "Камила Юсупова", changes: [change("changed_fields", null, '["first_name","role"]')] }), /создал студента Камила Юсупова/],
       [event(9, { entity_type: "user", action: "create", entity_label: "Рустам Назаров", changes: [change("role", null, "mentor")] }), /добавил ментора Рустам Назаров/],
@@ -168,7 +168,7 @@ describe("Audit plain sentences", () => {
       [event(14, { entity_type: "journal_entry", changes: [change("score", "4", "5")] }), /изменил запись в журнале: Балл: 4 → 5/],
       [event(15, { entity_type: "settings", changes: [change("notify_debts", "True", "False")] }), /изменил настройки школы: Уведомления о долгах: Да → Нет/],
       [event(16, { entity_type: "student_telegram_link", entity_label: "Камила Юсупова", changes: [change("link_code_expires_at", null, "2026-10-22T16:38:09+00:00")] }), /создал код привязки Telegram|обновил код привязки Telegram родителя студента Камила Юсупова/],
-      [event(17, { entity_type: "debt_reminder", action: "create", changes: [change("amount", null, "300.00")] }), /отправил напоминание о долге на 300\.00 TJS/],
+      [event(17, { entity_type: "debt_reminder", action: "create", changes: [change("amount", null, "300.00")] }), /отправил напоминание о долге на 300 TJS/],
       [event(18, { entity_type: "journal_student_summary", changes: [change("exam_score", "1", "2")] }), /обновил итоги студента за период/],
     ];
     const rows: string[] = await rowText(cases.map(([item]) => item));

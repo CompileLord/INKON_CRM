@@ -108,6 +108,22 @@ describe("MentorFormPanel", () => {
     expect(screen.queryByLabelText(/Parent phone/i)).toBeNull();
   });
 
+  it("renders two-column layout on desktop and single phone placeholder without label hint", async () => {
+    await i18n.changeLanguage("ru");
+    try {
+      renderPanel();
+      const identityGrid: HTMLElement | null = document.querySelector(".grid.sm\\:grid-cols-2");
+      expect(identityGrid).not.toBeNull();
+      const emailLabel: HTMLElement = screen.getByText("Электронная почта");
+      expect(emailLabel).toBeDefined();
+      const phoneInput: HTMLElement = screen.getByPlaceholderText("+992901234567");
+      expect(phoneInput).toBeDefined();
+      expect(screen.queryByText("Формат: +992901234567")).toBeNull();
+    } finally {
+      await i18n.changeLanguage("en");
+    }
+  });
+
   it("renders avatar upload field in edit mode", () => {
     renderPanel({ mentor: existingMentor });
 
@@ -238,7 +254,7 @@ describe("MentorFormPanel", () => {
       renderPanel();
       const user = userEvent.setup();
 
-      await user.type(screen.getByLabelText(/Email/i), "valid@example.com");
+      await user.type(screen.getByLabelText(/Email|Электронная почта/i), "valid@example.com");
 
       const submitButton = screen.getByRole("button", { name: "Создать" });
       await user.click(submitButton);
@@ -270,7 +286,7 @@ describe("MentorFormPanel", () => {
 
       await user.type(screen.getByLabelText(/Имя/i), "Test");
       await user.type(screen.getByLabelText(/Фамилия/i), "Mentor");
-      await user.type(screen.getByLabelText(/Email/i), "valid@example.com");
+      await user.type(screen.getByLabelText(/Email|Электронная почта/i), "valid@example.com");
 
       const submitButton = screen.getByRole("button", { name: "Создать" });
       await user.click(submitButton);

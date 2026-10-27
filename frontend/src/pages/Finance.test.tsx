@@ -91,7 +91,7 @@ describe("Finance overview", () => {
   it("shows a valid zero collection as 0.00 and labels current values as current", async () => {
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
-    await within(summary).findByText("0.00 TJS");
+    await within(summary).findByText("0 TJS");
     expect(within(summary).getByText("Current due unpaid")).toBeTruthy();
     expect(within(summary).getByText("Current unpaid students")).toBeTruthy();
     expect(within(summary).getByText("Net cash collected")).toBeTruthy();
@@ -100,7 +100,7 @@ describe("Finance overview", () => {
   it("builds the summary from one shared stat group without info tooltips", async () => {
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
-    await within(summary).findByText("0.00 TJS");
+    await within(summary).findByText("0 TJS");
     expect(summary.querySelectorAll("[data-stat-group]")).toHaveLength(1);
     expect(summary.querySelectorAll("[data-stat-tile]")).toHaveLength(3);
     expect(screen.queryByRole("tooltip")).toBeNull();
@@ -131,7 +131,7 @@ describe("Finance overview", () => {
   it("rejects inverted and incomplete ranges before any query and keeps the URL", async () => {
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
-    await within(summary).findByText("0.00 TJS");
+    await within(summary).findByText("0 TJS");
     const before = requests(analyticsUrl).length;
     await userEvent.click(within(summary).getByRole("button", { name: /^Collection period:/ }));
     await screen.findByLabelText("From");
@@ -153,7 +153,7 @@ describe("Finance overview", () => {
     });
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
-    await within(summary).findByText("0.00 TJS");
+    await within(summary).findByText("0 TJS");
     await userEvent.click(within(summary).getByRole("button", { name: /^Collection period:/ }));
     await screen.findByLabelText("From");
     typeDate("From", "01.01.2026");
@@ -170,7 +170,7 @@ describe("Finance overview", () => {
   it("applies the Last month preset from the compact range popover", async () => {
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
-    await within(summary).findByText("0.00 TJS");
+    await within(summary).findByText("0 TJS");
     const range = FinanceUrlState.presetRange("lastMonth");
     await userEvent.click(within(summary).getByRole("button", { name: /^Collection period:/ }));
     await userEvent.click(await screen.findByRole("button", { name: "Last month" }));

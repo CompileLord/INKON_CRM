@@ -86,7 +86,7 @@ describe("Payment detail", () => {
     expect(within(dialog).getByText("This payment was voided.")).toBeTruthy();
     mock.onGet(statusUrl).reply(200, listing([{ ...known, is_voided: false, refunded_amount: "25.00" }]));
     await userEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
-    expect(await within(dialog).findByText("Refunded: 25.00 TJS")).toBeTruthy();
+    expect(await within(dialog).findByText("Refunded: 25 TJS")).toBeTruthy();
     expect(within(dialog).queryByText("This payment was voided.")).toBeNull();
     expect(within(dialog).queryByText("Status could not be refreshed. Showing the last known status.")).toBeNull();
   });

@@ -82,8 +82,8 @@ describe("Withdrawal preview in the roster dialog", () => {
     await openWithdrawDialog("en");
     const panel: HTMLElement = await screen.findByTestId("withdraw-preview");
     expect(panel.textContent).toContain("Remaining to pay");
-    expect(panel.textContent).toContain("500.00 TJS");
-    expect(panel.textContent).toContain("2 months · 1 000.00 TJS");
+    expect(panel.textContent).toContain("500 TJS");
+    expect(panel.textContent).toContain("2 months · 1 000 TJS");
     expect(mock.history.get.filter((request) => request.url === "/enrollments/77/withdraw-preview")).toHaveLength(1);
   });
 
@@ -96,7 +96,7 @@ describe("Withdrawal preview in the roster dialog", () => {
     await openWithdrawDialog("ru");
     const panel: HTMLElement = await screen.findByTestId("withdraw-preview");
     expect(panel.textContent).toContain("Останется к оплате");
-    expect(panel.textContent).toContain(`${expected} · 1 000.00 TJS`);
+    expect(panel.textContent).toContain(`${expected} · 1 000 TJS`);
     await i18n.changeLanguage("en");
   });
 
@@ -122,7 +122,7 @@ describe("Withdrawal preview in the roster dialog", () => {
     expect(errorPanel.textContent).toContain("Couldn't load what withdrawal changes");
     expect((within(screen.getByRole("dialog")).getByRole("button", { name: "Withdraw" }) as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(within(errorPanel).getByRole("button", { name: "Retry" }));
-    expect((await screen.findByTestId("withdraw-preview")).textContent).toContain("1 000.00 TJS");
+    expect((await screen.findByTestId("withdraw-preview")).textContent).toContain("1 000 TJS");
   });
 
   it("refreshes roster, finance and debt queries after the withdrawal is confirmed", async () => {

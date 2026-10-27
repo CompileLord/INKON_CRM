@@ -61,16 +61,16 @@ describe("course entries on shared primitives", () => {
     expect(screen.getByText("Mon, Wed · 14:00–15:30")).toBeTruthy();
     expect(screen.getByText("12 students")).toBeTruthy();
     expect(screen.getByText("Sitora Alieva")).toBeTruthy();
-    expect(screen.getByText("700.00 TJS / mo")).toBeTruthy();
+    expect(screen.getByText("700 TJS / mo")).toBeTruthy();
   });
 
-  it("marks only archived courses with a status badge", () => {
+  it("marks active courses with emerald status badge and archived courses with archived badge", () => {
     const { rerender, container } = render(
       <MemoryRouter>
         <CourseCard course={baseCourse} isMentor={false} menuHandlers={null} />
       </MemoryRouter>,
     );
-    expect(container.querySelector("[data-badge-status]")).toBeNull();
+    expect(container.querySelector("[data-badge-status='active']")).not.toBeNull();
     rerender(
       <MemoryRouter>
         <CourseCard course={{ ...baseCourse, status: "archived" }} isMentor={false} menuHandlers={null} />
@@ -105,7 +105,7 @@ describe("course entries on shared primitives", () => {
     expect(grid?.className).toContain("md:grid-cols-[");
     expect(container.querySelectorAll("a")).toHaveLength(1);
     expect(container.textContent).toContain("Sitora Alieva");
-    expect(container.textContent).toContain("700.00 TJS / mo");
+    expect(container.textContent).toContain("700 TJS / mo");
   });
 
   it("gives mentors the journal action in the row menu", async () => {

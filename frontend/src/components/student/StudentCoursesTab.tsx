@@ -4,7 +4,7 @@ import { CourseScore } from "./CourseScore";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
 import { formatDate } from "../../i18n/formatters";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { getStudentCourseLink } from "../../lib/students/studentNavigation";
 import type { StudentCourseProfile } from "../../lib/users/types";
 
@@ -40,7 +40,7 @@ export function StudentCoursesTab({ courses, role, currentUserId }: StudentCours
                       <StudentCourseStagePill course={item} />
                     </span>
                     <span className="text-xs tabular-nums text-muted">
-                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {formatMoney(item.course.price, { suffix: t("stats.currency") })}
+                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {formatTjs(item.course.price, { perMonth: true, lng: i18n.language })}
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">

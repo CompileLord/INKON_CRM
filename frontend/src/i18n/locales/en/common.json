@@ -148,5 +148,6 @@
       "reminder": "Payment reminder",
       "generic": "Account notification"
     }
-  }
+  },
+  "perMonthSuffix": "/ mo"
 }

@@ -62,15 +62,7 @@ export function MentorFormPanel({
   );
 }
 
-interface MentorFormPanelInnerProps {
-  open: boolean;
-  mode?: "create" | "edit";
-  mentor?: User;
-  onClose: () => void;
-  onSaved: (action: "created" | "updated", user?: User) => void;
-  onAvatarSaved?: (user?: User) => void;
-  finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
-}
+type MentorFormPanelInnerProps = MentorFormPanelProps;
 
 const inputClass =
   "w-full min-h-[48px] rounded-xl border border-control-border bg-card px-3.5 py-2.5 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out disabled:pointer-events-none disabled:opacity-60";
@@ -452,95 +444,97 @@ function MentorFormPanelInner({
               {t("form.sectionIdentity")}
             </h3>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="mentor-firstName" className={labelClass}>
-                {t("form.firstNameLabel")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="mentor-firstName"
-                autoComplete="given-name"
-                aria-required="true"
-                aria-invalid={Boolean(errors.firstName)}
-                aria-describedby={errors.firstName ? "mentor-firstName-error" : undefined}
-                className={inputClass}
-                {...firstNameReg}
-                ref={(el) => {
-                  firstNameReg.ref(el);
-                  firstInputRef.current = el;
-                }}
-              />
-              {errors.firstName?.message && (
-                <span id="mentor-firstName-error" role="alert" className="text-xs text-destructive">
-                  {errors.firstName.message}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="mentor-lastName" className={labelClass}>
-                {t("form.lastNameLabel")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="mentor-lastName"
-                autoComplete="family-name"
-                aria-required="true"
-                aria-invalid={Boolean(errors.lastName)}
-                aria-describedby={errors.lastName ? "mentor-lastName-error" : undefined}
-                className={inputClass}
-                {...lastNameReg}
-              />
-              {errors.lastName?.message && (
-                <span id="mentor-lastName-error" role="alert" className="text-xs text-destructive">
-                  {errors.lastName.message}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="mentor-email" className={labelClass}>
-                {t("form.emailLabel")} <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="mentor-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                aria-required="true"
-                aria-invalid={Boolean(errors.email)}
-                aria-describedby={errors.email ? "mentor-email-error" : undefined}
-                className={inputClass}
-                {...emailReg}
-              />
-              {errors.email?.message && (
-                <span id="mentor-email-error" role="alert" className="text-xs text-destructive">
-                  {errors.email.message}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="mentor-birthDate" className={labelClass}>
-                {t("form.dobLabel")}
-              </label>
-              <Controller
-                control={control}
-                name="birthDate"
-                render={({ field }) => (
-                  <DatePicker
-                    id="mentor-birthDate"
-                    label={t("form.dobLabel")}
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    invalid={Boolean(errors.birthDate)}
-                    describedBy={errors.birthDate ? "mentor-birthDate-error" : undefined}
-                  />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="mentor-firstName" className={labelClass}>
+                  {t("form.firstNameLabel")} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  id="mentor-firstName"
+                  autoComplete="given-name"
+                  aria-required="true"
+                  aria-invalid={Boolean(errors.firstName)}
+                  aria-describedby={errors.firstName ? "mentor-firstName-error" : undefined}
+                  className={inputClass}
+                  {...firstNameReg}
+                  ref={(el) => {
+                    firstNameReg.ref(el);
+                    firstInputRef.current = el;
+                  }}
+                />
+                {errors.firstName?.message && (
+                  <span id="mentor-firstName-error" role="alert" className="text-xs text-destructive">
+                    {errors.firstName.message}
+                  </span>
                 )}
-              />
-              {errors.birthDate?.message && (
-                <span id="mentor-birthDate-error" role="alert" className="text-xs text-destructive">
-                  {errors.birthDate.message}
-                </span>
-              )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="mentor-lastName" className={labelClass}>
+                  {t("form.lastNameLabel")} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  id="mentor-lastName"
+                  autoComplete="family-name"
+                  aria-required="true"
+                  aria-invalid={Boolean(errors.lastName)}
+                  aria-describedby={errors.lastName ? "mentor-lastName-error" : undefined}
+                  className={inputClass}
+                  {...lastNameReg}
+                />
+                {errors.lastName?.message && (
+                  <span id="mentor-lastName-error" role="alert" className="text-xs text-destructive">
+                    {errors.lastName.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="mentor-email" className={labelClass}>
+                  {t("form.emailLabel")} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  id="mentor-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  aria-required="true"
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "mentor-email-error" : undefined}
+                  className={inputClass}
+                  {...emailReg}
+                />
+                {errors.email?.message && (
+                  <span id="mentor-email-error" role="alert" className="text-xs text-destructive">
+                    {errors.email.message}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="mentor-birthDate" className={labelClass}>
+                  {t("form.dobLabel")}
+                </label>
+                <Controller
+                  control={control}
+                  name="birthDate"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="mentor-birthDate"
+                      label={t("form.dobLabel")}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      invalid={Boolean(errors.birthDate)}
+                      describedBy={errors.birthDate ? "mentor-birthDate-error" : undefined}
+                    />
+                  )}
+                />
+                {errors.birthDate?.message && (
+                  <span id="mentor-birthDate-error" role="alert" className="text-xs text-destructive">
+                    {errors.birthDate.message}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

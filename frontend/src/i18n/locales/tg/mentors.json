@@ -58,9 +58,8 @@
     "sectionContacts": "Тамос",
     "firstNameLabel": "Ном",
     "lastNameLabel": "Насаб",
-    "emailLabel": "Email",
+    "emailLabel": "Почтаи электронӣ",
     "phoneLabel": "Телефон",
-    "phoneHelp": "Формат: +992901234567",
     "phonePlaceholder": "+992901234567",
     "dobLabel": "Санаи таваллуд",
     "telegramChatIdLabel": "Telegram chat ID",
@@ -103,7 +102,6 @@
       "active": "Фаъол",
       "archived": "Бойгонӣ"
     },
-    "currencyTjs": "сомонӣ",
     "performanceTitle": "Натиҷаҳои сабтшуда",
     "normalizedBasis": "Миёнаи фоизҳои сабтшуда барои курсҳои таъиншуда, аз ҷумла бойгонӣ ва ҳазфшуда. Фоиз танҳо бо ҳадди мусбати баллҳои давра дастрас аст.",
     "ratioEligibility": "{{included}} фоизи дастрас · {{excluded}} дастнорас · {{total}} натиҷаи сабтшуда",

@@ -58,9 +58,8 @@
     "sectionContacts": "Контакты",
     "firstNameLabel": "Имя",
     "lastNameLabel": "Фамилия",
-    "emailLabel": "Email",
+    "emailLabel": "Электронная почта",
     "phoneLabel": "Телефон",
-    "phoneHelp": "Формат: +992901234567",
     "phonePlaceholder": "+992901234567",
     "dobLabel": "Дата рождения",
     "telegramChatIdLabel": "Telegram chat ID",
@@ -103,7 +102,6 @@
       "active": "Активен",
       "archived": "Архивный"
     },
-    "currencyTjs": "сомони",
     "performanceTitle": "Сохранённые результаты",
     "normalizedBasis": "Среднее сохранённых процентов по назначенным курсам, включая архивные и удалённые. Процент доступен только при положительном максимуме баллов периода.",
     "ratioEligibility": "{{included}} доступных процентов · {{excluded}} недоступных · {{total}} сохранённых итогов",

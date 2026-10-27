@@ -222,7 +222,7 @@ describe("Course roster section", () => {
     expect(first.textContent).toContain("Alisher Navoiy");
     expect(first.textContent).toContain("alisher@kitob.example.com");
     expect(first.querySelector("[data-badge-status='active']")).not.toBeNull();
-    expect(first.textContent).toContain("1 200.00 TJS / month");
+    expect(first.textContent).toContain("1 200 TJS / month");
     expect(first.textContent).toContain("01.09.2026");
     expect(document.querySelector("table")).toBeNull();
   });

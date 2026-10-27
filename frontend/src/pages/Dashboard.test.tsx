@@ -64,7 +64,7 @@ describe("Superadmin Dashboard (/)", () => {
 
     renderDashboard();
 
-    expect(screen.queryByText("0.00 TJS")).toBeNull();
+    expect(screen.queryByText("0 TJS")).toBeNull();
     expect(screen.queryByText("0 debtors")).toBeNull();
     expect(screen.getByText("Failed to load summary")).toBeTruthy();
 
