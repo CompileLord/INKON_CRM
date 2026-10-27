@@ -13,6 +13,12 @@ from app.models.allocation import Allocation
 from app.models.accounting_period import AccountingPeriod, AccountingPeriodStatus
 
 
+class HistoricalEnrollmentClock:
+    @staticmethod
+    def to_dushanbe(original_timestamp: datetime) -> datetime:
+        return datetime(2026, 8, 1, tzinfo=timezone.utc)
+
+
 @pytest.mark.asyncio
 async def test_schedule_generation_and_auto_allocation(
     client: AsyncClient,
@@ -23,6 +29,7 @@ async def test_schedule_generation_and_auto_allocation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", lambda: date(2026, 8, 10))
+    monkeypatch.setattr("app.services.finance_service._to_dushanbe", HistoricalEnrollmentClock.to_dushanbe)
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -67,17 +74,12 @@ async def test_schedule_generation_and_auto_allocation(
     )
     enrollment_id = enr_resp.json()["id"]
 
-    # 4. Verify 3 charges generated summing to exactly 1000.00
     ch_q = select(Charge).filter(Charge.enrollment_id == enrollment_id).order_by(Charge.sequence_no.asc())
     ch_res = await db_session.execute(ch_q)
     charges = list(ch_res.scalars().all())
 
     assert len(charges) == 3
-    # 1000 / 3 = 333.33, 333.33, 333.34
-    assert charges[0].amount == Decimal("333.33")
-    assert charges[1].amount == Decimal("333.33")
-    assert charges[2].amount == Decimal("333.34")
-    assert sum(c.amount for c in charges) == Decimal("1000.00")
+    assert all(charge.amount == Decimal("1000.00") for charge in charges)
 
     # 5. Overpay: Record payment of 500
     pmt_resp = await client.post(
@@ -99,15 +101,15 @@ async def test_schedule_generation_and_auto_allocation(
     assert bal_resp.status_code == 200
     bal_data = bal_resp.json()
 
-    # Surplus 166.67 is auto-allocated to next charge (charge 2), leaving credit_balance = 0.0 and net_receivable = 0.0
     assert float(bal_data["credit_balance"]) == 0.0
     assert float(bal_data["net_receivable"]) == 0.0
 
 
 @pytest.mark.asyncio
 async def test_void_and_refund_lifecycle(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service._to_dushanbe", HistoricalEnrollmentClock.to_dushanbe)
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)

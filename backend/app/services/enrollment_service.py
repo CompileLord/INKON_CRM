@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -74,6 +74,7 @@ class EnrollmentService:
     async def enroll_student(
         self, student_id: int, course_id: int, current_user: User,
         lesson_plan: EnrollmentLessonPlan | None = None,
+        enrolled_at: datetime | None = None,
     ) -> Enrollment:
         from app.services.finance_service import FinanceService
 
@@ -110,6 +111,8 @@ class EnrollmentService:
             color_hex=color_hex,
             status=EnrollmentStatus.ACTIVE
         )
+        if enrolled_at is not None:
+            enrollment.enrolled_at = enrolled_at
         try:
             self.db.add(enrollment)
             await self.db.flush()

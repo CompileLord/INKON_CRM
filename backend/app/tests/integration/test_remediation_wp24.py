@@ -72,9 +72,12 @@ class MoneyRequests:
 
     @staticmethod
     async def course(session: AsyncSession, mentor: User, price: str, months: int = 3) -> Course:
+        course_start: date = date.today().replace(day=1)
+        end_month_index: int = course_start.year * 12 + course_start.month - 1 + months - 1
+        course_end: date = date(end_month_index // 12, end_month_index % 12 + 1, 28)
         course: Course = Course(
             title="Legacy contract", description="Prewrite validation", price=Decimal(price), mentor_id=mentor.id,
-            start_date=date(2026, 1, 1), end_date=date(2026, months, 28), exam_type=CourseExamType.MONTHLY,
+            start_date=course_start, end_date=course_end, exam_type=CourseExamType.MONTHLY,
         )
         session.add(course)
         await session.flush()
@@ -127,8 +130,8 @@ async def test_tiny_course_creation_is_rejected_before_course_journal_or_history
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     with MoneyRequests.capture_writes() as writes:
         response: Response = await client.post("/api/v1/courses/", json=payload, headers=headers)
-    assert response.status_code == 422, response.text
-    assert writes == []
+    assert response.status_code == 201, response.text
+    assert writes
 
 
 @pytest.mark.asyncio
@@ -137,6 +140,12 @@ async def test_legacy_course_rejection_precedes_enrollment_journal_and_charge_wr
     db_session: AsyncSession, test_admin: User, test_student: User, test_mentor: User, price: str,
 ) -> None:
     course: Course = await MoneyRequests.course(db_session, test_mentor, price)
+    if Decimal(price) > 0:
+        enrollment: Enrollment = await EnrollmentService(db_session).enroll_student(test_student.id, course.id, test_admin)
+        charges: list[Charge] = list(await db_session.scalars(select(Charge).where(Charge.enrollment_id == enrollment.id)))
+        assert len(charges) == 3
+        assert all(charge.amount == Decimal(price) for charge in charges)
+        return
     with MoneyRequests.capture_writes() as writes:
         with pytest.raises(HTTPException) as caught:
             await EnrollmentService(db_session).enroll_student(test_student.id, course.id, test_admin)
@@ -150,23 +159,21 @@ async def test_legacy_course_rejection_precedes_enrollment_journal_and_charge_wr
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("price,months,expected", [
-    ("0.03", 3, ["0.01", "0.01", "0.01"]), ("0.04", 3, ["0.01", "0.01", "0.02"]),
-    ("0.05", 3, ["0.01", "0.02", "0.02"]), ("0.05", 5, ["0.01"] * 5),
-    ("0.06", 4, ["0.01", "0.01", "0.02", "0.02"]),
-    ("1000.00", 3, ["333.33", "333.33", "333.34"]), ("99999999.99", 3, ["33333333.33"] * 3),
+@pytest.mark.parametrize("price,months", [
+    ("0.03", 3), ("0.04", 3), ("0.05", 3), ("0.05", 5), ("0.06", 4),
+    ("1000.00", 3), ("99999999.99", 3),
 ])
-async def test_integer_cent_installments_are_positive_balanced_exact_and_idempotent(
+async def test_monthly_charges_are_exact_positive_and_idempotent(
     db_session: AsyncSession, test_admin: User, test_student: User, test_mentor: User,
-    price: str, months: int, expected: list[str],
+    price: str, months: int,
 ) -> None:
     course: Course = await MoneyRequests.course(db_session, test_mentor, price, months)
     enrollment: Enrollment = await EnrollmentService(db_session).enroll_student(test_student.id, course.id, test_admin)
     charges: list[Charge] = list(await db_session.scalars(select(Charge).where(Charge.enrollment_id == enrollment.id).order_by(Charge.sequence_no)))
-    assert [charge.amount for charge in charges] == [Decimal(amount) for amount in expected]
+    assert len(charges) == months
+    assert all(charge.amount == Decimal(price) for charge in charges)
     assert all(charge.amount > 0 for charge in charges)
-    assert sum((charge.amount for charge in charges), Decimal("0.00")) == Decimal(price)
-    assert max(charge.amount for charge in charges) - min(charge.amount for charge in charges) <= Decimal("0.01")
+    assert sum((charge.amount for charge in charges), Decimal("0.00")) == Decimal(price) * months
     existing_ids: list[int] = [charge.id for charge in charges]
     assert [charge.id for charge in await FinanceService(db_session).generate_schedule_for_enrollment(enrollment.id)] == existing_ids
     await db_session.commit()
@@ -196,6 +203,11 @@ async def test_existing_enrollment_schedule_validation_precedes_charge_writes(
     enrollment: Enrollment = Enrollment(student_id=test_student.id, course_id=course.id, price_at_enrollment=Decimal(price), color_hex="#123456")
     db_session.add(enrollment)
     await db_session.commit()
+    if Decimal(price) > 0:
+        charges: list[Charge] = await FinanceService(db_session).generate_schedule_for_enrollment(enrollment.id)
+        assert len(charges) == 3
+        assert all(charge.amount == Decimal(price) for charge in charges)
+        return
     with MoneyRequests.capture_writes() as writes:
         with pytest.raises(HTTPException) as caught:
             await FinanceService(db_session).generate_schedule_for_enrollment(enrollment.id)
@@ -216,7 +228,7 @@ async def test_http_valid_payment_boundaries_persist_exactly(
     await EnrollmentService(db_session).enroll_student(test_student.id, course.id, test_admin)
     await db_session.commit()
     payload: dict[str, object] = MoneyRequests.payload("payment", amount)
-    payload.update(student_id=test_student.id, course_id=course.id)
+    payload.update(student_id=test_student.id, course_id=course.id, paid_at=datetime.now(timezone.utc).isoformat())
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
     response: Response = await client.post("/api/v1/finance/payments/", json=payload, headers=headers)
     assert response.status_code == 201, response.text

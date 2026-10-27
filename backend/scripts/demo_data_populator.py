@@ -256,7 +256,8 @@ class DemoDataPopulator:
                     await enrollment_service.enroll_student(
                         student_id=student.id,
                         course_id=course.id,
-                        current_user=admin_user
+                        current_user=admin_user,
+                        enrolled_at=datetime.combine(course.start_date, datetime.min.time(), tzinfo=timezone.utc),
                     )
 
                 logger.info(f"Course '{course.title}' created with real photo and {len(assigned_students)} enrolled students.")
