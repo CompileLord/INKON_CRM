@@ -527,6 +527,8 @@ class FinanceService:
             due_date: date = date(year, month, min(payment_day, calendar.monthrange(year, month)[1]))
             if due_date < course_month_start:
                 due_date = date(next_year, next_month, min(payment_day, calendar.monthrange(next_year, next_month)[1]))
+            if due_date >= next_course_month_start:
+                due_date = next_course_month_start - timedelta(days=1)
             if not charges:
                 due_date = max(due_date, enrollment_date)
 
