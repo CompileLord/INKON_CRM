@@ -187,6 +187,17 @@ class EnrollmentService:
         await self.db.refresh(enrollment)
         return enrollment
 
+    async def withdraw_active_enrollments_for_student(self, student_id: int, actor_id: int) -> list[Enrollment]:
+        from app.services.finance_service import FinanceService
+
+        await FinanceService(self.db).lock_student_accounts([student_id])
+        active_enrollments: list[Enrollment] = await self.enrollment_repo.list_active_for_student(student_id)
+        withdrawn_enrollments: list[Enrollment] = []
+        enrollment: Enrollment
+        for enrollment in active_enrollments:
+            withdrawn_enrollments.append(await self.withdraw_student(enrollment.id, actor_id))
+        return withdrawn_enrollments
+
     async def withdraw_student(self, enrollment_id: int, actor_id: int | None = None) -> Enrollment:
         enrollment = await self.enrollment_repo.get_by_id(enrollment_id)
         if not enrollment or enrollment.is_deleted:

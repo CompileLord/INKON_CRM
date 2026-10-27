@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_log import AuditLog
-from app.models.charge import Charge, ChargeStatus
+from app.models.charge import Charge, ChargeStatus, ChargeType
 from app.models.course import Course, CourseExamType
 from app.models.course_schedule import CourseSchedule
 from app.models.enrollment import Enrollment, EnrollmentStatus
@@ -77,3 +77,43 @@ async def test_deleted_and_withdrawn_students_are_hidden_or_preserved_as_require
     journal: dict[str, Any] = await JournalQueryService(db_session).get_journal(journals[0].id, test_admin)
     assert [student["student_id"] for student in journal["students"]] == [withdrawn_student.id]
     assert journal["students"][0]["entries"]
+
+
+@pytest.mark.asyncio
+async def test_student_deletion_withdraws_all_active_enrollments_only(
+    db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User,
+) -> None:
+    today: date = date.today()
+    enrollments: list[Enrollment] = []
+    charges: list[Charge] = []
+    enrollment_status: EnrollmentStatus
+    for enrollment_status in (EnrollmentStatus.ACTIVE, EnrollmentStatus.ACTIVE, EnrollmentStatus.COMPLETED):
+        course: Course = Course(
+            title="B1 multiple courses", description="Deletion orchestration", start_date=today,
+            end_date=today + timedelta(days=90), exam_type=CourseExamType.MONTHLY,
+            price=Decimal("500.00"), mentor_id=test_mentor.id,
+        )
+        db_session.add(course)
+        await db_session.flush()
+        enrollment: Enrollment = Enrollment(
+            student_id=test_student.id, course_id=course.id, price_at_enrollment=course.price,
+            color_hex="#112233", status=enrollment_status,
+        )
+        db_session.add(enrollment)
+        await db_session.flush()
+        charge: Charge = Charge(
+            enrollment_id=enrollment.id, student_id=test_student.id, sequence_no=1,
+            amount=course.price, due_date=today + timedelta(days=10),
+            status=ChargeStatus.OPEN, type=ChargeType.TUITION,
+        )
+        db_session.add(charge)
+        enrollments.append(enrollment)
+        charges.append(charge)
+    await db_session.flush()
+
+    await UserService(db_session).delete_user(test_student.id, test_admin.id)
+
+    assert [enrollment.status for enrollment in enrollments] == [
+        EnrollmentStatus.WITHDRAWN, EnrollmentStatus.WITHDRAWN, EnrollmentStatus.COMPLETED,
+    ]
+    assert [charge.status for charge in charges] == [ChargeStatus.CANCELLED, ChargeStatus.CANCELLED, ChargeStatus.OPEN]
