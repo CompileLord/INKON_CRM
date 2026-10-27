@@ -13,6 +13,8 @@ class DebtReminderNotification(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    channel: Mapped[str | None] = mapped_column(String(16))
+    masked_destination: Mapped[str | None] = mapped_column(String(24))
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending", server_default="pending")
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
@@ -25,4 +27,15 @@ class DebtReminderNotification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DebtReminderEnrollment(Base):
+    __tablename__ = "debt_reminder_enrollments"
+
+    notification_id: Mapped[int] = mapped_column(
+        ForeignKey("debt_reminder_notifications.id", ondelete="CASCADE"), primary_key=True,
+    )
+    enrollment_id: Mapped[int] = mapped_column(
+        ForeignKey("enrollments.id", ondelete="CASCADE"), primary_key=True, index=True,
     )

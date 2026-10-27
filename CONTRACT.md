@@ -3523,6 +3523,8 @@ Manually apply a student's wallet credit to a specific charge.
         "total_paid": string,
         "debt": string,
         "overdue_days": integer,
+        "reminder_channel?": "telegram" | "sms",
+        "reminder_masked_destination?": string,
         "parent_telegram_linked": boolean,
         "last_reminder_at": string,
       }
@@ -3568,7 +3570,9 @@ Manually apply a student's wallet credit to a specific charge.
     "results": [
       {
         "student_id": integer,
-        "outcome": "queued" | "no_parent_chat" | "no_debt" | "recently_reminded" | "not_found",
+        "outcome": "queued" | "no_parent_chat" | "no_debt" | "recently_reminded" | "not_found" | "no_channel",
+        "channel?": "telegram" | "sms",
+        "masked_destination?": string,
         "next_allowed_at": string,
       }
     ],
