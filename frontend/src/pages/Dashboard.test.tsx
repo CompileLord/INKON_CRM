@@ -61,7 +61,7 @@ describe("Superadmin Dashboard (/)", () => {
 
     renderDashboard();
 
-    expect(screen.queryByText("0.00 TJS")).toBeNull();
+    expect(screen.queryByText("0 TJS")).toBeNull();
     expect(screen.queryByText("0 debtors")).toBeNull();
     expect(screen.getByText("Failed to load summary")).toBeTruthy();
 
@@ -89,12 +89,12 @@ describe("Superadmin Dashboard (/)", () => {
     renderDashboard();
 
     expect(screen.getByText("Ali Valiev")).toBeTruthy();
-    const overdueMoney = screen.getByText("800.00 TJS");
+    const overdueMoney = screen.getByText("800 TJS");
     expect(overdueMoney.className).toContain("text-destructive");
     expect(screen.getByText(/Overdue 12 days/)).toBeTruthy();
 
     expect(screen.getByText("Zara Karimova")).toBeTruthy();
-    const dueTodayMoney = screen.getByText("600.00 TJS");
+    const dueTodayMoney = screen.getByText("600 TJS");
     expect(dueTodayMoney.className).toContain("text-ink");
     expect(dueTodayMoney.className).not.toContain("text-destructive");
     expect(screen.getByText(/Due today/)).toBeTruthy();

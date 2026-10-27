@@ -50,11 +50,11 @@ describe("formatMoney", () => {
   });
 
   it("preserves sign", () => {
-    expect(formatMoney("-500")).toBe("-500.00");
+    expect(formatMoney("-500")).toBe("-500");
   });
 
   it("appends an optional suffix", () => {
-    expect(formatMoney("100", { suffix: "TJS" })).toBe("100.00 TJS");
+    expect(formatMoney("100", { suffix: "TJS" })).toBe("100 TJS");
   });
 
   it("returns the raw value unchanged for invalid input rather than throwing", () => {
@@ -84,7 +84,7 @@ describe("exact payment display", () => {
   it("retains every supplied fractional digit and huge integer digits", () => {
     expect(formatExactMoney("12345678901234567890.1234567890123456789")).toBe("12 345 678 901 234 567 890.1234567890123456789");
     expect(formatExactMoney("0.001")).toBe("0.001");
-    expect(formatExactMoney("0")).toBe("0.00");
+    expect(formatExactMoney("0")).toBe("0");
     expect(formatExactMoney("1234.5")).toBe("1 234.50");
   });
 });
@@ -129,5 +129,18 @@ describe("formatTjs shared formatter", () => {
     expect(enMonthly).toBe("500 TJS / mo");
     expect(ruMonthly).toBe("500 TJS / мес");
     expect(tgMonthly).toBe("500 TJS / моҳ");
+  });
+});
+
+describe("per-month suffix translations", () => {
+  it("comes from the common locale for every language", () => {
+    expect(formatTjs("500", { perMonth: true, lng: "en" })).toBe("500 TJS / mo");
+    expect(formatTjs("500", { perMonth: true, lng: "tg" })).toBe("500 TJS / моҳ");
+    expect(formatTjs("500", { perMonth: true, lng: "ru" })).toBe("500 TJS / мес");
+  });
+
+  it("trims whole amounts but keeps real cents in the exact formatter", () => {
+    expect(formatExactMoney("500.00")).toBe("500");
+    expect(formatExactMoney("1500.50")).toBe("1 500.50");
   });
 });

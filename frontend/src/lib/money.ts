@@ -22,10 +22,7 @@ export function isValidMoneyString(value: unknown): boolean {
 }
 
 export function getPerMonthSuffix(lng?: string): string {
-  const current: string = lng || i18n.language || "ru";
-  if (current.startsWith("en")) return "/ mo";
-  if (current.startsWith("tg")) return "/ моҳ";
-  return "/ мес";
+  return i18n.t("common:perMonthSuffix", { lng: lng || i18n.language || "ru" });
 }
 
 export interface FormatMoneyOptions {
@@ -42,7 +39,7 @@ export interface FormatMoneyOptions {
  */
 export function formatMoney(value: unknown, options: FormatMoneyOptions = {}): string {
   if (value === null || value === undefined) {
-    const zero: string = options.trimZeroCents ? "0" : "0.00";
+    const zero: string = options.trimZeroCents === false ? "0.00" : "0";
     if (options.perMonth) {
       const suffix: string = options.suffix ?? "TJS";
       return `${zero} ${suffix} ${getPerMonthSuffix(options.lng)}`;
@@ -61,7 +58,7 @@ export function formatMoney(value: unknown, options: FormatMoneyOptions = {}): s
   const grouped: string = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
   const hasCents: boolean = fractionPart !== "" && fractionPart !== "00";
-  const formatted: string = options.trimZeroCents && !hasCents
+  const formatted: string = options.trimZeroCents !== false && !hasCents
     ? `${negative ? "-" : ""}${grouped}`
     : `${negative ? "-" : ""}${grouped}.${fractionPart}`;
 
@@ -96,7 +93,10 @@ export function formatSum(value: unknown): string {
 export function formatExactMoney(value: string): string {
   if (!isValidMoneyString(value)) return value;
   const [whole, fraction = ""] = new Big(value).toFixed().split(".");
-  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + "." + fraction.padEnd(2, "0");
+  const groupedWhole: string = whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const significantFraction: string = fraction.replace(/0+$/, "");
+  if (significantFraction === "") return groupedWhole;
+  return `${groupedWhole}.${significantFraction.padEnd(2, "0")}`;
 }
 
 export function addMoney(a: string, b: string): string {
