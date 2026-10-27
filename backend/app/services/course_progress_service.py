@@ -2,6 +2,7 @@ from dataclasses import replace
 from typing import Dict, List, Optional, Tuple
 from datetime import date
 from app.core.scoring import ScoringPolicy
+from app.repositories.sqlalchemy.student_course_progress_query import StudentCourseProgressQuery
 from app.repositories.interfaces.course_progress_repository import (
     CourseChartSnapshot,
     ChartPeriodAggregate,
@@ -68,7 +69,7 @@ class CourseProgressService:
 
             for p in snapshot.periods:
                 summary = summary_map.get((st.student_id, p.id))
-                if summary is None:
+                if summary is None or not StudentCourseProgressQuery.is_summary_graded(summary.is_graded):
                     period_results.append(
                         StaffProgressPeriodResult(
                             period_id=p.id,
