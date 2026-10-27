@@ -64,9 +64,15 @@ async def test_course_overview_and_card_count_only_active_students(
 ) -> None:
     course: Course = active_cohort[0]
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
-    response: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}&page=1&page_size=1", headers=headers)
+    response: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}&status=active&page=1&page_size=1", headers=headers)
     assert response.status_code == 200
     assert response.json()["total"] == 3
+    unfiltered: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}", headers=headers)
+    assert unfiltered.status_code == 200
+    assert unfiltered.json()["total"] == 5
+    withdrawn: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}&status=withdrawn", headers=headers)
+    assert withdrawn.status_code == 200
+    assert withdrawn.json()["total"] == 1
     roster: Response = await client.get(f"/api/v1/enrollments/courses/{course.id}/roster", headers=headers)
     assert roster.status_code == 200
     assert roster.json()["total"] == 4
@@ -85,7 +91,7 @@ async def test_journal_counts_use_active_students_but_grid_retains_withdrawn_his
     students: list[User]
     course, journal, students = active_cohort
     headers: dict[str, str] = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
-    response: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}&page=1&page_size=1", headers=headers)
+    response: Response = await client.get(f"/api/v1/enrollments/?course_id={course.id}&status=active&page=1&page_size=1", headers=headers)
     assert response.json()["total"] == 3
     journals: Response = await client.get(f"/api/v1/courses/{course.id}/journals", headers=headers)
     assert journals.status_code == 200
