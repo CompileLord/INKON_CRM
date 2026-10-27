@@ -60,7 +60,6 @@
     "lastNameLabel": "Last Name",
     "emailLabel": "Email",
     "phoneLabel": "Phone",
-    "phoneHelp": "Format: +992901234567",
     "phonePlaceholder": "+992901234567",
     "dobLabel": "Date of Birth",
     "telegramChatIdLabel": "Telegram chat ID",
