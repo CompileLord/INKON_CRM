@@ -21,6 +21,7 @@ interface EnrollStudentModalProps {
   courseId: number;
   courseTitle: string;
   coursePrice: string;
+  initialStudent?: EligibleCandidateResponse;
   onClose: () => void;
   onEnrolled: (enrolledStudentId: number) => void;
 }
@@ -30,13 +31,14 @@ export function EnrollStudentModal({
   courseId,
   courseTitle,
   coursePrice,
+  initialStudent,
   onClose,
   onEnrolled,
 }: EnrollStudentModalProps) {
   const { t, i18n } = useTranslation(["courses", "common"]);
   const [search, setSearch] = useState("");
   const [candidatePage, setCandidatePage] = useState(1);
-  const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(initialStudent ?? null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGrant, setIsGrant] = useState<boolean>(false);
@@ -77,21 +79,21 @@ export function EnrollStudentModal({
       page: candidatePage,
       page_size: 10,
     },
-    open,
+    open && selectedCandidate === null,
   );
 
   useEffect(() => {
     if (open) {
       setSearch("");
       setCandidatePage(1);
-      setSelectedCandidate(null);
+      setSelectedCandidate(initialStudent ?? null);
       setErrorMessage(null);
       setIsSubmitting(false);
       setIsGrant(false);
       setMonthlyFee(coursePrice);
       isSubmittingRef.current = false;
     }
-  }, [open, courseId]);
+  }, [open, courseId, initialStudent?.id]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
