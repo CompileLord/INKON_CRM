@@ -84,6 +84,9 @@ export interface ListCoursesParams {
 export interface CourseListItemResponse extends CourseResponse {
   schedules: CourseScheduleResponse[];
   active_student_count: number;
+  current_period_label: string | null;
+  last_graded_lesson_date: string | null;
+  ungraded_lessons_count: number;
 }
 
 export type PaginatedCourses = Paginated<CourseListItemResponse>;

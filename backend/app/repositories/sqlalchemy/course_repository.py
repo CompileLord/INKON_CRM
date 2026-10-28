@@ -1,9 +1,10 @@
 from datetime import date
 from typing import Any, cast, Dict, List, Optional, Sequence
-from sqlalchemy import func, or_, select, Select
+from sqlalchemy import bindparam, func, or_, select, Select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.elements import ColumnElement, TextClause
+from sqlalchemy.engine import CursorResult
 from app.models.user import User, UserRole
 from app.schemas.course_list import CourseSortOrder
 from app.repositories.interfaces.base_repository import RepositoryPage
@@ -12,7 +13,7 @@ from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
 from app.models.enrollment import Enrollment, EnrollmentStatus
-from app.repositories.interfaces.course_repository import CourseRepository
+from app.repositories.interfaces.course_repository import CourseJournalProgress, CourseRepository
 from app.repositories.sqlalchemy.base_repository import SQLAlchemyBaseRepository
 
 
@@ -49,6 +50,42 @@ class SQLAlchemyCourseRepository(SQLAlchemyBaseRepository[Course], CourseReposit
         }
         query = query.order_by(columns[sort], Course.id.asc())
         return cast(RepositoryPage[Course], await self.get_paginated(query, page, page_size))
+
+    async def get_journal_progress(self, course_ids: Sequence[int], today: date) -> dict[int, CourseJournalProgress]:
+        if not course_ids:
+            return {}
+        statement: TextClause = text("""
+            SELECT course.id,
+                   current_journal.period_label,
+                   (SELECT max(entry.lesson_date)
+                    FROM journal_entries AS entry
+                    JOIN journals AS journal ON journal.id = entry.journal_id
+                    WHERE journal.course_id = course.id AND entry.is_graded IS TRUE
+                      AND entry.lesson_date <= :today) AS last_graded_lesson_date,
+                   (SELECT count(*)
+                    FROM generate_series(current_journal.period_start, LEAST(current_journal.period_end, CAST(:today AS date)), interval '1 day') AS lesson(day)
+                    WHERE EXISTS (SELECT 1 FROM course_schedules AS schedule
+                                  WHERE schedule.course_id = course.id
+                                    AND schedule.day_of_week = extract(isodow FROM lesson.day) - 1)
+                      AND EXISTS (SELECT 1 FROM enrollments AS enrollment
+                                  JOIN users AS student ON student.id = enrollment.student_id
+                                  WHERE enrollment.course_id = course.id AND enrollment.is_deleted IS FALSE
+                                    AND enrollment.status = 'active' AND student.is_deleted IS FALSE
+                                    AND NOT EXISTS (SELECT 1 FROM journal_entries AS entry
+                                                    WHERE entry.journal_id = current_journal.id
+                                                      AND entry.student_id = student.id
+                                                      AND entry.lesson_date = CAST(lesson.day AS date)
+                                                      AND entry.is_graded IS TRUE))) AS ungraded_lessons_count
+            FROM courses AS course
+            LEFT JOIN LATERAL (SELECT journal.id, journal.period_label, journal.period_start, journal.period_end
+                               FROM journals AS journal
+                               WHERE journal.course_id = course.id AND journal.period_start <= :today
+                                 AND journal.period_end >= :today
+                               ORDER BY journal.period_start, journal.id LIMIT 1) AS current_journal ON TRUE
+            WHERE course.id IN :course_ids
+        """).bindparams(bindparam("course_ids", expanding=True))
+        rows: CursorResult[Any] = await self.session.execute(statement, {"course_ids": list(course_ids), "today": today})
+        return {row.id: CourseJournalProgress(row.period_label, row.last_graded_lesson_date, row.ungraded_lessons_count) for row in rows}
 
     async def get_by_id_for_update(self, course_id: int) -> Optional[Course]:
         statement: Select[tuple[Course]] = select(Course).where(Course.id == course_id).with_for_update().execution_options(populate_existing=True)

@@ -3,8 +3,9 @@ from typing import Optional, List
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.school_calendar import SchoolCalendar
 from app.core.schedule_utils import CourseCopyBudgetExceeded, CourseCopyPlan, EnrollmentLessonPlan
-from app.repositories.interfaces.course_repository import CourseRepository
+from app.repositories.interfaces.course_repository import CourseJournalProgress, CourseRepository
 from app.repositories.interfaces.user_repository import UserRepository
 from app.models.course import Course, CourseStatus
 from app.models.course_schedule import CourseSchedule
@@ -261,6 +262,9 @@ class CourseService:
         student_counts: dict[int, int] = await self.course_repo.count_active_students_by_course(
             [course.id for course in courses]
         )
+        journal_progress: dict[int, CourseJournalProgress] = await self.course_repo.get_journal_progress(
+            [course.id for course in courses], SchoolCalendar.today(),
+        )
         page_result["items"] = [
             CourseListItemResponse(
                 **CourseResponse.model_validate(course, from_attributes=True).model_dump(),
@@ -269,6 +273,7 @@ class CourseService:
                     for schedule in course.schedules
                 ],
                 active_student_count=student_counts.get(course.id, 0),
+                **vars(journal_progress.get(course.id, CourseJournalProgress(None, None, 0))),
             )
             for course in courses
         ]
