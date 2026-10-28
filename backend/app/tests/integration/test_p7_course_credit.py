@@ -48,6 +48,13 @@ async def test_course_credit_allocation_and_errors(client: AsyncClient, db_sessi
     charges: list[Charge] = list((await db_session.scalars(select(Charge).where(Charge.enrollment_id == enrollment.id).order_by(Charge.due_date, Charge.id))).all())
     assert [item['charge_id'] for item in body['allocations']] == [charges[0].id, charges[1].id]
     assert [item['amount'] for item in body['allocations']] == ['100.00', '50.00']
+    audit_response: Response = await client.get('/api/v1/audit-log/events/', headers={'Authorization': f'Bearer {create_access_token(test_admin.id, test_admin.role)}'}, params={'entity_type': 'allocation', 'search': f'{test_student.first_name} {test_student.last_name}'})
+    assert audit_response.status_code == 200
+    audit_events: list[dict] = audit_response.json()['items']
+    allocation_event: dict = next(event for event in audit_events if event['entity_id'] == charges[0].id)
+    assert allocation_event['student_id'] == test_student.id
+    assert allocation_event['entity_label'] == f'{test_student.first_name} {test_student.last_name}'
+    assert next(change['new_value'] for change in allocation_event['changes'] if change['field_name'] == 'allocated') == '150.00'
     other_allocations: list[Allocation] = list((await db_session.scalars(select(Allocation).join(Charge).where(Charge.enrollment_id == other.id))).all())
     assert not other_allocations
     response = await client.post(url, headers=headers, json={'enrollment_id': enrollment.id})
