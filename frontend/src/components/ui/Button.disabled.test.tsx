@@ -24,7 +24,17 @@ describe("Button disabled state", () => {
 
   it("shows no tooltip when the button is enabled", () => {
     render(<Button disabledReason="Select a student">Enroll</Button>);
-    expect(screen.getByRole("button", { name: "Enroll" }).parentElement).toBe(document.body.firstElementChild);
+    const anchor: HTMLElement = screen.getByRole("button", { name: "Enroll" }).parentElement as HTMLElement;
+    fireEvent.focus(anchor);
+    fireEvent.pointerEnter(anchor, { pointerType: "mouse" });
     expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(anchor.tabIndex).toBe(-1);
+  });
+
+  it("keeps the same button element when it becomes enabled", () => {
+    const { rerender } = render(<Button disabled disabledReason="Reason">Save</Button>);
+    const before: HTMLElement = screen.getByRole("button", { name: "Save" });
+    rerender(<Button disabledReason="Reason">Save</Button>);
+    expect(screen.getByRole("button", { name: "Save" })).toBe(before);
   });
 });

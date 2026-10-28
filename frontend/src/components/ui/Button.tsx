@@ -82,8 +82,7 @@ export function Button({
     </button>
   );
 
-  if (disabled && !isLoading && disabledReason !== undefined) {
-    return <Tooltip content={disabledReason} focusable>{button}</Tooltip>;
-  }
-  return button;
+  if (disabledReason === undefined) return button;
+  const explainsDisabled: boolean = Boolean(disabled) && !isLoading && disabledReason !== "";
+  return <Tooltip content={disabledReason} focusable={explainsDisabled} disabled={!explainsDisabled}>{button}</Tooltip>;
 }

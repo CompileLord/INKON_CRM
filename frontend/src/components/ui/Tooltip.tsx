@@ -8,6 +8,7 @@ interface TooltipProps {
   content: ReactNode;
   children: ReactNode;
   focusable?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -17,7 +18,7 @@ interface TooltipPosition {
   transformOrigin: string;
 }
 
-export function Tooltip({ content, children, focusable = false, className = "" }: TooltipProps) {
+export function Tooltip({ content, children, focusable = false, disabled = false, className = "" }: TooltipProps) {
   const tooltipId: string = useId();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
@@ -67,25 +68,28 @@ export function Tooltip({ content, children, focusable = false, className = "" }
     <span
       ref={anchorRef}
       tabIndex={focusable ? 0 : undefined}
-      aria-describedby={isOpen ? tooltipId : undefined}
+      aria-describedby={isOpen && !disabled ? tooltipId : undefined}
       onPointerEnter={(event) => {
-        if (event.pointerType !== "mouse" || isOpen) return;
+        if (disabled || event.pointerType !== "mouse" || isOpen) return;
         cancelHover();
         hoverTimer.current = setTimeout(() => setIsOpen(true), HOVER_DELAY_MILLISECONDS);
       }}
       onPointerLeave={(event) => {
         if (event.pointerType === "mouse") close();
       }}
-      onFocus={() => setIsOpen(true)}
+      onFocus={() => {
+        if (!disabled) setIsOpen(true);
+      }}
       onBlur={close}
       onClick={() => {
+        if (disabled) return;
         if (focusable) setIsOpen(true);
         else close();
       }}
       className={["relative inline-flex max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[6px]", className].join(" ")}
     >
       {children}
-      {isOpen && (
+      {isOpen && !disabled && (
         <span
           ref={bubbleRef}
           id={tooltipId}
