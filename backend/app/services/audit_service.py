@@ -160,6 +160,9 @@ class AuditService:
         if course_id is None:
             referenced_course = next((change.new_value for change in changes if change.field_name == "course_id" and change.new_value and change.new_value.isdigit()), None)
             course_id = int(referenced_course) if referenced_course is not None else None
+        amount: str | None = reference.amount if reference else None
+        if key.action == "refund" and key.entity_type == "payment":
+            amount = next((change.new_value for change in changes if change.field_name == "amount"), amount)
         return {
             "id": min((change.id for change in changes), default=0),
             "user_id": key.user_id,
@@ -171,7 +174,7 @@ class AuditService:
             "student_id": reference.student_id if reference else None,
             "course_id": course_id,
             "course_title": None,
-            "amount": reference.amount if reference else None,
+            "amount": amount,
             "created_at": key.created_at,
             "changes": [
                 {"id": change.id, "field_name": change.field_name, "old_value": change.old_value, "new_value": change.new_value}
