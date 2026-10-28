@@ -2,32 +2,15 @@ import { useTranslation } from "react-i18next";
 import { StatGroup, StatTile } from "../ui/StatGroup";
 import { ScoreFormat } from "../profile/ScoreFormat";
 import { formatNumber } from "../../i18n/formatters";
-import { compareMoney, formatTjs } from "../../lib/money";
-import { useStudentBalance } from "../../lib/finance/hooks";
 import { ActiveCourseScores } from "./ActiveCourseScores";
 import type { StudentCourseProfile, StudentPerformanceTotals } from "../../lib/users/types";
 
 interface StudentStatTilesProps {
-  studentId: number;
   courses: StudentCourseProfile[];
   performance: StudentPerformanceTotals | null | undefined;
-  showBalance: boolean;
 }
 
-function BalanceTile({ studentId }: { studentId: number }) {
-  const { t, i18n } = useTranslation("studentProfile");
-  const { data: balance } = useStudentBalance(studentId);
-  const isDebt: boolean = balance !== undefined && compareMoney(balance.net_receivable, "0") > 0;
-  const isCredit: boolean = balance !== undefined && !isDebt && compareMoney(balance.credit_balance, "0") > 0;
-  const label: string = isDebt ? t("stats.debt") : isCredit ? t("stats.credit") : t("stats.balance");
-  const rawAmount: string | null = balance === undefined ? null : (isDebt ? balance.net_receivable : isCredit ? balance.credit_balance : "0");
-  const amount: string | null = rawAmount === null ? null : formatTjs(rawAmount, { lng: i18n.language });
-  const overdue: string | undefined = isDebt && balance !== undefined && balance.days_overdue > 0 ? t("stats.overdueDays", { count: balance.days_overdue, formatted: formatNumber(balance.days_overdue, i18n.language) }) : undefined;
-  if (amount === null) return null;
-  return <StatTile label={label} value={amount} hint={overdue} />;
-}
-
-export function StudentStatTiles({ studentId, courses, performance, showBalance }: StudentStatTilesProps) {
+export function StudentStatTiles({ courses, performance }: StudentStatTilesProps) {
   const { t, i18n } = useTranslation("studentProfile");
   const totals: { score: number; max: number } | null = ActiveCourseScores.totals(courses);
   const hasAttendance: boolean = performance !== null && performance !== undefined && performance.attendance_denominator > 0 && performance.attendance_percentage !== null;
@@ -39,14 +22,13 @@ export function StudentStatTiles({ studentId, courses, performance, showBalance 
     : undefined;
 
   const scoreValue: string | null = totals ? ScoreFormat.points(totals.score, i18n.language) : null;
-  if (scoreValue === null && attendanceValue === null && !showBalance) return null;
+  if (scoreValue === null && attendanceValue === null) return null;
 
   return (
     <div data-profile-summary>
       <StatGroup compact>
         {scoreValue !== null ? <StatTile label={t("stats.score")} value={scoreValue} /> : null}
         {attendanceValue !== null ? <StatTile label={t("stats.attendance")} value={attendanceValue} hint={absencesHint} /> : null}
-        {showBalance ? <BalanceTile studentId={studentId} /> : null}
       </StatGroup>
     </div>
   );
