@@ -30,6 +30,7 @@ export interface AvatarUploadFieldProps {
   onBusyChange?: (busy: boolean) => void;
   onOperationStateChange?: (state: AvatarOperationState) => void;
   hideLabel?: boolean;
+  compact?: boolean;
 }
 
 export function AvatarUploadField({
@@ -42,6 +43,7 @@ export function AvatarUploadField({
   onBusyChange,
   onOperationStateChange,
   hideLabel = false,
+  compact = false,
 }: AvatarUploadFieldProps) {
   const { t } = useTranslation("common");
   const inputId = useId();
@@ -337,17 +339,17 @@ export function AvatarUploadField({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className={hideLabel ? "sr-only" : "text-sm font-medium text-ink"}>{t("avatar.label")}</span>
-      <div className="flex items-center gap-4">
+      <span className={hideLabel || compact ? "sr-only" : "text-sm font-medium text-ink"}>{t("avatar.label")}</span>
+      <div className={compact ? "flex items-center gap-3" : "flex items-center gap-4"}>
         <div
           data-testid="avatar-preview-container"
-          className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-control-border bg-beige shadow-xs"
+          className={`relative flex ${compact ? "h-12 w-12" : "h-16 w-16"} shrink-0 items-center justify-center overflow-hidden rounded-full border border-control-border bg-beige shadow-xs`}
         >
           <PersonAvatar
             firstName={firstName}
             lastName={lastName}
             photoUrl={displayUrl}
-            size={64}
+            size={compact ? 48 : 64}
           />
           {status === "uploading" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-cream/75 backdrop-blur-[1px]">

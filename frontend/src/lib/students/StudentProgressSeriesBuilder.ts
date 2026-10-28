@@ -13,6 +13,7 @@ export interface StudentProgressSeries {
   periodLabels: string[];
   values: (number | null)[];
   latestTotal: number | null;
+  latestMax?: number | null;
 }
 
 export class StudentProgressSeriesBuilder {
@@ -29,17 +30,18 @@ export class StudentProgressSeriesBuilder {
       const result = studentRow?.period_results.find((entry) => entry.period_id === period.id);
       return result?.percentage ?? null;
     });
-    const latestScore: number | null = [...progress.periods]
+    const latestResult = [...progress.periods]
       .reverse()
-      .map((period) => studentRow?.period_results.find((entry) => entry.period_id === period.id)?.score ?? null)
-      .find((score: number | null) => score !== null) ?? null;
+      .map((period) => studentRow?.period_results.find((entry) => entry.period_id === period.id))
+      .find((result) => result?.score !== null && result?.score !== undefined);
     return {
       courseId: course.id,
       title: course.title,
       slot,
       periodLabels: progress.periods.map((period) => period.period_label),
       values,
-      latestTotal: latestScore,
+      latestTotal: latestResult?.score ?? null,
+      latestMax: latestResult?.max_score ?? null,
     };
   }
 
@@ -51,13 +53,15 @@ export class StudentProgressSeriesBuilder {
     const orderedPeriods: StudentJournalPeriod[] = journals
       .filter((journal) => journal.course_id === course.id)
       .sort((first, second) => first.period_start.localeCompare(second.period_start));
+    const latestGraded: StudentJournalPeriod | undefined = [...orderedPeriods].reverse().find((journal) => journal.state === "graded");
     return {
       courseId: course.id,
       title: course.title,
       slot,
       periodLabels: orderedPeriods.map((journal) => journal.period_label),
       values: orderedPeriods.map((journal) => (journal.state === "graded" ? journal.percentage : null)),
-      latestTotal: [...orderedPeriods].reverse().find((journal) => journal.state === "graded")?.sum_score ?? null,
+      latestTotal: latestGraded?.sum_score ?? null,
+      latestMax: latestGraded?.max_period_score ?? null,
     };
   }
 

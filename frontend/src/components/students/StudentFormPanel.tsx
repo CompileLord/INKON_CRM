@@ -371,8 +371,9 @@ function StudentFormPanelInner({
           )}
 
           {student && (
-            <div className="rounded-xl border border-border bg-strip p-4">
+            <div data-avatar-row>
               <AvatarUploadField
+                compact
                 userId={student.id}
                 role="student"
                 currentPhotoUrl={resolveMediaUrl(student.thumbnail_path ?? student.photo_path)}

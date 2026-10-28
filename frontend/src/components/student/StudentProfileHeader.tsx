@@ -5,6 +5,7 @@ import { Button } from "../ui/Button";
 import { EntityHeader } from "../ui/EntityHeader";
 import type { MenuItem } from "../ui/Menu";
 import { PersonAvatar } from "../ui/PersonAvatar";
+import { StudentBalancePill } from "./StudentBalancePill";
 import { StudentParentLink } from "./StudentParentLink";
 import { formatDate, formatPhoneDisplay } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
@@ -41,6 +42,7 @@ export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdi
       status={
         <>
           {user.is_deleted ? <Badge status="archived" /> : null}
+          {isSuperAdmin ? <StudentBalancePill studentId={user.id} /> : null}
           <StudentParentLink user={user} canManage={isSuperAdmin} />
         </>
       }

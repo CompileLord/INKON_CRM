@@ -221,7 +221,7 @@ export function StudentProfile() {
         onOpenAccess={() => setIsAccessOpen(true)}
       />
 
-      <StudentStatTiles studentId={user.id} courses={courses} performance={performance} showBalance={isSuperAdmin} />
+      <StudentStatTiles courses={courses} performance={performance} />
 
       <Tabs tabs={tabs} value={activeTab} onChange={selectTab} ariaLabel={t("tabs.label")} idPrefix={PROFILE_ID_PREFIX} />
 

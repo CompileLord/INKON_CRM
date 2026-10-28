@@ -83,6 +83,16 @@ describe("MentorFormPanel", () => {
     expect(screen.queryByText(/Upload photo/i)).toBeNull();
   });
 
+  it("puts the compact avatar and the upload button on one row without a framed photo block", () => {
+    renderPanel({ mentor: existingMentor });
+    const preview = screen.getByTestId("avatar-preview-container");
+    const uploadButton = screen.getByRole("button", { name: /photo/i });
+    expect(preview.className).toContain("h-12");
+    expect(preview.parentElement).toBe(uploadButton.parentElement?.parentElement);
+    expect(preview.closest("[data-avatar-row]")?.className ?? "").not.toContain("p-4");
+    expect(preview.closest("[data-avatar-row]")?.querySelector("span.sr-only")).not.toBeNull();
+  });
+
   it("keeps the email required and blocks a mentor created without one", async () => {
     const createSpy = vi.fn();
     vi.spyOn(userHooks, "useCreateUser").mockReturnValue({

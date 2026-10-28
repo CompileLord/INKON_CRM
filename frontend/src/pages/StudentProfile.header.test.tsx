@@ -57,14 +57,18 @@ describe("StudentProfile Component", () => {
     expect(items.map((item) => item.textContent)).toEqual(["Send login details", "Delete student"]);
   });
 
-  it("shows exactly three distinct stat tiles in one group for a superadmin", async () => {
+  it("shows two stat tiles in one compact group and the debt as a pill in the header, not a tile", async () => {
     renderStudentProfile();
     const group = document.querySelector("[data-profile-summary] [data-stat-group]") as HTMLElement;
-    await waitFor(() => expect(group.textContent).toContain("Debt"));
-    expect(group.querySelectorAll("[data-stat-tile]")).toHaveLength(3);
-    const labels = Array.from(group.querySelectorAll("dt")).map((node) => node.textContent);
-    expect(new Set(labels).size).toBe(3);
+    expect(group.querySelectorAll("[data-stat-tile]")).toHaveLength(2);
     expect(group.getAttribute("data-compact")).toBe("true");
+    const pill = await waitFor(() => {
+      const found = document.querySelector("[data-entity-header] [data-balance-pill]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(pill.getAttribute("data-balance-pill")).toBe("debt");
+    expect(group.textContent).not.toContain("Debt");
   });
 
   it("shows the points of the active courses as the score only", () => {
@@ -106,26 +110,35 @@ describe("StudentProfile Component", () => {
     expect(tile.textContent).not.toMatch(/%|\/ 100/);
   });
 
-  it("shows the debt with money formatting and the overdue days", async () => {
+  it("shows the debt pill with money formatting and the overdue days", async () => {
     renderStudentProfile();
-    const tile = (await screen.findByText("Debt")).closest("[data-stat-tile]") as HTMLElement;
-    expect(tile.textContent).toContain("250 TJS");
-    expect(tile.textContent).toContain("3 days overdue");
+    const pill = await waitFor(() => {
+      const found = document.querySelector("[data-balance-pill=debt]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(pill.textContent).toContain("Debt 250 TJS");
+    expect(pill.textContent).toContain("3 days overdue");
   });
 
-  it("shows an overpayment as credit and a settled account as a zero balance", async () => {
+  it("shows an overpayment as a credit pill and nothing for a settled account", async () => {
     vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "0", total_settled: "0", net_receivable: "0.00", credit_balance: "75.50", days_overdue: 0 });
     renderStudentProfile();
-    const creditTile = (await screen.findByText("Overpaid")).closest("[data-stat-tile]") as HTMLElement;
-    expect(creditTile.textContent).toContain("75.50 TJS");
+    const creditPill = await waitFor(() => {
+      const found = document.querySelector("[data-balance-pill=credit]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(creditPill.textContent).toContain("Overpaid 75.50 TJS");
     cleanup();
     vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "0", total_settled: "0", net_receivable: "0.00", credit_balance: "0.00", days_overdue: 0 });
     renderStudentProfile();
-    const balanceTile = (await screen.findByText("Balance")).closest("[data-stat-tile]") as HTMLElement;
-    await waitFor(() => expect(balanceTile.textContent).toContain("0 TJS"));
+    await waitFor(() => expect(financeApi.fetchStudentBalance).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.querySelector("[data-balance-pill]")).toBeNull();
   });
 
-  it("hides the balance tile and never requests the balance for a mentor", () => {
+  it("hides the balance pill and never requests the balance for a mentor", () => {
     useAuthStore.setState({ role: "mentor", userId: 7 });
     renderStudentProfile();
     const group = document.querySelector("[data-stat-group]") as HTMLElement;

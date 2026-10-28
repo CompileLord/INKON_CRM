@@ -24,7 +24,6 @@
     "absencesOf": "{{absences}} of {{total}} missed",
     "debt": "Debt",
     "credit": "Overpaid",
-    "balance": "Balance",
     "overdueDays_one": "{{formatted}} day overdue",
     "overdueDays_other": "{{formatted}} days overdue"
   },
@@ -54,6 +53,7 @@
     "rowNoData": "No grades yet",
     "coursesLabel": "Progress by course",
     "attendanceShort": "{{value}}% attendance",
+    "latestPeriodScore": "latest period",
     "historyWindow": "Showing {{count}} periods. Load more for older results.",
     "historyComplete": "All {{count}} started periods loaded.",
     "historyEmptyTitle": "No history yet",
