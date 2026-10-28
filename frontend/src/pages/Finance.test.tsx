@@ -59,7 +59,7 @@ describe("Finance overview", () => {
   it("shows two identified course balances for one student and never a fetched-page sum", async () => {
     renderFinance();
     await screen.findAllByText("Python Advanced");
-    const balances = screen.getByRole("region", { name: "Course balances" });
+    const balances = screen.getByRole("region", { name: "Largest debts" });
     const rows = within(balances).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText("Python Advanced")).toBeTruthy();
@@ -75,7 +75,7 @@ describe("Finance overview", () => {
   it("opens the payment dialog for the exact student and course of the row", async () => {
     renderFinance();
     await screen.findAllByText("Python Advanced");
-    const balances = screen.getByRole("region", { name: "Course balances" });
+    const balances = screen.getByRole("region", { name: "Largest debts" });
     await userEvent.click(within(balances).getByRole("button", { name: "Accept payment for Anisa Karimova, English IELTS" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Anisa Karimova")).toBeTruthy();
@@ -97,6 +97,17 @@ describe("Finance overview", () => {
     expect(within(summary).getByText("Collected in period")).toBeTruthy();
   });
 
+  it("places the period picker inside the collected tile only", async () => {
+    renderFinance();
+    const summary = screen.getByRole("region", { name: "Finance summary" });
+    await within(summary).findByText("0 TJS");
+    const picker: HTMLElement = within(summary).getByRole("button", { name: /^Collection period:/ });
+    const tiles: HTMLElement[] = Array.from(summary.querySelectorAll<HTMLElement>("[data-stat-tile]"));
+    const owners: HTMLElement[] = tiles.filter((tile) => tile.contains(picker));
+    expect(owners).toHaveLength(1);
+    expect(within(owners[0]).getByText("Collected in period")).toBeTruthy();
+  });
+
   it("builds the summary from one shared stat group without info tooltips", async () => {
     renderFinance();
     const summary = screen.getByRole("region", { name: "Finance summary" });
@@ -110,12 +121,12 @@ describe("Finance overview", () => {
   it("shows names, not student numbers, unless two visible rows share a name", async () => {
     renderFinance();
     await screen.findAllByText("Python Advanced");
-    expect(within(screen.getByRole("region", { name: "Course balances" })).queryByText(/Student #/)).toBeNull();
+    expect(within(screen.getByRole("region", { name: "Largest debts" })).queryByText(/Student #/)).toBeNull();
     mock.onGet(debtsUrl).reply(200, page([debt(7, 11, "Anisa", "Python Advanced", "700.10"), debt(8, 12, "Anisa", "English IELTS", "500.20")]));
     cleanup();
     renderFinance();
     await screen.findAllByText("English IELTS");
-    const balances = screen.getByRole("region", { name: "Course balances" });
+    const balances = screen.getByRole("region", { name: "Largest debts" });
     expect(within(balances).getByText("Student #7")).toBeTruthy();
     expect(within(balances).getByText("Student #8")).toBeTruthy();
   });
@@ -182,7 +193,7 @@ describe("Finance overview", () => {
   it("isolates preview failures, never shows zero for them and retries only the failed one", async () => {
     mock.onGet(debtsUrl).reply(500);
     renderFinance();
-    const balances = await screen.findByRole("region", { name: "Course balances" });
+    const balances = await screen.findByRole("region", { name: "Largest debts" });
     expect(await within(balances).findByRole("alert")).toBeTruthy();
     const latest = screen.getByRole("region", { name: "Latest payments" });
     expect(await within(latest).findByRole("button", { name: "Details for Dilnoza Rustamova, payment 123" })).toBeTruthy();
@@ -214,7 +225,7 @@ describe("Finance overview", () => {
   it("opens Debtors and Payments from the preview footers", async () => {
     renderFinance();
     await screen.findAllByText("Anisa Karimova");
-    await userEvent.click(screen.getByRole("button", { name: "View all course balances" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open the debtors tab" }));
     expect(location()).toBe("/finance?tab=debtors");
     expect(screen.getByRole("tab", { name: "Debtors" }).getAttribute("aria-selected")).toBe("true");
   });
