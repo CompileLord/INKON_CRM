@@ -1,5 +1,4 @@
 {
-  "title": "Панели маъмур",
   "crmControlPanel": "CRM ИМКОН • Панели идоракунӣ",
   "paymentDebt": "Қарзи боқимонда",
   "debtors": "{{count}} қарздор",
@@ -185,5 +184,10 @@
   "nextLessonOnDay": "{{day}}, {{time}}",
   "noLessonsTodaySlim": "Имрӯз дарс нест",
   "noLessonsTodayNext": "Имрӯз дарс нест · Навбатӣ: {{when}}",
-  "absenceStreak_ordinal_other": "Ғоибии {{count}}-ум пай дар пай"
+  "absenceStreak_ordinal_other": "Ғоибии {{count}}-ум пай дар пай",
+  "greeting": {
+    "morning": "Субҳи хуш",
+    "afternoon": "Рӯзи хуш",
+    "evening": "Бегоҳи хуш"
+  }
 }

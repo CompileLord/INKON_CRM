@@ -37,9 +37,9 @@ describe("dashboard i18n key parity", () => {
   });
 
   it("verifies superadmin dashboard operational copy is localized across all three languages", () => {
-    expect(enDashboard.title).toBe("Admin Dashboard");
-    expect(ruDashboard.title).toBe("Панель администратора");
-    expect(tgDashboard.title).toBe("Панели маъмур");
+    expect(enDashboard.greeting.morning).toBe("Good morning");
+    expect(ruDashboard.greeting.afternoon).toBe("Добрый день");
+    expect(tgDashboard.greeting.evening).toBe("Бегоҳи хуш");
 
     expect(enDashboard.dueToday).toBe("Due today");
     expect(ruDashboard.dueToday).toBe("Срок сегодня");
