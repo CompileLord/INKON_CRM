@@ -1,14 +1,40 @@
 # Finance spec — implementation status
 
-Phases from `05-risks-and-phases.md`. Raw logs live outside Git in `~/.local/state/imkon-remediation/finance-spec/phase-N/`. Before/after images and a captioned `index.html` page per phase live in the main checkout's `docs/finance-spec-before-after/phase-N/` (not committed).
+Phases from `05-risks-and-phases.md`. Raw logs live outside Git in `~/.local/state/imkon-remediation/finance-spec/phase-N/`.
 
-| Phase | Status | Branches (merge commit on `master`) | Tests |
-|---|---|---|---|
-| 0 — Monthly billing, B-1 roster | Accepted | `finance/p0-backend` (f67643d), `finance/p0-frontend` (cfdd542), `finance/p0-progress-fix` (a2f08ee), `finance/p0-counts-fix` (d2166b7), `finance/p0-counts-fix2` (af3571b) | See below |
-| 1 — Journal chart and period dialog | Accepted | `finance/p1-frontend` (93154b0), built on `uat/u05` | See below |
-| 2 — Mentors and course cards | In progress | `finance/p2-backend` | |
-| 3 — Lesson times | Delivered by U17 (`uat/u17`), to verify | | |
-| 4–11 | Not started | | Phase 6 waits for U17 on `master` |
+| Phase | Status | Branches (merge commit on `master`) |
+|---|---|---|
+| 0 — Monthly billing, B-1 roster | Accepted | `finance/p0-backend` (f67643d), `finance/p0-frontend` (cfdd542), `finance/p0-progress-fix` (a2f08ee), `finance/p0-counts-fix` (d2166b7), `finance/p0-counts-fix2` (af3571b) |
+| 1 — Journal chart and period dialog | Accepted | `finance/p1-frontend` (93154b0) |
+| 2 — Mentors and course cards | Accepted | `finance/p2-backend` (1cb393c), `finance/p2-frontend` (052a575), `fix/mentor-active-students` (9b8a1db) |
+| 3 — Lesson times | Accepted (delivered by U17) | `uat/u17` (f417ae8, e653f49) |
+| 4 — Grants | Accepted | `finance/p4-backend` (020d70f), `finance/p4-frontend` (ca76260) |
+| 5 — Students and onboarding | Accepted | `finance/p5-backend` (4a37939), `finance/p5-frontend` (5393fad), `fix/students-active-course-pills` (f74d91b), `finance/p5-profile` (c28090b) |
+| 6 — Dashboard | Accepted | `finance/p6-backend` (56b8f8a), `finance/p6-frontend` (07bdeca) |
+| 7 — Multi-course payments | Accepted | `finance/p7-backend` (89b0179), `finance/p7-frontend` (b210b04), `finance/p7-credit` (0990b7d), `finance/p7-credit-fe` (a47a7f4) |
+| 8 — Audit | Accepted | `finance/p8-backend` (c434b80), `finance/p8-frontend` (6fa368a) |
+| 9 — Settings | Accepted | `finance/p9-backend` (9e1d38d), `finance/p9-frontend` (b68863c) |
+| 10 — Notifications | Accepted (staff notifications and lockout reset need their own spec) | `finance/p10-backend` (ea53b49), `finance/p10-frontend` (cd65c43) |
+| 11 — Cross-cutting UI/UX | Accepted | `finance/p11-shared` (6f4aa71), `finance/p11-auth-home` (3ca1388), `finance/p11-students` (5442bb6), `finance/p11-finance-audit` (63c290a), `finance/p11-journals` (b2f922c), `finance/p11-courses` (8cc7cd8), `fix/p11-backend` (b6ebd7d) |
+
+Related merges: U16 SMS reminders (765e54e), U18 withdrawals (e201338, 572d90f, c518434), test fixes `fix/u07-seeder` (fc56411) and `fix/batch2-tests` (1ac0446).
+
+## Final check on `master` (b6ebd7d, 2026-10-29)
+
+- Backend full suite: 2257 passed, 6 skipped, 2 failed, 4 errors.
+  - Known before this work: wp11 and 4 × wp13 (Redis TLS).
+  - New: `test_remediation_wp19::test_analytics_uses_existing_auth_checkout_in_a_single_connection_pool`, a date-dependent fixture (the course end date is today + 65 days, so on some days it bills a fourth month). The product code is unaffected; the test fix is on `fix/wp19-date`.
+- Frontend: `tsc` clean; vitest 2248/2248 passed.
+
+## Open items
+
+- Staff notifications (admin inbox generator) and the Telegram lockout reset need a separate spec (§9).
+- Debt-reminder retry (separate `DebtReminderNotification` model) is not covered by the delivery-log retry.
+- Student profile: mentors and students do not see the course mentor name or balance (no endpoint for their role); schedules come from the first 100 courses.
+- The Debtors counter counts student-and-course rows; a student owing on two courses counts twice.
+- The bell popover's empty text is the same for every role.
+- `PaymentEntryDialog.tsx` is close to the 20 KB file cap.
+- Before any deploy: re-run the read-only production count of active enrollments that have charges.
 
 ## Phase 0
 
