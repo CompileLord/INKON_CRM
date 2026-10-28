@@ -117,6 +117,7 @@ describe("StudentProfile Component", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain("Advanced Mathematics");
     expect(rows[0].querySelector("[data-course-score]")?.textContent).toBe("9 / 10");
+    expect(rows[0].textContent).toContain("latest period");
     expect(rows[0].textContent).not.toContain("340 / 400");
     expect(rows[0].textContent).not.toContain("—");
     expect(rows[0].textContent).not.toContain("85%");

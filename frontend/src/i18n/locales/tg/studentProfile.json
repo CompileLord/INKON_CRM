@@ -53,6 +53,7 @@
     "rowNoData": "Ҳоло баҳо нест",
     "coursesLabel": "Пешрафт аз рӯи курсҳо",
     "attendanceShort": "иштирок {{value}}%",
+    "latestPeriodScore": "дар давраи охирин",
     "historyWindow": "Давраҳои намоён: {{count}}. Барои натиҷаҳои пешина бештар бор кунед.",
     "historyComplete": "Ҳамаи давраҳои оғозшуда бор шуданд: {{count}}.",
     "historyEmptyTitle": "Ҳанӯз таърих нест",

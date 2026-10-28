@@ -105,6 +105,11 @@ describe("StudentCoursesTab", () => {
     expect(screen.queryByRole("link", { name: "Journal" })).toBeNull();
   });
 
+  it("shows the course total with its maximum on the course card", () => {
+    renderTab([{ ...profileCourse(5, "Frontend"), my_total_score: 114, my_total_max_score: 300 }], "superadmin");
+    expect(screen.getByTestId("student-course-card").querySelector("[data-course-score]")?.textContent).toBe("114 / 300");
+  });
+
   it("sends a student to their own journal page", () => {
     renderTab([profileCourse(5, "Frontend")], "student", 3);
     expect(screen.getByRole("link", { name: "Journal" }).getAttribute("href")).toBe("/my/courses/5/journal");

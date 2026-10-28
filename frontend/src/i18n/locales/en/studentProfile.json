@@ -53,6 +53,7 @@
     "rowNoData": "No grades yet",
     "coursesLabel": "Progress by course",
     "attendanceShort": "{{value}}% attendance",
+    "latestPeriodScore": "latest period",
     "historyWindow": "Showing {{count}} periods. Load more for older results.",
     "historyComplete": "All {{count}} started periods loaded.",
     "historyEmptyTitle": "No history yet",

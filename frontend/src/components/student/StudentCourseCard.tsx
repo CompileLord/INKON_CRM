@@ -48,7 +48,7 @@ export function StudentCourseCard({ item, role, currentUserId, mentorName, sched
               <span className="text-xs tabular-nums text-muted">{formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)}</span>
             </span>
             <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">
-              {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} /> : <EmptyValue reason={t("ui:noGradedPeriods")} />}
+              {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} max={item.my_total_max_score} /> : <EmptyValue reason={t("ui:noGradedPeriods")} />}
               {item.periods_total > 0 ? (
                 <span className="text-xs tabular-nums text-muted">{t("courses.periodsGraded", { graded: item.periods_graded, total: item.periods_total })}</span>
               ) : null}

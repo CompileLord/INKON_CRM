@@ -40,7 +40,12 @@ function CourseProgressRow({ item, role, currentUserId, latestTotal, latestMax }
           </span>
           {total !== null || hasLessons ? (
             <span className="flex min-w-0 max-w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
-              {total !== null ? <CourseScore score={total} max={totalMax} /> : null}
+              {total !== null ? (
+                <span className="flex items-baseline gap-1.5">
+                  <CourseScore score={total} max={totalMax} />
+                  {latestTotal !== null ? <span className="text-xs text-muted">{t("progress.latestPeriodScore")}</span> : null}
+                </span>
+              ) : null}
               {hasLessons && attendance !== null ? (
                 <span className="tabular-nums text-muted">{t("progress.attendanceShort", { value: formatNumber(attendance, i18n.language, { maximumFractionDigits: 0 }) })}</span>
               ) : null}
