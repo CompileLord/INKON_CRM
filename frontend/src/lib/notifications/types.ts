@@ -36,8 +36,6 @@ export interface DeliveryLogItem {
   sent_at: string | null;
   student_id?: number | null;
   course_id?: number | null;
-  payment_id?: number | null;
-  ledger_entry_id?: number | null;
   course_title?: string | null;
   amount?: string | null;
   score?: number | null;

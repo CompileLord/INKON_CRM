@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from typing import Any
-from sqlalchemy import Date, Integer, Row, String, Text, and_, case, cast, column, false, literal, or_, select, values
+from sqlalchemy import Date, Integer, Numeric, Row, String, Text, and_, case, cast, column, false, literal, or_, select, values
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,8 +56,8 @@ class SQLAlchemyPaymentReminderRepository(PaymentReminderRepository):
 
     async def queue_batch(self, today: date, candidates: list[PaymentReminderDraft]) -> list[QueuedPaymentReminder]:
         drafts: Any = (
-            values(column("enrollment_id", Integer), column("due_date", Date), column("delivery_text", Text))
-            .data([(draft.source.enrollment_id, draft.source.due_date, draft.text) for draft in candidates])
+            values(column("enrollment_id", Integer), column("due_date", Date), column("delivery_text", Text), column("delivery_amount", Numeric(10, 2)))
+            .data([(draft.source.enrollment_id, draft.source.due_date, draft.text, draft.source.balance) for draft in candidates])
             .alias("reminder_drafts")
         )
         balances: Any = self._query.balances().subquery()
@@ -76,6 +76,7 @@ class SQLAlchemyPaymentReminderRepository(PaymentReminderRepository):
                 literal(0),
                 literal(NotificationStatus.QUEUED.value),
                 drafts.c.delivery_text,
+                drafts.c.delivery_amount,
                 false(),
                 literal(1),
             )
@@ -99,6 +100,7 @@ class SQLAlchemyPaymentReminderRepository(PaymentReminderRepository):
                     "attempts",
                     "delivery_state",
                     "delivery_text",
+                    "delivery_amount",
                     "is_terminal",
                     "revision",
                 ],

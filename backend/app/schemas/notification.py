@@ -52,8 +52,6 @@ class DeliveryLogResponse(BaseModel):
     sent_at: Optional[datetime] = None
     student_id: Optional[int] = None
     course_id: Optional[int] = None
-    payment_id: Optional[int] = None
-    ledger_entry_id: Optional[int] = None
     course_title: Optional[str] = None
     amount: Optional[str] = None
     score: Optional[int] = None

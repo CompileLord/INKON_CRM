@@ -1,7 +1,8 @@
 from datetime import date, datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.user import User
@@ -48,6 +49,7 @@ class NotificationLog(Base):
     delivery_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_terminal: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False, server_default="false")
     revision: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=1, server_default="1")
+    delivery_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     delivery_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     claim_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

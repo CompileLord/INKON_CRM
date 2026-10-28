@@ -1,5 +1,6 @@
 import re
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Sequence, cast as typing_cast
 from sqlalchemy import Row, String, and_, case, cast, exists, false, func, or_, select, update
 from sqlalchemy.engine import CursorResult, Result
@@ -136,19 +137,12 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
                 "student_id": log.user_id if role == UserRole.STUDENT else None,
                 "course_id": reminder_course_id or exam_course_id,
                 "course_title": reminder_title or exam_title,
-                "amount": self._reminder_amount(log),
+                "amount": format(log.delivery_amount, ".2f") if log.delivery_amount is not None else None,
                 "score": self._exam_score(log),
             }
             for log, first_name, last_name, role, reminder_course_id, reminder_title, exam_course_id, exam_title in rows
         ]
         return items, total
-
-    @staticmethod
-    def _reminder_amount(log: NotificationLog) -> str | None:
-        if log.type not in (NotificationType.PAYMENT_REMINDER_1D, NotificationType.PAYMENT_REMINDER_2D):
-            return None
-        match: re.Match[str] | None = re.search(r"(?:К оплате:|Amount due:|Маблағи пардохт:)\s*([0-9]+\.[0-9]{2}) TJS\.", log.delivery_text or "")
-        return match.group(1) if match is not None else None
 
     @staticmethod
     def _exam_score(log: NotificationLog) -> int | None:
@@ -398,6 +392,11 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
 
     async def can_queue_reminder(self, recipient: str, notification_type: NotificationType, enrollment_id: int, notification_date: date, user_id: int | None) -> bool:
         return (await self._session.execute(select(self._reminder_query.source_for_identity(recipient, notification_type, enrollment_id, notification_date, user_id).exists()))).scalar_one()
+
+    async def set_delivery_amount(self, claim: NotificationClaim, amount: Decimal) -> None:
+        await self._session.execute(update(NotificationLog).where(
+            NotificationLog.id == claim.notification_id, NotificationLog.claim_token == claim.claim_token,
+        ).values(delivery_amount=amount))
 
     async def reminder_delivery_context(self, notification_id: int) -> ReminderDeliveryContext:
         balances: Any = self._reminder_query.balances().subquery()
