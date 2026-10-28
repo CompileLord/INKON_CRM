@@ -12,7 +12,7 @@ describe("Course balance action", () => {
   it("is a quiet ghost Pay action with the full accessible name, 44px target and no border", async () => {
     renderFinance();
     await screen.findAllByText("Python Advanced");
-    const balances = screen.getByRole("region", { name: "Course balances" });
+    const balances = screen.getByRole("region", { name: "Largest debts" });
     const action = within(balances).getByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" });
     expect(action.textContent).toBe("Pay");
     expect(action.className).toContain("min-h-11");

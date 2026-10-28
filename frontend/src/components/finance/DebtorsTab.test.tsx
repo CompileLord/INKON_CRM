@@ -103,17 +103,24 @@ afterEach(() => {
 });
 
 describe("Debtors toolbar and counts", () => {
+  it("uses the singular debtor count for one row", async () => {
+    mock.onGet(debtsUrl).reply(200, listing([anisa]));
+    renderDebtors();
+    await screen.findByText("Anisa Karimova");
+    expect(screen.getByText("1 debtor")).toBeTruthy();
+  });
+
   it("searches only loaded rows, keeping the page-scoped count apart from the server total", async () => {
     mock.onGet(debtsUrl).reply(200, listing([anisa, zara], { total: 45, total_pages: 3 }));
     renderDebtors();
     await screen.findByText("Anisa Karimova");
-    expect(screen.getByText("Course balances: 45")).toBeTruthy();
+    expect(screen.getByText("45 debtors")).toBeTruthy();
     const before = debtRequests().length;
     await userEvent.type(screen.getByLabelText("Search this page"), "ielts");
     expect(screen.queryByText("Anisa Karimova")).toBeNull();
     expect(screen.getByText("Zara Karimova")).toBeTruthy();
     expect(screen.getByText("On this page: 1 of 2")).toBeTruthy();
-    expect(screen.getByText("Course balances: 45")).toBeTruthy();
+    expect(screen.getByText("45 debtors")).toBeTruthy();
     expect(debtRequests()).toHaveLength(before);
     expect(location()).toBe("/finance?tab=debtors");
   });

@@ -115,13 +115,12 @@ describe("Debt reminder controls", () => {
     expect(JSON.parse(mock.history.post[0].data)).toEqual({ student_ids: [7, 9] });
   });
 
-  it("disables bulk with a reason when nobody on the page has a channel", async () => {
+  it("hides bulk entirely when nobody on the page has a channel", async () => {
     mock.onGet(debtsUrl).reply(200, listing([zara]));
     renderDebtors();
     await screen.findByText("Zara Karimova");
-    const bulk: HTMLElement = screen.getByRole("button", { name: "Remind all on this page (0)" });
-    expect((bulk as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("No debtors with a reminder channel on this page")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Remind all on this page/ })).toBeNull();
+    expect(screen.queryByText("No debtors with a reminder channel on this page")).toBeNull();
   });
 
   it("shows the settings-disabled message on HTTP 409 and never claims success", async () => {
