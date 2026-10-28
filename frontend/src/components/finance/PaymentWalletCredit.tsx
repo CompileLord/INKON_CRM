@@ -1,34 +1,49 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApplyWalletCredit } from "../../lib/finance/hooks";
-import { PaymentTargets } from "../../lib/finance/paymentTargets";
-import type { PaymentOption } from "../../lib/finance/types";
+import { PaymentTargets, type CreditAllocationError, type CreditAllocationErrorCode } from "../../lib/finance/paymentTargets";
+import type { CourseCreditAllocationResponse, PaymentOption } from "../../lib/finance/types";
 import { formatExactMoney } from "../../lib/money";
 import { Button } from "../ui/Button";
+import { ListboxPicker } from "../ui/ListboxPicker";
+
+const CREDIT_ERROR_KEYS: Record<CreditAllocationErrorCode, string> = {
+  invalid_payment_target: "paymentModal.applyCreditInvalidTarget",
+  no_wallet_credit: "paymentModal.applyCreditNoCredit",
+  nothing_to_allocate: "paymentModal.applyCreditNothing",
+  credit_exceeds_available: "paymentModal.applyCreditExceedsCredit",
+  payment_target_exceeds_balance: "paymentModal.applyCreditExceedsDebt",
+};
 
 interface PaymentWalletCreditProps {
   studentId: number;
   credit: string;
   options: readonly PaymentOption[];
+  onApplied: (allocatedAmount: string) => void;
 }
 
-export function PaymentWalletCredit({ studentId, credit, options }: PaymentWalletCreditProps) {
+export function PaymentWalletCredit({ studentId, credit, options, onApplied }: PaymentWalletCreditProps) {
   const { t } = useTranslation("finance");
   const apply = useApplyWalletCredit();
   const candidates: PaymentOption[] = options.filter(PaymentTargets.hasDebt);
   const [picking, setPicking] = useState<boolean>(false);
   const [enrollmentId, setEnrollmentId] = useState<number | null>(null);
   const [failed, setFailed] = useState<boolean>(false);
+  const [problem, setProblem] = useState<CreditAllocationError | null>(null);
   const selected: number | null = enrollmentId ?? candidates[0]?.enrollment_id ?? null;
 
   const submit = async (): Promise<void> => {
     if (selected === null) return;
     setFailed(false);
+    setProblem(null);
     try {
-      await apply.mutateAsync({ studentId, enrollmentId: selected });
+      const result: CourseCreditAllocationResponse = await apply.mutateAsync({ studentId, enrollmentId: selected });
       setPicking(false);
-    } catch {
-      setFailed(true);
+      onApplied(result.allocated_amount);
+    } catch (failure) {
+      const parsed: CreditAllocationError | null = PaymentTargets.parseCreditAllocationError(failure);
+      setProblem(parsed);
+      setFailed(parsed === null);
     }
   };
 
@@ -44,18 +59,17 @@ export function PaymentWalletCredit({ studentId, credit, options }: PaymentWalle
       </div>
       {picking && (
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label={t("paymentModal.creditCourse")}
-            value={selected ?? ""}
-            onChange={(event) => setEnrollmentId(Number(event.target.value))}
-            className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-card px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {candidates.map((option) => (
-              <option key={option.enrollment_id} value={option.enrollment_id}>
-                {option.course_title}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-0 flex-1">
+            <ListboxPicker
+              layout="field"
+              icon={null}
+              label={t("paymentModal.creditCourse")}
+              ariaLabel={t("paymentModal.creditCourse")}
+              value={String(selected ?? "")}
+              options={candidates.map((option) => ({ value: String(option.enrollment_id), label: option.course_title }))}
+              onChange={(value) => setEnrollmentId(Number(value))}
+            />
+          </div>
           <Button type="button" loading={apply.isPending} onClick={() => void submit()}>
             {t("paymentModal.applyCreditConfirm")}
           </Button>
@@ -63,6 +77,11 @@ export function PaymentWalletCredit({ studentId, credit, options }: PaymentWalle
             {t("paymentModal.applyCreditCancel")}
           </Button>
         </div>
+      )}
+      {problem && (
+        <p role="alert" className="text-destructive">
+          {t(CREDIT_ERROR_KEYS[problem.code], { maximum: formatExactMoney(problem.maximum ?? "0") })}
+        </p>
       )}
       {failed && (
         <p role="alert" className="text-destructive">

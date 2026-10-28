@@ -166,35 +166,75 @@ describe("wallet credit", () => {
     expect(screen.queryByText(/Unallocated balance/)).toBeNull();
   });
 
-  it("applies the credit to the oldest open charge of the chosen course", async () => {
+  const CREDIT_URL: string = "/finance/students/7/credit-allocations";
+
+  async function openApply(): Promise<ReturnType<typeof userEvent.setup>> {
     mock.onGet(OPTIONS_URL).reply(200, withCredit);
-    mock.onGet(/\/finance\/charges\//).reply(200, {
-      items: [
-        { id: 902, student_id: 7, enrollment_id: 502, sequence_no: 2, type: "tuition", amount: "500", due_date: "2026-10-05", status: "open", allocated_amount: "0", remaining_balance: "500" },
-        { id: 901, student_id: 7, enrollment_id: 502, sequence_no: 1, type: "tuition", amount: "500", due_date: "2026-09-05", status: "open", allocated_amount: "0", remaining_balance: "500" },
-        { id: 800, student_id: 7, enrollment_id: 501, sequence_no: 1, type: "tuition", amount: "500", due_date: "2026-08-05", status: "open", allocated_amount: "0", remaining_balance: "500" },
-      ],
-      total: 3, page: 1, page_size: 100, total_pages: 1,
-    });
-    mock.onPost("/finance/allocations/").replyOnce(201, { id: 1 }).onPost("/finance/allocations/").replyOnce(400, { detail: "No credit available to allocate" });
     const user = renderModal();
-    expect((await screen.findByText("Unallocated balance: 120 TJS"))).toBeTruthy();
+    expect(await screen.findByText("Unallocated balance: 120 TJS")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Apply to course…" }));
-    await user.selectOptions(screen.getByLabelText("Course to apply the balance to"), "502");
+    await user.click(screen.getByRole("button", { name: "Course to apply the balance to" }));
+    await user.click(await screen.findByRole("option", { name: "English Elementary" }));
+    return user;
+  }
+
+  it("applies the credit with one request, shows the amount and refetches options", async () => {
+    mock.onPost(CREDIT_URL).reply(201, { allocated_amount: "120.00", wallet_credit: "0.00", allocations: [{ charge_id: 901, ledger_entry_id: 1, amount: "120.00" }] });
+    const user = await openApply();
     await user.click(screen.getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(mock.history.post).toHaveLength(2));
-    expect(JSON.parse(mock.history.post[0].data)).toEqual({ student_id: 7, charge_id: 901 });
-    expect(JSON.parse(mock.history.post[1].data)).toEqual({ student_id: 7, charge_id: 902 });
+    await waitFor(() => expect(mock.history.post).toHaveLength(1));
+    expect(mock.history.post[0].url).toBe(CREDIT_URL);
+    expect(JSON.parse(mock.history.post[0].data)).toEqual({ enrollment_id: 502 });
+    expect(await screen.findByText("Applied 120 TJS to the course")).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole("button", { name: "Apply" })).toBeNull());
     expect(mock.history.get.filter((request) => request.url === OPTIONS_URL).length).toBeGreaterThan(1);
-    expect(mock.history.post.some((request) => request.url === "/finance/payments/")).toBe(false);
+    expect(mock.history.get.some((request) => /\/finance\/charges\//.test(request.url ?? ""))).toBe(false);
+    expect(mock.history.post.some((request) => request.url === "/finance/allocations/" || request.url === "/finance/payments/")).toBe(false);
   });
 
-  it("shows an error when the credit cannot be applied", async () => {
-    mock.onGet(OPTIONS_URL).reply(200, withCredit);
-    mock.onGet(/\/finance\/charges\//).reply(200, { items: [], total: 0, page: 1, page_size: 100, total_pages: 0 });
-    const user = renderModal();
+  it("shows the refetched debt and clamps a prefilled amount after the credit is applied", async () => {
+    const afterCredit: PaymentOptions = {
+      wallet_credit: "0.00",
+      enrollments: twoCourses.enrollments.map((option) =>
+        option.enrollment_id === 502 ? { ...option, open_debt: "380.10", remaining_contract_maximum: "380.10" } : option,
+      ),
+    };
+    let applied: boolean = false;
+    mock.onGet(OPTIONS_URL).reply(() => [200, applied ? afterCredit : withCredit]);
+    mock.onPost(CREDIT_URL).reply(() => {
+      applied = true;
+      return [201, { allocated_amount: "120.00", wallet_credit: "0.00", allocations: [] }];
+    });
+    const user = renderModal(12);
+    const input = (await screen.findByLabelText(/Amount for English Elementary/)) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("500.10"));
     await user.click(await screen.findByRole("button", { name: "Apply to course…" }));
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    await screen.findByText("Applied 120 TJS to the course");
+    await waitFor(() => expect(input.value).toBe("380.10"));
+    const row = screen.getByTestId("payment-target-502");
+    expect(row.textContent).toContain("Debt 380.10 TJS");
+    expect(row.textContent).not.toContain("500.10");
+  });
+
+  it.each([
+    ["invalid_payment_target", {}, "The course is no longer available for this balance. The list was refreshed."],
+    ["no_wallet_credit", {}, "This student has no balance to apply."],
+    ["nothing_to_allocate", {}, "Nothing to apply: this course has no open debt."],
+    ["credit_exceeds_available", { maximum: "80.00" }, "The balance changed. Available: 80 TJS."],
+    ["payment_target_exceeds_balance", { maximum: "50.50" }, "The amount exceeds the course debt. Maximum: 50.50 TJS."],
+  ])("maps the %s error to its own message", async (code, extra, message) => {
+    mock.onPost(CREDIT_URL).reply(422, { detail: { code, ...extra } });
+    const user = await openApply();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+    expect(mock.history.post).toHaveLength(1);
+    expect(screen.queryByText(/^Applied /)).toBeNull();
+  });
+
+  it("shows the generic message for an unrecognised failure", async () => {
+    mock.onPost(CREDIT_URL).reply(500);
+    const user = await openApply();
     await user.click(screen.getByRole("button", { name: "Apply" }));
     expect(await screen.findByText("Could not apply the balance. Try again.")).toBeTruthy();
   });

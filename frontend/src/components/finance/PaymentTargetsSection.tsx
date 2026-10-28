@@ -2,8 +2,10 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { TargetDrafts } from "../../lib/finance/paymentTargets";
 import type { PaymentOption, PaymentOptions } from "../../lib/finance/types";
-import { formatExactMoney, isPositiveMoney } from "../../lib/money";
+import { formatExactMoney, formatTjs, isPositiveMoney } from "../../lib/money";
 import { Button } from "../ui/Button";
+import { Toast } from "../ui/Toast";
+import { useTransientToast } from "../settings/useTransientToast";
 import { PaymentTargetRows, type TargetRowProblem } from "./PaymentTargetRows";
 import { PaymentWalletCredit } from "./PaymentWalletCredit";
 
@@ -22,6 +24,7 @@ interface PaymentTargetsSectionProps {
 export function PaymentTargetsSection({ studentId, paymentOptions, drafts, problems, total, fieldProblem, failureKey, onChange, onFill }: PaymentTargetsSectionProps) {
   const { t } = useTranslation(["finance", "common"]);
   const options: readonly PaymentOption[] = paymentOptions.data?.enrollments ?? [];
+  const { toast, announce } = useTransientToast();
   const walletCredit: string = paymentOptions.data?.wallet_credit ?? "0";
   return (
     <section aria-label={t("finance:paymentModal.targetsLabel")} className="flex flex-col gap-3">
@@ -60,7 +63,8 @@ export function PaymentTargetsSection({ studentId, paymentOptions, drafts, probl
           {t(`finance:${failureKey}`)}
         </p>
       )}
-      {paymentOptions.data && isPositiveMoney(walletCredit) && <PaymentWalletCredit studentId={studentId} credit={walletCredit} options={options} />}
+      {paymentOptions.data && isPositiveMoney(walletCredit) && <PaymentWalletCredit studentId={studentId} credit={walletCredit} options={options} onApplied={(allocated) => announce(t("finance:paymentModal.applyCreditSuccess", { amount: formatTjs(allocated) }))} />}
+      <Toast message={toast.message} show={toast.show} variant={toast.variant} />
       <p className="flex items-baseline justify-between gap-3 text-sm text-ink">
         <span className="font-medium text-label">{t("finance:paymentModal.total")}</span>
         <span className="text-lg font-semibold tabular-nums">{t("finance:moneyAmount", { amount: formatExactMoney(total) })}</span>

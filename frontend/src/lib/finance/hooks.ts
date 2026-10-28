@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  allocateCredit,
+  allocateCourseCredit,
   closePeriod,
   createAdjustment,
   createDiscount,
@@ -22,22 +22,17 @@ import {
   type DebtFilters,
   type PaymentFilters,
 } from "./api";
-import { AuthApiError } from "../auth/errors";
 import { getSchoolCalendarDate } from "../../i18n/formatters";
 import { PaymentDateBounds } from "./paymentDateBounds";
 import { PaymentIdempotencyKeys } from "./paymentIdempotencyKey";
 import type {
-  ChargeItem,
   PaymentItem,
   AdjustmentCreatePayload,
-  AllocationCreatePayload,
   DiscountCreatePayload,
   PaymentCreatePayload,
   RefundPaymentPayload,
   VoidPaymentPayload,
 } from "./types";
-
-const PAYABLE_COURSES_PAGE_SIZE: number = 100;
 
 /** Every finance mutation invalidates this root so balances never go stale. */
 const FINANCE_KEY = ["finance"];
@@ -138,29 +133,10 @@ export function useCreateAdjustment() {
   return useFinanceMutation((payload: AdjustmentCreatePayload) => createAdjustment(payload));
 }
 
-export function useAllocateCredit() {
-  return useFinanceMutation((payload: AllocationCreatePayload) => allocateCredit(payload));
-}
-
 export function useApplyWalletCredit() {
-  return useFinanceMutation(async ({ studentId, enrollmentId }: { studentId: number; enrollmentId: number }) => {
-    const charges = await fetchCharges(1, PAYABLE_COURSES_PAGE_SIZE, studentId, "open");
-    const openCharges: ChargeItem[] = charges.items
-      .filter((charge) => charge.enrollment_id === enrollmentId)
-      .sort((first, second) => first.due_date.localeCompare(second.due_date) || first.sequence_no - second.sequence_no);
-    if (openCharges.length === 0) throw new Error("no_open_charge");
-    let applied: number = 0;
-    for (const charge of openCharges) {
-      try {
-        await allocateCredit({ student_id: studentId, charge_id: charge.id });
-        applied += 1;
-      } catch (failure) {
-        if (applied > 0 && failure instanceof AuthApiError && failure.status === 400) break;
-        throw failure;
-      }
-    }
-    return applied;
-  });
+  return useFinanceMutation(({ studentId, enrollmentId }: { studentId: number; enrollmentId: number }) =>
+    allocateCourseCredit(studentId, { enrollment_id: enrollmentId })
+  );
 }
 
 export function useStudentLedger(studentId: number) {
