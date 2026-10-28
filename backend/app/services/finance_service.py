@@ -392,6 +392,8 @@ class FinanceService:
         self,
         entries: List[LedgerEntry],
         charges: List[Charge],
+        limit: Optional[Decimal] = None,
+        created: Optional[List[Allocation]] = None,
     ) -> List[int]:
         """Apply available credit from ``entries`` to ``charges``, oldest first."""
         if not entries or not charges:
@@ -412,6 +414,8 @@ class FinanceService:
         touched: List[int] = []
         for entry in entries:
             available = await self._entry_available(entry)
+            if limit is not None:
+                available = min(available, limit)
             if available <= ZERO:
                 continue
 
@@ -423,13 +427,12 @@ class FinanceService:
                     continue
 
                 amount = min(available, needed)
-                self.db.add(
-                    Allocation(
-                        ledger_entry_id=entry.id,
-                        charge_id=charge.id,
-                        amount=amount,
-                    )
-                )
+                allocation: Allocation = Allocation(ledger_entry_id=entry.id, charge_id=charge.id, amount=amount)
+                self.db.add(allocation)
+                if created is not None:
+                    created.append(allocation)
+                if limit is not None:
+                    limit -= amount
                 settled_by_charge[charge.id] = settled_by_charge.get(charge.id, ZERO) + amount
                 available -= amount
                 touched.append(charge.id)
@@ -1062,6 +1065,45 @@ class FinanceService:
         )
         await self._invalidate_cache()
         return await self._load_entry(refund_entry.id)
+
+    async def allocate_course_credit(
+        self, student_id: int, enrollment_id: int, requested_amount: Optional[Decimal], current_user: User,
+    ) -> dict:
+        await self.lock_student_accounts([student_id])
+        enrollment: Optional[Enrollment] = await self.db.scalar(select(Enrollment).where(
+            Enrollment.id == enrollment_id, Enrollment.student_id == student_id,
+        ))
+        if enrollment is None:
+            raise HTTPException(status_code=422, detail={"code": "invalid_payment_target"})
+        wallet: Decimal = await self.get_unallocated_credit(student_id)
+        if wallet <= ZERO:
+            raise HTTPException(status_code=422, detail={"code": "no_wallet_credit"})
+        charges: List[Charge] = list((await self.db.scalars(select(Charge).where(
+            Charge.enrollment_id == enrollment_id, Charge.student_id == student_id,
+            Charge.is_deleted.is_(False), Charge.status != ChargeStatus.CANCELLED,
+        ).order_by(Charge.due_date.asc(), Charge.id.asc()))).all())
+        allocated_total: Decimal = Decimal(await self.db.scalar(select(func.coalesce(func.sum(Allocation.amount), ZERO)).where(
+            Allocation.charge_id.in_([charge.id for charge in charges]), Allocation.reversed_by_entry_id.is_(None),
+        )) or ZERO)
+        balance: Decimal = sum((charge.amount for charge in charges), ZERO) - allocated_total
+        if balance <= ZERO:
+            raise HTTPException(status_code=422, detail={"code": "nothing_to_allocate"})
+        amount: Decimal = requested_amount if requested_amount is not None else min(wallet, balance)
+        if amount > wallet:
+            raise HTTPException(status_code=422, detail={"code": "credit_exceeds_available", "maximum": format(wallet, ".2f")})
+        if amount > balance:
+            raise HTTPException(status_code=422, detail={"code": "payment_target_exceeds_balance", "enrollment_id": enrollment_id, "maximum": format(balance, ".2f")})
+        entries: List[LedgerEntry] = list((await self.db.scalars(select(LedgerEntry).where(
+            LedgerEntry.student_id == student_id, LedgerEntry.type.in_(CREDIT_TYPES),
+            LedgerEntry.id.notin_(self._voided_ids_subquery()),
+        ).order_by(LedgerEntry.occurred_at.asc(), LedgerEntry.id.asc()))).all())
+        created: List[Allocation] = []
+        await self._apply_credit(entries, charges, limit=amount, created=created)
+        await self._log_audit(user_id=current_user.id, action="update", entity_type="allocation", entity_id=enrollment_id,
+                              changes={"allocated": str(amount), "student_id": student_id, "enrollment_id": enrollment_id})
+        await self._invalidate_cache()
+        return {"allocated_amount": amount, "wallet_credit": await self.get_unallocated_credit(student_id),
+                "allocations": [{"charge_id": item.charge_id, "ledger_entry_id": item.ledger_entry_id, "amount": item.amount} for item in created]}
 
     async def allocate_credit(self, payload: AllocationCreatePayload, current_user: User) -> LedgerEntry:
         """Manually apply wallet credit to a specific charge."""

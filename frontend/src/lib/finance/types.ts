@@ -301,3 +301,14 @@ export interface StudentLedgerRow {
   reverses_entry_id?: number | null;
   is_cash_out?: boolean | null;
 }
+
+export interface CourseCreditAllocationPayload {
+  enrollment_id: number;
+  amount?: string | null;
+}
+
+export interface CourseCreditAllocationResponse {
+  allocated_amount: string;
+  wallet_credit: string;
+  allocations: { charge_id: number; ledger_entry_id: number; amount: string }[];
+}

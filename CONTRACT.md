@@ -3417,6 +3417,53 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## POST /api/v1/finance/students/{student_id}/credit-allocations
+
+**Summary:** Allocate Course Credit
+
+**Parameters:**
+- `student_id` [path] *(required)*
+
+**Request Body (JSON):**
+```json
+{
+  "enrollment_id": integer,
+  "amount?": string,
+}
+```
+
+**Responses:**
+- **201**: Successful Response
+  ```json
+  {
+    "allocated_amount": string,
+    "wallet_credit": string,
+    "allocations": [
+      {
+        "charge_id": integer,
+        "ledger_entry_id": integer,
+        "amount": string,
+      }
+    ],
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## GET /api/v1/finance/students/{id}/ledger
 
 **Summary:** Get Student Ledger
