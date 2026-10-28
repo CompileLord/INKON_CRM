@@ -9,6 +9,7 @@ import {
   fetchCharges,
   fetchDebts,
   fetchFinanceAnalytics,
+  fetchPaymentOptions,
   fetchPaymentReceipt,
   fetchPayments,
   queueDebtReminders,
@@ -21,12 +22,12 @@ import {
   type DebtFilters,
   type PaymentFilters,
 } from "./api";
-import { listEnrollments } from "../enrollments/endpoints";
+import { AuthApiError } from "../auth/errors";
 import { getSchoolCalendarDate } from "../../i18n/formatters";
-import { PayableCourses } from "./payableCourses";
 import { PaymentDateBounds } from "./paymentDateBounds";
 import { PaymentIdempotencyKeys } from "./paymentIdempotencyKey";
 import type {
+  ChargeItem,
   PaymentItem,
   AdjustmentCreatePayload,
   AllocationCreatePayload,
@@ -35,6 +36,8 @@ import type {
   RefundPaymentPayload,
   VoidPaymentPayload,
 } from "./types";
+
+const PAYABLE_COURSES_PAGE_SIZE: number = 100;
 
 /** Every finance mutation invalidates this root so balances never go stale. */
 const FINANCE_KEY = ["finance"];
@@ -71,6 +74,15 @@ export function useStudentCredits() {
   return useQuery({
     queryKey: ["finance", "credits"],
     queryFn: () => fetchStudentCredits(),
+  });
+}
+
+export function usePaymentOptions(studentId: number | undefined) {
+  return useQuery({
+    queryKey: ["finance", "payment-options", studentId],
+    queryFn: () => fetchPaymentOptions(studentId as number),
+    enabled: studentId !== undefined,
+    gcTime: 0,
   });
 }
 
@@ -130,6 +142,27 @@ export function useAllocateCredit() {
   return useFinanceMutation((payload: AllocationCreatePayload) => allocateCredit(payload));
 }
 
+export function useApplyWalletCredit() {
+  return useFinanceMutation(async ({ studentId, enrollmentId }: { studentId: number; enrollmentId: number }) => {
+    const charges = await fetchCharges(1, PAYABLE_COURSES_PAGE_SIZE, studentId, "open");
+    const openCharges: ChargeItem[] = charges.items
+      .filter((charge) => charge.enrollment_id === enrollmentId)
+      .sort((first, second) => first.due_date.localeCompare(second.due_date) || first.sequence_no - second.sequence_no);
+    if (openCharges.length === 0) throw new Error("no_open_charge");
+    let applied: number = 0;
+    for (const charge of openCharges) {
+      try {
+        await allocateCredit({ student_id: studentId, charge_id: charge.id });
+        applied += 1;
+      } catch (failure) {
+        if (applied > 0 && failure instanceof AuthApiError && failure.status === 400) break;
+        throw failure;
+      }
+    }
+    return applied;
+  });
+}
+
 export function useStudentLedger(studentId: number) {
   return useQuery({
     queryKey: ["finance", "ledger", studentId],
@@ -187,20 +220,4 @@ export function usePaymentStatus(knownPayment: PaymentItem | null): PaymentStatu
     isRefreshing: lookup.isFetching,
     retry: () => void lookup.refetch(),
   };
-}
-
-const PAYABLE_COURSES_PAGE_SIZE: number = 100;
-
-export function usePayableCourses(studentId: number | undefined) {
-  return useQuery({
-    queryKey: ["finance", "payable-courses", studentId],
-    queryFn: async () => {
-      const [enrollments, charges] = await Promise.all([
-        listEnrollments({ student_id: studentId, page: 1, page_size: PAYABLE_COURSES_PAGE_SIZE }),
-        fetchCharges(1, PAYABLE_COURSES_PAGE_SIZE, studentId),
-      ]);
-      return PayableCourses.build(enrollments.items, charges.items);
-    },
-    enabled: studentId !== undefined,
-  });
 }

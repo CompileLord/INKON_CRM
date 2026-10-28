@@ -66,6 +66,17 @@ export async function configureFinanceMocks(): Promise<void> {
   mock.onGet(analyticsUrl).reply(200, analytics);
   mock.onGet(debtsUrl).reply(200, page(twoCourseDebts));
   mock.onGet(paymentsUrl).reply(200, page([payment]));
+  mockPaymentOptions();
+}
+
+export function mockPaymentOptions(): void {
+  mock.onGet(/\/finance\/students\/\d+\/payment-options/).reply(200, {
+    wallet_credit: "0",
+    enrollments: [
+      { enrollment_id: 501, course_id: 11, course_title: "Python Advanced", open_debt: "700.10", overdue_days: 4, remaining_contract_maximum: "1000", billing_mode: "paid" },
+      { enrollment_id: 502, course_id: 12, course_title: "English IELTS", open_debt: "500.20", overdue_days: 4, remaining_contract_maximum: "800", billing_mode: "paid" },
+    ],
+  });
 }
 
 export function typeDate(label: string | RegExp, typedValue: string): void {

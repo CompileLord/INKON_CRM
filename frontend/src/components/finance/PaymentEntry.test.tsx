@@ -48,9 +48,13 @@ function renderFinance(query: string) {
   );
 }
 
+const AMOUNT_LABEL: string = "Amount for Python Advanced (TJS)";
+
 function mockPayableCourses() {
-  mock.onGet("/enrollments/").reply(200, { items: [{ id: 500, student_id: 7, course_id: 11, price_at_enrollment: "1000", color_hex: "#000000", enrolled_at: "2026-09-01T00:00:00Z", status: "active", is_deleted: false }], total: 1, page: 1, page_size: 100, total_pages: 1 });
-  mock.onGet(/\/finance\/charges\//).reply(200, { items: [{ id: 700, enrollment_id: 500, student_id: 7, sequence_no: 1, amount: "10", due_date: "2026-10-01", type: "tuition", status: "open", allocated_amount: "0", remaining_balance: "10", course_title: "Python Advanced" }], total: 1, page: 1, page_size: 100, total_pages: 1 });
+  mock.onGet("/finance/students/7/payment-options").reply(200, {
+    wallet_credit: "0",
+    enrollments: [{ enrollment_id: 500, course_id: 11, course_title: "Python Advanced", open_debt: "700.10", overdue_days: 4, remaining_contract_maximum: "1000", billing_mode: "paid" }],
+  });
 }
 
 beforeEach(async () => {
@@ -79,8 +83,7 @@ async function pickDate(_user: ReturnType<typeof userEvent.setup>, day: string) 
 async function chooseStudentAndCourse(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByRole("combobox", { name: "Student" }), "Anisa");
   await user.click(await screen.findByRole("option", { name: /Anisa Karimova/ }));
-  await user.click(await screen.findByLabelText("Priority course"));
-  await user.click(await screen.findByRole("option", { name: "Python Advanced" }));
+  await screen.findByLabelText(AMOUNT_LABEL);
 }
 
 describe("Payment entry form", () => {
@@ -96,12 +99,11 @@ describe("Payment entry form", () => {
     renderFinance("?tab=debtors");
     await user.click(await screen.findByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" }));
     const dialog = await screen.findByRole("dialog");
-    await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByLabelText("Amount (TJS)")));
+    expect(await within(dialog).findByText("Python Advanced")).toBeTruthy();
     expect(within(dialog).getByText("Anisa Karimova")).toBeTruthy();
-    expect(within(dialog).getByText("Python Advanced")).toBeTruthy();
     expect(within(dialog).queryByRole("combobox")).toBeNull();
     expect(within(dialog).getByText("Locked for this debtor")).toBeTruthy();
-    expect((within(dialog).getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("");
+    expect((within(dialog).getByLabelText(AMOUNT_LABEL) as HTMLInputElement).value).toBe("700.10");
   });
 
   it("defaults the date to the Dushanbe calendar day instead of the UTC day", async () => {
@@ -118,12 +120,12 @@ describe("Payment entry form", () => {
     renderFinance("?tab=payments");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await chooseStudentAndCourse(user);
-    await user.type(screen.getByLabelText("Amount (TJS)"), "12345678901234567890,123456789");
+    await user.type(screen.getByLabelText(AMOUNT_LABEL), "12345678901234567890,123456789");
     await pickDate(user, "2026-03-01");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await screen.findByText("Payment #321 recorded");
     expect(String(mock.history.post[0].headers?.["Idempotency-Key"])).toMatch(/^[0-9a-f-]{36}$/);
-    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "12345678901234567890.123456789", paid_at: "2026-02-28T19:00:00.000Z", student_id: 7, course_id: 11 });
+    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "12345678901234567890.123456789", paid_at: "2026-02-28T19:00:00.000Z", student_id: 7, targets: [{ enrollment_id: 500, amount: "12345678901234567890.123456789" }] });
   }, 20000);
 
   it("announces the pending status and keeps the dialog values when the result is ambiguous", async () => {
@@ -133,29 +135,29 @@ describe("Payment entry form", () => {
     renderFinance("?tab=payments");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await chooseStudentAndCourse(user);
-    await user.type(screen.getByLabelText("Amount (TJS)"), "100,25");
+    await user.type(screen.getByLabelText(AMOUNT_LABEL), "100,25");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await waitFor(() => expect(screen.getAllByRole("status").some((node) => node.textContent === "Recording payment…")).toBe(true));
-    expect(screen.getByLabelText("Amount (TJS)").closest("fieldset")?.disabled).toBe(true);
+    expect(screen.getByLabelText(AMOUNT_LABEL).closest("fieldset")?.disabled).toBe(true);
     fail?.();
     expect(await screen.findByText(/Check whether the payment was recorded before submitting again/)).toBeTruthy();
-    expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("100,25");
+    expect((screen.getByLabelText(AMOUNT_LABEL) as HTMLInputElement).value).toBe("100,25");
     expect(screen.queryByText("Payment #321 recorded")).toBeNull();
     expect(mock.history.post).toHaveLength(1);
   });
 
   it("shows the course loading state before the options arrive", async () => {
     let release: (() => void) | undefined;
-    mock.onGet("/enrollments/").reply(() => new Promise((resolve) => { release = () => resolve([200, { items: [{ id: 500, student_id: 7, course_id: 11, price_at_enrollment: "1000", color_hex: "#000000", enrolled_at: "2026-09-01T00:00:00Z", status: "active", is_deleted: false }], total: 1, page: 1, page_size: 100, total_pages: 1 }]); }));
+    mock.onGet("/finance/students/7/payment-options").reply(() => new Promise((resolve) => { release = () => resolve([200, { wallet_credit: "0", enrollments: [{ enrollment_id: 500, course_id: 11, course_title: "Python Advanced", open_debt: "700.10", overdue_days: 4, remaining_contract_maximum: "1000", billing_mode: "paid" }] }]); }));
     const user = userEvent.setup();
     renderFinance("?tab=payments");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await user.type(screen.getByRole("combobox", { name: "Student" }), "Anisa");
     await user.click(await screen.findByRole("option", { name: /Anisa Karimova/ }));
     expect((await screen.findByText("Loading courses")).closest("[aria-busy='true']")).toBeTruthy();
-    expect(screen.queryByLabelText("Priority course")).toBeNull();
+    expect(screen.queryByLabelText(AMOUNT_LABEL)).toBeNull();
     release?.();
-    expect(await screen.findByLabelText("Priority course")).toBeTruthy();
+    expect(await screen.findByLabelText(AMOUNT_LABEL)).toBeTruthy();
   });
 });
 
@@ -167,7 +169,7 @@ describe("Payment completion", () => {
     renderFinance("?tab=payments&pmethod=transfer");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await chooseStudentAndCourse(user);
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750.50");
+    await user.type(screen.getByLabelText(AMOUNT_LABEL), "750.50");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     const region = await screen.findByRole("status", { name: "Recorded payment" });
     expect(within(region).getByText("Payment #321 recorded")).toBeTruthy();
@@ -192,7 +194,7 @@ describe("Payment completion", () => {
     const before = registryRequests().length;
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await chooseStudentAndCourse(user);
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750.50");
+    await user.type(screen.getByLabelText(AMOUNT_LABEL), "750.50");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await screen.findByText("Payment #321 recorded");
     await waitFor(() => expect(registryRequests().length).toBeGreaterThan(before));

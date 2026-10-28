@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest";
+import { AuthApiError } from "../auth/errors";
+import { PaymentTargets } from "./paymentTargets";
+import type { PaymentOption } from "./types";
+
+function option(enrollmentId: number, debt: string, maximum: string, billingMode: string = "paid"): PaymentOption {
+  return { enrollment_id: enrollmentId, course_id: enrollmentId + 100, course_title: `Course ${enrollmentId}`, open_debt: debt, overdue_days: 3, remaining_contract_maximum: maximum, billing_mode: billingMode };
+}
+
+describe("PaymentTargets.plan", () => {
+  const options: PaymentOption[] = [option(1, "750", "900"), option(2, "500", "500"), option(3, "0", "0", "grant")];
+
+  it("sums decimal strings exactly and keeps only non-zero rows", () => {
+    const plan = PaymentTargets.plan(options, { 1: "0,1", 2: "0.2", 3: "" });
+    expect(plan.total).toBe("0.3");
+    expect(plan.targets).toEqual([
+      { enrollment_id: 1, amount: "0.1" },
+      { enrollment_id: 2, amount: "0.2" },
+    ]);
+  });
+
+  it("skips zero and blank rows and reports unparsable rows", () => {
+    const plan = PaymentTargets.plan(options, { 1: "0", 2: "abc" });
+    expect(plan.targets).toEqual([]);
+    expect(plan.total).toBe("0");
+    expect(plan.invalidEnrollmentIds).toEqual([2]);
+  });
+
+  it("keeps very large amounts exact", () => {
+    expect(PaymentTargets.plan(options, { 1: "12345678901234567890.12", 2: "0.01" }).total).toBe("12345678901234567890.13");
+  });
+});
+
+describe("PaymentTargets row rules", () => {
+  it("treats grant and zero-maximum enrollments as not payable", () => {
+    expect(PaymentTargets.isPayable(option(1, "10", "10"))).toBe(true);
+    expect(PaymentTargets.isPayable(option(2, "0", "0", "grant"))).toBe(false);
+    expect(PaymentTargets.isPayable(option(3, "0", "0"))).toBe(false);
+  });
+
+  it("fills the debt but never above the remaining maximum", () => {
+    expect(PaymentTargets.debtFill(option(1, "750", "900"))).toBe("750");
+    expect(PaymentTargets.debtFill(option(1, "750", "600"))).toBe("600");
+  });
+});
+
+describe("PaymentTargets.parseError", () => {
+  it("reads every target code, with enrollment and maximum for exceeds-balance", () => {
+    const exceeds = new AuthApiError(422, { code: "payment_target_exceeds_balance", enrollment_id: 5, maximum: "120.00" } as never);
+    expect(PaymentTargets.parseError(exceeds)).toEqual({ code: "payment_target_exceeds_balance", enrollmentId: 5, maximum: "120.00" });
+    for (const code of ["payment_target_sum_mismatch", "invalid_payment_target", "duplicate_payment_target", "payment_target_required"]) {
+      expect(PaymentTargets.parseError(new AuthApiError(422, { code }))?.code).toBe(code);
+    }
+  });
+
+  it("ignores other failures", () => {
+    expect(PaymentTargets.parseError(new AuthApiError(422, { code: "something_else" }))).toBeNull();
+    expect(PaymentTargets.parseError(new AuthApiError(500, { code: "payment_target_required" }))).toBeNull();
+    expect(PaymentTargets.parseError(new Error("x"))).toBeNull();
+  });
+});
