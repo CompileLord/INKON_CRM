@@ -23,7 +23,7 @@ Related merges: U16 SMS reminders (765e54e), U18 withdrawals (e201338, 572d90f, 
 
 - Backend full suite: 2257 passed, 6 skipped, 2 failed, 4 errors.
   - Known before this work: wp11 and 4 × wp13 (Redis TLS).
-  - New: `test_remediation_wp19::test_analytics_uses_existing_auth_checkout_in_a_single_connection_pool`, a date-dependent fixture (the course end date is today + 65 days, so on some days it bills a fourth month). The product code is unaffected; the test fix is on `fix/wp19-date`.
+  - New: `test_remediation_wp19::test_analytics_uses_existing_auth_checkout_in_a_single_connection_pool`, a date-dependent fixture (the course end date is today + 65 days, so on some days it bills a fourth month). The product code is unaffected; fixed in `fix/wp19-date` (22/22 in that file pass).
 - Frontend: `tsc` clean; vitest 2248/2248 passed.
 
 ## Open items
