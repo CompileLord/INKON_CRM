@@ -30,7 +30,8 @@ export function DeliveryItemCard({ item, role, userId, retrying, onRetry }: Deli
   const hasContext: boolean = Boolean(item.course_title) || item.amount != null || item.score != null;
 
   return (
-    <li data-testid="delivery-item" className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3 motion-safe:transition-[background-color] motion-safe:duration-150 motion-safe:ease-out hover:bg-row-hover">
+    <li data-testid="delivery-item" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 motion-safe:transition-[background-color] motion-safe:duration-150 motion-safe:ease-out hover:bg-row-hover sm:flex-row sm:items-start">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
       <span data-testid="delivery-icon" data-kind={kind} className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-strip text-muted">
         <Icon size={16} aria-hidden="true" />
       </span>
@@ -54,8 +55,9 @@ export function DeliveryItemCard({ item, role, userId, retrying, onRetry }: Deli
           <time dateTime={item.sent_at ?? item.notification_date}>{item.sent_at ? sentText : `${t("deliveryLog.notSent")} · ${formatDate(`${item.notification_date}T12:00:00+05:00`, i18n.language, SCHOOL_TIMEZONE)}`}</time>
         </p>
       </div>
+      </div>
       {NotificationPresentation.canRetry(item) && (
-        <Button type="button" variant="secondary" loading={retrying} onClick={() => onRetry(item.id)} className="shrink-0">
+        <Button type="button" variant="secondary" loading={retrying} onClick={() => onRetry(item.id)} className="w-full shrink-0 sm:w-auto">
           {t("deliveryLog.retry")}
         </Button>
       )}

@@ -238,11 +238,12 @@ describe("Notifications delivery states and unsent inbox rows", () => {
     expect(screen.getAllByTestId("delivery-status").map((chip) => chip.textContent)).toEqual(["Дар навбат", "Фиристода истодааст"]);
   });
 
-  it("says the delivery log covers Telegram in the subtitle with a tooltip and in the empty state", () => {
+  it("says the delivery log covers messages to students and parents, channel-neutral, in the subtitle with a tooltip and in the empty state", () => {
     renderNotifications("superadmin", "/notifications?tab=log");
-    expect(screen.getByText("Telegram deliveries")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Only Telegram messages to parents are logged here. Emails and SMS are not listed." })).toBeTruthy();
-    expect(screen.getByText("No Telegram messages have been sent yet.")).toBeTruthy();
+    expect(screen.getByText("Messages to students and parents")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Messages sent to students and parents by Telegram or SMS. Emails are not listed." })).toBeTruthy();
+    expect(screen.getByText("No messages have been sent yet.")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("Telegram deliveries");
     expect(screen.getByText("Payment reminders and exam results sent to students and parents will appear here.")).toBeTruthy();
   });
 

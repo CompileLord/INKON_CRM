@@ -163,7 +163,7 @@ describe("DeliveryLog list states", () => {
   it("explains why it is empty and what happens next", async () => {
     endpoints.fetchDeliveryLog.mockResolvedValue(listing([]));
     renderLog();
-    expect(await screen.findByText("No Telegram messages have been sent yet.")).toBeTruthy();
+    expect(await screen.findByText("No messages have been sent yet.")).toBeTruthy();
     expect(screen.getByText("Payment reminders and exam results sent to students and parents will appear here.")).toBeTruthy();
   });
 
