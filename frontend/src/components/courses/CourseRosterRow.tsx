@@ -1,5 +1,5 @@
 import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EnrollmentStatusBadge } from "../enrollments/EnrollmentStatusBadge";
 import { GrantBadge } from "../enrollments/GrantBadge";
@@ -30,6 +30,8 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
   const price: string = `${formatMoney(item.price_at_enrollment)} ${t("perMonth")}`;
   const enrolledOn: string = formatDate(item.enrolled_at);
 
+  const priceOrBadge: ReactNode = item.billing_mode === "grant" ? <GrantBadge billingMode={item.billing_mode} /> : price;
+
   const content = (
     <span data-testid="student-identity" className="flex min-w-0 items-center gap-3">
       <PersonAvatar
@@ -39,17 +41,14 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
         size={36}
       />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="flex min-w-0 items-center gap-2">
-          <span ref={(element: HTMLElement | null) => registerName(item.student_id, element)} className="truncate text-sm font-medium text-ink">{studentName}</span>
-          <span className="shrink-0"><GrantBadge billingMode={item.billing_mode} /></span>
-        </span>
+        <span ref={(element: HTMLElement | null) => registerName(item.student_id, element)} className="truncate text-sm font-medium text-ink">{studentName}</span>
         <span className="truncate text-xs text-muted">{item.student.email ?? CanonicalPhone.prefill(item.student.phone)}</span>
-        <span className="text-xs tabular-nums text-muted sm:hidden">{price} · {enrolledOn}</span>
+        <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted sm:hidden">{priceOrBadge}<span>{item.billing_mode === "grant" ? enrolledOn : `· ${enrolledOn}`}</span></span>
       </span>
       <span className="flex shrink-0 items-center gap-4">
         <EnrollmentStatusBadge status={item.status} />
         <span className="hidden flex-col items-end text-right sm:flex">
-          <span className="text-sm font-medium tabular-nums text-ink">{price}</span>
+          <span className="flex min-h-5 items-center text-sm font-medium tabular-nums text-ink">{priceOrBadge}</span>
           <span className="text-xs tabular-nums text-muted">{enrolledOn}</span>
         </span>
       </span>

@@ -324,7 +324,7 @@ describe("EnrollStudentModal workflows", () => {
     });
   });
 
-  it("handles candidate pagination across page two and preserves selection", () => {
+  it("hides the search and candidate list once a student is selected and restores them on Change student", () => {
     vi.mocked(enrollmentHooks.useEligibleCandidates).mockReturnValue(
       mockQueryResult<PaginatedEligibleCandidates>({
         items: [mockCandidateOne],
@@ -350,19 +350,21 @@ describe("EnrollStudentModal workflows", () => {
       </QueryClientProvider>,
     );
 
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
-    fireEvent.click(candidateRadio);
-
     const nextBtn = screen.getByRole("button", { name: "Next page" });
-    expect(nextBtn).toBeDefined();
     expect(nextBtn.hasAttribute("disabled")).toBe(false);
-
     fireEvent.click(nextBtn);
 
-    expect(screen.getAllByText("Zara Karimova").length).toBeGreaterThan(0);
-    expect(screen.getByText("Change student")).toBeDefined();
-  });
+    fireEvent.click(screen.getByRole("radio", { name: /Zara Karimova/i }));
 
+    expect(screen.getAllByText("Zara Karimova")).toHaveLength(1);
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.queryByPlaceholderText("Search candidates by name or email…")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
+
+    fireEvent.click(screen.getByText("Change student"));
+    expect(screen.getByRole("radio", { name: /Zara Karimova/i })).toBeDefined();
+    expect(screen.getByPlaceholderText("Search candidates by name or email…")).toBeDefined();
+  });
 
   it("disables candidate modal pagination while fetching", () => {
     vi.mocked(enrollmentHooks.useEligibleCandidates).mockReturnValue({

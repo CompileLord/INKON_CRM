@@ -42,10 +42,9 @@ export function StudentCoursesTab({ courses, studentId, role, currentUserId }: S
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">{item.course.title}</span>
                       <StudentCourseStagePill course={item} />
-                      <GrantBadge billingMode={billingModes.data?.get(item.course.id)} />
                     </span>
                     <span className="text-xs tabular-nums text-muted">
-                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {formatMoney(item.course.price, { suffix: t("stats.currency") })}
+                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {billingModes.data?.get(item.course.id) === "grant" ? <GrantBadge billingMode="grant" /> : formatMoney(item.course.price, { suffix: t("stats.currency") })}
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">

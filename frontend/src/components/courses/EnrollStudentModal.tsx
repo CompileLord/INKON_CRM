@@ -240,33 +240,6 @@ export function EnrollStudentModal({
           </div>
         ) : null}
 
-        <div className="relative">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            disabled={enrollMutation.isPending || isSubmittingRef.current}
-            placeholder={t("enrollment.searchPlaceholder")}
-            aria-label={t("enrollment.searchPlaceholder")}
-            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card pl-10 pr-12 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent"
-          />
-          {search ? (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              disabled={enrollMutation.isPending || isSubmittingRef.current}
-              aria-label={t("students.resetSearch")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-            >
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
-
         {selectedCandidate ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-maroon dark:border-accent bg-beige/60 dark:bg-row-hover p-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -305,6 +278,35 @@ export function EnrollStudentModal({
             onRetry={() => void preview.refetch()}
           />
         ) : null}
+
+        {!selectedCandidate ? (
+          <>
+        <div className="relative">
+          <Search
+            size={18}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            disabled={enrollMutation.isPending || isSubmittingRef.current}
+            placeholder={t("enrollment.searchPlaceholder")}
+            aria-label={t("enrollment.searchPlaceholder")}
+            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card pl-10 pr-12 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              disabled={enrollMutation.isPending || isSubmittingRef.current}
+              aria-label={t("students.resetSearch")}
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+        </div>
 
         <div className="flex flex-col gap-2 min-h-[220px]">
           <div className="flex items-center justify-between">
@@ -388,21 +390,16 @@ export function EnrollStudentModal({
               className="flex flex-col gap-1.5"
             >
               {items.map((candidate) => {
-                const isSelected = selectedCandidate?.id === candidate.id;
                 return (
                   <label
                     key={candidate.id}
-                    className={`flex items-center gap-3 rounded-xl p-3 text-left motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out min-h-[52px] border cursor-pointer select-none focus-within:ring-2 focus-within:ring-maroon dark:focus-within:ring-accent motion-safe:active:scale-[0.96] ${
-                      isSelected
-                        ? "border-maroon bg-beige dark:border-accent dark:bg-row-hover"
-                        : "border-border bg-card hover:bg-row-hover"
-                    }`}
+                    className="flex items-center gap-3 rounded-xl p-3 text-left motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out min-h-[52px] border cursor-pointer select-none focus-within:ring-2 focus-within:ring-maroon dark:focus-within:ring-accent motion-safe:active:scale-[0.96] border-border bg-card hover:bg-row-hover"
                   >
                     <input
                       type="radio"
                       name="eligible-candidate"
                       value={candidate.id}
-                      checked={isSelected}
+                      checked={false}
                       disabled={isPendingOrSubmitting || isSubmittingRef.current}
                       onChange={() => handleSelectCandidate(candidate)}
                       className="h-4 w-4 shrink-0 text-maroon-text accent-maroon focus:ring-0"
@@ -455,6 +452,8 @@ export function EnrollStudentModal({
             </div>
           ) : null}
         </div>
+          </>
+        ) : null}
       </div>
     </Modal>
   );
