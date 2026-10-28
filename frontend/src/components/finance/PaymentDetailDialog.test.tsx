@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MockAdapter from "axios-mock-adapter";
@@ -137,5 +137,59 @@ describe("Payment detail", () => {
     mock.onGet(receiptUrl).reply(500);
     renderDetail({ ...known, student_first_name: null, student_last_name: null });
     expect(await within(await screen.findByRole("dialog")).findByText("Unknown student")).toBeTruthy();
+  });
+});
+
+describe("Payment detail receipt print", () => {
+  const withTargets = {
+    ...receipt,
+    comment: "Autumn tuition",
+    targets: [
+      { enrollment_id: 501, course_id: 11, course_title: "Web Frontend", amount: "600.25" },
+      { enrollment_id: 502, course_id: 12, course_title: "English Elementary", amount: "300.00" },
+    ],
+  };
+
+  it("lists the payment targets with course and amount", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, withTargets);
+    renderDetail();
+    const section = (await screen.findByRole("heading", { name: "Paid by course" })).closest("section") as HTMLElement;
+    expect(within(section).getByText("Web Frontend")).toBeTruthy();
+    expect(within(section).getByText("600.25 TJS")).toBeTruthy();
+    expect(within(section).getByText("English Elementary")).toBeTruthy();
+    expect(within(section).getByText("300 TJS")).toBeTruthy();
+  });
+
+  it("keeps Print receipt disabled until the receipt arrives, then prints the receipt with its targets", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, withTargets);
+    const printed = { document: document.implementation.createHTMLDocument(""), focus: vi.fn(), print: vi.fn() };
+    const open = vi.spyOn(window, "open").mockReturnValue(printed as unknown as Window);
+    renderDetail();
+    const button = (await screen.findByRole("button", { name: "Print receipt" })) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    await waitFor(() => expect(button.disabled).toBe(false));
+    await userEvent.click(button);
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(printed.print).toHaveBeenCalledTimes(1);
+    const body = printed.document.body.textContent ?? "";
+    expect(printed.document.body.querySelector("h1")?.textContent).toBe("Receipt R-2026-0077");
+    for (const expected of ["Receipt Name", "Acc Ountant", "900.25 TJS", "Web Frontend", "600.25 TJS", "English Elementary", "300 TJS", "Autumn tuition"]) {
+      expect(body).toContain(expected);
+    }
+    open.mockRestore();
+  });
+
+  it("tells the user when the browser blocks the print window", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, withTargets);
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    renderDetail();
+    const button = (await screen.findByRole("button", { name: "Print receipt" })) as HTMLButtonElement;
+    await waitFor(() => expect(button.disabled).toBe(false));
+    await userEvent.click(button);
+    expect((await screen.findByRole("alert")).textContent).toBe("The browser blocked the print window. Allow pop-ups and try again.");
+    open.mockRestore();
   });
 });

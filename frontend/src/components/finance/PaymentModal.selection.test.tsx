@@ -37,10 +37,8 @@ describe("authorized payment selection", () => {
     if (withProfile) mockCourses([{ courseId: 20, title: "Returned archived enrollment" }]);
   }
   function mockCourses(courses: { courseId: number; title: string }[]) {
-    const enrollments = courses.map((course, index) => ({ id: 500 + index, student_id: 90, course_id: course.courseId, price_at_enrollment: "1000", color_hex: "#000000", enrolled_at: "2026-09-01T00:00:00Z", status: "withdrawn", is_deleted: false }));
-    const charges = courses.map((course, index) => ({ id: 700 + index, enrollment_id: 500 + index, student_id: 90, sequence_no: 1, amount: "10", due_date: "2026-10-01", type: "tuition", status: "open", allocated_amount: "0", remaining_balance: "10", course_title: course.title }));
-    mock.onGet("/enrollments/").reply(200, { items: enrollments, total: enrollments.length, page: 1, page_size: 100, total_pages: 1 });
-    mock.onGet(/\/finance\/charges\//).reply(200, { items: charges, total: charges.length, page: 1, page_size: 100, total_pages: 1 });
+    const enrollments = courses.map((course, index) => ({ enrollment_id: 500 + index, course_id: course.courseId, course_title: course.title, open_debt: "10", overdue_days: 2, remaining_contract_maximum: "1000", billing_mode: "paid" }));
+    mock.onGet("/finance/students/90/payment-options").reply(200, { wallet_credit: "0", enrollments });
   }
   function openGeneral() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -56,11 +54,11 @@ describe("authorized payment selection", () => {
     await user.click(await screen.findByRole("button", { name: "More results" }));
     await user.click(await screen.findByRole("option", { name: /Later Match/ }));
     expect(await screen.findByText("Later Match")).toBeTruthy();
-    await user.click(await screen.findByLabelText("Priority course"));
-    await user.click(await screen.findByRole("option", { name: "Returned archived enrollment" }));
+    expect(await screen.findByLabelText("Amount for Returned archived enrollment (TJS)")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(false);
     expect(document.querySelector("select")).toBeNull();
-    expect(mock.history.get.find(request => request.url === "/enrollments/")?.params).toMatchObject({ student_id: 90 });
+    expect(mock.history.get.some(request => request.url === "/finance/students/90/payment-options")).toBe(true);
+    expect(mock.history.get.some(request => request.url === "/enrollments/")).toBe(false);
     expect(mock.history.get.some(request => /\/students\/\d+\/profile/.test(request.url ?? ""))).toBe(false);
     expect(mock.history.get.some(request => request.url?.startsWith("/courses/"))).toBe(false);
   });
@@ -84,15 +82,14 @@ describe("authorized payment selection", () => {
     expect(mock.history.post).toHaveLength(0);
   });
 
-  it("clears the course and its stale data when the student is changed", async () => {
+  it("clears the course rows and their stale data when the student is changed", async () => {
     mockStudents();
     const user = openGeneral(); await user.click(screen.getByRole("button", { name: "Open general payment" }));
     await user.type(screen.getByRole("combobox", { name: "Student" }), "Match");
     await user.click(await screen.findByRole("button", { name: "More results" })); await user.click(await screen.findByRole("option", { name: /Later Match/ }));
-    await user.click(await screen.findByLabelText("Priority course")); await user.click(await screen.findByRole("option", { name: "Returned archived enrollment" }));
-    expect(screen.getByLabelText("Priority course").textContent).toContain("Returned archived enrollment");
+    await user.type(await screen.findByLabelText("Amount for Returned archived enrollment (TJS)"), "5");
     await user.click(screen.getByRole("button", { name: "Change" }));
-    expect(screen.queryByLabelText("Priority course")).toBeNull(); expect(screen.queryByText("Returned archived enrollment")).toBeNull();
+    expect(screen.queryByLabelText("Amount for Returned archived enrollment (TJS)")).toBeNull(); expect(screen.queryByText("Returned archived enrollment")).toBeNull();
     expect(screen.getByRole("combobox", { name: "Student" })).toBeTruthy();
     expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole("button", { name: "Accept Payment" }).className).toContain("bg-maroon");
@@ -100,13 +97,12 @@ describe("authorized payment selection", () => {
 
   it("shows distinct course loading, error with retry and no-enrollment states", async () => {
     mockStudents(false);
-    mock.onGet("/enrollments/").reply(500);
-    mock.onGet(/\/finance\/charges\//).reply(200, { items: [], total: 0, page: 1, page_size: 100, total_pages: 0 });
+    mock.onGet("/finance/students/90/payment-options").reply(500);
     const user = openGeneral(); await user.click(screen.getByRole("button", { name: "Open general payment" }));
     await user.type(screen.getByRole("combobox", { name: "Student" }), "Match");
     await user.click(await screen.findByRole("button", { name: "More results" })); await user.click(await screen.findByRole("option", { name: /Later Match/ }));
     expect(await screen.findByText("Course context could not be loaded.")).toBeTruthy();
-    mock.onGet("/enrollments/").reply(200, { items: [], total: 0, page: 1, page_size: 100, total_pages: 0 });
+    mock.onGet("/finance/students/90/payment-options").reply(200, { wallet_credit: "0", enrollments: [] });
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText("No available enrollments were returned for this student.")).toBeTruthy();
     expect(screen.queryByText("Course context could not be loaded.")).toBeNull();

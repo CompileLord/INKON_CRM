@@ -8,6 +8,7 @@ export class PaymentIdempotencyKeys {
     const signature: string = JSON.stringify([
       payload.student_id,
       payload.course_id,
+      payload.targets ?? null,
       payload.amount,
       payload.paid_at,
       payload.method,

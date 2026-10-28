@@ -1,17 +1,17 @@
 import { useCallback, useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import { UNSAFE_DataRouterContext } from "react-router-dom";
-import { BookOpen, Lock, Plus, UserRound } from "lucide-react";
+import { Lock, Plus, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { PaymentCreatePayload, PaymentItem, PaymentMethod } from "../../lib/finance/types";
-import { useCreatePayment, usePayableCourses } from "../../lib/finance/hooks";
-import { PaymentAmountParser, type PaymentAmountProblem } from "../../lib/finance/paymentAmountParser";
+import type { PaymentCreatePayload, PaymentItem, PaymentMethod, PaymentOption } from "../../lib/finance/types";
+import { useCreatePayment, usePaymentOptions } from "../../lib/finance/hooks";
+import { PaymentTargets, type PaymentTargetError, type PaymentTargetPlan, type TargetDrafts } from "../../lib/finance/paymentTargets";
 import { PaymentSubmissionOutcome, type PaymentFailureKind } from "../../lib/finance/paymentSubmissionOutcome";
 import type { StudentSearchResult } from "../../lib/finance/studentSearch";
-import { formatExactMoney } from "../../lib/money";
 import { getSchoolCalendarDate, schoolCalendarDateToTimestamp } from "../../i18n/formatters";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
-import { PAYMENT_COURSE_TRIGGER_ID, PaymentCourseField } from "./PaymentCourseField";
+import type { TargetRowProblem } from "./PaymentTargetRows";
+import { PaymentTargetsSection } from "./PaymentTargetsSection";
 import { PaymentMethodRadios } from "./PaymentMethodRadios";
 import { PaymentNavigationGuard, type NavigationDecision } from "./PaymentNavigationGuard";
 import { DatePicker } from "../ui/DatePicker";
@@ -23,7 +23,6 @@ export interface PaymentEntryProps {
   defaultStudentId?: number;
   defaultStudentName?: string;
   defaultCourseId?: number;
-  defaultCourseName?: string;
 }
 
 interface SelectedStudent {
@@ -33,7 +32,7 @@ interface SelectedStudent {
 
 const PAYMENT_DATE_FIELD_ID: string = "payment-date";
 
-type EntryField = "student" | "course" | "amount" | "date";
+type EntryField = "student" | "targets" | "date";
 
 interface FieldProblem {
   field: EntryField;
@@ -52,24 +51,26 @@ const FAILURE_MESSAGE_KEYS: Record<PaymentFailureKind, string> = {
   rejected: "paymentModal.saveError",
 };
 
-const AMOUNT_PROBLEM_KEYS: Record<PaymentAmountProblem, string> = {
-  empty: "paymentModal.amountRequired",
-  invalid: "paymentModal.invalidAmount",
-  notPositive: "paymentModal.invalidAmount",
+const TARGET_ERROR_KEYS: Record<Exclude<PaymentTargetError["code"], "payment_target_exceeds_balance">, string> = {
+  payment_target_sum_mismatch: "paymentModal.targetSumMismatch",
+  invalid_payment_target: "paymentModal.targetInvalid",
+  duplicate_payment_target: "paymentModal.targetDuplicate",
+  payment_target_required: "paymentModal.targetRequired",
 };
 
 function borderFor(isInvalid: boolean): string {
   return isInvalid ? "border-destructive" : "border-control-border";
 }
 
-export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defaultStudentName, defaultCourseId, defaultCourseName }: PaymentEntryProps) {
+export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defaultStudentName, defaultCourseId }: PaymentEntryProps) {
   const { t } = useTranslation(["finance", "common"]);
   const dataRouter = useContext(UNSAFE_DataRouterContext);
   const isLocked: boolean = defaultStudentId !== undefined;
   const initialStudent: SelectedStudent | null = defaultStudentId !== undefined ? { id: defaultStudentId, name: defaultStudentName ?? "" } : null;
   const [student, setStudent] = useState<SelectedStudent | null>(initialStudent);
-  const [courseId, setCourseId] = useState<number | null>(defaultCourseId ?? null);
-  const [amount, setAmount] = useState<string>("");
+  const [drafts, setDrafts] = useState<TargetDrafts>({});
+  const [rowProblems, setRowProblems] = useState<Record<number, TargetRowProblem>>({});
+  const [targetFailureKey, setTargetFailureKey] = useState<string | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [initialDate] = useState<string>(getSchoolCalendarDate);
   const [paidAt, setPaidAt] = useState<string>(initialDate);
@@ -82,17 +83,28 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const navigation = useRef<NavigationDecision | null>(null);
   const searchField = useRef<HTMLInputElement>(null);
   const changeStudentButton = useRef<HTMLButtonElement>(null);
-  const amountField = useRef<HTMLInputElement>(null);
+  const baselineDrafts = useRef<TargetDrafts>({});
+  const prefilled = useRef<boolean>(false);
   const keepEditing = useRef<HTMLButtonElement>(null);
   const opener = useRef<Element | null>(typeof document === "undefined" ? null : document.activeElement);
   const createPayment = useCreatePayment();
-  const payableCourses = usePayableCourses(isLocked ? undefined : student?.id);
+  const paymentOptions = usePaymentOptions(student?.id);
+  const options: readonly PaymentOption[] = paymentOptions.data?.enrollments ?? [];
   const pending: boolean = createPayment.isPending;
-  const parsedAmount = PaymentAmountParser.parse(amount);
-  const dirty: boolean =
-    amount !== "" || comment !== "" || method !== "cash" || paidAt !== initialDate || student?.id !== initialStudent?.id || courseId !== (defaultCourseId ?? null);
-  const eligibleCourse: boolean = isLocked ? courseId !== null : Boolean(payableCourses.data?.some((course) => course.courseId === courseId));
+  const plan: PaymentTargetPlan = PaymentTargets.plan(options, drafts);
+  const draftsChanged: boolean = Object.keys(drafts).some((key) => (drafts[Number(key)] ?? "") !== (baselineDrafts.current[Number(key)] ?? ""));
+  const dirty: boolean = draftsChanged || comment !== "" || method !== "cash" || paidAt !== initialDate || student?.id !== initialStudent?.id;
   const studentLabel: string = student?.name ?? "";
+
+  useEffect(() => {
+    if (prefilled.current || defaultCourseId === undefined || !paymentOptions.data) return;
+    prefilled.current = true;
+    const match: PaymentOption | undefined = paymentOptions.data.enrollments.find((option) => option.course_id === defaultCourseId);
+    if (match === undefined || !PaymentTargets.hasDebt(match)) return;
+    const fill: TargetDrafts = { [match.enrollment_id]: PaymentTargets.debtFill(match) };
+    baselineDrafts.current = fill;
+    setDrafts(fill);
+  }, [defaultCourseId, paymentOptions.data]);
 
   useEffect(() => {
     if (dismissDecision) keepEditing.current?.focus();
@@ -130,7 +142,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     navigation.current?.cancel();
     navigation.current = null;
     setDismissDecision(false);
-    (isLocked ? amountField : student ? changeStudentButton : searchField).current?.focus();
+    (isLocked ? null : student ? changeStudentButton : searchField)?.current?.focus();
   };
 
   const discard = (): void => {
@@ -141,22 +153,44 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     decision?.proceed();
   };
 
+  const resetTargets = (): void => {
+    setDrafts({});
+    setRowProblems({});
+    setTargetFailureKey(null);
+    baselineDrafts.current = {};
+    prefilled.current = true;
+  };
+
+  const changeDraft = (enrollmentId: number, value: string): void => {
+    setDrafts((current) => ({ ...current, [enrollmentId]: value }));
+    setRowProblems((current) => {
+      if (!(enrollmentId in current)) return current;
+      const { [enrollmentId]: _removed, ...rest } = current;
+      return rest;
+    });
+    setProblem(null);
+    setTargetFailureKey(null);
+  };
+
+  const fillDebt = (option: PaymentOption): void => changeDraft(option.enrollment_id, PaymentTargets.debtFill(option));
+
   const chooseStudent = (selected: StudentSearchResult): void => {
     setStudent({ id: selected.id, name: `${selected.first_name} ${selected.last_name}` });
-    setCourseId(null);
+    resetTargets();
     setProblem(null);
     requestAnimationFrame(() => changeStudentButton.current?.focus());
   };
 
   const changeStudent = (): void => {
     setStudent(null);
-    setCourseId(null);
+    resetTargets();
     requestAnimationFrame(() => searchField.current?.focus());
   };
 
   const focusProblem = (field: EntryField): void => {
+    const firstPayable: PaymentOption | undefined = options.find(PaymentTargets.isPayable);
     const target: HTMLElement | null | undefined =
-      field === "student" ? searchField.current : field === "course" ? document.getElementById(PAYMENT_COURSE_TRIGGER_ID) : field === "amount" ? amountField.current : document.getElementById(PAYMENT_DATE_FIELD_ID);
+      field === "student" ? searchField.current : field === "targets" ? document.getElementById(`payment-amount-${firstPayable?.enrollment_id}`) : document.getElementById(PAYMENT_DATE_FIELD_ID);
     target?.focus();
   };
 
@@ -166,23 +200,27 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     const found: FieldProblem | null =
       student === null
         ? { field: "student", messageKey: "paymentModal.chooseStudent" }
-        : courseId === null || !eligibleCourse
-          ? { field: "course", messageKey: "paymentModal.chooseCourse" }
-          : parsedAmount.canonical === null
-            ? { field: "amount", messageKey: AMOUNT_PROBLEM_KEYS[parsedAmount.problem] }
-            : schoolCalendarDateToTimestamp(paidAt) === null
-              ? { field: "date", messageKey: "paymentModal.invalidDate" }
-              : null;
+        : plan.targets.length === 0 && plan.invalidEnrollmentIds.length === 0
+          ? { field: "targets", messageKey: "paymentModal.amountRequired" }
+          : schoolCalendarDateToTimestamp(paidAt) === null
+            ? { field: "date", messageKey: "paymentModal.invalidDate" }
+            : null;
     setProblem(found);
     setFailure(null);
+    setTargetFailureKey(null);
+    setRowProblems(Object.fromEntries(plan.invalidEnrollmentIds.map((id: number): [number, TargetRowProblem] => [id, { messageKey: "paymentModal.invalidAmount" }])));
+    if (plan.invalidEnrollmentIds.length > 0) {
+      document.getElementById(`payment-amount-${plan.invalidEnrollmentIds[0]}`)?.focus();
+      return;
+    }
     if (found !== null) {
       focusProblem(found.field);
       return;
     }
     const payload: PaymentCreatePayload = {
       student_id: (student as SelectedStudent).id,
-      course_id: courseId as number,
-      amount: parsedAmount.canonical as string,
+      targets: plan.targets,
+      amount: plan.total,
       paid_at: schoolCalendarDateToTimestamp(paidAt) as string,
       method,
       ...(comment.trim() ? { comment: comment.trim() } : {}),
@@ -192,15 +230,22 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     try {
       payment = await createPayment.mutateAsync(payload);
     } catch (error) {
+      const targetError: PaymentTargetError | null = PaymentTargets.parseError(error);
+      if (targetError !== null) {
+        if (targetError.code === "payment_target_exceeds_balance" && targetError.enrollmentId !== null) {
+          setRowProblems({ [targetError.enrollmentId]: { messageKey: "paymentModal.targetExceedsBalance", maximum: targetError.maximum ?? "0" } });
+          document.getElementById(`payment-amount-${targetError.enrollmentId}`)?.focus();
+        } else {
+          setTargetFailureKey(TARGET_ERROR_KEYS[targetError.code === "payment_target_exceeds_balance" ? "invalid_payment_target" : targetError.code]);
+          void paymentOptions.refetch();
+        }
+        return;
+      }
       const kind: PaymentFailureKind = PaymentSubmissionOutcome.classify(error);
       setVerificationRequired(!PaymentSubmissionOutcome.isConfirmedRejection(kind));
       setFailure(kind);
       if (kind === "closedPeriod") document.getElementById(PAYMENT_DATE_FIELD_ID)?.focus();
-      else if (kind === "enrollment" && !isLocked) {
-        setCourseId(null);
-        void payableCourses.refetch();
-        requestAnimationFrame(() => document.getElementById(PAYMENT_COURSE_TRIGGER_ID)?.focus());
-      } else amountField.current?.focus();
+      else if (kind === "enrollment") void paymentOptions.refetch();
       return;
     } finally {
       inFlight.current = false;
@@ -211,11 +256,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
       onClose();
     }
   };
-
-  const summaryText: string =
-    parsedAmount.canonical !== null
-      ? t("finance:paymentModal.summary", { amount: formatExactMoney(parsedAmount.canonical), method: t(`common:enums.paymentMethod.${method}`) })
-      : t("finance:paymentModal.enterAmount");
 
   const footer = dismissDecision ? (
     <div className="flex flex-col gap-3">
@@ -229,7 +269,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     </div>
   ) : (
     <div className="flex flex-col gap-3">
-      <p className="break-words text-sm text-muted tabular-nums">{summaryText}</p>
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
         <Button variant="secondary" disabled={pending} onClick={requestClose}>
           {t("common:cancel")}
@@ -254,7 +293,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
         title={t(dismissDecision ? "finance:paymentModal.discardTitle" : "finance:paymentModal.title")}
         maxWidthClassName="sm:max-w-[520px]"
         fullScreenOnMobile
-        initialFocus={isLocked ? amountField : student ? changeStudentButton : searchField}
+        initialFocus={isLocked ? undefined : student ? changeStudentButton : searchField}
         footer={footer}
         closeDisabled={pending}
       >
@@ -286,10 +325,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                   <span>{studentLabel || t("finance:row.unknownStudent")}</span>
                   <Lock size={14} aria-hidden="true" className="ml-auto shrink-0 text-muted" />
                   <span className="sr-only">{t("finance:paymentModal.locked")}</span>
-                </p>
-                <p className="mt-1 flex items-center gap-2 break-words text-muted">
-                  <BookOpen size={16} aria-hidden="true" className="shrink-0" />
-                  {defaultCourseName ?? t("finance:paymentsTab.selectedCourse")}
                 </p>
               </div>
             ) : (
@@ -328,70 +363,40 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                     )}
                   </div>
                 )}
-                {student && (
-                  <div>
-                    <PaymentCourseField
-                      studentId={student.id}
-                      courseId={courseId}
-                      invalid={problem?.field === "course"}
-                      describedBy={problem?.field === "course" ? problemId("course") : undefined}
-                      onChange={(selected) => {
-                        setCourseId(selected);
-                        setProblem(null);
-                      }}
-                    />
-                    {problemFor("course") && (
-                      <p id={problemId("course")} role="alert" className="mt-1 text-sm text-destructive">
-                        {problemFor("course")}
-                      </p>
-                    )}
-                  </div>
-                )}
               </>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="payment-amount" className="text-sm font-medium text-label">
-                  {t("finance:paymentModal.amountLabel")}
-                </label>
-                <input
-                  id="payment-amount"
-                  ref={amountField}
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
-                  aria-invalid={problem?.field === "amount" || undefined}
-                  aria-describedby={problem?.field === "amount" ? problemId("amount") : undefined}
-                  className={`mt-1 tabular-nums ${INPUT_CLASSES} ${borderFor(problem?.field === "amount")}`}
+            {student && (
+              <PaymentTargetsSection
+                studentId={student.id}
+                paymentOptions={paymentOptions}
+                drafts={drafts}
+                problems={rowProblems}
+                total={plan.total}
+                fieldProblem={problemFor("targets")}
+                failureKey={targetFailureKey}
+                onChange={changeDraft}
+                onFill={fillDebt}
+              />
+            )}
+            <div>
+              <label htmlFor={PAYMENT_DATE_FIELD_ID} className="text-sm font-medium text-label">
+                {t("finance:paymentModal.date")}
+              </label>
+              <div className="mt-1">
+                <DatePicker
+                  id={PAYMENT_DATE_FIELD_ID}
+                  label={t("finance:paymentModal.date")}
+                  value={paidAt}
+                  onChange={setPaidAt}
+                  invalid={problem?.field === "date"}
+                  describedBy={problem?.field === "date" ? problemId("date") : undefined}
                 />
-                {problemFor("amount") && (
-                  <p id={problemId("amount")} role="alert" className="mt-1 text-sm text-destructive">
-                    {problemFor("amount")}
-                  </p>
-                )}
               </div>
-              <div>
-                <label htmlFor={PAYMENT_DATE_FIELD_ID} className="text-sm font-medium text-label">
-                  {t("finance:paymentModal.date")}
-                </label>
-                <div className="mt-1">
-                  <DatePicker
-                    id={PAYMENT_DATE_FIELD_ID}
-                    label={t("finance:paymentModal.date")}
-                    value={paidAt}
-                    onChange={setPaidAt}
-                    invalid={problem?.field === "date"}
-                    describedBy={problem?.field === "date" ? problemId("date") : undefined}
-                  />
-                </div>
-                {problemFor("date") && (
-                  <p id={problemId("date")} role="alert" className="mt-1 text-sm text-destructive">
-                    {problemFor("date")}
-                  </p>
-                )}
-              </div>
+              {problemFor("date") && (
+                <p id={problemId("date")} role="alert" className="mt-1 text-sm text-destructive">
+                  {problemFor("date")}
+                </p>
+              )}
             </div>
             <PaymentMethodRadios value={method} onChange={setMethod} />
             <div>

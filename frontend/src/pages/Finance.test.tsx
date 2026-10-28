@@ -79,8 +79,8 @@ describe("Finance overview", () => {
     await userEvent.click(within(balances).getByRole("button", { name: "Accept payment for Anisa Karimova, English IELTS" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Anisa Karimova")).toBeTruthy();
-    expect(within(dialog).getByText("English IELTS")).toBeTruthy();
-    expect(within(dialog).queryByText("Python Advanced")).toBeNull();
+    expect(((await within(dialog).findByLabelText("Amount for English IELTS (TJS)")) as HTMLInputElement).value).toBe("500.20");
+    expect((within(dialog).getByLabelText("Amount for Python Advanced (TJS)") as HTMLInputElement).value).toBe("");
   });
 
   it("keeps big decimal strings exact without float conversion", async () => {
@@ -94,7 +94,7 @@ describe("Finance overview", () => {
     await within(summary).findByText("0 TJS");
     expect(within(summary).getByText("Current due unpaid")).toBeTruthy();
     expect(within(summary).getByText("Current unpaid students")).toBeTruthy();
-    expect(within(summary).getByText("Net cash collected")).toBeTruthy();
+    expect(within(summary).getByText("Collected in period")).toBeTruthy();
   });
 
   it("builds the summary from one shared stat group without info tooltips", async () => {

@@ -18,7 +18,6 @@ interface PaymentContext {
   studentId: number;
   studentName: string;
   courseId: number;
-  courseName: string;
 }
 
 export function Finance() {
@@ -40,7 +39,6 @@ export function Finance() {
       studentId: debt.student.id,
       studentName: `${debt.student.first_name} ${debt.student.last_name}`,
       courseId: debt.course.id,
-      courseName: debt.course.title,
     });
     setIsPaymentOpen(true);
   };
@@ -95,7 +93,6 @@ export function Finance() {
         defaultStudentId={paymentContext?.studentId}
         defaultStudentName={paymentContext?.studentName}
         defaultCourseId={paymentContext?.courseId}
-        defaultCourseName={paymentContext?.courseName}
       />
       <PaymentDetailModal payment={detailPayment} onClose={() => setDetailPayment(null)} />
     </PageContainer>

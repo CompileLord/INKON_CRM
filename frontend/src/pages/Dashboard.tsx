@@ -46,7 +46,6 @@ function AdminDashboard() {
         defaultStudentId={paymentRequest?.studentId}
         defaultStudentName={paymentRequest?.studentName}
         defaultCourseId={paymentRequest?.courseId}
-        defaultCourseName={paymentRequest?.courseName}
       />
     </PageContainer>
   );

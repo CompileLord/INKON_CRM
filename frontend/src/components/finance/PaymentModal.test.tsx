@@ -21,6 +21,14 @@ vi.hoisted(() => {
 });
 
 const mock = new MockAdapter(httpClient);
+const AMOUNT: string = "Amount for Test Course (TJS)";
+
+function mockOptions(): void {
+  mock.onGet("/finance/students/10/payment-options").reply(200, {
+    wallet_credit: "0",
+    enrollments: [{ enrollment_id: 600, course_id: 20, course_title: "Test Course", open_debt: "900", overdue_days: 0, remaining_contract_maximum: "2000", billing_mode: "paid" }],
+  });
+}
 
 function Fixture() {
   const [open, setOpen] = useState(false);
@@ -37,8 +45,6 @@ function Fixture() {
         onSuccess={payment => { setRecorded(payment); setOpen(false); }}
         defaultStudentId={10}
         defaultStudentName="Test Student"
-        defaultCourseId={20}
-        defaultCourseName="Test Course"
       />
     </>
   );
@@ -47,6 +53,7 @@ function Fixture() {
 describe("PaymentModal shared modal integration", () => {
   beforeEach(() => {
     mock.reset();
+    mockOptions();
     useShellStore.getState().close();
   });
 
@@ -86,7 +93,7 @@ describe("PaymentModal shared modal integration", () => {
     expect(document.body.style.overflowY).toBe("hidden");
     expect(document.querySelector("[data-base-ui-inert]") || document.querySelector('[aria-hidden="true"]')).toBeTruthy();
 
-    const amountInput = screen.getByLabelText("Amount (TJS)") as HTMLInputElement;
+    const amountInput = (await screen.findByLabelText(AMOUNT)) as HTMLInputElement;
     expect(amountInput).toBeTruthy();
     await user.clear(amountInput);
     await user.type(amountInput, "750.5");
@@ -130,24 +137,24 @@ function paymentFixture() {
 }
 
 describe("payment recording reliability", () => {
-  beforeEach(() => { mock.reset(); });
+  beforeEach(() => { mock.reset(); mockOptions(); });
   afterEach(() => { cleanup(); mock.reset(); });
 
   it("serializes locale decimals and the chosen school date without device-timezone conversion", async () => {
     mock.onPost("/finance/payments/").reply(201, savedPayment);
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750,50");
+    await user.type((await screen.findByLabelText(AMOUNT)), "750,50");
     await pickDate(user, "2026-10-11");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     expect(await screen.findByText("Payment #123 recorded")).toBeTruthy();
-    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "750.50", paid_at: "2026-10-10T19:00:00.000Z", student_id: 10, course_id: 20 });
+    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "750.5", paid_at: "2026-10-10T19:00:00.000Z", student_id: 10, targets: [{ enrollment_id: 600, amount: "750.50" }] });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("applying a date inside the date popover never submits the payment form", async () => {
     mock.onPost("/finance/payments/").reply(201, savedPayment);
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750,50");
+    await user.type((await screen.findByLabelText(AMOUNT)), "750,50");
     await pickDate(user, "2026-10-11");
     expect(mock.history.post).toHaveLength(0);
     expect(screen.getByRole("dialog")).toBeTruthy();
@@ -165,7 +172,7 @@ describe("payment recording reliability", () => {
 
   it("rejects zero and invalid money without sending a payment", async () => {
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    const amount = screen.getByLabelText("Amount (TJS)");
+    const amount = (await screen.findByLabelText(AMOUNT));
     for (const invalid of ["0", "-1", "750,5,0", "abc"]) {
       await user.clear(amount); await user.type(amount, invalid); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
       expect(await screen.findByRole("alert")).toBeTruthy(); expect(document.activeElement).toBe(amount);
@@ -177,9 +184,9 @@ describe("payment recording reliability", () => {
     let settle: ((response: [number, PaymentItem]) => void) | undefined;
     mock.onPost("/finance/payments/").reply(() => new Promise<[number, PaymentItem]>(resolve => { settle = resolve; }));
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750.50"); await user.dblClick(screen.getByRole("button", { name: "Accept Payment" }));
-    expect(mock.history.post).toHaveLength(1); expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).disabled).toBe(false);
-    expect(screen.getByLabelText("Amount (TJS)").closest("fieldset")?.disabled).toBe(true);
+    await user.type((await screen.findByLabelText(AMOUNT)), "750.50"); await user.dblClick(screen.getByRole("button", { name: "Accept Payment" }));
+    expect(mock.history.post).toHaveLength(1); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).disabled).toBe(false);
+    expect((await screen.findByLabelText(AMOUNT)).closest("fieldset")?.disabled).toBe(true);
     await user.keyboard("{Escape}"); expect(screen.getByRole("dialog")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
     settle?.([201, savedPayment]); expect(await screen.findByText("Payment #123 recorded")).toBeTruthy(); expect(mock.history.post).toHaveLength(1);
@@ -188,9 +195,9 @@ describe("payment recording reliability", () => {
   it("preserves exact decimal input, method and comment after a confirmed rejection", async () => {
     mock.onPost("/finance/payments/").replyOnce(400, { detail: "Accounting period closed" }).onPost("/finance/payments/").reply(201, savedPayment);
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type(screen.getByLabelText("Amount (TJS)"), "750.123456789"); await user.click(screen.getByRole("radio", { name: "Bank Transfer" })); await user.type(screen.getByLabelText("Comment"), "Keep this entry");
+    await user.type((await screen.findByLabelText(AMOUNT)), "750.123456789"); await user.click(screen.getByRole("radio", { name: "Bank Transfer" })); await user.type(screen.getByLabelText("Comment"), "Keep this entry");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
-    expect(await screen.findByRole("alert")).toBeTruthy(); expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("750.123456789");
+    expect(await screen.findByRole("alert")).toBeTruthy(); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("750.123456789");
     expect((screen.getByRole("radio", { name: "Bank Transfer" }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText("Comment") as HTMLTextAreaElement).value).toBe("Keep this entry");
     await user.click(screen.getByRole("button", { name: "Accept Payment" })); await screen.findByText("Payment #123 recorded");
@@ -200,25 +207,25 @@ describe("payment recording reliability", () => {
   it("explains a 422 withdrawn_enrollment_payment_exceeds_debt rejection and keeps the entered values", async () => {
     mock.onPost("/finance/payments/").replyOnce(422, { detail: "withdrawn_enrollment_payment_exceeds_debt" });
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type(screen.getByLabelText("Amount (TJS)"), "900.00");
+    await user.type((await screen.findByLabelText(AMOUNT)), "900.00");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     expect((await screen.findByRole("alert")).textContent).toContain("This student has withdrawn from the course. A payment can't exceed the remaining debt.");
-    expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("900.00");
+    expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("900.00");
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
   it("requires verification before resubmission after an ambiguous transport result", async () => {
     mock.onPost("/finance/payments/").networkError();
-    const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type(screen.getByLabelText("Amount (TJS)"), "750.50"); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
+    const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type((await screen.findByLabelText(AMOUNT)), "750.50"); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     expect(await screen.findByRole("checkbox")).toBeTruthy(); expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(mock.history.post).toHaveLength(1); expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("750.50");
+    expect(mock.history.post).toHaveLength(1); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("750.50");
   });
 
   it("retains confirmed success and offers only receipt retry when the receipt request fails", async () => {
     mock.onPost("/finance/payments/").reply(201, savedPayment);
     mock.onGet(/\/finance\/payments\/\?/).reply(200, { items: [savedPayment], total: 1, page: 1, page_size: 100, total_pages: 1 });
     mock.onGet("/finance/payments/123/receipt").replyOnce(500).onGet("/finance/payments/123/receipt").reply(200, { receipt_number: "ACTUAL-123", student_name: "Test Student", accepted_by_name: "Accountant", allocations: [] });
-    const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type(screen.getByLabelText("Amount (TJS)"), "750.50"); await user.click(screen.getByRole("button", { name: "Accept Payment" })); await screen.findByText("Payment #123 recorded");
+    const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type((await screen.findByLabelText(AMOUNT)), "750.50"); await user.click(screen.getByRole("button", { name: "Accept Payment" })); await screen.findByText("Payment #123 recorded");
     await user.click(screen.getByRole("button", { name: "View payment" })); await screen.findByRole("alert");
     expect(screen.getByRole("heading", { name: "Payment #123" })).toBeTruthy(); expect(screen.queryByRole("button", { name: "Accept Payment" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Retry" })); expect(await screen.findByText("ACTUAL-123")).toBeTruthy(); expect(mock.history.post).toHaveLength(1);
@@ -227,15 +234,16 @@ describe("payment recording reliability", () => {
 
 
 describe("payment route ownership", () => {
+  beforeEach(() => { mockOptions(); });
   afterEach(() => { cleanup(); mock.reset(); });
   it("keeps unsaved values when navigation is rejected and proceeds only after explicit discard", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     const router = createMemoryRouter([{ path: "/", element: <Fixture /> }, { path: "/other", element: <h1>Other destination</h1> }]);
     render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>);
-    const user = userEvent.setup(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type(screen.getByLabelText("Amount (TJS)"), "123.45");
+    const user = userEvent.setup(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type((await screen.findByLabelText(AMOUNT)), "123.45");
     await act(async () => { await router.navigate("/other"); });
     expect(await screen.findByRole("button", { name: "Keep editing" })).toBeTruthy(); expect(router.state.location.pathname).toBe("/");
-    await user.click(screen.getByRole("button", { name: "Keep editing" })); expect((screen.getByLabelText("Amount (TJS)") as HTMLInputElement).value).toBe("123.45");
+    await user.click(screen.getByRole("button", { name: "Keep editing" })); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("123.45");
     await act(async () => { await router.navigate("/other"); }); await user.click(screen.getByRole("button", { name: "Discard changes" }));
     expect(await screen.findByRole("heading", { name: "Other destination" })).toBeTruthy(); expect(mock.history.post).toHaveLength(0);
   });
@@ -245,7 +253,7 @@ describe("payment route ownership", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     const router = createMemoryRouter([{ path: "/", element: <Fixture /> }, { path: "/other", element: <h1>Other destination</h1> }]);
     render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>);
-    const user = userEvent.setup(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type(screen.getByLabelText("Amount (TJS)"), "123.45"); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
+    const user = userEvent.setup(); await user.click(screen.getByRole("button", { name: "Open payment trigger" })); await user.type((await screen.findByLabelText(AMOUNT)), "123.45"); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await act(async () => { await router.navigate("/other"); });
     expect(router.state.location.pathname).toBe("/"); expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
     settle?.([201, savedPayment]); expect(await screen.findByText("Payment #123 recorded")).toBeTruthy(); expect(mock.history.post).toHaveLength(1);

@@ -11,6 +11,7 @@ import type {
   LedgerEntryItem,
   PaymentCreatePayload,
   PaymentItem,
+  PaymentOptions,
   PaymentReceipt,
   RefundPaymentPayload,
   StudentBalanceResponse,
@@ -178,5 +179,10 @@ export async function reopenPeriod(
   const response = await httpClient.post(`/finance/periods/${year}/${month}/reopen`, {
     reason_code: reasonCode,
   });
+  return response.data;
+}
+
+export async function fetchPaymentOptions(studentId: number): Promise<PaymentOptions> {
+  const response = await httpClient.get(`/finance/students/${studentId}/payment-options`);
   return response.data;
 }
