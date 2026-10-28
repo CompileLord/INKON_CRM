@@ -43,7 +43,7 @@ const STICKY_STUDENT_COLUMN_PX = 200;
 const COMPACT_STICKY_STUDENT_COLUMN_PX = 120;
 const LESSON_COLUMN_PX = 128;
 const COMPACT_LESSON_COLUMN_PX = 112;
-const SUMMARY_FIELD_COLUMN_PX = 96;
+const SUMMARY_FIELD_COLUMN_PX = 112;
 const TOTAL_COLUMN_PX = 136;
 const SHELL_HEADER_OFFSET = "calc(3.5rem + 1px + env(safe-area-inset-top))";
 const VISIBLE_EDGE_PADDING_PX = 8;
@@ -250,7 +250,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 ))}
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  <span className="inline-flex items-baseline justify-center gap-1">
+                  <span className="inline-flex items-baseline justify-center gap-1 whitespace-nowrap">
                     {t("table.exam")}
                     {" "}
                     <span className="text-xs font-normal tabular-nums text-muted" data-testid="exam-maximum">
@@ -260,7 +260,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 </th>
 
                 <th scope="col" className="border-b border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  <span className="inline-flex items-baseline justify-center gap-1">
+                  <span className="inline-flex items-baseline justify-center gap-1 whitespace-nowrap">
                     {t("table.bonus")}
                     {" "}
                     <span className="text-xs font-normal tabular-nums text-muted" data-testid="bonus-maximum">
@@ -270,7 +270,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                 </th>
 
                 <th scope="col" className="border-b border-l border-border bg-beige px-2 py-3 text-center text-sm font-semibold text-ink">
-                  <span className="inline-flex items-baseline justify-center gap-1">
+                  <span className="inline-flex items-baseline justify-center gap-1 whitespace-nowrap">
                     {t("table.sum")}
                     {" "}
                     {sharedMaximum !== undefined && (

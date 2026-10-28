@@ -56,6 +56,14 @@ describe("JournalGrid future lessons", () => {
     }
   });
 
+  it("keeps each summary header label and its maximum on one line", () => {
+    freezeSchoolDate("2026-10-13T09:00:00+05:00");
+    mountGrid();
+    for (const testId of ["exam-maximum", "bonus-maximum"]) {
+      expect(screen.getByTestId(testId).parentElement?.className).toContain("whitespace-nowrap");
+    }
+  });
+
   it("uses the school calendar date, not the browser date, at the day boundary", () => {
     freezeSchoolDate("2026-10-13T20:30:00Z");
     mountGrid();
