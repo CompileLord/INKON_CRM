@@ -46,8 +46,6 @@
   },
   "history": {
     "title": "Mentor changes",
-    "show": "Show",
-    "hide": "Hide",
     "toggleLabel": "Mentor assignment history",
     "loadError": "Couldn't load the mentor history",
     "empty": "The mentor hasn't changed",
