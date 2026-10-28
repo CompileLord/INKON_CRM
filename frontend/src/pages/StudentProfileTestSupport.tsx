@@ -11,6 +11,7 @@ import * as userHooks from "../lib/users/hooks";
 import * as userEndpoints from "../lib/users/endpoints";
 import * as courseEndpoints from "../lib/courses/endpoints";
 import * as documentEndpoints from "../lib/documents/endpoints";
+import * as enrollmentEndpoints from "../lib/enrollments/endpoints";
 import * as financeApi from "../lib/finance/api";
 import type { StudentJournalPeriod, StudentProfileResponse, User } from "../lib/users/types";
 import type { CourseStaffProgressResponse } from "../lib/courses/types";
@@ -247,6 +248,7 @@ export function registerStudentProfileHooks(): void {
     vi.spyOn(courseEndpoints, "getCourseStaffProgress").mockImplementation(async (courseId: number) => staffProgressFixture(courseId));
     vi.spyOn(financeApi, "fetchStudentBalance").mockResolvedValue({ student_id: 42, billed_to_date: "900.00", total_settled: "650.00", net_receivable: "250.00", credit_balance: "0.00", days_overdue: 3 });
   vi.spyOn(userEndpoints, "getMyStudentJournalPage").mockResolvedValue({ items: ownJournalsFixture, next_cursor: null, has_upcoming_periods: false });
+    vi.spyOn(enrollmentEndpoints, "listEnrollments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 100, total_pages: 0 });
     vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
     vi.spyOn(userHooks, "useStudentProfile").mockImplementation(() => {
       return {

@@ -74,7 +74,7 @@ describe("Withdrawal preview in the roster dialog", () => {
     );
     const actions = await screen.findByRole("button", { name: /Sherzod/ });
     fireEvent.click(actions);
-    fireEvent.click(await screen.findByRole("menuitem"));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^(Withdraw|Отчислить)$/ }));
   }
 
   it("fetches the preview for the enrollment and shows what stays owed and what is cancelled", async () => {

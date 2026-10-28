@@ -1,18 +1,20 @@
 import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { AlertCircle, RotateCcw, Search, UserRound, X } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { EnrollBillingFields, isAcceptableFee } from "../enrollments/EnrollBillingFields";
+import { EnrollmentPreviewPanel } from "../enrollments/EnrollmentPreviewPanel";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { resolveMediaUrl } from "../../lib/users/media";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { AuthApiError } from "../../lib/auth/errors";
-import { useEligibleCandidates, useEnrollStudent } from "../../lib/enrollments/hooks";
-import type { EligibleCandidateResponse } from "../../lib/enrollments/types";
+import { useEligibleCandidates, useEnrollmentPreview, useEnrollStudent } from "../../lib/enrollments/hooks";
+import type { EligibleCandidateResponse, EnrollmentPreviewRequest } from "../../lib/enrollments/types";
 
 interface EnrollStudentModalProps {
   open: boolean;
@@ -31,17 +33,36 @@ export function EnrollStudentModal({
   onClose,
   onEnrolled,
 }: EnrollStudentModalProps) {
-  const { t } = useTranslation(["courses", "common"]);
+  const { t, i18n } = useTranslation(["courses", "common"]);
   const [search, setSearch] = useState("");
   const [candidatePage, setCandidatePage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGrant, setIsGrant] = useState<boolean>(false);
+  const [monthlyFee, setMonthlyFee] = useState<string>(coursePrice);
 
   const isSubmittingRef = useRef(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const enrollMutation = useEnrollStudent();
+
+  const feeIsValid: boolean = isGrant || isAcceptableFee(monthlyFee);
+  const previewRequest: EnrollmentPreviewRequest | null = useMemo(
+    () =>
+      open && selectedCandidate && feeIsValid
+        ? {
+            student_id: selectedCandidate.id,
+            course_id: courseId,
+            billing_mode: isGrant ? "grant" : "paid",
+            ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
+          }
+        : null,
+    [open, selectedCandidate, feeIsValid, courseId, isGrant, monthlyFee],
+  );
+  const debouncedPreviewRequest: EnrollmentPreviewRequest | null = useDebouncedValue(previewRequest, 400);
+  const previewIsSettled: boolean = JSON.stringify(previewRequest) === JSON.stringify(debouncedPreviewRequest);
+  const preview = useEnrollmentPreview(debouncedPreviewRequest);
 
   const {
     data: candidateData,
@@ -66,6 +87,8 @@ export function EnrollStudentModal({
       setSelectedCandidate(null);
       setErrorMessage(null);
       setIsSubmitting(false);
+      setIsGrant(false);
+      setMonthlyFee(coursePrice);
       isSubmittingRef.current = false;
     }
   }, [open, courseId]);
@@ -105,6 +128,8 @@ export function EnrollStudentModal({
       await enrollMutation.mutateAsync({
         course_id: courseId,
         student_id: studentToEnrollId,
+        billing_mode: isGrant ? "grant" : "paid",
+        ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
       });
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -172,7 +197,7 @@ export function EnrollStudentModal({
             type="button"
             variant="primary"
             onClick={handleSubmit}
-            disabled={!selectedCandidate || isPendingOrSubmitting || isSubmittingRef.current}
+            disabled={!selectedCandidate || !feeIsValid || isPendingOrSubmitting || isSubmittingRef.current}
             loading={isPendingOrSubmitting}
             className="w-full sm:w-auto min-h-[44px]"
           >
@@ -188,13 +213,22 @@ export function EnrollStudentModal({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-semibold text-ink break-words">{courseTitle}</span>
             <span className="text-sm font-semibold tabular-nums text-maroon-text dark:text-accent">
-              {formatMoney(coursePrice)} {t("currencyPerMonth")}
+              {formatTjs(coursePrice, { perMonth: true, lng: i18n.language })}
             </span>
           </div>
           <p className="text-xs text-muted">
             {t("enrollment.readOnlyTermsNotice")}
           </p>
         </div>
+
+        <EnrollBillingFields
+          isGrant={isGrant}
+          onGrantChange={setIsGrant}
+          monthlyFee={monthlyFee}
+          onMonthlyFeeChange={setMonthlyFee}
+          feeIsValid={feeIsValid}
+          disabled={isPendingOrSubmitting}
+        />
 
         {errorMessage ? (
           <div
@@ -205,33 +239,6 @@ export function EnrollStudentModal({
             <span className="flex-1 break-words">{errorMessage}</span>
           </div>
         ) : null}
-
-        <div className="relative">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            disabled={enrollMutation.isPending || isSubmittingRef.current}
-            placeholder={t("enrollment.searchPlaceholder")}
-            aria-label={t("enrollment.searchPlaceholder")}
-            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card pl-10 pr-12 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent"
-          />
-          {search ? (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              disabled={enrollMutation.isPending || isSubmittingRef.current}
-              aria-label={t("students.resetSearch")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-            >
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
 
         {selectedCandidate ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-maroon dark:border-accent bg-beige/60 dark:bg-row-hover p-3">
@@ -262,6 +269,44 @@ export function EnrollStudentModal({
             </Button>
           </div>
         ) : null}
+
+        {selectedCandidate && previewRequest !== null ? (
+          <EnrollmentPreviewPanel
+            preview={preview.data}
+            isLoading={!previewIsSettled || preview.isLoading}
+            isError={previewIsSettled && preview.isError}
+            onRetry={() => void preview.refetch()}
+          />
+        ) : null}
+
+        {!selectedCandidate ? (
+          <>
+        <div className="relative">
+          <Search
+            size={18}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            disabled={enrollMutation.isPending || isSubmittingRef.current}
+            placeholder={t("enrollment.searchPlaceholder")}
+            aria-label={t("enrollment.searchPlaceholder")}
+            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card pl-10 pr-12 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              disabled={enrollMutation.isPending || isSubmittingRef.current}
+              aria-label={t("students.resetSearch")}
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+        </div>
 
         <div className="flex flex-col gap-2 min-h-[220px]">
           <div className="flex items-center justify-between">
@@ -345,21 +390,16 @@ export function EnrollStudentModal({
               className="flex flex-col gap-1.5"
             >
               {items.map((candidate) => {
-                const isSelected = selectedCandidate?.id === candidate.id;
                 return (
                   <label
                     key={candidate.id}
-                    className={`flex items-center gap-3 rounded-xl p-3 text-left motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out min-h-[52px] border cursor-pointer select-none focus-within:ring-2 focus-within:ring-maroon dark:focus-within:ring-accent motion-safe:active:scale-[0.96] ${
-                      isSelected
-                        ? "border-maroon bg-beige dark:border-accent dark:bg-row-hover"
-                        : "border-border bg-card hover:bg-row-hover"
-                    }`}
+                    className="flex items-center gap-3 rounded-xl p-3 text-left motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out min-h-[52px] border cursor-pointer select-none focus-within:ring-2 focus-within:ring-maroon dark:focus-within:ring-accent motion-safe:active:scale-[0.96] border-border bg-card hover:bg-row-hover"
                   >
                     <input
                       type="radio"
                       name="eligible-candidate"
                       value={candidate.id}
-                      checked={isSelected}
+                      checked={false}
                       disabled={isPendingOrSubmitting || isSubmittingRef.current}
                       onChange={() => handleSelectCandidate(candidate)}
                       className="h-4 w-4 shrink-0 text-maroon-text accent-maroon focus:ring-0"
@@ -412,6 +452,8 @@ export function EnrollStudentModal({
             </div>
           ) : null}
         </div>
+          </>
+        ) : null}
       </div>
     </Modal>
   );

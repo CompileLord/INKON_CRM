@@ -6,5 +6,38 @@
   },
   "enrolledAt": "Enrolled date: {{date}}",
   "disenroll": "Disenroll from group",
-  "disenrollConfirm": "Are you sure you want to disenroll this student from the group?"
+  "disenrollConfirm": "Are you sure you want to disenroll this student from the group?",
+  "grantBadge": "Grant",
+  "billing": {
+    "grantToggle": "Grant (free study)",
+    "monthlyFee": "Monthly fee",
+    "monthlyFeeInvalid": "Enter an amount greater than zero",
+    "preview": {
+      "loading": "Calculating charges…",
+      "error": "Could not calculate charges",
+      "grantNoCharges": "Grant: no charges will be created.",
+      "firstCharge": "First charge {{amount}}, due {{date}}",
+      "summary": "{{months}} billed months, total {{total}}"
+    },
+    "switch": {
+      "toGrant": "Switch to grant",
+      "toPaid": "Switch to paid",
+      "toGrantTitle": "Switch to grant",
+      "toPaidTitle": "Switch to paid",
+      "toGrantMessage": "{{name}} will study for free in {{course}}.",
+      "toPaidMessage": "{{name}} will pay for {{course}}.",
+      "toGrantEffect": "Future unpaid months are cancelled. Paid money stays where it is, and started months stay owed.",
+      "toPaidEffect": "Billing starts from the next course month.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Why is the mode changing?",
+      "reasonRequired": "Enter a reason (up to 500 characters)",
+      "success": "Billing mode changed. Cancelled months: {{cancelled}} ({{cancelledAmount}}), written off: {{writtenOff}}, new months: {{generated}}.",
+      "errors": {
+        "unchanged": "The enrollment already has this mode.",
+        "notActive": "Only an active enrollment can change its mode.",
+        "invalid": "Check the reason and try again.",
+        "generic": "Could not change the mode. Please try again."
+      }
+    }
+  }
 }

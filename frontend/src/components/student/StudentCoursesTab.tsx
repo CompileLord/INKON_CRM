@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../ui/EmptyState";
+import { GrantBadge } from "../enrollments/GrantBadge";
+import { useStudentBillingModes } from "../../lib/enrollments/hooks";
 import { CourseScore } from "./CourseScore";
 import { StudentCourseEntry } from "./StudentCourseEntry";
 import { StudentCourseStagePill } from "./StudentCourseStagePill";
@@ -10,12 +12,14 @@ import type { StudentCourseProfile } from "../../lib/users/types";
 
 interface StudentCoursesTabProps {
   courses: StudentCourseProfile[];
+  studentId: number;
   role: string | null;
   currentUserId: number | null;
 }
 
-export function StudentCoursesTab({ courses, role, currentUserId }: StudentCoursesTabProps) {
+export function StudentCoursesTab({ courses, studentId, role, currentUserId }: StudentCoursesTabProps) {
   const { t, i18n } = useTranslation("studentProfile");
+  const billingModes = useStudentBillingModes(role === "superadmin" ? studentId : undefined);
 
   if (courses.length === 0) {
     return (
@@ -40,7 +44,7 @@ export function StudentCoursesTab({ courses, role, currentUserId }: StudentCours
                       <StudentCourseStagePill course={item} />
                     </span>
                     <span className="text-xs tabular-nums text-muted">
-                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {formatTjs(item.course.price, { perMonth: true, lng: i18n.language })}
+                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {billingModes.data?.get(item.course.id) === "grant" ? <GrantBadge billingMode="grant" /> : formatTjs(item.course.price, { perMonth: true, lng: i18n.language })}
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">
