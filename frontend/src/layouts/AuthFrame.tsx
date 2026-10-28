@@ -56,9 +56,6 @@ export function AuthFrame({
           </Button>
         </div>
         <div className="mx-auto w-full max-w-[400px] pt-6 lg:my-auto lg:py-10">
-          <div className="mb-6 hidden lg:block">
-            <BrandLogo size="xl" />
-          </div>
           {children}
         </div>
       </section>

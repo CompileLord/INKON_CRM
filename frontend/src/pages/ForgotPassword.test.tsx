@@ -150,3 +150,23 @@ describe("ForgotPassword without access to email", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("Too many attempts");
   });
 });
+
+describe("ForgotPassword copy", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+  afterEach(() => cleanup());
+
+  it("explains only the email path in the description and leaves the SMS path to the no-access link", () => {
+    renderForgot();
+    expect(screen.getByText("Enter your email or phone. We will send a code to your email.")).toBeTruthy();
+    expect(screen.queryByText(/by SMS/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "I don't have access to my email" })).toBeTruthy();
+  });
+
+  it("uses the same animated emblem composition as the login page", () => {
+    renderForgot();
+    expect(document.querySelector("aside")).not.toBeNull();
+    expect(document.querySelector("aside [data-testid=\"brand-animated-logo\"]")).not.toBeNull();
+  });
+});
