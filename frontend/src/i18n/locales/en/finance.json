@@ -150,11 +150,11 @@
     "presetThisYear": "This year"
   },
   "courseBalances": {
-    "title": "Course balances",
+    "title": "Largest debts",
     "empty": "There are no unpaid course balances right now. New balances appear here once charges come due.",
     "error": "Course balances could not be loaded.",
-    "viewAll": "View all",
-    "viewAllLabel": "View all course balances",
+    "viewAll": "All debtors",
+    "viewAllLabel": "Open the debtors tab",
     "loading": "Loading course balances",
     "info": "One row per student and course, largest current balance first. Due unpaid is the part of charges already due that is still unsettled."
   },
@@ -224,7 +224,8 @@
     "searchPlaceholder": "Name or course",
     "searchInfo": "Searches only the rows loaded on this page. Use the filters to narrow all course balances.",
     "pageMatches": "On this page: {{shown}} of {{loaded}}",
-    "total": "Course balances: {{total}}",
+    "total_one": "{{formatted}} debtor",
+    "total_other": "{{formatted}} debtors",
     "range": "{{from}}–{{to}} of {{total}}",
     "overdueLabel": "Overdue",
     "statusLabel": "Status",
@@ -261,7 +262,6 @@
     "actionFor": "Remind the parent of {{student}}",
     "lastSent": "Last reminder: {{when}}",
     "bulk": "Remind all on this page ({{count}})",
-    "bulkNone": "No debtors with a reminder channel on this page",
     "recentlyReminded": "{{student}} was reminded in the last 24 hours. Next reminder: {{when}}.",
     "noParentChat": "{{student}} has no reminder channel.",
     "noDebt": "{{student}} has no unpaid balance.",

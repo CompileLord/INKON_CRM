@@ -48,10 +48,6 @@ export function OverviewSummary({ range, onApplyRange }: OverviewSummaryProps) {
 
   return (
     <section aria-label={t("finance:overview.summaryLabel")} className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted">{t("finance:overview.rangeTitle")}</span>
-        <CollectionRangePicker range={effectiveRange} onApply={onApplyRange} />
-      </div>
       <StatGroup>
         <StatTile
           label={t("finance:overview.currentDue")}
@@ -63,7 +59,12 @@ export function OverviewSummary({ range, onApplyRange }: OverviewSummaryProps) {
         />
         <StatTile
           label={t("finance:overview.netCash")}
-          value={collectionUnavailable ? <MetricStatus query={collection} /> : money(collection.data!.collected_in_period)}
+          value={
+            <span className="flex flex-col items-start gap-1">
+              {collectionUnavailable ? <MetricStatus query={collection} /> : money(collection.data!.collected_in_period)}
+              <span className="text-base font-normal"><CollectionRangePicker range={effectiveRange} onApply={onApplyRange} /></span>
+            </span>
+          }
         />
       </StatGroup>
       {(current.data && current.isError) || (collection.data && collection.isError) ? (

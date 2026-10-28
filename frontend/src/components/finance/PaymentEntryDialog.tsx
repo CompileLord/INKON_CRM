@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import { UNSAFE_DataRouterContext } from "react-router-dom";
-import { Lock, Plus, UserRound } from "lucide-react";
+import { Lock, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentCreatePayload, PaymentItem, PaymentMethod, PaymentOption } from "../../lib/finance/types";
 import { useCreatePayment, usePaymentOptions } from "../../lib/finance/hooks";
@@ -280,7 +280,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
           {t("common:cancel")}
         </Button>
         <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired}>
-          {!pending && <Plus size={18} aria-hidden="true" />}
           {t(pending ? "finance:paymentModal.recording" : "finance:paymentModal.acceptPayment")}
         </Button>
       </div>
