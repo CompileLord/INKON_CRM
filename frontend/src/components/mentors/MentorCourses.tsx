@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Badge } from "../ui/Badge";
+import { StatusBadge } from "../ui/Badge";
 import { EmptyState } from "../ui/EmptyState";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
@@ -38,7 +38,7 @@ function MentorCourseRow({ course, lng }: MentorCourseRowProps): JSX.Element {
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex min-w-0 flex-wrap items-center gap-2">
             <span className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">{course.title}</span>
-            <Badge status={course.status} />
+            <StatusBadge status={course.status} />
           </span>
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
             {isLoading && !schedules && (

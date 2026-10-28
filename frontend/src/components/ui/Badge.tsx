@@ -28,3 +28,8 @@ export function Badge({ status, label }: BadgeProps) {
     </span>
   );
 }
+
+export function StatusBadge({ status, label }: BadgeProps) {
+  if (status === "active") return null;
+  return <Badge status={status} label={label} />;
+}
