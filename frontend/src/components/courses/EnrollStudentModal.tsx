@@ -200,6 +200,7 @@ export function EnrollStudentModal({
             variant="primary"
             onClick={handleSubmit}
             disabled={!selectedCandidate || !feeIsValid || isPendingOrSubmitting || isSubmittingRef.current}
+            disabledReason={!selectedCandidate ? t("common:disabledReason.selectStudent") : !feeIsValid ? t("common:disabledReason.fixFee") : undefined}
             loading={isPendingOrSubmitting}
             className="w-full sm:w-auto min-h-[44px]"
           >

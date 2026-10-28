@@ -80,6 +80,7 @@ export function Tooltip({ content, children, focusable = false, className = "" }
       onBlur={close}
       onClick={() => {
         if (focusable) setIsOpen(true);
+        else close();
       }}
       className={["relative inline-flex max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[6px]", className].join(" ")}
     >

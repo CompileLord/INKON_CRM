@@ -76,7 +76,7 @@ export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isE
         <div data-debtor-actions className="flex shrink-0 items-center gap-2">
           {extraAction}
           {onRemind && (
-            <Button variant="secondary" disabled={!canRemind} loading={isReminding} aria-label={t("reminders.actionFor", { student: studentName })} onClick={() => onRemind(debt)}>
+            <Button variant="secondary" disabled={!canRemind} disabledReason={channelHint} loading={isReminding} aria-label={t("reminders.actionFor", { student: studentName })} onClick={() => onRemind(debt)}>
               {t("reminders.action")}
             </Button>
           )}

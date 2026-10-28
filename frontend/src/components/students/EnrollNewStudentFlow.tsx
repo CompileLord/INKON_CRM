@@ -43,7 +43,7 @@ export function EnrollNewStudentFlow({ open, student, isJustCreated = true, onFi
         footer={
           <div className="flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={onFinish}>{t(isJustCreated ? "enrollPrompt.skip" : "common:cancel")}</Button>
-            <Button type="button" disabled={selectedCourse === undefined} onClick={() => setIsEnrollOpen(true)}>{t("enrollPrompt.continue")}</Button>
+            <Button type="button" disabled={selectedCourse === undefined} disabledReason={t("common:disabledReason.selectCourse")} onClick={() => setIsEnrollOpen(true)}>{t("enrollPrompt.continue")}</Button>
           </div>
         }
       >

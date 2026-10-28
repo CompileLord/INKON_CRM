@@ -202,7 +202,7 @@ export const JournalPeriodSettingsDialog: React.FC<JournalPeriodSettingsDialogPr
           {t("journals:drain.retry")}
         </Button>
       ) : (
-        <Button type="submit" form="journal-period-settings-form" disabled={!canSave} loading={isPending}>
+        <Button type="submit" form="journal-period-settings-form" disabled={!canSave} disabledReason={isDirty ? t("common:disabledReason.fixErrors") : t("common:disabledReason.noChanges")} loading={isPending}>
           {phase.kind === "draining" ? t("journalPeriodSettings:checking") : isPending ? t("journalPeriodSettings:saving") : t("journalPeriodSettings:save")}
         </Button>
       )}

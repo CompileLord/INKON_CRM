@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, Ref } from "react";
 import { BrandActivityIndicator } from "./BrandActivityIndicator";
+import { Tooltip } from "./Tooltip";
 
 export type ButtonVariant = "primary" | "secondary" | "accent" | "destructive";
 
@@ -7,6 +8,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   loading?: boolean;
+  disabledReason?: string;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -20,10 +22,18 @@ const variantClasses: Record<ButtonVariant, string> = {
     "bg-destructive text-on-destructive hover:opacity-90 shadow-xs hover:shadow-sm",
 };
 
+const disabledClasses: Record<ButtonVariant, string> = {
+  primary: "disabled:border-dashed disabled:bg-strip disabled:text-muted disabled:opacity-70",
+  accent: "disabled:border-dashed disabled:bg-strip disabled:text-muted disabled:opacity-70",
+  destructive: "disabled:border-dashed disabled:bg-strip disabled:text-muted disabled:opacity-70",
+  secondary: "disabled:bg-beige disabled:text-muted",
+};
+
 export function Button({
   variant = "primary",
   loading,
   disabled,
+  disabledReason,
   className = "",
   children,
   ...props
@@ -32,7 +42,7 @@ export function Button({
   const isLoading = Boolean(loading);
   const isDisabled = disabled || isLoading;
 
-  return (
+  const button = (
     <button
       disabled={isDisabled}
       aria-busy={isLoading ? "true" : undefined}
@@ -43,8 +53,9 @@ export function Button({
         "motion-safe:transition-[background-color,transform,box-shadow,border-color,opacity] motion-safe:duration-150 motion-safe:ease-out",
         "motion-safe:active:scale-[0.96]",
         "focus-visible:active:scale-100 focus-visible:transition-none",
-        "disabled:cursor-not-allowed disabled:bg-beige disabled:text-muted disabled:border-control-border disabled:shadow-none disabled:active:scale-100 disabled:pointer-events-none",
+        "disabled:cursor-not-allowed disabled:border-control-border disabled:shadow-none disabled:active:scale-100 disabled:pointer-events-none",
         variantClasses[variant],
+        disabledClasses[variant],
         className,
       ].join(" ")}
       {...props}
@@ -70,4 +81,9 @@ export function Button({
       )}
     </button>
   );
+
+  if (disabled && !isLoading && disabledReason !== undefined) {
+    return <Tooltip content={disabledReason} focusable>{button}</Tooltip>;
+  }
+  return button;
 }

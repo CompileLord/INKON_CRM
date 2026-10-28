@@ -7,6 +7,13 @@
     "noCourses": "Not enrolled in any course"
   },
   "timePlaceholder": "HH:MM",
+  "disabledReason": {
+    "selectStudent": "Select a student",
+    "selectCourse": "Select a course",
+    "noChanges": "No changes to save",
+    "fixErrors": "Fix the errors in the form first",
+    "fixFee": "Enter a valid monthly fee"
+  },
   "emailLabel": "Email",
   "search": "Search...",
   "cancel": "Cancel",
@@ -111,6 +118,7 @@
     "emblemAlt": "KITOB book emblem"
   },
   "theme": {
+    "quickSettings": "Quick settings",
     "settings": "Theme and language settings",
     "light": "Light theme",
     "dark": "Dark theme",
