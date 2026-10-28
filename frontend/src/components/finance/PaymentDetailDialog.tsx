@@ -1,10 +1,11 @@
-import { Banknote, CalendarDays, Landmark, Receipt, UserCheck } from "lucide-react";
-import type { ReactNode } from "react";
+import { Banknote, CalendarDays, Landmark, Printer, Receipt, UserCheck } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { usePaymentReceipt, usePaymentStatus } from "../../lib/finance/hooks";
 import { PaymentIdentity } from "../../lib/finance/paymentIdentity";
 import { PaymentStatus } from "../../lib/finance/paymentStatus";
-import type { PaymentItem } from "../../lib/finance/types";
+import { ReceiptPrinter } from "../../lib/finance/receiptPrinter";
+import type { PaymentItem, PaymentTarget } from "../../lib/finance/types";
 import { formatExactMoney } from "../../lib/money";
 import { formatDate, formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { Button } from "../ui/Button";
@@ -45,7 +46,29 @@ export function PaymentDetailModal({ payment, onClose }: PaymentDetailModalProps
   const allocations =
     receipt.data?.allocations.map((allocation) => ({ ...allocation, amount: allocation.allocated_amount })) ?? known?.allocations ?? [];
   const studentName: string | null = known ? PaymentIdentity.displayName(known) ?? receipt.data?.student_name ?? null : null;
+  const [printBlocked, setPrintBlocked] = useState<boolean>(false);
+  const targets: readonly PaymentTarget[] = receipt.data?.targets ?? known?.targets ?? [];
   const isReceiptReserved: boolean = receipt.isLoading && !receipt.data;
+
+  const printReceipt = (): void => {
+    if (!receipt.data) return;
+    const data = receipt.data;
+    const printed: boolean = ReceiptPrinter.print({
+      title: t("paymentDetail.printTitle", { number: data.receipt_number }),
+      heading: t("paymentDetail.printTitle", { number: data.receipt_number }),
+      lines: [
+        { label: t("paymentDetail.student"), value: data.student_name },
+        { label: t("paymentModal.date"), value: formatDateTime(data.occurred_at, i18n.language, SCHOOL_TIMEZONE) },
+        { label: t("paymentModal.method"), value: data.method ? t(`common:enums.paymentMethod.${data.method}`) : t("paymentDetail.unavailable") },
+        { label: t("paymentDetail.acceptedBy"), value: data.accepted_by_name },
+        { label: t("paymentDetail.printTotal"), value: t("moneyAmount", { amount: formatExactMoney(data.amount) }) },
+      ],
+      targetsHeading: t("paymentDetail.targets"),
+      targets: targets.map((target) => ({ label: target.course_title, value: t("moneyAmount", { amount: formatExactMoney(target.amount) }) })),
+      comment: data.comment ?? null,
+    });
+    setPrintBlocked(!printed);
+  };
 
   return (
     <Modal
@@ -118,33 +141,61 @@ export function PaymentDetailModal({ payment, onClose }: PaymentDetailModalProps
               </Button>
             </div>
           )}
-          <section aria-labelledby="payment-current-allocations">
-            <h3 id="payment-current-allocations" className="flex items-center gap-1 font-semibold">
-              {t("paymentDetail.currentAllocations")}
-              <InfoTooltip label={t("finance:overview.aboutMetric", { label: t("paymentDetail.currentAllocations") })}>{t("paymentDetail.allocationsInfo")}</InfoTooltip>
-            </h3>
-            {allocations.length > 0 ? (
+          {targets.length > 0 && (
+            <section aria-labelledby="payment-targets">
+              <h3 id="payment-targets" className="font-semibold">
+                {t("paymentDetail.targets")}
+              </h3>
               <ul className="mt-2 divide-y divide-border">
-                {allocations.map((allocation) => (
-                  <li key={allocation.charge_id} className="flex items-start justify-between gap-3 py-3">
-                    <div className="min-w-0 break-words">
-                      <p>{allocation.course_title}</p>
-                      <p className="text-xs text-muted tabular-nums">{formatDate(allocation.due_date, i18n.language, SCHOOL_TIMEZONE)}</p>
-                    </div>
-                    <p className="shrink-0 font-medium tabular-nums">{t("moneyAmount", { amount: formatExactMoney(allocation.amount) })}</p>
+                {targets.map((target) => (
+                  <li key={target.enrollment_id} className="flex items-start justify-between gap-3 py-3">
+                    <p className="min-w-0 break-words">{target.course_title}</p>
+                    <p className="shrink-0 font-medium tabular-nums">{t("moneyAmount", { amount: formatExactMoney(target.amount) })}</p>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-2 text-muted">{t("paymentDetail.noAllocations")}</p>
-            )}
-          </section>
+            </section>
+          )}
+          {targets.length === 0 && (
+            <section aria-labelledby="payment-current-allocations">
+              <h3 id="payment-current-allocations" className="flex items-center gap-1 font-semibold">
+                {t("paymentDetail.currentAllocations")}
+                <InfoTooltip label={t("finance:overview.aboutMetric", { label: t("paymentDetail.currentAllocations") })}>{t("paymentDetail.allocationsInfo")}</InfoTooltip>
+              </h3>
+              {allocations.length > 0 ? (
+                <ul className="mt-2 divide-y divide-border">
+                  {allocations.map((allocation) => (
+                    <li key={allocation.charge_id} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0 break-words">
+                        <p>{allocation.course_title}</p>
+                        <p className="text-xs text-muted tabular-nums">{formatDate(allocation.due_date, i18n.language, SCHOOL_TIMEZONE)}</p>
+                      </div>
+                      <p className="shrink-0 font-medium tabular-nums">{t("moneyAmount", { amount: formatExactMoney(allocation.amount) })}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-muted">{t("paymentDetail.noAllocations")}</p>
+              )}
+            </section>
+          )}
           {known.comment && (
             <section>
               <h3 className="font-semibold">{t("paymentModal.comment")}</h3>
               <p className="mt-1 whitespace-pre-wrap break-words text-muted">{known.comment}</p>
             </section>
           )}
+          <div className="flex flex-col gap-2">
+            <Button variant="secondary" disabled={!receipt.data} onClick={printReceipt}>
+              <Printer size={18} aria-hidden="true" />
+              {t("paymentDetail.print")}
+            </Button>
+            {printBlocked && (
+              <p role="alert" className="text-destructive">
+                {t("paymentDetail.printBlocked")}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </Modal>
