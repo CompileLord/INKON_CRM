@@ -24,7 +24,6 @@
     "absencesOf": "{{absences}} аз {{total}} ғоиб",
     "debt": "Қарз",
     "credit": "Пардохти зиёдатӣ",
-    "balance": "Тавозун",
     "overdueDays_one": "{{formatted}} рӯз гузаштааст",
     "overdueDays_other": "{{formatted}} рӯз гузаштааст"
   },

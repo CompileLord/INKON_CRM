@@ -24,7 +24,6 @@
     "absencesOf": "пропущено {{absences}} из {{total}}",
     "debt": "Долг",
     "credit": "Переплата",
-    "balance": "Баланс",
     "overdueDays_one": "просрочен {{formatted}} день",
     "overdueDays_few": "просрочено {{formatted}} дня",
     "overdueDays_many": "просрочено {{formatted}} дней",

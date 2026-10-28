@@ -24,7 +24,6 @@
     "absencesOf": "{{absences}} of {{total}} missed",
     "debt": "Debt",
     "credit": "Overpaid",
-    "balance": "Balance",
     "overdueDays_one": "{{formatted}} day overdue",
     "overdueDays_other": "{{formatted}} days overdue"
   },
