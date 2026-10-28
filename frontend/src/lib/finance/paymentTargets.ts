@@ -37,6 +37,26 @@ const TARGET_ERROR_CODES: readonly string[] = [
   "payment_target_required",
 ];
 
+export type CreditAllocationErrorCode =
+  | "invalid_payment_target"
+  | "no_wallet_credit"
+  | "nothing_to_allocate"
+  | "credit_exceeds_available"
+  | "payment_target_exceeds_balance";
+
+export interface CreditAllocationError {
+  code: CreditAllocationErrorCode;
+  maximum: string | null;
+}
+
+const CREDIT_ALLOCATION_ERROR_CODES: readonly string[] = [
+  "invalid_payment_target",
+  "no_wallet_credit",
+  "nothing_to_allocate",
+  "credit_exceeds_available",
+  "payment_target_exceeds_balance",
+];
+
 export class PaymentTargets {
   static isPayable(option: PaymentOption): boolean {
     return option.billing_mode !== "grant" && isPositiveMoney(option.remaining_contract_maximum);
@@ -80,5 +100,15 @@ export class PaymentTargets {
       enrollmentId: typeof record.enrollment_id === "number" ? record.enrollment_id : null,
       maximum: typeof record.maximum === "string" ? record.maximum : null,
     };
+  }
+
+  static parseCreditAllocationError(failure: unknown): CreditAllocationError | null {
+    if (!(failure instanceof AuthApiError) || failure.status !== 422) return null;
+    const detail: unknown = failure.detail;
+    if (typeof detail !== "object" || detail === null || Array.isArray(detail)) return null;
+    const record: Record<string, unknown> = detail as Record<string, unknown>;
+    const code: unknown = record.code;
+    if (typeof code !== "string" || !CREDIT_ALLOCATION_ERROR_CODES.includes(code)) return null;
+    return { code: code as CreditAllocationErrorCode, maximum: typeof record.maximum === "string" ? record.maximum : null };
   }
 }

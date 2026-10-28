@@ -2,7 +2,8 @@ import { httpClient } from "../auth/httpClient";
 import type {
   AccountingPeriodItem,
   AdjustmentCreatePayload,
-  AllocationCreatePayload,
+  CourseCreditAllocationPayload,
+  CourseCreditAllocationResponse,
   ChargeItem,
   DebtItem,
   DebtReminderResponse,
@@ -141,8 +142,8 @@ export async function createAdjustment(payload: AdjustmentCreatePayload): Promis
   return response.data;
 }
 
-export async function allocateCredit(payload: AllocationCreatePayload): Promise<LedgerEntryItem | null> {
-  const response = await httpClient.post("/finance/allocations/", payload);
+export async function allocateCourseCredit(studentId: number, payload: CourseCreditAllocationPayload): Promise<CourseCreditAllocationResponse> {
+  const response = await httpClient.post(`/finance/students/${studentId}/credit-allocations`, payload);
   return response.data;
 }
 

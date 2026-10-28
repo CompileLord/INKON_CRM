@@ -62,12 +62,6 @@ export interface AdjustmentCreatePayload {
   occurred_at?: string;
 }
 
-export interface AllocationCreatePayload {
-  student_id: number;
-  charge_id: number;
-  amount?: string;
-}
-
 export interface AllocationItem {
   id: number;
   ledger_entry_id: number;
