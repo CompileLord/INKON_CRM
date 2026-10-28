@@ -13,7 +13,6 @@ import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
-import { SectionCard } from "../ui/SectionCard";
 import { Pagination } from "../ui/Pagination";
 import { DebtorRow } from "./DebtorRow";
 import { DebtorsToolbar } from "./DebtorsToolbar";
@@ -40,7 +39,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.role);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const headingRef = useRef<HTMLSpanElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingRowKey = useRef<string | null>(null);
   const pendingRowIndex = useRef<number>(0);
   const handledPaymentId = useRef<number | null>(null);
@@ -212,8 +211,9 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
 
   return (
     <div ref={sectionRef} role="region" aria-labelledby="finance-debtors-heading">
-      <SectionCard title={t("finance:debtors.title")} actions={summary}>
-        <span id="finance-debtors-heading" ref={headingRef} tabIndex={-1} className="sr-only focus-visible:outline-none">{t("finance:debtors.title")}</span>
+      <section data-section-card className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 md:p-5">
+        <h2 id="finance-debtors-heading" ref={headingRef} tabIndex={-1} className="sr-only focus-visible:outline-none">{t("finance:tabs.debtors")}</h2>
+        {summary}
         <DebtorsToolbar view={view} search={search} courseLabel={courseLabel} studentLabel={studentLabel} onSearchChange={setSearch} onChangeFilters={onChangeFilters} trailingAction={<>{toolbarAction}{bulkAction}</>} />
         <p role="status" ref={announcementRef} className="sr-only" />
         {reminderFeedback && (
@@ -224,12 +224,11 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
             <span className="sr-only">{t("finance:courseBalances.loading")}</span>
             <ul aria-hidden="true" className="flex flex-col motion-safe:animate-pulse">
               {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-                <li key={index} className="flex items-center justify-between gap-4 px-3 py-3">
-                  <div className="flex flex-1 flex-col gap-2">
-                    <div className="h-4 w-40 max-w-full rounded bg-border" />
-                    <div className="h-3 w-56 max-w-full rounded bg-border" />
-                  </div>
-                  <div className="h-4 w-20 rounded bg-border" />
+                <li key={index} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="h-8 w-8 shrink-0 rounded-full bg-border" />
+                  <div className="h-4 w-40 max-w-full flex-1 rounded bg-border" />
+                  <div className="h-4 w-16 rounded bg-border" />
+                  <div className="h-11 w-28 rounded-[10px] bg-border" />
                 </li>
               ))}
             </ul>
@@ -266,7 +265,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
             {totalPages > 1 && <Pagination page={view.page} totalPages={totalPages} onPageChange={onPageChange} />}
           </div>
         )}
-      </SectionCard>
+      </section>
     </div>
   );
 }

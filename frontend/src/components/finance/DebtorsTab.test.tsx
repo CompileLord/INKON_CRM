@@ -89,6 +89,13 @@ beforeEach(async () => {
   mock.onGet(analyticsUrl).reply(200, { net_receivable: "0", collected_in_period: "0", unpaid_students_count: 0 });
   mock.onGet(paymentsUrl).reply(200, listing([]));
   mock.onGet(debtsUrl).reply(200, listing([anisa, zara]));
+  mock.onGet(/\/finance\/students\/\d+\/payment-options/).reply(200, {
+    wallet_credit: "0",
+    enrollments: [
+      { enrollment_id: 501, course_id: 11, course_title: "Python Advanced", open_debt: "700.10", overdue_days: 4, remaining_contract_maximum: "1000", billing_mode: "paid" },
+      { enrollment_id: 502, course_id: 12, course_title: "English IELTS", open_debt: "500.20", overdue_days: 0, remaining_contract_maximum: "800", billing_mode: "paid" },
+    ],
+  });
 });
 afterEach(() => {
   cleanup();
@@ -177,12 +184,13 @@ describe("Debtors filters", () => {
 });
 
 describe("Debtors rows", () => {
-  it("shows zero overdue neutrally and unknown overdue as Unavailable", async () => {
+  it("shows the overdue pill only for positive overdue days and Unavailable in details for unknown overdue", async () => {
     mock.onGet(debtsUrl).reply(200, listing([zara, { ...anisa, overdue_days: Number.NaN }]));
     renderDebtors();
-    const zeroChip = await screen.findByText("0 d");
-    expect(zeroChip.className).toContain("text-muted");
-    expect(zeroChip.className).not.toContain("text-warning");
+    await screen.findByText("Zara Karimova");
+    expect(screen.queryByText("0 d")).toBeNull();
+    expect(screen.queryByText("NaN d")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Details for Anisa Karimova, Python Advanced" }));
     expect(screen.getByText("Unavailable")).toBeTruthy();
   });
 
@@ -212,8 +220,8 @@ describe("Debtors rows", () => {
     await userEvent.click(screen.getByRole("button", { name: "Accept payment for Zara Karimova, English IELTS" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Zara Karimova")).toBeTruthy();
-    expect(within(dialog).getByText("English IELTS")).toBeTruthy();
-    expect(within(dialog).queryByText("Python Advanced")).toBeNull();
+    expect(((await within(dialog).findByLabelText("Amount for English IELTS (TJS)")) as HTMLInputElement).value).toBe("500.20");
+    expect((within(dialog).getByLabelText("Amount for Python Advanced (TJS)") as HTMLInputElement).value).toBe("");
   });
 
   it("links the name to the profile for a superadmin and keeps plain text for an accountant", async () => {
@@ -302,7 +310,7 @@ describe("Debtors registry states", () => {
     await screen.findByText("Anisa Karimova");
     await userEvent.click(screen.getByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" }));
     const dialog = await screen.findByRole("dialog");
-    await userEvent.type(within(dialog).getByLabelText("Amount (TJS)"), "700.10");
+    await waitFor(() => expect((within(dialog).getByLabelText("Amount for Python Advanced (TJS)") as HTMLInputElement).value).toBe("700.10"));
     await userEvent.click(within(dialog).getByRole("button", { name: "Accept Payment" }));
     await waitFor(() => expect(screen.queryByText("Anisa Karimova")).toBeNull());
     await waitFor(() => {

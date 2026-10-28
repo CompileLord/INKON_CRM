@@ -73,16 +73,15 @@ describe("DebtReminders", () => {
 });
 
 describe("Debt reminder controls", () => {
-  it("disables the action with a visible reason when no parent is linked and shows last reminder dates", async () => {
+  it("disables the action without a channel and keeps the row free of repeated reminder sentences", async () => {
     renderDebtors();
     await screen.findByText("Zara Karimova");
     const zaraButton: HTMLElement = screen.getByRole("button", { name: "Remind the parent of Zara Karimova" });
     expect((zaraButton as HTMLButtonElement).disabled).toBe(true);
-    expect(zaraButton.getAttribute("aria-describedby")).toBeTruthy();
-    expect(screen.getByText("No Telegram or phone: add a parent phone")).toBeTruthy();
-    expect(screen.getByText("Last reminder: 19.10.2026 11:30")).toBeTruthy();
-    expect(screen.getAllByText("No reminder sent yet")).toHaveLength(2);
     expect((screen.getByRole("button", { name: "Remind the parent of Anisa Karimova" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByText("No reminder sent yet")).toBeNull();
+    expect(screen.queryByText("No Telegram or phone: add a parent phone", { selector: "p" })).toBeNull();
+    expect(screen.queryByText(/Last reminder:/)).toBeNull();
   });
 
   it("sends one student id for a single reminder and reports the queued outcome", async () => {
@@ -169,20 +168,30 @@ describe("Debt reminder channels", () => {
     expect(enabled("Zara Karimova")).toBe(false);
   });
 
-  it("explains the destination per channel in a tooltip", async () => {
+  it("shows a channel icon per row with the destination, last reminder and missing channel in its tooltip", async () => {
     renderDebtors();
     await screen.findByText("Bakhtior Karimova");
-    const bakhtiorRow: HTMLElement = screen.getByText("Bakhtior Karimova").closest("li") as HTMLElement;
-    await userEvent.click(within(bakhtiorRow).getByRole("button", { name: "Where the reminder goes" }));
-    expect(within(bakhtiorRow).getByRole("tooltip").textContent).toBe("The reminder will go by SMS to +992\u00A090\u00A0•••\u00A098\u00A076");
-    cleanup();
+    const iconOf = (name: string): HTMLElement => (screen.getByText(name).closest("li") as HTMLElement).querySelector("[role=\"img\"][title]") as HTMLElement;
+    const sms: HTMLElement = iconOf("Bakhtior Karimova");
+    expect(sms.getAttribute("title")).toBe("The reminder will go by SMS to +992\u00A090\u00A0•••\u00A098\u00A076");
+    expect(sms.querySelector(".lucide-message-square")).toBeTruthy();
+    const telegram: HTMLElement = iconOf("Anisa Karimova");
+    expect(telegram.getAttribute("title")).toBe("The reminder will go to the parent in Telegram · Last reminder: 19.10.2026 11:30");
+    expect(telegram.querySelector(".lucide-send")).toBeTruthy();
+    const none: HTMLElement = iconOf("Zara Karimova");
+    expect(none.getAttribute("title")).toBe("No Telegram or phone: add a parent phone");
+    expect(none.querySelector(".lucide-bell-off")).toBeTruthy();
+  });
+
+  it("keeps each debtor on a single line with avatar, overdue pill, amount and the two actions", async () => {
     renderDebtors();
-    await screen.findByText("Anisa Karimova");
-    const anisaRow: HTMLElement = screen.getByText("Anisa Karimova").closest("li") as HTMLElement;
-    await userEvent.click(within(anisaRow).getByRole("button", { name: "Where the reminder goes" }));
-    expect(within(anisaRow).getByRole("tooltip").textContent).toBe("The reminder will go to the parent in Telegram");
-    const zaraRow: HTMLElement = screen.getByText("Zara Karimova").closest("li") as HTMLElement;
-    expect(within(zaraRow).queryByRole("button", { name: "Where the reminder goes" })).toBeNull();
+    const row: HTMLElement = (await screen.findByText("Anisa Karimova")).closest("li") as HTMLElement;
+    expect(within(row).getByText("4 d")).toBeTruthy();
+    expect(within(row).getByText("700.10 TJS").className).toContain("tabular-nums");
+    expect(within(row).getByRole("button", { name: "Remind the parent of Anisa Karimova" })).toBeTruthy();
+    expect(within(row).getByRole("button", { name: "Accept payment for Anisa Karimova, Course Anisa" }).textContent).toBe("Pay");
+    expect(row.querySelector("[data-debtor-actions]")).toBeTruthy();
+    expect(row.firstElementChild?.className).toContain("sm:flex-nowrap");
   });
 
   it("shows the channel and masked destination when an sms reminder is queued", async () => {
