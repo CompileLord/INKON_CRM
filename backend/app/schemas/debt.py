@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel
 from app.schemas.enrollment import EffectiveBillingMode
+from app.models.enrollment import EnrollmentStatus
 
 
 class DebtStudentInfo(BaseModel):
@@ -23,6 +24,7 @@ class DebtResponse(BaseModel):
     course: DebtCourseInfo
     price_at_enrollment: Decimal
     billing_mode: EffectiveBillingMode
+    enrollment_status: EnrollmentStatus
     billed_to_date: Decimal
     total_paid: Decimal
     debt: Decimal

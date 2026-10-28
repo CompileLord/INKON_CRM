@@ -67,7 +67,6 @@ class SQLAlchemyDebtReminderRepository:
         query: Select[Any]
         debt: Any
         query, debt = DebtQuery().build(today)
-        query = query.where(Enrollment.status == EnrollmentStatus.ACTIVE, User.is_deleted.is_(False))
         balances: Any = (
             query.with_only_columns(
                 Enrollment.student_id, Enrollment.id.label("enrollment_id"), Course.id.label("course_id"), Course.title, func.sum(debt).label("debt")
@@ -110,7 +109,6 @@ class SQLAlchemyDebtReminderRepository:
         query: Select[Any]
         debt: Any
         query, debt = DebtQuery().build(today)
-        query = query.where(Enrollment.status == EnrollmentStatus.ACTIVE, User.is_deleted.is_(False))
         for key, column in (("course_id", Enrollment.course_id), ("student_id", Enrollment.student_id), ("status", Enrollment.status)):
             if filters.get(key) is not None:
                 query = query.where(column == filters[key])
@@ -138,7 +136,7 @@ class SQLAlchemyDebtReminderRepository:
                             "email": student.email, "payment_day_of_month": student.payment_day_of_month},
                 "course": {"id": course.id, "title": course.title},
                 "price_at_enrollment": enrollment.price_at_enrollment,
-                "billing_mode": enrollment.effective_billing_mode, "billed_to_date": billed,
+                "billing_mode": enrollment.effective_billing_mode, "enrollment_status": enrollment.status, "billed_to_date": billed,
                 "total_paid": allocated, "debt": amount, "overdue_days": max(0, int(overdue or 0)),
                 "_parent_phone": student.parent_phone, "_student_phone": student.phone,
                 "_parent_chat_id": student.parent_telegram_chat_id,

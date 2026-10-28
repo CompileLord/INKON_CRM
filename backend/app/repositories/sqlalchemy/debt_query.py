@@ -6,7 +6,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.models.allocation import Allocation
 from app.models.charge import Charge, ChargeStatus
 from app.models.course import Course
-from app.models.enrollment import Enrollment
+from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User
 
 
@@ -43,6 +43,6 @@ class DebtQuery:
             .join(User, User.id == Enrollment.student_id).join(Course, Course.id == Enrollment.course_id)
             .outerjoin(billed, billed.c.enrollment_id == Enrollment.id)
             .outerjoin(allocated, allocated.c.enrollment_id == Enrollment.id)
-            .where(Enrollment.is_deleted.is_(False))
+            .where(Enrollment.is_deleted.is_(False), Enrollment.status.in_([EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN]), User.is_deleted.is_(False))
         )
         return query, debt

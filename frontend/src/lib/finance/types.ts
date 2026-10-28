@@ -194,6 +194,7 @@ export interface PaymentReceipt {
 }
 
 export interface DebtItem {
+  enrollment_status?: "active" | "withdrawn" | "completed";
   student: {
     id: number;
     first_name: string;

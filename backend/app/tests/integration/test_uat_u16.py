@@ -227,7 +227,7 @@ async def test_expired_sms_updates_history(client: AsyncClient, test_accountant:
 
 
 @pytest.mark.asyncio
-async def test_withdrawn_enrollment_cannot_queue_or_deliver_sms(client: AsyncClient, test_accountant: User, test_mentor: User) -> None:
+async def test_withdrawn_enrollment_remains_eligible_for_sms(client: AsyncClient, test_accountant: User, test_mentor: User) -> None:
     from app.models.enrollment import Enrollment, EnrollmentStatus
     from app.workers.debt_reminder_sms import DebtReminderSmsDispatcher
 
@@ -241,7 +241,7 @@ async def test_withdrawn_enrollment_cannot_queue_or_deliver_sms(client: AsyncCli
         await session.execute(update(Enrollment).where(Enrollment.student_id == student_id).values(status=EnrollmentStatus.WITHDRAWN))
         await session.commit()
     inspection: Any = await DebtReminderSmsDispatcher._inspect(None, event, payload, TestingSessionLocal)
-    assert inspection.invalid_reason == "no_current_debt"
+    assert inspection.invalid_reason is None
     response: Response = await ReminderScenario.send(client, test_accountant, student_id)
-    assert response.status_code == 200
-    assert response.json()["results"][0]["outcome"] == "no_debt"
+    assert response.status_code == 429
+    assert response.json()["detail"]["code"] == "debt_reminder_rate_limited"

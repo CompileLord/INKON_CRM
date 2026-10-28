@@ -19,7 +19,7 @@ from app.tests.integration.wp32_reminder_support import ReminderFixture, Reminde
         ("discounted_paid", 0, None),
         ("partial", 1, "60.00"),
         ("refunded", 1, "100.00"),
-        ("withdrawn", 0, None),
+        ("withdrawn", 1, "100.00"),
         ("cancelled", 0, None),
         ("deleted_charge", 0, None),
     ],
