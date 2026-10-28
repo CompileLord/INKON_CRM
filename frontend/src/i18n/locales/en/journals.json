@@ -151,7 +151,11 @@
       "body": "Nothing on this page matches your search or status filter. Clear them to see every journal loaded for this page.",
       "clear": "Clear search and filters"
     },
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "lastGraded": "Last graded: {{date}}",
+    "ungraded_one": "{{count}} ungraded",
+    "ungraded_other": "{{count}} ungraded",
+    "ungradedLabel": "Past lessons in the current period without grades"
   },
   "workspace": {
     "periodPickerLabel": "Period",

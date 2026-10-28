@@ -26,6 +26,9 @@ const baseCourse: CourseListItemResponse = {
     { id: 2, course_id: 7, day_of_week: 2, time_start: "14:00:00", time_end: "15:30:00" },
   ],
   active_student_count: 12,
+  current_period_label: null,
+  last_graded_lesson_date: null,
+  ungraded_lessons_count: 0,
 };
 
 const mentor = { id: 3, first_name: "Sitora", last_name: "Alieva" } as never;

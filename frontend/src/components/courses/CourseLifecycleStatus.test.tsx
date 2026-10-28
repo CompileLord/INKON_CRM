@@ -23,6 +23,9 @@ const runningCourse: CourseListItemResponse = {
   updated_at: "2026-09-01T00:00:00Z",
   schedules: [],
   active_student_count: 12,
+  current_period_label: null,
+  last_graded_lesson_date: null,
+  ungraded_lessons_count: 0,
 };
 const endedCourse: CourseListItemResponse = { ...runningCourse, end_date: "2025-06-01" };
 

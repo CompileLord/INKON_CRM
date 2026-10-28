@@ -4,7 +4,8 @@ import { Badge } from "../ui/Badge";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
 import { resolveMediaUrl } from "../../lib/users/media";
-import type { CourseResponse } from "../../lib/courses/types";
+import { formatDate } from "../../i18n/formatters";
+import type { CourseListItemResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
 
 export type JournalRowMentorState =
@@ -14,7 +15,7 @@ export type JournalRowMentorState =
   | { kind: "ready"; mentor: User };
 
 interface JournalListRowProps {
-  course: CourseResponse;
+  course: CourseListItemResponse;
   mentorState: JournalRowMentorState;
   onNavigateOut: () => void;
 }
@@ -22,8 +23,10 @@ interface JournalListRowProps {
 const ROW_COLUMNS_WITH_MENTOR: string = "md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]";
 
 export function JournalListRow({ course, mentorState, onNavigateOut }: JournalListRowProps) {
-  const { t } = useTranslation(["journals", "common"]);
+  const { t, i18n } = useTranslation(["journals", "common"]);
   const hasMentorColumn: boolean = mentorState.kind !== "hidden";
+  const hasProgress: boolean =
+    course.current_period_label !== null || course.last_graded_lesson_date !== null || course.ungraded_lessons_count > 0;
 
   return (
     <li onClickCapture={(event) => { if ((event.target as HTMLElement).closest("a") !== null) onNavigateOut(); }}>
@@ -36,6 +39,25 @@ export function JournalListRow({ course, mentorState, onNavigateOut }: JournalLi
                 <span className="min-w-0 break-words text-sm font-semibold text-ink [overflow-wrap:anywhere]">{course.title}</span>
                 {course.status === "archived" && <Badge status="archived" />}
               </span>
+              {hasProgress && (
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
+                  {course.current_period_label !== null && <span data-testid="journal-period">{course.current_period_label}</span>}
+                  {course.last_graded_lesson_date !== null && (
+                    <span data-testid="journal-last-graded" className="tabular-nums">
+                      {t("hub.lastGraded", { date: formatDate(course.last_graded_lesson_date, i18n.language) })}
+                    </span>
+                  )}
+                  {course.ungraded_lessons_count > 0 && (
+                    <span
+                      data-testid="journal-ungraded"
+                      title={t("hub.ungradedLabel")}
+                      className="rounded-full bg-warning-surface px-2 py-0.5 font-medium tabular-nums text-warning"
+                    >
+                      {t("hub.ungraded", { count: course.ungraded_lessons_count })}
+                    </span>
+                  )}
+                </span>
+              )}
             </span>
           </span>
           {mentorState.kind === "ready" ? (
@@ -69,6 +91,7 @@ export function JournalListRowSkeleton({ showMentor }: { showMentor: boolean }) 
           <div className="size-10 shrink-0 rounded-[10px] bg-border" />
           <div className="flex flex-1 flex-col gap-2">
             <div className="h-4 w-2/3 rounded bg-border" />
+            <div className="h-3 w-1/2 rounded bg-border" />
           </div>
         </div>
         {showMentor && <div className="hidden h-4 w-40 rounded bg-border md:block" />}
