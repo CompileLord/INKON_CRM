@@ -10,9 +10,10 @@ interface EnrollmentPreviewPanelProps {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
+  studentCount?: number;
 }
 
-export function EnrollmentPreviewPanel({ preview, isLoading, isError, onRetry }: EnrollmentPreviewPanelProps) {
+export function EnrollmentPreviewPanel({ preview, isLoading, isError, onRetry, studentCount = 1 }: EnrollmentPreviewPanelProps) {
   const { t, i18n } = useTranslation("enrollments");
   const money = (amount: string): string => formatTjs(amount);
 
@@ -53,6 +54,7 @@ export function EnrollmentPreviewPanel({ preview, isLoading, isError, onRetry }:
       <p className="text-xs tabular-nums text-muted">
         {t("billing.preview.summary", { months: preview.billed_months, total: money(preview.total_amount) })}
       </p>
+      {studentCount > 1 ? <p className="text-xs text-muted">{t("billing.preview.sameForEach", { count: studentCount })}</p> : null}
     </div>
   );
 }

@@ -203,14 +203,14 @@ describe("EnrollStudentModal workflows", () => {
     expect(enrollSubmitButton).toBeDefined();
     expect(enrollSubmitButton.hasAttribute("disabled")).toBe(true);
 
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = screen.getByRole("checkbox", { name: /Zara Karimova/i });
     expect(candidateRadio).toBeDefined();
 
     fireEvent.click(candidateRadio);
 
     expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
     expect(enrollSubmitButton.hasAttribute("disabled")).toBe(false);
-    expect(screen.getByText("Change student")).toBeDefined();
+    expect(enrollSubmitButton.textContent).toBe("Enroll 1");
 
     fireEvent.click(enrollSubmitButton);
 
@@ -241,7 +241,7 @@ describe("EnrollStudentModal workflows", () => {
       </QueryClientProvider>,
     );
 
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = screen.getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
     expect(mockMutateEnrollAsync).not.toHaveBeenCalled();
 
@@ -289,10 +289,10 @@ describe("EnrollStudentModal workflows", () => {
       </QueryClientProvider>,
     );
 
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = screen.getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
 
-    const enrollSubmitButton = screen.getByRole("button", { name: "Enroll student" });
+    const enrollSubmitButton = screen.getByRole("button", { name: "Enroll 1" });
     fireEvent.click(enrollSubmitButton);
 
     await waitFor(() => {
@@ -300,8 +300,7 @@ describe("EnrollStudentModal workflows", () => {
       expect(alert.textContent).toContain("This student is already enrolled in this course.");
     });
 
-    expect(screen.getAllByText("Zara Karimova").length).toBeGreaterThan(0);
-    expect(screen.getByText("Change student")).toBeDefined();
+    expect((screen.getByRole("checkbox", { name: /Zara Karimova/i }) as HTMLInputElement).checked).toBe(true);
     expect(enrollSubmitButton.hasAttribute("disabled")).toBe(false);
   });
 
@@ -316,54 +315,34 @@ describe("EnrollStudentModal workflows", () => {
       </QueryClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("radio", { name: /Zara Karimova/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Enroll student" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Zara Karimova/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Enroll 1" }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toContain("This course has already ended. Students can't be enrolled in it.");
     });
   });
 
-  it("hides the search and candidate list once a student is selected and restores them on Change student", () => {
+  it("keeps the search and candidate list visible after selecting and keeps the selection across pages", () => {
     vi.mocked(enrollmentHooks.useEligibleCandidates).mockReturnValue(
-      mockQueryResult<PaginatedEligibleCandidates>({
-        items: [mockCandidateOne],
-        total: 15,
-        page: 1,
-        page_size: 10,
-        total_pages: 2,
-      }),
+      mockQueryResult<PaginatedEligibleCandidates>({ items: [mockCandidateOne], total: 15, page: 1, page_size: 10, total_pages: 2 }),
     );
 
     render(
       <QueryClientProvider client={queryClient}>
         <I18nextProvider i18n={i18n}>
-          <EnrollStudentModal
-            open={true}
-            courseId={42}
-            courseTitle="Frontend Mastery"
-            coursePrice="1200.00"
-            onClose={vi.fn()}
-            onEnrolled={vi.fn()}
-          />
+          <EnrollStudentModal open={true} courseId={42} courseTitle="Frontend Mastery" coursePrice="1200.00" onClose={vi.fn()} onEnrolled={vi.fn()} />
         </I18nextProvider>
       </QueryClientProvider>,
     );
 
-    const nextBtn = screen.getByRole("button", { name: "Next page" });
-    expect(nextBtn.hasAttribute("disabled")).toBe(false);
-    fireEvent.click(nextBtn);
-
-    fireEvent.click(screen.getByRole("radio", { name: /Zara Karimova/i }));
-
+    fireEvent.click(screen.getByRole("checkbox", { name: /Zara Karimova/i }));
     expect(screen.getAllByText("Zara Karimova")).toHaveLength(1);
-    expect(screen.queryByRole("radio")).toBeNull();
-    expect(screen.queryByPlaceholderText("Search candidates by name or email…")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
-
-    fireEvent.click(screen.getByText("Change student"));
-    expect(screen.getByRole("radio", { name: /Zara Karimova/i })).toBeDefined();
     expect(screen.getByPlaceholderText("Search candidates by name or email…")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect((screen.getByRole("checkbox", { name: /Zara Karimova/i }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Zara Karimova/i }));
+    expect((screen.getByRole("checkbox", { name: /Zara Karimova/i }) as HTMLInputElement).checked).toBe(false);
   });
 
   it("disables candidate modal pagination while fetching", () => {
@@ -430,10 +409,10 @@ describe("EnrollStudentModal workflows", () => {
       </QueryClientProvider>,
     );
 
-    const candidateRadio = screen.getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = screen.getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
 
-    const submitBtn = screen.getByRole("button", { name: "Enroll student" });
+    const submitBtn = screen.getByRole("button", { name: "Enroll 1" });
     fireEvent.click(submitBtn);
     fireEvent.click(submitBtn);
     fireEvent.click(submitBtn);

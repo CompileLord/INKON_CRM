@@ -17,7 +17,8 @@
       "error": "Could not calculate charges",
       "grantNoCharges": "Grant: no charges will be created.",
       "firstCharge": "First charge {{amount}}, due {{date}}",
-      "summary": "{{months}} billed months, total {{total}}"
+      "summary": "{{months}} billed months, total {{total}}",
+      "sameForEach": "Same for each of {{count}} students"
     },
     "switch": {
       "toGrant": "Switch to grant",
