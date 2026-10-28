@@ -311,5 +311,6 @@
   },
   "studentsCount_one": "{{count}} student",
   "studentsCount_other": "{{count}} students",
-  "statusLabel": "Status"
+  "statusLabel": "Status",
+  "statusActive": "Running"
 }

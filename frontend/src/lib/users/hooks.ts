@@ -21,7 +21,7 @@ import {
   uploadAvatar,
 } from "./endpoints";
 import { AuthApiError } from "../auth/errors";
-import type { CredentialsChannel, ListUsersParams, StudentJournalHistoryPage, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
+import type { CredentialsChannel, ListStudentsParams, ListUsersParams, StudentJournalHistoryPage, UserCreate, UserSelfUpdate, UserUpdate } from "./types";
 
 /**
  * There's no GET /users/{id} — no single-user fetch hook exists. Edit/avatar
@@ -33,11 +33,11 @@ function resourceFor(role: ListableRole) {
   return role === "student" ? "students" : "mentors";
 }
 
-function listQueryKey(role: ListableRole, params: ListUsersParams) {
+function listQueryKey(role: ListableRole, params: ListUsersParams | ListStudentsParams) {
   return ["users", resourceFor(role), params] as const;
 }
 
-export function useStudents(params: ListUsersParams = {}, enabled = true) {
+export function useStudents(params: ListStudentsParams = {}, enabled = true) {
   return useQuery({
     queryKey: listQueryKey("student", params),
     queryFn: () => getStudents(params),

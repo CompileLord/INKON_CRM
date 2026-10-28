@@ -97,6 +97,28 @@ class PaymentAllocationItem(BaseModel):
     amount: Decimal
 
 
+class PaymentTargetResponse(BaseModel):
+    enrollment_id: int
+    course_id: int
+    course_title: str
+    amount: Decimal
+
+
+class PaymentOptionResponse(BaseModel):
+    enrollment_id: int
+    course_id: int
+    course_title: str
+    open_debt: Decimal
+    overdue_days: int
+    remaining_contract_maximum: Decimal
+    billing_mode: str
+
+
+class PaymentOptionsResponse(BaseModel):
+    wallet_credit: Decimal
+    enrollments: List[PaymentOptionResponse]
+
+
 class PaymentEntryResponse(BaseModel):
     """A recorded payment. ``amount`` is always the cash actually received."""
 
@@ -115,3 +137,4 @@ class PaymentEntryResponse(BaseModel):
     is_voided: bool = False
     refunded_amount: Decimal = Decimal("0.00")
     allocations: List[PaymentAllocationItem] = []
+    targets: List[PaymentTargetResponse] = []

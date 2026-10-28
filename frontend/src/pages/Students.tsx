@@ -8,11 +8,14 @@ import { Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StudentsTable } from "../components/students/StudentsTable";
 import { StudentFormPanel } from "../components/students/StudentFormPanel";
+import { EnrollNewStudentFlow } from "../components/students/EnrollNewStudentFlow";
+import { StudentsFilters } from "../components/students/StudentsFilters";
 import { Button } from "../components/ui/Button";
 import { Toast } from "../components/ui/Toast";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { BrandActivityIndicator } from "../components/ui/BrandActivityIndicator";
 import { useDeleteUser, useStudents } from "../lib/users/hooks";
+import { useCourses } from "../lib/courses/hooks";
 import { withdrawEnrollment } from "../lib/enrollments/endpoints";
 import { fetchFilteredEnrollments } from "../lib/enrollments/hooks";
 import type { EnrollmentResponse } from "../lib/enrollments/types";
@@ -27,9 +30,15 @@ import {
   restoreStudentsScrollAndFocus,
 } from "../lib/users/returnContext";
 import { useAuthStore } from "../store/authStore";
-import type { PaginatedUsers, User, UserCreateResponse } from "../lib/users/types";
+import { ALL_FILTER_VALUE, PAYMENT_STATUSES } from "../components/students/studentFilterValues";
+import type { PaginatedUsers, StudentListItemResponse, StudentPaymentStatus, User, UserCreateResponse } from "../lib/users/types";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+interface PendingEnrollment {
+  user: UserCreateResponse;
+  profileState: Record<string, unknown>;
+}
 
 type PanelState = { mode: "create" } | { mode: "edit"; student: User } | null;
 
@@ -42,7 +51,7 @@ export function Students() {
   const userId = useAuthStore((state) => state.userId);
 
   const hasExplicitParams =
-    searchParams.has("q") || searchParams.has("page") || searchParams.has("pageSize");
+    searchParams.has("q") || searchParams.has("page") || searchParams.has("pageSize") || searchParams.has("course") || searchParams.has("payment");
   const initialReturnCtx = !hasExplicitParams
     ? getSavedStudentsReturnContext(role ?? undefined, userId)
     : null;
@@ -56,6 +65,12 @@ export function Students() {
     ? parseSafePageSizeParam(searchParams.get("pageSize"))
     : (initialReturnCtx?.pageSize ?? 20);
 
+  const rawCourseId: number = Number(searchParams.get("course"));
+  const courseId: number | undefined = rawCourseId > 0 && Number.isInteger(rawCourseId) ? rawCourseId : undefined;
+  const paymentStatus: StudentPaymentStatus | undefined = PAYMENT_STATUSES.find((status) => status === searchParams.get("payment"));
+  const hasActiveFilters: boolean = courseId !== undefined || paymentStatus !== undefined;
+
+  const [pendingEnrollment, setPendingEnrollment] = useState<PendingEnrollment | null>(null);
   const [searchInput, setSearchInput] = useState<string>(urlQuery);
   const debouncedSearch = useDebouncedValue(searchInput, 300);
 
@@ -101,7 +116,10 @@ export function Students() {
     search: debouncedSearch.trim() || undefined,
     page,
     page_size: pageSize,
+    course_id: courseId,
+    payment_status: paymentStatus,
   });
+  const { data: coursesPage } = useCourses({ page_size: 100 });
 
   const normalizedSearch = debouncedSearch.trim();
 
@@ -109,7 +127,9 @@ export function Students() {
     query: string;
     page: number;
     pageSize: number;
-    data: PaginatedUsers;
+    courseId: number | undefined;
+    paymentStatus: StudentPaymentStatus | undefined;
+    data: PaginatedUsers<StudentListItemResponse>;
   } | null>(null);
 
   if (data && !isError && !isPlaceholderData) {
@@ -117,6 +137,8 @@ export function Students() {
       query: normalizedSearch,
       page,
       pageSize,
+      courseId,
+      paymentStatus,
       data,
     };
   }
@@ -235,6 +257,28 @@ export function Students() {
     setSearchParams(nextParams);
   };
 
+  const handleFilterChange = (key: "course" | "payment", value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (value === ALL_FILTER_VALUE) {
+      nextParams.delete(key);
+    } else {
+      nextParams.set(key, value);
+    }
+    nextParams.set("page", "1");
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleClearFilters = () => {
+    lastSynchronizedQueryRef.current = "";
+    setSearchInput("");
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("q");
+    nextParams.delete("course");
+    nextParams.delete("payment");
+    nextParams.set("page", "1");
+    setSearchParams(nextParams, { replace: true });
+  };
+
   const handleClearSearch = () => {
     lastSynchronizedQueryRef.current = "";
     setSearchInput("");
@@ -269,8 +313,9 @@ export function Students() {
           role: role ?? "superadmin",
           userId,
         });
-        navigate(`/students/${user.id}`, {
-          state: {
+        setPendingEnrollment({
+          user,
+          profileState: {
             createdStudentId: user.id,
             createdParentLinkCode: user.parent_link_code ?? null,
             createdCredentials: user.credentials_channel ? { channel: user.credentials_channel, maskedPhone: user.credentials_masked_phone ?? null } : null,
@@ -357,7 +402,9 @@ export function Students() {
     lastGoodResponseRef.current !== null &&
     lastGoodResponseRef.current.query === normalizedSearch &&
     lastGoodResponseRef.current.page === page &&
-    lastGoodResponseRef.current.pageSize === pageSize;
+    lastGoodResponseRef.current.pageSize === pageSize &&
+    lastGoodResponseRef.current.courseId === courseId &&
+    lastGoodResponseRef.current.paymentStatus === paymentStatus;
 
   const effectiveData = data ?? (isCurrentParamsMatchingLastGood ? lastGoodResponseRef.current?.data : null);
   const effectiveStudents = effectiveData?.items ?? [];
@@ -397,7 +444,8 @@ export function Students() {
         }
       />
 
-      <div className="min-w-0 sm:w-[30rem]">
+      <div className="flex flex-wrap items-center gap-2">
+      <div className="w-full min-w-0 sm:w-[22rem]">
         <Input
           ref={searchInputRef}
           type="search"
@@ -408,6 +456,15 @@ export function Students() {
           leftAddon={<Search size={16} aria-hidden="true" />}
         />
       </div>
+        <StudentsFilters
+          courses={coursesPage?.items ?? []}
+          courseId={courseId}
+          paymentStatus={paymentStatus}
+          hasActiveFilters={hasActiveFilters}
+          onChange={handleFilterChange}
+          onReset={handleClearFilters}
+        />
+      </div>
 
       <StudentsTable
         students={effectiveStudents}
@@ -416,6 +473,7 @@ export function Students() {
         pageSize={data?.page_size ?? pageSize}
         totalPages={effectiveTotalPages}
         search={searchInput}
+        hasActiveFilters={hasActiveFilters}
         isLoading={isLoading}
         isError={isError}
         hasLoadedOnce={hasLoadedOnce}
@@ -438,6 +496,7 @@ export function Students() {
           setPanel({ mode: "create" });
         }}
         onClearSearch={handleClearSearch}
+        onClearFilters={handleClearFilters}
         onStudentNavigate={handleStudentNavigate}
       />
 
@@ -454,6 +513,17 @@ export function Students() {
         onSaved={handleSaved}
         finalFocus={activeTriggerRef}
       />
+
+      {pendingEnrollment !== null && (
+        <EnrollNewStudentFlow
+          open
+          studentName={`${pendingEnrollment.user.first_name} ${pendingEnrollment.user.last_name}`}
+          onFinish={() => {
+            setPendingEnrollment(null);
+            navigate(`/students/${pendingEnrollment.user.id}`, { state: pendingEnrollment.profileState });
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteTarget !== null}

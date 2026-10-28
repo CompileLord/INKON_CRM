@@ -8,12 +8,13 @@ import { MentorProfile } from "./MentorProfile";
 import { useAuthStore } from "../store/authStore";
 import * as endpoints from "../lib/users/endpoints";
 import * as documentEndpoints from "../lib/documents/endpoints";
+import * as courseEndpoints from "../lib/courses/endpoints";
 import type { MentorProfileResponse, MentorAnalyticsResponse, User } from "../lib/users/types";
 import { clearSavedMentorsReturnContext } from "../lib/users/returnContext";
 
 
 export const mentor: User = { id: 10, first_name: "Alisher", last_name: "Navoiy", email: "alisher@example.com", role: "mentor", phone: "+992900000010", date_of_birth: "1980-02-09", parent_phone: null, photo_path: null, thumbnail_path: null, payment_day_of_month: null, must_set_password: false, is_deleted: false, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" };
-export const profile: MentorProfileResponse = { user: mentor, active_courses: [{ id: 2, title: "Advanced Mathematics", description: "", photo_path: null, start_date: "2026-01-01", end_date: "2026-12-31", exam_type: "monthly", price: "1200.00", mentor_id: 10, status: "active", is_deleted: false, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" }], active_students_count: 5, avg_score: 46.67, active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses", avg_score_grading_state: "unknown", avg_score_provenance: "unknown", avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived", avg_score_summary_count: 6, avg_score_defined_ratio_count: 4, avg_score_undefined_ratio_count: 2, avg_score_defined_ratios_mean: 70 };
+export const profile: MentorProfileResponse = { user: mentor, active_courses: [{ id: 2, title: "Advanced Mathematics", description: "", photo_path: null, start_date: "2026-01-01", end_date: "2026-12-31", exam_type: "monthly", price: "1200.00", mentor_id: 10, status: "active", is_deleted: false, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" }], active_students_count: 5, avg_score: 46.67, active_students_population: "active_enrollments_on_active_non_deleted_courses", avg_score_grading_state: "unknown", avg_score_provenance: "unknown", avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived", avg_score_summary_count: 6, avg_score_defined_ratio_count: 4, avg_score_undefined_ratio_count: 2, avg_score_defined_ratios_mean: 70 };
 export const analytics: MentorAnalyticsResponse = { active_courses_count: 1, active_courses_population: "active_non_deleted_courses", total_students_count: 19, total_students_population: "non_deleted_enrollments_on_assigned_courses_all_statuses_including_soft_deleted_courses", average_student_score: 62, average_student_score_grading_state: "unknown", average_student_score_provenance: "unknown", average_student_score_basis: "all_summaries_on_non_deleted_courses_including_archived_raw_points", average_student_score_summary_count: 5 };
 export const clients: QueryClient[] = [];
 export let navigateRoute: ReturnType<typeof useNavigate> = () => { throw new Error("Router is not mounted"); };
@@ -38,6 +39,7 @@ export function registerMentorProfileHooks(): void {
     useAuthStore.setState({ status: "authenticated", role: "superadmin", userId: 1 });
     clearSavedMentorsReturnContext();
     vi.spyOn(endpoints, "getMentorProfile").mockImplementation(async id => ({ ...profile, user: { ...mentor, id } }));
+    vi.spyOn(courseEndpoints, "getCourseSchedule").mockResolvedValue([]);
     vi.spyOn(endpoints, "getMentorAnalytics").mockResolvedValue(analytics);
     vi.spyOn(documentEndpoints, "fetchDocuments").mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, total_pages: 0 });
   });

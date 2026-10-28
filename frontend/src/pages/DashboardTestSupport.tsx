@@ -14,7 +14,7 @@ import * as dashboardHooks from "../lib/dashboard/hooks";
 import type { DashboardAttention } from "../lib/dashboard/types";
 import type { FinanceAnalyticsResponse, DebtItem } from "../lib/finance/types";
 import type { CourseListItemResponse } from "../lib/courses/types";
-import type { User } from "../lib/users/types";
+import type { StudentListItemResponse } from "../lib/users/types";
 import type { AuditEvent } from "../lib/audit/api";
 import type { Paginated } from "../lib/pagination";
 
@@ -159,7 +159,7 @@ export const mockCoursesPaginated: Paginated<CourseListItemResponse> = {
   total_pages: 1,
 };
 
-export const mockStudentsPaginated: Paginated<User> = {
+export const mockStudentsPaginated: Paginated<StudentListItemResponse> = {
   items: [],
   total: 42,
   page: 1,

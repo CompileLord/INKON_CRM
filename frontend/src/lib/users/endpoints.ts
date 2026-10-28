@@ -1,7 +1,9 @@
 import type { AxiosProgressEvent } from "axios";
 import { httpClient } from "../auth/httpClient";
 import type {
+  ListStudentsParams,
   ListUsersParams,
+  StudentListItemResponse,
   MentorAnalyticsResponse,
   MentorProfileResponse,
   MentorProfileResult,
@@ -69,8 +71,8 @@ export function uploadAvatar(
 }
 
 /** GET /api/v1/students/ — role-scoped user listing (role=student). */
-export function getStudents(params: ListUsersParams = {}): Promise<PaginatedUsers> {
-  return httpClient.get<PaginatedUsers>("/students/", { params }).then((res) => res.data);
+export function getStudents(params: ListStudentsParams = {}): Promise<PaginatedUsers<StudentListItemResponse>> {
+  return httpClient.get<PaginatedUsers<StudentListItemResponse>>("/students/", { params }).then((res) => res.data);
 }
 
 /** GET /api/v1/mentors/ — role-scoped user listing (role=mentor). */

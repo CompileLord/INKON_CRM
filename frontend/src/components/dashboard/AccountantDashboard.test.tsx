@@ -40,8 +40,8 @@ describe("Accountant dashboard contract", () => {
 
   it("renders actual zero collected cash without substituting receivable or gross value", async () => {
     mock.onGet(analyticsUrl).reply(200, analytics); mock.onGet(paymentsUrl).reply(200, listReply()); renderDashboard();
-    const summary = screen.getByRole("region", { name: "Dashboard Summary" }); await within(summary).findByText("0.00 TJS");
-    expect(within(summary).getByText("1 200.25 TJS")).toBeTruthy(); expect(within(summary).queryByText("5 000.00 TJS")).toBeNull();
+    const summary = screen.getByRole("region", { name: "Dashboard Summary" }); await within(summary).findByText("0 TJS");
+    expect(within(summary).getByText("1 200.25 TJS")).toBeTruthy(); expect(within(summary).queryByText("5 000 TJS")).toBeNull();
     expect(within(summary).getByText("3")).toBeTruthy(); expect(within(summary).queryByRole("alert")).toBeNull();
   });
 

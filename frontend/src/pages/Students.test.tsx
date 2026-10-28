@@ -7,10 +7,11 @@ import * as enrollmentEndpoints from "../lib/enrollments/endpoints";
 import * as enrollmentHooks from "../lib/enrollments/hooks";
 import type { StudentProfileResponse, User } from "../lib/users/types";
 import type { EnrollmentResponse } from "../lib/enrollments/types";
-import { mockPaginatedData, renderStudentsPage } from "./StudentsTestSupport";
+import { mockCoursePicker, mockPaginatedData, renderStudentsPage } from "./StudentsTestSupport";
 
 beforeEach(() => {
   useAuthStore.setState({ role: "superadmin" });
+  mockCoursePicker();
 });
 
 afterEach(() => {
@@ -144,6 +145,8 @@ describe("Students page", () => {
 
     const createSubmit = screen.getByRole("button", { name: "Create" });
     await user.click(createSubmit);
+
+    await user.click(await screen.findByRole("button", { name: "Skip for now" }));
 
     await waitFor(() => {
       expect(getLocation()?.pathname).toBe("/students/99");

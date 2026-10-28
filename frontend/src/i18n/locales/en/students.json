@@ -76,7 +76,6 @@
   "table": {
     "student": "Student",
     "phone": "Phone",
-    "paymentDay": "Payment day",
     "created": "Registered",
     "empty": "No students found",
     "error": "Failed to load data",
@@ -85,27 +84,31 @@
     "range": "{{from}}–{{to}} of {{total}}",
     "rangeEmpty": "0 of 0",
     "guardianPhone": "Guardian phone",
-    "paymentDayInfo": "The day of each month when this student's payment is due.",
-    "paymentDayChip": "Day {{day}}",
-    "paymentDayNone": "No payment day set",
     "perPage": "{{size}} per page",
     "rowsPerPage": "Rows per page",
-    "total": "Total students"
+    "total": "Total students",
+    "courses": "Courses",
+    "balance": "Balance",
+    "balanceDebt": "Debt {{amount}}",
+    "balanceGrant": "Grant",
+    "coursesMore": "+{{count}}",
+    "telegramLinked": "Parent linked in Telegram",
+    "emptyFilteredTitle": "No students match",
+    "emptyFilteredDescription": "Nothing matches the search or filters. Reset them to see everyone.",
+    "paymentDay": "Payment day",
+    "paymentDayInfo": "The day of each month when this student's payment is due.",
+    "paymentDayChip": "Day {{day}}",
+    "paymentDayNone": "No payment day set"
   },
   "form": {
     "newStudentTitle": "New Student",
     "editStudentTitle": "Edit Student",
-    "sectionIdentity": "Identity",
-    "sectionContacts": "Contacts",
     "sectionPayment": "Payment details",
     "firstNameLabel": "First Name",
     "lastNameLabel": "Last Name",
     "emailLabel": "Email",
     "emailHelp": "If set, the password is sent by email.",
-    "emailInfoLabel": "About password delivery",
-    "emailInfo": "Optional for students. With an email, the password is sent there. Without it, the password goes by SMS to the student's phone, or to the parent's phone if there is none. The student logs in with email or phone.",
     "phoneLabel": "Phone",
-    "phoneHelp": "Format: +992901234567",
     "dobLabel": "Date of Birth",
     "parentPhoneLabel": "Parent phone",
     "paymentDayLabel": "Payment day (monthly)",
@@ -122,8 +125,7 @@
     "deleteWithdrawError": "Failed to withdraw student's active enrollments. The student account was not deleted.",
     "deleteFailedAfterWithdraw": "Active enrollments were withdrawn, but deleting the student account failed.",
     "deleteAccountError": "Failed to delete student account. The student was not deleted.",
-    "contactsInfoLabel": "About contacts",
-    "contactsInfo": "Enter the student's own phone (it works as a login when there is no email) and the parent phone. Without an email, the password is sent there by SMS."
+    "phonePlaceholder": "+992901234567"
   },
   "validation": {
     "firstNameRequired": "Enter first name",
@@ -136,7 +138,6 @@
     "emailTaken": "This email is already in use",
     "emailOrPhoneRequired": "Enter the student's email or their own phone; a parent phone alone is not enough."
   },
-  "currencyTjs": "TJS",
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",
   "missingScoreValue": "—",
   "profileState": {
@@ -183,5 +184,23 @@
     "codeHint": "Shown once. Give it to the parent to type in the Telegram bot.",
     "codeError": "Could not generate the code. Please try again.",
     "copyError": "Could not copy the code. Select it and copy manually."
+  },
+  "filters": {
+    "course": "Course",
+    "allCourses": "All courses",
+    "payment": "Balance",
+    "all": "All",
+    "debt": "In debt",
+    "ok": "No debt",
+    "grant": "Grant",
+    "reset": "Reset filters"
+  },
+  "enrollPrompt": {
+    "title": "New student created",
+    "description": "Enroll {{name}} in a course now, or do it later from the profile.",
+    "courseLabel": "Course",
+    "coursePlaceholder": "Select a course",
+    "continue": "Continue",
+    "skip": "Skip for now"
   }
 }

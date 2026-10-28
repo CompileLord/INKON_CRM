@@ -28,9 +28,9 @@ describe("Mentor profile authorization and state", () => {
     setup({ profileTab: "performance" });
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
     expect(screen.getByText("Loading results")).toBeDefined();
-    expect(screen.queryByText("19")).toBeNull();
+    expect(screen.queryByText("62")).toBeNull();
     await act(async () => { finish(analytics); });
-    await screen.findByText("19");
+    await screen.findByText("62");
     expect(screen.queryByText("Loading results")).toBeNull();
   });
 
@@ -114,20 +114,18 @@ describe("Mentor profile authorization and state", () => {
     setup({ profileTab: "performance" });
     await screen.findByRole("heading", { name: "Alisher Navoiy" });
     expect((await screen.findByRole("alert")).textContent).toContain("Couldn't load the results");
-    expect(screen.queryByText("19")).toBeNull();
     expect(screen.queryByText("62")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await screen.findByText("19");
-    expect(screen.getByText("62")).toBeDefined();
-    expect(screen.getByText("What a student scores in one period on average.")).toBeDefined();
+    await screen.findByText("62");
+    expect(screen.getByRole("button", { name: "What a student scores in one period on average." })).toBeDefined();
   });
 
   it("zero points with recorded summaries remains 0 and without summaries shows a dash", async () => {
     vi.mocked(endpoints.getMentorAnalytics).mockResolvedValueOnce({ ...analytics, average_student_score: 0 }).mockResolvedValue({ ...analytics, average_student_score: 0, average_student_score_summary_count: 0, average_student_score_grading_state: "missing" });
     const queryClient = setup({ profileTab: "performance" });
-    await screen.findByText("19");
-    const pointsFact = (): HTMLElement => screen.getByText("Points per period").closest("div") as HTMLElement;
-    expect(pointsFact().textContent).toContain("0What a student");
+    await screen.findByText("Points per period");
+    const pointsFact = (): HTMLElement => screen.getByText("Points per period").closest("div")?.parentElement as HTMLElement;
+    expect(pointsFact().textContent).toMatch(/Points per period\s*0$/);
     await act(async () => { await queryClient.invalidateQueries({ queryKey: ["users", "mentors", "analytics", 10] }); });
     await waitFor(() => expect(pointsFact().textContent).toContain("—"));
   });
@@ -166,14 +164,16 @@ describe("Mentor profile authorization and state", () => {
     expect(screen.getByRole("tab", { name: "Documents" }).getAttribute("aria-selected")).toBe("true");
   });
 
-  it("explains performance in short sentences with the points first", async () => {
+  it("shows points per period once with graded periods in the tooltip and no repeated average or title", async () => {
     setup({ profileTab: "performance" });
-    await screen.findByText("19");
-    const facts = Array.from(document.querySelectorAll("[role='tabpanel'] dl > div")).map((node) => node.textContent);
-    expect(facts[0]).toBe("Points per period62What a student scores in one period on average.");
-    expect(facts[1]).toContain("Average result70%");
-    expect(facts[2]).toContain("Students19");
-    expect(screen.getByText(/^Based on \d+ graded periods?\.$/)).toBeDefined();
+    await screen.findByText("62");
+    const panel: HTMLElement = screen.getByRole("tabpanel");
+    expect(within(panel).queryByText("Average result")).toBeNull();
+    expect(within(panel).queryByRole("progressbar")).toBeNull();
+    expect(within(panel).queryByRole("heading")).toBeNull();
+    expect(screen.getAllByText("Average result").length).toBe(1);
+    await userEvent.click(within(panel).getByRole("button", { name: /What a student scores/ }));
+    expect((await screen.findByRole("tooltip")).textContent).toMatch(/Based on \d+ graded periods?\./);
   });
 
   it("does not navigate on abandoned deletion after a person returns", async () => {

@@ -1,11 +1,15 @@
 from app.repositories.sqlalchemy.student_performance_repository import SQLAlchemyStudentPerformanceRepository
 from datetime import date
+from decimal import Decimal
 from typing import cast, Any, Dict, List, Optional
 from sqlalchemy import Select, case, func, select
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Exists
+from app.core.school_calendar import SchoolCalendar
+from app.repositories.sqlalchemy.student_directory_query import StudentDirectoryQuery
+from app.schemas.user import UserResponse
 from app.core.email_normalizer import EmailNormalizer
 from app.core.login_identifier import LoginIdentifier, LoginIdentifierKind
 from app.models.user import User, UserRole
@@ -117,6 +121,62 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             query = query.where(PersonSearch.matches(search, include_parent_phone=True))
         return cast(RepositoryPage[User], await self.get_paginated(query, page, page_size))
 
+    async def get_student_directory(
+        self, page: int, page_size: int, search: str | None, mentor_id: int | None,
+        course_id: int | None, payment_status: str | None,
+    ) -> RepositoryPage[dict[str, Any]]:
+        debts: Any = StudentDirectoryQuery().debts(SchoolCalendar.today())
+        active: Any = (
+            select(Enrollment.student_id.label("student_id"), func.count(Enrollment.id).label("count"),
+                   func.sum(case((func.coalesce(Enrollment.billing_mode, "paid") != "grant", 1), else_=0)).label("paid"))
+            .join(Course, Course.id == Enrollment.course_id)
+            .where(Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
+                   Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE)
+            .group_by(Enrollment.student_id).subquery()
+        )
+        debt: Any = func.coalesce(debts.c.debt, Decimal("0.00"))
+        status: Any = case((debt > 0, "debt"),
+                           ((func.coalesce(active.c.count, 0) > 0) & (active.c.paid == 0), "grant"), else_="ok")
+        query: Any = (select(User, debt.label("debt"), status.label("payment_status"))
+                      .outerjoin(debts, debts.c.student_id == User.id)
+                      .outerjoin(active, active.c.student_id == User.id)
+                      .where(User.role == UserRole.STUDENT, User.is_deleted.is_(False)))
+        if mentor_id is not None:
+            query = query.where(select(Enrollment.id).join(Course, Course.id == Enrollment.course_id).where(
+                Enrollment.student_id == User.id, Enrollment.is_deleted.is_(False), Course.is_deleted.is_(False),
+                Course.mentor_id == mentor_id).exists())
+        if search:
+            query = query.where(PersonSearch.matches(search, include_parent_phone=True))
+        if course_id is not None:
+            query = query.where(select(Enrollment.id).join(Course, Course.id == Enrollment.course_id).where(
+                Enrollment.student_id == User.id, Enrollment.course_id == course_id,
+                Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
+                Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE).exists())
+        if payment_status is not None:
+            query = query.where(status == payment_status)
+        total: int = int(await self.session.scalar(select(func.count()).select_from(query.subquery())) or 0)
+        rows: Any = (await self.session.execute(query.order_by(User.id).offset((page - 1) * page_size).limit(page_size))).all()
+        student_ids: list[int] = [row[0].id for row in rows]
+        courses_by_student: dict[int, list[dict[str, Any]]] = {student_id: [] for student_id in student_ids}
+        if student_ids:
+            courses: Any = (await self.session.execute(
+                select(Enrollment.student_id, Course.id, Course.title, Enrollment.id, Enrollment.billing_mode)
+                .join(Course, Course.id == Enrollment.course_id)
+                .where(Enrollment.student_id.in_(student_ids), Enrollment.status == EnrollmentStatus.ACTIVE,
+                       Enrollment.is_deleted.is_(False), Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE)
+                .order_by(Course.title, Course.id)
+            )).all()
+            for student_id, course, title, enrollment, billing_mode in courses:
+                courses_by_student[student_id].append({"course_id": course, "title": title,
+                                                       "enrollment_id": enrollment, "billing_mode": billing_mode or "paid"})
+        items: list[dict[str, Any]] = []
+        for user, amount, student_status in rows:
+            item: dict[str, Any] = UserResponse.model_validate(user, from_attributes=True).model_dump()
+            item.update(courses=courses_by_student[user.id], debt_amount=str(amount), payment_status=student_status)
+            items.append(item)
+        return {"items": items, "total": total, "page": page, "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size}
+
     async def get_mentors_list(
         self,
         page: int = 1,
@@ -168,6 +228,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
             .join(User, User.id == Enrollment.student_id)
             .filter(
                 Course.mentor_id == mentor_id,
+                Course.status == CourseStatus.ACTIVE,
                 Course.is_deleted.is_(False),
                 Enrollment.status == EnrollmentStatus.ACTIVE,
                 Enrollment.is_deleted.is_(False),

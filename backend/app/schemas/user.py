@@ -71,6 +71,19 @@ class UserResponse(BaseModel):
 
 
 
+class StudentCoursePillResponse(BaseModel):
+    course_id: int
+    title: str
+    enrollment_id: int
+    billing_mode: Literal["paid", "grant"]
+
+
+class StudentListItemResponse(UserResponse):
+    courses: list[StudentCoursePillResponse]
+    debt_amount: str
+    payment_status: Literal["debt", "ok", "grant"]
+
+
 class UserCreateResponse(UserResponse):
     parent_link_code: Optional[str] = None
     password_sms_destination: Optional[Literal["student_phone", "parent_phone"]] = None
@@ -252,7 +265,7 @@ class MentorProfileResponse(BaseModel):
     active_courses: list[CourseResponse]
     active_students_count: int
     avg_score: float
-    active_students_population: Literal["active_enrollments_on_assigned_courses_including_soft_deleted_courses"]
+    active_students_population: Literal["active_enrollments_on_active_non_deleted_courses"]
     avg_score_grading_state: Literal["missing", "unknown"]
     avg_score_provenance: Literal["unknown"]
     avg_score_basis: Literal["all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived"]

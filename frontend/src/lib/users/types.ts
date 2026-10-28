@@ -60,6 +60,19 @@ export interface User {
   active_courses?: MentorCoursePillResponse[];
 }
 
+export interface StudentCoursePillResponse {
+  course_id: number;
+  title: string;
+  enrollment_id: number;
+  billing_mode: "paid" | "grant";
+}
+
+export interface StudentListItemResponse extends User {
+  courses: StudentCoursePillResponse[];
+  debt_amount: string;
+  payment_status: "debt" | "ok" | "grant";
+}
+
 export interface MentorListItemResponse extends User {
   active_courses: MentorCoursePillResponse[];
 }
@@ -113,10 +126,17 @@ export interface TelegramLinkCode {
 
 export type PaginatedUsers<T = User> = Paginated<T>;
 
+export type StudentPaymentStatus = StudentListItemResponse["payment_status"];
+
 export interface ListUsersParams {
   search?: string;
   page?: number;
   page_size?: number;
+}
+
+export interface ListStudentsParams extends ListUsersParams {
+  course_id?: number;
+  payment_status?: StudentPaymentStatus;
 }
 
 export type StudentGradingState = "missing" | "unknown";
@@ -229,7 +249,7 @@ export interface MentorStaffProfileResponse {
   active_courses: CourseResponse[];
   active_students_count: number;
   avg_score: number;
-  active_students_population: "active_enrollments_on_assigned_courses_including_soft_deleted_courses";
+  active_students_population: "active_enrollments_on_active_non_deleted_courses";
   avg_score_grading_state: "missing" | "unknown";
   avg_score_provenance: "unknown";
   avg_score_basis: "all_summaries_on_courses_currently_assigned_including_soft_deleted_and_archived";

@@ -7,7 +7,7 @@ import { ListRow } from "../ui/ListRow";
 import type { MenuItem } from "../ui/Menu";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { formatDate } from "../../i18n/formatters";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { CourseRosterItem } from "../../lib/enrollments/types";
 
@@ -24,10 +24,10 @@ interface CourseRosterRowProps {
 }
 
 export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBillingMode, isHighlighted, registerName, onStudentOpen, onWithdraw, onSwitchBillingMode }: CourseRosterRowProps) {
-  const { t } = useTranslation("courseDetail");
+  const { t, i18n } = useTranslation("courseDetail");
   const { t: tEnrollments } = useTranslation("enrollments");
   const studentName: string = `${item.student.first_name} ${item.student.last_name}`.trim();
-  const price: string = `${formatMoney(item.price_at_enrollment)} ${t("perMonth")}`;
+  const price: string = formatTjs(item.price_at_enrollment, { perMonth: true, lng: i18n.language });
   const enrolledOn: string = formatDate(item.enrolled_at);
 
   const priceOrBadge: ReactNode = item.billing_mode === "grant" ? <GrantBadge billingMode={item.billing_mode} /> : price;

@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, date, timezone, timedelta
 from decimal import Decimal
+from unittest.mock import Mock
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -110,6 +111,7 @@ async def test_void_and_refund_lifecycle(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("app.services.finance_service._to_dushanbe", HistoricalEnrollmentClock.to_dushanbe)
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 10)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -226,8 +228,10 @@ async def test_void_and_refund_lifecycle(
 
 @pytest.mark.asyncio
 async def test_period_close_enforcement(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 7, 15)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -265,11 +269,14 @@ async def test_period_close_enforcement(
     )
     course_id = c_resp.json()["id"]
 
-    await client.post(
-        "/api/v1/enrollments/",
-        json={"student_id": student_id, "course_id": course_id},
-        headers=admin_headers,
-    )
+    with monkeypatch.context() as enrollment_clock:
+        enrollment_clock.setattr("app.services.finance_service._to_dushanbe", lambda timestamp: datetime(2026, 7, 1, tzinfo=timezone.utc))
+        enrollment_resp = await client.post(
+            "/api/v1/enrollments/",
+            json={"student_id": student_id, "course_id": course_id},
+            headers=admin_headers,
+        )
+    assert enrollment_resp.status_code == 201, enrollment_resp.text
 
     pmt_resp = await client.post(
         "/api/v1/finance/payments/",
@@ -310,8 +317,10 @@ async def test_period_close_enforcement(
 
 @pytest.mark.asyncio
 async def test_receipt_generation(
-    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("app.services.finance_service.get_dushanbe_today", Mock(return_value=date(2026, 8, 10)))
     admin_token = create_access_token(test_admin.id, test_admin.role)
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     acc_token = create_access_token(test_accountant.id, test_accountant.role)
@@ -340,14 +349,17 @@ async def test_receipt_generation(
     )
     course_id = c_resp.json()["id"]
 
-    await client.post(
-        "/api/v1/enrollments/",
-        json={"student_id": student_id, "course_id": course_id},
-        headers=admin_headers,
-    )
+    with monkeypatch.context() as enrollment_clock:
+        enrollment_clock.setattr("app.services.finance_service._to_dushanbe", lambda timestamp: datetime(2026, 8, 1, tzinfo=timezone.utc))
+        enrollment_resp = await client.post(
+            "/api/v1/enrollments/",
+            json={"student_id": student_id, "course_id": course_id},
+            headers=admin_headers,
+        )
+    assert enrollment_resp.status_code == 201, enrollment_resp.text
 
     # Post payment
-    await client.post(
+    payment_resp = await client.post(
         "/api/v1/finance/payments/",
         json={
             "student_id": student_id,
@@ -359,6 +371,8 @@ async def test_receipt_generation(
         },
         headers=acc_headers,
     )
+
+    assert payment_resp.status_code == 201, payment_resp.text
 
     payment_q = select(LedgerEntry).filter(LedgerEntry.student_id == student_id, LedgerEntry.type == LedgerEntryType.PAYMENT)
     p_res = await db_session.execute(payment_q)

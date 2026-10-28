@@ -59,9 +59,9 @@ describe("EnrollStudentModal grants and monthly fee", () => {
     expect(feeInput.value).toBe("1200.00");
     await selectCandidate();
     const preview = await screen.findByTestId("enroll-preview");
-    expect(preview.textContent).toContain("1 200.00 TJS");
+    expect(preview.textContent).toContain("1 200 TJS");
     expect(preview.textContent).toContain("5 billed months");
-    expect(preview.textContent).toContain("6 000.00 TJS");
+    expect(preview.textContent).toContain("6 000 TJS");
     expect(endpoints.previewEnrollment).toHaveBeenCalledWith({ student_id: 201, course_id: 42, billing_mode: "paid", price_at_enrollment: "1200.00" });
   });
 

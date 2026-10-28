@@ -4,6 +4,7 @@ export type BadgeStatus = "active" | "archived" | "paid" | "overdue" | "partial"
 
 interface BadgeProps {
   status: BadgeStatus;
+  label?: string;
 }
 
 const STATUS_CLASSES: Record<BadgeStatus, string> = {
@@ -19,11 +20,11 @@ const STATUS_CLASSES: Record<BadgeStatus, string> = {
   draft: "bg-strip text-muted",
 };
 
-export function Badge({ status }: BadgeProps) {
+export function Badge({ status, label }: BadgeProps) {
   const { t } = useTranslation("ui");
   return (
     <span data-badge-status={status} className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[status]}`}>
-      {t(`badge.${status}`)}
+      {label ?? t(`badge.${status}`)}
     </span>
   );
 }

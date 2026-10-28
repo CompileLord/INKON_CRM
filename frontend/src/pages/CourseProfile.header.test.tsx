@@ -54,7 +54,7 @@ describe("CourseProfile header", () => {
     expect(header.querySelector("h1")?.textContent).toBe("Frontend Development Mastery");
     expect(header.querySelector("[data-badge-status='active']")).not.toBeNull();
     const meta = Array.from(header.querySelectorAll("p > span > span:not([aria-hidden])")).map((node) => node.textContent);
-    expect(meta).toEqual(["Farrukh Rahimov", "Monthly exams", "01.09.2026 – 31.05.2027", "1 250.00 TJS / month"]);
+    expect(meta).toEqual(["Farrukh Rahimov", "Monthly exams", "01.09.2026 – 31.05.2027", "1 250 TJS / month"]);
     const links = header.querySelectorAll("a");
     expect(links).toHaveLength(1);
     expect(links[0].textContent).toBe("Open journal");

@@ -8,7 +8,6 @@
   "disenroll": "Disenroll from group",
   "disenrollConfirm": "Are you sure you want to disenroll this student from the group?",
   "grantBadge": "Grant",
-  "moneyAmount": "{{amount}} TJS",
   "billing": {
     "grantToggle": "Grant (free study)",
     "monthlyFee": "Monthly fee",

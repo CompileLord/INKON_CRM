@@ -196,7 +196,7 @@ describe("Debtors rows", () => {
     for (const label of ["Monthly price", "Billed to date", "Settled against due charges", "Due unpaid", "Days overdue"]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
-    expect(screen.getByText("150.00 TJS")).toBeTruthy();
+    expect(screen.getByText("150 TJS")).toBeTruthy();
     expect(screen.queryByText(/^Paid$|Amount paid|Cash paid|Contracted total/)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Accept payment for Anisa Karimova, Python Advanced" }));
     const dialog = await screen.findByRole("dialog");

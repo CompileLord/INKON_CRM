@@ -59,7 +59,7 @@ describe("BillingModeDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Switch to grant" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(endpoints.changeBillingMode).toHaveBeenCalledWith(7, { billing_mode: "grant", reason: "Scholarship" });
-    expect(onToast).toHaveBeenCalledWith(expect.stringContaining("Cancelled months: 4 (3 200.00 TJS)"), "success");
+    expect(onToast).toHaveBeenCalledWith(expect.stringContaining("Cancelled months: 4 (3 200 TJS)"), "success");
   });
 
   it("offers grant to paid with its own effect line", async () => {

@@ -6,6 +6,10 @@ from typing import Any, Dict, List, Set, Tuple
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, Response
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.charge import Charge
 
 from app.core.security import create_access_token
 from app.main import app
@@ -81,7 +85,10 @@ async def test_money_rejects_non_plain_decimals_json_number(scenario: PaymentSce
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("amount, expected", [("100", "100.00"), ("12.5", "12.50"), ("0.01", "0.01"), (12.5, "12.50"), (7, "7.00"), ("99999999.99", "99999999.99")])
-async def test_money_accepts_plain_decimals_and_serializes_two_places(scenario: PaymentScenario, amount: Any, expected: str) -> None:
+async def test_money_accepts_plain_decimals_and_serializes_two_places(scenario: PaymentScenario, amount: Any, expected: str, db_session: AsyncSession) -> None:
+    if expected == "99999999.99":
+        await db_session.execute(update(Charge).where(Charge.student_id == scenario.student_id).values(amount="99999999.99"))
+        await db_session.commit()
     response: Response = await scenario.pay(amount)
     assert response.status_code == 201, response.text
     assert response.json()["amount"] == expected

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { Badge } from "../ui/Badge";
 import { ListRow } from "../ui/ListRow";
@@ -31,7 +31,7 @@ export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandle
       <ListRow to={`/courses/${course.id}`} menuItems={menu.items} menuLabel={menu.label}>
         <span className={`grid items-center gap-x-4 gap-y-1 ${columns}`}>
           <span className="flex min-w-0 items-center gap-3">
-            <CourseThumb title={course.title} photoPath={course.photo_path} />
+            <CourseThumb title={course.title} photoPath={course.photo_path} size="md" />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 flex-wrap items-center gap-x-2">
                 <span className="break-words text-sm font-semibold text-ink">{course.title}</span>
@@ -50,7 +50,7 @@ export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandle
             </span>
           </span>
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink md:text-right">
-            {formatMoney(course.price)} {t("currencyPerMonth")}
+            {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
           </span>
         </span>
       </ListRow>

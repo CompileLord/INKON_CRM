@@ -11,7 +11,7 @@ import { PersonAvatar } from "../ui/PersonAvatar";
 import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { resolveMediaUrl } from "../../lib/users/media";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import { AuthApiError } from "../../lib/auth/errors";
 import { useEligibleCandidates, useEnrollmentPreview, useEnrollStudent } from "../../lib/enrollments/hooks";
 import type { EligibleCandidateResponse, EnrollmentPreviewRequest } from "../../lib/enrollments/types";
@@ -33,7 +33,7 @@ export function EnrollStudentModal({
   onClose,
   onEnrolled,
 }: EnrollStudentModalProps) {
-  const { t } = useTranslation(["courses", "common"]);
+  const { t, i18n } = useTranslation(["courses", "common"]);
   const [search, setSearch] = useState("");
   const [candidatePage, setCandidatePage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(null);
@@ -213,7 +213,7 @@ export function EnrollStudentModal({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm font-semibold text-ink break-words">{courseTitle}</span>
             <span className="text-sm font-semibold tabular-nums text-maroon-text dark:text-accent">
-              {formatMoney(coursePrice)} {t("currencyPerMonth")}
+              {formatTjs(coursePrice, { perMonth: true, lng: i18n.language })}
             </span>
           </div>
           <p className="text-xs text-muted">

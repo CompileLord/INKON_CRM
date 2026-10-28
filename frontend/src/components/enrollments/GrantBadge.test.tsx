@@ -67,11 +67,11 @@ describe("GrantBadge placement", () => {
   it("renders in the roster row for a grant and not for paid or a missing mode", () => {
     renderRow(rosterItem("grant"));
     expect(screen.getAllByTestId("grant-badge")[0].textContent).toBe("Grant");
-    expect(screen.queryByText(/800\.00 TJS/)).toBeNull();
+    expect(screen.queryByText(/800 TJS/)).toBeNull();
     cleanup();
     renderRow(rosterItem("paid"));
     expect(screen.queryByTestId("grant-badge")).toBeNull();
-    expect(screen.getAllByText(/800\.00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/800/).length).toBeGreaterThan(0);
     cleanup();
     renderRow(rosterItem(undefined));
     expect(screen.queryByTestId("grant-badge")).toBeNull();
@@ -92,7 +92,7 @@ describe("GrantBadge placement", () => {
     });
     renderWithProviders(<StudentCoursesTab courses={[profileCourse]} studentId={3} role="superadmin" currentUserId={1} />);
     expect((await screen.findByTestId("grant-badge")).textContent).toBe("Grant");
-    expect(screen.queryByText(/800\.00/)).toBeNull();
+    expect(screen.queryByText(/800/)).toBeNull();
   });
 
   it("does not fetch enrollments or show the badge to a mentor viewing the profile", async () => {

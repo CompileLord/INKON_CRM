@@ -8,7 +8,6 @@
   "disenroll": "Отчислить из группы",
   "disenrollConfirm": "Вы уверены, что хотите отчислить студента из этой группы?",
   "grantBadge": "Грант",
-  "moneyAmount": "{{amount}} TJS",
   "billing": {
     "grantToggle": "Грант (бесплатное обучение)",
     "monthlyFee": "Стоимость в месяц",

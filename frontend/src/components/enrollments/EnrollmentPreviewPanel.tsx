@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { AlertCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { formatDate } from "../../i18n/formatters";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import type { EnrollmentPreviewResponse } from "../../lib/enrollments/types";
 
 interface EnrollmentPreviewPanelProps {
@@ -14,7 +14,7 @@ interface EnrollmentPreviewPanelProps {
 
 export function EnrollmentPreviewPanel({ preview, isLoading, isError, onRetry }: EnrollmentPreviewPanelProps) {
   const { t, i18n } = useTranslation("enrollments");
-  const money = (amount: string): string => t("moneyAmount", { amount: formatMoney(amount) });
+  const money = (amount: string): string => formatTjs(amount);
 
   if (isLoading) {
     return (

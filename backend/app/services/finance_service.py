@@ -38,6 +38,8 @@ from app.models.course import Course
 from app.models.enrollment import BillingMode, Enrollment, EnrollmentStatus
 from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.models.payment import PaymentMethod
+from app.models.payment_target import PaymentTarget
+from app.schemas.payment import PaymentTargetInput
 from app.models.user import User, UserRole
 from app.schemas.accounting_period import ClosePeriodPayload, ReopenPeriodPayload
 from app.schemas.common import InstallmentPriceInput, PositiveMoney
@@ -600,7 +602,6 @@ class FinanceService:
         self.db.add_all(charges)
 
         await self.db.flush()
-        await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
         await self._invalidate_cache()
         return charges
 
@@ -723,7 +724,6 @@ class FinanceService:
         ]
         self.db.add_all(new_charges)
         await self.db.flush()
-        await self.auto_allocate_student_credit(student.id, prefer_enrollment_id=enrollment.id)
         await self._invalidate_cache()
         return BillingModeChangeOutcome(0, ZERO, ZERO, len(new_charges))
 
@@ -734,12 +734,13 @@ class FinanceService:
     async def create_payment(
         self,
         student_id: int,
-        course_id: int,
+        course_id: Optional[int],
         amount: Decimal,
         paid_at: datetime,
         method: PaymentMethod,
         comment: Optional[str],
         current_user: User,
+        targets: Optional[list[PaymentTargetInput]] = None,
     ) -> LedgerEntry:
         """Record cash received. ``amount`` is always the cash actually taken."""
         try:
@@ -753,35 +754,42 @@ class FinanceService:
         await self.lock_student_accounts([student_id])
         await self._check_period_open(paid_at, "payment")
 
-        enrollment_res = await self.db.execute(
-            select(Enrollment).filter(
-                Enrollment.student_id == student_id,
-                Enrollment.course_id == course_id,
-                Enrollment.is_deleted == False,  # noqa: E712
-            )
-        )
-        enrollment = enrollment_res.scalars().first()
-        if not enrollment:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Student is not enrolled in this course",
-            )
-
-        if enrollment.status == EnrollmentStatus.WITHDRAWN:
-            allocation_totals: Any = select(
-                Allocation.charge_id, func.sum(Allocation.amount).label("amount"),
-            ).where(Allocation.reversed_by_entry_id.is_(None)).group_by(Allocation.charge_id).subquery()
-            remaining_debt: Decimal = Decimal(await self.db.scalar(
-                select(func.coalesce(func.sum(Charge.amount - func.coalesce(allocation_totals.c.amount, ZERO)), ZERO))
-                .outerjoin(allocation_totals, allocation_totals.c.charge_id == Charge.id)
-                .where(Charge.enrollment_id == enrollment.id, Charge.status == ChargeStatus.OPEN,
-                       Charge.is_deleted.is_(False))
-            ) or ZERO)
-            if amount > remaining_debt:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="withdrawn_enrollment_payment_exceeds_debt",
-                )
+        if targets is None:
+            enrollment: Optional[Enrollment] = await self.db.scalar(select(Enrollment).where(
+                Enrollment.student_id == student_id, Enrollment.course_id == course_id,
+                Enrollment.is_deleted.is_(False),
+            ))
+            if enrollment is None:
+                raise HTTPException(status_code=422, detail={"code": "invalid_payment_target"})
+            targets = [PaymentTargetInput(enrollment_id=enrollment.id, amount=amount)]
+        if sum((target.amount for target in targets), ZERO) != amount:
+            raise HTTPException(status_code=422, detail={"code": "payment_target_sum_mismatch"})
+        target_ids: list[int] = [target.enrollment_id for target in targets]
+        if len(set(target_ids)) != len(target_ids):
+            raise HTTPException(status_code=422, detail={"code": "duplicate_payment_target"})
+        enrollment_rows: list[Enrollment] = list((await self.db.scalars(select(Enrollment).where(
+            Enrollment.id.in_(target_ids), Enrollment.student_id == student_id,
+            Enrollment.is_deleted.is_(False),
+        ))).all())
+        enrollments: dict[int, Enrollment] = {row.id: row for row in enrollment_rows}
+        allocation_totals: Any = select(
+            Allocation.charge_id, func.sum(Allocation.amount).label("amount"),
+        ).where(Allocation.reversed_by_entry_id.is_(None)).group_by(Allocation.charge_id).subquery()
+        balances: dict[int, Decimal] = {row.enrollment_id: Decimal(row.balance) for row in (await self.db.execute(
+            select(Charge.enrollment_id, func.sum(Charge.amount - func.coalesce(allocation_totals.c.amount, ZERO)).label("balance"))
+            .outerjoin(allocation_totals, allocation_totals.c.charge_id == Charge.id)
+            .where(Charge.enrollment_id.in_(target_ids), Charge.status == ChargeStatus.OPEN, Charge.is_deleted.is_(False))
+            .group_by(Charge.enrollment_id)
+        )).all()}
+        for target in targets:
+            enrollment = enrollments.get(target.enrollment_id)
+            if enrollment is None or (enrollment.status != EnrollmentStatus.ACTIVE and not (
+                course_id is not None and enrollment.status == EnrollmentStatus.WITHDRAWN
+            )):
+                raise HTTPException(status_code=422, detail={"code": "invalid_payment_target"})
+            maximum: Decimal = ZERO if enrollment.effective_billing_mode == BillingMode.GRANT else balances.get(target.enrollment_id, ZERO)
+            if target.amount > maximum:
+                raise HTTPException(status_code=422, detail={"code": "payment_target_exceeds_balance", "enrollment_id": target.enrollment_id, "maximum": format(maximum, ".2f")})
 
         entry = LedgerEntry(
             student_id=student_id,
@@ -795,8 +803,28 @@ class FinanceService:
         self.db.add(entry)
         await self.db.flush()
 
-        await self.auto_allocate_student_credit(student_id, prefer_enrollment_id=enrollment.id)
+        self.db.add_all([PaymentTarget(ledger_entry_id=entry.id, enrollment_id=target.enrollment_id, amount=target.amount) for target in targets])
+        charges: List[Charge] = list((await self.db.scalars(select(Charge).where(
+            Charge.enrollment_id.in_(target_ids), Charge.status == ChargeStatus.OPEN,
+            Charge.is_deleted.is_(False),
+        ).order_by(Charge.due_date, Charge.sequence_no, Charge.id))).all())
+        charge_ids: list[int] = [charge.id for charge in charges]
+        allocated_rows: Any = await self.db.execute(select(Allocation.charge_id, func.sum(Allocation.amount)).where(
+            Allocation.charge_id.in_(charge_ids), Allocation.reversed_by_entry_id.is_(None),
+        ).group_by(Allocation.charge_id))
+        allocated: dict[int, Decimal] = {charge_id: Decimal(total) for charge_id, total in allocated_rows.all()}
+        remaining: dict[int, Decimal] = {target.enrollment_id: target.amount for target in targets}
+        touched: list[int] = []
+        for charge in charges:
+            applied: Decimal = min(remaining[charge.enrollment_id], charge.amount - allocated.get(charge.id, ZERO))
+            if applied > ZERO:
+                self.db.add(Allocation(ledger_entry_id=entry.id, charge_id=charge.id, amount=applied))
+                remaining[charge.enrollment_id] -= applied
+                touched.append(charge.id)
+        await self.db.flush()
+        await self._recompute_charge_status(touched)
 
+        course_ids: set[int] = {enrollment.course_id for enrollment in enrollments.values()}
         await self._log_audit(
             user_id=current_user.id,
             action="create",
@@ -805,7 +833,8 @@ class FinanceService:
             changes={
                 "amount": str(amount),
                 "student_id": student_id,
-                "course_id": course_id,
+                **({"course_id": next(iter(course_ids))} if len(course_ids) == 1 else {}),
+                "targets": [{"enrollment_id": target.enrollment_id, "amount": format(target.amount, ".2f")} for target in targets],
                 "method": str(method),
             },
         )
@@ -903,8 +932,6 @@ class FinanceService:
         )
         self.db.add(entry)
         await self.db.flush()
-
-        await self.auto_allocate_student_credit(payload.student_id)
 
         await self._log_audit(
             user_id=current_user.id,
@@ -1168,6 +1195,18 @@ class FinanceService:
                 allocated_by_entry.get(alloc.ledger_entry_id, ZERO) + alloc.amount
             )
 
+        target_rows: Any = await self.db.execute(
+            select(PaymentTarget, Course).join(Enrollment, Enrollment.id == PaymentTarget.enrollment_id)
+            .join(Course, Course.id == Enrollment.course_id).where(PaymentTarget.ledger_entry_id.in_(entry_ids))
+            .order_by(PaymentTarget.id)
+        )
+        targets_by_entry: Dict[int, List[dict]] = {}
+        for target, course in target_rows.all():
+            targets_by_entry.setdefault(target.ledger_entry_id, []).append({
+                "enrollment_id": target.enrollment_id, "course_id": course.id,
+                "course_title": course.title, "amount": target.amount,
+            })
+
         reversal_res = await self.db.execute(
             select(LedgerEntry).filter(
                 LedgerEntry.reverses_entry_id.in_(entry_ids),
@@ -1214,6 +1253,7 @@ class FinanceService:
                     "is_voided": entry.id in voided_ids,
                     "refunded_amount": refunded_by_entry.get(entry.id, ZERO),
                     "allocations": allocations_by_entry.get(entry.id, []),
+                    "targets": targets_by_entry.get(entry.id, []),
                 }
             )
         return items
@@ -1833,6 +1873,35 @@ class FinanceService:
             for student in students_res.scalars().all()
         ]
 
+    async def get_payment_options(self, student_id: int) -> dict:
+        allocation_totals: Any = select(
+            Allocation.charge_id, func.sum(Allocation.amount).label("amount"),
+        ).where(Allocation.reversed_by_entry_id.is_(None)).group_by(Allocation.charge_id).subquery()
+        balance: Any = Charge.amount - func.coalesce(allocation_totals.c.amount, ZERO)
+        today: date = get_dushanbe_today()
+        charge_totals: Any = select(
+            Charge.enrollment_id,
+            func.sum(balance).label("maximum"),
+            func.sum(case((Charge.due_date <= today, balance), else_=ZERO)).label("open_debt"),
+            func.min(case((Charge.due_date < today, Charge.due_date), else_=None)).label("oldest_due"),
+        ).outerjoin(allocation_totals, allocation_totals.c.charge_id == Charge.id).where(
+            Charge.status == ChargeStatus.OPEN, Charge.is_deleted.is_(False),
+        ).group_by(Charge.enrollment_id).subquery()
+        rows: Any = await self.db.execute(
+            select(Enrollment, Course.title, charge_totals.c.maximum, charge_totals.c.open_debt, charge_totals.c.oldest_due)
+            .join(Course, Course.id == Enrollment.course_id)
+            .outerjoin(charge_totals, charge_totals.c.enrollment_id == Enrollment.id)
+            .where(Enrollment.student_id == student_id, Enrollment.status == EnrollmentStatus.ACTIVE,
+                   Enrollment.is_deleted.is_(False)).order_by(Course.title, Enrollment.id)
+        )
+        return {"wallet_credit": await self.get_unallocated_credit(student_id), "enrollments": [
+            {"enrollment_id": enrollment.id, "course_id": enrollment.course_id, "course_title": title,
+             "open_debt": debt or ZERO, "remaining_contract_maximum": maximum or ZERO,
+             "overdue_days": max(0, (today - oldest_due).days) if oldest_due else 0,
+             "billing_mode": enrollment.effective_billing_mode}
+            for enrollment, title, maximum, debt, oldest_due in rows.all()
+        ]}
+
     async def get_payment_receipt(self, payment_id: int) -> dict:
         entry = await self._get_payment_entry(payment_id)
 
@@ -1874,6 +1943,7 @@ class FinanceService:
             "method": entry.method,
             "accepted_by_name": f"{accepted_by.first_name} {accepted_by.last_name}" if accepted_by else "Staff",
             "allocations": allocations,
+            "targets": (await self._decorate_entries([entry]))[0]["targets"],
             "comment": entry.comment,
         }
 

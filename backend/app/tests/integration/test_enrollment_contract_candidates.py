@@ -1,3 +1,4 @@
+from typing import Callable
 import asyncio
 from datetime import date, timedelta
 from typing import List, Optional, Tuple
@@ -18,6 +19,11 @@ from app.models.user import User
 from app.services.enrollment_service import EnrollmentConflictClassifier, EnrollmentService
 from app.tests.conftest import test_engine, TestingSessionLocal
 from app.tests.integration.test_enrollment_contract import create_helper_course, create_helper_student
+
+
+@pytest.fixture(autouse=True)
+def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
+    freeze_school_today(date(2026, 8, 10))
 
 
 @pytest.mark.asyncio

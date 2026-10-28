@@ -1,5 +1,6 @@
 import logging
-from datetime import date, datetime, time, timezone
+from calendar import monthrange
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import List, Dict, Any
@@ -135,13 +136,16 @@ class DemoDataPopulator:
             await DemoSeedRecorder.issue_parent_link_codes(session, seed_report, student_users)
             logger.info(f"Seeded users: 1 Admin, 1 Accountant, 3 Mentors (with real photos), {len(student_users)} Students.")
 
+            today: date = SchoolCalendar.today()
+            current_month_start: date = today.replace(day=1)
+            current_month_end: date = today.replace(day=monthrange(today.year, today.month)[1])
             course_definitions: List[Dict[str, Any]] = [
                 {
                     "id": 1,
-                    "title": "English Elementary (Jun-Aug 2026)",
+                    "title": "English Elementary",
                     "description": "General English Elementary group covering essential grammar, vocabulary, listening, and speaking skills.",
-                    "start_date": date(2026, 6, 1),
-                    "end_date": date(2026, 8, 31),
+                    "start_date": today - timedelta(days=60),
+                    "end_date": today + timedelta(days=60),
                     "exam_type": CourseExamType.MONTHLY,
                     "price": Decimal("500.00"),
                     "mentor_id": mentor_gulnora.id,
@@ -154,10 +158,10 @@ class DemoDataPopulator:
                 },
                 {
                     "id": 2,
-                    "title": "German A1 Beginner (Jun-Aug 2026)",
-                    "description": "Introductory 3-month German language program for beginners with monthly exams and conversational practice.",
-                    "start_date": date(2026, 6, 1),
-                    "end_date": date(2026, 8, 31),
+                    "title": "German A1 Beginner",
+                    "description": "Introductory German language program for beginners with monthly exams and conversational practice.",
+                    "start_date": today - timedelta(days=60),
+                    "end_date": today + timedelta(days=60),
                     "exam_type": CourseExamType.MONTHLY,
                     "price": Decimal("550.00"),
                     "mentor_id": mentor_farhod.id,
@@ -170,10 +174,10 @@ class DemoDataPopulator:
                 },
                 {
                     "id": 3,
-                    "title": "Python Backend Development (Aug 2026)",
+                    "title": "Python Backend Development",
                     "description": "Intensive 1-month Python backend programming course with weekly practical exams, FastAPI, and database design.",
-                    "start_date": date(2026, 8, 1),
-                    "end_date": date(2026, 8, 31),
+                    "start_date": current_month_start,
+                    "end_date": current_month_end,
                     "exam_type": CourseExamType.WEEKLY,
                     "price": Decimal("700.00"),
                     "mentor_id": mentor_sukhrob.id,
@@ -189,10 +193,10 @@ class DemoDataPopulator:
                 },
                 {
                     "id": 4,
-                    "title": "Web Frontend Development (Aug 2026)",
+                    "title": "Web Frontend Development",
                     "description": "Modern frontend web development course covering HTML5, CSS3, Tailwind, JavaScript, and React framework.",
-                    "start_date": date(2026, 8, 1),
-                    "end_date": date(2026, 8, 31),
+                    "start_date": current_month_start,
+                    "end_date": current_month_end,
                     "exam_type": CourseExamType.WEEKLY,
                     "price": Decimal("750.00"),
                     "mentor_id": mentor_sukhrob.id,
@@ -267,8 +271,6 @@ class DemoDataPopulator:
         async with session_factory() as session:
             logger.info("Populating gradebook entries and journal summaries...")
             sum_service: SumCalculationService = SumCalculationService(session)
-            today: date = SchoolCalendar.today()
-
             journals_res = await session.execute(select(Journal))
             journals: List[Journal] = list(journals_res.scalars().all())
 
@@ -316,7 +318,7 @@ class DemoDataPopulator:
                 assigned_students: List[User] = student_users[cdef["student_slice"]]
 
                 for idx, student in enumerate(assigned_students):
-                    paid_at: datetime = datetime(2026, 8, 2, 10, 0, 0, tzinfo=timezone.utc)
+                    paid_at: datetime = datetime.combine(today, time(10, 0), tzinfo=timezone.utc)
                     method: PaymentMethod = PaymentMethod.CASH if idx % 2 == 0 else PaymentMethod.TRANSFER
 
                     if idx < 4:

@@ -4,7 +4,7 @@ import axios from "axios";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { AuthApiError } from "../../lib/auth/errors";
 import { useChangeBillingMode } from "../../lib/enrollments/hooks";
-import { formatMoney } from "../../lib/money";
+import { formatTjs } from "../../lib/money";
 import type { BillingMode } from "../../lib/enrollments/types";
 
 export interface BillingModeTarget {
@@ -73,8 +73,8 @@ export function BillingModeDialog({ target, onClose, onToast }: BillingModeDialo
       onToast(
         t("billing.switch.success", {
           cancelled: result.cancelled_months,
-          cancelledAmount: t("moneyAmount", { amount: formatMoney(result.cancelled_amount) }),
-          writtenOff: t("moneyAmount", { amount: formatMoney(result.written_off_amount) }),
+          cancelledAmount: formatTjs(result.cancelled_amount),
+          writtenOff: formatTjs(result.written_off_amount),
           generated: result.generated_months,
         }),
         "success",
