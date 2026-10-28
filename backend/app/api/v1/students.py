@@ -1,5 +1,6 @@
 from typing import Annotated, List, Optional, Literal, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_user_repository, get_current_user, get_student_journal_history_service, get_student_profile_service, require_superadmin
 from app.models.user import User, UserRole
@@ -33,8 +34,10 @@ async def get_students(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
+    if current_user.role == UserRole.MENTOR and payment_status is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     mentor_id: int | None = current_user.id if current_user.role == UserRole.MENTOR else None
-    return await user_repo.get_student_directory(
+    result: RepositoryPage[dict[str, Any]] = await user_repo.get_student_directory(
         page=pagination.page,
         page_size=pagination.page_size,
         search=search,
@@ -42,6 +45,10 @@ async def get_students(
         course_id=course_id,
         payment_status=payment_status,
     )
+    if current_user.role == UserRole.MENTOR:
+        response: PaginatedResponse[StudentListItemResponse] = PaginatedResponse[StudentListItemResponse].model_validate(result, from_attributes=True)
+        return JSONResponse(response.model_dump(mode="json", exclude={"items": {"__all__": {"debt_amount": True, "payment_status": True, "payment_day_of_month": True, "courses": {"__all__": {"billing_mode"}}}}}))
+    return result
 
 
 @router.post(
@@ -69,7 +76,7 @@ async def get_my_profile(
             detail="Current user is not a student"
         )
     stats = await profile_service.get_student_profile_payload(current_user.id)
-    return {
+    response: dict[str, Any] = {
         "user": current_user,
         "totals": stats["totals"],
         "courses": stats["courses"],
@@ -78,6 +85,8 @@ async def get_my_profile(
         "total_lessons": stats["total_lessons"],
         "performance": stats["performance"],
     }
+    validated: StudentProfileResponse = StudentProfileResponse.model_validate(response, from_attributes=True)
+    return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month"}}))
 
 
 @router.get("/me/journals/page", response_model=StudentJournalHistoryPage, description=ContractNotes.JOURNAL_HISTORY_PAGE)
@@ -137,7 +146,7 @@ async def get_student_profile(
         )
 
     stats = await profile_service.get_student_profile_payload(id)
-    return {
+    response: dict[str, Any] = {
         "user": target_user,
         "totals": stats["totals"],
         "courses": stats["courses"],
@@ -146,3 +155,7 @@ async def get_student_profile(
         "total_lessons": stats["total_lessons"],
         "performance": stats["performance"],
     }
+    if current_user.role not in (UserRole.SUPERADMIN, UserRole.ACCOUNTANT):
+        validated: StudentProfileResponse = StudentProfileResponse.model_validate(response, from_attributes=True)
+        return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month"}}))
+    return response

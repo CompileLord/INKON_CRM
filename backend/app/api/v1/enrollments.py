@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db_session, get_enrollment_billing_service, get_enrollment_service, get_current_user, require_superadmin
 from app.models.user import User, UserRole
@@ -119,7 +120,11 @@ async def list_enrollments(
         if student_id is not None:
             filters["student_id"] = student_id
 
-    return await enrollment_service.list_enrollments(filters, page, page_size)
+    result: dict = await enrollment_service.list_enrollments(filters, page, page_size)
+    if current_user.role not in (UserRole.SUPERADMIN, UserRole.ACCOUNTANT):
+        response: PaginatedResponse[EnrollmentResponse] = PaginatedResponse[EnrollmentResponse].model_validate(result, from_attributes=True)
+        return JSONResponse(response.model_dump(mode="json", exclude={"items": {"__all__": {"price_at_enrollment", "billing_mode"}}}))
+    return result
 
 
 @router.get("/courses/{course_id}/roster", response_model=CourseRosterResponse)
@@ -140,7 +145,7 @@ async def get_course_roster(
             status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view course roster"
         )
-    return await enrollment_service.get_course_roster(
+    result: CourseRosterResponse = await enrollment_service.get_course_roster(
         course_id=course_id,
         current_user=current_user,
         page=page,
@@ -151,6 +156,9 @@ async def get_course_roster(
         student_id=student_id,
         locate_student_id=locate_student_id,
     )
+    if current_user.role == UserRole.MENTOR:
+        return JSONResponse(result.model_dump(mode="json", exclude={"items": {"__all__": {"price_at_enrollment", "billing_mode"}}}))
+    return result
 
 
 @router.get("/courses/{course_id}/roster/locate", response_model=RosterLocationResponse)
@@ -169,7 +177,7 @@ async def locate_course_roster_student(
             status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view course roster"
         )
-    return await enrollment_service.get_roster_location(
+    result: RosterLocationResponse = await enrollment_service.get_roster_location(
         course_id=course_id,
         student_id=student_id,
         current_user=current_user,
@@ -178,6 +186,9 @@ async def locate_course_roster_student(
         status_filter=status,
         sort=sort,
     )
+    if current_user.role == UserRole.MENTOR:
+        return JSONResponse(result.model_dump(mode="json", exclude={"item": {"price_at_enrollment", "billing_mode"}}))
+    return result
 
 
 @router.get("/courses/{course_id}/eligible-candidates", response_model=PaginatedResponse[EligibleCandidateResponse])
