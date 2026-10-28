@@ -140,9 +140,11 @@ it("omits immutable terms (price, exam_type, schedules) from PATCH payload when 
     />,
   );
 
-  expect(screen.getByText("Course terms (read-only)")).toBeTruthy();
-  expect(screen.getByText("Exam type and price cannot be changed after the course is created.")).toBeTruthy();
-  expect(screen.getByText("1 500")).toBeTruthy();
+  expect(screen.getByText("Course terms")).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Exam type and price cannot be changed after the course is created." })).toBeTruthy();
+  expect(screen.queryByText("Exam type and price cannot be changed after the course is created.")).toBeNull();
+  expect(screen.queryByText(/read-only/i)).toBeNull();
+  expect(screen.getByText(/1\s500 TJS/)).toBeTruthy();
 
   const titleInput = screen.getByLabelText(/Title/);
   fireEvent.change(titleInput, { target: { value: "Updated Title" } });

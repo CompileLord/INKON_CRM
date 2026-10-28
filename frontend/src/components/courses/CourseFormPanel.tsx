@@ -400,14 +400,12 @@ function CourseFormPanelInner({
               />
             </CourseFormField>
 
-            <CourseFormField id="course-description-field" label={t("form.descriptionLabel")} required error={errorText(errors.description, "form.requiredFieldError")} errorId="course-description-error">
+            <CourseFormField id="course-description-field" label={t("form.descriptionLabel")}>
               <textarea
                 id="course-description-field"
                 rows={3}
-                aria-invalid={Boolean(errors.description)}
-                aria-describedby={errors.description ? "course-description-error" : undefined}
-                disabled={areCourseFieldsLocked}
-                className={`${textareaClass} ${errors.description ? "border-destructive" : "border-control-border"}`}
+                                                disabled={areCourseFieldsLocked}
+                className={`${textareaClass} border-control-border`}
                 {...register("description")}
               />
             </CourseFormField>
@@ -463,7 +461,7 @@ function CourseFormPanelInner({
                   <Input
                     id="course-price-field"
                     inputMode="decimal"
-                    placeholder={t("form.pricePlaceholder")}
+                    rightAddon={<span className="text-sm text-muted">{t("form.priceCurrency")}</span>}
                     aria-invalid={Boolean(errors.price)}
                     aria-describedby={errors.price ? "course-price-error" : undefined}
                     disabled={areCourseFieldsLocked}

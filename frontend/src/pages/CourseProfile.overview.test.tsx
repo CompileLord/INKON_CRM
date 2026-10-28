@@ -145,8 +145,12 @@ describe("CourseProfile Component", () => {
       expect(courseHooks.useCourseMentorHistory).toHaveBeenCalledWith(42, false);
 
       const disclosureBtn = screen.getByRole("button", { name: "Mentor assignment history" });
+      expect(disclosureBtn.getAttribute("aria-expanded")).toBe("false");
+      expect(disclosureBtn.textContent).toBe("Mentor changes");
+      expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
       fireEvent.click(disclosureBtn);
 
+      expect(disclosureBtn.getAttribute("aria-expanded")).toBe("true");
       expect(courseHooks.useCourseMentorHistory).toHaveBeenCalledWith(42, true);
     });
   });

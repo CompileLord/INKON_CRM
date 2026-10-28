@@ -246,6 +246,13 @@ describe("Course roster section", () => {
     );
   }
 
+  it("labels the enrollment date on each roster row", () => {
+    renderPane();
+
+    const labelled: HTMLElement[] = screen.getAllByText(/^(· )?since \d{2}\.\d{2}\.\d{4}$/);
+    expect(labelled.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("displays error with working retry when roster query fails", () => {
     const mockRefetch = vi.fn();
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue({
@@ -328,10 +335,10 @@ describe("Course roster section", () => {
     fireEvent.click(enrollButton);
 
     const dialog = screen.getByRole("dialog");
-    const candidateRadio = within(dialog).getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = within(dialog).getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
 
-    const submitBtn = within(dialog).getByRole("button", { name: "Enroll student" });
+    const submitBtn = within(dialog).getByRole("button", { name: "Enroll 1" });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -467,10 +474,10 @@ describe("Course roster section", () => {
     fireEvent.click(enrollButton);
 
     const dialog = screen.getByRole("dialog");
-    const candidateRadio = within(dialog).getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = within(dialog).getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
 
-    const submitBtn = within(dialog).getByRole("button", { name: "Enroll student" });
+    const submitBtn = within(dialog).getByRole("button", { name: "Enroll 1" });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -560,10 +567,10 @@ describe("Course roster section", () => {
     fireEvent.click(enrollButton);
 
     const dialog = screen.getByRole("dialog");
-    const candidateRadio = within(dialog).getByRole("radio", { name: /Zara Karimova/i });
+    const candidateRadio = within(dialog).getByRole("checkbox", { name: /Zara Karimova/i });
     fireEvent.click(candidateRadio);
 
-    const submitBtn = within(dialog).getByRole("button", { name: "Enroll student" });
+    const submitBtn = within(dialog).getByRole("button", { name: "Enroll 1" });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

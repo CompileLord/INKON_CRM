@@ -7,6 +7,7 @@ import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { CourseScheduleGrouper, type ScheduleGroup } from "../../lib/courses/CourseScheduleGrouper";
 import { StatusBadge } from "../ui/Badge";
 import { Menu } from "../ui/Menu";
+import { courseLifecycleStatus } from "./courseLifecycleStatus";
 import { CourseThumb } from "./CourseThumb";
 import { useCourseMenu, type CourseMenuHandlers } from "./useCourseMenu";
 import type { CourseListItemResponse } from "../../lib/courses/types";
@@ -46,7 +47,6 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
           >
             {course.title}
           </Link>
-          <span className="truncate text-sm text-muted">{t(`examTypeLabel.${course.exam_type}`)}</span>
           {mentorName !== null && <span className="truncate text-sm text-muted">{mentorName}</span>}
         </div>
         {menu.items.length > 0 && <Menu items={menu.items} label={menu.label} />}
@@ -92,7 +92,7 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
             {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
           </span>
-          <StatusBadge status={course.status === "active" ? "active" : "archived"} />
+          <StatusBadge status={courseLifecycleStatus(course)} />
         </span>
         {isMentor && (
           <Link

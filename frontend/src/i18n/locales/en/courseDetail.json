@@ -46,8 +46,6 @@
   },
   "history": {
     "title": "Mentor changes",
-    "show": "Show",
-    "hide": "Hide",
     "toggleLabel": "Mentor assignment history",
     "loadError": "Couldn't load the mentor history",
     "empty": "The mentor hasn't changed",
@@ -82,6 +80,7 @@
     "emptyAdminHelp": "Enroll students to start the group.",
     "emptyMentorHelp": "Students enrolled by the administrator will appear here.",
     "enroll": "Enroll student",
+    "enrolledSince": "since {{date}}",
     "enrolledToast": "Student enrolled",
     "hiddenNotice": "The student is enrolled but is on another page or hidden by filters.",
     "loadError": "Couldn't load the students",
