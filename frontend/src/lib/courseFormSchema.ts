@@ -29,7 +29,7 @@ function courseFormSchemaFor(mode: "create" | "edit") {
   return z
     .object({
       title: z.string().trim().min(1, "form.requiredFieldError").max(255, "form.titleTooLongError"),
-      description: z.string().trim().min(1, "form.requiredFieldError"),
+      description: z.string().trim(),
       start_date: z.string().min(1, "form.requiredFieldError"),
       end_date: z.string().min(1, "form.requiredFieldError"),
       exam_type: z.enum(["weekly", "monthly"]),
