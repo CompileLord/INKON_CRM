@@ -4,6 +4,7 @@ import { Button } from "../ui/Button";
 import { ListboxPicker, type ListboxOption } from "../ui/ListboxPicker";
 import type { CourseListItemResponse } from "../../lib/courses/types";
 import type { StudentPaymentStatus } from "../../lib/users/types";
+import { useAuthStore } from "../../store/authStore";
 import { ALL_FILTER_VALUE, PAYMENT_STATUSES } from "./studentFilterValues";
 
 interface StudentsFiltersProps {
@@ -17,13 +18,14 @@ interface StudentsFiltersProps {
 
 export function StudentsFilters({ courses, courseId, paymentStatus, hasActiveFilters, onChange, onReset }: StudentsFiltersProps) {
   const { t } = useTranslation("students");
+  const role = useAuthStore((state) => state.role);
   const courseOptions: readonly ListboxOption[] = [
     { value: ALL_FILTER_VALUE, label: t("filters.allCourses") },
     ...courses.map((course) => ({ value: String(course.id), label: course.title })),
   ];
   const paymentOptions: readonly ListboxOption[] = [
     { value: ALL_FILTER_VALUE, label: t("filters.all") },
-    ...PAYMENT_STATUSES.map((status) => ({ value: status, label: t(`filters.${status}`) })),
+    ...PAYMENT_STATUSES.filter((status): status is NonNullable<StudentPaymentStatus> => status !== undefined).map((status) => ({ value: status, label: t(`filters.${status}`) })),
   ];
 
   return (
@@ -35,13 +37,13 @@ export function StudentsFilters({ courses, courseId, paymentStatus, hasActiveFil
         value={courseId === undefined ? ALL_FILTER_VALUE : String(courseId)}
         onChange={(value: string) => onChange("course", value)}
       />
-      <ListboxPicker
+      {role !== "mentor" && <ListboxPicker
         label={t("filters.payment")}
         icon={null}
         options={paymentOptions}
         value={paymentStatus ?? ALL_FILTER_VALUE}
         onChange={(value: string) => onChange("payment", value)}
-      />
+      />}
       {hasActiveFilters && (
         <Button type="button" variant="secondary" onClick={onReset}>
           <RotateCcw size={14} aria-hidden="true" />

@@ -15,10 +15,12 @@ import { StudentBalanceCell } from "./StudentBalanceCell";
 import { StudentCoursePills } from "./StudentCoursePills";
 import { formatNumber, formatPhoneDisplay } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
+import { useAuthStore } from "../../store/authStore";
 import type { StudentListItemResponse, User } from "../../lib/users/types";
 
 const SKELETON_ROW_COUNT = 5;
 const ROW_GRID = "md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2.2fr)_9rem]";
+const ROW_GRID_WITHOUT_BALANCE = "md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2.2fr)]";
 
 interface StudentsTableProps {
   students: StudentListItemResponse[];
@@ -45,6 +47,7 @@ interface StudentsTableProps {
 
 interface StudentRowProps {
   student: StudentListItemResponse;
+  showBalance: boolean;
   search: string;
   page: number;
   pageSize: number;
@@ -53,7 +56,7 @@ interface StudentRowProps {
   onStudentNavigate?: (student: User) => void;
 }
 
-function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, onStudentNavigate }: StudentRowProps) {
+function StudentRow({ student, showBalance, search, page, pageSize, onEdit, onDeleteRequest, onStudentNavigate }: StudentRowProps) {
   const { t } = useTranslation(["students", "common"]);
   const rootRef = useRef<HTMLLIElement | null>(null);
   const fullName: string = `${student.first_name} ${student.last_name}`;
@@ -76,7 +79,7 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
         menuItems={menuItems}
         menuLabel={`${t("studentActions")}: ${fullName}`}
       >
-        <span className={`grid items-center gap-x-4 gap-y-1.5 ${ROW_GRID}`}>
+        <span className={`grid items-center gap-x-4 gap-y-1.5 ${showBalance ? ROW_GRID : ROW_GRID_WITHOUT_BALANCE}`}>
           <span className="flex min-w-0 items-center gap-3">
             <PersonAvatar firstName={student.first_name} lastName={student.last_name} photoUrl={photoUrl} />
             <span className="flex min-w-0 flex-col">
@@ -94,7 +97,9 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
           </span>
           <span className={`text-sm tabular-nums text-ink ${student.phone == null ? "hidden md:block" : ""}`}>{student.phone != null ? formatPhoneDisplay(student.phone) : <EmptyValue reason={t("common:empty.phone")} />}</span>
           <StudentCoursePills courses={student.courses} />
-          <span className="md:text-right"><StudentBalanceCell paymentStatus={student.payment_status} debtAmount={student.debt_amount} /></span>
+          {showBalance && student.payment_status !== undefined && student.debt_amount !== undefined && (
+            <span className="md:text-right"><StudentBalanceCell paymentStatus={student.payment_status} debtAmount={student.debt_amount} /></span>
+          )}
         </span>
       </ListRow>
     </li>
@@ -106,10 +111,14 @@ export function StudentsTable({
   onRetry, onPageChange, onPageSizeChange, onEdit, onDeleteRequest, onAddStudent, onClearSearch, onClearFilters, onStudentNavigate,
 }: StudentsTableProps) {
   const { t, i18n } = useTranslation(["students", "common"]);
+  const role = useAuthStore((state) => state.role);
   const from: number = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to: number = Math.min(page * pageSize, total);
   const isSearchActive: boolean = search.trim().length > 0;
   const hasRows: boolean = students.length > 0;
+  const showBalance: boolean = hasRows
+    ? students.some((student) => student.payment_status !== undefined && student.debt_amount !== undefined)
+    : role !== "mentor";
   const loadedOnce: boolean = typeof hasLoadedOnce === "boolean" ? hasLoadedOnce : (hasRows || (!isLoading && !isError));
   const showInitialLoading: boolean = isLoading && !loadedOnce;
   const showInitialError: boolean = isError && !loadedOnce;
@@ -122,7 +131,7 @@ export function StudentsTable({
         <ul aria-hidden="true">
           {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
             <li key={index} className="px-3 py-3 motion-safe:animate-pulse">
-              <div className={`grid items-center gap-x-4 gap-y-2 ${ROW_GRID}`}>
+              <div className={`grid items-center gap-x-4 gap-y-2 ${showBalance ? ROW_GRID : ROW_GRID_WITHOUT_BALANCE}`}>
                 <div className="flex items-center gap-3">
                   <div className="size-10 shrink-0 rounded-full bg-border" />
                   <div className="flex flex-1 flex-col gap-2">
@@ -132,7 +141,7 @@ export function StudentsTable({
                 </div>
                 <div className="hidden h-4 w-28 rounded bg-border md:block" />
                 <div className="hidden h-5 w-32 rounded-full bg-border md:block" />
-                <div className="hidden h-4 w-16 rounded bg-border md:ml-auto md:block" />
+                {showBalance && <div className="hidden h-4 w-16 rounded bg-border md:ml-auto md:block" />}
               </div>
             </li>
           ))}
@@ -166,7 +175,7 @@ export function StudentsTable({
     return (
       <ul>
         {students.map((student) => (
-          <StudentRow key={student.id} student={student} search={search} page={page} pageSize={pageSize} onEdit={onEdit} onDeleteRequest={onDeleteRequest} onStudentNavigate={onStudentNavigate} />
+          <StudentRow key={student.id} student={student} showBalance={showBalance} search={search} page={page} pageSize={pageSize} onEdit={onEdit} onDeleteRequest={onDeleteRequest} onStudentNavigate={onStudentNavigate} />
         ))}
       </ul>
     );
@@ -182,11 +191,11 @@ export function StudentsTable({
       )}
       <div className="rounded-2xl border border-border bg-card p-1">
         {hasRows && (
-          <div aria-hidden="true" className={`hidden gap-x-4 py-2 pl-3 pr-[4.25rem] text-sm text-muted md:grid ${ROW_GRID}`}>
+          <div aria-hidden="true" className={`hidden gap-x-4 py-2 pl-3 pr-[4.25rem] text-sm text-muted md:grid ${showBalance ? ROW_GRID : ROW_GRID_WITHOUT_BALANCE}`}>
             <span className="pl-[3.25rem]">{t("table.student")}</span>
             <span>{t("table.phone")}</span>
             <span>{t("table.courses")}</span>
-            <span className="text-right">{t("table.balance")}</span>
+            {showBalance && <span className="text-right">{t("table.balance")}</span>}
           </div>
         )}
         {renderBody()}

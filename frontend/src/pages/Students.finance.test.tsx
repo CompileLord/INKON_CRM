@@ -28,6 +28,17 @@ afterEach(() => {
 });
 
 describe("Students page filters", () => {
+  it("hides finance controls for mentors when the API omits finance fields", async () => {
+    useAuthStore.setState({ role: "mentor" });
+    const items = mockPaginatedData.items.map(({ debt_amount: _debtAmount, payment_status: _paymentStatus, ...student }) => student);
+    vi.spyOn(userEndpoints, "getStudents").mockResolvedValue({ ...mockPaginatedData, items });
+    renderStudentsPage();
+    await screen.findByText("Farrukh Saidov");
+    expect(screen.queryByRole("button", { name: /Balance/ })).toBeNull();
+    expect(screen.queryByText("Balance")).toBeNull();
+    expect(screen.getByRole("button", { name: /Course/ })).toBeTruthy();
+  });
+
   it("sends course and payment filters to the list endpoint, resets to page 1, and makes one request per change", async () => {
     const getStudentsSpy = vi.spyOn(userEndpoints, "getStudents").mockResolvedValue({ ...mockPaginatedData, total: 40, total_pages: 2, page: 2 });
     const fetchEnrollmentsSpy = vi.spyOn(enrollmentHooks, "fetchFilteredEnrollments");
