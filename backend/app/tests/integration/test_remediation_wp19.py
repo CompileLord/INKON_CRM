@@ -113,9 +113,12 @@ class RedisProbe:
 @pytest_asyncio.fixture
 async def scenario(db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User) -> FinanceScenario:
     today: date = date.today()
+    start_date: date = today.replace(day=1)
+    fourth_month_index: int = start_date.year * 12 + start_date.month - 1 + 3
+    end_date: date = date(fourth_month_index // 12, fourth_month_index % 12 + 1, 1) - timedelta(days=1)
     course: Course = Course(
         title="Generation race", description="Transactional analytics", mentor_id=test_mentor.id,
-        price=Decimal("100.00"), start_date=today.replace(day=1), end_date=today + timedelta(days=65),
+        price=Decimal("100.00"), start_date=start_date, end_date=end_date,
         exam_type=CourseExamType.MONTHLY,
     )
     db_session.add(course)
