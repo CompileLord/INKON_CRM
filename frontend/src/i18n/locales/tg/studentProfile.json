@@ -32,7 +32,10 @@
     "empty": "Донишҷӯ ба ягон курс сабт нашудааст.",
     "emptyTitle": "Курс нест",
     "emptyStudent": "Шумо ба ягон курс сабт нашудаед.",
-    "periodsGraded": "давраҳои баҳогузоришуда: {{graded}} аз {{total}}"
+    "periodsGraded": "давраҳои баҳогузоришуда: {{graded}} аз {{total}}",
+    "enroll": "Ба курс сабт кардан",
+    "debt": "Қарз {{amount}}",
+    "openJournal": "Ба журнал"
   },
   "courseStatus": {
     "withdrawn": "Хориҷшуда"

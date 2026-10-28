@@ -235,7 +235,7 @@ describe("Documents pane ownership and roles", () => {
     cleanup();
     vi.mocked(endpoints.fetchDocuments).mockResolvedValue(pageOf([]));
     setup(false);
-    await screen.findByText("No attached documents");
+    await screen.findByText("No documents");
     expect(screen.getByText("Files added by the administration will appear here.")).toBeDefined();
     expect(screen.queryByText(/Upload the first file/)).toBeNull();
   });
@@ -243,7 +243,8 @@ describe("Documents pane ownership and roles", () => {
   it("managers get upload-directed empty copy", async () => {
     vi.mocked(endpoints.fetchDocuments).mockResolvedValue(pageOf([]));
     setup(true);
-    await screen.findByText("No attached documents");
-    expect(screen.getByText(/Upload the first file with the Upload Document button/)).toBeDefined();
+    await screen.findByText("No documents");
+    expect(screen.getByText("Upload the first file with the button above.")).toBeDefined();
+    expect(screen.getAllByText(/up to 50 MB/)).toHaveLength(1);
   });
 });

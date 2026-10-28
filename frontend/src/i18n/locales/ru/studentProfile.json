@@ -34,7 +34,10 @@
     "empty": "Студент не записан ни на один курс.",
     "emptyTitle": "Курсов нет",
     "emptyStudent": "Вы не записаны ни на один курс.",
-    "periodsGraded": "оценено периодов: {{graded}} из {{total}}"
+    "periodsGraded": "оценено периодов: {{graded}} из {{total}}",
+    "enroll": "Записать на курс",
+    "debt": "Долг {{amount}}",
+    "openJournal": "В журнал"
   },
   "courseStatus": {
     "withdrawn": "Отчислен"

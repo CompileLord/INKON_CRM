@@ -517,7 +517,7 @@ export function Students() {
       {pendingEnrollment !== null && (
         <EnrollNewStudentFlow
           open
-          studentName={`${pendingEnrollment.user.first_name} ${pendingEnrollment.user.last_name}`}
+          student={pendingEnrollment.user}
           onFinish={() => {
             setPendingEnrollment(null);
             navigate(`/students/${pendingEnrollment.user.id}`, { state: pendingEnrollment.profileState });

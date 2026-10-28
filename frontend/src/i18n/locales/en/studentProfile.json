@@ -32,7 +32,10 @@
     "empty": "This student isn't enrolled in any course.",
     "emptyTitle": "No courses",
     "emptyStudent": "You aren't enrolled in any course.",
-    "periodsGraded": "{{graded}} of {{total}} periods graded"
+    "periodsGraded": "{{graded}} of {{total}} periods graded",
+    "enroll": "Enroll in a course",
+    "debt": "Debt {{amount}}",
+    "openJournal": "Journal"
   },
   "courseStatus": {
     "withdrawn": "Withdrawn"

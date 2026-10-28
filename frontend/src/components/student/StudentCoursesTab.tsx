@@ -1,64 +1,85 @@
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
-import { GrantBadge } from "../enrollments/GrantBadge";
-import { useStudentBillingModes } from "../../lib/enrollments/hooks";
-import { CourseScore } from "./CourseScore";
-import { StudentCourseEntry } from "./StudentCourseEntry";
-import { StudentCourseStagePill } from "./StudentCourseStagePill";
-import { formatDate } from "../../i18n/formatters";
-import { formatTjs } from "../../lib/money";
-import { getStudentCourseLink } from "../../lib/students/studentNavigation";
-import type { StudentCourseProfile } from "../../lib/users/types";
+import { SectionCard } from "../ui/SectionCard";
+import { EnrollNewStudentFlow } from "../students/EnrollNewStudentFlow";
+import { StudentCourseCard } from "./StudentCourseCard";
+import { useCourses } from "../../lib/courses/hooks";
+import { useMentors } from "../../lib/users/hooks";
+import { useStudentCourseBalances } from "../../lib/students/useStudentCourseBalances";
+import type { CourseListItemResponse } from "../../lib/courses/types";
+import type { StudentCourseProfile, User } from "../../lib/users/types";
 
 interface StudentCoursesTabProps {
   courses: StudentCourseProfile[];
-  studentId: number;
+  student: User;
   role: string | null;
   currentUserId: number | null;
+  onEnrolled?: () => void;
 }
 
-export function StudentCoursesTab({ courses, studentId, role, currentUserId }: StudentCoursesTabProps) {
-  const { t, i18n } = useTranslation("studentProfile");
-  const billingModes = useStudentBillingModes(role === "superadmin" ? studentId : undefined);
+export function StudentCoursesTab({ courses, student, role, currentUserId, onEnrolled }: StudentCoursesTabProps) {
+  const { t } = useTranslation(["studentProfile", "common"]);
+  const isSuperAdmin: boolean = role === "superadmin";
+  const [isEnrollOpen, setIsEnrollOpen] = useState<boolean>(false);
+  const balances = useStudentCourseBalances(student.id, isSuperAdmin && courses.length > 0);
+  const courseList = useCourses({ page_size: 100 });
+  const mentors = useMentors({ page_size: 100 }, isSuperAdmin && courses.length > 0);
+
+  const schedulesFor = (courseId: number) => (courseList.data?.items ?? []).find((course: CourseListItemResponse) => course.id === courseId)?.schedules ?? [];
+  const mentorNameFor = (mentorId: number): string | null => {
+    const mentor: User | undefined = mentors.data?.items.find((candidate: User) => candidate.id === mentorId);
+    return mentor ? `${mentor.first_name} ${mentor.last_name}`.trim() : null;
+  };
+
+  const enrollButton = isSuperAdmin ? (
+    <Button type="button" variant="secondary" onClick={() => setIsEnrollOpen(true)}>
+      <Plus size={16} aria-hidden="true" />
+      {t("courses.enroll")}
+    </Button>
+  ) : undefined;
+
+  const flow = isSuperAdmin ? (
+    <EnrollNewStudentFlow
+      open={isEnrollOpen}
+      student={student}
+      isJustCreated={false}
+      onFinish={() => {
+        setIsEnrollOpen(false);
+        onEnrolled?.();
+      }}
+    />
+  ) : null;
 
   if (courses.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card">
-        <EmptyState title={t("courses.emptyTitle")} description={t(role === "student" ? "courses.emptyStudent" : "courses.empty")} />
-      </div>
+      <>
+        <div className="rounded-2xl border border-border bg-card">
+          <EmptyState title={t("courses.emptyTitle")} description={t(role === "student" ? "courses.emptyStudent" : "courses.empty")} action={enrollButton} />
+        </div>
+        {flow}
+      </>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-2">
+    <SectionCard title={t("tabs.courses")} actions={enrollButton}>
       <ul className="flex flex-col divide-y divide-border">
-        {courses.map((item: StudentCourseProfile) => {
-          const linkInfo = getStudentCourseLink(item.course.id, item.course.mentor_id, role, currentUserId);
-          return (
-            <li key={item.course.id}>
-              <StudentCourseEntry to={linkInfo.to} isNavigable={linkInfo.isNavigable}>
-                <span className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">{item.course.title}</span>
-                      <StudentCourseStagePill course={item} />
-                    </span>
-                    <span className="text-xs tabular-nums text-muted">
-                      {formatDate(item.course.start_date, i18n.language)} – {formatDate(item.course.end_date, i18n.language)} · {billingModes.data?.get(item.course.id) === "grant" ? <GrantBadge billingMode="grant" /> : formatTjs(item.course.price, { perMonth: true, lng: i18n.language })}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 flex-col items-end gap-0.5 text-right text-sm">
-                    {typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? <CourseScore score={item.my_total_score} /> : <span className="text-muted">—</span>}
-                    {item.periods_total > 0 ? (
-                      <span className="text-xs tabular-nums text-muted">{t("courses.periodsGraded", { graded: item.periods_graded, total: item.periods_total })}</span>
-                    ) : null}
-                  </span>
-                </span>
-              </StudentCourseEntry>
-            </li>
-          );
-        })}
+        {courses.map((item: StudentCourseProfile) => (
+          <StudentCourseCard
+            key={item.course.id}
+            item={item}
+            role={role}
+            currentUserId={currentUserId}
+            mentorName={mentorNameFor(item.course.mentor_id)}
+            schedules={schedulesFor(item.course.id)}
+            balance={balances.data?.get(item.course.id)}
+          />
+        ))}
       </ul>
-    </div>
+      {flow}
+    </SectionCard>
   );
 }
