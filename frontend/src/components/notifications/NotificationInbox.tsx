@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BellOff, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { formatDate, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
+import { formatDate, formatActivityTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "../../lib/notifications/hooks";
 import { NotificationPresentation, type NotificationEventKind } from "../../lib/notifications/NotificationPresentation";
 import type { NotificationLogItem } from "../../lib/notifications/types";
@@ -35,7 +35,7 @@ function NotificationRow({ notification }: { notification: NotificationLogItem }
   const unread: boolean = notification.read_at === null;
   const delivered: boolean = NotificationPresentation.isDelivered(notification);
   const timeText: string = notification.sent_at
-    ? formatRecentRelativeTime(notification.sent_at, i18n.language) ?? formatTime(notification.sent_at, i18n.language, SCHOOL_TIMEZONE)
+    ? formatActivityTime(notification.sent_at, i18n.language)
     : formatDate(`${notification.notification_date}T12:00:00+05:00`, i18n.language, SCHOOL_TIMEZONE);
   const timeValue: string = notification.sent_at ?? notification.notification_date;
 
