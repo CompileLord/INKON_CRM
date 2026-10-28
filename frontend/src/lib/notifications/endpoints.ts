@@ -1,5 +1,5 @@
 import { httpClient } from "../auth/httpClient";
-import type { MarkAllReadResponse, NotificationLogItem, NotificationStatus, PaginatedDeliveryLog, PaginatedNotifications, UnreadCountResponse } from "./types";
+import type { DeliveryLogItem, MarkAllReadResponse, NotificationLogItem, NotificationStatus, PaginatedDeliveryLog, PaginatedNotifications, UnreadCountResponse } from "./types";
 
 export function fetchNotifications(page = 1, pageSize = 20): Promise<PaginatedNotifications> {
   return httpClient
@@ -33,4 +33,8 @@ export function fetchDeliveryLog(page = 1, pageSize = 20, status?: NotificationS
       params: { page, page_size: pageSize, ...(status ? { status } : {}) },
     })
     .then((res) => res.data);
+}
+
+export function retryDeliveryLog(id: number): Promise<DeliveryLogItem> {
+  return httpClient.post<DeliveryLogItem>(`/notifications/logs/${id}/retry`).then((res) => res.data);
 }

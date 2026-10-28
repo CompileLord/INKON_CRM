@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   markOne: vi.fn(),
   markAll: vi.fn(),
   deliveryLog: { isLoading: false, isError: false, data: undefined as unknown, refetch: vi.fn() },
+  retry: { mutate: vi.fn(), isPending: false, variables: undefined as number | undefined },
   deliveryLogCalls: [] as Array<{ enabled: boolean; page: number; status: string | undefined }>,
 }));
 
@@ -20,6 +21,7 @@ vi.mock("../lib/notifications/hooks", () => ({
   useUnreadNotificationCount: () => mocks.unread,
   useMarkNotificationRead: () => ({ mutate: mocks.markOne, isPending: false, isError: false }),
   useMarkAllNotificationsRead: () => ({ mutate: mocks.markAll, isPending: false, isError: false }),
+  useRetryDelivery: () => mocks.retry,
   useDeliveryLog: (enabled: boolean, page: number, status?: string) => {
     mocks.deliveryLogCalls.push({ enabled, page, status });
     return mocks.deliveryLog;
@@ -50,6 +52,7 @@ beforeEach(async () => {
   mocks.unread = { data: { unread_count: 0 } };
   mocks.deliveryLog = { isLoading: false, isError: false, data: { items: [], total: 0, page: 1, page_size: 20, total_pages: 1 }, refetch: vi.fn() };
   mocks.deliveryLogCalls = [];
+  mocks.retry = { mutate: vi.fn(), isPending: false, variables: undefined };
   mocks.markOne.mockReset();
   mocks.markAll.mockReset();
 });
@@ -165,10 +168,12 @@ describe("Notifications delivery log", () => {
   it("shows the Inbox and Delivery log tabs to the superadmin and switches with the keyboard", () => {
     renderNotifications("superadmin");
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["Inbox", "Delivery log"]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Delivery log", "Inbox"]);
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(screen.queryByTestId("inbox-empty")).toBeNull();
     fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
-    expect(screen.getByRole("tab", { name: "Delivery log" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Inbox" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("inbox-empty")).toBeTruthy();
   });
 
   it("lists names with status chips, a localized event and an unknown recipient fallback, never ids", () => {
@@ -180,7 +185,7 @@ describe("Notifications delivery log", () => {
     expect(within(rows[0]).getByTestId("delivery-status").getAttribute("data-status")).toBe("sent");
     expect(within(rows[1]).getByText("Unknown recipient")).toBeTruthy();
     expect(within(rows[1]).getByTestId("delivery-status").textContent).toContain("Failed · 3");
-    expect(within(rows[1]).getByText("Not sent")).toBeTruthy();
+    expect(within(rows[1]).getByText(/^Not sent/)).toBeTruthy();
     expect(container.textContent).not.toContain("payment_reminder_1d");
   });
 
@@ -218,9 +223,7 @@ describe("Notifications delivery states and unsent inbox rows", () => {
     renderNotifications("superadmin", "/notifications?tab=log");
     const chips: HTMLElement[] = screen.getAllByTestId("delivery-status");
     expect(chips.map((chip) => chip.textContent)).toEqual(["Queued", "Sending", "Sent", "Failed · 3"]);
-    expect(chips.map((chip) => chip.className.includes("text-destructive"))).toEqual([false, false, false, true]);
-    expect(chips[1].className).toContain("text-info");
-    expect(chips[2].className).toContain("text-success");
+    expect(chips.map((chip) => chip.querySelector("[data-badge-status]")?.getAttribute("data-badge-status"))).toEqual(["draft", "pending", "paid", "overdue"]);
     expect(chips.every((chip) => chip.className.includes("tabular-nums"))).toBe(true);
   });
 
@@ -240,6 +243,7 @@ describe("Notifications delivery states and unsent inbox rows", () => {
     expect(screen.getByText("Telegram deliveries")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Only Telegram messages to parents are logged here. Emails and SMS are not listed." })).toBeTruthy();
     expect(screen.getByText("No Telegram messages have been sent yet.")).toBeTruthy();
+    expect(screen.getByText("Payment reminders and exam results sent to students and parents will appear here.")).toBeTruthy();
   });
 
   it("shows the queued date for unsent inbox rows, marks them with their status and hides body, dot and mark-read", () => {

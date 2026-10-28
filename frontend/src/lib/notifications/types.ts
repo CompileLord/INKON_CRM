@@ -28,7 +28,7 @@ export interface MarkAllReadResponse {
 
 export interface DeliveryLogItem {
   id: number;
-  recipient_name: string | null;
+  recipient_name?: string | null;
   type: NotificationType;
   notification_date: string;
   status: NotificationStatus;
@@ -40,5 +40,7 @@ export interface DeliveryLogItem {
   amount?: string | null;
   score?: number | null;
 }
+
+export type DeliveryRetryFailure = "notFailed" | "rateLimited" | "notFound" | "generic";
 
 export type PaginatedDeliveryLog = Paginated<DeliveryLogItem>;
