@@ -9,7 +9,7 @@ import { useAuthStore } from "../store/authStore";
 
 type NotificationsTab = "inbox" | "log";
 
-const TABS: readonly NotificationsTab[] = ["inbox", "log"];
+const TABS: readonly NotificationsTab[] = ["log", "inbox"];
 
 export function Notifications() {
   const { t } = useTranslation("notifications");
@@ -17,7 +17,7 @@ export function Notifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const canSeeLog: boolean = role === "superadmin";
-  const tab: NotificationsTab = canSeeLog && searchParams.get("tab") === "log" ? "log" : "inbox";
+  const tab: NotificationsTab = canSeeLog && searchParams.get("tab") !== "inbox" ? "log" : "inbox";
   const failedOnly: boolean = tab === "log" && searchParams.get("failed") === "1";
   const rawPage: number = Number(searchParams.get("page"));
   const page: number = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
@@ -25,7 +25,7 @@ export function Notifications() {
   const updateQuery = (next: { tab?: NotificationsTab; failed?: boolean; page?: number }): void => {
     const query = new URLSearchParams();
     const nextTab: NotificationsTab = next.tab ?? tab;
-    if (nextTab === "log") query.set("tab", "log");
+    if (nextTab === "inbox" && canSeeLog) query.set("tab", "inbox");
     if (nextTab === "log" && (next.failed ?? failedOnly)) query.set("failed", "1");
     if (nextTab === "log" && (next.page ?? page) > 1) query.set("page", String(next.page ?? page));
     setSearchParams(query);

@@ -46,7 +46,7 @@
     "failed": "Failed · {{count}}",
     "unknownRecipient": "Unknown recipient",
     "notSent": "Not sent",
-    "empty": "No Telegram messages have been sent yet.",
+    "empty": "No messages have been sent yet.",
     "emptyFailed": "No failed deliveries.",
     "recipient": "Recipient",
     "event": "Event",
@@ -55,7 +55,18 @@
     "sentAt": "Sent",
     "queued": "Queued",
     "inflight": "Sending",
-    "scope": "Telegram deliveries",
-    "scopeInfo": "Only Telegram messages to parents are logged here. Emails and SMS are not listed."
+    "scope": "Messages to students and parents",
+    "scopeInfo": "Messages sent to students and parents by Telegram or SMS. Emails are not listed.",
+    "retry": "Retry",
+    "retryQueued": "Message queued for resending.",
+    "retryError": {
+      "notFailed": "This message is no longer failed, so it can't be retried.",
+      "rateLimited": "Too many retries. Try again in a minute.",
+      "notFound": "This message no longer exists.",
+      "generic": "Couldn't retry the message. Try again."
+    },
+    "emptyNext": "Payment reminders and exam results sent to students and parents will appear here.",
+    "emptyFailedNext": "Failed messages show up here so you can retry them.",
+    "score": "Score: {{score}}"
   }
 }

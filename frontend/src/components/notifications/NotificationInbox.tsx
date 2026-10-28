@@ -5,7 +5,7 @@ import { formatDate, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } fro
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "../../lib/notifications/hooks";
 import { NotificationPresentation, type NotificationEventKind } from "../../lib/notifications/NotificationPresentation";
 import type { NotificationLogItem } from "../../lib/notifications/types";
-import { DeliveryStatusChip } from "./DeliveryLog";
+import { DeliveryStatusChip } from "./DeliveryStatusChip";
 import { Button } from "../ui/Button";
 import { ErrorState } from "../ui/ErrorState";
 import { Pagination } from "../ui/Pagination";
