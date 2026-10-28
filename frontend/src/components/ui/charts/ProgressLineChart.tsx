@@ -18,6 +18,7 @@ interface ProgressLineChartProps {
   formatValue: (value: number) => string;
   formatAxisValue: (value: number) => string;
   describeEntry: (name: string, formattedValue: string) => string;
+  showLegend?: boolean;
 }
 
 interface TooltipEntry {
@@ -53,6 +54,7 @@ export function ProgressLineChart({
   formatValue,
   formatAxisValue,
   describeEntry,
+  showLegend = true,
 }: ProgressLineChartProps) {
   const hintId: string = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -254,14 +256,14 @@ export function ProgressLineChart({
           )}
         </div>
       </div>
-      <ul className="flex flex-wrap gap-x-4 gap-y-1.5" data-testid="student-chart-legend">
+      {showLegend ? <ul className="flex flex-wrap gap-x-4 gap-y-1.5" data-testid="student-chart-legend">
         {series.map((entry) => (
           <li key={entry.key} className="flex min-w-0 items-center gap-2 text-sm text-muted">
             <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${SERIES_BACKGROUND[entry.slot % SERIES_BACKGROUND.length]}`} />
             <span className="truncate" title={entry.name}>{entry.name}</span>
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

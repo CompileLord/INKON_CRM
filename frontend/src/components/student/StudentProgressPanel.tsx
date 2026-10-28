@@ -21,12 +21,13 @@ interface StudentProgressPanelProps {
   currentUserId: number | null;
 }
 
-function CourseProgressRow({ item, role, currentUserId, latestTotal }: { item: StudentCourseProfile; role: string | null; currentUserId: number | null; latestTotal: number | null }) {
+function CourseProgressRow({ item, role, currentUserId, latestTotal, latestMax }: { item: StudentCourseProfile; role: string | null; currentUserId: number | null; latestTotal: number | null; latestMax: number | null }) {
   const { t, i18n } = useTranslation("studentProfile");
   const linkInfo = getStudentCourseLink(item.course.id, item.course.mentor_id, role, currentUserId);
   const stats = item.performance && item.performance.period_summaries_count > 0 ? item.performance : null;
   const attendance: number | null = stats !== null && stats.attendance_denominator > 0 ? stats.attendance_percentage : null;
   const total: number | null = latestTotal ?? (typeof item.my_total_score === "number" && (item.my_total_max_score ?? 0) > 0 ? item.my_total_score : null);
+  const totalMax: number | null = latestTotal !== null ? latestMax : (item.my_total_max_score ?? null);
   const hasLessons: boolean = stats !== null && stats.total_lessons > 0;
 
   return (
@@ -39,7 +40,7 @@ function CourseProgressRow({ item, role, currentUserId, latestTotal }: { item: S
           </span>
           {total !== null || hasLessons ? (
             <span className="flex min-w-0 max-w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
-              {total !== null ? <CourseScore score={total} /> : null}
+              {total !== null ? <CourseScore score={total} max={totalMax} /> : null}
               {hasLessons && attendance !== null ? (
                 <span className="tabular-nums text-muted">{t("progress.attendanceShort", { value: formatNumber(attendance, i18n.language, { maximumFractionDigits: 0 }) })}</span>
               ) : null}
@@ -69,6 +70,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
     values: series.values,
     pointLabels: series.periodLabels.map(periodName),
   }));
+  const rowSeries = (courseId: number): StudentProgressSeries | undefined => progress.series.find((series: StudentProgressSeries) => series.courseId === courseId);
   const showChart: boolean = courses.length > 0 && StudentProgressSeriesBuilder.canDrawChart(progress.series);
 
   return (
@@ -97,6 +99,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
           noValuesLabel={t("progress.chartNoValues")}
           formatValue={(value: number) => formatPercentage(value, i18n.language)}
           formatAxisValue={(value: number) => formatNumber(value, i18n.language)}
+          showLegend={chartSeries.length > 1}
           describeEntry={(name: string, formattedValue: string) => t("progress.chartEntry", { name, value: formattedValue })}
         />
       ) : progress.history?.items.length === 0 ? null : (
@@ -131,7 +134,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
       {courses.length > 0 ? (
         <ul aria-label={t("progress.coursesLabel")} className="flex flex-col divide-y divide-border">
           {courses.map((item: StudentCourseProfile) => (
-            <CourseProgressRow key={item.course.id} item={item} role={role} currentUserId={currentUserId} latestTotal={progress.series.find((series: StudentProgressSeries) => series.courseId === item.course.id)?.latestTotal ?? null} />
+            <CourseProgressRow key={item.course.id} item={item} role={role} currentUserId={currentUserId} latestTotal={rowSeries(item.course.id)?.latestTotal ?? null} latestMax={rowSeries(item.course.id)?.latestMax ?? null} />
           ))}
         </ul>
       ) : null}

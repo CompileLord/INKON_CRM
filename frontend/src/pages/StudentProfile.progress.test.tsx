@@ -116,13 +116,26 @@ describe("StudentProfile Component", () => {
     const rows = screen.getAllByTestId("course-progress-row");
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain("Advanced Mathematics");
-    expect(rows[0].querySelector("[data-course-score]")?.textContent).toBe("9");
+    expect(rows[0].querySelector("[data-course-score]")?.textContent).toBe("9 / 10");
     expect(rows[0].textContent).not.toContain("340 / 400");
     expect(rows[0].textContent).not.toContain("—");
     expect(rows[0].textContent).not.toContain("85%");
     expect(rows[0].textContent).toContain("95% attendance");
     expect(rows[0].textContent).toContain("1 of 12 missed");
     expect(screen.queryByText(/Recorded period summaries for this course/i)).toBeNull();
+  });
+
+  it("hides the chart legend when only one course has graded periods and keeps it for several", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(courseEndpoints, "getCourseStaffProgress").mockImplementation(async (courseId: number) => {
+      const progress = staffProgressFixture(courseId);
+      return courseId === 101 ? progress : { ...progress, students: [{ ...progress.students[0], period_results: progress.students[0].period_results.map((result) => ({ ...result, score: null, max_score: null, percentage: null })) }] };
+    });
+    renderStudentProfile();
+    await user.click(screen.getByRole("tab", { name: "Progress" }));
+    const chart = await screen.findByTestId("student-progress-chart");
+    expect(chart.querySelectorAll('[data-testid="student-chart-line"]')).toHaveLength(1);
+    expect(screen.queryByTestId("student-chart-legend")).toBeNull();
   });
 
   it("shows a crosshair tooltip with each course value when a period is inspected", async () => {
