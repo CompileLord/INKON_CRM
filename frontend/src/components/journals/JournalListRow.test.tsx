@@ -23,7 +23,7 @@ function buildCourse(overrides: Partial<CourseListItemResponse> = {}): CourseLis
     updated_at: "2026-01-01T00:00:00Z",
     schedules: [],
     active_student_count: 0,
-    current_period_label: "Месяц 3",
+    current_period_label: "Month 3",
     last_graded_lesson_date: "2026-10-27",
     ungraded_lessons_count: 3,
     ...overrides,
@@ -48,9 +48,17 @@ describe("JournalListRow progress", () => {
 
   it("shows the period, the formatted last graded date and the ungraded pill", async () => {
     await renderRow(buildCourse());
-    expect(screen.getByTestId("journal-period").textContent).toBe("Месяц 3");
+    expect(screen.getByTestId("journal-period").textContent).toBe("Month 3");
     expect(screen.getByTestId("journal-last-graded").textContent).toBe("Last graded: 27.10.2026");
     expect(screen.getByTestId("journal-ungraded").textContent).toBe("3 ungraded");
+  });
+
+  it("translates the backend period label like the journal page", async () => {
+    await renderRow(buildCourse({ current_period_label: "Month 2" }), "ru");
+    expect(screen.getByTestId("journal-period").textContent).toBe("Месяц 2");
+    cleanup();
+    await renderRow(buildCourse({ current_period_label: "Week 4" }), "ru");
+    expect(screen.getByTestId("journal-period").textContent).toBe("Неделя 4");
   });
 
   it("leaves out the period and last graded date when they are null", async () => {

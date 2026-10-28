@@ -4,6 +4,7 @@ import { Badge } from "../ui/Badge";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
 import { resolveMediaUrl } from "../../lib/users/media";
+import { usePeriodName } from "../ui/periodName";
 import { formatDate } from "../../i18n/formatters";
 import type { CourseListItemResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
@@ -24,6 +25,7 @@ const ROW_COLUMNS_WITH_MENTOR: string = "md:grid-cols-[minmax(0,2fr)_minmax(0,1f
 
 export function JournalListRow({ course, mentorState, onNavigateOut }: JournalListRowProps) {
   const { t, i18n } = useTranslation(["journals", "common"]);
+  const periodName: (label: string) => string = usePeriodName();
   const hasMentorColumn: boolean = mentorState.kind !== "hidden";
   const hasProgress: boolean =
     course.current_period_label !== null || course.last_graded_lesson_date !== null || course.ungraded_lessons_count > 0;
@@ -41,7 +43,7 @@ export function JournalListRow({ course, mentorState, onNavigateOut }: JournalLi
               </span>
               {hasProgress && (
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
-                  {course.current_period_label !== null && <span data-testid="journal-period">{course.current_period_label}</span>}
+                  {course.current_period_label !== null && <span data-testid="journal-period">{periodName(course.current_period_label)}</span>}
                   {course.last_graded_lesson_date !== null && (
                     <span data-testid="journal-last-graded" className="tabular-nums">
                       {t("hub.lastGraded", { date: formatDate(course.last_graded_lesson_date, i18n.language) })}
