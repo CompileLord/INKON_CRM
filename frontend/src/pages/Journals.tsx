@@ -5,6 +5,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "../i18n/formatters";
 import { useCourses } from "../lib/courses/hooks";
 import { useMentors } from "../lib/users/hooks";
 import { parseSafePageParam } from "../lib/courses/returnContext";
@@ -31,7 +32,7 @@ export function Journals() {
 }
 
 function JournalsHub() {
-  const { t } = useTranslation(["journals", "common"]);
+  const { t, i18n } = useTranslation(["journals", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
   const role = useAuthStore((state) => state.role);
   const isSuperAdmin = role === "superadmin";
@@ -162,7 +163,10 @@ function JournalsHub() {
 
   return (
     <PageContainer>
-      <PageHeader title={t("hubTitle")} />
+      <PageHeader
+        title={t("common:nav.journals")}
+        count={isSettled && coursesPage && !isTrulyEmptyCatalog ? formatNumber(coursesPage.total, i18n.language) : undefined}
+      />
 
       {isTrulyEmptyCatalog ? null : (
         <JournalsToolbar
@@ -173,13 +177,11 @@ function JournalsHub() {
         />
       )}
 
-      {isSettled && coursesPage && !isTrulyEmptyCatalog ? (
+      {isSettled && coursesPage && !isTrulyEmptyCatalog && (normalizedQuery || isRefreshing) ? (
         <div role="status" className="flex flex-col gap-0.5 text-sm text-muted">
           <span className="tabular-nums">
-            {normalizedQuery
-              ? t("hub.searchPageScope", { count: visibleCourses.length, total: coursesPage.items.length })
-              : t("hub.resultsTotal", { count: coursesPage.total })}
-            {isRefreshing ? <span> · {t("hub.refreshing")}</span> : null}
+            {normalizedQuery ? t("hub.searchPageScope", { count: visibleCourses.length, total: coursesPage.items.length }) : null}
+            {isRefreshing ? <span>{normalizedQuery ? " · " : null}{t("hub.refreshing")}</span> : null}
           </span>
           {normalizedQuery ? <span>{t("hub.searchScopeNotice")}</span> : null}
         </div>

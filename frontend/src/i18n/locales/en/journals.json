@@ -133,8 +133,6 @@
     "discardFailed": "Could not discard right now. Check your connection and try again."
   },
   "hub": {
-    "resultsTotal_one": "{{count}} journal",
-    "resultsTotal_other": "{{count}} journals",
     "searchPageScope": "Found on this page: {{count}} of {{total}}",
     "searchScopeNotice": "Search covers only the journals loaded on this page, not the whole catalog.",
     "searchLabel": "Search journals on this page",

@@ -135,10 +135,6 @@
     "discardFailed": "Сейчас отменить не получается. Проверьте соединение и повторите."
   },
   "hub": {
-    "resultsTotal_one": "{{count}} журнал",
-    "resultsTotal_few": "{{count}} журнала",
-    "resultsTotal_many": "{{count}} журналов",
-    "resultsTotal_other": "{{count}} журнала",
     "searchPageScope": "Найдено на этой странице: {{count}} из {{total}}",
     "searchScopeNotice": "Поиск охватывает только журналы, загруженные на этой странице, а не весь каталог.",
     "searchLabel": "Поиск журналов на этой странице",
