@@ -5,7 +5,7 @@ import { useDashboardAttention } from "../../lib/dashboard/hooks";
 import type { AttentionAbsentStudent, AttentionLesson, DashboardAttention } from "../../lib/dashboard/types";
 import { FinanceUrlState } from "../../lib/finance/urlState";
 import { formatMoney } from "../../lib/money";
-import { formatTime, getSchoolCalendarDate } from "../../i18n/formatters";
+import { formatPhoneDisplay, formatTime, getSchoolCalendarDate } from "../../i18n/formatters";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
@@ -116,7 +116,7 @@ function AttentionGroups({ attention, onPay }: { attention: DashboardAttention; 
                   {lesson.mentor_phone !== null && (
                     <>
                       {" · "}
-                      <a href={`tel:${lesson.mentor_phone}`} className="tabular-nums hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{lesson.mentor_phone}</a>
+                      <a href={`tel:${lesson.mentor_phone}`} className="tabular-nums hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{formatPhoneDisplay(lesson.mentor_phone)}</a>
                     </>
                   )}
                 </span>

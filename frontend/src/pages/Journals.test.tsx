@@ -246,7 +246,7 @@ describe("Journals hub", () => {
     expect(screen.getByText(/appears here for every course you are permitted to open/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Clear search and filters" })).toBeNull();
     expect(screen.queryByText("No journals match")).toBeNull();
-    expect(screen.queryByText("0 journals")).toBeNull();
+    expect(screen.queryByRole("heading", { level: 1 })?.textContent).toBe("Journals");
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.queryByRole("button", { name: "Filter journals by status" })).toBeNull();
   });
@@ -261,7 +261,7 @@ describe("Journals hub", () => {
     expect(await screen.findByText("No journals match")).toBeTruthy();
     expect(screen.getByRole("textbox")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Filter journals by status" }).textContent).toContain("Archived");
-    expect(screen.getByText("0 journals")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).parentElement?.textContent).toBe("Journals0");
   });
 
   it("clears a search that matches nothing on the loaded page", async () => {
@@ -283,14 +283,15 @@ describe("Journals hub", () => {
     getMentorsMock.mockResolvedValue(mentorPage([]));
     renderHub();
     await screen.findByText("Course 1");
-    expect(screen.getByText("60 journals")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Journals");
+    expect(screen.getByText("60").className).toContain("text-muted");
+    expect(screen.queryByText(/journals$/)).toBeNull();
     expect(screen.queryByText(/not the whole catalog/)).toBeNull();
 
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "course 2" } });
 
     expect(await screen.findByText("Found on this page: 1 of 3")).toBeTruthy();
     expect(screen.getByText(/not the whole catalog/)).toBeTruthy();
-    expect(screen.queryByText("60 journals")).toBeNull();
     expect(lastListParams()).not.toHaveProperty("search");
     expect(lastListParams()).not.toHaveProperty("q");
   });

@@ -26,7 +26,7 @@ describe("StudentProfile Component", () => {
     expect(screen.getByRole("heading", { name: "Rustam Karimov" })).toBeDefined();
     const header = document.querySelector("[data-entity-header]") as HTMLElement;
     const contacts = Array.from(header.querySelectorAll("p > span > span:not([aria-hidden])")).map((node) => node.textContent);
-    expect(contacts).toEqual(["student42@example.com", "+992900000042", "Parent: +992900000043", "15.05.2007"]);
+    expect(contacts).toEqual(["student42@example.com", "+992 90 000 0042", "Parent: +992 90 000 0043", "15.05.2007"]);
     expect(document.querySelectorAll("[data-entity-header]")).toHaveLength(1);
 
     const backLink = screen.getByRole("link", { name: /Back to Students/i });
@@ -43,8 +43,8 @@ describe("StudentProfile Component", () => {
     mockProfile({ user: legacyUser });
     renderStudentProfile();
     const header: HTMLElement = document.querySelector<HTMLElement>("[data-entity-header]")!;
-    expect(within(header).getByText("+992901234567")).toBeTruthy();
-    expect(within(header).getByText("Parent: +992901234568")).toBeTruthy();
+    expect(within(header).getByText("+992 90 123 4567")).toBeTruthy();
+    expect(within(header).getByText("Parent: +992 90 123 4568")).toBeTruthy();
     expect(legacyUser.phone).toBe("992901234567");
     expect(legacyUser.parent_phone).toBe("992901234568");
   });
@@ -152,7 +152,7 @@ describe("StudentProfile Component", () => {
 
   it("shows the guardian phone as plain text in the contact line", () => {
     renderStudentProfile();
-    expect(screen.getByText("Parent: +992900000043")).toBeDefined();
+    expect(screen.getByText("Parent: +992 90 000 0043")).toBeDefined();
   });
 
   it("shows the archived badge beside the name only when the student is not active", () => {

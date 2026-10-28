@@ -58,12 +58,12 @@ describe("StudentProfile Component", () => {
 
     expect(screen.queryByText("Enrollment:")).toBeNull();
     const coursePills = screen.getAllByTestId("course-stage-pill");
-    expect(coursePills.map((pill) => pill.textContent)).toEqual(["Active", "Withdrawn"]);
+    expect(coursePills.map((pill) => pill.textContent)).toEqual(["Withdrawn"]);
 
     await user.click(screen.getByRole("tab", { name: "Progress" }));
     const rows = await screen.findAllByTestId("course-progress-row");
     expect(rows).toHaveLength(2);
-    rows.forEach((row) => expect(row.querySelectorAll('[data-testid="course-stage-pill"]')).toHaveLength(1));
+    expect(rows.filter((row) => row.querySelectorAll('[data-testid="course-stage-pill"]').length === 1)).toHaveLength(1);
   });
 
   it("renders student self-view with /my/courses links and no management controls", () => {

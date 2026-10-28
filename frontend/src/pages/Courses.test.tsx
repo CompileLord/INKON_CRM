@@ -94,8 +94,8 @@ describe("Courses page directory", () => {
       });
 
       const heading = screen.getByRole("heading", { level: 1 });
-      expect(heading.textContent).toContain("Courses & Groups");
-      expect(screen.getByText("(3)").className).toContain("tabular-nums");
+      expect(heading.textContent).toBe("Courses");
+      expect(screen.getByText("3").className).toContain("tabular-nums");
       expect(screen.queryByText(/Course catalog/)).toBeNull();
     });
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "../i18n/formatters";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
@@ -33,7 +34,7 @@ const PAGE_SIZE: number = 12;
 const VIEW_PREFERENCE_KEY: string = "kitob_courses_view_preference";
 
 export function Courses() {
-  const { t } = useTranslation(["courses", "common"]);
+  const { t, i18n } = useTranslation(["courses", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
   const role = useAuthStore((state) => state.role);
   const isSuperAdmin: boolean = role === "superadmin";
@@ -240,7 +241,7 @@ export function Courses() {
     <PageContainer>
       <PageHeader
         title={t("title")}
-        count={showLoadingSkeleton ? undefined : coursesPage ? `(${coursesPage.total})` : undefined}
+        count={showLoadingSkeleton ? undefined : coursesPage ? formatNumber(coursesPage.total, i18n.language) : undefined}
         actions={isSuperAdmin ? (
           <Button ref={addCourseButtonRef} onClick={openCreatePanel}>
             <Plus size={18} aria-hidden="true" />

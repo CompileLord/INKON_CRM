@@ -161,7 +161,7 @@ function DocumentsWorkspace({ ownerType, ownerId, canManage, ownerName }: { owne
   const noticeClassName: string = "flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-strip px-3 py-2 text-sm";
 
   return (
-    <SectionCard title={t("title")} actions={uploadAction}>
+    <SectionCard title={t("title")} titleHidden actions={uploadAction}>
       {canManage && <p id="documents-upload-help" className="text-xs text-muted">{t("uploadHelp")}</p>}
 
       {canManage && <DocumentUploadStatus state={uploadState} ownerName={resolvedOwnerName} onRetry={retryUpload} onReselect={reselectFile} onDismiss={() => setUploadState({ phase: "idle" })} />}

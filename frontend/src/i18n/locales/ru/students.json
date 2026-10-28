@@ -29,7 +29,6 @@
   "backToRoster": "Назад к списку группы",
   "backToCourse": "Назад к курсу",
   "backToJournal": "Назад к журналу",
-  "emailLabel": "Электронная почта",
   "phoneLabel": "Телефон",
   "parentPhoneLabel": "Телефон родителя",
   "personalDetails": "Личные данные",
@@ -106,7 +105,6 @@
     "sectionPayment": "Оплата",
     "firstNameLabel": "Имя",
     "lastNameLabel": "Фамилия",
-    "emailLabel": "Электронная почта",
     "emailHelp": "Если указана, пароль придёт по почте.",
     "phoneLabel": "Телефон",
     "dobLabel": "Дата рождения",
@@ -124,15 +122,14 @@
     "deleteSuccess": "Студент успешно удален",
     "deleteWithdrawError": "Не удалось отозвать активные записи студента на курсы. Аккаунт не был удален.",
     "deleteFailedAfterWithdraw": "Записи на курсы отозваны, но не удалось удалить аккаунт студента.",
-    "deleteAccountError": "Не удалось удалить аккаунт студента. Студент не был удален.",
-    "phonePlaceholder": "+992901234567"
+    "deleteAccountError": "Не удалось удалить аккаунт студента. Студент не был удален."
   },
   "validation": {
     "firstNameRequired": "Введите имя",
     "lastNameRequired": "Введите фамилию",
     "nameTooLong": "Максимум 100 символов",
     "invalidEmail": "Некорректный адрес электронной почты",
-    "invalidPhone": "Формат: +992901234567",
+    "invalidPhone": "Номер в международном формате, начиная с +",
     "invalidPaymentDay": "Число от 1 до 28",
     "emailRequired": "Пока аккаунты учеников только с телефоном отключены, укажите почту.",
     "emailTaken": "Этот адрес электронной почты уже занят",

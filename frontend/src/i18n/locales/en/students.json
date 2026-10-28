@@ -29,7 +29,6 @@
   "backToRoster": "Back to Course Roster",
   "backToCourse": "Back to Course",
   "backToJournal": "Back to Journal",
-  "emailLabel": "Email",
   "phoneLabel": "Phone",
   "parentPhoneLabel": "Parent phone",
   "personalDetails": "Personal Details",
@@ -106,7 +105,6 @@
     "sectionPayment": "Payment details",
     "firstNameLabel": "First Name",
     "lastNameLabel": "Last Name",
-    "emailLabel": "Email",
     "emailHelp": "If set, the password is sent by email.",
     "phoneLabel": "Phone",
     "dobLabel": "Date of Birth",
@@ -124,15 +122,14 @@
     "deleteSuccess": "Student deleted successfully",
     "deleteWithdrawError": "Failed to withdraw student's active enrollments. The student account was not deleted.",
     "deleteFailedAfterWithdraw": "Active enrollments were withdrawn, but deleting the student account failed.",
-    "deleteAccountError": "Failed to delete student account. The student was not deleted.",
-    "phonePlaceholder": "+992901234567"
+    "deleteAccountError": "Failed to delete student account. The student was not deleted."
   },
   "validation": {
     "firstNameRequired": "Enter first name",
     "lastNameRequired": "Enter last name",
     "nameTooLong": "Maximum 100 characters",
     "invalidEmail": "Invalid email address",
-    "invalidPhone": "Use the international format, e.g. +992901234567",
+    "invalidPhone": "Use international format, starting with +",
     "invalidPaymentDay": "Must be a number from 1 to 28",
     "emailRequired": "Email is required while phone-only student accounts are disabled.",
     "emailTaken": "This email is already in use",

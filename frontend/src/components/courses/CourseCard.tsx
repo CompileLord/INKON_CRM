@@ -5,7 +5,7 @@ import { CalendarDays, Clock, Users } from "lucide-react";
 import { formatTjs } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
 import { CourseScheduleGrouper, type ScheduleGroup } from "../../lib/courses/CourseScheduleGrouper";
-import { Badge } from "../ui/Badge";
+import { StatusBadge } from "../ui/Badge";
 import { Menu } from "../ui/Menu";
 import { CourseThumb } from "./CourseThumb";
 import { useCourseMenu, type CourseMenuHandlers } from "./useCourseMenu";
@@ -92,11 +92,7 @@ export function CourseCard({ course, mentor, isMentor, menuHandlers, onNavigate 
           <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
             {formatTjs(course.price, { perMonth: true, lng: i18n.language })}
           </span>
-          {course.status === "active" ? (
-            <Badge status="active" label={t("statusActive")} />
-          ) : (
-            <Badge status="archived" />
-          )}
+          <StatusBadge status={course.status === "active" ? "active" : "archived"} />
         </span>
         {isMentor && (
           <Link

@@ -9,6 +9,7 @@ interface StudentCourseStagePillProps {
 export function StudentCourseStagePill({ course }: StudentCourseStagePillProps) {
   const { t } = useTranslation("studentProfile");
   const stageKey: string = course.enrollment_status !== "active" ? course.enrollment_status : course.course.status;
+  if (stageKey === "active") return null;
   return (
     <span data-testid="course-stage-pill" className="inline-flex shrink-0">
       {stageKey === "withdrawn" ? (

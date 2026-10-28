@@ -232,7 +232,8 @@ describe("StatGroup and StatTile", () => {
     expect(missing).toHaveLength(2);
     expect(missing[0].textContent).toBe("—");
     expect(missing[0].className).toContain("text-muted");
-    expect(screen.getAllByRole("button", { name: "No exams yet" })).toHaveLength(1);
+    expect(screen.getByLabelText("No exams yet").textContent).toBe("—");
+    expect(screen.queryByRole("button", { name: "No exams yet" })).toBeNull();
   });
 });
 
@@ -242,6 +243,13 @@ describe("SectionCard", () => {
     expect(screen.getByRole("heading", { level: 2, name: /Payments/ })).toBeTruthy();
     expect(screen.getAllByRole("button", { name: "Formula" })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Export" })).toBeTruthy();
+  });
+
+  it("drops the visible heading when titleHidden but keeps actions and an accessible heading", () => {
+    render(<SectionCard title="Documents" titleHidden actions={<button type="button">Upload</button>}>Body</SectionCard>);
+    const heading: HTMLElement = screen.getByRole("heading", { level: 2, name: "Documents" });
+    expect(heading.className).toContain("sr-only");
+    expect(screen.getByRole("button", { name: "Upload" })).toBeTruthy();
   });
 
   it("flattens a nested SectionCard so cards never nest", () => {

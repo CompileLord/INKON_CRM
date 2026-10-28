@@ -72,7 +72,7 @@ export function StudentProgressPanel({ studentId, courses, role, currentUserId }
   const showChart: boolean = courses.length > 0 && StudentProgressSeriesBuilder.canDrawChart(progress.series);
 
   return (
-    <SectionCard title={t("progress.title")} info={t("progress.method")}>
+    <SectionCard title={t("progress.title")} titleHidden info={t("progress.method")}>
       {courses.length === 0 ? (
         <EmptyState title={t("courses.emptyTitle")} description={t("courses.empty")} />
       ) : progress.isLoading ? (

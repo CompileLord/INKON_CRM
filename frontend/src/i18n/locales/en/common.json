@@ -1,5 +1,20 @@
 {
   "appName": "KITOB CRM",
+  "phonePlaceholder": "+992901234567",
+  "phoneInvalid": "Use international format, starting with +",
+  "empty": {
+    "phone": "No phone number",
+    "noCourses": "Not enrolled in any course"
+  },
+  "timePlaceholder": "HH:MM",
+  "disabledReason": {
+    "selectStudent": "Select a student",
+    "selectCourse": "Select a course",
+    "noChanges": "No changes to save",
+    "fixErrors": "Fix the errors in the form first",
+    "fixFee": "Enter a valid monthly fee"
+  },
+  "emailLabel": "Email",
   "search": "Search...",
   "cancel": "Cancel",
   "save": "Save",
@@ -103,6 +118,7 @@
     "emblemAlt": "KITOB book emblem"
   },
   "theme": {
+    "quickSettings": "Quick settings",
     "settings": "Theme and language settings",
     "light": "Light theme",
     "dark": "Dark theme",

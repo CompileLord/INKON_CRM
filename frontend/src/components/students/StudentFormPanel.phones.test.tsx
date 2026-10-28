@@ -165,6 +165,6 @@ describe("StudentFormPanel phones", () => {
     await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
     await user.type(screen.getByLabelText(/^Phone/i), "992901112233");
     await user.click(screen.getByRole("button", { name: "Create" }));
-    expect(await screen.findByText("Use the international format, e.g. +992901234567")).toBeDefined();
+    expect(await screen.findByText("Use international format, starting with +")).toBeDefined();
   });
 });

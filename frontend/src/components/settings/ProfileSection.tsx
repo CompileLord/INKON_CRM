@@ -3,6 +3,7 @@ import { Camera } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AvatarUploadField } from "../ui/AvatarUploadField";
 import { Input } from "../ui/Input";
+import { PhoneInput } from "../ui/PhoneInput";
 import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import { SettingsSectionError, SettingsSectionSkeleton } from "./SettingsSectionState";
@@ -12,7 +13,6 @@ import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { ProfileSaveErrorMapper, type ProfileField, type ProfileSaveFailure } from "../../lib/users/profileSaveError";
 import type { Role, UserSelfUpdate } from "../../lib/users/types";
 
-const PHONE_PLACEHOLDER: string = "+992901234567";
 
 interface ProfileDraft {
   firstName: string;
@@ -26,7 +26,7 @@ interface ProfileSectionProps {
 }
 
 export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation(["settings", "common"]);
   const identifier: string = useId();
   const { data: user, isLoading, isError, refetch } = useCurrentUser();
   const updateProfile = useUpdateOwnProfile();
@@ -96,8 +96,8 @@ export function ProfileSection({ role, onSaved }: ProfileSectionProps) {
         <div className="grid gap-4 py-4 md:grid-cols-2">
           <Input label={t("profile.firstName")} id={`${identifier}-first`} value={current.firstName} maxLength={100} autoComplete="given-name" error={(dirty ? firstNameError : undefined) ?? serverError("firstName")} onChange={(event) => edit({ firstName: event.target.value })} />
           <Input label={t("profile.lastName")} id={`${identifier}-last`} value={current.lastName} maxLength={100} autoComplete="family-name" error={(dirty ? lastNameError : undefined) ?? serverError("lastName")} onChange={(event) => edit({ lastName: event.target.value })} />
-          <Input label={t("students:form.emailLabel")} id={`${identifier}-email`} type="email" value={user.email ?? ""} disabled readOnly />
-          <Input label={t("profile.phone")} id={`${identifier}-phone`} type="tel" inputMode="tel" placeholder={PHONE_PLACEHOLDER} value={current.phone} autoComplete="tel" error={(dirty ? phoneError : undefined) ?? serverError("phone")} onChange={(event) => edit({ phone: event.target.value })} />
+          <Input label={t("common:emailLabel")} id={`${identifier}-email`} type="email" value={user.email ?? ""} disabled readOnly />
+          <PhoneInput label={t("profile.phone")} id={`${identifier}-phone`} value={current.phone} error={(dirty ? phoneError : undefined) ?? serverError("phone")} onChange={(event) => edit({ phone: event.target.value })} />
         </div>
       </SettingsGroup>
       <SettingsSaveBar

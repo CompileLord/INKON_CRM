@@ -85,7 +85,7 @@ describe("MentorsTable", () => {
     const rowLink = within(row).getByRole("link", { name: /Dilshod Rahimov/ });
     expect(rowLink.getAttribute("href")).toBe("/mentors/201");
     expect(within(row).getAllByRole("link")).toHaveLength(1);
-    expect(within(row).getByText("+992900000001").className).toContain("tabular-nums");
+    expect(within(row).getByText("+992 90 000 0001").className).toContain("tabular-nums");
     expect(row.querySelector("[data-badge-status]")).toBeNull();
     expect((document.getElementById("mentor-row-202") as HTMLElement).querySelector("[data-badge-status='archived']")).not.toBeNull();
 

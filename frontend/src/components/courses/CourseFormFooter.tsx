@@ -29,7 +29,7 @@ export function CourseFormFooter({ isEditing, isLocked, isSubmitting, isSaveDisa
           {t("form.retryImage")}
         </Button>
       ) : (
-        <Button type="submit" form="course-form" loading={isLocked} disabled={isSaveDisabled}>
+        <Button type="submit" form="course-form" loading={isLocked} disabled={isSaveDisabled} disabledReason={t("common:disabledReason.noChanges")}>
           {submitLabel}
         </Button>
       )}

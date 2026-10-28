@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Controller, useFieldArray, type Control, type FieldErrors, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { TimeInput24 } from "../ui/TimeInput24";
 import { Select } from "../ui/Select";
 import type { ListboxOption } from "../ui/ListboxPicker";
 import { emptyScheduleRow } from "../../lib/courses/formMapping";
@@ -119,15 +120,18 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
                     control={control}
                     name={`schedules.${index}.time_start`}
                     render={({ field: timeField }) => (
-                      <input
+                      <TimeInput24
                         id={`schedule-time-start-${index}`}
-                        type="time"
                         aria-label={t("form.timeStart")}
-                        aria-invalid={Boolean(rowErrors?.time_start)}
+                        invalid={Boolean(rowErrors?.time_start)}
                         aria-describedby={rowErrors?.time_start ? `schedule-time-start-error-${index}` : undefined}
                         disabled={disabled}
                         className={`${inputClass} ${rowErrors?.time_start ? "border-destructive/60" : ""}`}
-                        {...timeField}
+                        value={timeField.value}
+                        onChange={timeField.onChange}
+                        onBlur={timeField.onBlur}
+                        name={timeField.name}
+                        ref={timeField.ref}
                       />
                     )}
                   />
@@ -146,15 +150,18 @@ export function ScheduleEditor({ control, errors, disabled = false }: ScheduleEd
                     control={control}
                     name={`schedules.${index}.time_end`}
                     render={({ field: timeField }) => (
-                      <input
+                      <TimeInput24
                         id={`schedule-time-end-${index}`}
-                        type="time"
                         aria-label={t("form.timeEnd")}
-                        aria-invalid={Boolean(rowErrors?.time_end)}
+                        invalid={Boolean(rowErrors?.time_end)}
                         aria-describedby={rowErrors?.time_end ? `schedule-time-end-error-${index}` : undefined}
                         disabled={disabled}
                         className={`${inputClass} ${rowErrors?.time_end ? "border-destructive/60" : ""}`}
-                        {...timeField}
+                        value={timeField.value}
+                        onChange={timeField.onChange}
+                        onBlur={timeField.onBlur}
+                        name={timeField.name}
+                        ref={timeField.ref}
                       />
                     )}
                   />

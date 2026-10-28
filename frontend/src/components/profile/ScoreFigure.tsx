@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { EmptyValue } from "../ui/EmptyValue";
 import { ScoreFormat } from "./ScoreFormat";
 
 interface ScoreFigureProps {
@@ -12,7 +13,7 @@ export function ScoreFigure({ score, max, showPercent = true, className = "" }: 
   const { t, i18n } = useTranslation("ui");
   const ratio: string | null = ScoreFormat.ratio(score, max, i18n.language);
   if (ratio === null) {
-    return <span aria-label={t("missing")} className={`tabular-nums text-muted ${className}`}>—</span>;
+    return <EmptyValue reason={t("noGradedPeriods")} className={`tabular-nums ${className}`} />;
   }
   const percent: string | null = showPercent ? ScoreFormat.percentHint(score, max, i18n.language) : null;
   return (

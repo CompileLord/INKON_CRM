@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { EmptyValue } from "../ui/EmptyValue";
 import { formatNumber } from "../../i18n/formatters";
 import type { StudentCoursePillResponse } from "../../lib/users/types";
 
@@ -10,7 +11,7 @@ interface StudentCoursePillsProps {
 
 export function StudentCoursePills({ courses }: StudentCoursePillsProps) {
   const { t, i18n } = useTranslation("students");
-  if (courses.length === 0) return <span className="hidden text-sm text-muted md:block">—</span>;
+  if (courses.length === 0) return <span className="hidden text-sm md:block"><EmptyValue reason={t("common:empty.noCourses")} /></span>;
   const visible: readonly StudentCoursePillResponse[] = courses.slice(0, VISIBLE_PILL_COUNT);
   const hidden: readonly StudentCoursePillResponse[] = courses.slice(VISIBLE_PILL_COUNT);
 

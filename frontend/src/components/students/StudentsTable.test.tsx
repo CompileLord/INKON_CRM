@@ -108,7 +108,7 @@ describe("StudentsTable without an email", () => {
     const emailless: StudentListItemResponse = { ...mockStudents[0], id: 103, email: null, phone: "+992900000099", first_name: "Nodira" };
     renderTable({ students: [emailless], total: 1 });
     const row = document.getElementById("student-row-103") as HTMLElement;
-    expect(within(row).getAllByText("+992900000099")).toHaveLength(1);
+    expect(within(row).getAllByText("+992 90 000 0099")).toHaveLength(1);
     expect(row.textContent).not.toContain("null");
   });
 });
@@ -127,15 +127,15 @@ describe("StudentsTable", () => {
   it("hides the phone line on phones when there is no phone but keeps the dash on desktop", () => {
     renderTable();
     const dash = within(document.getElementById("student-row-102") as HTMLElement).getAllByText("—")[0];
-    expect(dash.parentElement?.className).toContain("hidden md:block");
-    const withPhone = within(document.getElementById("student-row-101") as HTMLElement).getByText("+992900000001");
+    expect(dash.closest(".hidden")?.className).toContain("md:block");
+    const withPhone = within(document.getElementById("student-row-101") as HTMLElement).getByText("+992 90 000 0001");
     expect(withPhone.className).not.toContain("hidden");
   });
 
   it("hides the empty courses dash on phones", () => {
     renderTable();
     const dashes = within(document.getElementById("student-row-102") as HTMLElement).getAllByText("—");
-    expect(dashes.some((dash) => dash.className.includes("hidden") && dash.className.includes("md:block"))).toBe(true);
+    expect(dashes.some((dash) => (dash.closest(".hidden")?.className ?? "").includes("md:block"))).toBe(true);
   });
 
   it("lets course pills use the column width and keeps the full title", () => {
@@ -152,7 +152,7 @@ describe("StudentsTable", () => {
     const rowLink = within(row).getByRole("link", { name: /Sarah Connor/ });
     expect(rowLink.getAttribute("href")).toBe("/students/101");
     expect(within(row).getAllByRole("link")).toHaveLength(1);
-    expect(within(row).getByText("+992900000001").className).toContain("tabular-nums");
+    expect(within(row).getByText("+992 90 000 0001").className).toContain("tabular-nums");
 
     const menuButton = within(row).getByRole("button", { name: "Student actions: Sarah Connor" });
     const user = userEvent.setup();

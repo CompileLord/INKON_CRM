@@ -65,7 +65,7 @@ export function StudentCoursesTab({ courses, student, role, currentUserId, onEnr
   }
 
   return (
-    <SectionCard title={t("tabs.courses")} actions={enrollButton}>
+    <SectionCard title={t("tabs.courses")} titleHidden actions={enrollButton}>
       <ul className="flex flex-col divide-y divide-border">
         {courses.map((item: StudentCourseProfile) => (
           <StudentCourseCard

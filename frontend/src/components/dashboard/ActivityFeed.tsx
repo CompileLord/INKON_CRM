@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAuditEvents } from "../../lib/audit/hooks";
 import type { AuditEvent } from "../../lib/audit/api";
-import { formatDateTime, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
+import { formatDateTime, formatActivityTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import { AuditSentence } from "../audit/AuditSentence";
 import { useAuditEventText } from "../audit/useAuditEventText";
 import { EmptyState } from "../ui/EmptyState";
@@ -19,7 +19,7 @@ function ActivityEventRow({ event, phoneHidden }: ActivityEventRowProps) {
   const { i18n } = useTranslation("dashboard");
   const { subtitle } = useAuditEventText(event);
   const language: string = i18n.language;
-  const timeText: string = formatRecentRelativeTime(event.created_at, language) ?? formatTime(event.created_at, language, SCHOOL_TIMEZONE);
+  const timeText: string = formatActivityTime(event.created_at, language);
   return (
     <li className={`${phoneHidden ? "hidden lg:flex" : "flex"} min-w-0 flex-col gap-0.5 px-3 py-3`}>
       <div className="flex min-w-0 items-start justify-between gap-3">

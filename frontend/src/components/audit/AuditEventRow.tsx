@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatDateTime, formatRecentRelativeTime, formatTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
+import { formatDateTime, formatActivityTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditEvent } from "../../lib/audit/api";
 import { AuditCategoryIcon } from "./AuditCategoryIcon";
 import { AuditSentence } from "./AuditSentence";
@@ -17,7 +17,7 @@ export function AuditEventRow({ event, onOpen, similarCount = 1, onToggleSimilar
   const { t, i18n } = useTranslation("audit");
   const { subtitle } = useAuditEventText(event);
   const language: string = i18n.language;
-  const timeText: string = formatRecentRelativeTime(event.created_at, language) ?? formatTime(event.created_at, language, SCHOOL_TIMEZONE);
+  const timeText: string = formatActivityTime(event.created_at, language);
   const hasSimilar: boolean = similarCount > 1 && onToggleSimilar !== undefined;
 
   return (

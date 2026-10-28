@@ -90,7 +90,7 @@ describe("profile layout", () => {
     expect(phone.placeholder).toBe("+992901234567");
     expect(screen.queryByText(/Start with \+/)).toBeNull();
     expect(screen.queryByText(/international format/)).toBeNull();
-    expect(screen.getByLabelText(i18n.t("students:form.emailLabel"))).toBeTruthy();
+    expect(screen.getByLabelText(i18n.t("common:emailLabel"))).toBeTruthy();
     expect(phone.closest(".md\\:grid-cols-2")).not.toBeNull();
   });
 
@@ -100,6 +100,6 @@ describe("profile layout", () => {
     const phone: HTMLElement = await screen.findByLabelText("Phone");
     await user.clear(phone);
     await user.type(phone, "123");
-    expect(screen.getByText("Use the international format, e.g. +992901234567.")).toBeTruthy();
+    expect(screen.getByText("Use international format, starting with +")).toBeTruthy();
   });
 });

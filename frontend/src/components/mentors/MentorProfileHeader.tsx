@@ -1,10 +1,9 @@
-import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { EntityHeader } from "../ui/EntityHeader";
 import type { MenuItem } from "../ui/Menu";
 import { PersonAvatar } from "../ui/PersonAvatar";
-import { formatDate } from "../../i18n/formatters";
+import { formatDate, formatPhoneDisplay } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { User } from "../../lib/users/types";
 
@@ -18,7 +17,7 @@ interface MentorProfileHeaderProps {
 
 export function MentorProfileHeader({ user, isSuperAdmin, onEdit, onDelete, onOpenAccess }: MentorProfileHeaderProps) {
   const { t } = useTranslation("mentorProfile");
-  const meta: string[] = [...(user.email ? [user.email] : []), ...(user.phone ? [CanonicalPhone.prefill(user.phone)] : []), ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : [])];
+  const meta: string[] = [...(user.email ? [user.email] : []), ...(user.phone ? [formatPhoneDisplay(user.phone)] : []), ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : [])];
   const menuTrigger = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-entity-header] [aria-haspopup="menu"]');
   const menuItems: MenuItem[] | undefined = isSuperAdmin
     ? [

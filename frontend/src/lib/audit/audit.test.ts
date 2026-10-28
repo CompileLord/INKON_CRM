@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRecentRelativeTime, getSchoolCalendarDate } from "../../i18n/formatters";
+import { formatActivityTime, formatRecentRelativeTime, getSchoolCalendarDate } from "../../i18n/formatters";
 import type { AuditEvent } from "./api";
 import { AuditPresentation } from "./auditPresentation";
 import { AuditUrlState } from "./auditUrlState";
@@ -96,5 +96,23 @@ describe("recent relative time", () => {
     expect(formatRecentRelativeTime("2026-10-16T08:59:00Z", "en", now)).toBeNull();
     expect(formatRecentRelativeTime("2026-10-16T10:05:00Z", "en", now)).toBeNull();
     expect(formatRecentRelativeTime("garbage", "en", now)).toBeNull();
+  });
+});
+
+describe("formatActivityTime", () => {
+  const now: Date = new Date("2026-10-16T10:00:00Z");
+
+  it("uses relative time under 24 hours, in minutes then hours", () => {
+    expect(formatActivityTime("2026-10-16T09:55:00Z", "en", now)).toBe("5 minutes ago");
+    expect(formatActivityTime("2026-10-16T07:30:00Z", "en", now)).toBe("2 hours ago");
+  });
+
+  it("uses date and time from 24 hours on, and for future moments", () => {
+    expect(formatActivityTime("2026-10-15T08:00:00Z", "en", now)).toBe("15.10.2026 13:00");
+    expect(formatActivityTime("2026-10-16T12:00:00Z", "en", now)).toBe("16.10.2026 17:00");
+  });
+
+  it("returns empty text for a missing date", () => {
+    expect(formatActivityTime(null, "en", now)).toBe("");
   });
 });

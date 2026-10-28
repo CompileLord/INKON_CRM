@@ -1,4 +1,5 @@
 import i18n from "./index";
+export { formatPhoneDisplay } from "../lib/phone";
 export { formatTjs, getPerMonthSuffix, formatMoney } from "../lib/money";
 
 export const SCHOOL_TIMEZONE = "Asia/Dushanbe";
@@ -165,6 +166,22 @@ export function formatRecentRelativeTime(
   const elapsedMinutes = Math.floor((now.getTime() - moment.getTime()) / 60000);
   if (elapsedMinutes < 0 || elapsedMinutes >= 60) return null;
   return new Intl.RelativeTimeFormat(getActiveLocale(lng), { numeric: "auto" }).format(-elapsedMinutes, "minute");
+}
+
+export function formatActivityTime(
+  date: string | Date | null | undefined,
+  lng?: string,
+  now: Date = new Date()
+): string {
+  if (!date) return "";
+  const moment: Date = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(moment.getTime())) return String(date);
+  const elapsedMinutes: number = Math.floor((now.getTime() - moment.getTime()) / 60000);
+  if (elapsedMinutes >= 0 && elapsedMinutes < 24 * 60) {
+    const formatter: Intl.RelativeTimeFormat = new Intl.RelativeTimeFormat(getActiveLocale(lng), { numeric: "auto" });
+    return elapsedMinutes < 60 ? formatter.format(-elapsedMinutes, "minute") : formatter.format(-Math.floor(elapsedMinutes / 60), "hour");
+  }
+  return formatDateTime(moment, lng, SCHOOL_TIMEZONE);
 }
 
 export function formatPercentage(value: number, lng?: string): string {

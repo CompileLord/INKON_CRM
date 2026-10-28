@@ -1,9 +1,8 @@
-import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useId, useState, type KeyboardEvent, type Ref } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedText, useStudentSearch, type StudentSearchResult } from "../../lib/finance/studentSearch";
-import { formatNumber } from "../../i18n/formatters";
+import { formatNumber, formatPhoneDisplay } from "../../i18n/formatters";
 import { Button } from "../ui/Button";
 
 interface StudentSearchFieldProps {
@@ -141,7 +140,7 @@ export function StudentSearchField({ label, onSelect, inputRef, invalid = false,
                 {student.first_name} {student.last_name}
               </span>
               <span className="block text-xs text-muted">
-                {t("analytics.studentNumber", { id: formatNumber(student.id, i18n.language) })} · {student.email ?? CanonicalPhone.prefill(student.phone)}
+                {t("analytics.studentNumber", { id: formatNumber(student.id, i18n.language) })} · {student.email ?? formatPhoneDisplay(student.phone)}
               </span>
             </li>
           ))}
