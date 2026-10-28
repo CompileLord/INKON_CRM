@@ -63,12 +63,12 @@ class EnrollmentResponse(BaseModel):
     id: int
     student_id: int
     course_id: int
-    price_at_enrollment: Decimal
+    price_at_enrollment: Decimal | None = None
     color_hex: str
     enrolled_at: datetime
     status: EnrollmentStatus
     is_deleted: bool
-    billing_mode: EffectiveBillingMode
+    billing_mode: EffectiveBillingMode = BillingMode.PAID
 
 
 class BillingModeChangeResponse(BaseModel):
@@ -102,11 +102,11 @@ class CourseRosterItemResponse(BaseModel):
     enrollment_id: int
     student_id: int
     course_id: int
-    price_at_enrollment: Decimal
+    price_at_enrollment: Decimal | None = None
     color_hex: str
     enrolled_at: datetime
     status: EnrollmentStatus
-    billing_mode: EffectiveBillingMode
+    billing_mode: EffectiveBillingMode = BillingMode.PAID
     student: RosterStudentIdentity
 
 

@@ -363,3 +363,14 @@ describe("StudentsTable", () => {
     }
   });
 });
+
+
+describe("StudentsTable without finance fields", () => {
+  it("omits the balance column when finance fields are absent", () => {
+    const { debt_amount: _debtAmount, payment_status: _paymentStatus, ...student } = mockStudents[0];
+    renderTable({ students: [student], total: 1 });
+    expect(screen.getByText("Sarah Connor")).toBeTruthy();
+    expect(screen.queryByText("Balance")).toBeNull();
+    expect(screen.queryByText(/250/)).toBeNull();
+  });
+});

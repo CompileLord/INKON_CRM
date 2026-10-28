@@ -67,7 +67,7 @@ export interface EnrollmentResponse {
   id: number;
   student_id: number;
   course_id: number;
-  price_at_enrollment: string;
+  price_at_enrollment?: string;
   color_hex: string;
   enrolled_at: string; // date-time
   status: EnrollmentStatus;
@@ -102,7 +102,7 @@ export interface CourseRosterItem {
   enrollment_id: number;
   student_id: number;
   course_id: number;
-  price_at_enrollment: string;
+  price_at_enrollment?: string;
   color_hex: string;
   enrolled_at: string;
   status: EnrollmentStatus;

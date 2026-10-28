@@ -54,6 +54,7 @@ from app.core.redis import redis_client
 from app.services.analytics_cache_service import AnalyticsCacheService
 from app.repositories.interfaces.cache_generation_repository import CacheGenerationRepository
 from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
+from app.repositories.sqlalchemy.debt_query import DebtQuery
 
 
 # The centre operates on Asia/Dushanbe (UTC+5, no DST).
@@ -1446,85 +1447,18 @@ class FinanceService:
             "days_overdue": max(0, days_overdue),
         }
 
-    def _debt_query(self, today: date, filters: dict):
-        """Set-based debt query. Read-only: never generates schedules."""
-        billed_sub = (
-            select(
-                Charge.enrollment_id.label("enrollment_id"),
-                func.coalesce(func.sum(Charge.amount), ZERO).label("billed"),
-                func.min(
-                    case((Charge.status == ChargeStatus.OPEN, Charge.due_date), else_=None)
-                ).label("oldest_open_due"),
-            )
-            .filter(
-                Charge.due_date <= today,
-                Charge.status != ChargeStatus.CANCELLED,
-                Charge.is_deleted == False,  # noqa: E712
-            )
-            .group_by(Charge.enrollment_id)
-            .subquery()
-        )
-
-        alloc_sub = (
-            select(
-                Charge.enrollment_id.label("enrollment_id"),
-                func.coalesce(func.sum(Allocation.amount), ZERO).label("allocated"),
-            )
-            .join(Allocation, Allocation.charge_id == Charge.id)
-            .filter(
-                Charge.due_date <= today,
-                Charge.status != ChargeStatus.CANCELLED,
-                Charge.is_deleted == False,  # noqa: E712
-                Allocation.reversed_by_entry_id.is_(None),
-            )
-            .group_by(Charge.enrollment_id)
-            .subquery()
-        )
-
-        billed_expr = func.coalesce(billed_sub.c.billed, ZERO)
-        allocated_expr = func.coalesce(alloc_sub.c.allocated, ZERO)
-        debt_expr = billed_expr - allocated_expr
-        overdue_expr = case(
-            (billed_sub.c.oldest_open_due.is_(None), 0),
-            (debt_expr <= ZERO, 0),
-            else_=cast(literal(today), Date) - billed_sub.c.oldest_open_due,
-        )
-
-        query = (
-            select(
-                Enrollment,
-                User,
-                Course,
-                billed_expr.label("billed"),
-                allocated_expr.label("allocated"),
-                debt_expr.label("debt"),
-                overdue_expr.label("overdue_days"),
-            )
-            .join(User, User.id == Enrollment.student_id)
-            .join(Course, Course.id == Enrollment.course_id)
-            .outerjoin(billed_sub, billed_sub.c.enrollment_id == Enrollment.id)
-            .outerjoin(alloc_sub, alloc_sub.c.enrollment_id == Enrollment.id)
-            .filter(Enrollment.is_deleted.is_(False), User.is_deleted.is_(False))
-        )
-
-        if filters.get("course_id"):
-            query = query.filter(Enrollment.course_id == filters["course_id"])
-        if filters.get("student_id"):
-            query = query.filter(Enrollment.student_id == filters["student_id"])
-        if filters.get("status"):
-            query = query.filter(Enrollment.status == filters["status"])
-
-        min_debt = filters.get("min_debt")
-        if min_debt is not None:
-            query = query.filter(debt_expr >= min_debt)
-        else:
-            query = query.filter(debt_expr > ZERO)
-
-        overdue_filter = filters.get("overdue_days")
-        if overdue_filter is not None:
-            query = query.filter(overdue_expr >= overdue_filter)
-
-        return query, debt_expr
+    def _debt_query(self, today: date, filters: dict[str, Any]) -> tuple[Select[Any], ColumnElement[Decimal]]:
+        query: Select[Any]
+        debt: ColumnElement[Decimal]
+        query, debt = DebtQuery().build(today)
+        for key, column in (("course_id", Enrollment.course_id), ("student_id", Enrollment.student_id), ("status", Enrollment.status)):
+            if filters.get(key) is not None:
+                query = query.where(column == filters[key])
+        minimum_debt: Decimal | None = filters.get("min_debt")
+        query = query.where(debt >= minimum_debt if minimum_debt is not None else debt > ZERO)
+        if filters.get("overdue_days") is not None:
+            query = query.where(query.selected_columns.overdue_days >= filters["overdue_days"])
+        return query, debt
 
     async def get_debts(self, filters: dict, page: int, page_size: int) -> dict:
         page_size = min(max(1, page_size), 100)
@@ -1556,6 +1490,7 @@ class FinanceService:
                     "course": {"id": course.id, "title": course.title},
                     "price_at_enrollment": enrollment.price_at_enrollment,
                     "billing_mode": enrollment.effective_billing_mode,
+                    "enrollment_status": enrollment.status,
                     "billed_to_date": Decimal(billed or 0),
                     "total_paid": Decimal(allocated or 0),
                     "debt": Decimal(debt or 0),
@@ -1623,7 +1558,10 @@ class FinanceService:
             )
         )
         settled_to_date = Decimal(settled_res.scalar() or 0)
-        net_receivable = max(ZERO, billed_to_date - settled_to_date)
+        debt_query, debt_amount = DebtQuery().build(today)
+        debt_totals = debt_query.with_only_columns(debt_amount.label("debt")).where(debt_amount > ZERO).subquery()
+        net_receivable_result = await self.db.execute(select(func.coalesce(func.sum(debt_totals.c.debt), ZERO)))
+        net_receivable = Decimal(net_receivable_result.scalar() or 0)
 
         # Period bounds: local Dushanbe midnight-to-midnight, expressed in UTC.
         dt_from = datetime.combine(date_from, datetime.min.time()).replace(tzinfo=timezone.utc) - DUSHANBE_TZ_OFFSET

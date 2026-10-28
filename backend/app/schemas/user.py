@@ -75,13 +75,13 @@ class StudentCoursePillResponse(BaseModel):
     course_id: int
     title: str
     enrollment_id: int
-    billing_mode: Literal["paid", "grant"]
+    billing_mode: Literal["paid", "grant"] | None = None
 
 
 class StudentListItemResponse(UserResponse):
     courses: list[StudentCoursePillResponse]
-    debt_amount: str
-    payment_status: Literal["debt", "ok", "grant"]
+    debt_amount: str | None = None
+    payment_status: Literal["debt", "ok", "grant"] | None = None
 
 
 class UserCreateResponse(UserResponse):

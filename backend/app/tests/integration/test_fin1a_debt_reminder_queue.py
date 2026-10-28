@@ -305,3 +305,46 @@ async def test_debt_list_matches_the_original_finance_service_calculation(
         for item in reference["items"]
     ]
     assert [(a, b, str(c), d, str(e)) for a, b, c, d, e in comparable] == [(a, b, str(c), d, str(e)) for a, b, c, d, e in expected]
+
+@pytest.mark.asyncio
+async def test_withdrawn_debt_remains_visible_without_reminders(
+    client: AsyncClient, test_accountant: User, test_mentor: User
+) -> None:
+    from decimal import Decimal
+    from app.models.allocation import Allocation
+    from app.models.charge import Charge
+    from app.models.enrollment import Enrollment, EnrollmentStatus
+    from app.models.ledger import LedgerEntry, LedgerEntryType
+    from app.models.user import User as Student
+
+    withdrawn_id: int = await create_student("withdrawn-live@example.com", CHAT_ID, "ru")
+    active_id: int = await create_student("active-live@example.com", CHAT_ID + 1, "ru")
+    deleted_id: int = await create_student("deleted-live@example.com", CHAT_ID + 2, "ru")
+    enrollment_id: int = await add_debt(withdrawn_id, test_mentor.id, "Withdrawn", "700.00", days_ago(5))
+    await add_debt(active_id, test_mentor.id, "Active", "125.00", days_ago(5))
+    await add_debt(deleted_id, test_mentor.id, "Deleted", "90.00", days_ago(5))
+    session: Any
+    async with TestingSessionLocal() as session:
+        enrollment: Enrollment = await session.get(Enrollment, enrollment_id)
+        enrollment.status = EnrollmentStatus.WITHDRAWN
+        charge: Charge = await session.scalar(select(Charge).where(Charge.enrollment_id == enrollment_id))
+        payment: LedgerEntry = LedgerEntry(student_id=withdrawn_id, type=LedgerEntryType.PAYMENT,
+            amount=Decimal("200.00"), occurred_at=datetime.now(timezone.utc), recorded_by_id=test_accountant.id)
+        session.add(payment)
+        await session.flush()
+        session.add(Allocation(charge_id=charge.id, ledger_entry_id=payment.id, amount=Decimal("200.00")))
+        deleted: Student = await session.get(Student, deleted_id)
+        deleted.is_deleted = True
+        await session.commit()
+    response: Response = await client.get(DEBTS_URL, headers=bearer(test_accountant))
+    assert response.status_code == 200
+    items: list[dict[str, Any]] = response.json()["items"]
+    assert {item["student"]["id"] for item in items} == {withdrawn_id, active_id}
+    withdrawn: dict[str, Any] = next(item for item in items if item["student"]["id"] == withdrawn_id)
+    assert withdrawn["enrollment_status"] == "withdrawn"
+    assert Decimal(withdrawn["debt"]) == Decimal("500.00")
+    assert outcomes(await post_reminders(client, test_accountant, [withdrawn_id])) == {withdrawn_id: "no_debt"}
+    assert await all_reminders() == []
+    analytics: Response = await client.get("/api/v1/finance/analytics/", headers=bearer(test_accountant))
+    assert analytics.status_code == 200
+    assert sum(Decimal(item["debt"]) for item in items) == Decimal(analytics.json()["net_receivable"])
