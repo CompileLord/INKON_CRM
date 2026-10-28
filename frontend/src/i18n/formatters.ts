@@ -1,4 +1,5 @@
 import i18n from "./index";
+export { formatPhoneDisplay } from "../lib/phone";
 export { formatTjs, getPerMonthSuffix, formatMoney } from "../lib/money";
 
 export const SCHOOL_TIMEZONE = "Asia/Dushanbe";

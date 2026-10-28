@@ -232,7 +232,8 @@ describe("StatGroup and StatTile", () => {
     expect(missing).toHaveLength(2);
     expect(missing[0].textContent).toBe("—");
     expect(missing[0].className).toContain("text-muted");
-    expect(screen.getAllByRole("button", { name: "No exams yet" })).toHaveLength(1);
+    expect(screen.getByLabelText("No exams yet").textContent).toBe("—");
+    expect(screen.queryByRole("button", { name: "No exams yet" })).toBeNull();
   });
 });
 

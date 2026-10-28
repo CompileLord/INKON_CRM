@@ -1,4 +1,3 @@
-import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EnrollmentStatusBadge } from "../enrollments/EnrollmentStatusBadge";
@@ -6,7 +5,7 @@ import { GrantBadge } from "../enrollments/GrantBadge";
 import { ListRow } from "../ui/ListRow";
 import type { MenuItem } from "../ui/Menu";
 import { PersonAvatar } from "../ui/PersonAvatar";
-import { formatDate } from "../../i18n/formatters";
+import { formatDate, formatPhoneDisplay } from "../../i18n/formatters";
 import { formatTjs } from "../../lib/money";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { CourseRosterItem } from "../../lib/enrollments/types";
@@ -42,7 +41,7 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span ref={(element: HTMLElement | null) => registerName(item.student_id, element)} className="truncate text-sm font-medium text-ink">{studentName}</span>
-        <span className="truncate text-xs text-muted">{item.student.email ?? CanonicalPhone.prefill(item.student.phone)}</span>
+        <span className="truncate text-xs text-muted">{item.student.email ?? formatPhoneDisplay(item.student.phone)}</span>
         <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted sm:hidden">{priceOrBadge}<span>{item.billing_mode === "grant" ? enrolledOn : `· ${enrolledOn}`}</span></span>
       </span>
       <span className="flex shrink-0 items-center gap-4">

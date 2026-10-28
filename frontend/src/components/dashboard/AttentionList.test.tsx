@@ -76,7 +76,7 @@ describe("AttentionList", () => {
     vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(queryResult({ data: attentionFixture() }));
     renderAttention();
     const unmarked: HTMLElement = screen.getByRole("heading", { name: "Attendance not marked" }).parentElement as HTMLElement;
-    expect(within(unmarked).getByText("+992900000001").getAttribute("href")).toBe("tel:+992900000001");
+    expect(within(unmarked).getByText("+992 90 000 0001").getAttribute("href")).toBe("tel:+992900000001");
     expect(within(unmarked).getByRole("link", { name: "Open Gradebook" }).getAttribute("href")).toBe("/journals/12");
   });
 

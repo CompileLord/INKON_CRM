@@ -1,5 +1,12 @@
 {
   "appName": "KITOB CRM",
+  "phonePlaceholder": "+992901234567",
+  "phoneInvalid": "Use international format, starting with +",
+  "empty": {
+    "phone": "No phone number",
+    "noCourses": "Not enrolled in any course"
+  },
+  "timePlaceholder": "HH:MM",
   "emailLabel": "Email",
   "search": "Search...",
   "cancel": "Cancel",

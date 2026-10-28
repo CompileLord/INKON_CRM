@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { InfoTooltip } from "./InfoTooltip";
+import { EmptyValue } from "./EmptyValue";
 
 const CompactStatContext = createContext<boolean>(false);
 
@@ -39,8 +39,7 @@ export function StatTile({ label, value, hint, missingHint }: StatTileProps) {
       <dd className="m-0 flex flex-wrap items-baseline gap-x-2">
         {isMissing ? (
           <span data-stat-missing className={`inline-flex items-center gap-1 ${compact ? "text-xl sm:text-2xl" : "text-2xl"} font-semibold text-muted`}>
-            <span aria-label={t("missing")}>—</span>
-            {missingHint !== undefined && <InfoTooltip label={missingHint}>{missingHint}</InfoTooltip>}
+            <EmptyValue reason={missingHint ?? t("missing")} />
           </span>
         ) : (
           <span className={`${compact ? "text-xl sm:text-2xl" : "text-2xl"} font-semibold text-ink tabular-nums`}>{value}</span>

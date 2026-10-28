@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { Input } from "../ui/Input";
+import { PhoneInput } from "../ui/PhoneInput";
 import { SettingsGroup, SettingsRow } from "./SettingsRow";
 import { SettingsSaveBar } from "./SettingsSaveBar";
 import { SettingsSectionError, SettingsSectionSkeleton } from "./SettingsSectionState";
@@ -13,7 +14,6 @@ import { useOrgSettings, useTestTelegramBot, useUpdateOrgSettings } from "../../
 
 const ORGANIZATION_NAME_MAXIMUM_LENGTH: number = 255;
 const ORGANIZATION_ADDRESS_MAXIMUM_LENGTH: number = 255;
-const PHONE_PLACEHOLDER: string = "+992901234567";
 
 interface OrganizationSectionProps {
   onSaved: () => void;
@@ -106,7 +106,7 @@ export function OrganizationSection({ onSaved }: OrganizationSectionProps) {
           <Input id={`${identifier}-address`} value={currentAddress} maxLength={ORGANIZATION_ADDRESS_MAXIMUM_LENGTH} autoComplete="street-address" onChange={(event) => setDraftAddress(event.target.value)} />
         </SettingsRow>
         <SettingsRow icon={<Phone size={18} />} label={t("organization.phone")} controlId={`${identifier}-phone`}>
-          <Input id={`${identifier}-phone`} type="tel" inputMode="tel" autoComplete="tel" placeholder={PHONE_PLACEHOLDER} value={currentPhone} error={phoneError} onChange={(event) => setDraftPhone(event.target.value)} />
+          <PhoneInput id={`${identifier}-phone`} value={currentPhone} error={phoneError} onChange={(event) => setDraftPhone(event.target.value)} />
         </SettingsRow>
         <SettingsRow
           icon={<Coins size={18} />}

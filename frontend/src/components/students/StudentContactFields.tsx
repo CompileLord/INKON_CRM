@@ -1,5 +1,6 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { PhoneInput } from "../ui/PhoneInput";
 import type { StudentFormValues } from "../../lib/studentFormSchema";
 
 interface StudentFieldProps {
@@ -9,59 +10,16 @@ interface StudentFieldProps {
   labelClass: string;
 }
 
-export function StudentPhoneField({ register, errors, inputClass, labelClass }: StudentFieldProps) {
+export function StudentPhoneField({ register, errors }: StudentFieldProps) {
   const { t } = useTranslation("students");
 
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor="student-phone" className={labelClass}>
-        {t("form.phoneLabel")}
-      </label>
-      <input
-        id="student-phone"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        placeholder={t("form.phonePlaceholder")}
-        aria-invalid={Boolean(errors.phone)}
-        aria-describedby={errors.phone ? "student-phone-error" : undefined}
-        className={inputClass}
-        {...register("phone")}
-      />
-      {errors.phone?.message && (
-        <span id="student-phone-error" role="alert" className="text-xs text-destructive">
-          {errors.phone.message}
-        </span>
-      )}
-    </div>
-  );
+  return <PhoneInput id="student-phone" label={t("form.phoneLabel")} error={errors.phone?.message} {...register("phone")} />;
 }
 
-export function StudentParentPhoneField({ register, errors, inputClass, labelClass }: StudentFieldProps) {
+export function StudentParentPhoneField({ register, errors }: StudentFieldProps) {
   const { t } = useTranslation("students");
 
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor="student-parentPhone" className={labelClass}>
-        {t("form.parentPhoneLabel")}
-      </label>
-      <input
-        id="student-parentPhone"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        aria-invalid={Boolean(errors.parentPhone)}
-        aria-describedby={errors.parentPhone ? "student-parentPhone-error" : undefined}
-        className={inputClass}
-        {...register("parentPhone")}
-      />
-      {errors.parentPhone?.message && (
-        <span id="student-parentPhone-error" role="alert" className="text-xs text-destructive">
-          {errors.parentPhone.message}
-        </span>
-      )}
-    </div>
-  );
+  return <PhoneInput id="student-parentPhone" label={t("form.parentPhoneLabel")} error={errors.parentPhone?.message} {...register("parentPhone")} />;
 }
 
 export function StudentPaymentFields({ register, errors, inputClass, labelClass }: StudentFieldProps) {

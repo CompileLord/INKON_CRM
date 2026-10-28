@@ -1,7 +1,7 @@
-import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import { useRef, type ReactNode } from "react";
 import { RotateCcw, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { EmptyValue } from "../ui/EmptyValue";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { Pagination } from "../ui/Pagination";
 import { PageSizeListbox } from "../ui/PageSizeListbox";
@@ -13,7 +13,7 @@ import type { MenuItem } from "../ui/Menu";
 import { StudentStatusPill } from "./StudentStatusPill";
 import { StudentBalanceCell } from "./StudentBalanceCell";
 import { StudentCoursePills } from "./StudentCoursePills";
-import { formatNumber } from "../../i18n/formatters";
+import { formatNumber, formatPhoneDisplay } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { StudentListItemResponse, User } from "../../lib/users/types";
 
@@ -92,7 +92,7 @@ function StudentRow({ student, search, page, pageSize, onEdit, onDeleteRequest, 
               {student.email != null && <span className="truncate text-sm text-muted" title={student.email}>{student.email}</span>}
             </span>
           </span>
-          <span className={`text-sm tabular-nums text-ink ${student.phone == null ? "hidden md:block" : ""}`}>{student.phone != null ? CanonicalPhone.prefill(student.phone) : <span className="text-muted">—</span>}</span>
+          <span className={`text-sm tabular-nums text-ink ${student.phone == null ? "hidden md:block" : ""}`}>{student.phone != null ? formatPhoneDisplay(student.phone) : <EmptyValue reason={t("common:empty.phone")} />}</span>
           <StudentCoursePills courses={student.courses} />
           <span className="md:text-right"><StudentBalanceCell paymentStatus={student.payment_status} debtAmount={student.debt_amount} /></span>
         </span>

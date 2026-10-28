@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { TimeInput24 } from "../ui/TimeInput24";
 import {
   isScheduleTimeRangeValid,
   resolveScheduleTimes,
@@ -37,24 +38,22 @@ export function CourseScheduleTimesEditor({ rows, edits, showMissingErrors, disa
           <li key={row.id} className="flex flex-col gap-1.5">
             <div className="grid grid-cols-2 items-center gap-x-2 gap-y-1.5 md:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)]">
               <span className="col-span-2 text-sm font-medium text-ink md:col-span-1">{dayLabel}</span>
-              <input
-                type="time"
+              <TimeInput24
                 aria-label={t("form.dayTimeStartLabel", { day: dayLabel })}
-                aria-invalid={hasRangeError}
+                invalid={hasRangeError}
                 aria-describedby={hasRangeError ? errorId : undefined}
                 disabled={disabled}
                 value={times.time_start}
-                onChange={(event) => onChange(row.id, { ...times, time_start: event.target.value })}
+                onChange={(value) => onChange(row.id, { ...times, time_start: value })}
                 className={`${timeInputClass} ${borderClass}`}
               />
-              <input
-                type="time"
+              <TimeInput24
                 aria-label={t("form.dayTimeEndLabel", { day: dayLabel })}
-                aria-invalid={hasRangeError}
+                invalid={hasRangeError}
                 aria-describedby={hasRangeError ? errorId : undefined}
                 disabled={disabled}
                 value={times.time_end}
-                onChange={(event) => onChange(row.id, { ...times, time_end: event.target.value })}
+                onChange={(value) => onChange(row.id, { ...times, time_end: value })}
                 className={`${timeInputClass} ${borderClass}`}
               />
             </div>

@@ -1,5 +1,12 @@
 {
   "appName": "КИТОБ CRM",
+  "phonePlaceholder": "+992901234567",
+  "phoneInvalid": "Номер в международном формате, начиная с +",
+  "empty": {
+    "phone": "Телефон не указан",
+    "noCourses": "Нет записей на курсы"
+  },
+  "timePlaceholder": "ЧЧ:ММ",
   "emailLabel": "Электронная почта",
   "search": "Поиск...",
   "cancel": "Отмена",

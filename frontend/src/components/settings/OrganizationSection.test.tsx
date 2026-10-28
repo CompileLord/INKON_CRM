@@ -70,7 +70,7 @@ describe("OrganizationSection address and phone", () => {
     const phone: HTMLElement = await screen.findByLabelText("Phone");
     expect(screen.queryByText(/international format/)).toBeNull();
     fireEvent.change(phone, { target: { value: "9929" } });
-    expect(screen.getByText("Use the international format, e.g. +992901234567.")).toBeTruthy();
+    expect(screen.getByText("Use international format, starting with +")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(update).not.toHaveBeenCalled();
   });

@@ -100,6 +100,6 @@ describe("profile layout", () => {
     const phone: HTMLElement = await screen.findByLabelText("Phone");
     await user.clear(phone);
     await user.type(phone, "123");
-    expect(screen.getByText("Use the international format, e.g. +992901234567.")).toBeTruthy();
+    expect(screen.getByText("Use international format, starting with +")).toBeTruthy();
   });
 });

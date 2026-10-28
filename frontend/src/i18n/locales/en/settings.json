@@ -27,7 +27,7 @@
     "lastName": "Last name",
     "phone": "Phone",
     "nameRequired": "Enter a name.",
-    "phoneInvalid": "Use the international format, e.g. +992901234567.",
+    "phoneInvalid": "Use international format, starting with +",
     "phoneTaken": "This phone number is already in use."
   },
   "appearance": {
@@ -84,7 +84,7 @@
     "test": "Test",
     "address": "Address",
     "phone": "Phone",
-    "phoneInvalid": "Use the international format, e.g. +992901234567."
+    "phoneInvalid": "Use international format, starting with +"
   },
   "rules": {
     "payments": "Payment notifications",

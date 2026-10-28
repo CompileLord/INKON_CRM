@@ -19,6 +19,7 @@
   "menu": {
     "actions": "More actions"
   },
+  "noGradedPeriods": "No graded periods yet",
   "missing": "No data",
   "badge": {
     "active": "Active",

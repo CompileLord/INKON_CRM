@@ -1,4 +1,3 @@
-import { CanonicalPhone } from "../../lib/users/CanonicalPhone";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../ui/Badge";
@@ -7,7 +6,7 @@ import { EntityHeader } from "../ui/EntityHeader";
 import type { MenuItem } from "../ui/Menu";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { StudentParentLink } from "./StudentParentLink";
-import { formatDate } from "../../i18n/formatters";
+import { formatDate, formatPhoneDisplay } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { User } from "../../lib/users/types";
 
@@ -24,8 +23,8 @@ export function StudentProfileHeader({ user, isSuperAdmin, editTriggerRef, onEdi
   const { t } = useTranslation("studentProfile");
   const meta: string[] = [
     ...(user.email ? [user.email] : []),
-    ...(user.phone ? [CanonicalPhone.prefill(user.phone)] : []),
-    ...(user.parent_phone ? [t("header.parentPhone", { phone: CanonicalPhone.prefill(user.parent_phone) })] : []),
+    ...(user.phone ? [formatPhoneDisplay(user.phone)] : []),
+    ...(user.parent_phone ? [t("header.parentPhone", { phone: formatPhoneDisplay(user.parent_phone) })] : []),
     ...(user.date_of_birth ? [formatDate(user.date_of_birth)] : []),
   ];
   const menuItems: MenuItem[] | undefined = isSuperAdmin

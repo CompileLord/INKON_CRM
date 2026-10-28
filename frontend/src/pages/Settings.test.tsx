@@ -127,7 +127,7 @@ describe("Profile section", () => {
   it("blocks saving an invalid phone number and an empty name", () => {
     renderSettings("student");
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "not-a-phone" } });
-    expect(screen.getByText(/international format, e\.g\. \+992901234567\./i, { selector: "[role='alert']" })).toBeTruthy();
+    expect(screen.getByText(/international format, starting with \+/i, { selector: "[role='alert']" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(mocks.updateProfile).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+992900000001" } });

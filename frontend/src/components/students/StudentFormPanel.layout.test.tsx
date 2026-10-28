@@ -66,7 +66,7 @@ describe("StudentFormPanel layout", () => {
     const { container } = renderPanel();
     const formatHint = "+992901234567";
     const placeholders = Array.from(container.ownerDocument.querySelectorAll("input")).filter((input) => input.placeholder === formatHint);
-    expect(placeholders).toHaveLength(1);
+    expect(placeholders).toHaveLength(2);
     expect(container.ownerDocument.body.textContent).not.toContain("Format:");
     expect(screen.getAllByText(/the password is sent by email/i)).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /About password delivery|About contacts/i })).toBeNull();

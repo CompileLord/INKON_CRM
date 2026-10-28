@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { EmptyValue } from "../ui/EmptyValue";
 import { AlertTriangle } from "lucide-react";
 import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from "./JournalScoreCell";
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
@@ -172,7 +173,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
               }
             />
           ) : (
-            <span className="text-muted" aria-label={nothingGraded ? t("table.notRecorded") : undefined}>—</span>
+            nothingGraded ? <EmptyValue reason={t("table.notRecorded")} /> : <span className="text-muted">—</span>
           )}
         </td>
       ))}
@@ -181,7 +182,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         <span className="inline-flex items-center gap-1.5">
           {summaryStatus && <JournalSaveMarker status={summaryStatus} className="relative" />}
           {nothingGraded ? (
-            <span data-testid="total-not-graded" className="text-muted" aria-label={t("table.notRecorded")}>—</span>
+            <span data-testid="total-not-graded"><EmptyValue reason={t("table.notRecorded")} /></span>
           ) : summary ? (
             <span className="leading-5">
               <span className="font-semibold text-ink">{formatNumber(summary.sum_score)}</span>
