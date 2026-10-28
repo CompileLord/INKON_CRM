@@ -308,11 +308,17 @@ describe("Progress chart visibility", () => {
     expect(render(<JournalProgressView courseId={1} />).container.innerHTML).toBe("");
   });
 
+  it("labels the y-axis as period totals so it is not read as the 1–5 lesson scale", () => {
+    render(<JournalProgressView courseId={1} />);
+    expect(screen.getByTestId("progress-axis-label").textContent).toBe("Period totals, points");
+    expect(screen.getByRole("button", { name: /period totals \(sum of points\)/ })).toBeDefined();
+  });
+
   it("is a single section with one info tooltip and no table", () => {
     render(<JournalProgressView courseId={1} />);
     expect(screen.queryByTestId("progress-table")).toBeNull();
     expect(screen.queryByTestId("student-row")).toBeNull();
-    expect(screen.getAllByRole("button", { name: /Average of stored totals/ })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /not per-lesson grades on the 1–5 scale/ })).toHaveLength(1);
     expect(vi.mocked(courseHooks.useCourseStaffProgress)).toHaveBeenLastCalledWith(1, true);
   });
 });

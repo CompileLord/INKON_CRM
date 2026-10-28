@@ -52,7 +52,7 @@ export const JournalKeyboardHelp: React.FC = () => {
           id={panelId}
           role="region"
           aria-label={t("help.title")}
-          className="absolute right-0 top-full z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 text-ink shadow-lg"
+          className="z-40 mt-2 rounded-2xl max-sm:fixed max-sm:inset-x-4 sm:absolute sm:left-0 sm:top-full sm:w-[22rem] border border-border bg-card p-4 text-ink shadow-lg"
         >
           <h3 className="mb-3 text-sm font-semibold">{t("help.title")}</h3>
           <dl className="space-y-2 text-sm">

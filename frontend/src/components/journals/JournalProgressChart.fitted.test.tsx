@@ -109,7 +109,7 @@ describe("Progress chart tooltip header and legend", () => {
     render(<JournalProgressView courseId={1} />);
     expect(screen.getByRole("heading", { name: "Performance trend" })).toBeDefined();
     expect(screen.queryByText("Whole course, all periods")).toBeNull();
-    expect(screen.getAllByRole("button", { name: /Average of stored totals/ })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /not per-lesson grades on the 1–5 scale/ })).toHaveLength(1);
   });
 
   it("lists every student with data in the legend, as a chip or in the more menu", () => {

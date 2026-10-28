@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyValue } from "../ui/EmptyValue";
+import { Tooltip } from "../ui/Tooltip";
 import { AlertTriangle } from "lucide-react";
 import { JournalScoreCell, type CellNavDirection, type JournalCellControl } from "./JournalScoreCell";
 import { JournalReadOnlyCell } from "./JournalReadOnlyCell";
@@ -79,15 +80,16 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
         <div className="flex items-center gap-2">
           <span className="min-w-0 truncate" title={studentName}>{studentName}</span>
           {atRisk && (
-            <span
-              data-testid="at-risk-marker"
-              role="img"
-              aria-label={t("atRisk.label")}
-              title={t("atRisk.tooltip")}
-              className="shrink-0 text-warning"
-            >
-              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            </span>
+            <Tooltip content={t("atRisk.tooltip")} focusable>
+              <span
+                data-testid="at-risk-marker"
+                role="img"
+                aria-label={t("atRisk.label")}
+                className="shrink-0 text-warning"
+              >
+                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+              </span>
+            </Tooltip>
           )}
           {isSelf && (
             <span className={compact ? "sr-only" : "shrink-0 rounded-full bg-info-surface px-2 text-xs font-semibold text-ink"}>{t("readOnly.you")}</span>

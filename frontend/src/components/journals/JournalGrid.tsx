@@ -228,7 +228,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
                     }}
                     scope="col"
                     aria-current={date === selectedLesson ? "date" : undefined}
-                    className={`relative border-b border-border p-0 text-center motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
+                    className={`group/column relative border-b border-border p-0 text-center motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out ${
                       date === selectedLesson ? "bg-info-surface text-ink" : "bg-beige text-ink"
                     }`}
                   >

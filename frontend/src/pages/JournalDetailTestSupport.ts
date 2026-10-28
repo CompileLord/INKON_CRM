@@ -184,8 +184,7 @@ export function choosePeriod(periodId: number): void {
 }
 
 export function periodSettingsButton(): HTMLElement {
-  fireEvent.click(screen.getByRole("button", { name: "Period options" }));
-  return screen.getByRole("menuitem", { name: "Period settings" });
+  return screen.getByRole("button", { name: "Period settings" });
 }
 
 export function gradeCell(name: string, date: string): HTMLElement {

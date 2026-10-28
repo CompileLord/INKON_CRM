@@ -3,7 +3,6 @@ import { PersonAvatar } from "../ui/PersonAvatar";
 import { Badge } from "../ui/Badge";
 import { InitialTile } from "../ui/InitialTile";
 import { ListRow } from "../ui/ListRow";
-import { formatDate } from "../../i18n/formatters";
 import { resolveMediaUrl } from "../../lib/users/media";
 import type { CourseResponse } from "../../lib/courses/types";
 import type { User } from "../../lib/users/types";
@@ -36,11 +35,6 @@ export function JournalListRow({ course, mentorState, onNavigateOut }: JournalLi
               <span className="flex min-w-0 flex-wrap items-center gap-x-2">
                 <span className="min-w-0 break-words text-sm font-semibold text-ink [overflow-wrap:anywhere]">{course.title}</span>
                 {course.status === "archived" && <Badge status="archived" />}
-              </span>
-              <span className="text-sm text-muted">
-                <span>{t(`common:enums.examType.${course.exam_type}`)}</span>
-                <span aria-hidden="true"> · </span>
-                <span className="tabular-nums">{formatDate(course.start_date)} – {formatDate(course.end_date)}</span>
               </span>
             </span>
           </span>
@@ -75,7 +69,6 @@ export function JournalListRowSkeleton({ showMentor }: { showMentor: boolean }) 
           <div className="size-10 shrink-0 rounded-[10px] bg-border" />
           <div className="flex flex-1 flex-col gap-2">
             <div className="h-4 w-2/3 rounded bg-border" />
-            <div className="h-3 w-1/2 rounded bg-border" />
           </div>
         </div>
         {showMentor && <div className="hidden h-4 w-40 rounded bg-border md:block" />}
