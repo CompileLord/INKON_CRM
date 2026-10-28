@@ -4257,6 +4257,13 @@ Manually apply a student's wallet credit to a specific charge.
         "status": "queued" | "inflight" | "sent" | "failed",
         "attempts": integer,
         "sent_at?": string,
+        "student_id?": integer,
+        "course_id?": integer,
+        "payment_id?": integer,
+        "ledger_entry_id?": integer,
+        "course_title?": string,
+        "amount?": string,
+        "score?": integer,
       }
     ],
     "total": integer,
