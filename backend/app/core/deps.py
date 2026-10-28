@@ -396,3 +396,11 @@ def get_auth_service(
         challenge_consumer, sms_service, sms_budget, session_service,
     )
 
+
+
+def get_notification_retry_service(db: AsyncSession = Depends(get_db_session)) -> "NotificationRetryService":
+    from app.core.redis import enqueue_job
+    from app.repositories.sqlalchemy.notification_retry_repository import SQLAlchemyNotificationRetryRepository
+    from app.services.audit_service import AuditService
+    from app.services.notification_retry_service import NotificationRetryService
+    return NotificationRetryService(SQLAlchemyNotificationRetryRepository(db), AuditService(db), enqueue_job)

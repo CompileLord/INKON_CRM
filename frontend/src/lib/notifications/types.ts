@@ -34,6 +34,11 @@ export interface DeliveryLogItem {
   status: NotificationStatus;
   attempts: number;
   sent_at: string | null;
+  student_id?: number | null;
+  course_id?: number | null;
+  course_title?: string | null;
+  amount?: string | null;
+  score?: number | null;
 }
 
 export type PaginatedDeliveryLog = Paginated<DeliveryLogItem>;

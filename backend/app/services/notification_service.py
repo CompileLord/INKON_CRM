@@ -215,7 +215,6 @@ class NotificationService:
             return False
 
         context: ReminderDeliveryContext = await self.repo.reminder_delivery_context(notification_id)
-        await self.repo.commit()
         text: str | None = claim.delivery_text
         if context.is_reminder:
             if not context.enabled:
@@ -225,6 +224,8 @@ class NotificationService:
                 await self.finalize_notification(claim, "source_unavailable" if not context.owned else "balance_settled", terminal=not context.owned)
                 return False
             text = PaymentReminderMessages().render(context.source, context.notification_date)
+            await self.repo.set_delivery_amount(claim, context.source.balance)
+        await self.repo.commit()
 
         async def send(is_update: bool) -> None:
             if text is None:
@@ -307,7 +308,9 @@ class NotificationService:
                 "revision": log.revision or 1,
                 "_job_id": f"notification:{log.id}:{log.revision}:recovery:{log.attempts}",
             }
-            if log.delivery_text is not None:
+            if log.retry_requested:
+                jobs.append(("retry_notification_delivery", payload))
+            elif log.delivery_text is not None:
                 payload.update(chat_id=int(log.recipient), text=log.delivery_text)
                 jobs.append(("send_telegram_message", payload))
             else:
