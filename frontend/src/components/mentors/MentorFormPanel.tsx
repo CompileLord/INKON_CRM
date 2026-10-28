@@ -418,8 +418,9 @@ function MentorFormPanelInner({
           )}
 
           {mentor && (
-            <div className="rounded-xl border border-border bg-strip p-4">
+            <div data-avatar-row>
               <AvatarUploadField
+                compact
                 userId={mentor.id}
                 role="mentor"
                 currentPhotoUrl={resolveMediaUrl(mentor.thumbnail_path ?? mentor.photo_path)}

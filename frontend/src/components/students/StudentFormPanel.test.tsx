@@ -109,6 +109,16 @@ describe("StudentFormPanel", () => {
     expect(screen.getByRole("button", { name: /photo/i })).toBeDefined();
   });
 
+  it("puts the compact avatar and the upload button on one row without a framed photo block", () => {
+    renderPanel({ student: existingStudent });
+    const preview = screen.getByTestId("avatar-preview-container");
+    const uploadButton = screen.getByRole("button", { name: /photo/i });
+    expect(preview.className).toContain("h-12");
+    expect(preview.parentElement).toBe(uploadButton.parentElement?.parentElement);
+    expect(preview.closest("[data-avatar-row]")?.className ?? "").not.toContain("p-4");
+    expect(preview.closest("[data-avatar-row]")?.querySelector("span.sr-only")).not.toBeNull();
+  });
+
   it("closes immediately without confirmation when pristine form is cancelled", async () => {
     const { props } = renderPanel();
     const user = userEvent.setup();
