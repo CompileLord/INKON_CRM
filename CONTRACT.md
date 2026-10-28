@@ -1497,6 +1497,9 @@ Students receive only public mentor identity and course identity for their nonde
         "updated_at": string,
         "schedules": array[],
         "active_student_count": integer,
+        "current_period_label": string,
+        "last_graded_lesson_date": string,
+        "ungraded_lessons_count": integer,
       }
     ],
     "total": integer,

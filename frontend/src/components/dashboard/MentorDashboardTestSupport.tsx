@@ -66,6 +66,9 @@ export function mockCourse(id: number, title: string, exam_type: "weekly" | "mon
     updated_at: "2026-01-01T00:00:00Z",
     schedules: [],
     active_student_count: 0,
+    current_period_label: null,
+    last_graded_lesson_date: null,
+    ungraded_lessons_count: 0,
   };
 }
 

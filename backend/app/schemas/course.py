@@ -116,6 +116,9 @@ class CourseResponse(BaseModel):
 class CourseListItemResponse(CourseResponse):
     schedules: List[CourseScheduleResponse]
     active_student_count: int
+    current_period_label: str | None
+    last_graded_lesson_date: date | None
+    ungraded_lessons_count: int
 
 
 class MentorMiniResponse(BaseModel):

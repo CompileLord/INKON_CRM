@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 from app.core.security import create_access_token
 from app.models.audit_log import AuditAction, AuditLog
@@ -341,3 +341,33 @@ async def test_events_keep_filters_and_role_guard(client: AsyncClient, test_admi
 
     assert by_actor["total"] == 2
     assert forbidden.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_refund_event_uses_refunded_amount(
+    client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
+) -> None:
+    from app.tests.integration.test_finance import _setup_student_course
+
+    student_id: int
+    course_id: int
+    student_id, course_id = await _setup_student_course(
+        client, _headers(test_admin), test_mentor.id, email="refund-event@example.com"
+    )
+    payment_response: Response = await client.post(
+        "/api/v1/finance/payments/",
+        json={"student_id": student_id, "course_id": course_id, "amount": "275.00", "paid_at": datetime.now(timezone.utc).isoformat(), "method": "cash"},
+        headers=_headers(test_accountant),
+    )
+    assert payment_response.status_code in (200, 201)
+    payment_id: int = payment_response.json()["id"]
+    refund_response: Response = await client.post(
+        f"/api/v1/finance/payments/{payment_id}/refund",
+        json={"amount": "100.00", "reason_code": "other", "to_wallet": True},
+        headers=_headers(test_admin),
+    )
+    assert refund_response.status_code == 200
+    events: dict = await _events(client, test_admin, entity_type="payment", entity_id=payment_id)
+    refund: dict = next(event for event in events["items"] if event["action"] == "refund")
+    assert refund["amount"] == "100.00"
+    assert refund["student_id"] == student_id

@@ -29,6 +29,9 @@ function courseFixture(id: number, title: string, mentorId: number, timeStart: s
     updated_at: "2026-09-01T00:00:00Z",
     schedules: [{ id: id, course_id: id, day_of_week: dayOfWeek, time_start: timeStart, time_end: timeEnd }],
     active_student_count: 8,
+    current_period_label: null,
+    last_graded_lesson_date: null,
+    ungraded_lessons_count: 0,
   };
 }
 

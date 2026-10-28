@@ -19,6 +19,9 @@ function course(dayOfWeek: number, timeStart: string): CourseListItemResponse {
     updated_at: "2026-09-01T00:00:00Z",
     schedules: [{ id: 1, course_id: 1, day_of_week: dayOfWeek, time_start: timeStart, time_end: "23:00:00" }],
     active_student_count: 3,
+    current_period_label: null,
+    last_graded_lesson_date: null,
+    ungraded_lessons_count: 0,
   };
 }
 

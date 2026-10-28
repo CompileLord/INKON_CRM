@@ -1099,7 +1099,7 @@ class FinanceService:
         ).order_by(LedgerEntry.occurred_at.asc(), LedgerEntry.id.asc()))).all())
         created: List[Allocation] = []
         await self._apply_credit(entries, charges, limit=amount, created=created)
-        await self._log_audit(user_id=current_user.id, action="update", entity_type="allocation", entity_id=enrollment_id,
+        await self._log_audit(user_id=current_user.id, action="update", entity_type="allocation", entity_id=created[0].charge_id,
                               changes={"allocated": str(amount), "student_id": student_id, "enrollment_id": enrollment_id})
         await self._invalidate_cache()
         return {"allocated_amount": amount, "wallet_credit": await self.get_unallocated_credit(student_id),
