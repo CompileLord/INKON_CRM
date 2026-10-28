@@ -10,13 +10,13 @@ interface StudentEmailFieldProps {
 }
 
 export function StudentEmailField({ register, errors, inputClass, labelClass }: StudentEmailFieldProps) {
-  const { t } = useTranslation("students");
+  const { t } = useTranslation(["students", "common"]);
   const describedBy: string = errors.email ? "student-email-error" : "student-email-help";
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
       <label htmlFor="student-email" className={labelClass}>
-        {t("form.emailLabel")}
+        {t("common:emailLabel")}
       </label>
       <input
         id="student-email"

@@ -491,7 +491,7 @@ function MentorFormPanelInner({
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="mentor-email" className={labelClass}>
-                  {t("form.emailLabel")} <span className="text-destructive">*</span>
+                  {t("common:emailLabel")} <span className="text-destructive">*</span>
                 </label>
                 <input
                   id="mentor-email"

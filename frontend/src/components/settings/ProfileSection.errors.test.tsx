@@ -90,7 +90,7 @@ describe("profile layout", () => {
     expect(phone.placeholder).toBe("+992901234567");
     expect(screen.queryByText(/Start with \+/)).toBeNull();
     expect(screen.queryByText(/international format/)).toBeNull();
-    expect(screen.getByLabelText(i18n.t("students:form.emailLabel"))).toBeTruthy();
+    expect(screen.getByLabelText(i18n.t("common:emailLabel"))).toBeTruthy();
     expect(phone.closest(".md\\:grid-cols-2")).not.toBeNull();
   });
 

@@ -1,5 +1,6 @@
 {
   "appName": "KITOB CRM",
+  "emailLabel": "Email",
   "search": "Search...",
   "cancel": "Cancel",
   "save": "Save",
