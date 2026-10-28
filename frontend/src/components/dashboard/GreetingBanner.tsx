@@ -6,6 +6,15 @@ import type { UserCreateResponse } from "../../lib/users/types";
 import { StudentFormPanel } from "../students/StudentFormPanel";
 import { Button } from "../ui/Button";
 import { PageHeader } from "../ui/PageHeader";
+import { SCHOOL_TIMEZONE } from "../../i18n/formatters";
+
+type GreetingPeriod = "morning" | "afternoon" | "evening";
+
+export function greetingPeriodFor(moment: Date): GreetingPeriod {
+  const hour: number = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: SCHOOL_TIMEZONE }).format(moment)) % 24;
+  if (hour < 12) return "morning";
+  return hour < 18 ? "afternoon" : "evening";
+}
 
 interface GreetingBannerProps {
   onAcceptPayment: () => void;
@@ -30,7 +39,7 @@ export function GreetingBanner({ onAcceptPayment }: GreetingBannerProps) {
   return (
     <>
       <PageHeader
-        title={t("title")}
+        title={t(`greeting.${greetingPeriodFor(new Date())}`)}
         actions={
           <>
             <Button type="button" variant="secondary" onClick={() => setIsStudentPanelOpen(true)}>

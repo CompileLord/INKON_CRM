@@ -9,6 +9,7 @@ import { DeliveryStatusChip } from "./DeliveryStatusChip";
 import { Button } from "../ui/Button";
 import { ErrorState } from "../ui/ErrorState";
 import { Pagination } from "../ui/Pagination";
+import { useAuthStore } from "../../store/authStore";
 
 function InboxSkeleton() {
   const { t } = useTranslation("common");
@@ -76,6 +77,8 @@ export function NotificationInbox() {
   const inbox = useNotifications(page);
   const unreadCount = useUnreadNotificationCount();
   const markAll = useMarkAllNotificationsRead();
+  const role = useAuthStore((state) => state.role);
+  const emptyAudience: "student" | "admin" | "staff" = role === "student" ? "student" : role === "superadmin" ? "admin" : "staff";
 
   const items: NotificationLogItem[] = inbox.data?.items ?? [];
   const hasUnread: boolean = (unreadCount.data?.unread_count ?? NotificationPresentation.countUnread(items)) > 0;
@@ -104,7 +107,7 @@ export function NotificationInbox() {
         <BellOff size={20} aria-hidden="true" className="shrink-0 text-muted" />
         <div className="flex min-w-0 flex-col">
           <p className="text-sm font-medium text-ink">{t("notifications:inboxEmpty")}</p>
-          <p className="text-sm text-muted">{t("notifications:inboxEmptyNextStep")}</p>
+          <p className="text-sm text-muted">{t(`notifications:inboxEmptyNextStep.${emptyAudience}`)}</p>
         </div>
       </div>
     );

@@ -73,8 +73,18 @@ describe("Login page integration", () => {
 
     expect(screen.queryByRole("link", { name: /activate account/i })).toBeNull();
     expect(document.querySelector('a[href="/verify-email"]')).toBeNull();
-    const hint = screen.getByText("New student? Enter the 6-character code from the SMS.");
+    const hint = screen.getByText("New student? Enter the code from the SMS in the \"Password\" field.");
     expect(hint.className).toContain("text-muted");
+  });
+
+  it("keeps the small logo for mobile only so desktop shows the logo once, in the right-hand panel", () => {
+    renderLogin();
+    const formColumn: Element = document.querySelector("section") as Element;
+    const mobileLogoWrapper: Element | null = formColumn.querySelector(".lg\\:hidden");
+    expect(mobileLogoWrapper).not.toBeNull();
+    expect(mobileLogoWrapper?.querySelector("img, svg")).not.toBeNull();
+    expect(formColumn.querySelector(".hidden.lg\\:block")).toBeNull();
+    expect(formColumn.querySelectorAll("img, svg[role='img']").length).toBe(mobileLogoWrapper?.querySelectorAll("img, svg[role='img']").length);
   });
 
   it("validates empty and invalid fields with accessible error association", async () => {

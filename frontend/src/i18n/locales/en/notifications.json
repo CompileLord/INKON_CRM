@@ -38,8 +38,6 @@
   "unreadSummary": "Unread: {{count}}",
   "allRead": "All caught up",
   "loadFailed": "Couldn't load notifications.",
-  "inboxEmpty": "You're all caught up",
-  "inboxEmptyNextStep": "New lessons, grades and messages will show up here.",
   "deliveryLog": {
     "failedOnly": "Failed only",
     "sent": "Sent",
@@ -68,5 +66,12 @@
     "emptyNext": "Payment reminders and exam results sent to students and parents will appear here.",
     "emptyFailedNext": "Failed messages show up here so you can retry them.",
     "score": "Score: {{score}}"
-  }
+  },
+  "inboxEmpty": "No notifications yet",
+  "inboxEmptyNextStep": {
+    "student": "New lessons, grades and messages will show up here.",
+    "admin": "System alerts will show up here, for example when parent linking is paused.",
+    "staff": "Work notifications will show up here."
+  },
+  "popoverHistory": "All notifications"
 }

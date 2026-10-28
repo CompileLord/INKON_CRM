@@ -25,7 +25,7 @@ export function ForgotPassword() {
 
   return (
     <AuthFrame
-      composition="static-emblem"
+      composition="animated-loop"
       editorialTitle={t("auth:editorialTitle")}
       editorialDescription={t("auth:editorialSubtitle")}
     >

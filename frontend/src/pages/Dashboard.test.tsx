@@ -43,7 +43,8 @@ describe("Superadmin Dashboard (/)", () => {
   it("renders the page title without a filler subtitle", () => {
     renderDashboard();
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading.textContent).toContain("Admin Dashboard");
+    expect(heading.textContent).toMatch(/^Good (morning|afternoon|evening)$/);
+    expect(heading.textContent).not.toContain("Admin Dashboard");
     expect(screen.queryByText("Operational summary of courses, finances, and academic process.")).toBeNull();
     expect(document.querySelector("[data-page-container]")).not.toBeNull();
   });

@@ -1,5 +1,4 @@
 {
-  "title": "Панель администратора",
   "crmControlPanel": "CRM ИМКОН • Панель управления",
   "paymentDebt": "Задолженность",
   "debtors": "{{count}} должников",
@@ -187,5 +186,10 @@
   "nextLessonOnDay": "{{day}}, {{time}}",
   "noLessonsTodaySlim": "Сегодня занятий нет",
   "noLessonsTodayNext": "Сегодня занятий нет · Следующее: {{when}}",
-  "absenceStreak_ordinal_other": "{{count}}-й пропуск подряд"
+  "absenceStreak_ordinal_other": "{{count}}-й пропуск подряд",
+  "greeting": {
+    "morning": "Доброе утро",
+    "afternoon": "Добрый день",
+    "evening": "Добрый вечер"
+  }
 }

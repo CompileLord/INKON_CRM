@@ -41,7 +41,7 @@ function page(items: NotificationLogItem[], totalPages = 1) {
   return { items, total: items.length, page: 1, page_size: 20, total_pages: totalPages };
 }
 
-function renderNotifications(role: "student" | "superadmin", url = "/notifications") {
+function renderNotifications(role: "student" | "superadmin" | "mentor", url = "/notifications") {
   useAuthStore.setState({ role, userId: 5, status: "authenticated" });
   return render(<MemoryRouter initialEntries={[url]}><Notifications /></MemoryRouter>);
 }
@@ -122,11 +122,23 @@ describe("Notifications inbox", () => {
   it("shows a compact icon, short title and one-line next step instead of a large card when empty", () => {
     renderNotifications("student");
     const empty: HTMLElement = screen.getByTestId("inbox-empty");
-    expect(empty.textContent).toContain("You're all caught up");
+    expect(empty.textContent).toContain("No notifications yet");
+    expect(empty.textContent).not.toContain("caught up");
     expect(empty.textContent).toContain("New lessons, grades and messages will show up here.");
     expect(empty.querySelector("svg")).not.toBeNull();
     expect(empty.closest("[data-empty-state]")).toBeNull();
     expect(empty.className).not.toMatch(/\bpy-10\b|\bborder\b|\bbg-card\b/);
+  });
+
+  it("shows admin and staff copy instead of student copy when empty", () => {
+    renderNotifications("superadmin", "/notifications?tab=inbox");
+    const adminEmpty: string = screen.getByTestId("inbox-empty").textContent ?? "";
+    expect(adminEmpty).toContain("No notifications yet");
+    expect(adminEmpty).toContain("System alerts will show up here");
+    expect(adminEmpty).not.toContain("lessons, grades");
+    cleanup();
+    renderNotifications("mentor");
+    expect(screen.getByTestId("inbox-empty").textContent).toContain("Work notifications will show up here.");
   });
 
   it("shows a skeleton while loading and a retry on error", () => {

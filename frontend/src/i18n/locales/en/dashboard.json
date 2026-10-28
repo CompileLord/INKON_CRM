@@ -1,5 +1,4 @@
 {
-  "title": "Admin Dashboard",
   "crmControlPanel": "IMKON CRM • Control Panel",
   "paymentDebt": "Outstanding debt",
   "debtors": "{{count}} debtors",
@@ -188,5 +187,10 @@
   "absenceStreak_ordinal_one": "{{count}}st absence in a row",
   "absenceStreak_ordinal_two": "{{count}}nd absence in a row",
   "absenceStreak_ordinal_few": "{{count}}rd absence in a row",
-  "absenceStreak_ordinal_other": "{{count}}th absence in a row"
+  "absenceStreak_ordinal_other": "{{count}}th absence in a row",
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  }
 }
