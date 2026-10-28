@@ -1,19 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatPhoneDisplay } from "../../i18n/formatters";
-import axios from "axios";
-import { AlertCircle, RotateCcw, Search, UserRound, X } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { EnrollBillingFields, isAcceptableFee } from "../enrollments/EnrollBillingFields";
 import { EnrollmentPreviewPanel } from "../enrollments/EnrollmentPreviewPanel";
-import { PersonAvatar } from "../ui/PersonAvatar";
-import { BrandActivityIndicator } from "../ui/BrandActivityIndicator";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
-import { resolveMediaUrl } from "../../lib/users/media";
 import { formatTjs } from "../../lib/money";
-import { AuthApiError } from "../../lib/auth/errors";
 import { useEligibleCandidates, useEnrollmentPreview, useEnrollStudent } from "../../lib/enrollments/hooks";
+import { EnrollCandidateList } from "./EnrollCandidateList";
+import { enrollFailureKey, type EnrollFailureKey } from "./enrollFailureKey";
 import type { EligibleCandidateResponse, EnrollmentPreviewRequest } from "../../lib/enrollments/types";
 
 interface EnrollStudentModalProps {
@@ -26,68 +21,53 @@ interface EnrollStudentModalProps {
   onEnrolled: (enrolledStudentId: number) => void;
 }
 
-export function EnrollStudentModal({
-  open,
-  courseId,
-  courseTitle,
-  coursePrice,
-  initialStudent,
-  onClose,
-  onEnrolled,
-}: EnrollStudentModalProps) {
+export function EnrollStudentModal({ open, courseId, courseTitle, coursePrice, initialStudent, onClose, onEnrolled }: EnrollStudentModalProps) {
   const { t, i18n } = useTranslation(["courses", "common"]);
-  const [search, setSearch] = useState("");
-  const [candidatePage, setCandidatePage] = useState(1);
-  const [selectedCandidate, setSelectedCandidate] = useState<EligibleCandidateResponse | null>(initialStudent ?? null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [search, setSearch] = useState<string>("");
+  const [candidatePage, setCandidatePage] = useState<number>(1);
+  const [selected, setSelected] = useState<EligibleCandidateResponse[]>(initialStudent ? [initialStudent] : []);
+  const [enrolled, setEnrolled] = useState<EligibleCandidateResponse[]>([]);
+  const [failures, setFailures] = useState<Record<number, EnrollFailureKey>>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isGrant, setIsGrant] = useState<boolean>(false);
   const [monthlyFee, setMonthlyFee] = useState<string>(coursePrice);
 
-  const isSubmittingRef = useRef(false);
-  const debouncedSearch = useDebouncedValue(search, 300);
-
+  const isSubmittingRef = useRef<boolean>(false);
+  const debouncedSearch: string = useDebouncedValue(search, 300);
   const enrollMutation = useEnrollStudent();
+  const isBusy: boolean = enrollMutation.isPending || isSubmitting;
 
   const feeIsValid: boolean = isGrant || isAcceptableFee(monthlyFee);
+  const previewStudentId: number | undefined = selected[0]?.id;
   const previewRequest: EnrollmentPreviewRequest | null = useMemo(
     () =>
-      open && selectedCandidate && feeIsValid
+      open && previewStudentId !== undefined && feeIsValid
         ? {
-            student_id: selectedCandidate.id,
+            student_id: previewStudentId,
             course_id: courseId,
             billing_mode: isGrant ? "grant" : "paid",
             ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
           }
         : null,
-    [open, selectedCandidate, feeIsValid, courseId, isGrant, monthlyFee],
+    [open, previewStudentId, feeIsValid, courseId, isGrant, monthlyFee],
   );
   const debouncedPreviewRequest: EnrollmentPreviewRequest | null = useDebouncedValue(previewRequest, 400);
   const previewIsSettled: boolean = JSON.stringify(previewRequest) === JSON.stringify(debouncedPreviewRequest);
   const preview = useEnrollmentPreview(debouncedPreviewRequest);
 
-  const {
-    data: candidateData,
-    isLoading,
-    isFetching,
-    isError,
-    refetch,
-  } = useEligibleCandidates(
+  const { data: candidateData, isLoading, isFetching, isError, refetch } = useEligibleCandidates(
     open ? courseId : undefined,
-    {
-      search: debouncedSearch.trim() || undefined,
-      page: candidatePage,
-      page_size: 10,
-    },
-    open && selectedCandidate === null,
+    { search: debouncedSearch.trim() || undefined, page: candidatePage, page_size: 10 },
+    open,
   );
 
   useEffect(() => {
     if (open) {
       setSearch("");
       setCandidatePage(1);
-      setSelectedCandidate(initialStudent ?? null);
-      setErrorMessage(null);
+      setSelected(initialStudent ? [initialStudent] : []);
+      setEnrolled([]);
+      setFailures({});
       setIsSubmitting(false);
       setIsGrant(false);
       setMonthlyFee(coursePrice);
@@ -95,86 +75,70 @@ export function EnrollStudentModal({
     }
   }, [open, courseId, initialStudent?.id]);
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setCandidatePage(1);
+  const selectedIds: ReadonlySet<number> = useMemo(() => new Set(selected.map((candidate: EligibleCandidateResponse) => candidate.id)), [selected]);
+  const enrolledIds: ReadonlySet<number> = useMemo(() => new Set(enrolled.map((candidate: EligibleCandidateResponse) => candidate.id)), [enrolled]);
+  const rows: EligibleCandidateResponse[] = useMemo(() => {
+    const pageItems: EligibleCandidateResponse[] = candidateData?.items ?? [];
+    const pageIds: Set<number> = new Set(pageItems.map((candidate: EligibleCandidateResponse) => candidate.id));
+    const pinned: EligibleCandidateResponse[] = [
+      ...enrolled,
+      ...selected.filter((candidate: EligibleCandidateResponse) => !pageIds.has(candidate.id) && !enrolledIds.has(candidate.id)),
+    ];
+    return [...pinned, ...pageItems.filter((candidate: EligibleCandidateResponse) => !enrolledIds.has(candidate.id))];
+  }, [candidateData, enrolled, enrolledIds, selected]);
+
+  const handleToggle = (candidate: EligibleCandidateResponse): void => {
+    if (isBusy || isSubmittingRef.current) return;
+    setFailures((previous: Record<number, EnrollFailureKey>) => {
+      const { [candidate.id]: _removed, ...rest } = previous;
+      return rest;
+    });
+    setSelected((previous: EligibleCandidateResponse[]) =>
+      previous.some((item: EligibleCandidateResponse) => item.id === candidate.id)
+        ? previous.filter((item: EligibleCandidateResponse) => item.id !== candidate.id)
+        : [...previous, candidate],
+    );
   };
 
-  const handleClearSearch = () => {
-    setSearch("");
-    setCandidatePage(1);
-  };
-
-  const isPendingOrSubmitting = enrollMutation.isPending || isSubmitting;
-
-  const handleSelectCandidate = (candidate: EligibleCandidateResponse) => {
-    if (isPendingOrSubmitting || isSubmittingRef.current) return;
-    setSelectedCandidate(candidate);
-    setErrorMessage(null);
-  };
-
-  const handleDeselectCandidate = () => {
-    if (isPendingOrSubmitting || isSubmittingRef.current) return;
-    setSelectedCandidate(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedCandidate || isPendingOrSubmitting || isSubmittingRef.current) return;
+  const handleSubmit = async (): Promise<void> => {
+    if (selected.length === 0 || isBusy || isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    setErrorMessage(null);
+    setFailures({});
+    let lastEnrolledId: number | null = null;
+    let failureCount = 0;
 
-    const studentToEnrollId = selectedCandidate.id;
-
-    try {
-      await enrollMutation.mutateAsync({
-        course_id: courseId,
-        student_id: studentToEnrollId,
-        billing_mode: isGrant ? "grant" : "paid",
-        ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
-      });
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-      onEnrolled(studentToEnrollId);
-    } catch (err: unknown) {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-      let status: number | undefined;
-      let detail: unknown;
-      if (err instanceof AuthApiError) {
-        status = err.status;
-        detail = err.detail;
-      } else if (axios.isAxiosError(err)) {
-        status = err.response?.status;
-        detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
-      } else if (
-        typeof err === "object" &&
-        err !== null &&
-        "status" in err &&
-        typeof (err as { status?: unknown }).status === "number"
-      ) {
-        status = (err as { status: number }).status;
-        detail = (err as { detail?: unknown }).detail;
-      }
-
-      if (status === 422 && detail === "course_already_ended") {
-        setErrorMessage(t("enrollment.courseAlreadyEnded"));
-      } else if (status === 409) {
-        setErrorMessage(t("enrollment.duplicateConflict"));
-      } else {
-        setErrorMessage(t("enrollment.genericError"));
+    for (const candidate of selected) {
+      try {
+        await enrollMutation.mutateAsync({
+          course_id: courseId,
+          student_id: candidate.id,
+          billing_mode: isGrant ? "grant" : "paid",
+          ...(isGrant ? {} : { price_at_enrollment: monthlyFee.trim() }),
+        });
+        lastEnrolledId = candidate.id;
+        setEnrolled((previous: EligibleCandidateResponse[]) => [...previous, candidate]);
+        setSelected((previous: EligibleCandidateResponse[]) => previous.filter((item: EligibleCandidateResponse) => item.id !== candidate.id));
+      } catch (error: unknown) {
+        failureCount += 1;
+        setFailures((previous: Record<number, EnrollFailureKey>) => ({ ...previous, [candidate.id]: enrollFailureKey(error) }));
       }
     }
+
+    isSubmittingRef.current = false;
+    setIsSubmitting(false);
+    if (failureCount === 0 && lastEnrolledId !== null) onEnrolled(lastEnrolledId);
   };
 
-  const handleClose = () => {
-    if (isPendingOrSubmitting || isSubmittingRef.current) return;
-    onClose();
+  const handleClose = (): void => {
+    if (isBusy || isSubmittingRef.current) return;
+    const lastEnrolled: EligibleCandidateResponse | undefined = enrolled[enrolled.length - 1];
+    if (lastEnrolled) onEnrolled(lastEnrolled.id);
+    else onClose();
   };
 
-  const totalPages = candidateData?.total_pages ?? 1;
-  const items = candidateData?.items ?? [];
-  const totalCandidates = candidateData?.total ?? 0;
+  const failedCount: number = Object.keys(failures).length;
+  const submitDisabledReason: string = selected.length === 0 ? t("common:disabledReason.selectStudent") : !feeIsValid ? t("common:disabledReason.fixFee") : "";
 
   return (
     <Modal
@@ -183,45 +147,35 @@ export function EnrollStudentModal({
       title={t("enrollment.modalTitle")}
       maxWidthClassName="sm:max-w-[560px]"
       fullScreenOnMobile={true}
-      closeDisabled={isPendingOrSubmitting || isSubmittingRef.current}
+      closeDisabled={isBusy || isSubmittingRef.current}
       footer={
-        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleClose}
-            disabled={isPendingOrSubmitting || isSubmittingRef.current}
-            className="w-full sm:w-auto min-h-[44px]"
-          >
-            {t("common:cancel")}
+        <div className="flex flex-col-reverse items-center justify-end gap-3 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={handleClose} disabled={isBusy || isSubmittingRef.current} className="min-h-[44px] w-full sm:w-auto">
+            {enrolled.length > 0 ? t("common:close") : t("common:cancel")}
           </Button>
           <Button
             type="button"
             variant="primary"
             onClick={handleSubmit}
-            disabled={!selectedCandidate || !feeIsValid || isPendingOrSubmitting || isSubmittingRef.current}
-            disabledReason={!selectedCandidate ? t("common:disabledReason.selectStudent") : !feeIsValid ? t("common:disabledReason.fixFee") : ""}
-            loading={isPendingOrSubmitting}
-            className="w-full sm:w-auto min-h-[44px]"
+            disabled={selected.length === 0 || !feeIsValid || isBusy || isSubmittingRef.current}
+            disabledReason={submitDisabledReason}
+            loading={isBusy}
+            className="min-h-[44px] w-full sm:w-auto"
           >
-            {isPendingOrSubmitting
-              ? t("enrollment.enrolling")
-              : t("enrollment.enrollSubmit")}
+            {isBusy ? t("enrollment.enrolling") : selected.length > 0 ? t("enrollment.enrollSubmitCount", { count: selected.length }) : t("enrollment.enrollSubmit")}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <div className="rounded-xl border border-border-warm bg-strip p-3.5 flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 rounded-xl border border-border-warm bg-strip p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-ink break-words">{courseTitle}</span>
+            <span className="break-words text-sm font-semibold text-ink">{courseTitle}</span>
             <span className="text-sm font-semibold tabular-nums text-maroon-text dark:text-accent">
               {formatTjs(coursePrice, { perMonth: true, lng: i18n.language })}
             </span>
           </div>
-          <p className="text-xs text-muted">
-            {t("enrollment.readOnlyTermsNotice")}
-          </p>
+          <p className="text-xs text-muted">{t("enrollment.readOnlyTermsNotice")}</p>
         </div>
 
         <EnrollBillingFields
@@ -230,233 +184,47 @@ export function EnrollStudentModal({
           monthlyFee={monthlyFee}
           onMonthlyFeeChange={setMonthlyFee}
           feeIsValid={feeIsValid}
-          disabled={isPendingOrSubmitting}
+          disabled={isBusy}
         />
 
-        {errorMessage ? (
-          <div
-            role="alert"
-            className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            <AlertCircle size={18} className="shrink-0 mt-0.5" />
-            <span className="flex-1 break-words">{errorMessage}</span>
-          </div>
+        {enrolled.length > 0 && failedCount > 0 ? (
+          <p role="status" className="text-sm font-medium text-ink">
+            {t("enrollment.resultSummary", { enrolled: enrolled.length, failed: failedCount })}
+          </p>
         ) : null}
 
-        {selectedCandidate ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-maroon dark:border-accent bg-beige/60 dark:bg-row-hover p-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <PersonAvatar
-                firstName={selectedCandidate.first_name}
-                lastName={selectedCandidate.last_name}
-                photoUrl={resolveMediaUrl(selectedCandidate.thumbnail_path ?? selectedCandidate.photo_path) ?? undefined}
-                size={36}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="break-words text-base md:text-sm font-semibold text-ink">
-                  {selectedCandidate.first_name} {selectedCandidate.last_name}
-                </p>
-                <p className="break-words text-xs text-muted">
-                  {[selectedCandidate.email, selectedCandidate.phone ? formatPhoneDisplay(selectedCandidate.phone) : null].filter(Boolean).join(" • ")}
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleDeselectCandidate}
-              disabled={isPendingOrSubmitting || isSubmittingRef.current}
-              className="shrink-0 text-xs min-h-[44px] px-3.5"
-            >
-              {t("enrollment.changeCandidate")}
-            </Button>
-          </div>
-        ) : null}
-
-        {selectedCandidate && previewRequest !== null ? (
+        {selected.length > 0 && previewRequest !== null ? (
           <EnrollmentPreviewPanel
             preview={preview.data}
             isLoading={!previewIsSettled || preview.isLoading}
             isError={previewIsSettled && preview.isError}
             onRetry={() => void preview.refetch()}
+            studentCount={selected.length}
           />
         ) : null}
 
-        {!selectedCandidate ? (
-          <>
-        <div className="relative">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            disabled={enrollMutation.isPending || isSubmittingRef.current}
-            placeholder={t("enrollment.searchPlaceholder")}
-            aria-label={t("enrollment.searchPlaceholder")}
-            className="w-full min-h-[48px] rounded-xl border border-control-border bg-card pl-10 pr-12 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon dark:focus-visible:ring-accent"
-          />
-          {search ? (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              disabled={enrollMutation.isPending || isSubmittingRef.current}
-              aria-label={t("students.resetSearch")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
-            >
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-2 min-h-[220px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-              {t("enrollment.candidatesTitle")}
-            </span>
-            {isFetching && !isLoading ? (
-              <span className="inline-flex items-center gap-1 text-xs text-muted">
-                <BrandActivityIndicator size={12} />
-                <span>{t("updating")}</span>
-              </span>
-            ) : null}
-          </div>
-
-          {isLoading ? (
-            <div className="flex flex-col gap-2 py-4">
-              <div className="flex items-center justify-center py-2">
-                <BrandActivityIndicator size={24} />
-              </div>
-              {Array.from({ length: 4 }, (_, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 rounded-xl p-3 border border-border bg-strip motion-safe:animate-pulse min-h-[52px]"
-                >
-                  <div className="h-4 w-4 rounded-full bg-border shrink-0" />
-                  <div className="h-9 w-9 rounded-full bg-border shrink-0" />
-                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                    <div className="h-4 w-32 rounded bg-border" />
-                    <div className="h-3 w-48 rounded bg-border" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : isError ? (
-            <div
-              role="alert"
-              className="flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-6 text-center"
-            >
-              <AlertCircle size={22} className="text-destructive" />
-              <p className="text-sm font-medium text-destructive">
-                {t("enrollment.candidatesLoadError")}
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => refetch()}
-                className="min-h-[44px] gap-1.5"
-              >
-                <RotateCcw size={14} />
-                <span>{t("common:retry")}</span>
-              </Button>
-            </div>
-          ) : totalCandidates === 0 && !debouncedSearch ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-strip p-8 text-center">
-              <UserRound size={28} className="text-muted" />
-              <p className="text-sm font-medium text-ink">
-                {t("enrollment.emptyCandidates")}
-              </p>
-              <p className="text-xs text-muted max-w-sm">
-                {t("enrollment.emptyCandidatesHelp")}
-              </p>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-strip p-8 text-center">
-              <p className="text-sm font-medium text-ink">
-                {t("enrollment.noMatches", { query: debouncedSearch })}
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleClearSearch}
-                className="mt-2 min-h-[44px]"
-              >
-                {t("students.resetSearch")}
-              </Button>
-            </div>
-          ) : (
-            <div
-              role="radiogroup"
-              aria-label={t("enrollment.candidatesTitle")}
-              className="flex flex-col gap-1.5"
-            >
-              {items.map((candidate) => {
-                return (
-                  <label
-                    key={candidate.id}
-                    className="flex items-center gap-3 rounded-xl p-3 text-left motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-150 motion-safe:ease-out min-h-[52px] border cursor-pointer select-none focus-within:ring-2 focus-within:ring-maroon dark:focus-within:ring-accent motion-safe:active:scale-[0.96] border-border bg-card hover:bg-row-hover"
-                  >
-                    <input
-                      type="radio"
-                      name="eligible-candidate"
-                      value={candidate.id}
-                      checked={false}
-                      disabled={isPendingOrSubmitting || isSubmittingRef.current}
-                      onChange={() => handleSelectCandidate(candidate)}
-                      className="h-4 w-4 shrink-0 text-maroon-text accent-maroon focus:ring-0"
-                    />
-
-                    <PersonAvatar
-                      firstName={candidate.first_name}
-                      lastName={candidate.last_name}
-                      photoUrl={resolveMediaUrl(candidate.thumbnail_path ?? candidate.photo_path) ?? undefined}
-                      size={36}
-                    />
-
-                    <div className="min-w-0 flex-1">
-                      <span className="text-base md:text-sm font-medium text-ink break-words block">
-                        {candidate.first_name} {candidate.last_name}
-                      </span>
-                      <span className="text-xs text-muted break-words block">
-                        {[candidate.email, candidate.phone ? formatPhoneDisplay(candidate.phone) : null].filter(Boolean).join(" • ")}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-between border-t border-border pt-3 mt-1">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={candidatePage <= 1 || isFetching || isLoading || enrollMutation.isPending || isSubmittingRef.current}
-                onClick={() => setCandidatePage((p) => Math.max(1, p - 1))}
-                className="min-h-[44px] text-xs"
-              >
-                {t("paginationPrev")}
-              </Button>
-              <span className="text-xs tabular-nums text-muted">
-                {t("paginationPage", { page: candidatePage, total: totalPages })}
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={candidatePage >= totalPages || isFetching || isLoading || enrollMutation.isPending || isSubmittingRef.current}
-                onClick={() => setCandidatePage((p) => Math.min(totalPages, p + 1))}
-                className="min-h-[44px] text-xs"
-              >
-                {t("paginationNext")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-          </>
-        ) : null}
+        <EnrollCandidateList
+          search={search}
+          debouncedSearch={debouncedSearch}
+          onSearchChange={(value: string) => {
+            setSearch(value);
+            setCandidatePage(1);
+          }}
+          rows={rows}
+          selectedIds={selectedIds}
+          enrolledIds={enrolledIds}
+          failures={failures}
+          disabled={isBusy || isSubmittingRef.current}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          isError={isError}
+          onRetry={() => void refetch()}
+          totalCandidates={candidateData?.total ?? 0}
+          page={candidatePage}
+          totalPages={candidateData?.total_pages ?? 1}
+          onPageChange={setCandidatePage}
+          onToggle={handleToggle}
+        />
       </div>
     </Modal>
   );

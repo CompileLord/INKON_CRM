@@ -38,7 +38,7 @@
     "serverLoading": "Loading the server value…"
   },
   "hubTitle": "Journals",
-  "searchCoursePlaceholder": "Search courses…",
+  "searchJournalPlaceholder": "Search journals…",
   "loadFailedHub": "Failed to load journals",
   "filter": {
     "all": "All",
@@ -170,8 +170,7 @@
     "periodsLoadFailed": "Could not load the journal periods",
     "progressLoadFailed": "Could not load progress",
     "noPeriodsTitle": "No journal periods yet",
-    "noPeriodsBody": "Periods are created for each week or month of the course. This course has none yet, so there is nothing to grade.",
-    "periodMenuLabel": "Period options"
+    "noPeriodsBody": "Periods are created for each week or month of the course. This course has none yet, so there is nothing to grade."
   },
   "grid": {
     "regionLabel": "Gradebook grid, {{period}}",
@@ -224,7 +223,7 @@
   },
   "progress": {
     "title": "Performance trend",
-    "scopeNote": "Average of stored totals for every period of this course. Missing results show as Unavailable.",
+    "scopeNote": "The chart shows period totals (sum of points), not per-lesson grades on the 1–5 scale. Missing results show as Unavailable.",
     "classAverage": "Class average",
     "legendLabel": "Chart series",
     "loadFailedBody": "Your gradebook and unsaved changes are not affected.",
@@ -243,7 +242,8 @@
     "moreCount": "+{{count}} more",
     "moreList": "More students",
     "moreListLabel": "Choose students to plot",
-    "maximum": "Maximum"
+    "maximum": "Maximum",
+    "axisLabel": "Period totals, points"
   },
   "readOnly": {
     "you": "You"

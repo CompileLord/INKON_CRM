@@ -38,7 +38,7 @@ it("handles partial success when course save succeeds but image upload fails, al
 
   await user.type(screen.getByLabelText(/Title/), "Full Course");
   await user.type(screen.getByLabelText(/Description/), "Full description");
-  await user.type(screen.getByLabelText(/^Monthly price, TJS/), "1500");
+  await user.type(screen.getByLabelText(/^Monthly price/), "1500");
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -127,7 +127,7 @@ it("closing partial success state explains saved course persists and notifies pa
 
   await user.type(screen.getByLabelText(/Title/), "Course 2");
   await user.type(screen.getByLabelText(/Description/), "Desc 2");
-  await user.type(screen.getByLabelText(/^Monthly price, TJS/), "1500");
+  await user.type(screen.getByLabelText(/^Monthly price/), "1500");
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -182,7 +182,7 @@ it("displays translated error message on API 403 Forbidden without raw backend s
 
   fireEvent.change(screen.getByLabelText(/Title/), { target: { value: "Forbidden Course" } });
   fireEvent.change(screen.getByLabelText(/Description/), { target: { value: "Desc" } });
-  fireEvent.change(screen.getByLabelText(/^Monthly price, TJS/), { target: { value: "100" } });
+  fireEvent.change(screen.getByLabelText(/^Monthly price/), { target: { value: "100" } });
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -215,7 +215,7 @@ it("displays translated error message on duplicate title conflict without raw ba
 
   fireEvent.change(screen.getByLabelText(/Title/), { target: { value: "Duplicate Course" } });
   fireEvent.change(screen.getByLabelText(/Description/), { target: { value: "Desc" } });
-  fireEvent.change(screen.getByLabelText(/^Monthly price, TJS/), { target: { value: "100" } });
+  fireEvent.change(screen.getByLabelText(/^Monthly price/), { target: { value: "100" } });
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -244,7 +244,7 @@ it("prevents double submission on rapid clicks or Enter keypresses with synchron
 
   await user.type(screen.getByLabelText(/Title/), "Concurrency Course");
   await user.type(screen.getByLabelText(/Description/), "Desc");
-  await user.type(screen.getByLabelText(/^Monthly price, TJS/), "100");
+  await user.type(screen.getByLabelText(/^Monthly price/), "100");
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -278,7 +278,7 @@ it("blocks cancel, escape, and close while submission lock is active", async () 
 
   await user.type(screen.getByLabelText(/Title/), "Locked Course");
   await user.type(screen.getByLabelText(/Description/), "Desc");
-  await user.type(screen.getByLabelText(/^Monthly price, TJS/), "1000");
+  await user.type(screen.getByLabelText(/^Monthly price/), "1000");
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");
@@ -310,7 +310,7 @@ it("focuses schedule input when schedule time is invalid on submit", async () =>
 
   await user.type(screen.getByLabelText(/Title/), "Valid Title");
   await user.type(screen.getByLabelText(/Description/), "Valid Desc");
-  await user.type(screen.getByLabelText(/^Monthly price, TJS/), "100");
+  await user.type(screen.getByLabelText(/^Monthly price/), "100");
   await chooseMentor(user, "Alisher Navoi");
   typeDate(/Start Date/, "01.10.2026");
   typeDate(/End Date/, "31.12.2026");

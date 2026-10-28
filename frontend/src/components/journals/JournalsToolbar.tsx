@@ -25,7 +25,7 @@ export function JournalsToolbar({ search, onSearchChange, status, onStatusChange
           type="text"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={t("searchCoursePlaceholder")}
+          placeholder={t("searchJournalPlaceholder")}
           aria-label={t("hub.searchLabel")}
           leftAddon={<Search size={16} aria-hidden="true" />}
           rightAddon={search ? (

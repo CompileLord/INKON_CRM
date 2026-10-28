@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { formatTjs } from "../../lib/money";
 import { formatSchoolLessonDate } from "../../i18n/formatters";
-import { Badge } from "../ui/Badge";
+import { StatusBadge } from "../ui/Badge";
 import { ListRow } from "../ui/ListRow";
+import { courseLifecycleStatus } from "./courseLifecycleStatus";
 import { CourseScheduleLine } from "./CourseScheduleLine";
 import { CourseThumb } from "./CourseThumb";
 import { useCourseMenu, type CourseMenuHandlers } from "./useCourseMenu";
@@ -35,9 +36,8 @@ export function CourseListRow({ course, mentor, showMentor, isMentor, menuHandle
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 flex-wrap items-center gap-x-2">
                 <span className="break-words text-sm font-semibold text-ink">{course.title}</span>
-                {course.status === "archived" && <Badge status="archived" />}
+                <StatusBadge status={courseLifecycleStatus(course)} />
               </span>
-              <span className="break-words text-sm text-muted">{t(`examTypeLabel.${course.exam_type}`)}</span>
             </span>
           </span>
           {showMentor && <span className="break-words text-sm text-muted">{mentorName ?? ""}</span>}

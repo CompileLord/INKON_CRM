@@ -103,7 +103,7 @@ describe("Period settings: exam maximum", () => {
     fireEvent.click(saveButton());
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull());
     expect(updateExamMaxMock).toHaveBeenCalledWith(OCTOBER, { exam_max_score: 80 });
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Period options" })));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Period settings" })));
     await waitFor(() => expect(getStaffProgressMock).toHaveBeenCalledTimes(2));
 
     fireEvent.click(settingsButton());
@@ -147,23 +147,21 @@ describe("Period settings: exam maximum", () => {
     await i18n.changeLanguage("ru");
     renderWorkspace();
     await screen.findByRole("region", { name: /./ });
-    fireEvent.click(await screen.findByRole("button", { name: "Параметры периода" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Настройки периода" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Настройки периода" }));
     expect(await screen.findByRole("dialog", { name: "Настройки периода" })).toBeDefined();
     cleanup();
     await i18n.changeLanguage("tg");
     renderWorkspace();
     await screen.findByRole("region", { name: /./ });
-    fireEvent.click(await screen.findByRole("button", { name: "Параметрҳои давра" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Танзимоти давра" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Танзимоти давра" }));
     expect(await screen.findByRole("dialog", { name: "Танзимоти давра" })).toBeDefined();
   });
 
   it.each([
-    ["en", "Period options", "Period settings", "Month 10", "current max: 60"],
-    ["ru", "Параметры периода", "Настройки периода", "Месяц 10", "текущий макс: 60"],
-    ["tg", "Параметрҳои давра", "Танзимоти давра", "Моҳи 10", "ҳадди ҷорӣ: 60"],
-  ])("shows the period subtitle and one inline current-maximum hint in %s", async (language, optionsLabel, dialogName, subtitle, hint) => {
+    ["en", "Period settings", "Month 10", "current max: 60"],
+    ["ru", "Настройки периода", "Месяц 10", "текущий макс: 60"],
+    ["tg", "Танзимоти давра", "Моҳи 10", "ҳадди ҷорӣ: 60"],
+  ])("shows the period subtitle and one inline current-maximum hint in %s", async (language, dialogName, subtitle, hint) => {
     getJournalMock.mockImplementation(async (journalId: number) => {
       const detail = buildJournal(journalId);
       detail.students[0].summary = { ...(detail.students[0].summary as NonNullable<typeof detail.students[0]["summary"]>), exam_score: 60 };
@@ -172,8 +170,7 @@ describe("Period settings: exam maximum", () => {
     await i18n.changeLanguage(language);
     renderWorkspace();
     await screen.findByRole("region", { name: /./ });
-    fireEvent.click(await screen.findByRole("button", { name: optionsLabel }));
-    fireEvent.click(screen.getByRole("menuitem", { name: dialogName }));
+    fireEvent.click(await screen.findByRole("button", { name: dialogName }));
     const dialog: HTMLElement = await screen.findByRole("dialog", { name: dialogName });
     expect(within(dialog).getByTestId("period-settings-subtitle").textContent).toBe(subtitle);
     expect(within(dialog).getByTestId("period-settings-current-maximum").textContent).toBe(hint);
@@ -194,7 +191,7 @@ describe("Period settings: exam maximum", () => {
     getCourseMock.mockResolvedValue(buildCourse({ status: "archived" }));
     renderWorkspace();
     await waitForGrid();
-    expect(screen.queryByRole("button", { name: "Period options" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
     expect(screen.queryByRole("dialog", { name: "Period settings" })).toBeNull();
   });
 

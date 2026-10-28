@@ -33,7 +33,7 @@ function renderModal(onEnrolled: (id: number) => void = vi.fn()) {
 }
 
 async function selectCandidate(): Promise<void> {
-  fireEvent.click(await screen.findByRole("radio", { name: /Zara Karimova/ }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: /Zara Karimova/ }));
 }
 
 describe("EnrollStudentModal grants and monthly fee", () => {
@@ -77,7 +77,7 @@ describe("EnrollStudentModal grants and monthly fee", () => {
     fireEvent.change(feeInput, { target: { value: "900.50" } });
     await waitFor(() => expect(endpoints.previewEnrollment).toHaveBeenCalledTimes(1));
     expect(endpoints.previewEnrollment).toHaveBeenCalledWith({ student_id: 201, course_id: 42, billing_mode: "paid", price_at_enrollment: "900.50" });
-    fireEvent.click(screen.getByRole("button", { name: "Enroll student" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enroll 1" }));
     await waitFor(() => expect(onEnrolled).toHaveBeenCalledWith(201));
     expect(endpoints.createEnrollment).toHaveBeenCalledWith({ student_id: 201, course_id: 42, billing_mode: "paid", price_at_enrollment: "900.50" });
   });
@@ -89,7 +89,7 @@ describe("EnrollStudentModal grants and monthly fee", () => {
     vi.mocked(endpoints.previewEnrollment).mockClear();
     fireEvent.change(screen.getByLabelText("Monthly fee"), { target: { value: badFee } });
     expect(await screen.findByText("Enter an amount greater than zero")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Enroll student" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Enroll 1" }) as HTMLButtonElement).disabled).toBe(true);
     await new Promise((resolve) => setTimeout(resolve, 600));
     expect(endpoints.previewEnrollment).not.toHaveBeenCalled();
   });
@@ -102,7 +102,7 @@ describe("EnrollStudentModal grants and monthly fee", () => {
     expect(screen.queryByLabelText("Monthly fee")).toBeNull();
     expect((await screen.findByTestId("enroll-preview")).textContent).toBe("Grant: no charges will be created.");
     expect(endpoints.previewEnrollment).toHaveBeenLastCalledWith({ student_id: 201, course_id: 42, billing_mode: "grant" });
-    fireEvent.click(screen.getByRole("button", { name: "Enroll student" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enroll 1" }));
     await waitFor(() => expect(onEnrolled).toHaveBeenCalled());
     expect(endpoints.createEnrollment).toHaveBeenCalledWith({ student_id: 201, course_id: 42, billing_mode: "grant" });
   });

@@ -165,6 +165,7 @@ describe("payment recording reliability", () => {
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
     const accept = screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement;
     expect(accept.disabled).toBe(false);
+    expect(accept.querySelector("svg")).toBeNull();
     expect(accept.className).toContain("bg-maroon");
     expect(accept.className).not.toMatch(/(^|\s)bg-beige/);
     expect(mock.history.post).toHaveLength(0);

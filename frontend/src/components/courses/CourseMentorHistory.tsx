@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCourseMentorHistory } from "../../lib/courses/hooks";
 import { formatDate } from "../../i18n/formatters";
-import { Button } from "../ui/Button";
+import { ChevronDown } from "lucide-react";
 import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
 import { PersonAvatar } from "../ui/PersonAvatar";
-import { SectionCard } from "../ui/SectionCard";
 import type { CourseMentorHistoryResponse } from "../../lib/courses/types";
 
 export function CourseMentorHistory({ courseId }: { courseId: number }) {
@@ -20,14 +19,18 @@ export function CourseMentorHistory({ courseId }: { courseId: number }) {
       : t("history.since", { start: formatDate(entry.assigned_from) });
 
   return (
-    <SectionCard
-      title={t("history.title")}
-      actions={
-        <Button type="button" variant="secondary" aria-expanded={isOpen} aria-label={t("history.toggleLabel")} onClick={() => setIsOpen((previous: boolean) => !previous)}>
-          {isOpen ? t("history.hide") : t("history.show")}
-        </Button>
-      }
-    >
+    <section className="flex flex-col gap-2">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls="mentor-history-list"
+        aria-label={t("history.toggleLabel")}
+        onClick={() => setIsOpen((previous: boolean) => !previous)}
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[10px] px-1 text-sm font-medium text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out"
+      >
+        <span>{t("history.title")}</span>
+        <ChevronDown aria-hidden="true" className={`size-4 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out ${isOpen ? "rotate-180" : ""}`} />
+      </button>
       {isOpen && isLoading && !history ? (
         <div aria-busy="true" className="flex flex-col gap-2">
           {[0, 1].map((row: number) => <div key={row} className="h-12 rounded-[10px] bg-strip motion-safe:animate-pulse" />)}
@@ -48,6 +51,6 @@ export function CourseMentorHistory({ courseId }: { courseId: number }) {
           ))}
         </ul>
       ) : null}
-    </SectionCard>
+    </section>
   );
 }

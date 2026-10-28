@@ -53,7 +53,7 @@ export const JournalPeriodSelect: React.FC<JournalPeriodSelectProps> = ({ period
   });
 
   return (
-    <div className="w-full sm:w-[28rem]" data-testid="journal-period-select">
+    <div className="w-full sm:w-64" data-testid="journal-period-select">
       <Select
         label={t("workspace.periodPickerLabel")}
         options={options}

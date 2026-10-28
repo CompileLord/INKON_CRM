@@ -151,19 +151,10 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
 
   const eligibleIds: number[] = DebtReminders.eligibleStudentIds(visible);
 
-  const bulkAction = (
-    <div className="flex flex-col items-end gap-1">
-      <Button
-        variant="secondary"
-        disabled={eligibleIds.length === 0}
-        loading={bulkRunning}
-        aria-describedby={eligibleIds.length === 0 ? "debtors-bulk-remind-reason" : undefined}
-        onClick={() => void sendReminders(eligibleIds, null)}
-      >
-        {t("finance:reminders.bulk", { count: formatNumber(eligibleIds.length, i18n.language) })}
-      </Button>
-      {eligibleIds.length === 0 && debts.data && loaded.length > 0 && <p id="debtors-bulk-remind-reason" className="text-xs text-muted">{t("finance:reminders.bulkNone")}</p>}
-    </div>
+  const bulkAction = eligibleIds.length === 0 ? undefined : (
+    <Button variant="secondary" loading={bulkRunning} onClick={() => void sendReminders(eligibleIds, null)}>
+      {t("finance:reminders.bulk", { count: formatNumber(eligibleIds.length, i18n.language) })}
+    </Button>
   );
 
   const toggleDetails = (rowKey: string): void => {
@@ -202,7 +193,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
 
   const summary = debts.data ? (
     <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted tabular-nums">
-      <span>{t("finance:debtorsTab.total", { total: formatNumber(total, i18n.language) })}</span>
+      <span>{t("finance:debtorsTab.total", { count: total, formatted: formatNumber(total, i18n.language) })}</span>
       {normalizedSearch && (
         <span>{t("finance:debtorsTab.pageMatches", { shown: formatNumber(visible.length, i18n.language), loaded: formatNumber(loaded.length, i18n.language) })}</span>
       )}

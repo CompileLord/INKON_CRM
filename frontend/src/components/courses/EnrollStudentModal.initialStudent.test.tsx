@@ -44,27 +44,21 @@ describe("EnrollStudentModal initialStudent", () => {
     );
   }
 
-  it("opens with the student selected and no candidate list or fetch", () => {
+  it("opens with the student preselected, listed with the other candidates, and fetches the list", () => {
     renderModal();
-    expect(screen.getByText("Nilufar Rahimova")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Change student" })).toBeDefined();
-    expect(screen.queryByRole("radio")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Enroll student" })?.hasAttribute("disabled")).toBe(false);
-    expect(vi.mocked(enrollmentHooks.useEligibleCandidates).mock.calls.every((call) => call[2] === false)).toBe(true);
+    const preselected = screen.getByRole("checkbox", { name: /Nilufar Rahimova/ }) as HTMLInputElement;
+    expect(preselected.checked).toBe(true);
+    expect((screen.getByRole("checkbox", { name: /Zara Karimova/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.queryByRole("button", { name: "Change student" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Enroll 1" }).hasAttribute("disabled")).toBe(false);
+    expect(vi.mocked(enrollmentHooks.useEligibleCandidates).mock.lastCall?.[2]).toBe(true);
   });
 
   it("enrolls the preselected student", async () => {
     const onEnrolled = vi.fn();
     renderModal(onEnrolled);
-    fireEvent.click(screen.getByRole("button", { name: "Enroll student" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enroll 1" }));
     await waitFor(() => expect(enrollAsync).toHaveBeenCalledWith({ course_id: 42, student_id: 501, billing_mode: "paid", price_at_enrollment: "1200.00" }));
-    expect(onEnrolled).toHaveBeenCalledWith(501);
-  });
-
-  it("Change student reveals the candidate list", () => {
-    renderModal();
-    fireEvent.click(screen.getByRole("button", { name: "Change student" }));
-    expect(screen.getByRole("radio", { name: /Zara Karimova/ })).toBeDefined();
-    expect(vi.mocked(enrollmentHooks.useEligibleCandidates).mock.lastCall?.[2]).toBe(true);
+    await waitFor(() => expect(onEnrolled).toHaveBeenCalledWith(501));
   });
 });

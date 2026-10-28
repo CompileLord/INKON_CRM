@@ -47,17 +47,20 @@ describe("single-screen journal page", () => {
     }
   });
 
-  it("shows a compact toolbar with the period dropdown, search, options menu, save status and a shortcuts icon button", async () => {
+  it("shows a compact toolbar with the compact period dropdown, search, a direct period settings button and save status, with the shortcuts button beside the title", async () => {
     renderWorkspace();
     await waitForGrid();
     const toolbar: HTMLElement = screen.getByTestId("journal-toolbar");
     expect(within(toolbar).getByRole("button", { name: "Period" })).toBeDefined();
     expect(within(toolbar).getByTestId("journal-search-slot")).toBeDefined();
-    expect(within(toolbar).getByRole("button", { name: "Period options" })).toBeDefined();
+    expect(within(toolbar).getByRole("button", { name: "Period settings" })).toBeDefined();
+    expect(within(toolbar).queryByRole("menuitem")).toBeNull();
     expect(within(toolbar).getByTestId("journal-save-status")).toBeDefined();
-    const help: HTMLElement = within(toolbar).getByRole("button", { name: "Keyboard shortcuts" });
+    expect(within(toolbar).queryByRole("button", { name: "Keyboard shortcuts" })).toBeNull();
+    const help: HTMLElement = within(document.querySelector("[data-page-header]") as HTMLElement).getByRole("button", { name: "Keyboard shortcuts" });
     expect(help.textContent).toBe("");
-    expect(screen.queryByRole("button", { name: "Period settings" })).toBeNull();
+    expect(help.closest("[data-page-header]")?.querySelector("h1")?.parentElement?.contains(help)).toBe(true);
+    expect(within(toolbar).getByTestId("journal-period-select").className).not.toContain("28rem");
   });
 
   it("puts the progress chart between the toolbar and the grid and renders no per-student progress table", async () => {
