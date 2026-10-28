@@ -67,6 +67,7 @@ class SQLAlchemyDebtReminderRepository:
         query: Select[Any]
         debt: Any
         query, debt = DebtQuery().build(today)
+        query = query.where(Enrollment.status == EnrollmentStatus.ACTIVE)
         balances: Any = (
             query.with_only_columns(
                 Enrollment.student_id, Enrollment.id.label("enrollment_id"), Course.id.label("course_id"), Course.title, func.sum(debt).label("debt")

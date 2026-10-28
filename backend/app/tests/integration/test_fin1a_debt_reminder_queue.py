@@ -307,7 +307,7 @@ async def test_debt_list_matches_the_original_finance_service_calculation(
     assert [(a, b, str(c), d, str(e)) for a, b, c, d, e in comparable] == [(a, b, str(c), d, str(e)) for a, b, c, d, e in expected]
 
 @pytest.mark.asyncio
-async def test_withdrawn_debt_remains_visible_and_remindable(
+async def test_withdrawn_debt_remains_visible_without_reminders(
     client: AsyncClient, test_accountant: User, test_mentor: User
 ) -> None:
     from decimal import Decimal
@@ -343,7 +343,8 @@ async def test_withdrawn_debt_remains_visible_and_remindable(
     withdrawn: dict[str, Any] = next(item for item in items if item["student"]["id"] == withdrawn_id)
     assert withdrawn["enrollment_status"] == "withdrawn"
     assert Decimal(withdrawn["debt"]) == Decimal("500.00")
-    assert outcomes(await post_reminders(client, test_accountant, [withdrawn_id])) == {withdrawn_id: "queued"}
+    assert outcomes(await post_reminders(client, test_accountant, [withdrawn_id])) == {withdrawn_id: "no_debt"}
+    assert await all_reminders() == []
     analytics: Response = await client.get("/api/v1/finance/analytics/", headers=bearer(test_accountant))
     assert analytics.status_code == 200
     assert sum(Decimal(item["debt"]) for item in items) == Decimal(analytics.json()["net_receivable"])
