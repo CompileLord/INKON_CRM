@@ -80,6 +80,7 @@
     "emptyAdminHelp": "Enroll students to start the group.",
     "emptyMentorHelp": "Students enrolled by the administrator will appear here.",
     "enroll": "Enroll student",
+    "enrolledSince": "since {{date}}",
     "enrolledToast": "Student enrolled",
     "hiddenNotice": "The student is enrolled but is on another page or hidden by filters.",
     "loadError": "Couldn't load the students",

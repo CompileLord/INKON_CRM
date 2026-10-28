@@ -27,7 +27,7 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
   const { t: tEnrollments } = useTranslation("enrollments");
   const studentName: string = `${item.student.first_name} ${item.student.last_name}`.trim();
   const price: string = formatTjs(item.price_at_enrollment, { perMonth: true, lng: i18n.language });
-  const enrolledOn: string = formatDate(item.enrolled_at);
+  const enrolledOn: string = t("students.enrolledSince", { date: formatDate(item.enrolled_at) });
 
   const priceOrBadge: ReactNode = item.billing_mode === "grant" ? <GrantBadge billingMode={item.billing_mode} /> : price;
 

@@ -246,6 +246,13 @@ describe("Course roster section", () => {
     );
   }
 
+  it("labels the enrollment date on each roster row", () => {
+    renderPane();
+
+    const labelled: HTMLElement[] = screen.getAllByText(/^(· )?since \d{2}\.\d{2}\.\d{4}$/);
+    expect(labelled.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("displays error with working retry when roster query fails", () => {
     const mockRefetch = vi.fn();
     vi.mocked(enrollmentHooks.useCourseRosterPage).mockReturnValue({
