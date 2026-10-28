@@ -107,6 +107,12 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   }, [defaultCourseId, paymentOptions.data]);
 
   useEffect(() => {
+    const refreshed: readonly PaymentOption[] = paymentOptions.data?.enrollments ?? [];
+    baselineDrafts.current = PaymentTargets.clampDrafts(refreshed, baselineDrafts.current);
+    setDrafts((current) => PaymentTargets.clampDrafts(refreshed, current));
+  }, [paymentOptions.data]);
+
+  useEffect(() => {
     if (dismissDecision) keepEditing.current?.focus();
   }, [dismissDecision]);
 

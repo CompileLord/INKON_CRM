@@ -59,3 +59,20 @@ describe("PaymentTargets.parseError", () => {
     expect(PaymentTargets.parseError(new Error("x"))).toBeNull();
   });
 });
+
+describe("PaymentTargets.clampDrafts", () => {
+  it("lowers amounts above the refreshed ceiling and keeps the rest", () => {
+    const drafts = { 1: "1195.00", 2: "10", 3: "abc" };
+    const clamped = PaymentTargets.clampDrafts([option(1, "1075.00", "1075.00"), option(2, "50", "50"), option(3, "50", "50")], drafts);
+    expect(clamped).toEqual({ 1: "1075.00", 2: "10", 3: "abc" });
+  });
+
+  it("uses the contract maximum when it is lower than the debt", () => {
+    expect(PaymentTargets.clampDrafts([option(1, "500", "300")], { 1: "500" })).toEqual({ 1: "300" });
+  });
+
+  it("returns the same object when nothing changes", () => {
+    const drafts = { 1: "5" };
+    expect(PaymentTargets.clampDrafts([option(1, "10", "10")], drafts)).toBe(drafts);
+  });
+});

@@ -192,6 +192,31 @@ describe("wallet credit", () => {
     expect(mock.history.post.some((request) => request.url === "/finance/allocations/" || request.url === "/finance/payments/")).toBe(false);
   });
 
+  it("shows the refetched debt and clamps a prefilled amount after the credit is applied", async () => {
+    const afterCredit: PaymentOptions = {
+      wallet_credit: "0.00",
+      enrollments: twoCourses.enrollments.map((option) =>
+        option.enrollment_id === 502 ? { ...option, open_debt: "380.10", remaining_contract_maximum: "380.10" } : option,
+      ),
+    };
+    let applied: boolean = false;
+    mock.onGet(OPTIONS_URL).reply(() => [200, applied ? afterCredit : withCredit]);
+    mock.onPost(CREDIT_URL).reply(() => {
+      applied = true;
+      return [201, { allocated_amount: "120.00", wallet_credit: "0.00", allocations: [] }];
+    });
+    const user = renderModal(12);
+    const input = (await screen.findByLabelText(/Amount for English Elementary/)) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe("500.10"));
+    await user.click(await screen.findByRole("button", { name: "Apply to course…" }));
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    await screen.findByText("Applied 120 TJS to the course");
+    await waitFor(() => expect(input.value).toBe("380.10"));
+    const row = screen.getByTestId("payment-target-502");
+    expect(row.textContent).toContain("Debt 380.10 TJS");
+    expect(row.textContent).not.toContain("500.10");
+  });
+
   it.each([
     ["invalid_payment_target", {}, "The course is no longer available for this balance. The list was refreshed."],
     ["no_wallet_credit", {}, "This student has no balance to apply."],

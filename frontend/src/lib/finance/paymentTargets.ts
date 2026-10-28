@@ -70,6 +70,18 @@ export class PaymentTargets {
     return compareMoney(option.open_debt, option.remaining_contract_maximum) > 0 ? option.remaining_contract_maximum : option.open_debt;
   }
 
+  static clampDrafts(options: readonly PaymentOption[], drafts: TargetDrafts): TargetDrafts {
+    let clamped: TargetDrafts = drafts;
+    for (const option of options) {
+      const raw: string | undefined = drafts[option.enrollment_id];
+      if (raw === undefined) continue;
+      const canonical: string | null = PaymentAmountParser.parse(raw).canonical;
+      const ceiling: string = PaymentTargets.isPayable(option) ? PaymentTargets.debtFill(option) : "0";
+      if (canonical !== null && compareMoney(canonical, ceiling) > 0) clamped = { ...clamped, [option.enrollment_id]: ceiling };
+    }
+    return clamped;
+  }
+
   static plan(options: readonly PaymentOption[], drafts: TargetDrafts): PaymentTargetPlan {
     const targets: PaymentTargetLine[] = [];
     const invalidEnrollmentIds: number[] = [];
