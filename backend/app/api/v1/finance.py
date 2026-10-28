@@ -17,6 +17,8 @@ from app.schemas.common import PaginatedResponse
 from app.schemas.ledger import (
     AdjustmentCreatePayload,
     AllocationCreatePayload,
+    CourseCreditAllocationPayload,
+    CourseCreditAllocationResponse,
     DiscountCreatePayload,
     LedgerEntryResponse,
     PaymentEntryResponse,
@@ -171,6 +173,14 @@ async def allocate_credit(
     """Manually apply a student's wallet credit to a specific charge."""
     finance_service = FinanceService(db)
     return await finance_service.allocate_credit(payload=payload, current_user=current_user)
+
+
+@router.post("/students/{student_id}/credit-allocations", response_model=CourseCreditAllocationResponse, status_code=status.HTTP_201_CREATED)
+async def allocate_course_credit(
+    student_id: int, payload: CourseCreditAllocationPayload,
+    current_user: User = Depends(require_accountant), db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    return await FinanceService(db).allocate_course_credit(student_id, payload.enrollment_id, payload.amount, current_user)
 
 
 @router.get("/students/{id}/ledger", response_model=List[dict])

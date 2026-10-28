@@ -1,10 +1,11 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import Any, Optional, List
+from pydantic import BaseModel, Field, field_validator
 from app.models.ledger import LedgerEntryType
 from app.models.payment import PaymentMethod
 from app.schemas.common import PositiveMoney
+from app.schemas.money import MoneyAmount
 from app.schemas.payment import PaymentCommentPolicy
 
 
@@ -78,6 +79,31 @@ class AllocationCreatePayload(BaseModel):
     student_id: int
     charge_id: int
     amount: Optional[PositiveMoney] = None
+
+
+class CourseCreditAllocationPayload(BaseModel):
+    model_config = {"extra": "forbid"}
+    enrollment_id: int = Field(gt=0)
+    amount: Optional[PositiveMoney] = None
+
+    @field_validator("amount", mode="before", json_schema_input_type=str | None)
+    @classmethod
+    def require_decimal_string(cls, value: Any) -> Any:
+        if value is not None and not isinstance(value, str):
+            raise ValueError("Amount must be a decimal string")
+        return value
+
+
+class CourseCreditAllocationItem(BaseModel):
+    charge_id: int
+    ledger_entry_id: int
+    amount: MoneyAmount
+
+
+class CourseCreditAllocationResponse(BaseModel):
+    allocated_amount: MoneyAmount
+    wallet_credit: MoneyAmount
+    allocations: List[CourseCreditAllocationItem]
 
 
 class StudentBalanceResponse(BaseModel):
