@@ -47,7 +47,7 @@ export const JournalSaveStatus: React.FC<JournalSaveStatusProps> = ({ status, on
   }
 
   return (
-    <div className="flex min-h-11 items-center gap-2" data-testid="journal-save-status" data-phase={phase}>
+    <div className="flex items-center gap-2 sm:min-h-11" data-testid="journal-save-status" data-phase={phase}>
       <div role="status" aria-live="polite" aria-atomic="true" className={`flex items-center gap-1.5 text-sm font-medium ${tone}`}>
         {icon}
         {message && <span>{message}</span>}

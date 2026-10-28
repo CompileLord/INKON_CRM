@@ -115,7 +115,11 @@ describe("JournalStudentRow totals", () => {
     view.unmount();
     render(<table><tbody><JournalStudentRow {...props} atRisk student={student} /></tbody></table>);
     const marker: HTMLElement = screen.getByTestId("at-risk-marker");
-    expect(marker.getAttribute("title")).toBe("At risk: period result below 60% or 3 absences in a row");
+    expect(marker.getAttribute("aria-label")).toBe("At risk");
+    expect(marker.getAttribute("title")).toBeNull();
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.focus(marker.parentElement as HTMLElement);
+    expect(screen.getByRole("tooltip").textContent).toBe("At risk: period result below 60% or 3 absences in a row");
     expect(marker.querySelector("svg")).not.toBeNull();
     expect(marker.className).toContain("text-warning");
     expect(screen.getByRole("rowheader").querySelector('[style*="background"]')).toBeNull();

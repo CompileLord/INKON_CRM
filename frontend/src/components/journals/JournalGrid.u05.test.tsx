@@ -38,6 +38,32 @@ describe("JournalGrid future lessons", () => {
     expect(document.querySelectorAll('[data-control="column-menu"]')).toHaveLength(2);
   });
 
+  it("reveals each column menu on hover or focus only, while keeping it keyboard and touch reachable", () => {
+    freezeSchoolDate("2026-10-13T09:00:00+05:00");
+    mountGrid();
+    const menus: HTMLElement[] = Array.from(document.querySelectorAll<HTMLElement>('[data-control="column-menu"]'));
+    expect(menus.length).toBeGreaterThan(0);
+    for (const menu of menus) {
+      expect(menu.className).toContain("opacity-0");
+      expect(menu.className).toContain("group-hover/column:opacity-100");
+      expect(menu.className).toContain("group-focus-within/column:opacity-100");
+      expect(menu.className).toContain("pointer-coarse:opacity-100");
+      expect(menu.className).toContain("has-[[data-popup-open]]:opacity-100");
+      expect(menu.closest("th")?.className).toContain("group/column");
+      const trigger: HTMLElement = within(menu).getByRole("button");
+      expect(trigger.getAttribute("tabindex")).not.toBe("-1");
+      expect(menu.hasAttribute("hidden")).toBe(false);
+    }
+  });
+
+  it("keeps each summary header label and its maximum on one line", () => {
+    freezeSchoolDate("2026-10-13T09:00:00+05:00");
+    mountGrid();
+    for (const testId of ["exam-maximum", "bonus-maximum"]) {
+      expect(screen.getByTestId(testId).parentElement?.className).toContain("whitespace-nowrap");
+    }
+  });
+
   it("uses the school calendar date, not the browser date, at the day boundary", () => {
     freezeSchoolDate("2026-10-13T20:30:00Z");
     mountGrid();

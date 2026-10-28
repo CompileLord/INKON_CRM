@@ -343,6 +343,18 @@ describe("Journals hub", () => {
     expect(screen.queryByText("No journals yet")).toBeNull();
   });
 
+  it("does not repeat course dates or exam type on a journal row and searches journals", async () => {
+    listCoursesMock.mockResolvedValue(pageOf([buildCourse(1)]));
+    renderHub();
+
+    const row = (await screen.findByText("Course 1")).closest("li") as HTMLElement;
+    expect(within(row).queryByText(/2026/)).toBeNull();
+    expect(row.textContent).not.toMatch(/\d{2}\.\d{2}\.\d{4}/);
+    expect(within(row).queryByText(/weekly/i)).toBeNull();
+    expect(screen.getByPlaceholderText("Search journals…")).toBeTruthy();
+    expect(screen.queryByPlaceholderText(/courses/i)).toBeNull();
+  });
+
   it("renders each row as one real link with no nested interactive element", async () => {
     listCoursesMock.mockResolvedValue(pageOf([buildCourse(7, { title: "A very long course title ".repeat(6) })]));
     getMentorsMock.mockResolvedValue(mentorPage([buildMentor(907, "Aziza", "Karimova")]));

@@ -186,6 +186,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
 
   return (
     <div ref={containerRef} className="relative min-w-0" data-testid="progress-chart">
+      <p data-testid="progress-axis-label" className="mb-1 text-xs text-muted">{t("progress.axisLabel")}</p>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width={width}

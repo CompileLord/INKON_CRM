@@ -10,7 +10,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { usePeriodName } from "../components/ui/periodName";
 import { JournalProgressView } from "../components/journals/JournalProgressView";
 import { JournalGrid } from "../components/journals/JournalGrid";
-import { JournalPeriodMenu } from "../components/journals/JournalPeriodMenu";
+import { JournalPeriodSettingsButton } from "../components/journals/JournalPeriodSettingsButton";
 import { JournalPeriodSelect } from "../components/journals/JournalPeriodSelect";
 import { JournalPeriodTransition } from "../components/journals/JournalPeriodTransition";
 import { JournalRosterSearch } from "../components/journals/JournalRosterSearch";
@@ -240,7 +240,12 @@ function JournalDetailContent() {
       />
 
       <div className="flex flex-col gap-1">
-        <PageHeader backTo="/journals" backLabel={t("backToJournals")} title={course.title} />
+        <PageHeader
+          backTo="/journals"
+          backLabel={t("backToJournals")}
+          title={course.title}
+          count={editing && journal && journal.lesson_dates.length > 0 ? <JournalKeyboardHelp /> : undefined}
+        />
         {metaItems.length > 0 && (
           <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
             {metaItems.map((item: string, index: number) => (
@@ -321,7 +326,7 @@ function JournalDetailContent() {
                     onSelect={route.selectPeriod}
                     disabled={queueStatus.draining}
                   />
-                  {editorsMounted && journal && <JournalPeriodMenu onOpenSettings={() => setSettingsJournalId(journalId ?? null)} />}
+                  {editorsMounted && journal && <JournalPeriodSettingsButton onOpenSettings={() => setSettingsJournalId(journalId ?? null)} />}
                 </div>
                 {rosterSearchVisible && (
                   <JournalRosterSearch
@@ -339,7 +344,6 @@ function JournalDetailContent() {
                     onRetry={() => void registry.retryAll()}
                     onReview={() => setReviewOpen(true)}
                   />
-                  {editing && journal && journal.lesson_dates.length > 0 && <JournalKeyboardHelp />}
                 </div>
               </div>
 
