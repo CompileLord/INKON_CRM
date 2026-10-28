@@ -56,8 +56,8 @@ class MemoryRepo:
     def stage_log(self, log: AuditLog) -> None:
         self.calls.append((log,))
 
-    async def get_students_list(self, page: int = 1, page_size: int = 20, search: str | None = None, mentor_id: int | None = None) -> RepositoryPage[User]:
-        self.calls.append((page, page_size, search, mentor_id))
+    async def get_student_directory(self, page: int, page_size: int, search: str | None, mentor_id: int | None, course_id: int | None, payment_status: str | None) -> RepositoryPage[dict[str, Any]]:
+        self.calls.append((page, page_size, search, mentor_id, course_id, payment_status))
         return self.page(page, page_size)
 
     async def get_student_profile_stats(self, student_id: int) -> dict[str, Any]:
@@ -90,7 +90,6 @@ class MemoryRepo:
     @staticmethod
     def page(page: int, page_size: int) -> RepositoryPage[Any]:
         return {"items": [], "total": 7, "page": page, "page_size": page_size, "total_pages": 4}
-
 
 class RepositoryOverrides:
     @staticmethod
@@ -279,12 +278,11 @@ class TestUserFeatureContracts:
     @pytest.mark.asyncio
     async def test_student_directory_provider_preserves_mentor_filter(self, client: AsyncClient, test_mentor: User) -> None:
         repository: MemoryRepo = MemoryRepo()
-
         RepositoryOverrides.apply(repository, test_mentor, "get_user_repository")
         response: Response = await client.get("/api/v1/students/", params={"page": 2, "page_size": 2, "search": "student"})
         assert response.status_code == 200, response.text
         assert response.json()["total"] == 7
-        assert repository.calls == [(2, 2, "student", test_mentor.id)]
+        assert repository.calls == [(2, 2, "student", test_mentor.id, None, None)]
 
     @pytest.mark.asyncio
     async def test_student_profile_provider_uses_alternate_repository(self, client: AsyncClient, test_student: User) -> None:

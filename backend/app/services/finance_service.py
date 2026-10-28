@@ -824,6 +824,7 @@ class FinanceService:
         await self.db.flush()
         await self._recompute_charge_status(touched)
 
+        course_ids: set[int] = {enrollment.course_id for enrollment in enrollments.values()}
         await self._log_audit(
             user_id=current_user.id,
             action="create",
@@ -832,6 +833,7 @@ class FinanceService:
             changes={
                 "amount": str(amount),
                 "student_id": student_id,
+                **({"course_id": next(iter(course_ids))} if len(course_ids) == 1 else {}),
                 "targets": [{"enrollment_id": target.enrollment_id, "amount": format(target.amount, ".2f")} for target in targets],
                 "method": str(method),
             },
