@@ -75,6 +75,16 @@ describe("shared shell lifecycle", () => {
     mock.onGet("/notifications/unread-count").reply(503); layout();
     expect(await screen.findAllByText("Unread count unavailable")).not.toHaveLength(0); expect(screen.queryByLabelText("Unread notifications: 0")).toBeNull();
   });
+  it("drops the zero unread counter and names the history link All notifications", async () => {
+    mock.onGet("/notifications/unread-count").reply(200, { unread_count: 0 });
+    mock.onGet("/notifications/").reply(200, { items: [], total: 0, page: 1, page_size: 5 });
+    layout("mentor"); const user = userEvent.setup(); await user.click(screen.getByRole("button", { name: "Notifications" }));
+    expect(await screen.findByRole("link", { name: "All notifications" })).toBeTruthy();
+    const allLink: HTMLElement = screen.getByRole("link", { name: "All notifications" });
+    const popoverRoot: HTMLElement = allLink.parentElement as HTMLElement;
+    expect(within(popoverRoot).queryByText(/Unread notifications/)).toBeNull();
+    expect(screen.queryByText("View notification history")).toBeNull();
+  });
   it("renders aria-busy loading skeleton with 5 bars while fetching notifications", async () => {
     mock.onGet("/notifications/").reply(() => new Promise(() => {}));
     layout("mentor");
