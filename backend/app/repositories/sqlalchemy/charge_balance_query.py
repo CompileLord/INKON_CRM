@@ -22,7 +22,7 @@ class ChargeBalanceQuery:
     def payment_notifications_enabled(self) -> ColumnElement[bool]:
         return func.coalesce(select(OrgSettings.notify_payments).where(OrgSettings.id == 1).scalar_subquery(), true())
 
-    def balances(self) -> Select[Any]:
+    def balances(self, require_chat: bool = True) -> Select[Any]:
         allocations: Any = (
             select(Allocation.charge_id, func.sum(Allocation.amount).label("allocated"))
             .where(Allocation.reversed_by_entry_id.is_(None))
@@ -57,7 +57,7 @@ class ChargeBalanceQuery:
                 Enrollment.status == EnrollmentStatus.ACTIVE,
                 User.is_deleted.is_(False),
                 User.role == UserRole.STUDENT,
-                User.parent_telegram_chat_id.is_not(None),
+                true() if not require_chat else User.parent_telegram_chat_id.is_not(None),
                 Course.is_deleted.is_(False),
             )
             .group_by(

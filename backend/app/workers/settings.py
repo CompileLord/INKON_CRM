@@ -14,6 +14,7 @@ from app.core.redis import RedisConnectionConfiguration
 from app.schemas.maintenance import MaintenanceTaskName
 from app.workers.debt_reminder_delivery import deliver_due_debt_reminders
 from app.workers.token_retention import purge_expired_refresh_tokens
+from app.workers.notification_retry import retry_notification_delivery
 from app.workers.tasks import (
     send_verification_email_task,
     send_telegram_message,
@@ -137,6 +138,7 @@ class WorkerSettings:
         ),
         send_verification_email_task,
         func(send_telegram_message, keep_result=0),
+        func(retry_notification_delivery, keep_result=0),
         func(send_exam_result_notification_task, keep_result=0),
         send_student_document_notification_task,
         deliver_due_exam_results,

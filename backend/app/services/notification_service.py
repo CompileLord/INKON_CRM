@@ -308,7 +308,9 @@ class NotificationService:
                 "revision": log.revision or 1,
                 "_job_id": f"notification:{log.id}:{log.revision}:recovery:{log.attempts}",
             }
-            if log.delivery_text is not None:
+            if log.retry_requested:
+                jobs.append(("retry_notification_delivery", payload))
+            elif log.delivery_text is not None:
                 payload.update(chat_id=int(log.recipient), text=log.delivery_text)
                 jobs.append(("send_telegram_message", payload))
             else:

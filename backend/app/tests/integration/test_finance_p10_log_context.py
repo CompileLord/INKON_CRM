@@ -12,6 +12,7 @@ from app.models.journal import Journal, JournalPeriodType
 from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
 from app.models.user import User
 from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
+from app.repositories.sqlalchemy.notification_context import NotificationContext
 
 
 @pytest.mark.asyncio
@@ -46,6 +47,6 @@ async def test_log_context_and_query_count(db_session: AsyncSession, test_studen
 
 def test_legacy_exam_score_marker() -> None:
     log: NotificationLog = NotificationLog(type=NotificationType.EXAM_RESULT, error_message="score:87")
-    assert SQLAlchemyNotificationLogRepository._exam_score(log) == 87
+    assert NotificationContext.exam_score(log) == 87
     log.error_message = "score:87 unexpected error"
-    assert SQLAlchemyNotificationLogRepository._exam_score(log) is None
+    assert NotificationContext.exam_score(log) is None

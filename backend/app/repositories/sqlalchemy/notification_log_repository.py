@@ -1,4 +1,3 @@
-import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Sequence, cast as typing_cast
@@ -12,6 +11,7 @@ from app.models.notification_log import ExamNotificationBaseline, NotificationLo
 from app.models.user import User, UserRole
 from app.models.enrollment import Enrollment
 from app.models.course import Course
+from app.repositories.sqlalchemy.notification_context import NotificationContext
 from app.models.journal import Journal
 from app.models.journal_student_summary import JournalStudentSummary
 from sqlalchemy.orm import aliased
@@ -91,13 +91,15 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
         return result.rowcount or 0
 
     async def delivery_page(
-        self, page: int, page_size: int, delivery_status: NotificationStatus | None
+        self, page: int, page_size: int, delivery_status: NotificationStatus | None, notification_id: int | None = None
     ) -> tuple[list[dict[str, Any]], int]:
         conditions: list[ColumnElement[bool]] = (
             [func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == delivery_status.value]
             if delivery_status is not None
             else []
         )
+        if notification_id is not None:
+            conditions.append(NotificationLog.id == notification_id)
         total: int = (
             await self._session.execute(select(func.count()).select_from(NotificationLog).where(*conditions))
         ).scalar_one()
@@ -138,20 +140,11 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
                 "course_id": reminder_course_id or exam_course_id,
                 "course_title": reminder_title or exam_title,
                 "amount": format(log.delivery_amount, ".2f") if log.delivery_amount is not None else None,
-                "score": self._exam_score(log),
+                "score": NotificationContext.exam_score(log),
             }
             for log, first_name, last_name, role, reminder_course_id, reminder_title, exam_course_id, exam_title in rows
         ]
         return items, total
-
-    @staticmethod
-    def _exam_score(log: NotificationLog) -> int | None:
-        if log.type != NotificationType.EXAM_RESULT:
-            return None
-        if log.delivery_score is not None:
-            return log.delivery_score
-        match: re.Match[str] | None = re.fullmatch(r"score:([0-9]+)", log.error_message or "")
-        return int(match.group(1)) if match is not None else None
 
     async def lock_or_create(
         self,
@@ -369,10 +362,11 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
                     select(NotificationLog)
                     .where(
                         eligible,
-                        self._reminder_query.eligible_notification(),
+                        or_(NotificationLog.retry_requested.is_(True), self._reminder_query.eligible_notification()),
                         NotificationLog.attempts < maximum_attempts,
                         func.coalesce(NotificationLog.is_terminal, false()).is_(False),
                         or_(
+                            NotificationLog.retry_requested.is_(True),
                             NotificationLog.delivery_text.is_not(None),
                             and_(
                                 NotificationLog.type == NotificationType.EXAM_RESULT,
@@ -395,7 +389,7 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
 
     async def set_delivery_amount(self, claim: NotificationClaim, amount: Decimal) -> None:
         await self._session.execute(update(NotificationLog).where(
-            NotificationLog.id == claim.notification_id, NotificationLog.claim_token == claim.claim_token,
+            NotificationLog.id == claim.notification_id, NotificationLog.claim_token == claim.claim_token
         ).values(delivery_amount=amount))
 
     async def reminder_delivery_context(self, notification_id: int) -> ReminderDeliveryContext:

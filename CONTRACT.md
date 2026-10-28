@@ -4287,6 +4287,48 @@ Manually apply a student's wallet credit to a specific charge.
 
 ---
 
+## POST /api/v1/notifications/logs/{id}/retry
+
+**Summary:** Retry Delivery Log
+
+**Parameters:**
+- `id` [path] *(required)*
+
+**Responses:**
+- **200**: Successful Response
+  ```json
+  {
+    "id": integer,
+    "recipient_name?": string,
+    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
+    "notification_date": string,
+    "status": "queued" | "inflight" | "sent" | "failed",
+    "attempts": integer,
+    "sent_at?": string,
+    "student_id?": integer,
+    "course_id?": integer,
+    "course_title?": string,
+    "amount?": string,
+    "score?": integer,
+  }
+  ```
+- **422**: Validation Error
+  ```json
+  {
+    "detail?": [
+      {
+        "loc": array[],
+        "msg": string,
+        "type": string,
+        "input?": any,
+        "ctx?": object,
+      }
+    ],
+  }
+  ```
+
+---
+
 ## PATCH /api/v1/notifications/{id}/read
 
 **Summary:** Mark Notification Read

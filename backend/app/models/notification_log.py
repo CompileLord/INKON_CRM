@@ -49,6 +49,7 @@ class NotificationLog(Base):
     delivery_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_terminal: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False, server_default="false")
     revision: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=1, server_default="1")
+    retry_requested: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     delivery_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     delivery_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     claim_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)

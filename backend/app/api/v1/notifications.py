@@ -1,11 +1,14 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
-from app.core.deps import get_current_user, get_notification_service, require_superadmin
+from app.core.deps import get_current_user, get_notification_service, get_notification_retry_service, require_superadmin
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
 from app.models.notification_log import NotificationLog, NotificationStatus
 from app.schemas.notification import DeliveryLogResponse, MarkAllReadResponse, NotificationResponse, UnreadCountResponse
 from app.services.notification_service import NotificationService
+from app.services.notification_retry_service import NotificationRetryService
+from app.core.rate_limiter import AtomicRateLimiter
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -47,6 +50,19 @@ async def list_delivery_log(
     service: NotificationService = Depends(get_notification_service)
 ) -> dict:
     return await service.get_delivery_log(page, page_size, delivery_status)
+
+
+@router.post("/logs/{id}/retry", response_model=DeliveryLogResponse)
+async def retry_delivery_log(
+    id: int,
+    current_user: User = Depends(require_superadmin),
+    service: NotificationRetryService = Depends(get_notification_retry_service),
+) -> dict:
+    await AtomicRateLimiter().acquire(
+        f"notification:retry:actor:{current_user.id}", settings.SMS_PASSWORD_IP_LIMIT,
+        settings.SMS_PASSWORD_IP_WINDOW_SECONDS,
+    )
+    return await service.retry(id, current_user.id)
 
 
 @router.patch("/{id}/read", response_model=NotificationResponse)
