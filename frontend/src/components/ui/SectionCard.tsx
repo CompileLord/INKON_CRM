@@ -6,20 +6,34 @@ const SectionNestingContext = createContext<boolean>(false);
 interface SectionCardProps {
   title: string;
   info?: string;
+  titleHidden?: boolean;
   actions?: ReactNode;
   children: ReactNode;
 }
 
-export function SectionCard({ title, info, actions, children }: SectionCardProps) {
+export function SectionCard({ title, info, titleHidden = false, actions, children }: SectionCardProps) {
   const isNested: boolean = useContext(SectionNestingContext);
+  const hasVisibleHeader: boolean = !titleHidden || info !== undefined || actions !== undefined;
   const header: ReactNode = (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-ink">
-        <span className="min-w-0 break-words">{title}</span>
-        {info !== undefined && <InfoTooltip label={info}>{info}</InfoTooltip>}
-      </h2>
-      {actions !== undefined && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-    </div>
+    <>
+      {titleHidden && <h2 className="sr-only">{title}</h2>}
+      {hasVisibleHeader && (
+        <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 ${titleHidden ? "justify-end" : "justify-between"}`}>
+          {!titleHidden && (
+            <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-ink">
+              <span className="min-w-0 break-words">{title}</span>
+              {info !== undefined && <InfoTooltip label={info}>{info}</InfoTooltip>}
+            </h2>
+          )}
+          {(titleHidden && info !== undefined) || actions !== undefined ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {titleHidden && info !== undefined && <InfoTooltip label={info}>{info}</InfoTooltip>}
+              {actions}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </>
   );
   if (isNested) {
     return (

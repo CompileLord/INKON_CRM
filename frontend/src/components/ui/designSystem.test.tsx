@@ -245,6 +245,13 @@ describe("SectionCard", () => {
     expect(screen.getByRole("button", { name: "Export" })).toBeTruthy();
   });
 
+  it("drops the visible heading when titleHidden but keeps actions and an accessible heading", () => {
+    render(<SectionCard title="Documents" titleHidden actions={<button type="button">Upload</button>}>Body</SectionCard>);
+    const heading: HTMLElement = screen.getByRole("heading", { level: 2, name: "Documents" });
+    expect(heading.className).toContain("sr-only");
+    expect(screen.getByRole("button", { name: "Upload" })).toBeTruthy();
+  });
+
   it("flattens a nested SectionCard so cards never nest", () => {
     render(<SectionCard title="Outer"><SectionCard title="Inner">x</SectionCard></SectionCard>);
     const cards: NodeListOf<Element> = document.querySelectorAll("[data-section-card]");
