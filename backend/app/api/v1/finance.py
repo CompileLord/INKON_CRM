@@ -40,6 +40,7 @@ from app.services.finance_service import FinanceService, get_dushanbe_today
 from app.repositories.interfaces.enrollment_repository import EnrollmentRepository
 from app.services.payment_date_window import PaymentDateWindow
 from app.services.payment_idempotency_service import PaymentIdempotencyService, PaymentRecordResult
+from app.services.credit_allocation_idempotency_service import CreditAllocationIdempotencyService
 
 router = APIRouter()
 
@@ -177,10 +178,14 @@ async def allocate_credit(
 
 @router.post("/students/{student_id}/credit-allocations", response_model=CourseCreditAllocationResponse, status_code=status.HTTP_201_CREATED)
 async def allocate_course_credit(
-    student_id: int, payload: CourseCreditAllocationPayload,
+    student_id: int, payload: CourseCreditAllocationPayload, response: Response,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key", pattern=PaymentIdempotency.KEY_PATTERN.pattern),
     current_user: User = Depends(require_accountant), db: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    return await FinanceService(db).allocate_course_credit(student_id, payload.enrollment_id, payload.amount, current_user)
+    result, replayed = await CreditAllocationIdempotencyService(db).allocate(student_id, payload, current_user, idempotency_key)
+    if replayed:
+        response.status_code = status.HTTP_200_OK
+    return result
 
 
 @router.get("/students/{id}/ledger", response_model=List[dict])

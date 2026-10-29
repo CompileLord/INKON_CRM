@@ -1,3 +1,4 @@
+from app.models.credit_allocation_idempotency import CreditAllocationIdempotency
 from app.models.storage_intent import StorageIntent
 from app.models.cache_generation import CacheGeneration
 from app.models.user import User, UserRole

@@ -3426,6 +3426,7 @@ Manually apply a student's wallet credit to a specific charge.
 
 **Parameters:**
 - `student_id` [path] *(required)*
+- `Idempotency-Key` [header]
 
 **Request Body (JSON):**
 ```json
