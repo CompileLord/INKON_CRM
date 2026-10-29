@@ -77,6 +77,7 @@ class EnrollmentBillingService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
         finance_service: FinanceService = FinanceService(self.db)
         await finance_service.lock_student_accounts([enrollment.student_id])
+        await self.db.refresh(enrollment)
         if enrollment.status != EnrollmentStatus.ACTIVE:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="enrollment_not_active")
         previous_mode: BillingMode = enrollment.effective_billing_mode

@@ -1,7 +1,8 @@
 import enum
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
-from sqlalchemy import DateTime, Enum, Index, Integer, String, Text, func
+from sqlalchemy import DateTime, Enum, Index, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -75,4 +76,5 @@ class OutboxEvent(Base):
     recipient_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     target_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     provider_message_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    dispatched_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     provider_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)

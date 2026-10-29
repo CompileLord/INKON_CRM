@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel
 from app.models.payment import PaymentMethod
 from app.schemas.ledger import PaymentTargetResponse
@@ -16,6 +16,9 @@ class ReceiptAllocationItem(BaseModel):
 
 class PaymentReceiptResponse(BaseModel):
     receipt_number: str
+    status: Literal["valid", "voided", "refunded", "partially_refunded"]
+    refunded_amount: Decimal
+    net_amount: Decimal
     occurred_at: datetime
     student_id: int
     student_name: str

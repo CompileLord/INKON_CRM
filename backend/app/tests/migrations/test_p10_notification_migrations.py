@@ -9,7 +9,7 @@ BACKEND_ROOT: Path = Path(__file__).resolve().parents[3]
 
 def test_notification_migrations_are_single_expand_only_chain() -> None:
     script: ScriptDirectory = ScriptDirectory.from_config(Config(str(BACKEND_ROOT / "alembic.ini")))
-    assert script.get_heads() == ["p10_notification_retry"]
+    assert script.get_heads() == ["flf_credit_allocation"]
     amount: Script | None = script.get_revision("p10_notification_amount")
     retry: Script | None = script.get_revision("p10_notification_retry")
     assert amount is not None and amount.down_revision == "p7_payment_targets"

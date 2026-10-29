@@ -1,5 +1,7 @@
 import math
-from datetime import datetime, timedelta, timezone
+import hashlib
+import json
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable, Protocol
 from zoneinfo import ZoneInfo
 from fastapi import HTTPException, status
@@ -7,6 +9,10 @@ from app.repositories.interfaces.debt_reminder_repository import DebtReminderRep
 from app.services.debt_reminder_sms import DebtReminderSms
 from app.services.debt_reminder_messages import DebtReminderMessages
 from app.schemas.debt_reminder import DebtReminderResponse, DebtReminderResult
+from app.schemas.debt import DebtPageResponse
+from app.repositories.interfaces.cache_generation_repository import CacheGenerationRepository
+from app.services.analytics_cache_service import AnalyticsCacheService
+from app.core.redis import redis_client
 
 
 class DebtReminderAudit(Protocol):
@@ -18,7 +24,9 @@ class DebtReminderService:
         self, repository: DebtReminderRepository, audit: DebtReminderAudit,
         clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
         sms: DebtReminderSms | None = None, interval_seconds: int = 86400,
+        cache_generation: CacheGenerationRepository | None = None,
     ) -> None:
+        self._cache_generation: CacheGenerationRepository | None = cache_generation
         self._sms: DebtReminderSms | None = sms
         self._interval: timedelta = timedelta(seconds=interval_seconds)
         self._repository: DebtReminderRepository = repository
@@ -74,13 +82,28 @@ class DebtReminderService:
             if any(result.outcome == "no_channel" for result in results):
                 await self._repository.rollback()
                 raise HTTPException(status_code=422, detail={"code": "debt_reminder_no_channel"})
+        if self._cache_generation is not None and any(result.outcome == "queued" for result in results):
+            await self._cache_generation.advance()
         await self._repository.commit()
         return DebtReminderResponse(results=results)
 
     async def list_debts(self, filters: dict[str, Any], page: int, page_size: int) -> dict[str, Any]:
-        response: dict[str, Any] = await self._repository.list_debts(
-            self._clock().astimezone(ZoneInfo("Asia/Dushanbe")).date(), filters, page, min(max(page_size, 1), 100)
-        )
+        today = self._clock().astimezone(ZoneInfo("Asia/Dushanbe")).date()
+        page_size = min(max(page_size, 1), 100)
+        generation = self._cache_generation
+        if generation is None or not generation.can_use_shared_cache():
+            return await self._list_debts(today, filters, page, page_size)
+        version: int = await generation.read_committed_generation()
+        parameters: str = json.dumps({"filters": filters, "page": page, "page_size": page_size}, sort_keys=True, default=str)
+        digest: str = hashlib.sha256(parameters.encode()).hexdigest()
+        key: str = f"finance:debtors:{version}:{today.isoformat()}:{digest}"
+        async def compute() -> dict[str, object]:
+            result: dict[str, Any] = await self._list_debts(today, filters, page, page_size)
+            return DebtPageResponse.model_validate(result).model_dump(mode="json")
+        return await AnalyticsCacheService(redis_client).get_or_compute(key, compute, generation.can_use_shared_cache)
+
+    async def _list_debts(self, today: date, filters: dict[str, Any], page: int, page_size: int) -> dict[str, Any]:
+        response: dict[str, Any] = await self._repository.list_debts(today, filters, page, page_size)
         item: dict[str, Any]
         for item in response["items"]:
             chat: int | None = item.pop("_parent_chat_id")

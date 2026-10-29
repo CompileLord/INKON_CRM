@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.models.outbox_event import OutboxEvent
+from app.services.debt_reminder_messages import DebtReminderMessages
 from app.models.user import User
 from app.repositories.sqlalchemy.user_repository import SQLAlchemyUserRepository
 from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
@@ -17,7 +18,9 @@ class DebtReminderSmsDispatcher(StudentPasswordSmsDispatcher):
         return f"debt-reminder-sms-{event.id}"
 
     def render_message(self, payload: dict[str, Optional[str]], inspection: SmsDispatchInspection) -> str:
-        return str(payload["text"])
+        if inspection.dispatched_amount is None:
+            raise ValueError("Missing current debt")
+        return DebtReminderMessages().render(inspection.dispatched_amount, payload.get("language"))
 
     async def _inspect(
         self, event: OutboxEvent, plaintext_payload: str, session_factory: async_sessionmaker[AsyncSession],
@@ -42,4 +45,4 @@ class DebtReminderSmsDispatcher(StudentPasswordSmsDispatcher):
             return SmsDispatchInspection("no_current_debt", None)
         if event.recipient_phone not in (user.phone, user.parent_phone):
             return SmsDispatchInspection("sms_destination_changed", None)
-        return SmsDispatchInspection(None, None)
+        return SmsDispatchInspection(None, None, source.total_debt)

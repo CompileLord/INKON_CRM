@@ -51,7 +51,7 @@ class MoneyRequests:
             payload.update(course_id=1, paid_at="2026-01-01T00:00:00Z", method="cash")
         if kind in {"refund", "adjustment"}:
             payload["reason_code"] = "money-boundary"
-        if kind == "allocation":
+        if kind in {"allocation", "discount"}:
             payload["charge_id"] = 1
         return payload
 

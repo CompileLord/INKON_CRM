@@ -3094,6 +3094,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
         "overdue_days": integer,
         "remaining_contract_maximum": string,
         "billing_mode": string,
+        "status": string,
       }
     ],
   }
@@ -3245,7 +3246,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
 ```json
 {
   "student_id": integer,
-  "charge_id?": integer,
+  "charge_id": integer,
   "amount": number,
   "occurred_at?": string,
   "reason_code?": string,
@@ -3426,6 +3427,7 @@ Manually apply a student's wallet credit to a specific charge.
 
 **Parameters:**
 - `student_id` [path] *(required)*
+- `Idempotency-Key` [header]
 
 **Request Body (JSON):**
 ```json
@@ -3618,6 +3620,9 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "receipt_number": string,
+    "status": "valid" | "voided" | "refunded" | "partially_refunded",
+    "refunded_amount": string,
+    "net_amount": string,
     "occurred_at": string,
     "student_id": integer,
     "student_name": string,
@@ -3800,6 +3805,7 @@ Manually apply a student's wallet credit to a specific charge.
     "page": integer,
     "page_size": integer,
     "total_pages": integer,
+    "student_total": integer,
   }
   ```
 - **422**: Validation Error
