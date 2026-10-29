@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import sys
 import uuid
 from pathlib import Path
@@ -268,14 +269,17 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_test_db() -> None:
+async def setup_test_db() -> AsyncGenerator[None, None]:
     from sqlalchemy import text
+    if TEST_WORKER_NAME:
+        shutil.rmtree(os.environ["STORAGE_PATH"], ignore_errors=True)
     async with test_engine.begin() as conn:
         await conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE;'))
         await conn.execute(text(f'CREATE SCHEMA "{TEST_SCHEMA}";'))
         await conn.run_sync(Base.metadata.create_all)
     yield
     if TEST_WORKER_NAME:
+        shutil.rmtree(os.environ["STORAGE_PATH"], ignore_errors=True)
         async with test_engine.begin() as conn:
             await conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE;'))
     await test_engine.dispose()
