@@ -17,6 +17,10 @@ class NotificationRetryService:
         self._enqueue: Callable[..., Awaitable[Any]] = enqueue
 
     async def retry(self, notification_id: int, actor_id: int) -> dict[str, Any]:
+        if notification_id < 0:
+            if not await self._repository.debt_sms_exists(-notification_id):
+                raise HTTPException(status_code=404, detail={"code": "notification_not_found"})
+            raise HTTPException(status_code=409, detail={"code": "debt_reminder_sms_retry_unavailable"})
         log: NotificationLog | None = await self._repository.request_retry(notification_id)
         if log is None:
             existing: NotificationLog | None = await self._repository.get_by_id(notification_id)

@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 from typing import Any
 from pydantic import BaseModel, Field, model_validator
 from app.models.notification_log import NotificationLog
@@ -43,7 +43,7 @@ class MarkAllReadResponse(BaseModel):
 class DeliveryLogResponse(BaseModel):
     id: int
     recipient_name: Optional[str] = None
-    type: NotificationType
+    type: Literal["payment_reminder_2d", "payment_reminder_1d", "exam_result", "telegram_link_lockout", "debt_reminder_sms"]
     notification_date: date
     status: NotificationStatus = Field(
         description="Sent confirms provider success. Delivery is at least once: a crash after sending but before finalization can cause a duplicate after lease recovery."
@@ -55,3 +55,5 @@ class DeliveryLogResponse(BaseModel):
     course_title: Optional[str] = None
     amount: Optional[str] = None
     score: Optional[int] = None
+    reason: Optional[str] = None
+    outbox_status: Literal["pending", "claimed", "delivered", "failed", "expired"] | None = None

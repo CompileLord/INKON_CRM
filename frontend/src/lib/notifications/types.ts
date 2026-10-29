@@ -29,7 +29,7 @@ export interface MarkAllReadResponse {
 export interface DeliveryLogItem {
   id: number;
   recipient_name?: string | null;
-  type: NotificationType;
+  type: NotificationType | "debt_reminder_sms";
   notification_date: string;
   status: NotificationStatus;
   attempts: number;
@@ -39,6 +39,8 @@ export interface DeliveryLogItem {
   course_title?: string | null;
   amount?: string | null;
   score?: number | null;
+  reason?: string | null;
+  outbox_status?: "pending" | "claimed" | "delivered" | "failed" | "expired" | null;
 }
 
 export type DeliveryRetryFailure = "notFailed" | "rateLimited" | "notFound" | "generic";
