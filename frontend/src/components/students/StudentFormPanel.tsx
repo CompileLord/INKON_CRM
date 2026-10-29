@@ -468,7 +468,7 @@ function StudentFormPanelInner({
           </div>
 
           <StudentPaymentFields register={register} errors={errors} inputClass={inputClass} labelClass={labelClass} />
-          {student && <StudentParentLink user={student} canManage />}
+          {student && <StudentParentLink user={student} canManage inline />}
         </form>
       </SlideOver>
 
