@@ -44,15 +44,14 @@ interface CourseFormPanelProps {
   finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
 }
 
-
 interface PartialSuccessState {
   courseId: number;
   savedCourse: CourseResponse;
 }
 
-export function CourseFormPanel({ open, course: courseProp, onClose, onSaved, finalFocus }: CourseFormPanelProps) {
+export function CourseFormPanel({ open, course: live, onClose, onSaved, finalFocus: focus }: CourseFormPanelProps) {
   const { present, onOpenChangeComplete } = usePresence(open);
-  const course: CourseResponse | undefined = useHeldWhileClosing(courseProp, open);
+  const { course, finalFocus } = useHeldWhileClosing({ course: live, finalFocus: focus }, open);
   if (!present) {
     return null;
   }

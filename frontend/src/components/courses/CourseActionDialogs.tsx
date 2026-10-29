@@ -22,6 +22,7 @@ export function CourseActionDialogs({ course, actions, finalFocus, onUpdated }: 
         <CourseFormPanel
           open={actions.editOpen}
           course={course}
+          finalFocus={finalFocus}
           onClose={() => {
             if (!actions.isOperationLive(generationAtOpen)) return;
             actions.closeEdit();
