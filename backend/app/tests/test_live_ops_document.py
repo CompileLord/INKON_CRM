@@ -35,3 +35,16 @@ async def test_document_rejects_mismatched_mime_and_deleted_owner() -> None:
     with pytest.raises(HTTPException) as error:
         await service.upload_document(valid, "student", 7, None, user)
     assert error.value.status_code == 404
+
+@pytest.mark.asyncio
+async def test_document_rejects_owner_with_wrong_role() -> None:
+    from io import BytesIO
+    from starlette.datastructures import Headers, UploadFile
+
+    database: MagicMock = MagicMock()
+    database.get = AsyncMock(return_value=User(id=7, role=UserRole.MENTOR, is_deleted=False))
+    service: DocumentService = DocumentService(database, storage=MagicMock(), document_repo=MagicMock())
+    upload: UploadFile = UploadFile(BytesIO(b"%PDF-1.7"), filename="a.pdf", headers=Headers({"content-type": "application/pdf"}))
+    with pytest.raises(HTTPException) as error:
+        await service.upload_document(upload, "student", 7, None, User(id=1, role=UserRole.SUPERADMIN))
+    assert error.value.status_code == 404
