@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -116,8 +117,10 @@ async def test_enrollment_state_reloaded_after_account_lock(db_session: AsyncSes
 
 
 @pytest.mark.asyncio
-async def test_collection_rate_excludes_grant_payments(db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User) -> None:
-    today = datetime.now(timezone.utc).date()
+async def test_collection_rate_excludes_grant_payments(db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User, freeze_school_today: Callable[[date], None]) -> None:
+    today: date = date(2026, 3, 18)
+    paid_at: datetime = datetime(2026, 3, 18, 7, 0, tzinfo=timezone.utc)
+    freeze_school_today(today)
     first: Enrollment = await make_enrollment(db_session, test_student, test_mentor, 'Paid collection')
     second: Enrollment = await make_enrollment(db_session, test_student, test_mentor, 'Grant collection')
     charges: list[Charge] = list((await db_session.scalars(select(Charge).where(Charge.enrollment_id.in_([first.id, second.id])))).all())
@@ -126,7 +129,7 @@ async def test_collection_rate_excludes_grant_payments(db_session: AsyncSession,
     await db_session.flush()
     service: FinanceService = FinanceService(db_session)
     for enrollment in (first, second):
-        await service.create_payment(test_student.id, enrollment.course_id, Decimal('100'), datetime.now(timezone.utc), PaymentMethod.CASH, None, test_admin)
+        await service.create_payment(test_student.id, enrollment.course_id, Decimal('100'), paid_at, PaymentMethod.CASH, None, test_admin)
     second.billing_mode = BillingMode.GRANT
     await db_session.flush()
     analytics: dict = await service._compute_analytics(today, today)
