@@ -11,7 +11,6 @@ from urllib.parse import urlsplit
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
 from redis.asyncio.client import Pipeline

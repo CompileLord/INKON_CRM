@@ -340,5 +340,3 @@ async def test_account_lock_acquisition_order_is_independent_of_physical_row_ord
     monkeypatch.setattr(db_session, "execute", observe_acquired_rows)
     await FinanceService(db_session).lock_student_accounts(requested_ids + requested_ids)
     assert acquired_ids == sorted(set(requested_ids))
-
-
