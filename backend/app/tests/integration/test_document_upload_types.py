@@ -1,7 +1,19 @@
+from io import BytesIO
+from zipfile import ZipFile
 import pytest
 from httpx import AsyncClient
 from app.core.security import create_access_token
 from app.models.user import User
+
+class DocumentTestContent:
+    @staticmethod
+    def docx() -> bytes:
+        buffer: BytesIO = BytesIO()
+        with ZipFile(buffer, "w") as archive:
+            archive.writestr("[Content_Types].xml", "<Types/>")
+            archive.writestr("word/document.xml", "<document/>")
+        return buffer.getvalue()
+
 
 ACCEPTED_UPLOADS: list[tuple[str, str, bytes]] = [
     ("photo.png", "image/png", b"\x89PNG\r\n\x1a\n" + b"0" * 16),
@@ -9,7 +21,7 @@ ACCEPTED_UPLOADS: list[tuple[str, str, bytes]] = [
     ("animation.gif", "image/gif", b"GIF89a" + b"0" * 16),
     ("voice.mp3", "audio/mpeg", b"ID3" + b"0" * 16),
     ("voice.wav", "audio/wav", b"RIFF\x00\x00\x00\x00WAVE" + b"0" * 16),
-    ("letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", b"PK\x03\x04" + b"0" * 16),
+    ("letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", DocumentTestContent.docx()),
     ("notes.txt", "text/plain", b"plain text notes"),
 ]
 
