@@ -1,0 +1,34 @@
+- generic [ref=e1]:
+  - main [ref=e6]:
+    - generic [ref=e17]:
+      - button "Main menu" [ref=e21] [cursor=pointer]:
+        - img [aria-hidden] [ref=e23]: menu
+      - group [ref=e27]:
+        - button "Open mode picker, currently 3.5 Flash-Lite" [ref=e29]:
+          - generic [ref=e33]:
+            - generic [ref=e34]: Gemini
+            - generic [ref=e37]: 3.5 Flash-Lite
+            - img [aria-hidden] [ref=e39]: keyboard_arrow_down
+    - generic [ref=e15]:
+      - heading "Conversation with Gemini" [level=1] [ref=e94]
+      - generic [ref=e16]:
+        - generic:
+          - button [aria-hidden]:
+            - generic:
+              - img [aria-hidden]: arrow_downward
+        - generic [ref=e51]:
+          - button "Add files" [ref=e53] [cursor=pointer]:
+            - img [aria-hidden] [ref=e54]: plus
+          - textbox "Enter a prompt for Gemini" [active] [ref=e62]:
+            - text: Ask Gemini
+            - paragraph [ref=e95]
+          - button "Dictate (^⇧D)" [ref=e70] [cursor=pointer]:
+            - img [aria-hidden] [ref=e72]: mic
+        - paragraph [ref=e96]: Gemini is AI and can make mistakes.
+    - generic [ref=e84]:
+      - button "New chat" [ref=e99] [cursor=pointer]:
+        - img [aria-hidden] [ref=e101]: gemini_chat
+      - generic [ref=e85]:
+        - generic: play_arrow
+        - button "Sign in" [ref=e88]
+  - generic [ref=e13]: Gemini replied

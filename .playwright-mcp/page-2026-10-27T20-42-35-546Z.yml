@@ -1,0 +1,27 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - button "Theme and language settings" [ref=f1e6]
+    - generic [ref=f1e10]:
+      - img "KITOB Educational Center logo" [ref=f1e13]
+      - generic [ref=f1e14]:
+        - heading "System Sign In" [level=1] [ref=f1e16]
+        - generic [ref=f1e17]:
+          - generic [ref=f1e18]:
+            - generic [ref=f1e19]: Email or phone*
+            - textbox "Email or phone*" [ref=f1e21]:
+              - /placeholder: email@example.com or +992900000000
+          - generic [ref=f1e22]:
+            - generic [ref=f1e23]: Password*
+            - generic [ref=f1e24]:
+              - textbox "Password*" [ref=f1e25]:
+                - /placeholder: ••••••••
+              - button "Show password" [ref=f1e27]
+          - link "Forgot password?" [ref=f1e31] [cursor=pointer]:
+            - /url: /forgot-password
+          - paragraph [ref=f1e32]: New student? Enter the 6-character code from the SMS.
+          - button "Sign In" [ref=f1e33]
+  - complementary "KITOB Educational Center" [ref=f1e36]:
+    - generic [ref=f1e37]:
+      - img "KITOB Educational Center logo" [ref=f1e40]
+      - heading "Open a new chapter." [level=2] [ref=f1e41]
+      - paragraph [ref=f1e42]: Your courses, progress, and learning community in one place.

@@ -6,19 +6,19 @@ Rules for every developer and AI coding agent working on **IMKON CRM** (KITOB).
 
 ## 1. Architecture
 
-- All business logic, services and repositories live in classes. No global utility functions.
-- SOLID. Abstractions (storage, repositories, mail) are ABCs or narrow Protocols. Services depend on repository Protocols, wired with FastAPI `Depends`.
+- Organize business workflows and database access in service and repository classes. Follow existing module conventions for small helpers and dependency providers.
+- Prefer narrow ABCs or Protocols for replaceable dependencies, and use FastAPI `Depends` where appropriate.
 - Layers:
   - **Models** hold schema, constraints and relationships only.
   - **Repositories** do database operations only. No business rules, validation or HTTP exceptions.
-  - **Services** handle workflows, transaction boundaries, audits and validation, and stay database-technology-agnostic.
+  - **Services** handle workflows, transaction boundaries, audits and validation. Existing services may use database sessions and raise HTTP exceptions; follow the surrounding conventions.
   - **API controllers** handle HTTP decoding, Pydantic parsing, authorization checks and responses.
 
 ## 2. Code Style
 
 - **No code comments.** Exceptions: complex math formulas and cron scheduler offsets.
 - Use verbose, meaningful names.
-- Type hints go on every variable, parameter and return value, including in tests. An unannotated local is a defect.
+- Type parameters and return values, including in tests. Annotate local variables where their types are not clear from context.
 - Use Pydantic v2 for all payloads and outputs, with `extra = "forbid"` on input schemas. Phone numbers are strictly E.164.
 
 ## 3. Database
@@ -34,6 +34,10 @@ Rules for every developer and AI coding agent working on **IMKON CRM** (KITOB).
 
 ## 4. Workflow
 
+- Before complicating a solution to address a hypothetical race condition or an extremely unlikely security scenario, explain to the user how the problem could occur, how likely it is, and what the added complexity would cost. Obtain the user's agreement before proceeding.
+- Do not silently expand the scope of a task solely for theoretical reliability.
+- If repository documentation conflicts with existing code, follow the conventions established in the code and identify every discrepancy found between the documentation and the code in the final response.
+
 ### 4.1. Branches
 - **Never merge, commit or reset onto `main` unless the user explicitly asks.**
 - `master` is the integration branch, checked out in `INKON_CRM-worktrees/master-integration`. Accepted work merges into `master`. The user decides when `master` goes to `main`.
@@ -44,15 +48,16 @@ Rules for every developer and AI coding agent working on **IMKON CRM** (KITOB).
 - The orchestrator plans, delegates, audits and updates status; executors implement and test. Audit the real diff, tests and screenshots, never a success label. Failed audits go back to the same executor with concrete defects.
 - **Every handoff starts with the user's requested outcomes, restated clearly in plain words**: what to change, where, and what it should look like when done. A file path to read can follow for environment, checks and commit details. It never replaces the outcomes.
 - Subagents cannot see images the user pastes. Describe each screenshot in words: which page and element it shows, and what is wrong with it. Forward user messages that arrive mid-run the same way.
-- Backend remediation is tracked only in `docs/remediation/STATUS.md`, with one row per work package, updated by the orchestrator. Task scope lives in `docs/remediation/tasks/WP-NN-*.md`.
+- For backend remediation work packages, track status in `docs/remediation/STATUS.md` and scope in `docs/remediation/tasks/WP-NN-*.md`.
 - Concurrent executors use separate worktrees with exclusive file ownership. Serialize migrations, shared files and contract generation.
 - Keep raw logs out of Git, in `~/.local/state/imkon-remediation/`.
 
 ### 4.3. Test environment
 - Tests that drop schemas or flush Redis run only against a disposable PostgreSQL and Redis pod, never the ordinary local services.
+- Backend tests require `TESTING=true`, `ENVIRONMENT=testing`, `TEST_DATABASE_URL` and `TEST_REDIS_URL`. The test fixture requires loopback PostgreSQL on port 5432 with database `imkon_test_db` and loopback Redis on port 6379 with database 15; see `backend/app/tests/conftest.py` for validation.
 - Move a worktree's real `backend/.env` aside before tests and restore it afterwards.
 - Never call real SMS, SMTP or Telegram from tests.
-- Production runs Python 3.12; run the backend suite on 3.12.
+- Production uses Python 3.12; run the backend suite on 3.12. The package metadata currently permits Python 3.11 and newer.
 
 ## 5. Frontend
 
