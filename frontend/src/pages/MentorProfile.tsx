@@ -10,7 +10,7 @@ import { mentorLocationState, mentorProfileTab, mentorReturnTarget, type MentorP
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PageContainer } from "../components/ui/PageContainer";
-import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
 import { AccountAccessDialog } from "../components/profile/AccountAccessDialog";
 import { ProfileBackLink } from "../components/profile/ProfileBackLink";
 import { ProfileSkeleton, ProfileState } from "../components/profile/ProfileState";
@@ -207,7 +207,7 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
 
       <Tabs tabs={tabs} value={activeTab} onChange={(tab: string) => { if (isLive(ownerGeneration)) selectTab(tab); }} ariaLabel={t("tabs.label")} idPrefix={PROFILE_ID_PREFIX} />
 
-      <div role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTab)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTab)} className="min-w-0">
+      <div key={activeTab} role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTab)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTab)} className={`${TAB_PANEL_ENTER_CLASS} min-w-0`}>
         {activeTab === "courses" && <MentorCourses courses={profile.active_courses} />}
         {activeTab === "performance" && <MentorPerformance profile={profile} analytics={analyticsQuery.data} loading={analyticsQuery.isLoading} failed={analyticsQuery.isError} onRetry={() => analyticsQuery.refetch()} />}
         {activeTab === "documents" && <DocumentsTab key={`${id}:${role}:${userId}:${ownerGeneration}`} ownerType="mentor" ownerId={profile.user.id} canManage={isSuperAdmin} ownerName={`${profile.user.first_name} ${profile.user.last_name}`} />}

@@ -4,7 +4,7 @@ import { DeliveryLog } from "../components/notifications/DeliveryLog";
 import { NotificationInbox } from "../components/notifications/NotificationInbox";
 import { PageContainer } from "../components/ui/PageContainer";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Tabs, tabElementId, tabPanelElementId, type TabDefinition } from "../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabElementId, tabPanelElementId, type TabDefinition } from "../components/ui/Tabs";
 import { useAuthStore } from "../store/authStore";
 
 type NotificationsTab = "inbox" | "log";
@@ -42,6 +42,8 @@ export function Notifications() {
       )}
 
       <div
+        key={tab}
+        className={TAB_PANEL_ENTER_CLASS}
         id={tabPanelElementId("notifications", tab)}
         role={canSeeLog ? "tabpanel" : undefined}
         aria-labelledby={canSeeLog ? tabElementId("notifications", tab) : undefined}

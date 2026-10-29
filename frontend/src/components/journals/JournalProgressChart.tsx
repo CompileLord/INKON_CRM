@@ -195,7 +195,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ periods, students,
         tabIndex={0}
         aria-label={t("progress.chart.label")}
         aria-describedby="progress-chart-hint"
-        className="block max-w-full touch-pan-y overflow-visible rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block max-w-full touch-pan-y overflow-visible rounded-[10px] motion-safe:animate-[tab-panel-in_300ms_ease-out] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onKeyDown={(event) => {
           if (event.key === "ArrowRight") moveTo((activeIndex ?? -1) + 1);
           else if (event.key === "ArrowLeft") moveTo((activeIndex ?? periods.length) - 1);

@@ -7,7 +7,7 @@ import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PageContainer } from "../components/ui/PageContainer";
-import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
 import { Toast } from "../components/ui/Toast";
 import { ProfileBackLink } from "../components/profile/ProfileBackLink";
 import { ProfileSkeleton, ProfileState } from "../components/profile/ProfileState";
@@ -225,7 +225,7 @@ export function StudentProfile() {
 
       <Tabs tabs={tabs} value={activeTab} onChange={selectTab} ariaLabel={t("tabs.label")} idPrefix={PROFILE_ID_PREFIX} />
 
-      <div role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTab)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTab)} className="min-w-0">
+      <div key={activeTab} role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTab)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTab)} className={`${TAB_PANEL_ENTER_CLASS} min-w-0`}>
         {activeTab === "courses" && <StudentCoursesTab courses={courses} student={user} role={role} currentUserId={currentUserId} onEnrolled={() => refetch()} />}
         {activeTab === "performance" && <StudentProgressPanel key={profileKey} studentId={user.id} courses={courses} role={role} currentUserId={currentUserId} />}
         {activeTab === "documents" && <DocumentsTab key={profileKey} ownerType="student" ownerId={user.id} canManage={isSuperAdmin} ownerName={`${user.first_name} ${user.last_name}`} />}
