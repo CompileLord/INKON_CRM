@@ -154,10 +154,10 @@ function AttentionGroups({ attention, onPay }: { attention: DashboardAttention; 
             return (
               <li key={payment.enrollment_id} className="flex min-w-0 items-center justify-between gap-3 py-2">
                 <span className="flex min-w-0 flex-col">
-                  <Link to={`/students/${payment.student_id}`} title={payment.student_name} className="break-words text-sm font-medium text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Link to={`/students/${payment.student_id}`} title={payment.student_name} className="truncate text-sm font-medium text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {payment.student_name}
                   </Link>
-                  <span className="break-words text-sm text-muted">
+                  <span className="truncate text-sm text-muted" title={payment.course_title}>
                     {payment.course_title} · <span className="tabular-nums">{overdueDays > 0 ? t("overdueDays", { count: overdueDays }) : t("dueToday")}</span>
                   </span>
                 </span>

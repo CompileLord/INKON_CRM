@@ -60,6 +60,18 @@ describe("AttentionList", () => {
     vi.resetAllMocks();
   });
 
+  it("truncates a long unbroken debtor name with a title and keeps the pay button", () => {
+    const longName: string = "L".repeat(100);
+    const data: DashboardAttention = attentionFixture();
+    data.payments[0] = { ...data.payments[0], student_name: longName };
+    vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(queryResult({ data }));
+    renderAttention();
+    const link: HTMLElement = screen.getByRole("link", { name: longName });
+    expect(link.getAttribute("title")).toBe(longName);
+    expect(link.className).toContain("truncate");
+    expect(link.closest("li")?.querySelector("button")).toBeTruthy();
+  });
+
   it("renders every attention group", () => {
     vi.mocked(dashboardHooks.useDashboardAttention).mockReturnValue(queryResult({ data: attentionFixture() }));
     renderAttention();

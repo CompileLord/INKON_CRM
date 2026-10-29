@@ -211,7 +211,8 @@ describe("Payment detail receipt reversals", () => {
     const window2 = printed();
     const open = vi.spyOn(window, "open").mockReturnValue(window2 as unknown as Window);
     renderDetail();
-    expect((await screen.findByTestId("receipt-reversal")).textContent).toContain("Voided");
+    expect((await screen.findByTestId("receipt-reversal")).textContent).toBe("0 TJS");
+    expect(screen.getByText("This payment was voided.")).toBeTruthy();
     const button = screen.getByRole("button", { name: "Print receipt" });
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
     await userEvent.click(button);
@@ -227,8 +228,7 @@ describe("Payment detail receipt reversals", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(window2 as unknown as Window);
     renderDetail();
     const mark = await screen.findByTestId("receipt-reversal");
-    expect(mark.textContent).toContain("Refunded 100 TJS");
-    expect(mark.textContent).toContain("800.25 TJS");
+    expect(mark.textContent).toBe("800.25 TJS");
     const button = screen.getByRole("button", { name: "Print receipt" });
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
     await userEvent.click(button);

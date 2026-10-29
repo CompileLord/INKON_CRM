@@ -136,7 +136,7 @@ export function PaymentDetailModal({ payment, onClose }: PaymentDetailModalProps
             {receipt.data && isReversed && (
               <DetailRow icon={receiptStatus === "voided" ? <Ban size={16} /> : <Undo2 size={16} />} label={t("paymentDetail.netAmount")}>
                 <span data-testid="receipt-reversal" className={`font-medium tabular-nums ${receiptStatus === "voided" ? "text-destructive" : "text-warning"}`}>
-                  {reversalMark} · {t("moneyAmount", { amount: formatExactMoney(receipt.data.net_amount) })}
+                  {PaymentStatus.hasNotice(known) ? "" : `${reversalMark} · `}{t("moneyAmount", { amount: formatExactMoney(receipt.data.net_amount) })}
                 </span>
               </DetailRow>
             )}
