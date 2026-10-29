@@ -170,7 +170,7 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["REDIS_URL"] = TEST_REDIS_URL
 
 TEST_REDIS_PREFIX: str = f"wp09:{os.getpid()}:{uuid.uuid4().hex}:"
-test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool, future=True)
+test_engine = create_async_engine(TEST_DATABASE_URL, pool_size=5, max_overflow=40, future=True)
 TestingSessionLocal = async_sessionmaker(
     bind=test_engine,
     class_=AsyncSession,
@@ -250,12 +250,19 @@ async def setup_test_db() -> None:
     await test_engine.dispose()
 
 
+@pytest_asyncio.fixture
+async def dispose_schema_connections() -> AsyncGenerator[None, None]:
+    try:
+        yield
+    finally:
+        await test_engine.dispose()
+
+
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def clean_database():
-    async with TestingSessionLocal() as session:
-        for table in reversed(Base.metadata.sorted_tables):
-            await session.execute(table.delete())
-        await session.commit()
+    statements: str = " ".join(f'DELETE FROM "{table.name}";' for table in reversed(Base.metadata.sorted_tables))
+    async with test_engine.begin() as connection:
+        await connection.exec_driver_sql(f"DO $$ BEGIN {statements} END $$")
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
