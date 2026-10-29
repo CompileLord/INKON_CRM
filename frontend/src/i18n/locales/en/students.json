@@ -179,7 +179,7 @@
     "copied": "Copied",
     "codeLabel": "Parent link code",
     "codeExpires": "Valid until {{date}}",
-    "codeHint": "Shown once. Give it to the parent to type in the Telegram bot.",
+    "codeHint": "Shown once.",
     "codeError": "Could not generate the code. Please try again.",
     "copyError": "Could not copy the code. Select it and copy manually."
   },
