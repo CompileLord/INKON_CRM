@@ -47,7 +47,7 @@ async def get_students(
     )
     if current_user.role == UserRole.MENTOR:
         response: PaginatedResponse[StudentListItemResponse] = PaginatedResponse[StudentListItemResponse].model_validate(result, from_attributes=True)
-        return JSONResponse(response.model_dump(mode="json", exclude={"items": {"__all__": {"debt_amount": True, "payment_status": True, "payment_day_of_month": True, "courses": {"__all__": {"billing_mode"}}}}}))
+        return JSONResponse(response.model_dump(mode="json", exclude={"items": {"__all__": {"parent_telegram_chat_id": True, "parent_link_code_expires_at": True, "debt_amount": True, "payment_status": True, "payment_day_of_month": True, "courses": {"__all__": {"billing_mode"}}}}}))
     return result
 
 
@@ -86,7 +86,7 @@ async def get_my_profile(
         "performance": stats["performance"],
     }
     validated: StudentProfileResponse = StudentProfileResponse.model_validate(response, from_attributes=True)
-    return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month"}}))
+    return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month", "parent_telegram_chat_id", "parent_link_code_expires_at"}}))
 
 
 @router.get("/me/journals/page", response_model=StudentJournalHistoryPage, description=ContractNotes.JOURNAL_HISTORY_PAGE)
@@ -157,5 +157,5 @@ async def get_student_profile(
     }
     if current_user.role not in (UserRole.SUPERADMIN, UserRole.ACCOUNTANT):
         validated: StudentProfileResponse = StudentProfileResponse.model_validate(response, from_attributes=True)
-        return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month"}}))
+        return JSONResponse(validated.model_dump(mode="json", exclude={"user": {"payment_day_of_month", "parent_telegram_chat_id", "parent_link_code_expires_at"}}))
     return response
