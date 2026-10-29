@@ -214,7 +214,7 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         return list(result.scalars().all())
 
     async def count_active_mentor_courses(self, mentor_id: int) -> int:
-        result = await self.session.execute(select(func.count(Course.id)).where(
+        result: Result = await self.session.execute(select(func.count(Course.id)).where(
             Course.mentor_id == mentor_id, Course.status == CourseStatus.ACTIVE, Course.is_deleted.is_(False),
         ))
         return int(result.scalar_one())
