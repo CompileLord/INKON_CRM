@@ -1,6 +1,6 @@
 # KITOB CRM screenshots, 2026-10-29
 
-Visual record of the current app. UI taken from master commit `4b2f8fb Merge branch 'fix/phone-default-992'`, running on the UAT stack with fresh seed data. Language: Russian. Default shots are 1440x900 light theme (full page for pages, viewport for windows). Suffix `-dark` is 1440 dark theme, suffix `-390` is 390x844 light mobile. Mobile full-page shots show the fixed bottom navigation where it sat in the first viewport.
+Visual record of the current app. UI taken from master commit `4b2f8fb Merge branch 'fix/phone-default-992'`, running on the UAT stack with fresh seed data. Retaken from `0ce4cfb Merge branch 'fix/motion-polish'`: the journal tables (all roles, light/dark/390), audit list and details drawer, plus the new `32b` and `33b` shots. Language: Russian. Default shots are 1440x900 light theme (full page for pages, viewport for windows). Suffix `-dark` is 1440 dark theme, suffix `-390` is 390x844 light mobile. Mobile full-page shots show the fixed bottom navigation where it sat in the first viewport.
 
 ## Auth
 - [01-login.png](auth/01-login.png): Login page
@@ -51,7 +51,9 @@ Visual record of the current app. UI taken from master commit `4b2f8fb Merge bra
 - [32-finance-accept-payment-modal-390.png](superadmin/32-finance-accept-payment-modal-390.png): Accept payment modal (student with one course; debt filled) (mobile 390x844)
 - [32-finance-accept-payment-modal-dark.png](superadmin/32-finance-accept-payment-modal-dark.png): Accept payment modal (student with one course; debt filled) (dark theme)
 - [32-finance-accept-payment-modal.png](superadmin/32-finance-accept-payment-modal.png): Accept payment modal (student with one course; debt filled)
+- [32b-finance-discard-payment-confirm.png](superadmin/32b-finance-discard-payment-confirm.png): Discard confirmation after Escape on a filled payment (focus on «Продолжить редактирование»)
 - [33-finance-payment-detail.png](superadmin/33-finance-payment-detail.png): Payment detail with receipt print button
+- [33b-finance-receipt-partly-refunded.png](superadmin/33b-finance-receipt-partly-refunded.png): Partly refunded payment: refunded amount once, net total after refund
 - [34-audit-list.png](superadmin/34-audit-list.png): Audit list
 - [35-audit-details-drawer.png](superadmin/35-audit-details-drawer.png): Audit change details drawer
 - [36-settings-profile.png](superadmin/36-settings-profile.png): Settings, Profile
