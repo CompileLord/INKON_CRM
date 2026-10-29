@@ -1,8 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { JournalProgressRules, type ProgressChartStudent } from "../../lib/journals/JournalProgressRules";
+import { JournalAnchoredOverlay } from "./JournalAnchoredOverlay";
 import { AverageSwatch, MaximumSwatch, StudentSwatch } from "./JournalProgressChart";
+
+const POPOVER_WIDTH_PX = 288;
+const POPOVER_VIEWPORT_MARGIN_PX = 16;
 
 interface MoreStudentsMenuProps {
   students: ProgressChartStudent[];
@@ -27,18 +31,8 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
 }) => {
   const { t } = useTranslation("journals");
   const [open, setOpen] = useState<boolean>(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const closeOnOutside = (event: PointerEvent): void => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOnOutside);
-    return () => document.removeEventListener("pointerdown", closeOnOutside);
-  }, [open]);
 
   const firstSelectedIndex: number = Math.max(students.findIndex((student) => visibleIds.has(student.studentId)), 0);
 
@@ -53,7 +47,7 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
   };
 
   return (
-    <div ref={wrapperRef} className="relative shrink-0">
+    <div className="shrink-0">
       <button
         ref={triggerRef}
         type="button"
@@ -66,10 +60,14 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
         {hiddenCount > 0 ? t("progress.moreCount", { count: hiddenCount }) : t("progress.moreList")}
       </button>
       {open && (
-        <div
-          className="absolute right-0 top-full z-20 mt-1 flex w-[min(18rem,calc(100vw-2rem))] origin-top-right flex-col rounded-[12px] bg-card p-2 shadow-lg ring-1 ring-border motion-safe:animate-[card-scale-in_150ms_ease-out]"
-          data-testid="legend-more-popover"
+        <JournalAnchoredOverlay
+          anchorRef={triggerRef}
+          width={Math.min(POPOVER_WIDTH_PX, window.innerWidth - 2 * POPOVER_VIEWPORT_MARGIN_PX)}
+          role="none"
+          className="flex flex-col p-2"
+          onClose={(reason) => (reason === "escape" ? close() : setOpen(false))}
         >
+          <div data-testid="legend-more-popover" className="flex flex-col">
           {showBulkActions && (
             <div className="mb-1 flex gap-1 border-b border-border pb-1">
               <button type="button" onClick={onShowAll} className="min-h-11 rounded-[8px] px-2 text-sm font-semibold text-maroon-text hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-accent lg:min-h-9">
@@ -85,12 +83,6 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
             aria-multiselectable="true"
             aria-label={t("progress.moreListLabel")}
             className="flex max-h-64 flex-col overflow-y-auto overscroll-contain"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault();
-                close();
-              }
-            }}
           >
             {students.map((student, index) => {
               const selected: boolean = visibleIds.has(student.studentId);
@@ -126,12 +118,13 @@ const MoreStudentsMenu: React.FC<MoreStudentsMenuProps> = ({
                     {selected && <Check size={12} strokeWidth={3} />}
                   </span>
                   <StudentSwatch student={student} muted={!selected} />
-                  <span className="min-w-0 flex-1 break-words" title={student.name}>{student.name}</span>
+                  <span className="min-w-0 flex-1 break-words">{student.name}</span>
                 </button>
               );
             })}
           </div>
-        </div>
+          </div>
+        </JournalAnchoredOverlay>
       )}
     </div>
   );
@@ -196,7 +189,7 @@ export const JournalProgressLegend: React.FC<JournalProgressLegendProps> = ({
         </li>
         {plottedStudents.map((student) => (
           <li key={student.studentId} className="min-w-0 max-w-full">
-            <button type="button" aria-pressed onClick={() => onToggleStudent(student.studentId)} className={legendItemClass(true)} title={student.name}>
+            <button type="button" aria-pressed onClick={() => onToggleStudent(student.studentId)} className={legendItemClass(true)}>
               <StudentSwatch student={student} />
               <span className="min-w-0 break-words text-left">{student.name}</span>
               {youBadge(student)}
