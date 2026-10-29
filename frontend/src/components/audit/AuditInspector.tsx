@@ -5,6 +5,7 @@ import { formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
 import type { AuditChange, AuditEvent } from "../../lib/audit/api";
 import { QUIET_ACTION_CLASSES } from "../finance/quietActionClasses";
 import { SlideOver } from "../ui/SlideOver";
+import { useHeldWhileClosing } from "../ui/usePresence";
 import { AuditCategoryIcon } from "./AuditCategoryIcon";
 import { AuditSentence } from "./AuditSentence";
 import { useAuditLabels } from "./useAuditLabels";
@@ -43,13 +44,14 @@ function ChangeValues({ change }: { change: AuditChange }) {
   );
 }
 
-export function AuditInspector({ event, onClose, onShowRecord, returnFocusTo }: AuditInspectorProps) {
+export function AuditInspector({ event: currentEvent, onClose, onShowRecord, returnFocusTo }: AuditInspectorProps) {
+  const event: AuditEvent | null = useHeldWhileClosing(currentEvent, currentEvent !== null);
   const { t, i18n } = useTranslation("audit");
   const labels = useAuditLabels();
   const language: string = i18n.language;
 
   return (
-    <SlideOver open={event !== null} onClose={onClose} title={t("inspector.title")} variant="course" finalFocus={returnFocusTo}>
+    <SlideOver open={currentEvent !== null} onClose={onClose} title={t("inspector.title")} variant="course" finalFocus={returnFocusTo}>
       {event !== null && (
         <div className="@container flex flex-col gap-5">
           <div className="flex items-start gap-3">
