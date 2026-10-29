@@ -66,12 +66,36 @@ it("keeps the entry animation free of focus-dependent toggles after focus change
   const user = userEvent.setup();
   render(<Modal open title="Animated fixture" onClose={() => {}}><input aria-label="Name fixture"/><button>Press fixture</button></Modal>);
   const dialog: HTMLElement = screen.getByRole("dialog");
-  const surface: HTMLElement = document.querySelector<HTMLElement>("[class*=card-scale-in]") ?? dialog;
+  const surface: HTMLElement = dialog;
   const classBefore: string = surface.className;
-  expect(classBefore).toContain("card-scale-in_200ms_ease-out");
+  expect(classBefore).toContain("data-[starting-style]:scale-[0.96]");
+  expect(classBefore).toContain("data-[ending-style]:scale-[0.96]");
+  expect(classBefore).toContain("data-[ending-style]:motion-safe:duration-150");
   expect(classBefore).not.toContain("animate-none");
   expect(classBefore).not.toContain("focus-visible");
   await user.type(screen.getByLabelText("Name fixture"), "abc");
   await user.click(screen.getByRole("button", { name: "Press fixture" }));
   expect(surface.className).toBe(classBefore);
+});
+
+it("keeps the modal and its fading backdrop mounted during the exit animation, then unmounts", async () => {
+  let finishExit: () => void = () => {};
+  const exitFinished: Promise<void> = new Promise<void>((resolve) => { finishExit = resolve; });
+  Object.defineProperty(Element.prototype, "getAnimations", { configurable: true, value: () => [{ finished: exitFinished, effect: { getTiming: () => ({ duration: 150, iterations: 1 }) } }] });
+  try {
+    const user = userEvent.setup();
+    render(<Fixture />);
+    await user.click(screen.getByRole("button", { name: "Open first fixture" }));
+    const dialog: HTMLElement = await screen.findByRole("dialog");
+    expect(document.querySelector("[class*=bg-scrim]")?.className).toContain("data-[ending-style]:opacity-0");
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(dialog.hasAttribute("data-ending-style")).toBe(true));
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+    expect(document.querySelector("[class*=bg-scrim]")).not.toBeNull();
+    finishExit();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.querySelector("[class*=bg-scrim]")).toBeNull();
+  } finally {
+    delete (Element.prototype as unknown as Record<string, unknown>).getAnimations;
+  }
 });
