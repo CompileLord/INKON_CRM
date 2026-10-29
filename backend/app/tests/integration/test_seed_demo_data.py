@@ -38,8 +38,7 @@ class SeededDatabase:
         self.target: ResetTarget = target
 
 
-@pytest_asyncio.fixture
-async def seeded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> SeededDatabase:
+async def create_seeded_database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> SeededDatabase:
     backend_root: Path = tmp_path / "backend"
     backend_root.mkdir()
     guard, reset_target = DemoSeedTestFixture.create_disposable_reset_target(backend_root)
@@ -54,6 +53,30 @@ async def seeded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest
     return SeededDatabase(capsys.readouterr().out, reset_target)
 
 
+@pytest_asyncio.fixture
+async def seeded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> SeededDatabase:
+    async with AsyncSessionLocal() as session:
+        assert await session.scalar(select(func.count()).select_from(User)) == 0
+    return await create_seeded_database(tmp_path, monkeypatch, capsys)
+
+
+@pytest_asyncio.fixture
+async def shared_seeded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    shared_seed_state: dict[str, object],
+) -> SeededDatabase:
+    school_day: date = SchoolCalendar.today()
+    if shared_seed_state.get("school_day") != school_day:
+        shared_seed_state["seeded"] = await create_seeded_database(tmp_path, monkeypatch, capsys)
+        shared_seed_state["school_day"] = school_day
+        shared_seed_state["ready"] = True
+    result: object = shared_seed_state["seeded"]
+    assert isinstance(result, SeededDatabase)
+    return result
+
+
 async def all_users() -> list[User]:
     session: AsyncSession
     async with AsyncSessionLocal() as session:
@@ -64,8 +87,9 @@ async def students() -> list[User]:
     return [user for user in await all_users() if user.role == UserRole.STUDENT]
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_every_seeded_phone_is_e164_and_every_student_can_log_in_and_be_reached(seeded: SeededDatabase) -> None:
+async def test_every_seeded_phone_is_e164_and_every_student_can_log_in_and_be_reached(shared_seeded: SeededDatabase) -> None:
     users: list[User] = await all_users()
     assert len(users) > 30
     user: User
@@ -79,8 +103,9 @@ async def test_every_seeded_phone_is_e164_and_every_student_can_log_in_and_be_re
         assert student.must_set_password is False
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_students_cover_every_contact_case_including_siblings(seeded: SeededDatabase) -> None:
+async def test_students_cover_every_contact_case_including_siblings(shared_seeded: SeededDatabase) -> None:
     cohort: list[User] = await students()
     assert any(s.email and s.phone and s.parent_phone for s in cohort)
     assert any(s.email is None and s.phone and s.parent_phone is None for s in cohort)
@@ -91,39 +116,43 @@ async def test_students_cover_every_contact_case_including_siblings(seeded: Seed
     assert len(own_phones) == len(set(own_phones))
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_seeding_queues_no_sms_email_or_telegram_events(seeded: SeededDatabase) -> None:
+async def test_seeding_queues_no_sms_email_or_telegram_events(shared_seeded: SeededDatabase) -> None:
     session: AsyncSession
     async with AsyncSessionLocal() as session:
         assert await session.scalar(select(func.count()).select_from(OutboxEvent)) == 0
         assert await session.scalar(select(func.count()).select_from(NotificationLog)) == 0
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_active_parent_link_codes_exist_and_printed_codes_match_stored_hashes(seeded: SeededDatabase) -> None:
+async def test_active_parent_link_codes_exist_and_printed_codes_match_stored_hashes(shared_seeded: SeededDatabase) -> None:
     session: AsyncSession
     async with AsyncSessionLocal() as session:
         rows: list[TelegramLinkCode] = list((await session.scalars(select(TelegramLinkCode))).all())
     now: datetime = datetime.now(timezone.utc)
     active: list[TelegramLinkCode] = [row for row in rows if row.expires_at > now]
     assert len(active) >= 3
-    printed: list[tuple[str, str]] = LINK_CODE_LINE.findall(seeded.output)
+    printed: list[tuple[str, str]] = LINK_CODE_LINE.findall(shared_seeded.output)
     assert len(printed) == len(active)
     hasher: TelegramLinkCodeHasher = TelegramLinkCodeHasher(settings.JWT_SECRET_KEY)
     stored_hashes: set[str] = {row.code_hash for row in active}
     assert {hasher.hash_code(code) for code, _ in printed} == stored_hashes
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_report_lists_logins_without_echoing_provisioned_passwords(seeded: SeededDatabase) -> None:
-    assert "superadmin@mail.com" in seeded.output and "accountant@test.com" in seeded.output
-    assert ADMINISTRATOR_PASSWORD not in seeded.output and DEMO_PASSWORD not in seeded.output
+async def test_report_lists_logins_without_echoing_provisioned_passwords(shared_seeded: SeededDatabase) -> None:
+    assert "superadmin@mail.com" in shared_seeded.output and "accountant@test.com" in shared_seeded.output
+    assert ADMINISTRATOR_PASSWORD not in shared_seeded.output and DEMO_PASSWORD not in shared_seeded.output
     phone_only: User = next(s for s in await students() if s.email is None)
-    assert phone_only.phone in seeded.output
+    assert phone_only.phone in shared_seeded.output
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_demo_logins_authenticate_by_email_and_by_phone(client: AsyncClient, seeded: SeededDatabase) -> None:
+async def test_demo_logins_authenticate_by_email_and_by_phone(client: AsyncClient, shared_seeded: SeededDatabase) -> None:
     cohort: list[User] = await students()
     phone_only: User = next(s for s in cohort if s.email is None)
     emailed: User = next(s for s in cohort if s.email)
@@ -171,8 +200,9 @@ def seed_school_day(request: pytest.FixtureRequest, freeze_school_today: Callabl
     return SchoolCalendar.today()
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_seed_courses_remain_current_with_history(seed_school_day: date, seeded: SeededDatabase) -> None:
+async def test_seed_courses_remain_current_with_history(seed_school_day: date, shared_seeded: SeededDatabase) -> None:
     async with AsyncSessionLocal() as session:
         courses: list[Course] = list((await session.scalars(select(Course).order_by(Course.id))).all())
         assert len(courses) == 4
@@ -184,8 +214,9 @@ async def test_seed_courses_remain_current_with_history(seed_school_day: date, s
         assert await session.scalar(select(func.count()).select_from(LedgerEntry).where(LedgerEntry.type == LedgerEntryType.PAYMENT)) == 28
 
 
+@pytest.mark.shared_seed
 @pytest.mark.asyncio
-async def test_demo_full_tuition_students_have_no_remaining_balance(seed_school_day: date, seeded: SeededDatabase) -> None:
+async def test_demo_full_tuition_students_have_no_remaining_balance(seed_school_day: date, shared_seeded: SeededDatabase) -> None:
     from decimal import Decimal
     from app.services.finance_service import FinanceService
 
