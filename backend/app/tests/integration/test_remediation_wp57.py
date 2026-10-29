@@ -1,10 +1,8 @@
 import asyncio
 import json
-import os
 import statistics
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock
@@ -28,26 +26,29 @@ ROUTES: tuple[tuple[str, str, int], ...] = (
     ("/api/v1/cron/payment-reminders", "check_payment_reminders", 4),
 )
 HEADERS: dict[str, str] = {"X-Cloud-Scheduler-Secret": "wp57-test-secret"}
+pytestmark = pytest.mark.xdist_group("wp57_maintenance")
 
 
 @pytest_asyncio.fixture
 async def maintenance_pool(monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[ArqRedis, None]:
-    worker_name: str | None = os.environ.get("PYTEST_XDIST_WORKER")
-    if worker_name:
-        monkeypatch.setattr(
-            redis_module,
-            "redis_connection_configuration",
-            replace(redis_module.redis_connection_configuration, database=int(worker_name.removeprefix("gw"))),
-        )
     pool: ArqRedis = await create_pool(redis_module.redis_connection_configuration.create_arq_settings())
     pool.default_queue_name = f"wp57:queue:{uuid4().hex}"
-    await pool.flushdb()
+    original_enqueue: Callable[..., Awaitable[Any]] = pool.enqueue_job
+
+    async def enqueue_owned_job(*args: Any, **kwargs: Any) -> Any:
+        kwargs["_job_id"] = f"{pool.default_queue_name}:{kwargs.get('_job_id') or uuid4().hex}"
+        return await original_enqueue(*args, **kwargs)
+
+    monkeypatch.setattr(pool, "enqueue_job", enqueue_owned_job)
     monkeypatch.setattr(redis_module, "get_arq_pool", AsyncMock(return_value=pool))
     monkeypatch.setattr(cron.settings, "CRON_SECRET", "wp57-test-secret")
     try:
         yield pool
     finally:
-        await pool.flushdb()
+        owned_keys: list[bytes] = [key async for key in pool.scan_iter(match=f"arq:*:{pool.default_queue_name}:*")]
+        owned_keys.extend([key async for key in pool.scan_iter(match=f"{pool.default_queue_name}*")])
+        if owned_keys:
+            await pool.delete(*owned_keys)
         await pool.aclose()
 
 
@@ -176,7 +177,7 @@ async def test_completed_window_is_not_reenqueued(
         repeated: Response = await client.post(route, headers=HEADERS)
         assert repeated.json()["job_id"] == response.json()["job_id"]
         assert await maintenance_pool.zcard(maintenance_pool.default_queue_name) == 0
-        assert await maintenance_pool.ttl(f"arq:result:{response.json()['job_id']}") > 86400
+        assert await maintenance_pool.ttl(f"arq:result:{maintenance_pool.default_queue_name}:{response.json()['job_id']}") > 86400
     finally:
         await worker.close()
 
@@ -311,7 +312,9 @@ async def test_internal_schedule_uses_the_same_queue_and_deduplication(
     assert await maintenance_pool.zcard(maintenance_pool.default_queue_name) == 1
     response: Response = await client.post(route, headers=HEADERS)
     assert response.status_code == 202
-    assert await maintenance_pool.zrange(maintenance_pool.default_queue_name, 0, -1) == [response.json()["job_id"].encode()]
+    assert await maintenance_pool.zrange(maintenance_pool.default_queue_name, 0, -1) == [
+        f"{maintenance_pool.default_queue_name}:{response.json()['job_id']}".encode()
+    ]
 
 
 @pytest.mark.asyncio
