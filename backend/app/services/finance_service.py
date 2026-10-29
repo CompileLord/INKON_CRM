@@ -1015,11 +1015,11 @@ class FinanceService:
         payload: RefundPaymentPayload,
         current_user: User,
     ) -> LedgerEntry:
-        """Refund part or all of a payment (SuperAdmin only)."""
-        if current_user.role != UserRole.SUPERADMIN:
+        """Refund part or all of a payment."""
+        if current_user.role not in (UserRole.SUPERADMIN, UserRole.ACCOUNTANT):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only SuperAdmin can issue refunds",
+                detail="Only finance staff can issue refunds",
             )
 
         target = await self._get_payment_entry(payment_id)

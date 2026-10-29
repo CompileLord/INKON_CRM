@@ -137,7 +137,7 @@ async def void_payment(
 async def refund_payment(
     id: int = Path(..., ge=1),
     payload: RefundPaymentPayload = ...,
-    current_user: User = Depends(require_superadmin),
+    current_user: User = Depends(require_accountant),
     db: AsyncSession = Depends(get_db_session),
 ) -> LedgerEntry:
     finance_service = FinanceService(db)
