@@ -47,10 +47,10 @@ describe("compact chart legend", (): void => {
     expect(average.className).toContain("text-muted");
   });
 
-  it("wraps a long student name instead of truncating it and keeps the full name in a title", (): void => {
+  it("wraps a long student name instead of truncating it and adds no redundant native title", (): void => {
     render(<JournalProgressView courseId={1} />);
     const bahor: HTMLElement = screen.getByRole("button", { name: /Bahor Tester/ });
-    expect(bahor.getAttribute("title")).toBe("Bahor Tester");
+    expect(bahor.getAttribute("title")).toBeNull();
     const nameSpan: Element | null = bahor.querySelector("span.break-words");
     expect(nameSpan?.textContent).toBe("Bahor Tester");
     expect(nameSpan?.className).not.toContain("truncate");

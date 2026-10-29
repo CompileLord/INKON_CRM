@@ -137,7 +137,7 @@ describe("Progress score chart", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(document.activeElement).toBe(more);
     fireEvent.click(more);
-    fireEvent.pointerDown(document.body);
+    fireEvent.mouseDown(document.body);
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
