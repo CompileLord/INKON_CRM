@@ -461,3 +461,16 @@ it("applies course variant geometry with 560px width from 768px breakpoint and p
   expect(dialog.className).toContain("grid-rows-[auto_minmax(0,1fr)_auto]");
   expect(screen.getByText("Submit")).toBeTruthy();
 });
+
+it("keeps the drawer entry animation free of focus-dependent toggles", async () => {
+  const user = userEvent.setup();
+  render(<SlideOver open title="Animated drawer" onClose={() => {}}><input aria-label="Drawer field"/><button>Drawer press</button></SlideOver>);
+  const surface: HTMLElement | null = document.querySelector<HTMLElement>("[class*=card-scale-in]");
+  expect(surface).not.toBeNull();
+  const classBefore: string = surface!.className;
+  expect(classBefore).not.toContain("animate-none");
+  expect(classBefore).not.toContain("focus-visible");
+  await user.type(screen.getByLabelText("Drawer field"), "abc");
+  await user.click(screen.getByRole("button", { name: "Drawer press" }));
+  expect(surface!.className).toBe(classBefore);
+});

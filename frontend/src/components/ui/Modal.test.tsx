@@ -61,3 +61,17 @@ it("supports caller-owned finalFocus and blocks dismissal when closeDisabled is 
   }
   expect(onClose).not.toHaveBeenCalled();
 });
+
+it("keeps the entry animation free of focus-dependent toggles after focus changes", async () => {
+  const user = userEvent.setup();
+  render(<Modal open title="Animated fixture" onClose={() => {}}><input aria-label="Name fixture"/><button>Press fixture</button></Modal>);
+  const dialog: HTMLElement = screen.getByRole("dialog");
+  const surface: HTMLElement = document.querySelector<HTMLElement>("[class*=card-scale-in]") ?? dialog;
+  const classBefore: string = surface.className;
+  expect(classBefore).toContain("card-scale-in_200ms_ease-out");
+  expect(classBefore).not.toContain("animate-none");
+  expect(classBefore).not.toContain("focus-visible");
+  await user.type(screen.getByLabelText("Name fixture"), "abc");
+  await user.click(screen.getByRole("button", { name: "Press fixture" }));
+  expect(surface.className).toBe(classBefore);
+});
