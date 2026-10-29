@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional, Sequence
-from sqlalchemy import and_, case, exists, func, or_, select, update
+from sqlalchemy import and_, case, exists, func, or_, select, text, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -20,7 +20,7 @@ class SQLAlchemyExamResultNotificationRepository:
         )
         upsert = statement.on_conflict_do_update(
             index_elements=[ExamResultNotification.student_id, ExamResultNotification.journal_id],
-            index_where=ExamResultNotification.status == ExamResultNotificationStatus.PENDING.value,
+            index_where=text(f"status = '{ExamResultNotificationStatus.PENDING.value}'"),
             set_={
                 "due_at": due_at,
                 "attempt_count": 0,

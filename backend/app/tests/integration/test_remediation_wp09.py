@@ -249,6 +249,7 @@ def test_namespaced_redis_pipeline_rejects_global_commands() -> None:
 @pytest.mark.asyncio
 async def test_pytest_autouse_cleanup_finalizes_after_failed_child_test(
     test_redis_connection: Any,
+    dispose_schema_connections: None,
 ) -> None:
     foreign_key: str = f"wp09:failed-test-sentinel:{uuid4().hex}"
     await test_redis_connection.set(foreign_key, "preserve")
