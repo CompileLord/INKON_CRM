@@ -245,6 +245,7 @@ class EnrollmentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
         finance_service: FinanceService = FinanceService(self.db)
         await finance_service.lock_student_accounts([enrollment.student_id])
+        await self.db.refresh(enrollment)
         if enrollment.status == EnrollmentStatus.WITHDRAWN:
             return enrollment
         course: Course | None = await self.course_repo.get_by_id(enrollment.course_id)
