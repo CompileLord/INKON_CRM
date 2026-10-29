@@ -8,10 +8,13 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import text
 import app.core.deps as deps_module
 import app.db.session as db_session_module
 import app.workers.tasks as worker_tasks_module
 from app.core.redis import redis_client
+from app.core.config import settings
+from app.tests.conftest import TEST_SCHEMA, test_engine
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
@@ -39,7 +42,7 @@ class RedisFixtureFinalizationProbe:
                     f"--basetemp={basetemp}",
                 ],
                 cwd=self.backend_root,
-                env=os.environ.copy(),
+                env={**os.environ, "PYTEST_XDIST_WORKER": f"probe_{uuid4().hex}"},
                 capture_output=True,
                 text=True,
                 check=False,
@@ -53,6 +56,14 @@ def test_request_and_worker_sessions_share_the_dedicated_test_factory() -> None:
     assert db_session_module.AsyncSessionLocal is deps_module.AsyncSessionLocal
     assert deps_module.AsyncSessionLocal is worker_tasks_module.AsyncSessionLocal
     assert deps_module.AsyncSessionLocal.kw["bind"].url.database == "imkon_test_db"
+
+
+@pytest.mark.asyncio
+async def test_worker_connections_and_storage_use_their_own_namespace() -> None:
+    async with test_engine.connect() as connection:
+        assert await connection.scalar(text("SELECT current_schema()")) == TEST_SCHEMA
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        assert Path(settings.STORAGE_PATH).name == TEST_SCHEMA
 
 
 @pytest.mark.parametrize(

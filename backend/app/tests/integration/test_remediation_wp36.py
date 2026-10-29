@@ -312,8 +312,10 @@ async def test_same_month_postings_for_different_students_hold_shared_locks_toge
                 (
                     await session.scalars(
                         text(
-                            "SELECT mode FROM pg_locks WHERE locktype = 'advisory' AND classid = :namespace "
-                            "AND objid = :period_key AND granted"
+                            "SELECT locks.mode FROM pg_locks AS locks JOIN pg_stat_activity AS activity USING (pid) "
+                            "WHERE locks.locktype = 'advisory' AND locks.classid = :namespace "
+                            "AND locks.objid = :period_key AND locks.granted "
+                            "AND activity.application_name = current_setting('application_name')"
                         ).bindparams(namespace=PERIOD_LOCK_NAMESPACE, period_key=expected_key)
                     )
                 ).all()
@@ -328,7 +330,9 @@ async def test_same_month_postings_for_different_students_hold_shared_locks_toge
     async with TestingSessionLocal() as session:
         remaining: int = (
             await session.scalar(
-                text("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND classid = :namespace").bindparams(
+                text("SELECT count(*) FROM pg_locks AS locks JOIN pg_stat_activity AS activity USING (pid) "
+                     "WHERE locks.locktype = 'advisory' AND locks.classid = :namespace "
+                     "AND activity.application_name = current_setting('application_name')").bindparams(
                     namespace=PERIOD_LOCK_NAMESPACE
                 )
             )
@@ -384,7 +388,9 @@ async def test_void_locks_both_months_sorted_after_account_lock_and_holds_until_
         await session.commit()
         remaining: int = (
             await session.scalar(
-                text("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND classid = :namespace").bindparams(
+                text("SELECT count(*) FROM pg_locks AS locks JOIN pg_stat_activity AS activity USING (pid) "
+                     "WHERE locks.locktype = 'advisory' AND locks.classid = :namespace "
+                     "AND activity.application_name = current_setting('application_name')").bindparams(
                     namespace=PERIOD_LOCK_NAMESPACE
                 )
             )

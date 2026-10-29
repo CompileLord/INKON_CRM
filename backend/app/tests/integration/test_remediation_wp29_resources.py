@@ -1,8 +1,11 @@
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 from unittest.mock import AsyncMock
 
 import pytest
+from redis.asyncio.connection import Connection
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +56,22 @@ class TestNotificationOutboxResources:
         from app.workers.settings import outbox_worker_shutdown
 
         scenario: NotificationScenario = await NotificationScenario.create(test_student, test_admin, tmp_path)
+        client_name: str = f"wp29-lifecycle-{uuid4().hex}"
+        original_on_connect: Callable[[Connection], Awaitable[None]] = Connection.on_connect
+
+        async def named_on_connect(connection: Connection) -> None:
+            await original_on_connect(connection)
+            await connection.send_command("CLIENT", "SETNAME", client_name)
+            await connection.read_response()
+
+        monkeypatch.setattr(Connection, "on_connect", named_on_connect)
         observer: Redis = Redis.from_url(settings.REDIS_URL)
+
+        async def own_clients() -> int:
+            listed_clients: list[dict[str, Any]] = await observer.client_list()
+            return sum(1 for listed_client in listed_clients if listed_client.get("name") == client_name)
+
+        await own_clients()
         pool_creation: AsyncMock = AsyncMock(wraps=arq.create_pool)
         monkeypatch.setattr(arq, "create_pool", pool_creation)
         monkeypatch.setattr(settings, "TESTING", False)
@@ -68,7 +86,7 @@ class TestNotificationOutboxResources:
         try:
             for trial in range(3):
                 pool_creation.reset_mock()
-                baseline_clients: int = int((await observer.info("clients"))["connected_clients"])
+                baseline_clients: int = await own_clients()
                 started_at: float = perf_counter()
                 async with TestingSessionLocal() as session:
                     upload_index: int
@@ -77,12 +95,12 @@ class TestNotificationOutboxResources:
                     await session.commit()
                 transaction_seconds.append(perf_counter() - started_at)
                 request_pool_creations: int = pool_creation.await_count
-                clients_after_requests: int = int((await observer.info("clients"))["connected_clients"])
+                clients_after_requests: int = await own_clients()
                 dispatched: int = await worker.run_once(TestingSessionLocal)
                 dispatch_pool_creations: int = pool_creation.await_count
-                clients_after_dispatch: int = int((await observer.info("clients"))["connected_clients"])
+                clients_after_dispatch: int = await own_clients()
                 await outbox_worker_shutdown({})
-                clients_after_shutdown: int = int((await observer.info("clients"))["connected_clients"])
+                clients_after_shutdown: int = await own_clients()
                 trials.append({"trial": trial, "uploads": uploads,
                     "request_pool_creations": request_pool_creations, "total_pool_creations": dispatch_pool_creations,
                     "dispatched": dispatched, "clients_baseline": baseline_clients,
