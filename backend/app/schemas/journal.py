@@ -158,7 +158,7 @@ class JournalExamMaxScoreUpdateResponse(BaseModel):
 class ClassJournalEntryResponse(BaseModel):
     id: int
     lesson_date: date
-    attendance: bool
+    attendance: bool | None
     score: int
     comment: Optional[str] = None
     has_comment: bool = False
