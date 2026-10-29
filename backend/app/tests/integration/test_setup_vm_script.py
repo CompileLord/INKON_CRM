@@ -158,5 +158,3 @@ def test_vm_setup_requires_existing_password_for_initialized_database(
     assert not password_file.exists()
     assert "password" in process.stderr.lower()
     assert "DATABASE_URL=" not in process.stdout
-
-

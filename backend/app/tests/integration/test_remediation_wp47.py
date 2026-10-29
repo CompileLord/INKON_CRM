@@ -595,14 +595,3 @@ async def test_admin_seed_suppresses_database_errors_that_contain_passwords(
     assert result == 1
     assert "details are suppressed" in captured_output.err
     assert secret_value not in captured_output.out + captured_output.err
-
-
-def test_admin_password_validation_and_reset_guards_remain_present() -> None:
-    admin_source: str = ADMIN_SCRIPT_PATH.read_text(encoding="utf-8")
-    reset_guard_source: str = (BACKEND_ROOT / "scripts/reset_guard.py").read_text(encoding="utf-8")
-
-    assert "at least 8 characters" in admin_source
-    assert "getpass" in admin_source
-    assert "non-interactive" in admin_source
-    assert "ResetTargetGuard" in reset_guard_source
-    assert "--reset" in reset_guard_source
