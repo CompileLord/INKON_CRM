@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -10,9 +10,11 @@ from app.models.course import Course, CourseExamType
 from app.models.enrollment import Enrollment
 from app.models.journal import Journal, JournalPeriodType
 from app.models.notification_log import NotificationLog, NotificationStatus, NotificationType
+from app.models.outbox_event import OutboxEvent, OutboxEventKind, OutboxEventStatus
 from app.models.user import User
 from app.repositories.sqlalchemy.notification_log_repository import SQLAlchemyNotificationLogRepository
 from app.repositories.sqlalchemy.notification_context import NotificationContext
+from app.repositories.sqlalchemy.delivery_log_page import DeliveryLogPage
 
 
 @pytest.mark.asyncio
@@ -39,10 +41,54 @@ async def test_log_context_and_query_count(db_session: AsyncSession, test_studen
     items, total = await repository.delivery_page(1, 100, None)
     event.remove(connection.sync_connection, "before_cursor_execute", record)
     assert total == 2
-    assert len(count) == 2
+    assert len(count) == 3
     by_id: dict[int, dict[str, Any]] = {item["id"]: item for item in items}
     assert (by_id[reminder.id]["student_id"], by_id[reminder.id]["course_id"], by_id[reminder.id]["course_title"], by_id[reminder.id]["amount"], by_id[reminder.id]["score"]) == (test_student.id, course.id, "Algebra", "300.00", None)
     assert (by_id[exam.id]["student_id"], by_id[exam.id]["course_id"], by_id[exam.id]["course_title"], by_id[exam.id]["amount"], by_id[exam.id]["score"]) == (test_student.id, course.id, "Algebra", None, 87)
+
+
+    legacy_items: list[dict[str, Any]]
+    legacy_total: int
+    legacy_items, legacy_total = await DeliveryLogPage(db_session).legacy(2, 1, None)
+    assert legacy_total == 2
+    assert len(legacy_items) == 1
+
+    single_items: list[dict[str, Any]]
+    single_total: int
+    single_items, single_total = await repository.delivery_page(1, 100, None, reminder.id)
+    assert single_total == 1
+    assert [item["id"] for item in single_items] == [reminder.id]
+    _, single_total = await repository.delivery_page(2, 1, None, reminder.id)
+    assert single_total == 1
+    _, single_total = await repository.delivery_page(1, 100, NotificationStatus.SENT, reminder.id)
+    assert single_total == 0
+
+    sms: OutboxEvent = OutboxEvent(kind=OutboxEventKind.DEBT_REMINDER_SMS, status=OutboxEventStatus.PENDING, recipient_email="", subject="", target_user_id=test_student.id, created_at=datetime(2026, 10, 2, tzinfo=timezone.utc))
+    db_session.add(sms)
+    await db_session.flush()
+    count.clear()
+    event.listen(connection.sync_connection, "before_cursor_execute", record)
+    items, total = await repository.delivery_page(1, 100, None)
+    event.remove(connection.sync_connection, "before_cursor_execute", record)
+    assert total == 3
+    assert len(count) == 4
+    assert {item["id"] for item in items} == {reminder.id, exam.id, -sms.id}
+
+    count.clear()
+    event.listen(connection.sync_connection, "before_cursor_execute", record)
+    items, total = await repository.delivery_page(1, 2, None)
+    event.remove(connection.sync_connection, "before_cursor_execute", record)
+    assert total == 3
+    assert len(count) == 4
+    assert len(items) == 2
+
+    count.clear()
+    event.listen(connection.sync_connection, "before_cursor_execute", record)
+    items, total = await repository.delivery_page(1, 1, None)
+    event.remove(connection.sync_connection, "before_cursor_execute", record)
+    assert total == 3
+    assert len(count) == 3
+    assert [item["id"] for item in items] == [-sms.id]
 
 
 def test_legacy_exam_score_marker() -> None:
