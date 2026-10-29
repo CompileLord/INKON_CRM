@@ -28,6 +28,9 @@
     "generic": {
       "title": "Notification",
       "body": "You have a new message."
+    },
+    "debtReminderSms": {
+      "title": "Debt reminder (SMS)"
     }
   },
   "unread": "Unread",
@@ -65,7 +68,12 @@
     },
     "emptyNext": "Payment reminders and exam results sent to students and parents will appear here.",
     "emptyFailedNext": "Failed messages show up here so you can retry them.",
-    "score": "Score: {{score}}"
+    "score": "Score: {{score}}",
+    "reasons": {
+      "no_current_debt": "Not sent: the student had no current debt.",
+      "no_current_debt_or_parent": "Not sent: no current debt or no parent contact.",
+      "delivery_outcome_unknown": "Delivery result is unknown."
+    }
   },
   "inboxEmpty": "No notifications yet",
   "inboxEmptyNextStep": {
