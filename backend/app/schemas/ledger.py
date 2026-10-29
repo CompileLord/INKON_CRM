@@ -138,6 +138,7 @@ class PaymentOptionResponse(BaseModel):
     overdue_days: int
     remaining_contract_maximum: Decimal
     billing_mode: str
+    status: str
 
 
 class PaymentOptionsResponse(BaseModel):

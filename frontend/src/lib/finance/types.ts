@@ -135,6 +135,7 @@ export interface PaymentOption {
   overdue_days: number;
   remaining_contract_maximum: string;
   billing_mode: string;
+  status?: "active" | "withdrawn";
 }
 
 export interface PaymentOptions {

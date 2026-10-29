@@ -3094,6 +3094,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
         "overdue_days": integer,
         "remaining_contract_maximum": string,
         "billing_mode": string,
+        "status": string,
       }
     ],
   }

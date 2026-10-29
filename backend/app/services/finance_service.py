@@ -804,11 +804,9 @@ class FinanceService:
         )).all()}
         for target in targets:
             enrollment = enrollments.get(target.enrollment_id)
-            if enrollment is None or (enrollment.status != EnrollmentStatus.ACTIVE and not (
-                course_id is not None and enrollment.status == EnrollmentStatus.WITHDRAWN
-            )):
+            if enrollment is None or enrollment.status not in (EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN):
                 raise HTTPException(status_code=422, detail={"code": "invalid_payment_target"})
-            maximum: Decimal = ZERO if enrollment.effective_billing_mode == BillingMode.GRANT else balances.get(target.enrollment_id, ZERO)
+            maximum: Decimal = balances.get(target.enrollment_id, ZERO)
             if target.amount > maximum:
                 raise HTTPException(status_code=422, detail={"code": "payment_target_exceeds_balance", "enrollment_id": target.enrollment_id, "maximum": format(maximum, ".2f")})
 
@@ -1888,14 +1886,16 @@ class FinanceService:
             select(Enrollment, Course.title, charge_totals.c.maximum, charge_totals.c.open_debt, charge_totals.c.oldest_due)
             .join(Course, Course.id == Enrollment.course_id)
             .outerjoin(charge_totals, charge_totals.c.enrollment_id == Enrollment.id)
-            .where(Enrollment.student_id == student_id, Enrollment.status == EnrollmentStatus.ACTIVE,
+            .where(Enrollment.student_id == student_id,
+                   or_(Enrollment.status == EnrollmentStatus.ACTIVE,
+                       and_(Enrollment.status == EnrollmentStatus.WITHDRAWN, charge_totals.c.maximum > ZERO)),
                    Enrollment.is_deleted.is_(False)).order_by(Course.title, Enrollment.id)
         )
         return {"wallet_credit": await self.get_unallocated_credit(student_id), "enrollments": [
             {"enrollment_id": enrollment.id, "course_id": enrollment.course_id, "course_title": title,
              "open_debt": debt or ZERO, "remaining_contract_maximum": maximum or ZERO,
              "overdue_days": max(0, (today - oldest_due).days) if oldest_due else 0,
-             "billing_mode": enrollment.effective_billing_mode}
+             "billing_mode": enrollment.effective_billing_mode, "status": enrollment.status}
             for enrollment, title, maximum, debt, oldest_due in rows.all()
         ]}
 
