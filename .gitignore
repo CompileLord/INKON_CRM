@@ -60,12 +60,6 @@ tasks/
 # Screenshots and visual captures
 **/screenshots/
 screenshots/
-docs/**/*.png
-docs/**/*.jpg
-docs/**/*.jpeg
-docs/**/*.webp
-docs/**/*.html
 
-# Redesign execution - exclude everything except README.md
-docs/redesign-execution/*
-!docs/redesign-execution/README.md
+# Documentation
+docs/
