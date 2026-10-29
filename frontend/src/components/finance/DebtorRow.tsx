@@ -8,6 +8,7 @@ import { formatDateTime, formatNumber } from "../../i18n/formatters";
 import { DebtReminders } from "../../lib/finance/debtReminders";
 import { Button } from "../ui/Button";
 import { PersonAvatar } from "../ui/PersonAvatar";
+import { EnrollmentStatusBadge } from "../enrollments/EnrollmentStatusBadge";
 import { GrantBadge } from "../enrollments/GrantBadge";
 import { DebtorDetails } from "./DebtorDetails";
 
@@ -22,9 +23,10 @@ interface DebtorRowProps {
   extraAction?: ReactNode;
   onRemind?: (debt: DebtItem) => void;
   isReminding?: boolean;
+  remindable?: boolean;
 }
 
-export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isExpanded, onToggleDetails, onAcceptPayment, extraAction, onRemind, isReminding = false }: DebtorRowProps) {
+export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isExpanded, onToggleDetails, onAcceptPayment, extraAction, onRemind, isReminding = false, remindable = true }: DebtorRowProps) {
   const { t, i18n } = useTranslation("finance");
   const studentName: string = `${debt.student.first_name} ${debt.student.last_name}`;
   const detailsId: string = `debtor-details-${rowKey}`;
@@ -64,6 +66,7 @@ export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isE
           <p className="flex min-w-0 items-center gap-2 text-muted">
             <span className="truncate">{debt.course.title}</span>
             <GrantBadge billingMode={debt.billing_mode} />
+            {debt.enrollment_status === "withdrawn" && <EnrollmentStatusBadge status="withdrawn" />}
           </p>
         </div>
         {debt.overdue_days > 0 && (
@@ -75,7 +78,7 @@ export function DebtorRow({ debt, rowKey, showStudentNumber, canOpenProfile, isE
         <p className="shrink-0 text-right font-semibold tabular-nums">{t("moneyAmount", { amount: formatExactMoney(debt.debt) })}</p>
         <div data-debtor-actions className="flex shrink-0 items-center gap-2">
           {extraAction}
-          {onRemind && (
+          {onRemind && remindable && (
             <Button variant="secondary" disabled={!canRemind} disabledReason={channelHint} loading={isReminding} aria-label={t("reminders.actionFor", { student: studentName })} onClick={() => onRemind(debt)}>
               {t("reminders.action")}
             </Button>
