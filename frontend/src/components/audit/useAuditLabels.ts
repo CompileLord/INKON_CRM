@@ -8,6 +8,7 @@ export interface AuditLabels {
   entityLabel: (entityType: string) => string;
   fieldLabel: (fieldName: string) => string;
   valueText: (fieldName: string, value: string | null) => string;
+  isDisplayable: (fieldName: string, value: string | null) => boolean;
   actorName: (subject: { actor_name?: string | null; user_id?: number | null }) => string;
   weekdayName: (weekday: number) => string;
   sentenceKey: (action: string) => string;
@@ -44,6 +45,7 @@ export function useAuditLabels(): AuditLabels {
       const { fieldNames } = AuditPresentation.expandChangedFields([{ id: 0, field_name: fieldName, old_value: null, new_value: descriptor.text }]);
       return fieldNames.map((name) => fieldLabel(name).toLowerCase()).join(", ");
     }
+    if (AuditPresentation.isTechnicalValue(descriptor.text)) return t("values.unavailable");
     if (ISO_TIMESTAMP_PATTERN.test(descriptor.text)) return formatDateTime(descriptor.text, i18n.language, SCHOOL_TIMEZONE);
     if (CALENDAR_DATE_PATTERN.test(descriptor.text)) return formatDate(descriptor.text, i18n.language, SCHOOL_TIMEZONE);
     if (AuditPresentation.scheduleSlot(fieldName) !== null) return AuditPresentation.trimTime(descriptor.text);
@@ -72,6 +74,7 @@ export function useAuditLabels(): AuditLabels {
     entityLabel,
     fieldLabel,
     valueText,
+    isDisplayable: (fieldName, value) => value === null || !AuditPresentation.isTechnicalValue(value) || fieldName === "changed_fields",
     actorName: (subject) => subject.actor_name ?? (subject.user_id == null ? t("actor.system") : t("filters.actorUnavailable")),
     weekdayName,
     statementKey,

@@ -129,7 +129,9 @@
     "password_sms_queued": "SMS бо рамз",
     "schedules": "Ҷадвал",
     "scheduleStart": "Оғози дарс, {{day}}",
-    "scheduleEnd": "Анҷоми дарс, {{day}}"
+    "scheduleEnd": "Анҷоми дарс, {{day}}",
+    "cancelled_amount": "Маблағи бекоршуда",
+    "months_cancelled": "Моҳҳои бекоршуда"
   },
   "values": {
     "none": "Арзиш нест",
@@ -172,7 +174,8 @@
     "queueReason": {
       "initial": "Маълумоти аввалини воридшавӣ",
       "reset": "Рамзи нав"
-    }
+    },
+    "unavailable": "Дастнорас"
   },
   "states": {
     "loading": "Боркунии тағйирот",
@@ -209,7 +212,9 @@
     "similarCount": "Тағйироти монанд: {{count}}",
     "showSimilar": "Ҳамаро нишон диҳед",
     "hideSimilar": "Пинҳон кардан",
-    "detailsSuffix": ": {{details}}"
+    "detailsSuffix": ": {{details}}",
+    "withdrawalSummary": "Моҳҳои бекоршуда: {{months}} · Маблағ: {{amount}}",
+    "withdrawalNoCharges": "Ҳисобҳо бекор нашуданд"
   },
   "moneyAmount": "{{amount}} TJS",
   "actor": {
@@ -302,7 +307,8 @@
       },
       "delete": {
         "any": "<actor>{{actor}}</actor> сабти номи {{name}}-ро аз курси {{course}} нест кард"
-      }
+      },
+      "withdraw": "<actor>{{actor}}</actor> донишҷӯи {{name}}-ро аз курси {{course}} хориҷ кард"
     },
     "course": {
       "create": {

@@ -129,7 +129,9 @@
     "password_sms_queued": "SMS с паролем",
     "schedules": "Расписание",
     "scheduleStart": "Начало занятий, {{day}}",
-    "scheduleEnd": "Конец занятий, {{day}}"
+    "scheduleEnd": "Конец занятий, {{day}}",
+    "cancelled_amount": "Отменённая сумма",
+    "months_cancelled": "Отменено месяцев"
   },
   "values": {
     "none": "Нет значения",
@@ -172,7 +174,8 @@
     "queueReason": {
       "initial": "Первые данные для входа",
       "reset": "Новый пароль"
-    }
+    },
+    "unavailable": "Недоступно"
   },
   "states": {
     "loading": "Загрузка изменений",
@@ -211,7 +214,9 @@
     "similarCount": "Похожих изменений: {{count}}",
     "showSimilar": "Показать все",
     "hideSimilar": "Скрыть",
-    "detailsSuffix": ": {{details}}"
+    "detailsSuffix": ": {{details}}",
+    "withdrawalSummary": "Отменено месяцев: {{months}} · На сумму: {{amount}}",
+    "withdrawalNoCharges": "Начисления не отменялись"
   },
   "moneyAmount": "{{amount}} TJS",
   "actor": {
@@ -304,7 +309,8 @@
       },
       "delete": {
         "any": "<actor>{{actor}}</actor> удалил запись студента {{name}} с курса {{course}}"
-      }
+      },
+      "withdraw": "<actor>{{actor}}</actor> отчислил(а) студента {{name}} с курса {{course}}"
     },
     "course": {
       "create": {

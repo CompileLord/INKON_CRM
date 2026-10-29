@@ -127,6 +127,10 @@ export class AuditPresentation {
     return qualified ? qualified[1].toLowerCase() : value;
   }
 
+  static isTechnicalValue(value: string): boolean {
+    return /^\s*[{\[<(]/.test(value);
+  }
+
   static isSnakeCaseIdentifier(value: string): boolean {
     return /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(value);
   }
