@@ -298,6 +298,11 @@ class UserService:
                 detail="User not found"
             )
 
+        if user.role == UserRole.MENTOR:
+            active_course_count: int = await self.user_repo.count_active_mentor_courses(user_id)
+            if active_course_count:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail={"code": "mentor_has_active_courses", "course_count": active_course_count})
+
         if user.role == UserRole.STUDENT:
             enrollment_service: EnrollmentService = EnrollmentService(self.db)
             await enrollment_service.withdraw_active_enrollments_for_student(user_id, current_user_id)

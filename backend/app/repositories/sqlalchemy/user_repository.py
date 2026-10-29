@@ -213,6 +213,12 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         result: Result[tuple[Course]] = await self.session.execute(statement)
         return list(result.scalars().all())
 
+    async def count_active_mentor_courses(self, mentor_id: int) -> int:
+        result = await self.session.execute(select(func.count(Course.id)).where(
+            Course.mentor_id == mentor_id, Course.status == CourseStatus.ACTIVE, Course.is_deleted.is_(False),
+        ))
+        return int(result.scalar_one())
+
     async def get_mentor_profile_stats(self, mentor_id: int) -> Dict[str, Any]:
         courses_query: Select[tuple[Course]] = select(Course).filter(
             Course.mentor_id == mentor_id,
