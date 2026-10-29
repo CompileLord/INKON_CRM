@@ -95,6 +95,8 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const draftsChanged: boolean = Object.keys(drafts).some((key) => (drafts[Number(key)] ?? "") !== (baselineDrafts.current[Number(key)] ?? ""));
   const dirty: boolean = draftsChanged || comment !== "" || method !== "cash" || paidAt !== initialDate || student?.id !== initialStudent?.id;
   const studentLabel: string = student?.name ?? "";
+  const liveProblems: Record<number, TargetRowProblem> = Object.fromEntries(plan.invalidEnrollmentIds.map((id: number): [number, TargetRowProblem] => [id, { messageKey: "paymentModal.invalidAmount" }]));
+  const hasInvalidAmount: boolean = plan.invalidEnrollmentIds.length > 0;
 
   useEffect(() => {
     if (prefilled.current || defaultCourseId === undefined || !paymentOptions.data) return;
@@ -279,7 +281,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
         <Button variant="secondary" disabled={pending} onClick={requestClose}>
           {t("common:cancel")}
         </Button>
-        <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired}>
+        <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired || hasInvalidAmount} disabledReason={hasInvalidAmount ? t("finance:paymentModal.invalidAmount") : undefined}>
           {t(pending ? "finance:paymentModal.recording" : "finance:paymentModal.acceptPayment")}
         </Button>
       </div>
@@ -375,7 +377,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                 studentId={student.id}
                 paymentOptions={paymentOptions}
                 drafts={drafts}
-                problems={rowProblems}
+                problems={{ ...liveProblems, ...rowProblems }}
                 total={plan.total}
                 fieldProblem={problemFor("targets")}
                 failureKey={targetFailureKey}

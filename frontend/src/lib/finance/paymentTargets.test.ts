@@ -19,11 +19,11 @@ describe("PaymentTargets.plan", () => {
     ]);
   });
 
-  it("skips zero and blank rows and reports unparsable rows", () => {
+  it("reports zero and unparsable rows as invalid and skips blank ones", () => {
     const plan = PaymentTargets.plan(options, { 1: "0", 2: "abc" });
     expect(plan.targets).toEqual([]);
     expect(plan.total).toBe("0");
-    expect(plan.invalidEnrollmentIds).toEqual([2]);
+    expect(plan.invalidEnrollmentIds).toEqual([1, 2]);
   });
 
   it("keeps very large amounts exact", () => {
@@ -32,9 +32,10 @@ describe("PaymentTargets.plan", () => {
 });
 
 describe("PaymentTargets row rules", () => {
-  it("treats grant and zero-maximum enrollments as not payable", () => {
+  it("treats zero-maximum enrollments as not payable and grant enrollments owing debt as payable", () => {
     expect(PaymentTargets.isPayable(option(1, "10", "10"))).toBe(true);
     expect(PaymentTargets.isPayable(option(2, "0", "0", "grant"))).toBe(false);
+    expect(PaymentTargets.isPayable(option(4, "40", "40", "grant"))).toBe(true);
     expect(PaymentTargets.isPayable(option(3, "0", "0"))).toBe(false);
   });
 

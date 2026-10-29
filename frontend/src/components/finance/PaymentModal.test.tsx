@@ -174,9 +174,10 @@ describe("payment recording reliability", () => {
   it("rejects zero and invalid money without sending a payment", async () => {
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
     const amount = (await screen.findByLabelText(AMOUNT));
-    for (const invalid of ["0", "-1", "750,5,0", "abc"]) {
-      await user.clear(amount); await user.type(amount, invalid); await user.click(screen.getByRole("button", { name: "Accept Payment" }));
-      expect(await screen.findByRole("alert")).toBeTruthy(); expect(document.activeElement).toBe(amount);
+    for (const invalid of ["0", "-1", "750,5,0", "abc", "0.005", "12.345"]) {
+      await user.clear(amount); await user.type(amount, invalid);
+      expect(await screen.findByRole("alert")).toBeTruthy();
+      expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(true);
     }
     expect(mock.history.post).toHaveLength(0);
   });
@@ -196,13 +197,13 @@ describe("payment recording reliability", () => {
   it("preserves exact decimal input, method and comment after a confirmed rejection", async () => {
     mock.onPost("/finance/payments/").replyOnce(400, { detail: "Accounting period closed" }).onPost("/finance/payments/").reply(201, savedPayment);
     const user = paymentFixture(); await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
-    await user.type((await screen.findByLabelText(AMOUNT)), "750.123456789"); await user.click(screen.getByRole("radio", { name: "Bank Transfer" })); await user.type(screen.getByLabelText("Comment"), "Keep this entry");
+    await user.type((await screen.findByLabelText(AMOUNT)), "750.12"); await user.click(screen.getByRole("radio", { name: "Bank Transfer" })); await user.type(screen.getByLabelText("Comment"), "Keep this entry");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
-    expect(await screen.findByRole("alert")).toBeTruthy(); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("750.123456789");
+    expect(await screen.findByRole("alert")).toBeTruthy(); expect(((await screen.findByLabelText(AMOUNT)) as HTMLInputElement).value).toBe("750.12");
     expect((screen.getByRole("radio", { name: "Bank Transfer" }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText("Comment") as HTMLTextAreaElement).value).toBe("Keep this entry");
     await user.click(screen.getByRole("button", { name: "Accept Payment" })); await screen.findByText("Payment #123 recorded");
-    expect(JSON.parse(mock.history.post[1].data).amount).toBe("750.123456789");
+    expect(JSON.parse(mock.history.post[1].data).amount).toBe("750.12");
   });
 
   it("explains a 422 withdrawn_enrollment_payment_exceeds_debt rejection and keeps the entered values", async () => {

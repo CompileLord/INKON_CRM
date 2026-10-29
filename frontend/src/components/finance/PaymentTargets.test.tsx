@@ -239,3 +239,41 @@ describe("wallet credit", () => {
     expect(await screen.findByText("Could not apply the balance. Try again.")).toBeTruthy();
   });
 });
+
+describe("withdrawn and grant targets and the amount field", () => {
+  const withdrawnOptions: PaymentOptions = {
+    wallet_credit: "0",
+    enrollments: [
+      { enrollment_id: 601, course_id: 21, course_title: "Old Course", open_debt: "300.00", overdue_days: 3, remaining_contract_maximum: "300.00", billing_mode: "paid", status: "withdrawn" },
+      { enrollment_id: 602, course_id: 22, course_title: "Grant Course", open_debt: "100.00", overdue_days: 0, remaining_contract_maximum: "100.00", billing_mode: "grant", status: "active" },
+    ],
+  };
+
+  it("badges withdrawn and grant targets and lets both take an amount", async () => {
+    mock.onGet(OPTIONS_URL).reply(200, withdrawnOptions);
+    renderModal();
+    const old = await screen.findByTestId("payment-target-601");
+    expect(within(old).getByText("Withdrawn")).toBeTruthy();
+    expect(within(old).getByRole("textbox")).toBeTruthy();
+    const grant = screen.getByTestId("payment-target-602");
+    expect(within(grant).getByTestId("grant-badge")).toBeTruthy();
+    expect(within(grant).getByRole("textbox")).toBeTruthy();
+  });
+
+  it("shows an inline error, disables Accept and keeps invalid amounts out of the total", async () => {
+    mock.onGet(OPTIONS_URL).reply(200, withdrawnOptions);
+    const user = renderModal();
+    const input = await screen.findByLabelText("Amount for Old Course (TJS)");
+    for (const bad of ["abc", "-5", "1e3", "0", "0.005", "12.345"]) {
+      await user.clear(input);
+      await user.type(input, bad);
+      expect(screen.getByRole("alert").textContent).toContain("up to 2 decimals");
+      expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByText(/0\.005/)).toBeNull();
+    }
+    await user.clear(input);
+    await user.type(input, "12,5");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect((screen.getByRole("button", { name: "Accept Payment" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});

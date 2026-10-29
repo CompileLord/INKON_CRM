@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { PaymentTargets, type TargetDrafts } from "../../lib/finance/paymentTargets";
 import type { PaymentOption } from "../../lib/finance/types";
 import { formatExactMoney } from "../../lib/money";
+import { EnrollmentStatusBadge } from "../enrollments/EnrollmentStatusBadge";
 import { GrantBadge } from "../enrollments/GrantBadge";
 
 export interface TargetRowProblem {
@@ -28,6 +29,7 @@ export function PaymentTargetRows({ options, drafts, problems, onChange, onFill 
         const id: number = option.enrollment_id;
         const payable: boolean = PaymentTargets.isPayable(option);
         const hasDebt: boolean = PaymentTargets.hasDebt(option);
+        const showAmount: boolean = option.billing_mode !== "grant" || payable;
         const problem: TargetRowProblem | undefined = problems[id];
         const problemId: string = `payment-target-${id}-problem`;
         return (
@@ -37,8 +39,9 @@ export function PaymentTargetRows({ options, drafts, problems, onChange, onFill 
                 <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
                   <span>{option.course_title}</span>
                   <GrantBadge billingMode={option.billing_mode === "grant" ? "grant" : "paid"} />
+                  {option.status === "withdrawn" && <EnrollmentStatusBadge status="withdrawn" />}
                 </p>
-                {option.billing_mode !== "grant" && (
+                {showAmount && (
                   <p className="text-sm text-muted tabular-nums">
                     {hasDebt
                       ? `${t("paymentModal.debtLine", { amount: formatExactMoney(option.open_debt) })}${option.overdue_days > 0 ? ` · ${t("overdueDaysCount", { count: option.overdue_days })}` : ""}`
@@ -46,7 +49,7 @@ export function PaymentTargetRows({ options, drafts, problems, onChange, onFill 
                   </p>
                 )}
               </div>
-              {option.billing_mode !== "grant" && (
+              {showAmount && (
                 <div className="flex items-center gap-2">
                   <input
                     id={`payment-amount-${id}`}
