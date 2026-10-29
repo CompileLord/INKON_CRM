@@ -8,7 +8,7 @@ import { AuthApiError } from "../lib/auth/errors";
 import { buildCourseJournalUrl, getSafeCourseReturnUrl, recordCourseDetailNavigation } from "../lib/courses/returnContext";
 import { Button } from "../components/ui/Button";
 import { PageContainer } from "../components/ui/PageContainer";
-import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
 import { Toast } from "../components/ui/Toast";
 import { ProfileBackLink } from "../components/profile/ProfileBackLink";
 import { ProfileSkeleton, ProfileState } from "../components/profile/ProfileState";
@@ -141,7 +141,7 @@ function CourseProfileOwner({ rawId }: { rawId: string | undefined }) {
 
       <Tabs tabs={tabs} value={activeTabId} onChange={changeTab} ariaLabel={t("tabs.label")} idPrefix={PROFILE_ID_PREFIX} />
 
-      <div role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTabId)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTabId)} tabIndex={0} className="min-w-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <div key={activeTabId} role="tabpanel" id={tabPanelElementId(PROFILE_ID_PREFIX, activeTabId)} aria-labelledby={tabElementId(PROFILE_ID_PREFIX, activeTabId)} tabIndex={0} className={`${TAB_PANEL_ENTER_CLASS} min-w-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}>
         {activeTabId === "overview" ? (
           <CourseOverviewPane course={course} isSuperAdmin={isSuperAdmin} onReady={() => detail.markPaneReady("overview")} />
         ) : null}

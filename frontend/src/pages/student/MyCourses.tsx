@@ -8,7 +8,7 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { PageContainer } from "../../components/ui/PageContainer";
 import { PageHeader } from "../../components/ui/PageHeader";
-import { Tabs, tabPanelElementId, useTabParam, type TabDefinition } from "../../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabPanelElementId, useTabParam, type TabDefinition } from "../../components/ui/Tabs";
 
 type CourseBucket = "active" | "archive";
 
@@ -81,7 +81,7 @@ export function MyCourses() {
     <PageContainer>
       <PageHeader title={t("student:myCoursesTitle")} />
       <Tabs tabs={tabs} value={bucket} onChange={selectBucket} ariaLabel={t("student:bucketTabsLabel")} idPrefix={PANEL_ID_PREFIX} />
-      <div role="tabpanel" id={tabPanelElementId(PANEL_ID_PREFIX, bucket)} aria-labelledby={`${PANEL_ID_PREFIX}-tab-${bucket}`}>
+      <div key={bucket} role="tabpanel" className={TAB_PANEL_ENTER_CLASS} id={tabPanelElementId(PANEL_ID_PREFIX, bucket)} aria-labelledby={`${PANEL_ID_PREFIX}-tab-${bucket}`}>
         <div className="rounded-2xl border border-border bg-card p-2">{renderBody()}</div>
       </div>
     </PageContainer>

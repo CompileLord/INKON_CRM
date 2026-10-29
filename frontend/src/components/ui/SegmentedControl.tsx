@@ -49,7 +49,7 @@ export function SegmentedControl({ ariaLabel, options, value, onChange }: Segmen
             className={[
               "inline-flex min-h-11 min-w-11 flex-1 items-center justify-center gap-2 rounded-[8px] px-3 text-sm font-medium",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              "motion-safe:transition-[background-color,color,box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]",
+              "motion-safe:transition-[background-color,border-color,color,box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.96]",
               selected ? "bg-card text-ink shadow-xs" : "text-muted hover:text-ink",
             ].join(" ")}
           >

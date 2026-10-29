@@ -4,6 +4,8 @@ import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { SlideOver } from "../ui/SlideOver";
+import { FORM_TEXTAREA_CLASS as textareaClass } from "../ui/formFieldClasses";
+import { useHeldWhileClosing, usePresence } from "../ui/usePresence";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { courseEditFormSchema, courseFormSchema, type CourseFormValues } from "../../lib/courseFormSchema";
 import {
@@ -42,16 +44,15 @@ interface CourseFormPanelProps {
   finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
 }
 
-const textareaClass: string =
-  "w-full resize-none rounded-[10px] border bg-card px-3 py-2.5 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-strip disabled:text-muted";
-
 interface PartialSuccessState {
   courseId: number;
   savedCourse: CourseResponse;
 }
 
-export function CourseFormPanel({ open, course, onClose, onSaved, finalFocus }: CourseFormPanelProps) {
-  if (!open) {
+export function CourseFormPanel({ open, course: live, onClose, onSaved, finalFocus: focus }: CourseFormPanelProps) {
+  const { present, onOpenChangeComplete } = usePresence(open);
+  const { course, finalFocus } = useHeldWhileClosing({ course: live, finalFocus: focus }, open);
+  if (!present) {
     return null;
   }
 
@@ -60,6 +61,7 @@ export function CourseFormPanel({ open, course, onClose, onSaved, finalFocus }: 
     <CourseFormPanelInner
       key={course?.id ?? "new"}
       open={open}
+      onOpenChangeComplete={onOpenChangeComplete}
       course={course}
       isEditing={isEditing}
       onClose={onClose}
@@ -71,6 +73,7 @@ export function CourseFormPanel({ open, course, onClose, onSaved, finalFocus }: 
 
 interface CourseFormPanelInnerProps {
   open: boolean;
+  onOpenChangeComplete: (open: boolean) => void;
   course?: CourseResponse;
   isEditing: boolean;
   onClose: () => void;
@@ -80,6 +83,7 @@ interface CourseFormPanelInnerProps {
 
 function CourseFormPanelInner({
   open,
+  onOpenChangeComplete,
   course,
   isEditing,
   onClose,
@@ -352,6 +356,7 @@ function CourseFormPanelInner({
     <>
       <SlideOver
         open={open}
+        onOpenChangeComplete={onOpenChangeComplete}
         onClose={handleAttemptClose}
         variant="course"
         title={titleText}

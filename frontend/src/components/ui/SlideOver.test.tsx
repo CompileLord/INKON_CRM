@@ -428,8 +428,6 @@ it("applies person default geometry with 480px width from 640px breakpoint and p
   expect(dialog.className).toContain("sm:max-w-[480px]");
   expect(dialog.className).toContain("sm:inset-y-0");
   expect(dialog.className).toContain("sm:rounded-l-2xl");
-  expect(dialog.className).toContain("sm:origin-right");
-  expect(dialog.className).toContain("origin-bottom");
   expect(dialog.className).toContain("fixed inset-0");
   expect(dialog.className).toContain("w-full");
   expect(dialog.className).toContain("h-dvh");
@@ -453,8 +451,6 @@ it("applies course variant geometry with 560px width from 768px breakpoint and p
   expect(dialog.className).toContain("md:max-w-[560px]");
   expect(dialog.className).toContain("md:inset-y-0");
   expect(dialog.className).toContain("md:rounded-l-2xl");
-  expect(dialog.className).toContain("md:origin-right");
-  expect(dialog.className).toContain("origin-bottom");
   expect(dialog.className).toContain("fixed inset-0");
   expect(dialog.className).toContain("w-full");
   expect(dialog.className).toContain("h-dvh");
@@ -465,7 +461,7 @@ it("applies course variant geometry with 560px width from 768px breakpoint and p
 it("keeps the drawer entry animation free of focus-dependent toggles", async () => {
   const user = userEvent.setup();
   render(<SlideOver open title="Animated drawer" onClose={() => {}}><input aria-label="Drawer field"/><button>Drawer press</button></SlideOver>);
-  const surface: HTMLElement | null = document.querySelector<HTMLElement>("[class*=card-scale-in]");
+  const surface: HTMLElement | null = screen.getByRole("dialog");
   expect(surface).not.toBeNull();
   const classBefore: string = surface!.className;
   expect(classBefore).not.toContain("animate-none");
@@ -473,4 +469,29 @@ it("keeps the drawer entry animation free of focus-dependent toggles", async () 
   await user.type(screen.getByLabelText("Drawer field"), "abc");
   await user.click(screen.getByRole("button", { name: "Drawer press" }));
   expect(surface!.className).toBe(classBefore);
+});
+
+it("slides the drawer in from the right and keeps it mounted through the slide-out before unmounting", async () => {
+  let finishExit: () => void = () => {};
+  const exitFinished: Promise<void> = new Promise<void>((resolve) => { finishExit = resolve; });
+  Object.defineProperty(Element.prototype, "getAnimations", { configurable: true, value: () => [{ finished: exitFinished, effect: { getTiming: () => ({ duration: 200, iterations: 1 }) } }] });
+  try {
+    const user = userEvent.setup();
+    render(<KeyboardContainmentFixture />);
+    const dialog: HTMLElement = screen.getByRole("dialog");
+    expect(dialog.className).toContain("data-[starting-style]:translate-x-full");
+    expect(dialog.className).toContain("data-[ending-style]:translate-x-full");
+    expect(dialog.className).toContain("motion-safe:duration-200");
+    expect(dialog.className).toContain("cubic-bezier(0.16,1,0.3,1)");
+    expect(dialog.className).not.toContain("card-scale-in");
+    expect(document.querySelector("[class*=bg-scrim]")?.className).toContain("data-[starting-style]:opacity-0");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(dialog.hasAttribute("data-ending-style")).toBe(true));
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+    expect(document.querySelector("[class*=bg-scrim]")).not.toBeNull();
+    finishExit();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  } finally {
+    delete (Element.prototype as unknown as Record<string, unknown>).getAnimations;
+  }
 });

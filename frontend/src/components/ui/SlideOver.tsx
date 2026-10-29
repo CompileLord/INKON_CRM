@@ -3,6 +3,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShellStore } from "../../store/shellStore";
+import { useEntryArmed } from "./usePresence";
 
 export type SlideOverVariant = "person" | "course";
 
@@ -17,6 +18,7 @@ export interface SlideOverProps {
   pending?: boolean;
   initialFocus?: ComponentProps<typeof Dialog.Popup>["initialFocus"];
   finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
+  onOpenChangeComplete?: (open: boolean) => void;
 }
 
 export function SlideOver({
@@ -30,9 +32,11 @@ export function SlideOver({
   pending = false,
   initialFocus,
   finalFocus,
+  onOpenChangeComplete,
 }: SlideOverProps) {
   const { t } = useTranslation("common");
   const closeShell = useShellStore((state) => state.close);
+  const armedOpen: boolean = useEntryArmed(open);
   const isDismissBlocked = closeDisabled || pending;
   const isCourseVariant = variant === "course";
 
@@ -43,8 +47,8 @@ export function SlideOver({
   }, [open, closeShell]);
 
   const desktopDrawerClasses = isCourseVariant
-    ? "md:inset-y-0 md:left-auto md:right-0 md:w-[560px] md:max-w-[560px] md:rounded-l-2xl md:border-l md:border-border-warm origin-bottom md:origin-right"
-    : "sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[480px] sm:max-w-[480px] sm:rounded-l-2xl sm:border-l sm:border-border-warm origin-bottom sm:origin-right";
+    ? "md:inset-y-0 md:left-auto md:right-0 md:w-[560px] md:max-w-[560px] md:rounded-l-2xl md:border-l md:border-border-warm"
+    : "sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[480px] sm:max-w-[480px] sm:rounded-l-2xl sm:border-l sm:border-border-warm";
 
   const headerDesktopPadding = isCourseVariant ? "md:pt-4" : "sm:pt-4";
   const bodyDesktopPadding = isCourseVariant ? "md:pb-5" : "sm:pb-5";
@@ -52,7 +56,8 @@ export function SlideOver({
 
   return (
     <Dialog.Root
-      open={open}
+      open={armedOpen}
+      onOpenChangeComplete={onOpenChangeComplete}
       disablePointerDismissal={isDismissBlocked}
       onOpenChange={(next) => {
         if (!next && !isDismissBlocked) {
@@ -61,7 +66,7 @@ export function SlideOver({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-60 bg-scrim" />
+        <Dialog.Backdrop className="fixed inset-0 z-60 bg-scrim motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-out data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 " />
         <Dialog.Popup
           initialFocus={initialFocus}
           finalFocus={finalFocus}
@@ -69,7 +74,7 @@ export function SlideOver({
             footer
               ? "grid-rows-[auto_minmax(0,1fr)_auto]"
               : "grid-rows-[auto_minmax(0,1fr)]"
-          } overflow-hidden bg-card shadow-2xl motion-safe:animate-[card-scale-in_200ms_ease-out] ${desktopDrawerClasses}`}
+          } overflow-hidden bg-card shadow-2xl motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full ${desktopDrawerClasses}`}
         >
           <div
             className={`flex shrink-0 items-center justify-between gap-3 border-b border-border-warm px-6 py-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] ${headerDesktopPadding}`}

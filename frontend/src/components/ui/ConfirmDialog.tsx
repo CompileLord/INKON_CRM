@@ -1,4 +1,4 @@
-import { type ComponentProps, type ReactNode } from "react";
+import { useRef, type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@base-ui/react/dialog";
 import { Modal } from "./Modal";
@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   pending?: boolean;
   errorMessage?: string;
   finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
+  focusCancelFirst?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -30,10 +31,12 @@ export function ConfirmDialog({
   pending = false,
   errorMessage,
   finalFocus,
+  focusCancelFirst = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const { t } = useTranslation("common");
+  const cancelButton = useRef<HTMLButtonElement>(null);
 
   const handleCancel = () => {
     if (!pending) {
@@ -53,6 +56,7 @@ export function ConfirmDialog({
       onClose={handleCancel}
       title={title}
       finalFocus={finalFocus}
+      initialFocus={focusCancelFirst ? cancelButton : undefined}
       closeDisabled={pending}
     >
       <div className="flex flex-col gap-5">
@@ -65,6 +69,7 @@ export function ConfirmDialog({
         ) : null}
         <div className="flex justify-end gap-3">
           <Button
+            ref={cancelButton}
             type="button"
             variant="secondary"
             onClick={handleCancel}

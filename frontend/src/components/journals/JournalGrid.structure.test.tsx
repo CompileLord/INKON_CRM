@@ -39,6 +39,30 @@ describe("JournalGrid structure", () => {
     expect(everyCellClass).not.toMatch(/right-0|right-16/);
   });
 
+  it("gives the sticky student column a solid background, a right border and an edge shadow that follows the horizontal scroll", () => {
+    mountGrid();
+    const corner = screen.getByRole("columnheader", { name: "Students" });
+    const rowHeader = screen.getAllByRole("rowheader")[0];
+    [corner, rowHeader].forEach((cell) => {
+      expect(cell.className).toMatch(/\bbg-(beige|card)\b/);
+      expect(cell.className).not.toContain("bg-clip-padding");
+      expect(cell.className).toContain("border-r");
+      expect(cell.className).toContain("after:from-scrim");
+      expect(cell.className).toContain("after:opacity-0");
+      expect(cell.className).toContain("group-data-[scrolled=true]/grid:after:opacity-40");
+      expect(cell.className).toContain("motion-safe:after:duration-150");
+    });
+    const grid = screen.getByTestId("journal-grid-region").parentElement as HTMLElement;
+    expect(grid.getAttribute("data-scrolled")).toBe("false");
+    const body = screen.getByTestId("journal-grid-region");
+    body.scrollLeft = 240;
+    fireEvent.scroll(body);
+    expect(grid.getAttribute("data-scrolled")).toBe("true");
+    body.scrollLeft = 0;
+    fireEvent.scroll(body);
+    expect(grid.getAttribute("data-scrolled")).toBe("false");
+  });
+
   it("gives the header and body tables identical fixed column widths so they stay aligned", () => {
     mountGrid();
     const widths = (table: Element) => Array.from(table.querySelectorAll("col")).map((col) => (col as HTMLElement).style.width);
@@ -106,7 +130,7 @@ describe("JournalGrid structure", () => {
     const bodyCell = screen.getByRole("rowheader", { name: /Anvar Tester/ });
     [headerCell, bodyCell].forEach((cell) => {
       expect(cell.className).toMatch(/\bbg-(card|beige)\b/);
-      expect(cell.className).toContain("shadow-[1px_0_0_0_var(--color-border)]");
+      expect(cell.className).toContain("border-r");
       expect(cell.className).toMatch(/\bz-(20|30)\b/);
     });
   });

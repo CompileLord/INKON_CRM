@@ -10,6 +10,7 @@ import type { StudentSearchResult } from "../../lib/finance/studentSearch";
 import { getSchoolCalendarDate, schoolCalendarDateToTimestamp } from "../../i18n/formatters";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import type { TargetRowProblem } from "./PaymentTargetRows";
 import { PaymentTargetsSection } from "./PaymentTargetsSection";
 import { PaymentMethodRadios } from "./PaymentMethodRadios";
@@ -86,7 +87,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const changeStudentButton = useRef<HTMLButtonElement>(null);
   const baselineDrafts = useRef<TargetDrafts>({});
   const prefilled = useRef<boolean>(false);
-  const keepEditing = useRef<HTMLButtonElement>(null);
+  const [visible, setVisible] = useState<boolean>(true);
   const opener = useRef<Element | null>(typeof document === "undefined" ? null : document.activeElement);
   const createPayment = useCreatePayment();
   const paymentOptions = usePaymentOptions(student?.id);
@@ -116,10 +117,6 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   }, [paymentOptions.data]);
 
   useEffect(() => {
-    if (dismissDecision) keepEditing.current?.focus();
-  }, [dismissDecision]);
-
-  useEffect(() => {
     if (!dirty && !pending) return;
     const handleUnload = (event: BeforeUnloadEvent): void => {
       event.preventDefault();
@@ -144,7 +141,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const requestClose = (): void => {
     if (inFlight.current || pending) return;
     if (dirty) setDismissDecision(true);
-    else onClose();
+    else setVisible(false);
   };
 
   const keepEditingAgain = (): void => {
@@ -158,7 +155,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     const decision: NavigationDecision | null = navigation.current;
     navigation.current = null;
     setDismissDecision(false);
-    onClose();
+    setVisible(false);
     decision?.proceed();
   };
 
@@ -262,21 +259,11 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     try {
       onSuccess(payment);
     } finally {
-      onClose();
+      setVisible(false);
     }
   };
 
-  const footer = dismissDecision ? (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-ink">{t("finance:paymentModal.discardBody")}</p>
-      <Button ref={keepEditing} onClick={keepEditingAgain}>
-        {t("finance:paymentModal.keepEditing")}
-      </Button>
-      <Button variant="secondary" onClick={discard}>
-        {t("finance:paymentModal.discardChanges")}
-      </Button>
-    </div>
-  ) : (
+  const footer = (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
         <Button variant="secondary" disabled={pending} onClick={requestClose}>
@@ -296,9 +283,10 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
     <>
       {dataRouter && <PaymentNavigationGuard active={dirty || pending} pending={pending} onRequest={requestNavigation} />}
       <Modal
-        open
+        open={visible}
         onClose={requestClose}
-        title={t(dismissDecision ? "finance:paymentModal.discardTitle" : "finance:paymentModal.title")}
+        onOpenChangeComplete={(isOpen: boolean) => { if (!isOpen) onClose(); }}
+        title={t("finance:paymentModal.title")}
         maxWidthClassName="sm:max-w-[520px]"
         fullScreenOnMobile
         initialFocus={isLocked ? undefined : student ? changeStudentButton : searchField}
@@ -325,7 +313,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
               {t("finance:paymentModal.verifiedNotRecorded")}
             </label>
           )}
-          <fieldset disabled={pending || dismissDecision} className="flex min-w-0 flex-col gap-4">
+          <fieldset disabled={pending} className="flex min-w-0 flex-col gap-4">
             {isLocked ? (
               <div className="rounded-xl bg-strip p-3 text-sm text-ink">
                 <p className="flex items-center gap-2 break-words font-medium">
@@ -422,6 +410,17 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
             </div>
           </fieldset>
         </form>
+        <ConfirmDialog
+          open={dismissDecision}
+          title={t("finance:paymentModal.discardTitle")}
+          message={t("finance:paymentModal.discardBody")}
+          cancelLabel={t("finance:paymentModal.keepEditing")}
+          confirmLabel={t("finance:paymentModal.discardChanges")}
+          focusCancelFirst
+          onCancel={keepEditingAgain}
+          onConfirm={discard}
+          finalFocus={() => (isLocked ? null : (student ? changeStudentButton : searchField).current)}
+        />
       </Modal>
     </>
   );

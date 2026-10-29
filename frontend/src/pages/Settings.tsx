@@ -8,7 +8,7 @@ import { ProfileSection } from "../components/settings/ProfileSection";
 import { useTransientToast } from "../components/settings/useTransientToast";
 import { PageContainer } from "../components/ui/PageContainer";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
+import { TAB_PANEL_ENTER_CLASS, Tabs, tabElementId, tabPanelElementId, useTabParam, type TabDefinition } from "../components/ui/Tabs";
 import { Toast } from "../components/ui/Toast";
 import { useAuthStore } from "../store/authStore";
 
@@ -45,11 +45,12 @@ export function Settings() {
       <div className="grid gap-6 md:grid-cols-[14rem_minmax(0,1fr)] md:items-start">
         <Tabs tabs={tabs} value={activeId} onChange={selectSection} ariaLabel={t("navLabel")} orientation="vertical" idPrefix={ID_PREFIX} />
         <div
+          key={activeId}
           role="tabpanel"
           id={tabPanelElementId(ID_PREFIX, activeId)}
           aria-labelledby={tabElementId(ID_PREFIX, activeId)}
           tabIndex={-1}
-          className="min-w-0"
+          className={`${TAB_PANEL_ENTER_CLASS} min-w-0`}
         >
           {content[activeId as SettingsSectionId]}
         </div>

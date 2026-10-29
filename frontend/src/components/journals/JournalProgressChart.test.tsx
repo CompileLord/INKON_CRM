@@ -43,6 +43,12 @@ describe("Progress score chart", () => {
     expect(screen.getAllByTestId("chart-line")[0].getAttribute("d")).toMatch(/C/);
   });
 
+  it("fades the chart in over 300ms only when motion is allowed", () => {
+    render(<JournalProgressView courseId={1} />);
+    const svgClass: string = screen.getByTestId("progress-chart").querySelector("svg")?.getAttribute("class") ?? "";
+    expect(svgClass).toContain("motion-safe:animate-[tab-panel-in_300ms_ease-out]");
+  });
+
   it("draws the y-axis in score points with round ticks that cover the highest score", () => {
     render(<JournalProgressView courseId={1} />);
     const gridlines = Array.from(screen.getByTestId("progress-chart").querySelectorAll("[data-testid='chart-gridline']"));
