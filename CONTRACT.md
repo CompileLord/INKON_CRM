@@ -3620,6 +3620,9 @@ Manually apply a student's wallet credit to a specific charge.
   ```json
   {
     "receipt_number": string,
+    "status": "valid" | "voided" | "refunded" | "partially_refunded",
+    "refunded_amount": string,
+    "net_amount": string,
     "occurred_at": string,
     "student_id": integer,
     "student_name": string,

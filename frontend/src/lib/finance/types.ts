@@ -182,6 +182,9 @@ export interface ReceiptAllocationItem {
 
 export interface PaymentReceipt {
   receipt_number: string;
+  status: "valid" | "voided" | "refunded" | "partially_refunded";
+  refunded_amount: string;
+  net_amount: string;
   occurred_at: string;
   student_id: number;
   student_name: string;

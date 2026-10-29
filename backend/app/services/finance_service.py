@@ -1900,6 +1900,14 @@ class FinanceService:
 
     async def get_payment_receipt(self, payment_id: int) -> dict:
         entry = await self._get_payment_entry(payment_id)
+        reversals: list[LedgerEntry] = list((await self.db.scalars(select(LedgerEntry).where(
+            LedgerEntry.reverses_entry_id == entry.id,
+            LedgerEntry.type.in_([LedgerEntryType.VOID, LedgerEntryType.REFUND]),
+        ))).all())
+        refunded_amount: Decimal = sum((reversal.amount for reversal in reversals if reversal.type == LedgerEntryType.REFUND), ZERO)
+        is_voided: bool = any(reversal.type == LedgerEntryType.VOID for reversal in reversals)
+        receipt_status: str = ("voided" if is_voided else "refunded" if refunded_amount >= entry.amount else
+                               "partially_refunded" if refunded_amount > ZERO else "valid")
 
         student_res = await self.db.execute(select(User).filter(User.id == entry.student_id))
         student = student_res.scalars().first()
@@ -1931,6 +1939,9 @@ class FinanceService:
 
         return {
             "receipt_number": f"REC-{entry.id:06d}",
+            "status": receipt_status,
+            "refunded_amount": refunded_amount,
+            "net_amount": ZERO if is_voided else entry.amount - refunded_amount,
             "occurred_at": entry.occurred_at,
             "student_id": student.id,
             "student_name": f"{student.first_name} {student.last_name}",
