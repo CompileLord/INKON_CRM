@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from sqlalchemy import select
-from app.core.security import create_access_token, hash_password
+from app.core.security import hash_password
 from app.models.charge import Charge
 from app.models.course import Course
 from app.models.debt_reminder_notification import DebtReminderNotification
@@ -11,6 +11,7 @@ from app.models.enrollment import Enrollment
 from app.models.telegram_link import TelegramChatPreference
 from app.models.user import User, UserRole
 from conftest import TestingSessionLocal
+from app.tests.factories import auth_headers as bearer
 
 
 @dataclass
@@ -30,10 +31,6 @@ class MutableClock:
 
     def __call__(self) -> datetime:
         return self.moment
-
-
-def bearer(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 async def create_student(

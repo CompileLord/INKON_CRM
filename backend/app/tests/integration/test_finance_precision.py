@@ -7,13 +7,13 @@ import pytest
 from httpx import AsyncClient
 
 from app.core.redis import redis_client
-from app.core.security import create_access_token
 from app.models.user import User
 from app.services.finance_service import ANALYTICS_CACHE_KEY_PREFIX, FinanceService
 from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
 from app.tests.conftest import TestingSessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.tests.integration.test_finance import _setup_student_course
+from app.tests.factories import auth_headers
 
 DEBTS_URL: str = "/api/v1/finance/debts/"
 ANALYTICS_URL: str = "/api/v1/finance/analytics/?date_from=2020-01-01&date_to=2099-12-31"
@@ -37,17 +37,13 @@ MONEY_FIELDS: List[str] = [
 ]
 
 
-def bearer(user: User) -> Dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
-
-
 async def enroll_students_with_prices(
     client: AsyncClient, admin: User, mentor: User, prices: List[str]
 ) -> List[int]:
     student_ids: List[int] = []
     for index, price in enumerate(prices):
         student_id, _ = await _setup_student_course(
-            client, bearer(admin), mentor.id, email=f"precision{index}@example.com", price=price
+            client, auth_headers(admin), mentor.id, email=f"precision{index}@example.com", price=price
         )
         student_ids.append(student_id)
     return student_ids
@@ -71,7 +67,7 @@ async def test_cold_and_cached_analytics_are_identical_exact_strings(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
     await enroll_students_with_prices(client, test_admin, test_mentor, ["99999999.99", "300.30", "0.30"])
-    headers = bearer(test_accountant)
+    headers = auth_headers(test_accountant)
 
     cold_response = await client.get(ANALYTICS_URL, headers=headers)
     cached_raw: str = await redis_client.get(await analytics_cache_key())
@@ -97,7 +93,7 @@ async def test_legacy_float_cache_entry_is_never_read(
 ) -> None:
     await redis_client.set(LEGACY_CACHE_KEY, json.dumps({"gross_contract_value": 0.1, "poisoned": True}), ex=600)
 
-    response = await client.get(ANALYTICS_URL, headers=bearer(test_accountant))
+    response = await client.get(ANALYTICS_URL, headers=auth_headers(test_accountant))
 
     assert response.status_code == 200
     assert "poisoned" not in response.json()
@@ -110,7 +106,7 @@ async def test_min_debt_threshold_is_exact_at_the_cent(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
     student_ids = await enroll_students_with_prices(client, test_admin, test_mentor, ["300.30"])
-    headers = bearer(test_accountant)
+    headers = auth_headers(test_accountant)
     items = (await client.get(DEBTS_URL, headers=headers)).json()["items"]
     debt: Decimal = Decimal(next(i for i in items if i["student"]["id"] == student_ids[0])["debt"])
     assert debt > Decimal("0.01")
@@ -132,6 +128,6 @@ async def test_min_debt_threshold_is_exact_at_the_cent(
 async def test_invalid_min_debt_is_rejected_with_422(
     client: AsyncClient, test_accountant: User, raw_value: str
 ) -> None:
-    response = await client.get(f"{DEBTS_URL}?min_debt={raw_value}", headers=bearer(test_accountant))
+    response = await client.get(f"{DEBTS_URL}?min_debt={raw_value}", headers=auth_headers(test_accountant))
 
     assert response.status_code == 422

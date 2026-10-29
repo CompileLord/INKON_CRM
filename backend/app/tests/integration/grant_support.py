@@ -7,12 +7,12 @@ from httpx import AsyncClient, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token
 from app.models.charge import Charge
 from app.models.course import Course, CourseExamType
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User, UserRole
 from app.services.finance_service import CourseMonthCalendar, FinanceService, get_dushanbe_today
+from app.tests.factories import auth_headers as headers_for
 
 ENROLLMENTS_URL: str = "/api/v1/enrollments/"
 REASON: str = "Scholarship approved by the director"
@@ -23,10 +23,6 @@ class CourseFixture:
     id: int
     start_date: date
     end_date: date
-
-
-def headers_for(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 async def create_course(

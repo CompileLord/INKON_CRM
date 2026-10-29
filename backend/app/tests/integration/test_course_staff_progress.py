@@ -8,13 +8,13 @@ from sqlalchemy import event
 from app.core.deps import get_course_progress_repository, get_course_progress_service
 from app.core.security import create_access_token
 from app.models.user import User, UserRole
-from app.models.course import Course, CourseExamType, CourseStatus
-from app.models.enrollment import Enrollment, EnrollmentStatus
+from app.models.enrollment import EnrollmentStatus
 from app.models.journal import Journal, JournalPeriodType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.repositories.interfaces.course_progress_repository import CourseProgressRepositoryInterface
 from app.repositories.sqlalchemy.course_progress_repository import SqlAlchemyCourseProgressRepository
 from app.services.course_progress_service import CourseProgressService
+from app.tests.factories import create_course, create_user, enroll_student
 
 
 @pytest.mark.asyncio
@@ -42,36 +42,25 @@ async def test_staff_progress_authorization_and_guards(
     test_mentor: User,
     test_student: User
 ) -> None:
-    other_mentor = User(
+    other_mentor = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="unassigned_mentor@example.com",
         password_hash="hash",
         first_name="Unassigned",
         last_name="Mentor",
-        role=UserRole.MENTOR,
-        must_set_password=False
     )
-    accountant = User(
+    accountant = await create_user(
+        db_session,
+        UserRole.ACCOUNTANT,
         email="accountant_staff@example.com",
         password_hash="hash",
         first_name="Accountant",
         last_name="User",
-        role=UserRole.ACCOUNTANT,
-        must_set_password=False
     )
-    db_session.add_all([other_mentor, accountant])
     await db_session.commit()
 
-    course = Course(
-        title="Staff Progress Auth Course",
-        description="Testing auth guards",
-        start_date=date(2026, 8, 1),
-        end_date=date(2026, 8, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
-    )
-    db_session.add(course)
+    course = await create_course(db_session, test_mentor, title="Staff Progress Auth Course", description="Testing auth guards")
     await db_session.commit()
 
     unauth_resp = await client.get(f"/api/v1/courses/{course.id}/staff-progress")
@@ -126,18 +115,13 @@ async def test_staff_progress_unknown_and_deleted_course(
     missing_resp = await client.get("/api/v1/courses/999999/staff-progress", headers=headers)
     assert missing_resp.status_code == 404
 
-    deleted_course = Course(
+    deleted_course = await create_course(
+        db_session,
+        test_mentor,
         title="Deleted Course",
         description="Soft-deleted course",
-        start_date=date(2026, 8, 1),
-        end_date=date(2026, 8, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
-        is_deleted=True
+        is_deleted=True,
     )
-    db_session.add(deleted_course)
     await db_session.commit()
 
     deleted_resp = await client.get(f"/api/v1/courses/{deleted_course.id}/staff-progress", headers=headers)
@@ -155,27 +139,10 @@ async def test_staff_progress_empty_states(
     admin_token = create_access_token(test_admin.id, test_admin.role)
     headers = {"Authorization": f"Bearer {admin_token}"}
 
-    course_no_periods = Course(
-        title="No Periods Course",
-        description="Course without journals",
-        start_date=date(2026, 8, 1),
-        end_date=date(2026, 8, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
-    )
-    db_session.add(course_no_periods)
+    course_no_periods = await create_course(db_session, test_mentor, title="No Periods Course", description="Course without journals")
     await db_session.commit()
 
-    enroll = Enrollment(
-        student_id=test_student.id,
-        course_id=course_no_periods.id,
-        price_at_enrollment=Decimal("100.00"),
-        color_hex="#083D91",
-        status=EnrollmentStatus.ACTIVE
-    )
-    db_session.add(enroll)
+    await enroll_student(db_session, test_student, course_no_periods, price_at_enrollment=Decimal("100.00"), color_hex="#083D91")
     await db_session.commit()
 
     resp1 = await client.get(f"/api/v1/courses/{course_no_periods.id}/staff-progress", headers=headers)
@@ -187,17 +154,7 @@ async def test_staff_progress_empty_states(
     assert "scheduled_period_mean" not in data1["students"][0]
     assert "average_scope" not in data1["students"][0]
 
-    course_no_students = Course(
-        title="No Students Course",
-        description="Course without enrollments",
-        start_date=date(2026, 8, 1),
-        end_date=date(2026, 8, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
-    )
-    db_session.add(course_no_students)
+    course_no_students = await create_course(db_session, test_mentor, title="No Students Course", description="Course without enrollments")
     await db_session.commit()
 
     j1 = Journal(
@@ -228,104 +185,93 @@ async def test_staff_progress_canonical_cohort_exclusion(
     admin_token = create_access_token(test_admin.id, test_admin.role)
     headers = {"Authorization": f"Bearer {admin_token}"}
 
-    active_user = User(
+    active_user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="cohort_active@example.com",
         password_hash="hash",
         first_name="Active",
         last_name="User",
-        role=UserRole.STUDENT,
-        must_set_password=False
     )
-    withdrawn_user = User(
+    withdrawn_user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="cohort_withdrawn@example.com",
         password_hash="hash",
         first_name="Withdrawn",
         last_name="User",
-        role=UserRole.STUDENT,
-        must_set_password=False
     )
-    deleted_enroll_user = User(
+    deleted_enroll_user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="cohort_del_enroll@example.com",
         password_hash="hash",
         first_name="DelEnroll",
         last_name="User",
-        role=UserRole.STUDENT,
-        must_set_password=False
     )
-    deleted_user = User(
+    deleted_user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="cohort_del_user@example.com",
         password_hash="hash",
         first_name="Deleted",
         last_name="User",
-        role=UserRole.STUDENT,
-        must_set_password=False,
-        is_deleted=True
+        is_deleted=True,
     )
-    mentor_as_student = User(
+    mentor_as_student = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="mentor_enrolled@example.com",
         password_hash="hash",
         first_name="MentorStudent",
         last_name="User",
-        role=UserRole.MENTOR,
-        must_set_password=False
     )
-    db_session.add_all([active_user, withdrawn_user, deleted_enroll_user, deleted_user, mentor_as_student])
     await db_session.commit()
 
-    course = Course(
-        title="Cohort Test Course",
-        description="Testing canonical cohort",
-        start_date=date(2026, 8, 1),
-        end_date=date(2026, 8, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
-    )
-    db_session.add(course)
+    course = await create_course(db_session, test_mentor, title="Cohort Test Course", description="Testing canonical cohort")
     await db_session.commit()
 
-    e_active = Enrollment(
-        student_id=active_user.id,
-        course_id=course.id,
+    await enroll_student(
+        db_session,
+        active_user,
+        course,
         price_at_enrollment=Decimal("100.00"),
         color_hex="#083D91",
-        status=EnrollmentStatus.ACTIVE,
-        is_deleted=False
+        is_deleted=False,
     )
-    e_withdrawn = Enrollment(
-        student_id=withdrawn_user.id,
-        course_id=course.id,
+    await enroll_student(
+        db_session,
+        withdrawn_user,
+        course,
         price_at_enrollment=Decimal("100.00"),
         color_hex="#083D91",
         status=EnrollmentStatus.WITHDRAWN,
-        is_deleted=False
+        is_deleted=False,
     )
-    e_deleted = Enrollment(
-        student_id=deleted_enroll_user.id,
-        course_id=course.id,
+    await enroll_student(
+        db_session,
+        deleted_enroll_user,
+        course,
         price_at_enrollment=Decimal("100.00"),
         color_hex="#083D91",
-        status=EnrollmentStatus.ACTIVE,
-        is_deleted=True
+        is_deleted=True,
     )
-    e_deleted_user = Enrollment(
-        student_id=deleted_user.id,
-        course_id=course.id,
+    await enroll_student(
+        db_session,
+        deleted_user,
+        course,
         price_at_enrollment=Decimal("100.00"),
         color_hex="#083D91",
-        status=EnrollmentStatus.ACTIVE,
-        is_deleted=False
+        is_deleted=False,
     )
-    e_mentor = Enrollment(
-        student_id=mentor_as_student.id,
-        course_id=course.id,
+    await enroll_student(
+        db_session,
+        mentor_as_student,
+        course,
         price_at_enrollment=Decimal("100.00"),
         color_hex="#083D91",
-        status=EnrollmentStatus.ACTIVE,
-        is_deleted=False
+        is_deleted=False,
     )
-    db_session.add_all([e_active, e_withdrawn, e_deleted, e_deleted_user, e_mentor])
     await db_session.commit()
 
     resp = await client.get(f"/api/v1/courses/{course.id}/staff-progress", headers=headers)

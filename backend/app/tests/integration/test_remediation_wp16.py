@@ -1,19 +1,13 @@
 from datetime import date
-from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token
-from app.models.course import Course, CourseExamType
+from app.models.course import Course
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User, UserRole
-
-
-def _authorization_headers(user: User) -> dict[str, str]:
-    token: str = create_access_token(user.id, user.role)
-    return {"Authorization": f"Bearer {token}"}
+from app.tests.factories import auth_headers, create_course, create_user, enroll_student
 
 
 async def _create_student(
@@ -23,18 +17,16 @@ async def _create_student(
     parent_phone: str,
     parent_chat_id: int,
 ) -> User:
-    student: User = User(
+    student: User = await create_user(
+        session,
+        UserRole.STUDENT,
         email=email,
         password_hash="test-hash",
         first_name=first_name,
         last_name="Directory",
-        role=UserRole.STUDENT,
         parent_phone=parent_phone,
         parent_telegram_chat_id=parent_chat_id,
-        must_set_password=False,
     )
-    session.add(student)
-    await session.flush()
     return student
 
 
@@ -44,18 +36,15 @@ async def _create_course(
     title: str,
     is_deleted: bool = False,
 ) -> Course:
-    course: Course = Course(
+    course: Course = await create_course(
+        session,
+        mentor,
         title=title,
         description="Directory ownership fixture",
         start_date=date(2026, 1, 1),
         end_date=date(2026, 12, 31),
-        exam_type=CourseExamType.WEEKLY,
-        price=Decimal("100.00"),
-        mentor_id=mentor.id,
         is_deleted=is_deleted,
     )
-    session.add(course)
-    await session.flush()
     return course
 
 
@@ -66,16 +55,7 @@ async def _enroll(
     status: EnrollmentStatus = EnrollmentStatus.ACTIVE,
     is_deleted: bool = False,
 ) -> Enrollment:
-    enrollment: Enrollment = Enrollment(
-        student_id=student.id,
-        course_id=course.id,
-        price_at_enrollment=course.price,
-        color_hex="#123456",
-        status=status,
-        is_deleted=is_deleted,
-    )
-    session.add(enrollment)
-    await session.flush()
+    enrollment: Enrollment = await enroll_student(session, student, course, status=status, is_deleted=is_deleted)
     return enrollment
 
 
@@ -85,15 +65,14 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
     db_session: AsyncSession,
     test_mentor: User,
 ) -> None:
-    other_mentor: User = User(
+    other_mentor: User = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="wp16_other_mentor@example.com",
         password_hash="test-hash",
         first_name="Other",
         last_name="Mentor",
-        role=UserRole.MENTOR,
-        must_set_password=False,
     )
-    db_session.add(other_mentor)
     await db_session.flush()
 
     owned_student: User = await _create_student(
@@ -118,7 +97,7 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
 
     response = await client.get(
         "/api/v1/students/?page=1&page_size=1&mentor_id=%d" % other_mentor.id,
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert response.status_code == 200
     page_data: dict[str, object] = response.json()
@@ -135,7 +114,7 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
 
     unrelated_search = await client.get(
         "/api/v1/students/?search=wp16_unrelated",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert unrelated_search.status_code == 200
     assert unrelated_search.json() == {
@@ -146,19 +125,18 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
         "total_pages": 0,
     }
 
-    zero_course_mentor: User = User(
+    zero_course_mentor: User = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="wp16_zero_courses@example.com",
         password_hash="test-hash",
         first_name="Zero",
         last_name="Courses",
-        role=UserRole.MENTOR,
-        must_set_password=False,
     )
-    db_session.add(zero_course_mentor)
     await db_session.commit()
     zero_course_response = await client.get(
         "/api/v1/students/",
-        headers=_authorization_headers(zero_course_mentor),
+        headers=auth_headers(zero_course_mentor),
     )
     assert zero_course_response.status_code == 200
     assert zero_course_response.json()["items"] == []
@@ -235,7 +213,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     response = await client.get(
         "/api/v1/students/?search=wp16_",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert response.status_code == 200
     assert response.json()["total"] == 4
@@ -248,7 +226,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     deleted_enrollment_search = await client.get(
         "/api/v1/students/?search=wp16_deleted_enrollment_only",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert deleted_enrollment_search.status_code == 200
     assert deleted_enrollment_search.json()["items"] == []
@@ -256,7 +234,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     deleted_course_search = await client.get(
         "/api/v1/students/?search=wp16_deleted_course_only",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert deleted_course_search.status_code == 200
     assert deleted_course_search.json()["items"] == []
@@ -298,15 +276,14 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
         9916114,
     )
     owned_course: Course = await _create_course(db_session, test_mentor, "Ordered owned course")
-    other_mentor: User = User(
+    other_mentor: User = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="wp16_order_other_mentor@example.com",
         password_hash="test-hash",
         first_name="OrderOther",
         last_name="Mentor",
-        role=UserRole.MENTOR,
-        must_set_password=False,
     )
-    db_session.add(other_mentor)
     await db_session.flush()
     unrelated_course: Course = await _create_course(db_session, other_mentor, "Ordered unrelated course")
     await _enroll(db_session, first_student, owned_course)
@@ -314,25 +291,24 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
     await _enroll(db_session, second_student, owned_course)
     await _enroll(db_session, third_student, owned_course)
 
-    reverse_insert_first: User = User(
+    reverse_insert_first: User = await create_user(
+        db_session,
+        UserRole.STUDENT,
         id=900002,
         email="wp16_order_reverse_first@example.com",
         password_hash="test-hash",
         first_name="OrderReverseFirst",
         last_name="Directory",
-        role=UserRole.STUDENT,
-        must_set_password=False,
     )
-    reverse_insert_second: User = User(
+    reverse_insert_second: User = await create_user(
+        db_session,
+        UserRole.STUDENT,
         id=900001,
         email="wp16_order_reverse_second@example.com",
         password_hash="test-hash",
         first_name="OrderReverseSecond",
         last_name="Directory",
-        role=UserRole.STUDENT,
-        must_set_password=False,
     )
-    db_session.add_all([reverse_insert_first, reverse_insert_second])
     await db_session.flush()
     await _enroll(db_session, reverse_insert_first, owned_course)
     await _enroll(db_session, reverse_insert_second, owned_course)
@@ -348,7 +324,7 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
     for page_number, expected_student_id in enumerate(expected_student_ids, start=1):
         response = await client.get(
             f"/api/v1/students/?search=wp16_order_&page={page_number}&page_size=1",
-            headers=_authorization_headers(test_mentor),
+            headers=auth_headers(test_mentor),
         )
         assert response.status_code == 200
         assert response.json()["total"] == len(expected_student_ids)
@@ -357,7 +333,7 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
 
     beyond_last_page = await client.get(
         "/api/v1/students/?search=wp16_order_&page=6&page_size=1",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert beyond_last_page.status_code == 200
     assert beyond_last_page.json()["items"] == []
@@ -393,7 +369,7 @@ async def test_admin_and_accountant_keep_unscoped_student_directory_access(
     for user in (test_admin, test_accountant):
         response = await client.get(
             "/api/v1/students/?search=wp16_",
-            headers=_authorization_headers(user),
+            headers=auth_headers(user),
         )
         assert response.status_code == 200
         assert response.json()["total"] == 2

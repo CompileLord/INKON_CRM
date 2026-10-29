@@ -11,18 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.charge import Charge
 
-from app.core.security import create_access_token
 from app.main import app
 from app.models.user import User
 from app.tests.integration.test_finance import _setup_student_course
+from app.tests.factories import auth_headers
 
 PAYMENTS_URL: str = "/api/v1/finance/payments/"
 COURSES_URL: str = "/api/v1/courses/"
 HUGE_IDENTIFIER: str = "99999999999999999999"
-
-
-def bearer(user: User) -> Dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 class PaymentScenario:
@@ -36,7 +32,7 @@ class PaymentScenario:
 
     async def prepare(self) -> "PaymentScenario":
         self.student_id, self.course_id = await _setup_student_course(
-            self.client, bearer(self.admin), self.mentor.id, email="u10@example.com", price="500.00"
+            self.client, auth_headers(self.admin), self.mentor.id, email="u10@example.com", price="500.00"
         )
         return self
 
@@ -50,10 +46,10 @@ class PaymentScenario:
         }
         if comment is not None:
             payload["comment"] = comment
-        return await self.client.post(PAYMENTS_URL, json=payload, headers=bearer(self.accountant))
+        return await self.client.post(PAYMENTS_URL, json=payload, headers=auth_headers(self.accountant))
 
     async def pay_raw(self, raw_body: str) -> Response:
-        headers: Dict[str, str] = {**bearer(self.accountant), "Content-Type": "application/json"}
+        headers: Dict[str, str] = {**auth_headers(self.accountant), "Content-Type": "application/json"}
         return await self.client.post(PAYMENTS_URL, content=raw_body, headers=headers)
 
 
@@ -98,7 +94,7 @@ async def test_money_accepts_plain_decimals_and_serializes_two_places(scenario: 
 async def test_money_validation_covers_refund_discount_adjustment_and_course_price(
     client: AsyncClient, test_admin: User, test_mentor: User
 ) -> None:
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     bad_amounts: List[str] = ["NaN", "1e3", "1.234"]
     bad_amount: str
     for bad_amount in bad_amounts:
@@ -161,7 +157,7 @@ async def test_payment_comment_is_limited_to_500_characters(
     too_long: Response = await scenario.pay("10.00", comment="x" * 501)
     assert too_long.status_code == 422
     assert (await scenario.pay("10.00", comment="x" * 5000)).status_code == 422
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     refund: Response = await client.post("/api/v1/finance/payments/1/refund", json={"amount": "1.00", "reason_code": "x", "comment": "y" * 501}, headers=headers)
     void: Response = await client.post("/api/v1/finance/payments/1/void", json={"reason_code": "x", "comment": "y" * 501}, headers=headers)
     discount: Response = await client.post("/api/v1/finance/discounts/", json={"student_id": 1, "amount": "1.00", "comment": "y" * 501}, headers=headers)
@@ -205,7 +201,7 @@ class IntegerPathRoutes:
 async def test_out_of_range_integer_path_ids_return_422_json_on_every_router(client: AsyncClient, test_admin: User) -> None:
     cases: List[Tuple[str, str, Set[str]]] = IntegerPathRoutes.collect()
     assert len(cases) > 30
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     offenders: List[str] = []
     method: str
     path: str
@@ -224,7 +220,7 @@ async def test_out_of_range_integer_path_ids_return_422_json_on_every_router(cli
 
 @pytest.mark.asyncio
 async def test_the_nine_reported_endpoints_do_not_crash(client: AsyncClient, test_admin: User) -> None:
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     targets: List[Tuple[str, str]] = [
         ("GET", f"/api/v1/students/{HUGE_IDENTIFIER}/profile"),
         ("GET", f"/api/v1/courses/{HUGE_IDENTIFIER}"),
@@ -245,7 +241,7 @@ async def test_the_nine_reported_endpoints_do_not_crash(client: AsyncClient, tes
 
 @pytest.mark.asyncio
 async def test_out_of_range_query_integers_return_422_json(client: AsyncClient, test_admin: User) -> None:
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     urls: List[str] = [
         f"/api/v1/finance/debts/?student_id={HUGE_IDENTIFIER}",
         f"/api/v1/finance/charges/?student_id={HUGE_IDENTIFIER}",
@@ -260,7 +256,7 @@ async def test_out_of_range_query_integers_return_422_json(client: AsyncClient, 
 
 @pytest.mark.asyncio
 async def test_nul_characters_return_422_json_in_body_query_and_path(client: AsyncClient, test_admin: User) -> None:
-    headers: Dict[str, str] = bearer(test_admin)
+    headers: Dict[str, str] = auth_headers(test_admin)
     patched: Response = await client.patch(
         f"/api/v1/users/{test_admin.id}", content=json.dumps({"last_name": "Bad\u0000Name"}), headers={**headers, "Content-Type": "application/json"}
     )

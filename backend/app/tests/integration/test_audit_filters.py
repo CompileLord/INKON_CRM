@@ -3,17 +3,13 @@ from datetime import datetime, timezone
 import pytest
 from httpx import AsyncClient, Response
 
-from app.core.security import create_access_token
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.course import Course, CourseExamType, CourseStatus
 from app.models.user import User
 from app.tests.conftest import TestingSessionLocal
+from app.tests.factories import auth_headers
 
 AUDIT_URL: str = "/api/v1/audit-log/"
-
-
-def _headers(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 def _entry(
@@ -65,7 +61,7 @@ async def seeded_course_id(test_admin: User, test_mentor: User) -> int:
 
 
 async def _fetch(client: AsyncClient, admin: User, **params: object) -> dict:
-    response = await client.get(AUDIT_URL, params=params, headers=_headers(admin))
+    response = await client.get(AUDIT_URL, params=params, headers=auth_headers(admin))
     assert response.status_code == 200
     return response.json()
 
@@ -171,7 +167,7 @@ async def test_unresolved_entities_and_null_actor_stay_empty(client: AsyncClient
 
 @pytest.mark.asyncio
 async def test_filter_options_list_only_recorded_actors_and_types(client: AsyncClient, test_admin: User, test_mentor: User, seeded_course_id: int) -> None:
-    response = await client.get(f"{AUDIT_URL}filter-options/", headers=_headers(test_admin))
+    response = await client.get(f"{AUDIT_URL}filter-options/", headers=auth_headers(test_admin))
 
     assert response.status_code == 200
     options = response.json()
@@ -181,11 +177,11 @@ async def test_filter_options_list_only_recorded_actors_and_types(client: AsyncC
 
 @pytest.mark.asyncio
 async def test_invalid_filters_are_rejected_and_roles_are_guarded(client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User) -> None:
-    invalid_action = await client.get(AUDIT_URL, params={"action": "explode"}, headers=_headers(test_admin))
-    invalid_date = await client.get(AUDIT_URL, params={"date_from": "not-a-date"}, headers=_headers(test_admin))
-    accountant = await client.get(AUDIT_URL, params={"actor_id": 1}, headers=_headers(test_accountant))
-    accountant_options = await client.get(f"{AUDIT_URL}filter-options/", headers=_headers(test_accountant))
-    mentor_options = await client.get(f"{AUDIT_URL}filter-options/", headers=_headers(test_mentor))
+    invalid_action = await client.get(AUDIT_URL, params={"action": "explode"}, headers=auth_headers(test_admin))
+    invalid_date = await client.get(AUDIT_URL, params={"date_from": "not-a-date"}, headers=auth_headers(test_admin))
+    accountant = await client.get(AUDIT_URL, params={"actor_id": 1}, headers=auth_headers(test_accountant))
+    accountant_options = await client.get(f"{AUDIT_URL}filter-options/", headers=auth_headers(test_accountant))
+    mentor_options = await client.get(f"{AUDIT_URL}filter-options/", headers=auth_headers(test_mentor))
 
     assert invalid_action.status_code == 422
     assert invalid_date.status_code == 422
@@ -201,7 +197,7 @@ async def test_real_payment_audit_rows_name_the_student_and_link_the_student(
     from app.tests.integration.test_finance import _setup_student_course
 
     student_id, course_id = await _setup_student_course(
-        client, _headers(test_admin), test_mentor.id, email="audit-label@example.com"
+        client, auth_headers(test_admin), test_mentor.id, email="audit-label@example.com"
     )
     payment_response = await client.post(
         "/api/v1/finance/payments/",
@@ -212,7 +208,7 @@ async def test_real_payment_audit_rows_name_the_student_and_link_the_student(
             "paid_at": datetime.now(timezone.utc).isoformat(),
             "method": "cash",
         },
-        headers=_headers(test_accountant),
+        headers=auth_headers(test_accountant),
     )
     assert payment_response.status_code in (200, 201)
 
@@ -229,7 +225,7 @@ EVENTS_URL: str = "/api/v1/audit-log/events/"
 
 
 async def _events(client: AsyncClient, admin: User, **params: object) -> dict:
-    response = await client.get(EVENTS_URL, params=params, headers=_headers(admin))
+    response = await client.get(EVENTS_URL, params=params, headers=auth_headers(admin))
     assert response.status_code == 200
     return response.json()
 
@@ -304,16 +300,16 @@ async def test_event_names_student_amount_and_course_from_real_records(
     from app.tests.integration.test_finance import _setup_student_course
 
     student_id, course_id = await _setup_student_course(
-        client, _headers(test_admin), test_mentor.id, email="audit-event@example.com"
+        client, auth_headers(test_admin), test_mentor.id, email="audit-event@example.com"
     )
     payment_response = await client.post(
         "/api/v1/finance/payments/",
         json={"student_id": student_id, "course_id": course_id, "amount": "75.50", "paid_at": datetime.now(timezone.utc).isoformat(), "method": "cash"},
-        headers=_headers(test_accountant),
+        headers=auth_headers(test_accountant),
     )
     payment_id = payment_response.json()["id"]
     void_response = await client.post(
-        f"/api/v1/finance/payments/{payment_id}/void", json={"reason_code": "entry_error"}, headers=_headers(test_accountant)
+        f"/api/v1/finance/payments/{payment_id}/void", json={"reason_code": "entry_error"}, headers=auth_headers(test_accountant)
     )
     assert void_response.status_code == 200
 
@@ -337,7 +333,7 @@ async def test_events_keep_filters_and_role_guard(client: AsyncClient, test_admi
     await _seed_grouped_events(test_admin, test_accountant)
 
     by_actor = await _events(client, test_admin, actor_id=test_accountant.id)
-    forbidden = await client.get(EVENTS_URL, headers=_headers(test_accountant))
+    forbidden = await client.get(EVENTS_URL, headers=auth_headers(test_accountant))
 
     assert by_actor["total"] == 2
     assert forbidden.status_code == 403
@@ -352,19 +348,19 @@ async def test_refund_event_uses_refunded_amount(
     student_id: int
     course_id: int
     student_id, course_id = await _setup_student_course(
-        client, _headers(test_admin), test_mentor.id, email="refund-event@example.com"
+        client, auth_headers(test_admin), test_mentor.id, email="refund-event@example.com"
     )
     payment_response: Response = await client.post(
         "/api/v1/finance/payments/",
         json={"student_id": student_id, "course_id": course_id, "amount": "275.00", "paid_at": datetime.now(timezone.utc).isoformat(), "method": "cash"},
-        headers=_headers(test_accountant),
+        headers=auth_headers(test_accountant),
     )
     assert payment_response.status_code in (200, 201)
     payment_id: int = payment_response.json()["id"]
     refund_response: Response = await client.post(
         f"/api/v1/finance/payments/{payment_id}/refund",
         json={"amount": "100.00", "reason_code": "other", "to_wallet": True},
-        headers=_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     assert refund_response.status_code == 200
     events: dict = await _events(client, test_admin, entity_type="payment", entity_id=payment_id)

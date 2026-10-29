@@ -6,13 +6,13 @@ from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import settings
-from app.core.security import create_access_token
 from app.models.outbox_event import OutboxEvent, OutboxEventKind
 from app.models.user import User
 from app.services.outbox_service import OutboxPayloadEncryptor
 from app.tests.conftest import TestingSessionLocal
 from app.tests.sms_fakes import FakeSmsSender
 from app.workers.outbox import OutboxWorkerManager
+from app.tests.factories import auth_headers
 
 
 class SmsPasswordTestSupport:
@@ -20,9 +20,7 @@ class SmsPasswordTestSupport:
     def build_session_factory() -> async_sessionmaker[AsyncSession]:
         return TestingSessionLocal
 
-    @staticmethod
-    def bearer(user: User) -> dict[str, str]:
-        return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
+    bearer = staticmethod(auth_headers)
 
     @staticmethod
     def build_worker(sender: FakeSmsSender, **overrides: Any) -> OutboxWorkerManager:

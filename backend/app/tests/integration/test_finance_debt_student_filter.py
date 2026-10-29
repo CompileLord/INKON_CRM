@@ -3,15 +3,11 @@ from datetime import date, timedelta
 import pytest
 from httpx import AsyncClient
 
-from app.core.security import create_access_token
 from app.models.user import User
 from app.tests.integration.test_finance import _setup_student_course
+from app.tests.factories import auth_headers
 
 DEBTS_URL: str = "/api/v1/finance/debts/"
-
-
-def _headers(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 async def _enroll_in_new_course(
@@ -45,8 +41,8 @@ async def _enroll_in_new_course(
 async def test_student_filter_returns_only_that_students_course_balances(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
-    admin_headers: dict[str, str] = _headers(test_admin)
-    accountant_headers: dict[str, str] = _headers(test_accountant)
+    admin_headers: dict[str, str] = auth_headers(test_admin)
+    accountant_headers: dict[str, str] = auth_headers(test_accountant)
     first_student_id, first_course_id = await _setup_student_course(
         client, admin_headers, test_mentor.id, email="debt-filter-a@example.com"
     )
@@ -71,8 +67,8 @@ async def test_student_filter_returns_only_that_students_course_balances(
 async def test_student_filter_intersects_with_course_filter(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
-    admin_headers: dict[str, str] = _headers(test_admin)
-    accountant_headers: dict[str, str] = _headers(test_accountant)
+    admin_headers: dict[str, str] = auth_headers(test_admin)
+    accountant_headers: dict[str, str] = auth_headers(test_accountant)
     student_id, first_course_id = await _setup_student_course(
         client, admin_headers, test_mentor.id, email="debt-intersect-a@example.com"
     )
@@ -102,13 +98,13 @@ async def test_student_filter_intersects_with_course_filter(
 async def test_student_filter_counts_before_pagination(
     client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User
 ) -> None:
-    admin_headers: dict[str, str] = _headers(test_admin)
+    admin_headers: dict[str, str] = auth_headers(test_admin)
     student_id, _ = await _setup_student_course(client, admin_headers, test_mentor.id, email="debt-page@example.com")
     await _setup_student_course(client, admin_headers, test_mentor.id, email="debt-page-other@example.com")
     await _enroll_in_new_course(client, admin_headers, test_mentor.id, student_id, "Paged")
 
     first_page = (
-        await client.get(DEBTS_URL, params={"student_id": student_id, "page_size": 1}, headers=_headers(test_accountant))
+        await client.get(DEBTS_URL, params={"student_id": student_id, "page_size": 1}, headers=auth_headers(test_accountant))
     ).json()
 
     assert first_page["total"] == 2
@@ -121,8 +117,8 @@ async def test_student_filter_counts_before_pagination(
 async def test_student_filter_unknown_student_is_empty_and_invalid_is_rejected(
     client: AsyncClient, test_accountant: User
 ) -> None:
-    unknown = await client.get(DEBTS_URL, params={"student_id": 987654}, headers=_headers(test_accountant))
-    invalid = await client.get(DEBTS_URL, params={"student_id": 0}, headers=_headers(test_accountant))
+    unknown = await client.get(DEBTS_URL, params={"student_id": 987654}, headers=auth_headers(test_accountant))
+    invalid = await client.get(DEBTS_URL, params={"student_id": 0}, headers=auth_headers(test_accountant))
 
     assert unknown.status_code == 200
     assert unknown.json()["total"] == 0
@@ -133,8 +129,8 @@ async def test_student_filter_unknown_student_is_empty_and_invalid_is_rejected(
 async def test_student_filter_keeps_role_guard(
     client: AsyncClient, test_mentor: User, test_student: User
 ) -> None:
-    mentor_response = await client.get(DEBTS_URL, params={"student_id": test_student.id}, headers=_headers(test_mentor))
-    student_response = await client.get(DEBTS_URL, params={"student_id": test_student.id}, headers=_headers(test_student))
+    mentor_response = await client.get(DEBTS_URL, params={"student_id": test_student.id}, headers=auth_headers(test_mentor))
+    student_response = await client.get(DEBTS_URL, params={"student_id": test_student.id}, headers=auth_headers(test_student))
 
     assert mentor_response.status_code == 403
     assert student_response.status_code == 403
@@ -146,7 +142,7 @@ async def test_debtors_cache_reuses_and_invalidates_after_payment(client: AsyncC
     from typing import Any
     from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
 
-    headers: dict[str, str] = _headers(test_admin)
+    headers: dict[str, str] = auth_headers(test_admin)
     student_id: int
     course_id: int
     student_id, course_id = await _setup_student_course(client, headers, test_mentor.id, email='debt-cache@example.com')

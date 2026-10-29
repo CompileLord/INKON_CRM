@@ -24,6 +24,7 @@ from app.services.auth_composition import AuthServiceComposition
 from app.services.email_service import EmailService
 from app.services.outbox_service import OutboxService
 from app.workers.outbox import OutboxWorkerManager, run_outbox_worker_once
+from app.tests.factories import create_user
 
 ORIGINAL_SEND_EMAIL = EmailService.send_email
 
@@ -36,14 +37,7 @@ def _make_test_session_factory() -> async_sessionmaker[AsyncSession]:
 
 @pytest.mark.asyncio
 async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
-    user = User(
-        email="reset-path@example.com",
-        first_name="Reset",
-        last_name="Tester",
-        role=UserRole.STUDENT,
-        must_set_password=False,
-    )
-    db_session.add(user)
+    user = await create_user(db_session, UserRole.STUDENT, email="reset-path@example.com", first_name="Reset", last_name="Tester")
     await db_session.commit()
 
     auth_svc: AuthService = AuthServiceComposition.create(db_session)
@@ -80,14 +74,14 @@ async def test_password_reset_mail_path(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_worker_once_delivers_and_purges_payload(db_session: AsyncSession) -> None:
-    user = User(
+    user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="worker@example.com",
         first_name="Worker",
         last_name="Test",
-        role=UserRole.STUDENT,
         must_set_password=True,
     )
-    db_session.add(user)
     await db_session.commit()
 
     auth_svc: AuthService = AuthServiceComposition.create(db_session)
@@ -123,14 +117,14 @@ async def test_worker_once_delivers_and_purges_payload(db_session: AsyncSession)
 
 @pytest.mark.asyncio
 async def test_worker_does_not_send_superseded_or_expired_code(db_session: AsyncSession) -> None:
-    user = User(
+    user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="superseded@example.com",
         first_name="Super",
         last_name="Seded",
-        role=UserRole.STUDENT,
         must_set_password=True,
     )
-    db_session.add(user)
     await db_session.commit()
 
     auth_svc: AuthService = AuthServiceComposition.create(db_session)
@@ -212,14 +206,14 @@ async def test_concurrent_workers_claim_disjoint_sets() -> None:
 
 @pytest.mark.asyncio
 async def test_no_db_checkout_held_during_smtp_send(db_session: AsyncSession) -> None:
-    user = User(
+    user = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="smtp-stall@example.com",
         first_name="Stall",
         last_name="Tester",
-        role=UserRole.STUDENT,
         must_set_password=True,
     )
-    db_session.add(user)
     await db_session.commit()
 
     auth_svc: AuthService = AuthServiceComposition.create(db_session)
