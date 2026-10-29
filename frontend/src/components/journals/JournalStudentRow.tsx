@@ -140,7 +140,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
                 graded={currentGraded}
                 comment={markUnrecorded && !isSelf ? null : currentComment}
                 status={cellStatus.get(cellKey)}
-                recorded={entry?.attendance !== null && (!markUnrecorded || entry !== undefined)}
+                recorded={date <= today && entry?.attendance !== null && (!markUnrecorded || entry !== undefined)}
               />
             )}
           </td>

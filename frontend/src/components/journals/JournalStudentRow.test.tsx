@@ -199,3 +199,10 @@ it("renders a future null attendance entry as empty rather than absent", () => {
   expect(screen.getByTestId("not-recorded-cell")).toBeDefined();
   expect(screen.queryByTestId("attendance-absent")).toBeNull();
 });
+
+
+it("renders a missing future entry as empty rather than absent", () => {
+  render(<table><tbody><JournalStudentRow {...props} lessonDates={["2099-01-01"]} editing={null} student={student} /></tbody></table>);
+  expect(screen.getByTestId("not-recorded-cell")).toBeDefined();
+  expect(screen.queryByTestId("attendance-absent")).toBeNull();
+});
