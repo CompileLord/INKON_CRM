@@ -5,7 +5,7 @@ import type {
   CourseCreditAllocationPayload,
   CourseCreditAllocationResponse,
   ChargeItem,
-  DebtItem,
+  DebtPage,
   DebtReminderResponse,
   DiscountCreatePayload,
   FinanceAnalyticsResponse,
@@ -75,7 +75,7 @@ export async function fetchDebts(
   page = 1,
   pageSize = 20,
   filters: DebtFilters = {}
-): Promise<Paginated<DebtItem>> {
+): Promise<DebtPage> {
   const params = new URLSearchParams({
     page: page.toString(),
     page_size: pageSize.toString(),

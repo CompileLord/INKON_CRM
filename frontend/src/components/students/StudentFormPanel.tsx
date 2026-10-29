@@ -21,6 +21,7 @@ import {
   buildUserFormValues,
   describeUserApiError,
   isDuplicateEmailError,
+  isDuplicatePhoneError,
 } from "../../lib/users/formMapping";
 import { useCreateUser, useUpdateUser } from "../../lib/users/hooks";
 import { resolveMediaUrl } from "../../lib/users/media";
@@ -201,10 +202,10 @@ function StudentFormPanelInner({
   };
 
   const handleError = (err: unknown) => {
-    if (isDuplicateEmailError(err)) {
-      setError("email", { type: "server", message: t("validation.emailTaken") });
-      const emailInput = formRef.current?.querySelector<HTMLElement>("#student-email");
-      emailInput?.focus();
+    const duplicate: "email" | "phone" | null = isDuplicateEmailError(err) ? "email" : isDuplicatePhoneError(err) ? "phone" : null;
+    if (duplicate) {
+      setError(duplicate, { type: "server", message: t(duplicate === "email" ? "validation.emailTaken" : "validation.phoneTaken") });
+      formRef.current?.querySelector<HTMLElement>(`#student-${duplicate}`)?.focus();
       return;
     }
     if (err instanceof AuthApiError && err.status === 422) {

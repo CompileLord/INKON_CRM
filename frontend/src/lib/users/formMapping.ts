@@ -1,5 +1,6 @@
 import { CanonicalPhone } from "./CanonicalPhone";
 import { AuthApiError, NetworkError } from "../auth/errors";
+import { ApiErrorCodes } from "../auth/apiErrorCodes";
 import type { UserCreate, UserUpdate } from "./types";
 
 /**
@@ -208,6 +209,8 @@ export function describeUserApiError(
 ): string {
   const t = translator ?? ((k: string) => k);
   if (err instanceof AuthApiError) {
+    const translated: string | null = translator ? ApiErrorCodes.translate(err, translator) : null;
+    if (translated !== null) return translated;
     if (err.status === 403) return translator ? t("common:error") : "Недостаточно прав для этого действия";
     if (err.status >= 500) return translator ? t("students:table.error") : "Сервер недоступен, попробуйте позже";
     return err.message;
@@ -218,26 +221,10 @@ export function describeUserApiError(
 
 export const EMAIL_TAKEN_MESSAGE = "Этот email уже используется";
 
-/**
- * There's no confirmed, stable error contract for "this email is already
- * taken" yet — as of writing the backend returns a bare 500 for it (a
- * server bug, tracked separately) instead of a clean 400/409. This matches
- * defensively on likely future shapes (a 400/409/422 whose detail mentions
- * the email already existing) so the email-specific UI in the form starts
- * working the moment the backend's response becomes well-formed, without
- * needing another frontend change. Tighten this once the real contract is
- * confirmed.
- */
 export function isDuplicateEmailError(err: unknown): boolean {
-  if (!(err instanceof AuthApiError)) return false;
-  if (![400, 409, 422].includes(err.status)) return false;
+  return err instanceof AuthApiError && err.status === 409 && ApiErrorCodes.is(err, "email_taken");
+}
 
-  const message = typeof err.detail === "string" ? err.detail : err.message;
-  const normalized = message.toLowerCase();
-  const mentionsEmail = normalized.includes("email") || Boolean(err.fieldErrors.email);
-  const mentionsDuplicate = /already exists|already in use|already registered|уже существ|уже использ|уже занят/.test(
-    normalized,
-  );
-
-  return mentionsEmail && mentionsDuplicate;
+export function isDuplicatePhoneError(err: unknown): boolean {
+  return err instanceof AuthApiError && err.status === 409 && ApiErrorCodes.is(err, "phone_taken");
 }

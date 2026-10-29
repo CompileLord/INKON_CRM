@@ -83,6 +83,7 @@
     "invalidPhone": "Use international format, starting with +",
     "invalidTelegramChatId": "Must be a valid integer ID",
     "emailTaken": "This email is already in use",
+    "phoneTaken": "This phone number is already in use",
     "required": "This field is required",
     "invalidField": "Invalid value entered",
     "generalValidationError": "Please correct errors in the form before saving"

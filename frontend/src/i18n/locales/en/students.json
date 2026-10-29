@@ -133,6 +133,7 @@
     "invalidPaymentDay": "Must be a number from 1 to 28",
     "emailRequired": "Email is required while phone-only student accounts are disabled.",
     "emailTaken": "This email is already in use",
+    "phoneTaken": "This phone number is already in use",
     "emailOrPhoneRequired": "Enter the student's email or their own phone; a parent phone alone is not enough."
   },
   "profileRefreshError": "Could not refresh this profile. Showing the last loaded information. Try again.",

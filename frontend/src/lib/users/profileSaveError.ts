@@ -1,4 +1,5 @@
 import { AuthApiError, NetworkError } from "../auth/errors";
+import { ApiErrorCodes } from "../auth/apiErrorCodes";
 
 export type ProfileField = "firstName" | "lastName" | "phone";
 
@@ -17,7 +18,7 @@ export class ProfileSaveErrorMapper {
   static map(error: unknown): ProfileSaveFailure {
     if (error instanceof NetworkError) return { fieldKeys: {}, formKey: "saveBar.network" };
     if (!(error instanceof AuthApiError)) return { fieldKeys: {}, formKey: "saveBar.failed" };
-    if (error.status === 409 && ProfileSaveErrorMapper.mentionsPhone(error)) {
+    if (error.status === 409 && ApiErrorCodes.is(error, "phone_taken")) {
       return { fieldKeys: { phone: "profile.phoneTaken" }, formKey: null };
     }
     if (error.status === 422 && Array.isArray(error.detail)) {

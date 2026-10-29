@@ -201,7 +201,7 @@ describe("StudentFormPanel", () => {
   });
 
   it("maps duplicate email server error to the email field", async () => {
-    const createSpy = vi.fn().mockRejectedValue(new AuthApiError(400, "Email already exists in system"));
+    const createSpy = vi.fn().mockRejectedValue(new AuthApiError(409, { code: "email_taken" }));
     vi.spyOn(userHooks, "useCreateUser").mockReturnValue({
       mutateAsync: createSpy,
       isPending: false,

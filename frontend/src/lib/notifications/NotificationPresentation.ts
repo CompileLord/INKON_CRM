@@ -60,7 +60,7 @@ export class NotificationPresentation {
     return role !== null && typeof courseId === "number" && isPathAllowed(role, `/courses/${courseId}`, userId);
   }
 
-  static canRetry(item: Pick<DeliveryLogItem, "status" | "type">): boolean {
+  static canRetry(item: Pick<DeliveryLogItem, "status"> & { type?: string }): boolean {
     return item.status === "failed" && item.type !== "debt_reminder_sms";
   }
 

@@ -7,6 +7,7 @@ import {
   buildUserFormValues,
   describeUserApiError,
   isDuplicateEmailError,
+  isDuplicatePhoneError,
   userFormDefaults,
 } from "./formMapping";
 
@@ -177,26 +178,27 @@ describe("describeUserApiError", () => {
 });
 
 describe("isDuplicateEmailError", () => {
-  it("matches a 409 whose detail mentions the email already existing", () => {
-    expect(isDuplicateEmailError(new AuthApiError(409, "Email already exists"))).toBe(true);
-  });
-
-  it("matches a 400 with a Russian duplicate-email message", () => {
-    expect(isDuplicateEmailError(new AuthApiError(400, "Этот email уже используется"))).toBe(true);
-  });
-
-  it("matches a 422 field error keyed on email even without the word 'email' in the message", () => {
-    expect(
-      isDuplicateEmailError(
-        new AuthApiError(422, [{ loc: ["body", "email"], msg: "already registered", type: "value_error" }]),
-      ),
-    ).toBe(true);
-  });
-
-  it("does not match an unrelated 409, a 500, or a message missing either signal", () => {
-    expect(isDuplicateEmailError(new AuthApiError(409, "Version conflict"))).toBe(false);
-    expect(isDuplicateEmailError(new AuthApiError(500, "email already exists"))).toBe(false);
-    expect(isDuplicateEmailError(new AuthApiError(400, "email is required"))).toBe(false);
+  it("matches only the 409 email_taken code", () => {
+    expect(isDuplicateEmailError(new AuthApiError(409, { code: "email_taken" }))).toBe(true);
+    expect(isDuplicateEmailError(new AuthApiError(409, { code: "phone_taken" }))).toBe(false);
+    expect(isDuplicateEmailError(new AuthApiError(409, "Email already exists"))).toBe(false);
+    expect(isDuplicateEmailError(new AuthApiError(500, { code: "email_taken" }))).toBe(false);
     expect(isDuplicateEmailError(new Error("weird"))).toBe(false);
+  });
+});
+
+describe("isDuplicatePhoneError", () => {
+  it("matches only the 409 phone_taken code", () => {
+    expect(isDuplicatePhoneError(new AuthApiError(409, { code: "phone_taken" }))).toBe(true);
+    expect(isDuplicatePhoneError(new AuthApiError(409, { code: "email_taken" }))).toBe(false);
+    expect(isDuplicatePhoneError(new AuthApiError(409, "User with this phone already exists"))).toBe(false);
+  });
+});
+
+describe("describeUserApiError with backend codes", () => {
+  it("translates codes that carry no message and counts mentor courses", () => {
+    const translate = (key: string, options?: Record<string, unknown>): string => `${key}:${String(options?.courses)}`;
+    expect(describeUserApiError(new AuthApiError(409, { code: "mentor_has_active_courses", course_count: 3 }), translate)).toBe("common:apiErrors.mentorHasActiveCourses:3");
+    expect(describeUserApiError(new AuthApiError(422, "course_already_ended"), translate)).toBe("common:apiErrors.courseAlreadyEnded:0");
   });
 });

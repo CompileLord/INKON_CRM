@@ -12,7 +12,7 @@ import * as userHooks from "../lib/users/hooks";
 import * as auditHooks from "../lib/audit/hooks";
 import * as dashboardHooks from "../lib/dashboard/hooks";
 import type { DashboardAttention } from "../lib/dashboard/types";
-import type { FinanceAnalyticsResponse, DebtItem } from "../lib/finance/types";
+import type { FinanceAnalyticsResponse, DebtPage } from "../lib/finance/types";
 import type { CourseListItemResponse } from "../lib/courses/types";
 import type { StudentListItemResponse } from "../lib/users/types";
 import type { AuditEvent } from "../lib/audit/api";
@@ -167,7 +167,7 @@ export const mockStudentsPaginated: Paginated<StudentListItemResponse> = {
   total_pages: 42,
 };
 
-export const mockDebtsPaginated: Paginated<DebtItem> = {
+export const mockDebtsPaginated: DebtPage = {
   items: [
     {
       student: { id: 101, first_name: "Ali", last_name: "Valiev", email: "ali@example.com", payment_day_of_month: 5 },
@@ -189,6 +189,7 @@ export const mockDebtsPaginated: Paginated<DebtItem> = {
     },
   ],
   total: 2,
+  student_total: 2,
   page: 1,
   page_size: 5,
   total_pages: 1,

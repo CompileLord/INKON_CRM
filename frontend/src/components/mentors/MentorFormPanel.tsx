@@ -16,6 +16,7 @@ import {
   buildMentorFormValues,
   buildMentorUpdatePayload,
   isDuplicateEmailError,
+  isDuplicatePhoneError,
 } from "../../lib/users/formMapping";
 import { useCreateUser, useUpdateUser } from "../../lib/users/hooks";
 import { resolveMediaUrl } from "../../lib/users/media";
@@ -204,16 +205,14 @@ function MentorFormPanelInner({
   };
 
   const handleError = (err: unknown) => {
-    if (isDuplicateEmailError(err)) {
-      setError("email", { type: "server", message: t("validation.emailTaken") });
-      const emailInput = formRef.current?.querySelector<HTMLElement>("#mentor-email");
-      emailInput?.focus();
+    const taken = isDuplicateEmailError(err) ? "email" : isDuplicatePhoneError(err) ? "phone" : null;
+    if (taken) {
+      setError(taken, { type: "server", message: t(`validation.${taken}Taken`) });
+      formRef.current?.querySelector<HTMLElement>(`#mentor-${taken}`)?.focus();
       return;
     }
     if (err instanceof AuthApiError && err.status === 422) {
-      let firstInvalidFieldName: string | null = null;
-      let applied = false;
-
+      let firstInvalidFieldName: string | null = null, applied = false;
       for (const [apiKey, msg] of Object.entries(err.fieldErrors)) {
         let fieldName: keyof MentorFormValues | null = null;
         if (apiKey === "first_name") fieldName = "firstName";
@@ -223,7 +222,7 @@ function MentorFormPanelInner({
         else if (apiKey === "date_of_birth") fieldName = "birthDate";
 
         if (fieldName) {
-          if (!firstInvalidFieldName) firstInvalidFieldName = fieldName;
+          firstInvalidFieldName ??= fieldName;
           let localizedMessage = t("validation.invalidField");
           const lowerMsg = (msg || "").toLowerCase();
           if (lowerMsg.includes("required") || lowerMsg.includes("missing")) {
@@ -240,16 +239,13 @@ function MentorFormPanelInner({
           applied = true;
         }
       }
-
       if (firstInvalidFieldName) {
         requestAnimationFrame(() => {
           const el = formRef.current?.querySelector<HTMLElement>(`#mentor-${firstInvalidFieldName}`);
           el?.focus({ preventScroll: false });
         });
       }
-      if (!applied) {
-        setFormError(t("validation.generalValidationError"));
-      }
+      if (!applied) setFormError(t("validation.generalValidationError"));
       return;
     }
     setFormError(t("form.saveError"));
