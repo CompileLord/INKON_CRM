@@ -34,7 +34,7 @@ def verify_magic_bytes(content: bytes, filename: str) -> bool:
         return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
     elif ext == "wav":
         return content.startswith(b"RIFF") and b"WAVE" in content[:12]
-    return True
+    return False
 
 
 class DocumentService:
@@ -57,18 +57,16 @@ class DocumentService:
         )
         file_size: int = len(content)
 
-        content_type = file.content_type or ""
-        allowed_types = ["audio", "image", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]
-        is_allowed = False
-        for t in allowed_types:
-            if content_type.startswith(t):
-                is_allowed = True
-                break
-        if not is_allowed:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unsupported file format"
-            )
+        content_type: str = file.content_type or ""
+        extension: str = (file.filename or "").rsplit(".", 1)[-1].lower()
+        allowed_types: dict[str, set[str]] = {
+            "pdf": {"application/pdf"}, "jpg": {"image/jpeg"}, "jpeg": {"image/jpeg"},
+            "png": {"image/png"}, "gif": {"image/gif"},
+            "docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+            "txt": {"text/plain"}, "mp3": {"audio/mpeg"}, "wav": {"audio/wav", "audio/x-wav"},
+        }
+        if content_type not in allowed_types.get(extension, set()):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file format")
 
         if not verify_magic_bytes(content, file.filename):
             raise HTTPException(
@@ -78,6 +76,10 @@ class DocumentService:
 
         if owner_type not in ("student", "mentor") or owner_id <= 0:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid document storage path")
+        owner: User | None = await self.db.get(User, owner_id)
+        expected_role: UserRole = UserRole.STUDENT if owner_type == "student" else UserRole.MENTOR
+        if owner is None or owner.is_deleted or owner.role != expected_role:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document owner not found")
         try:
             lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.upload_storage_service)
             filepath: str
