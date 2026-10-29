@@ -63,5 +63,10 @@
     "9": "Oct",
     "10": "Nov",
     "11": "Dec"
+  },
+  "relativeTime": {
+    "now": "just now",
+    "minutes": "{{count}} min ago",
+    "hours": "{{count}} h ago"
   }
 }
