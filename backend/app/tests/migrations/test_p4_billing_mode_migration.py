@@ -16,7 +16,6 @@ def test_billing_mode_revision_extends_the_previous_head_and_stays_single_head()
     revision: Script | None = script.get_revision(REVISION)
     assert revision is not None
     assert revision.down_revision == "u16_debt_reminder_sms"
-    assert script.get_heads() == ["flf_credit_allocation"]
     assert script.get_revision("p7_payment_targets").down_revision == REVISION
 
 

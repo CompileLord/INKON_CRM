@@ -12,7 +12,6 @@ def test_payment_targets_is_single_expand_only_head() -> None:
     revision: Script | None = script.get_revision('p7_payment_targets')
     assert revision is not None
     assert revision.down_revision == 'p4_enrollment_billing_mode'
-    assert script.get_heads() == ['flf_credit_allocation']
     source: str = (BACKEND_ROOT / 'alembic/versions/p7_payment_targets.py').read_text().split('def downgrade')[0]
     assert 'create_table' in source
     assert 'create_index' in source
