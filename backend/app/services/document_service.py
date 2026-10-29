@@ -18,39 +18,42 @@ from app.services.storage_service import StorageService, get_storage_service
 from app.services.bounded_upload_reader import BoundedUploadReader
 
 
-def verify_magic_bytes(content: bytes, filename: str) -> bool:
-    if "." not in filename:
-        return False
-    ext: str = filename.rsplit(".", 1)[-1].lower()
-    if ext == "pdf":
-        return content.startswith(b"%PDF")
-    elif ext in ["jpeg", "jpg"]:
-        return content.startswith(b"\xff\xd8")
-    elif ext == "png":
-        return content.startswith(b"\x89PNG\r\n\x1a\n")
-    elif ext == "gif":
-        return content.startswith(b"GIF8")
-    elif ext == "docx":
-        try:
-            with ZipFile(BytesIO(content)) as archive:
-                names: set[str] = set(archive.namelist())
-                return "[Content_Types].xml" in names and "word/document.xml" in names
-        except BadZipFile:
-            return False
-    elif ext == "txt":
-        try:
-            content.decode("utf-8")
-            return b"\x00" not in content
-        except UnicodeDecodeError:
-            return False
-    elif ext == "mp3":
-        return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
-    elif ext == "wav":
-        return content.startswith(b"RIFF") and b"WAVE" in content[:12]
-    return False
 
 
 class DocumentService:
+    @staticmethod
+    def verify_magic_bytes(content: bytes, filename: str) -> bool:
+        if "." not in filename:
+            return False
+        ext: str = filename.rsplit(".", 1)[-1].lower()
+        if ext == "pdf":
+            return content.startswith(b"%PDF")
+        elif ext in ["jpeg", "jpg"]:
+            return content.startswith(b"\xff\xd8")
+        elif ext == "png":
+            return content.startswith(b"\x89PNG\r\n\x1a\n")
+        elif ext == "gif":
+            return content.startswith(b"GIF8")
+        elif ext == "docx":
+            try:
+                with ZipFile(BytesIO(content)) as archive:
+                    names: set[str] = set(archive.namelist())
+                    return "[Content_Types].xml" in names and "word/document.xml" in names
+            except BadZipFile:
+                return False
+        elif ext == "txt":
+            try:
+                content.decode("utf-8")
+                return b"\x00" not in content
+            except UnicodeDecodeError:
+                return False
+        elif ext == "mp3":
+            return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
+        elif ext == "wav":
+            return content.startswith(b"RIFF") and b"WAVE" in content[:12]
+        return False
+
+
     def __init__(self, db: AsyncSession, storage: StorageService | None = None, document_repo: DocumentRepository | None = None) -> None:
         self.db: AsyncSession = db
         self.document_repo: DocumentRepository = document_repo if document_repo is not None else SQLAlchemyDocumentRepository(db)
@@ -81,7 +84,7 @@ class DocumentService:
         if content_type not in allowed_types.get(extension, set()):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file format")
 
-        if not verify_magic_bytes(content, file.filename or ""):
+        if not self.verify_magic_bytes(content, file.filename or ""):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid file contents for specified file type"
