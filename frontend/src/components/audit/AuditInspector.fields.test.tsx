@@ -59,6 +59,16 @@ describe("audit inspector fields", () => {
     expect(fields.textContent).toContain("РаспределениеWeb Frontend Development — 375 TJS");
   });
 
+  it("does not attach the event's single course to every line of a multi-course allocation", () => {
+    show(event({ changes: [
+      { id: 1, field_name: "targets", old_value: null, new_value: "[{'enrollment_id': 31, 'amount': '375.00'}, {'enrollment_id': 32, 'amount': '200.00'}]" },
+    ] }));
+    const fields: HTMLElement = screen.getByRole("region", { name: "Изменённые поля" });
+    expect(fields.textContent).toContain("375 TJS");
+    expect(fields.textContent).toContain("200 TJS");
+    expect(fields.textContent).not.toContain("Web Frontend Development —");
+  });
+
   it("omits references whose names are unknown and an unreadable allocation", () => {
     show(event({ student_id: null, course_id: null, course_title: null, changes: [
       { id: 1, field_name: "student_id", old_value: null, new_value: "36" },

@@ -53,7 +53,7 @@ export function buildInspectorRows(event: AuditEvent, labels: AuditLabels, langu
       if (amounts.length === 0) continue;
       const lines: string[] = amounts.map((amount) => {
         const formatted: string = formatTjs(amount, { lng: language });
-        return event.course_title ? allocationLine(event.course_title, formatted) : formatted;
+        return event.course_title && amounts.length === 1 ? allocationLine(event.course_title, formatted) : formatted;
       });
       rows.push({ id: change.id, label, layout: "single", lines });
       continue;
