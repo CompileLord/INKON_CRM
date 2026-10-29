@@ -1,2 +1,3 @@
 backend/requirements.lock linguist-generated=true
 backend/requirements-ci.lock linguist-generated=true
+docs/screenshots/** linguist-generated=true -diff
