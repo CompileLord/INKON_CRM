@@ -5,7 +5,6 @@ from app.models.course import CourseStatus
 from app.models.user import User, UserRole
 from app.schemas.course import MentorMiniResponse
 from app.services.audit_service import AuditService
-from app.services.document_service import verify_magic_bytes
 from app.services.journal_service import JournalService
 from app.repositories.interfaces.journal_cell_lookup import JournalCellLookup
 
