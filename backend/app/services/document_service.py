@@ -1,4 +1,6 @@
 from typing import Optional
+from io import BytesIO
+from zipfile import BadZipFile, ZipFile
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +19,9 @@ from app.services.bounded_upload_reader import BoundedUploadReader
 
 
 def verify_magic_bytes(content: bytes, filename: str) -> bool:
-    ext = filename.split(".")[-1].lower()
+    if "." not in filename:
+        return False
+    ext: str = filename.rsplit(".", 1)[-1].lower()
     if ext == "pdf":
         return content.startswith(b"%PDF")
     elif ext in ["jpeg", "jpg"]:
@@ -27,9 +31,18 @@ def verify_magic_bytes(content: bytes, filename: str) -> bool:
     elif ext == "gif":
         return content.startswith(b"GIF8")
     elif ext == "docx":
-        return content.startswith(b"PK\x03\x04")
+        try:
+            with ZipFile(BytesIO(content)) as archive:
+                names: set[str] = set(archive.namelist())
+                return "[Content_Types].xml" in names and "word/document.xml" in names
+        except BadZipFile:
+            return False
     elif ext == "txt":
-        return b"\x00" not in content
+        try:
+            content.decode("utf-8")
+            return b"\x00" not in content
+        except UnicodeDecodeError:
+            return False
     elif ext == "mp3":
         return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
     elif ext == "wav":
@@ -68,7 +81,7 @@ class DocumentService:
         if content_type not in allowed_types.get(extension, set()):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file format")
 
-        if not verify_magic_bytes(content, file.filename):
+        if not verify_magic_bytes(content, file.filename or ""):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid file contents for specified file type"

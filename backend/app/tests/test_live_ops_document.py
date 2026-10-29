@@ -13,6 +13,9 @@ from app.repositories.interfaces.journal_cell_lookup import JournalCellLookup
 def test_document_unknown_extension_is_rejected() -> None:
     assert not verify_magic_bytes(b"anything", "file.exe")
     assert verify_magic_bytes(b"%PDF-1.7", "file.pdf")
+    assert not verify_magic_bytes(b"%PDF-1.7", "pdf")
+    assert not verify_magic_bytes(b"PK\x03\x04invalid", "file.docx")
+    assert not verify_magic_bytes(b"\xffbinary", "file.txt")
 
 @pytest.mark.asyncio
 async def test_document_rejects_mismatched_mime_and_deleted_owner() -> None:
