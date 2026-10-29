@@ -304,6 +304,9 @@ class UserService:
 
         success = await self.user_repo.soft_delete(user_id)
         if success:
+            if user.role == UserRole.STUDENT:
+                from app.services.finance_service import FinanceService
+                await FinanceService(self.db)._invalidate_cache()
             await AuditService(self.db).log_change(
                 current_user_id, "delete", "user", user.id,
                 f"{user.first_name} {user.last_name}", {"is_deleted"},
