@@ -136,7 +136,7 @@ function AttentionGroups({ attention, onPay }: { attention: DashboardAttention; 
               <ul className="flex flex-wrap gap-x-4 gap-y-1">
                 {lesson.students.map((student) => (
                   <li key={student.student_id} className="flex items-center gap-2">
-                    <Link to={`/students/${student.student_id}`} className="inline-flex min-h-11 items-center break-words text-sm text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <Link to={`/students/${student.student_id}`} title={student.student_name} className="inline-flex min-h-11 items-center break-words text-sm text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                       {student.student_name}
                     </Link>
                     {absenceBadge(student, t("absenceStreak", { count: student.consecutive_absences, ordinal: true }))}
@@ -154,7 +154,7 @@ function AttentionGroups({ attention, onPay }: { attention: DashboardAttention; 
             return (
               <li key={payment.enrollment_id} className="flex min-w-0 items-center justify-between gap-3 py-2">
                 <span className="flex min-w-0 flex-col">
-                  <Link to={`/students/${payment.student_id}`} className="break-words text-sm font-medium text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Link to={`/students/${payment.student_id}`} title={payment.student_name} className="break-words text-sm font-medium text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {payment.student_name}
                   </Link>
                   <span className="break-words text-sm text-muted">

@@ -99,7 +99,7 @@ export function CourseRosterSection({
   const isFiltered: boolean = searchQuery !== "" || statusFilter !== DEFAULT_ROSTER_STATUS_FILTER;
 
   const statusOptions: ListboxOption[] = STATUS_VALUES.map((value: string) => ({ value, label: t(`students.status.${value}`) }));
-  const sortChoices: ListboxOption[] = SORT_OPTIONS.map((value: CourseRosterSortOption) => ({ value, label: t(`students.sort.${value}`) }));
+  const sortChoices: ListboxOption[] = SORT_OPTIONS.filter((value: CourseRosterSortOption) => isSuperAdmin || !value.startsWith("price")).map((value: CourseRosterSortOption) => ({ value, label: t(`students.sort.${value}`) }));
 
   const recordDeparture = (): void => {
     CourseDetailDeparture.record(courseId, { tab: "students", search: searchQuery, sort: sortOption, rosterPage: page, rosterStatus: statusFilter });
