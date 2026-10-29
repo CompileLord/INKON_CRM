@@ -99,7 +99,7 @@ export class JournalRequestErrors {
 }
 
 export function entryValueOf(entry: JournalEntryResponse | JournalEntryStateResponse): JournalEntryValue {
-  return { attendance: entry.attendance, score: entry.score, comment: entry.comment ?? null };
+  return { attendance: entry.attendance ?? false, score: entry.score, comment: entry.comment ?? null };
 }
 
 export function isGradedState(entry: JournalEntryResponse | JournalEntryStateResponse): boolean {
