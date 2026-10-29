@@ -131,7 +131,8 @@
     "scheduleStart": "Lesson start, {{day}}",
     "scheduleEnd": "Lesson end, {{day}}",
     "cancelled_amount": "Cancelled amount",
-    "months_cancelled": "Cancelled months"
+    "months_cancelled": "Cancelled months",
+    "targets": "Allocation"
   },
   "values": {
     "none": "No value",
@@ -199,7 +200,8 @@
     "showRecord": "Show all changes to this record",
     "technical": "Technical data",
     "unknownRecord": "Unnamed record",
-    "fields": "Changed fields"
+    "fields": "Changed fields",
+    "allocationLine": "{{course}} — {{amount}}"
   },
   "row": {
     "open": "Open details"

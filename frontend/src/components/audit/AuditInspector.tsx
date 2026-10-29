@@ -2,12 +2,13 @@ import { Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { formatDateTime, SCHOOL_TIMEZONE } from "../../i18n/formatters";
-import type { AuditChange, AuditEvent } from "../../lib/audit/api";
+import type { AuditEvent } from "../../lib/audit/api";
 import { QUIET_ACTION_CLASSES } from "../finance/quietActionClasses";
 import { SlideOver } from "../ui/SlideOver";
 import { AuditCategoryIcon } from "./AuditCategoryIcon";
 import { AuditSentence } from "./AuditSentence";
 import { useAuditLabels } from "./useAuditLabels";
+import { useAuditInspectorRows, type AuditInspectorRow } from "./useAuditInspectorFields";
 
 interface AuditInspectorProps {
   event: AuditEvent | null;
@@ -31,15 +32,45 @@ function ValueBlock({ heading, text, isPlaceholder }: ValueBlockProps) {
   );
 }
 
-function ChangeValues({ change }: { change: AuditChange }) {
+function InspectorRowValues({ row }: { row: AuditInspectorRow }) {
   const { t } = useTranslation("audit");
-  const labels = useAuditLabels();
-  const isPlaceholder = (value: string | null): boolean => value === null || value === "";
+  if (row.layout === "single") {
+    return (
+      <dd className="mt-1 flex select-text flex-col gap-0.5 break-words text-base tabular-nums text-ink">
+        {row.lines.map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </dd>
+    );
+  }
   return (
-    <dl className="mt-1 grid grid-cols-1 gap-2 @[28rem]:grid-cols-2">
-      <ValueBlock heading={t("inspector.before")} text={labels.valueText(change.field_name, change.old_value)} isPlaceholder={isPlaceholder(change.old_value)} />
-      <ValueBlock heading={t("inspector.after")} text={labels.valueText(change.field_name, change.new_value)} isPlaceholder={isPlaceholder(change.new_value)} />
-    </dl>
+    <dd className="mt-1">
+      <dl className="grid grid-cols-1 gap-2 @[28rem]:grid-cols-2">
+        <ValueBlock heading={t("inspector.before")} text={row.before} isPlaceholder={row.beforeIsPlaceholder} />
+        <ValueBlock heading={t("inspector.after")} text={row.after} isPlaceholder={row.afterIsPlaceholder} />
+      </dl>
+    </dd>
+  );
+}
+
+function InspectorFields({ event }: { event: AuditEvent }) {
+  const { t } = useTranslation("audit");
+  const rows: AuditInspectorRow[] = useAuditInspectorRows(event);
+  if (rows.length === 0) return null;
+  return (
+    <section aria-labelledby="audit-inspector-fields">
+      <h3 id="audit-inspector-fields" className="text-sm font-semibold text-ink">
+        {t("inspector.fields")}
+      </h3>
+      <dl className="mt-2 flex flex-col gap-4">
+        {rows.map((row) => (
+          <div key={row.id}>
+            <dt className="text-sm font-medium text-ink">{row.label}</dt>
+            <InspectorRowValues row={row} />
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -74,19 +105,7 @@ export function AuditInspector({ event, onClose, onShowRecord, returnFocusTo }: 
               </dd>
             </div>
           </dl>
-          <section aria-labelledby="audit-inspector-fields">
-            <h3 id="audit-inspector-fields" className="text-sm font-semibold text-ink">
-              {t("inspector.fields")}
-            </h3>
-            <ul className="mt-2 flex flex-col gap-4">
-              {event.changes.map((change) => (
-                <li key={change.id}>
-                  <p className="text-sm font-medium text-ink">{labels.fieldLabel(change.field_name)}</p>
-                  <ChangeValues change={change} />
-                </li>
-              ))}
-            </ul>
-          </section>
+          <InspectorFields event={event} />
           <div className="flex flex-wrap gap-2">
             {event.student_id != null && (
               <Link to={`/students/${event.student_id}`} className={QUIET_ACTION_CLASSES}>
