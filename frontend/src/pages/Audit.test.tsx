@@ -259,8 +259,8 @@ describe("Audit events", () => {
     await userEvent.click((await screen.findByText(/recorded 75\.50 TJS/)).closest("button") as HTMLElement);
     const dialog = await screen.findByRole("dialog");
     for (const field of ["Amount", "Method", "Student", "Course"]) expect(within(dialog).getByText(field)).toBeTruthy();
-    expect(within(dialog).getAllByText("Before")).toHaveLength(4);
-    expect(within(dialog).getAllByText("After")).toHaveLength(4);
+    expect(within(dialog).queryByText("Before")).toBeNull();
+    expect(within(dialog).queryByText("After")).toBeNull();
   });
 
   it("requests events, so pagination counts events", async () => {
@@ -277,8 +277,8 @@ describe("Audit inspector", () => {
     const row = (await screen.findByText(/changed the course Python Advanced/)).closest("button") as HTMLButtonElement;
     await userEvent.click(row);
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Before").nextSibling?.textContent).toBe("800.00");
-    expect(within(dialog).getByText("After").nextSibling?.textContent).toBe("850.50");
+    expect(within(dialog).getByText("Before").nextSibling?.textContent).toBe("800 TJS");
+    expect(within(dialog).getByText("After").nextSibling?.textContent).toBe("850.50 TJS");
     expect(within(dialog).getByRole("link", { name: "Open course" }).getAttribute("href")).toBe("/courses/9");
     expect(within(dialog).queryByRole("link", { name: "Open student" })).toBeNull();
     await userEvent.keyboard("{Escape}");
