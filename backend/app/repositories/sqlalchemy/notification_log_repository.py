@@ -9,6 +9,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.notification_log import ExamNotificationBaseline, NotificationLog, NotificationStatus, NotificationType
 from app.models.user import User, UserRole
+from app.repositories.sqlalchemy.delivery_log_page import DeliveryLogPage
+from app.models.outbox_event import OutboxEvent, OutboxEventKind
 from app.models.enrollment import Enrollment
 from app.models.course import Course
 from app.repositories.sqlalchemy.notification_context import NotificationContext
@@ -91,60 +93,17 @@ class SQLAlchemyNotificationLogRepository(SQLAlchemyBaseRepository[NotificationL
         return result.rowcount or 0
 
     async def delivery_page(
-        self, page: int, page_size: int, delivery_status: NotificationStatus | None, notification_id: int | None = None
+        self, page: int, page_size: int, delivery_status: NotificationStatus | None, notification_id: int | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
-        conditions: list[ColumnElement[bool]] = (
-            [func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == delivery_status.value]
-            if delivery_status is not None
-            else []
-        )
+        query: DeliveryLogPage = DeliveryLogPage(self._session)
         if notification_id is not None:
-            conditions.append(NotificationLog.id == notification_id)
-        total: int = (
-            await self._session.execute(select(func.count()).select_from(NotificationLog).where(*conditions))
-        ).scalar_one()
-        reminder_course: Any = aliased(Course)
-        exam_course: Any = aliased(Course)
-        rows: Sequence[Row[Any]] = (
-            await self._session.execute(
-                select(NotificationLog, User.first_name, User.last_name, User.role, reminder_course.id,
-                       reminder_course.title, exam_course.id, exam_course.title)
-                .outerjoin(User, User.id == NotificationLog.user_id)
-                .outerjoin(Enrollment, and_(NotificationLog.type.in_(self._reminder_query.reminder_types),
-                                             Enrollment.id == NotificationLog.related_entity_id,
-                                             Enrollment.student_id == NotificationLog.user_id))
-                .outerjoin(reminder_course, reminder_course.id == Enrollment.course_id)
-                .outerjoin(JournalStudentSummary, and_(NotificationLog.type == NotificationType.EXAM_RESULT,
-                    JournalStudentSummary.id == -NotificationLog.related_entity_id,
-                    JournalStudentSummary.student_id == NotificationLog.user_id))
-                .outerjoin(Journal, and_(NotificationLog.type == NotificationType.EXAM_RESULT,
-                    Journal.id == func.coalesce(NotificationLog.source_journal_id,
-                                               JournalStudentSummary.journal_id, NotificationLog.related_entity_id)))
-                .outerjoin(exam_course, exam_course.id == Journal.course_id)
-                .where(*conditions)
-                .order_by(NotificationLog.notification_date.desc(), NotificationLog.id.desc())
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-            )
-        ).all()
-        items: list[dict[str, Any]] = [
-            {
-                "id": log.id,
-                "recipient_name": f"{first_name} {last_name}".strip() if first_name is not None else None,
-                "type": log.type,
-                "notification_date": log.notification_date,
-                "status": log.delivery_state or log.status,
-                "attempts": log.attempts,
-                "sent_at": log.sent_at,
-                "student_id": log.user_id if role == UserRole.STUDENT else None,
-                "course_id": reminder_course_id or exam_course_id,
-                "course_title": reminder_title or exam_title,
-                "amount": format(log.delivery_amount, ".2f") if log.delivery_amount is not None else None,
-                "score": NotificationContext.exam_score(log),
-            }
-            for log, first_name, last_name, role, reminder_course_id, reminder_title, exam_course_id, exam_title in rows
-        ]
-        return items, total
+            return await query.legacy(page, page_size, delivery_status, notification_id)
+        return await query.page(page, page_size, delivery_status, query.legacy)
+
+    async def debt_sms_exists(self, event_id: int) -> bool:
+        return bool((await self._session.execute(select(OutboxEvent.id).where(
+            OutboxEvent.id == event_id, OutboxEvent.kind == OutboxEventKind.DEBT_REMINDER_SMS,
+        ))).scalar_one_or_none())
 
     async def lock_or_create(
         self,

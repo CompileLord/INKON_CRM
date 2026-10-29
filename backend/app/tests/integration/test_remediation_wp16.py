@@ -127,7 +127,8 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
     assert page_data["total_pages"] == 1
     assert [item["id"] for item in page_items] == [owned_student.id]
     assert page_items[0]["parent_phone"] == owned_student.parent_phone
-    assert page_items[0]["parent_telegram_chat_id"] == owned_student.parent_telegram_chat_id
+    assert "parent_telegram_chat_id" not in page_items[0]
+    assert "parent_link_code_expires_at" not in page_items[0]
     assert unrelated_student.email not in response.text
     assert unrelated_student.parent_phone not in response.text
     assert str(unrelated_student.parent_telegram_chat_id) not in response.text

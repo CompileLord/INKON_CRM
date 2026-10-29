@@ -62,7 +62,7 @@ export interface MentorMiniResponse {
   id: number;
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   is_deleted: boolean;
 }
 

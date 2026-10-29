@@ -9,6 +9,7 @@ from app.repositories.sqlalchemy.future_lesson_counts import FutureLessonCounts
 from app.models.course import Course, CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal
+from app.models.user import User
 from app.models.journal_student_summary import JournalStudentSummary
 from app.repositories.sqlalchemy.student_course_progress_query import StudentCourseProgressQuery
 from app.repositories.interfaces.user_repository import StudentCourseRawRecord, StudentTotalsRawRecord
@@ -120,9 +121,9 @@ class SQLAlchemyStudentPerformanceRepository:
             class_size_query = select(
                 Enrollment.course_id,
                 func.count(func.distinct(Enrollment.student_id))
-            ).filter(
+            ).join(User, User.id == Enrollment.student_id).filter(
                 Enrollment.course_id.in_(course_ids),
-                Enrollment.is_deleted == False
+                Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE, User.is_deleted.is_(False),
             ).group_by(Enrollment.course_id)
             class_size_res = await self.session.execute(class_size_query)
             class_size_map = dict(class_size_res.all())
@@ -133,10 +134,13 @@ class SQLAlchemyStudentPerformanceRepository:
                 func.sum(JournalStudentSummary.sum_score).filter(graded) * 1.0 / func.nullif(func.count(func.distinct(JournalStudentSummary.student_id)), 0)
             ).join(
                 Journal, JournalStudentSummary.journal_id == Journal.id
+            ).join(User, User.id == JournalStudentSummary.student_id).join(
+                Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == User.id),
             ).filter(
                 Journal.course_id.in_(course_ids),
                 Journal.period_start <= today,
-                graded,
+                graded, User.is_deleted.is_(False), Enrollment.is_deleted.is_(False),
+                Enrollment.status == EnrollmentStatus.ACTIVE,
             ).group_by(Journal.course_id)
             class_avg_res = await self.session.execute(class_avg_query)
             class_avg_rows = list(class_avg_res.all())
@@ -206,9 +210,14 @@ class SQLAlchemyStudentPerformanceRepository:
             ranked_scores: Subquery = select(
                 Journal.course_id.label("course_id"), JournalStudentSummary.student_id.label("student_id"),
                 func.avg(JournalStudentSummary.sum_score * 100.0 / JournalStudentSummary.max_period_score).label("percentage"),
-            ).join(Journal, Journal.id == JournalStudentSummary.journal_id).where(
+            ).join(Journal, Journal.id == JournalStudentSummary.journal_id).join(
+                User, User.id == JournalStudentSummary.student_id,
+            ).join(
+                Enrollment, (Enrollment.course_id == Journal.course_id) & (Enrollment.student_id == User.id),
+            ).where(
                 Journal.course_id.in_(course_ids), Journal.period_start <= today, graded,
-                JournalStudentSummary.max_period_score > 0,
+                JournalStudentSummary.max_period_score > 0, User.is_deleted.is_(False),
+                Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
             ).group_by(Journal.course_id, JournalStudentSummary.student_id).subquery()
             ranked: Subquery = select(
                 ranked_scores.c.course_id, ranked_scores.c.student_id,

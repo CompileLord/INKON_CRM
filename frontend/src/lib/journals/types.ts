@@ -46,7 +46,7 @@ export interface JournalStudentSummaryResponse {
 export interface JournalEntryResponse {
   id: number;
   lesson_date: string;
-  attendance: boolean;
+  attendance: boolean | null;
   score: number;
   comment: string | null;
   has_comment: boolean;

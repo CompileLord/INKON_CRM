@@ -4309,7 +4309,7 @@ Manually apply a student's wallet credit to a specific charge.
       {
         "id": integer,
         "recipient_name?": string,
-        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
+        "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout" | "debt_reminder_sms",
         "notification_date": string,
         "status": "queued" | "inflight" | "sent" | "failed",
         "attempts": integer,
@@ -4319,6 +4319,8 @@ Manually apply a student's wallet credit to a specific charge.
         "course_title?": string,
         "amount?": string,
         "score?": integer,
+        "reason?": string,
+        "outbox_status?": "pending" | "claimed" | "delivered" | "failed" | "expired",
       }
     ],
     "total": integer,
@@ -4357,7 +4359,7 @@ Manually apply a student's wallet credit to a specific charge.
   {
     "id": integer,
     "recipient_name?": string,
-    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout",
+    "type": "payment_reminder_2d" | "payment_reminder_1d" | "exam_result" | "telegram_link_lockout" | "debt_reminder_sms",
     "notification_date": string,
     "status": "queued" | "inflight" | "sent" | "failed",
     "attempts": integer,
@@ -4367,6 +4369,8 @@ Manually apply a student's wallet credit to a specific charge.
     "course_title?": string,
     "amount?": string,
     "score?": integer,
+    "reason?": string,
+    "outbox_status?": "pending" | "claimed" | "delivered" | "failed" | "expired",
   }
   ```
 - **422**: Validation Error

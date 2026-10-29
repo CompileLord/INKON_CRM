@@ -100,7 +100,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
       {lessonDates.map((date) => {
         const entry = entriesMap.get(date);
         const cellKey = `${student.student_id}:${date}`;
-        const currentAttendance = entry ? entry.attendance : false;
+        const currentAttendance: boolean = entry?.attendance ?? false;
         const currentScore = entry ? entry.score : 0;
         const currentComment = entry ? entry.comment : null;
         const currentGraded: boolean = entry ? entry.is_graded : false;
@@ -140,7 +140,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
                 graded={currentGraded}
                 comment={markUnrecorded && !isSelf ? null : currentComment}
                 status={cellStatus.get(cellKey)}
-                recorded={!markUnrecorded || entry !== undefined}
+                recorded={date <= today && entry?.attendance !== null && (!markUnrecorded || entry !== undefined)}
               />
             )}
           </td>

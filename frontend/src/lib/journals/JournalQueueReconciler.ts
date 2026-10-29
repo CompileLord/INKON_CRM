@@ -182,7 +182,7 @@ export abstract class JournalQueueReconciler extends JournalQueueSender {
     return {
       student_id: record.studentId,
       lesson_date: record.lessonDate,
-      attendance: serverEntry.attendance,
+      attendance: serverEntry.attendance ?? false,
       score: serverEntry.score,
       comment: serverEntry.comment,
       is_graded: serverEntry.is_graded,

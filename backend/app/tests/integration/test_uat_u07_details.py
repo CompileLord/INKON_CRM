@@ -48,7 +48,7 @@ class TestU07Details(U07AuditSupport):
         await self.assert_change(client, test_admin, "course", course.id, "update", "Updated", {
             "title": ("Original", "Updated"), "description": ("Original description", "Updated description"),
             "start_date": ("2027-01-01", "2027-01-02"), "end_date": ("2027-03-01", "2027-04-01"),
-            "status": (CourseStatus.ACTIVE.value, str(CourseStatus.ARCHIVED)), "mentor_id": (str(test_mentor.id), str(new_mentor.id)),
+            "status": (CourseStatus.ACTIVE.value, CourseStatus.ARCHIVED.value), "mentor_id": (str(test_mentor.id), str(new_mentor.id)),
         })
 
     @pytest.mark.parametrize("entity,field,previous,current", [
@@ -65,7 +65,7 @@ class TestU07Details(U07AuditSupport):
         async with TestingSessionLocal() as session:
             await AuditService(session).log_change(test_admin.id, "update", entity, identifier, label, {field: (previous, current)})
             await session.commit()
-        await self.assert_change(client, test_admin, entity, identifier, "update", label, {field: (str(previous), str(current))})
+        await self.assert_change(client, test_admin, entity, identifier, "update", label, {field: (previous.value if isinstance(previous, UserRole) else str(previous), current.value if isinstance(current, UserRole) else str(current))})
 
     async def test_labelled_and_legacy_rows_share_database_timestamp(self, test_admin: User, test_student: User) -> None:
         session: AsyncSession

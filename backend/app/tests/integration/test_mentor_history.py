@@ -74,6 +74,12 @@ async def test_mentor_history_logs_workflow(client: AsyncClient, test_admin: Use
     assert history2[1]["mentor_id"] == mentor_b_id
     assert history2[1]["assigned_to"] is None
 
+    blocked_response = await client.delete(f"/api/v1/users/{mentor_b_id}", headers=admin_headers)
+    assert blocked_response.status_code == 409
+    assert blocked_response.json()["detail"] == {"code": "mentor_has_active_courses", "course_count": 1}
+    reassigned_response = await client.patch(f"/api/v1/courses/{course_id}", json={"mentor_id": test_mentor.id}, headers=admin_headers)
+    assert reassigned_response.status_code == 200
+
     # 5. Soft-delete Mentor B
     del_mentor_resp = await client.delete(f"/api/v1/users/{mentor_b_id}", headers=admin_headers)
     assert del_mentor_resp.status_code == 204
@@ -82,7 +88,7 @@ async def test_mentor_history_logs_workflow(client: AsyncClient, test_admin: Use
     history_resp3 = await client.get(f"/api/v1/courses/{course_id}/mentor-history", headers=admin_headers)
     assert history_resp3.status_code == 200
     history3 = history_resp3.json()
-    assert len(history3) == 2
+    assert len(history3) == 3
     assert history3[1]["mentor_id"] == mentor_b_id
     assert history3[1]["mentor"]["is_deleted"] is True
 

@@ -263,6 +263,10 @@ class JournalService(JournalQueryService):
 
         self.authorize_mutation(course, current_user)
 
+        lookup: JournalCellLookup = await self.cell_lookup.lookup(journal, frozenset({student_id}))
+        if student_id not in lookup.enrolled_student_ids:
+            raise HTTPException(status_code=422, detail={"code": "student_not_enrolled"})
+
         if exam_score < 0 or bonus_score < 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

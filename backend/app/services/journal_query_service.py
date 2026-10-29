@@ -17,6 +17,7 @@ from app.models.user import User, UserRole
 from app.core.scoring import ScoringPolicy
 from app.core.schedule_utils import LessonDateCalculator
 from app.core.school_calendar import SchoolCalendar
+from app.services.student_class_entries import StudentClassEntries
 from app.repositories.interfaces.future_lesson_counts import FutureLessonCountsRepository
 from app.repositories.sqlalchemy.future_lesson_counts import FutureLessonCounts
 from app.repositories.interfaces.journal_repository import JournalClassStatistics, JournalRepository, MentorJournalBatch
@@ -217,12 +218,7 @@ class JournalQueryService:
         students_view: List[dict] = []
         for student_record in payload["students"]:
             is_self: bool = student_record["student_id"] == current_user.id
-            entries_view: List[dict] = [
-                entry_record
-                if is_self
-                else {**entry_record, "comment": None, "has_comment": False}
-                for entry_record in student_record["entries"]
-            ]
+            entries_view: List[dict] = StudentClassEntries.project(student_record["entries"], is_self)
             students_view.append({
                 "student_id": student_record["student_id"],
                 "first_name": student_record["first_name"],

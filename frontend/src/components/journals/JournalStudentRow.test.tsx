@@ -189,3 +189,20 @@ describe("JournalStudentRow inline summary validation", () => {
     expect(bonus.value).toBe("abc");
   });
 });
+
+it("renders a future null attendance entry as empty rather than absent", () => {
+  const value: JournalStudentResponse = {
+    ...student,
+    entries: [{ id: 3, lesson_date: "2099-01-01", attendance: null, score: 0, comment: null, has_comment: false, is_graded: false, version: 1 }],
+  };
+  render(<table><tbody><JournalStudentRow {...props} lessonDates={["2099-01-01"]} editing={null} student={value} /></tbody></table>);
+  expect(screen.getByTestId("not-recorded-cell")).toBeDefined();
+  expect(screen.queryByTestId("attendance-absent")).toBeNull();
+});
+
+
+it("renders a missing future entry as empty rather than absent", () => {
+  render(<table><tbody><JournalStudentRow {...props} lessonDates={["2099-01-01"]} editing={null} student={student} /></tbody></table>);
+  expect(screen.getByTestId("not-recorded-cell")).toBeDefined();
+  expect(screen.queryByTestId("attendance-absent")).toBeNull();
+});

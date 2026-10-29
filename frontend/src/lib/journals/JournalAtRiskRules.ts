@@ -10,11 +10,11 @@ export class JournalAtRiskRules {
   }
 
   static hasConsecutiveAbsences(student: JournalStudentResponse, lessonDates: readonly string[], today: string): boolean {
-    const entriesByDate: Map<string, boolean> = new Map(student.entries.map((entry) => [entry.lesson_date, entry.attendance]));
+    const entriesByDate: Map<string, boolean | null> = new Map(student.entries.map((entry) => [entry.lesson_date, entry.attendance]));
     const heldDates: string[] = [...lessonDates].filter((date) => date <= today).sort();
     let streak: number = 0;
     for (const date of heldDates) {
-      const attended: boolean | undefined = entriesByDate.get(date);
+      const attended: boolean | null | undefined = entriesByDate.get(date);
       streak = attended === false ? streak + 1 : 0;
       if (streak >= JournalAtRiskRules.CONSECUTIVE_ABSENCE_LIMIT) return true;
     }

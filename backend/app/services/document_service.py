@@ -1,4 +1,6 @@
 from typing import Optional
+from io import BytesIO
+from zipfile import BadZipFile, ZipFile
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,28 +18,42 @@ from app.services.storage_service import StorageService, get_storage_service
 from app.services.bounded_upload_reader import BoundedUploadReader
 
 
-def verify_magic_bytes(content: bytes, filename: str) -> bool:
-    ext = filename.split(".")[-1].lower()
-    if ext == "pdf":
-        return content.startswith(b"%PDF")
-    elif ext in ["jpeg", "jpg"]:
-        return content.startswith(b"\xff\xd8")
-    elif ext == "png":
-        return content.startswith(b"\x89PNG\r\n\x1a\n")
-    elif ext == "gif":
-        return content.startswith(b"GIF8")
-    elif ext == "docx":
-        return content.startswith(b"PK\x03\x04")
-    elif ext == "txt":
-        return b"\x00" not in content
-    elif ext == "mp3":
-        return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
-    elif ext == "wav":
-        return content.startswith(b"RIFF") and b"WAVE" in content[:12]
-    return True
 
 
 class DocumentService:
+    @staticmethod
+    def verify_magic_bytes(content: bytes, filename: str) -> bool:
+        if "." not in filename:
+            return False
+        ext: str = filename.rsplit(".", 1)[-1].lower()
+        if ext == "pdf":
+            return content.startswith(b"%PDF")
+        elif ext in ["jpeg", "jpg"]:
+            return content.startswith(b"\xff\xd8")
+        elif ext == "png":
+            return content.startswith(b"\x89PNG\r\n\x1a\n")
+        elif ext == "gif":
+            return content.startswith(b"GIF8")
+        elif ext == "docx":
+            try:
+                with ZipFile(BytesIO(content)) as archive:
+                    names: set[str] = set(archive.namelist())
+                    return "[Content_Types].xml" in names and "word/document.xml" in names
+            except BadZipFile:
+                return False
+        elif ext == "txt":
+            try:
+                content.decode("utf-8")
+                return b"\x00" not in content
+            except UnicodeDecodeError:
+                return False
+        elif ext == "mp3":
+            return content.startswith(b"ID3") or content.startswith(b"\xff\xfb") or content.startswith(b"\xff\xf3") or content.startswith(b"\xff\xf2")
+        elif ext == "wav":
+            return content.startswith(b"RIFF") and b"WAVE" in content[:12]
+        return False
+
+
     def __init__(self, db: AsyncSession, storage: StorageService | None = None, document_repo: DocumentRepository | None = None) -> None:
         self.db: AsyncSession = db
         self.document_repo: DocumentRepository = document_repo if document_repo is not None else SQLAlchemyDocumentRepository(db)
@@ -57,20 +73,18 @@ class DocumentService:
         )
         file_size: int = len(content)
 
-        content_type = file.content_type or ""
-        allowed_types = ["audio", "image", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]
-        is_allowed = False
-        for t in allowed_types:
-            if content_type.startswith(t):
-                is_allowed = True
-                break
-        if not is_allowed:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unsupported file format"
-            )
+        content_type: str = file.content_type or ""
+        extension: str = (file.filename or "").rsplit(".", 1)[-1].lower()
+        allowed_types: dict[str, set[str]] = {
+            "pdf": {"application/pdf"}, "jpg": {"image/jpeg"}, "jpeg": {"image/jpeg"},
+            "png": {"image/png"}, "gif": {"image/gif"},
+            "docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+            "txt": {"text/plain"}, "mp3": {"audio/mpeg"}, "wav": {"audio/wav", "audio/x-wav"},
+        }
+        if content_type not in allowed_types.get(extension, set()):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file format")
 
-        if not verify_magic_bytes(content, file.filename):
+        if not self.verify_magic_bytes(content, file.filename or ""):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid file contents for specified file type"
@@ -78,6 +92,10 @@ class DocumentService:
 
         if owner_type not in ("student", "mentor") or owner_id <= 0:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid document storage path")
+        owner: User | None = await self.db.get(User, owner_id)
+        expected_role: UserRole = UserRole.STUDENT if owner_type == "student" else UserRole.MENTOR
+        if owner is None or owner.is_deleted or owner.role != expected_role:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document owner not found")
         try:
             lifecycle: StorageLifecycleService = StorageLifecycleService(self.db, self.upload_storage_service)
             filepath: str

@@ -37,7 +37,7 @@ class MentorGradingQueueService:
                 cells_expected: int = batch.student_counts.get(course.id, 0) * lesson_count
                 cells_filled: int = batch.graded_entry_counts.get(journal.id, 0)
                 state: str = "empty" if cells_filled == 0 else "partial"
-                if cells_expected > 0 and cells_filled >= cells_expected:
+                if cells_expected == 0 or cells_filled >= cells_expected:
                     continue
                 queue.append(GradingQueueItemResponse(
                     journal_id=journal.id,

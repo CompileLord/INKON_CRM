@@ -59,8 +59,8 @@ class AuditService:
                 entity_id=entity_id,
                 entity_label=entity_label,
                 field_name=field,
-                old_value=str(old_val) if old_val is not None else None,
-                new_value=str(new_val) if new_val is not None else None,
+                old_value=str(old_val.value if isinstance(old_val, Enum) else old_val) if old_val is not None else None,
+                new_value=str(new_val.value if isinstance(new_val, Enum) else new_val) if new_val is not None else None,
             )
             self.audit_repo.stage_log(audit_log)
 

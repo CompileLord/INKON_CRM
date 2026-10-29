@@ -89,6 +89,9 @@ class UserRepository(BaseRepository[User], Protocol):
     async def get_student_visible_mentor_courses(self, mentor_id: int, student_id: int) -> list[Course]:
         ...
 
+    async def count_active_mentor_courses(self, mentor_id: int) -> int:
+        ...
+
     async def get_mentor_profile_stats(self, mentor_id: int) -> Dict[str, Any]:
         ...
 
