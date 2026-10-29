@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, act, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, act, fireEvent, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -259,5 +259,29 @@ describe("payment route ownership", () => {
     await act(async () => { await router.navigate("/other"); });
     expect(router.state.location.pathname).toBe("/"); expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
     settle?.([201, savedPayment]); expect(await screen.findByText("Payment #123 recorded")).toBeTruthy(); expect(mock.history.post).toHaveLength(1);
+  });
+  it("asks to discard in its own dialog on top and leaves the payment form untouched underneath", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const user = userEvent.setup();
+    render(<QueryClientProvider client={client}><Fixture /></QueryClientProvider>);
+    await user.click(screen.getByRole("button", { name: "Open payment trigger" }));
+    const amountInput = (await screen.findByLabelText(AMOUNT)) as HTMLInputElement;
+    await user.clear(amountInput);
+    await user.type(amountInput, "750.5");
+    const paymentDialog: HTMLElement = screen.getByRole("dialog", { name: "Accept Payment" });
+    const paymentTitle: HTMLElement = screen.getByRole("heading", { name: "Accept Payment" });
+
+    await user.keyboard("{Escape}");
+
+    const confirmDialog: HTMLElement = await screen.findByRole("dialog", { name: "Discard payment changes?" });
+    expect(confirmDialog).not.toBe(paymentDialog);
+    expect(paymentDialog.isConnected).toBe(true);
+    expect(paymentTitle.textContent).toBe("Accept Payment");
+    expect(amountInput.isConnected).toBe(true);
+    expect(amountInput.value).toBe("750.5");
+    expect(amountInput.closest("fieldset")?.disabled).toBe(false);
+    expect(within(paymentDialog).queryByRole("button", { name: "Keep editing" })).toBeNull();
+    expect(within(confirmDialog).getByRole("button", { name: "Keep editing" })).toBeTruthy();
+    expect(within(confirmDialog).getByRole("button", { name: "Discard changes" })).toBeTruthy();
   });
 });
