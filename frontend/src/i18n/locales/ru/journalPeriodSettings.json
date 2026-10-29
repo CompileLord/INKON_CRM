@@ -32,5 +32,5 @@
   "discard": "Отменить изменения",
   "bonusInputLabel": "Максимум бонуса",
   "infoLabel": "О максимумах",
-  "currentMaximum": "текущий макс: {{score}}"
+  "currentMaximum": "наибольший балл сейчас: {{score}}"
 }

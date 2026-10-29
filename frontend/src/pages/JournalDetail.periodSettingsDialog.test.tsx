@@ -118,7 +118,7 @@ describe("Period settings: exam maximum", () => {
       return detail;
     });
     const dialog = await openSettings();
-    expect(within(dialog).getByTestId("period-settings-current-maximum").textContent).toBe("current max: 60");
+    expect(within(dialog).getByTestId("period-settings-current-maximum").textContent).toBe("highest score now: 60");
     expect(dialog.textContent).not.toContain("Highest existing");
     typeMaximum("40");
 
@@ -158,9 +158,9 @@ describe("Period settings: exam maximum", () => {
   });
 
   it.each([
-    ["en", "Period settings", "Month 10", "current max: 60"],
-    ["ru", "Настройки периода", "Месяц 10", "текущий макс: 60"],
-    ["tg", "Танзимоти давра", "Моҳи 10", "ҳадди ҷорӣ: 60"],
+    ["en", "Period settings", "Month 10", "highest score now: 60"],
+    ["ru", "Настройки периода", "Месяц 10", "наибольший балл сейчас: 60"],
+    ["tg", "Танзимоти давра", "Моҳи 10", "баландтарин баҳо ҳоло: 60"],
   ])("shows the period subtitle and one inline current-maximum hint in %s", async (language, dialogName, subtitle, hint) => {
     getJournalMock.mockImplementation(async (journalId: number) => {
       const detail = buildJournal(journalId);

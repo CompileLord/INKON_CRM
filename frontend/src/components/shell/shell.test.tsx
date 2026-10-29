@@ -99,7 +99,16 @@ describe("shared shell lifecycle", () => {
     layout("mentor");
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Notifications" }));
-    expect(await screen.findByText("Results and reminders for your account will appear here.")).toBeTruthy();
+    expect(await screen.findByText("Work notifications will show up here.")).toBeTruthy();
+    expect(screen.getByText("No notifications yet")).toBeTruthy();
+    expect(screen.queryByText(/Results and reminders/)).toBeNull();
+  });
+  it("shows the student wording of the empty notifications state only to students", async () => {
+    mock.onGet("/notifications/").reply(200, { items: [], total: 0, page: 1, page_size: 5 });
+    layout("student");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Notifications" }));
+    expect(await screen.findByText("New lessons, grades and messages will show up here.")).toBeTruthy();
   });
   it("allows retrying both unread count and notification list on failure", async () => {
     mock.resetHandlers();

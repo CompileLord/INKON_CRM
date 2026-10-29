@@ -78,7 +78,7 @@ export function NotificationInbox() {
   const unreadCount = useUnreadNotificationCount();
   const markAll = useMarkAllNotificationsRead();
   const role = useAuthStore((state) => state.role);
-  const emptyAudience: "student" | "admin" | "staff" = role === "student" ? "student" : role === "superadmin" ? "admin" : "staff";
+  const emptyAudience: "student" | "admin" | "staff" = NotificationPresentation.emptyAudience(role);
 
   const items: NotificationLogItem[] = inbox.data?.items ?? [];
   const hasUnread: boolean = (unreadCount.data?.unread_count ?? NotificationPresentation.countUnread(items)) > 0;

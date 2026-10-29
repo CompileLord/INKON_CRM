@@ -40,6 +40,10 @@ export class NotificationPresentation {
     return known[status] ?? known.queued;
   }
 
+  static emptyAudience(role: Role | null): "student" | "admin" | "staff" {
+    return role === "student" ? "student" : role === "superadmin" ? "admin" : "staff";
+  }
+
   static categoryIcon(type: string): LucideIcon {
     const icons: Record<NotificationEventKind, LucideIcon> = {
       examResult: ClipboardCheck,

@@ -110,3 +110,18 @@ describe("SecuritySection", () => {
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Could not connect to server. Check your internet connection"));
   });
 });
+
+describe("SecuritySection role wording", () => {
+  it("shows the SMS-code hint only to students", () => {
+    useAuthStore.setState({ role: "student" });
+    const { unmount } = render(<SecuritySection onChanged={vi.fn()} />);
+    expect(screen.getByText("Students can enter the code from the SMS.")).toBeTruthy();
+    unmount();
+    for (const role of ["mentor", "superadmin", "accountant"] as const) {
+      useAuthStore.setState({ role });
+      const view = render(<SecuritySection onChanged={vi.fn()} />);
+      expect(screen.queryByText("Students can enter the code from the SMS.")).toBeNull();
+      view.unmount();
+    }
+  });
+});

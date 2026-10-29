@@ -151,7 +151,6 @@
     "unreadUnavailable": "Unread count unavailable",
     "stale": "The latest update failed. Previous information is shown.",
     "notifications": "Your notifications",
-    "notificationsEmpty": "Results and reminders for your account will appear here.",
     "notificationsFailed": "Notifications could not be loaded. Try again.",
     "read": "Read",
     "unreadState": "Unread",

@@ -32,5 +32,5 @@
   "discard": "Discard changes",
   "bonusInputLabel": "Bonus maximum",
   "infoLabel": "About maximums",
-  "currentMaximum": "current max: {{score}}"
+  "currentMaximum": "highest score now: {{score}}"
 }
