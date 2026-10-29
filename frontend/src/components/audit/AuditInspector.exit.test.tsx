@@ -23,10 +23,10 @@ it("keeps the change details visible while the drawer slides out instead of empt
     const tree = (current: AuditEvent | null) => <MemoryRouter><AuditInspector event={current} onClose={() => undefined} onShowRecord={() => undefined} returnFocusTo={() => null} /></MemoryRouter>;
     const view = render(tree(event));
     const dialog: HTMLElement = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("850.50")).toBeTruthy();
+    expect(within(dialog).getByText("850.50 TJS")).toBeTruthy();
     view.rerender(tree(null));
     await waitFor(() => expect(dialog.hasAttribute("data-ending-style")).toBe(true));
-    expect(within(dialog).getByText("850.50")).toBeTruthy();
+    expect(within(dialog).getByText("850.50 TJS")).toBeTruthy();
     await act(async () => { finishExit(); });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   } finally {

@@ -257,7 +257,7 @@ describe("Audit inspector labels", () => {
     expect(within(dialog).getByText("В архиве")).toBeTruthy();
     expect(within(dialog).getByText("01.09.2026")).toBeTruthy();
     expect(within(dialog).getByText("10:00")).toBeTruthy();
-    expect(dialog.querySelector("ul")?.textContent).not.toMatch(/start_date|time_start|archived|active/);
+    expect(dialog.querySelector("section")?.textContent).not.toMatch(/start_date|time_start|archived|active/);
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
