@@ -112,6 +112,7 @@
     "noAllocations": "No current allocations",
     "print": "Print receipt",
     "printTitle": "Receipt {{number}}",
+    "netAmount": "Net amount",
     "printTotal": "Amount received",
     "printBlocked": "The browser blocked the print window. Allow pop-ups and try again.",
     "targets": "Paid by course"

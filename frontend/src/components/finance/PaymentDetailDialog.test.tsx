@@ -193,3 +193,47 @@ describe("Payment detail receipt print", () => {
     open.mockRestore();
   });
 });
+
+describe("Payment detail receipt reversals", () => {
+  const printed = () => ({ document: document.implementation.createHTMLDocument(""), focus: vi.fn(), print: vi.fn() });
+
+  it("marks a valid receipt with nothing extra", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, { ...receipt, status: "valid", refunded_amount: "0", net_amount: "900.25" });
+    renderDetail();
+    await screen.findByText("R-2026-0077");
+    expect(screen.queryByTestId("receipt-reversal")).toBeNull();
+  });
+
+  it("shows a voided receipt on screen and in print", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, { ...receipt, status: "voided", refunded_amount: "0", net_amount: "0" });
+    const window2 = printed();
+    const open = vi.spyOn(window, "open").mockReturnValue(window2 as unknown as Window);
+    renderDetail();
+    expect((await screen.findByTestId("receipt-reversal")).textContent).toContain("Voided");
+    const button = screen.getByRole("button", { name: "Print receipt" });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    await userEvent.click(button);
+    expect(window2.document.body.querySelector(".mark")?.textContent).toBe("Voided");
+    expect(window2.document.body.textContent).toContain("Net amount");
+    open.mockRestore();
+  });
+
+  it("shows the refunded amount and the net amount for a partly refunded receipt", async () => {
+    mock.onGet(statusUrl).reply(200, listing([known]));
+    mock.onGet(receiptUrl).reply(200, { ...receipt, status: "partially_refunded", refunded_amount: "100", net_amount: "800.25" });
+    const window2 = printed();
+    const open = vi.spyOn(window, "open").mockReturnValue(window2 as unknown as Window);
+    renderDetail();
+    const mark = await screen.findByTestId("receipt-reversal");
+    expect(mark.textContent).toContain("Refunded 100 TJS");
+    expect(mark.textContent).toContain("800.25 TJS");
+    const button = screen.getByRole("button", { name: "Print receipt" });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    await userEvent.click(button);
+    expect(window2.document.body.querySelector(".mark")?.textContent).toBe("Refunded 100 TJS");
+    expect(window2.document.body.textContent).toContain("800.25 TJS");
+    open.mockRestore();
+  });
+});
