@@ -16,5 +16,4 @@ async def test_duplicate_contact_has_stable_code_and_legacy_detail(email: str | 
     with pytest.raises(HTTPException) as error:
         await service._reject_taken_contacts(email, phone, None)
     assert error.value.status_code == 409
-    assert error.value.headers["X-Error-Code"] == code
-    assert "already exists" in error.value.detail
+    assert error.value.detail == {"code": code}
