@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPhoneDisplay } from "./phone";
+import { formatPhoneDisplay, withDefaultCountryCode } from "./phone";
 
 describe("formatPhoneDisplay", () => {
   it("groups Tajik numbers", () => {
@@ -26,5 +26,19 @@ describe("formatPhoneDisplay", () => {
     expect(formatPhoneDisplay(undefined)).toBe("");
     expect(formatPhoneDisplay("")).toBe("");
     expect(formatPhoneDisplay("abc")).toBe("abc");
+  });
+});
+
+describe("withDefaultCountryCode", () => {
+  it("adds +992 to a local nine-digit number, with or without separators", () => {
+    expect(withDefaultCountryCode("901234567")).toBe("+992901234567");
+    expect(withDefaultCountryCode(" 90 123-45-67 ")).toBe("+992901234567");
+  });
+
+  it("leaves emails, international numbers and other lengths unchanged", () => {
+    expect(withDefaultCountryCode(" admin@example.com ")).toBe("admin@example.com");
+    expect(withDefaultCountryCode("+992901234567")).toBe("+992901234567");
+    expect(withDefaultCountryCode("992901234567")).toBe("992901234567");
+    expect(withDefaultCountryCode("12345678")).toBe("12345678");
   });
 });

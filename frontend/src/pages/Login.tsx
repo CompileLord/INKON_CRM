@@ -17,6 +17,7 @@ import {
   type MappedFieldError,
 } from "../lib/auth/errorMessages";
 import { SmsCodeNormalizer } from "../lib/auth/studentCode";
+import { withDefaultCountryCode } from "../lib/phone";
 import { getSafeRedirect, resolveLandingPath } from "../lib/postAuthRedirect";
 import { useAuthStore } from "../store/authStore";
 
@@ -71,7 +72,7 @@ export function Login() {
     setServerFieldErrors([]);
     setSubmitting(true);
     try {
-      const result = await login(values.login.trim(), SmsCodeNormalizer.normalizeForLogin(values.login, values.password));
+      const result = await login(withDefaultCountryCode(values.login), SmsCodeNormalizer.normalizeForLogin(values.login, values.password));
       setAuthenticated(result.access_token, result.refresh_token, result.must_set_password);
 
       if (result.must_set_password) {
