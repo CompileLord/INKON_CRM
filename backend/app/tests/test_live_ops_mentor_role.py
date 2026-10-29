@@ -35,3 +35,7 @@ async def test_course_rejects_non_mentor_on_create_and_patch() -> None:
     with pytest.raises(HTTPException) as error:
         await service.update_course(1, CourseUpdate(mentor_id=2), actor)
     assert error.value.status_code == 422 and error.value.detail["code"] == "mentor_role_required"
+    course_repository.get_by_id.return_value.mentor_id = 2
+    with pytest.raises(HTTPException) as error:
+        await service.update_course(1, CourseUpdate(mentor_id=2), actor)
+    assert error.value.status_code == 422 and error.value.detail["code"] == "mentor_role_required"

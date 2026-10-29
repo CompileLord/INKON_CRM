@@ -141,7 +141,7 @@ class CourseService:
                     detail="Cannot update dates because journals already exist for this course"
                 )
 
-        if data.mentor_id is not None and data.mentor_id != course.mentor_id:
+        if data.mentor_id is not None:
             new_mentor = await self.user_repo.get_by_id(data.mentor_id)
             if not new_mentor or new_mentor.is_deleted:
                 raise HTTPException(
@@ -152,6 +152,7 @@ class CourseService:
             if new_mentor.role != UserRole.MENTOR:
                 raise HTTPException(status_code=422, detail={"code": "mentor_role_required"})
 
+        if data.mentor_id is not None and data.mentor_id != course.mentor_id:
             history_query = select(CourseMentorHistory).filter(
                 CourseMentorHistory.course_id == course_id,
                 CourseMentorHistory.assigned_to.is_(None)
