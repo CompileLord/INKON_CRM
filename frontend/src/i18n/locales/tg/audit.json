@@ -131,7 +131,8 @@
     "scheduleStart": "Оғози дарс, {{day}}",
     "scheduleEnd": "Анҷоми дарс, {{day}}",
     "cancelled_amount": "Маблағи бекоршуда",
-    "months_cancelled": "Моҳҳои бекоршуда"
+    "months_cancelled": "Моҳҳои бекоршуда",
+    "targets": "Тақсимот"
   },
   "values": {
     "none": "Арзиш нест",
@@ -199,7 +200,8 @@
     "showRecord": "Нишон додани ҳамаи тағйироти ин сабт",
     "technical": "Маълумоти техникӣ",
     "unknownRecord": "Сабти беном",
-    "fields": "Майдонҳои тағйирёфта"
+    "fields": "Майдонҳои тағйирёфта",
+    "allocationLine": "{{course}} — {{amount}}"
   },
   "row": {
     "open": "Кушодани тафсилот"

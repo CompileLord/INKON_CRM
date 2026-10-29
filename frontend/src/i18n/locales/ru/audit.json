@@ -131,7 +131,8 @@
     "scheduleStart": "Начало занятий, {{day}}",
     "scheduleEnd": "Конец занятий, {{day}}",
     "cancelled_amount": "Отменённая сумма",
-    "months_cancelled": "Отменено месяцев"
+    "months_cancelled": "Отменено месяцев",
+    "targets": "Распределение"
   },
   "values": {
     "none": "Нет значения",
@@ -199,7 +200,8 @@
     "showRecord": "Показать все изменения этой записи",
     "technical": "Технические данные",
     "unknownRecord": "Запись без названия",
-    "fields": "Изменённые поля"
+    "fields": "Изменённые поля",
+    "allocationLine": "{{course}} — {{amount}}"
   },
   "row": {
     "open": "Открыть детали"
