@@ -412,9 +412,26 @@ class FinanceService:
         alloc_res = await self.db.execute(alloc_q)
         settled_by_charge: Dict[int, Decimal] = {row[0]: Decimal(row[1] or 0) for row in alloc_res.all()}
 
+        entry_ids: list[int] = [entry.id for entry in entries]
+        allocated_rows: Any = await self.db.execute(
+            select(Allocation.ledger_entry_id, func.sum(Allocation.amount))
+            .join(LedgerEntry, LedgerEntry.id == Allocation.ledger_entry_id)
+            .where(Allocation.ledger_entry_id.in_(entry_ids), self._consumed_credit_allocation())
+            .group_by(Allocation.ledger_entry_id)
+        )
+        allocated_by_entry: dict[int, Decimal] = {row[0]: Decimal(row[1]) for row in allocated_rows.all()}
+        refund_rows: Any = await self.db.execute(
+            select(LedgerEntry.reverses_entry_id, func.sum(LedgerEntry.amount))
+            .where(LedgerEntry.reverses_entry_id.in_(entry_ids), LedgerEntry.type == LedgerEntryType.REFUND,
+                   LedgerEntry.is_cash_out.is_(True))
+            .group_by(LedgerEntry.reverses_entry_id)
+        )
+        refunded_by_entry: dict[int, Decimal] = {row[0]: Decimal(row[1]) for row in refund_rows.all()}
         touched: List[int] = []
         for entry in entries:
-            available = await self._entry_available(entry)
+            if limit is not None and limit <= ZERO:
+                break
+            available: Decimal = entry.amount - allocated_by_entry.get(entry.id, ZERO) - refunded_by_entry.get(entry.id, ZERO)
             if limit is not None:
                 available = min(available, limit)
             if available <= ZERO:
