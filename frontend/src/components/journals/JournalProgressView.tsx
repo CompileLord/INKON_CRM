@@ -85,6 +85,7 @@ export const JournalProgressView: React.FC<JournalProgressViewProps> = ({ course
       <SectionCard
         title={t("journals:progress.title")}
         info={t("journals:progress.scopeNote")}
+        compact={!collapsed}
         actions={
           <button
             type="button"
