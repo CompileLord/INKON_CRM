@@ -34,7 +34,8 @@ class TestPendingStudentPassword:
                 async with SmsPasswordTestSupport.build_session_factory()() as session:
                     open_transactions: int = (await session.execute(text(
                         "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
-                        "AND pid <> pg_backend_pid() AND state = 'idle in transaction'"
+                        "AND pid <> pg_backend_pid() AND state = 'idle in transaction' "
+                        "AND application_name = current_setting('application_name')"
                     ))).scalar_one()
                     assert open_transactions == 0
                 return await super().send(phone_e164, message, idempotency_key)

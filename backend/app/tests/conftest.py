@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 import uuid
+from pathlib import Path
 from datetime import date, datetime, timezone
 from typing import Any, AsyncGenerator, Callable, Generator
 from unittest.mock import Mock
@@ -10,6 +11,7 @@ from urllib.parse import urlsplit
 
 import pytest
 import pytest_asyncio
+import asyncpg
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from redis.asyncio import Redis
@@ -165,11 +167,35 @@ if __name__ in sys.modules:
 TEST_DATABASE_URL: str
 TEST_REDIS_URL: str
 TEST_DATABASE_URL, TEST_REDIS_URL = TestTargetConfiguration.validate()
+TEST_WORKER_NAME: str | None = os.environ.get("PYTEST_XDIST_WORKER")
+TEST_SCHEMA: str = f"test_{TEST_WORKER_NAME}" if TEST_WORKER_NAME else "public"
+if TEST_WORKER_NAME:
+    original_asyncpg_connect = asyncpg.connect
+
+    async def connect_to_worker_schema(*args: Any, **kwargs: Any) -> asyncpg.Connection:
+        database_name: str | None = kwargs.get("database")
+        data_source_name: str | None = kwargs.get("dsn") or (args[0] if args else None)
+        if data_source_name:
+            database_name = urlsplit(data_source_name).path.removeprefix("/")
+        if database_name == "imkon_test_db":
+            server_settings: dict[str, str] = dict(kwargs.get("server_settings") or {})
+            server_settings["search_path"] = TEST_SCHEMA
+            server_settings.setdefault("application_name", TEST_SCHEMA)
+            kwargs["server_settings"] = server_settings
+        return await original_asyncpg_connect(*args, **kwargs)
+
+    asyncpg.connect = connect_to_worker_schema
+    os.environ["STORAGE_PATH"] = str(Path(os.environ.get("STORAGE_PATH", "storage")) / TEST_SCHEMA)
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["REDIS_URL"] = TEST_REDIS_URL
 
 TEST_REDIS_PREFIX: str = f"wp09:{os.getpid()}:{uuid.uuid4().hex}:"
-test_engine = create_async_engine(TEST_DATABASE_URL, pool_size=5, max_overflow=40, future=True)
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    pool_size=3 if TEST_WORKER_NAME else 5,
+    max_overflow=5 if TEST_WORKER_NAME else 40,
+    future=True,
+)
 TestingSessionLocal = async_sessionmaker(
     bind=test_engine,
     class_=AsyncSession,
@@ -242,10 +268,13 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 async def setup_test_db() -> None:
     from sqlalchemy import text
     async with test_engine.begin() as conn:
-        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
-        await conn.execute(text("CREATE SCHEMA public;"))
+        await conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE;'))
+        await conn.execute(text(f'CREATE SCHEMA "{TEST_SCHEMA}";'))
         await conn.run_sync(Base.metadata.create_all)
     yield
+    if TEST_WORKER_NAME:
+        async with test_engine.begin() as conn:
+            await conn.execute(text(f'DROP SCHEMA IF EXISTS "{TEST_SCHEMA}" CASCADE;'))
     await test_engine.dispose()
 
 

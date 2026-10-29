@@ -141,7 +141,7 @@ async def test_replay_returns_the_original_even_when_the_enrollment_is_gone_by_t
 
 @pytest.mark.parametrize(
     "field,value",
-    [("amount", "151.00"), ("paid_at", (datetime.now(timezone.utc) - timedelta(days=1)).replace(microsecond=0).isoformat()), ("method", "transfer"), ("comment", "other"), ("student_id", "OTHER_STUDENT"), ("course_id", "OTHER_COURSE")],
+    [("amount", "151.00"), ("paid_at", "YESTERDAY"), ("method", "transfer"), ("comment", "other"), ("student_id", "OTHER_STUDENT"), ("course_id", "OTHER_COURSE")],
 )
 @pytest.mark.asyncio
 async def test_same_key_with_a_different_payload_conflicts_and_changes_nothing(world: PaymentWorld, db_session: AsyncSession, field: str, value: str) -> None:
@@ -153,6 +153,8 @@ async def test_same_key_with_a_different_payload_conflicts_and_changes_nothing(w
         await world.enroll(enrolled_student, course_id)
     await world.enroll(student_id, other_course_id)
     resolved: str | int = {"OTHER_STUDENT": other_student_id, "OTHER_COURSE": other_course_id}.get(value, value)
+    if value == "YESTERDAY":
+        resolved = (datetime.fromisoformat(world.paid_at) - timedelta(days=1)).isoformat()
 
     first: Response = await world.pay(world.payload(student_id, course_id), "attempt-1")
     before: dict[str, Any] = await LedgerCounts.snapshot(db_session)

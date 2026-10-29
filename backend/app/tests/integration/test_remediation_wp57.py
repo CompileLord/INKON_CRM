@@ -1,8 +1,10 @@
 import asyncio
 import json
+import os
 import statistics
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock
@@ -30,6 +32,13 @@ HEADERS: dict[str, str] = {"X-Cloud-Scheduler-Secret": "wp57-test-secret"}
 
 @pytest_asyncio.fixture
 async def maintenance_pool(monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[ArqRedis, None]:
+    worker_name: str | None = os.environ.get("PYTEST_XDIST_WORKER")
+    if worker_name:
+        monkeypatch.setattr(
+            redis_module,
+            "redis_connection_configuration",
+            replace(redis_module.redis_connection_configuration, database=int(worker_name.removeprefix("gw"))),
+        )
     pool: ArqRedis = await create_pool(redis_module.redis_connection_configuration.create_arq_settings())
     pool.default_queue_name = f"wp57:queue:{uuid4().hex}"
     await pool.flushdb()

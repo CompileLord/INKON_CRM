@@ -15,13 +15,13 @@ class DocumentTestContent:
         return buffer.getvalue()
 
 
-ACCEPTED_UPLOADS: list[tuple[str, str, bytes]] = [
+ACCEPTED_UPLOADS: list[tuple[str, str, bytes | None]] = [
     ("photo.png", "image/png", b"\x89PNG\r\n\x1a\n" + b"0" * 16),
     ("photo.jpg", "image/jpeg", b"\xff\xd8\xff\xe0" + b"0" * 16),
     ("animation.gif", "image/gif", b"GIF89a" + b"0" * 16),
     ("voice.mp3", "audio/mpeg", b"ID3" + b"0" * 16),
     ("voice.wav", "audio/wav", b"RIFF\x00\x00\x00\x00WAVE" + b"0" * 16),
-    ("letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", DocumentTestContent.docx()),
+    ("letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", None),
     ("notes.txt", "text/plain", b"plain text notes"),
 ]
 
@@ -43,8 +43,8 @@ async def upload_as_administrator(client: AsyncClient, administrator: User, stud
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("file_name,content_type,content", ACCEPTED_UPLOADS)
-async def test_every_picker_family_is_accepted(client: AsyncClient, test_admin: User, test_student: User, file_name: str, content_type: str, content: bytes) -> None:
-    response = await upload_as_administrator(client, test_admin, test_student, file_name, content_type, content)
+async def test_every_picker_family_is_accepted(client: AsyncClient, test_admin: User, test_student: User, file_name: str, content_type: str, content: bytes | None) -> None:
+    response = await upload_as_administrator(client, test_admin, test_student, file_name, content_type, content if content is not None else DocumentTestContent.docx())
     assert response.status_code == 201
     assert response.json()["file_type"] == content_type
 
