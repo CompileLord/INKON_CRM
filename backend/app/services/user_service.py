@@ -215,19 +215,23 @@ class UserService:
         if email:
             email_owner: User | None = await self.user_repo.get_by_email(email)
             if email_owner is not None and email_owner.id != own_id:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists", headers={"X-Error-Code": "email_taken"})
         if phone:
             phone_owner: User | None = await self.user_repo.get_by_phone(phone)
             if phone_owner is not None and phone_owner.id != own_id:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this phone already exists")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this phone already exists", headers={"X-Error-Code": "phone_taken"})
 
     async def _persist_unique(self, persistence: Awaitable[User]) -> User:
         try:
             return await persistence
-        except IntegrityError:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="User with this email or phone already exists"
-            ) from None
+        except IntegrityError as error:
+            error_description: str = str(error.orig)
+            if "ux_users_phone_live" in error_description:
+                raise HTTPException(status_code=409, detail="User with this phone already exists", headers={"X-Error-Code": "phone_taken"}) from None
+            if "ux_users_email_lower_live" in error_description or "ix_users_email" in error_description:
+                raise HTTPException(status_code=409, detail="User with this email already exists", headers={"X-Error-Code": "email_taken"}) from None
+            raise
+
 
     async def list_password_sms_deliveries(
         self,
