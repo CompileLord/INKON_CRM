@@ -105,6 +105,7 @@ describe("StudentProfile Component", () => {
     const lines = chart.querySelectorAll('[data-testid="student-chart-line"]');
     expect(lines).toHaveLength(2);
     lines.forEach((line) => expect(line.getAttribute("d")).toContain("C"));
+    expect(chart.querySelector("svg")?.getAttribute("class")).toContain("motion-safe:animate-[tab-panel-in_300ms_ease-out]");
     expect(chart.querySelectorAll('[data-testid="student-chart-point"]')).toHaveLength(4);
     expect(courseEndpoints.getCourseStaffProgress).toHaveBeenCalledWith(101);
     expect(courseEndpoints.getCourseStaffProgress).toHaveBeenCalledWith(102);
