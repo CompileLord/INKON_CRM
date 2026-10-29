@@ -192,7 +192,7 @@ os.environ["REDIS_URL"] = TEST_REDIS_URL
 TEST_REDIS_PREFIX: str = f"wp09:{os.getpid()}:{uuid.uuid4().hex}:"
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
-    pool_size=3 if TEST_WORKER_NAME else 5,
+    pool_size=1 if TEST_WORKER_NAME else 5,
     max_overflow=5 if TEST_WORKER_NAME else 40,
     future=True,
 )
@@ -205,6 +205,9 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 from app.core.config import settings
+if TEST_WORKER_NAME:
+    settings.DB_POOL_SIZE = 1
+    settings.DB_OUTBOX_POOL_SIZE = 1
 import app.core.redis as redis_module
 from app.core.deps import get_db_session
 from app.core.security import hash_password, create_access_token

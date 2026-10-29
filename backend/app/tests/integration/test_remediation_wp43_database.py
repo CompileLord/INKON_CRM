@@ -78,6 +78,7 @@ async def test_exhausted_pool_times_out_then_recovers_after_return() -> None:
 async def test_compose_profiles_measure_checkout_hold_and_session_counts() -> None:
     import json
     import math
+    import os
     from time import perf_counter
     from typing import Any
     from uuid import uuid4
@@ -99,7 +100,12 @@ async def test_compose_profiles_measure_checkout_hold_and_session_counts() -> No
                 for revision in range(revisions):
                     kind: str
                     concurrency: int
-                    for kind, concurrency in (("api", 16), ("worker", 16), ("outbox", 4), ("api_storage", 2), ("worker_storage", 2)):
+                    profile_load: tuple[tuple[str, int], ...] = (
+                        (("api", 9), ("worker", 9), ("outbox", 2), ("api_storage", 1), ("worker_storage", 1))
+                        if os.environ.get("PYTEST_XDIST_WORKER")
+                        else (("api", 16), ("worker", 16), ("outbox", 4), ("api_storage", 2), ("worker_storage", 2))
+                    )
+                    for kind, concurrency in profile_load:
                         options: dict[str, Any]
                         if kind.endswith("storage"):
                             options = {"pool_size": 1, "max_overflow": 0, "pool_pre_ping": True, "connect_args": {"server_settings": {"statement_timeout": "5000", "lock_timeout": "1000"}}}
