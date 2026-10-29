@@ -257,8 +257,16 @@ async def dispose_schema_connections() -> AsyncGenerator[None, None]:
         await test_engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def shared_seed_state() -> dict[str, object]:
+    return {}
+
+
 @pytest_asyncio.fixture(scope="function", autouse=True)
-async def clean_database():
+async def clean_database(request: pytest.FixtureRequest, shared_seed_state: dict[str, object]) -> None:
+    if request.node.get_closest_marker("shared_seed") and shared_seed_state.get("ready"):
+        return
+    shared_seed_state.clear()
     statements: str = " ".join(f'DELETE FROM "{table.name}";' for table in reversed(Base.metadata.sorted_tables))
     async with test_engine.begin() as connection:
         await connection.exec_driver_sql(f"DO $$ BEGIN {statements} END $$")

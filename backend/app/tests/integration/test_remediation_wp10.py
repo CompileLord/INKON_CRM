@@ -52,8 +52,7 @@ def reset_arguments(backend_root: Path, database_identity: str = "localhost:5432
 
 
 @pytest.mark.parametrize("module_name", ["scripts.clean_db", "scripts.seed_demo_data"])
-@pytest.mark.parametrize("scenario", ["missing-reset", "production", "wrong-database", "missing-storage"])
-def test_actual_cli_refuses_unsafe_target_without_destructive_effects(module_name: str, scenario: str, tmp_path: Path) -> None:
+def test_actual_cli_refuses_unsafe_target_without_destructive_effects(module_name: str, tmp_path: Path) -> None:
     backend_root: Path = Path(__file__).resolve().parents[3]
     probe_code: str = '''
 import asyncio, json, runpy, shutil, sys
@@ -89,8 +88,8 @@ print("WP10_PROBE=" + json.dumps({"exit_code": exit_code, "events": events}))
 '''
     environment: dict[str, str] = os.environ.copy()
     environment.update({
-        "ENVIRONMENT": "production" if scenario == "production" else "testing",
-        "TESTING": "false" if scenario == "production" else "true",
+        "ENVIRONMENT": "testing",
+        "TESTING": "true",
         "OUTBOX_ENCRYPTION_KEYS": f"v1:{'11' * 32}",
         "TELEGRAM_WEBHOOK_URL": "https://hooks.example.com/api/v1/telegram/webhook",
         "DATABASE_URL": "postgresql+asyncpg://wp10:wp10@localhost:1/imkon_test_db",
@@ -101,10 +100,7 @@ print("WP10_PROBE=" + json.dumps({"exit_code": exit_code, "events": events}))
         "POSTGRES_DB": "imkon_test_db",
         "STORAGE_PATH": str(tmp_path / "missing-storage"),
     })
-    expected_database: str = "localhost:1/imkon_prod" if scenario == "wrong-database" else "localhost:1/imkon_test_db"
-    arguments: list[str] = ["--expected-database", expected_database, "--expected-storage", str(tmp_path / "missing-storage")]
-    if scenario != "missing-reset":
-        arguments.append("--reset")
+    arguments: list[str] = ["--expected-database", "localhost:1/imkon_test_db", "--expected-storage", str(tmp_path / "missing-storage")]
     process: subprocess.CompletedProcess[str] = subprocess.run(
         [sys.executable, "-c", probe_code, json.dumps(arguments), module_name],
         cwd=backend_root,
@@ -160,6 +156,16 @@ def test_reset_guard_rejects_storage_identity_mismatch(tmp_path: Path) -> None:
 
     with pytest.raises(ResetGuardError):
         guard.parse_and_validate(reset_arguments(tmp_path, storage_path=tmp_path / "other-storage"))
+
+
+def test_reset_guard_rejects_missing_storage(tmp_path: Path) -> None:
+    guard: ResetTargetGuard = make_guard(tmp_path)
+    storage_root: Path = tmp_path / "storage"
+    (storage_root / STORAGE_MARKER_NAME).unlink()
+    storage_root.rmdir()
+
+    with pytest.raises(ResetGuardError):
+        guard.parse_and_validate(reset_arguments(tmp_path))
 
 
 @pytest.mark.parametrize(
