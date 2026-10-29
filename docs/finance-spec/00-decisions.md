@@ -114,3 +114,12 @@ All files in `docs/audit_screenshots/` were checked against this document. `24_*
 | L8 | **"Now" and lesson times.** Lesson times are stored without zone. | Compare against `datetime.now(ZoneInfo(settings.TIMEZONE))` (Asia/Dushanbe), the same helper as `school_calendar.py`. |
 | L9 | **Q5 has no prod data.** Legacy wallet credit only exists in local/UAT data. | Keep the cheap UI (show + manual allocate); no migration work. |
 | L10 | **Attention block depends on correct lesson times.** It reads `time_start`/`time_end`, which only become editable with U17. | Phase 6 starts after U17 is merged. |
+
+## 0.6 Decisions after the live test (2026-10-29)
+
+| ID | Question | Owner decision |
+|---|---|---|
+| LT1 | May students see classmates' names and grades in the class journal view, and the class at-risk count? | Yes. Both stay visible to enrolled students. Money and contact data stay hidden. |
+| LT2 | Should a student see their own balance or payments? | No. Students see no finance data, including their own. |
+| LT3 | Accountant permissions | The accountant may void, discount **and refund**. |
+| LT4 | May mentors see a course's monthly price? | Yes, the course price. Per-student price, billing mode, debt and payment status stay hidden from mentors and students. |
