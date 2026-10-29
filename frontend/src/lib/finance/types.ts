@@ -307,3 +307,12 @@ export interface CourseCreditAllocationResponse {
   wallet_credit: string;
   allocations: { charge_id: number; ledger_entry_id: number; amount: string }[];
 }
+
+export interface DebtPage {
+  items: DebtItem[];
+  total: number;
+  student_total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}

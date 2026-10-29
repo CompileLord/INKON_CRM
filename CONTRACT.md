@@ -3800,6 +3800,7 @@ Manually apply a student's wallet credit to a specific charge.
     "page": integer,
     "page_size": integer,
     "total_pages": integer,
+    "student_total": integer,
   }
   ```
 - **422**: Validation Error

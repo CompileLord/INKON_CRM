@@ -118,7 +118,9 @@ class SQLAlchemyDebtReminderRepository:
             query = query.where(query.selected_columns.overdue_days >= filters["overdue_days"])
         if filters.get("search"):
             query = query.where(PersonSearch.matches(filters["search"]))
-        total: int = await self._session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        debt_rows: Any = query.subquery()
+        total: int = await self._session.scalar(select(func.count()).select_from(debt_rows)) or 0
+        student_total: int = await self._session.scalar(select(func.count(func.distinct(debt_rows.c.student_id)))) or 0
         latest: Any = (
             select(func.max(DebtReminderNotification.created_at))
             .where(DebtReminderNotification.student_id == User.id,
@@ -144,5 +146,5 @@ class SQLAlchemyDebtReminderRepository:
                 "parent_telegram_linked": student.parent_telegram_chat_id is not None,
                 "last_reminder_at": last_reminder,
             })
-        return {"items": items, "total": total, "page": page, "page_size": page_size,
+        return {"items": items, "total": total, "student_total": student_total, "page": page, "page_size": page_size,
                 "total_pages": (total + page_size - 1) // page_size}

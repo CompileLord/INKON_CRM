@@ -10,7 +10,7 @@ from app.models.charge import ChargeStatus
 from app.models.enrollment import EnrollmentStatus
 from app.models.ledger import LedgerEntry
 from app.schemas.payment import PaymentCreate, PaymentIdempotency
-from app.schemas.debt import DebtResponse
+from app.schemas.debt import DebtPageResponse, DebtResponse
 from app.schemas.debt_reminder import DebtReminderRequest, DebtReminderResponse
 from app.services.debt_reminder_service import DebtReminderService
 from app.schemas.common import PaginatedResponse
@@ -271,7 +271,7 @@ async def reopen_period(
     )
 
 
-@router.get("/debts/", response_model=PaginatedResponse[DebtResponse])
+@router.get("/debts/", response_model=DebtPageResponse)
 async def get_debts(
     search: Optional[str] = Query(None, description="Case-insensitive name, email or phone search before pagination"),
     course_id: Optional[int] = Query(None),

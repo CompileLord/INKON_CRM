@@ -60,6 +60,8 @@ async def test_student_filter_returns_only_that_students_course_balances(
 
     assert unfiltered["total"] > filtered["total"]
     assert filtered["total"] == 2
+    assert filtered["student_total"] == 1
+    assert unfiltered["student_total"] == 2
     assert {item["student"]["id"] for item in filtered["items"]} == {first_student_id}
     assert {item["course"]["id"] for item in filtered["items"]} == {first_course_id, second_course_id}
     assert second_student_id not in {item["student"]["id"] for item in filtered["items"]}
@@ -110,6 +112,7 @@ async def test_student_filter_counts_before_pagination(
     ).json()
 
     assert first_page["total"] == 2
+    assert first_page["student_total"] == 1
     assert first_page["total_pages"] == 2
     assert len(first_page["items"]) == 1
 
@@ -135,3 +138,33 @@ async def test_student_filter_keeps_role_guard(
 
     assert mentor_response.status_code == 403
     assert student_response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_debtors_cache_reuses_and_invalidates_after_payment(client: AsyncClient, test_admin: User, test_accountant: User, test_mentor: User, monkeypatch: pytest.MonkeyPatch) -> None:
+    from datetime import datetime, timezone
+    from typing import Any
+    from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
+
+    headers: dict[str, str] = _headers(test_admin)
+    student_id: int
+    course_id: int
+    student_id, course_id = await _setup_student_course(client, headers, test_mentor.id, email='debt-cache@example.com')
+    original = SQLAlchemyDebtReminderRepository.list_debts
+    calls: list[int] = []
+
+    async def counted(repository: SQLAlchemyDebtReminderRepository, today: date, filters: dict[str, Any], page: int, page_size: int) -> dict[str, Any]:
+        calls.append(page)
+        return await original(repository, today, filters, page, page_size)
+
+    monkeypatch.setattr(SQLAlchemyDebtReminderRepository, 'list_debts', counted)
+    params: dict[str, int] = {'student_id': student_id}
+    first = await client.get(DEBTS_URL, params=params, headers=headers)
+    second = await client.get(DEBTS_URL, params=params, headers=headers)
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json() and len(calls) == 1
+    payment = await client.post('/api/v1/finance/payments/', headers=headers, json={'student_id': student_id, 'course_id': course_id, 'amount': '10.00', 'paid_at': datetime.now(timezone.utc).isoformat(), 'method': 'cash'})
+    assert payment.status_code == 201
+    third = await client.get(DEBTS_URL, params=params, headers=headers)
+    assert len(calls) == 2
+    assert third.json()['items'][0]['debt'] != first.json()['items'][0]['debt']
