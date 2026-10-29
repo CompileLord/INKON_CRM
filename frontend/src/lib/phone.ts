@@ -26,3 +26,12 @@ export function formatPhoneDisplay(value: string | null | undefined): string {
   }
   return `+${countryCode} ${parts.join(" ")}`;
 }
+
+export const DEFAULT_PHONE_PREFIX: string = "+992";
+
+const LOCAL_TAJIK_NUMBER_PATTERN: RegExp = /^[0-9]{9}$/;
+
+export function withDefaultCountryCode(value: string): string {
+  const compact: string = value.trim().replace(/[\s()-]/g, "");
+  return LOCAL_TAJIK_NUMBER_PATTERN.test(compact) ? `${DEFAULT_PHONE_PREFIX}${compact}` : value.trim();
+}

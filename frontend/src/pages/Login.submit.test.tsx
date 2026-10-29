@@ -285,4 +285,15 @@ describe("Login page submission", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(loginSpy).toHaveBeenCalledWith("admin@example.com", "adminpass9"));
   });
+
+  it("sends a local nine-digit phone with the default +992 code", async () => {
+    const user = userEvent.setup();
+    const loginSpy = vi.spyOn(authEndpoints, "login").mockImplementationOnce(() => new Promise<TokenPair>(() => {}));
+    renderLogin();
+    await user.type(screen.getByLabelText(/^email or phone/i, { selector: "input" }), "90 123 45 67");
+    await user.type(screen.getByLabelText(/^password/i, { selector: "input" }), "Password123");
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(loginSpy).toHaveBeenCalledTimes(1));
+    expect(loginSpy.mock.calls[0][0]).toBe("+992901234567");
+  });
 });

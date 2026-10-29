@@ -163,7 +163,10 @@ describe("StudentFormPanel phones", () => {
     await user.type(screen.getByLabelText(/First Name/i), "Rustam");
     await user.type(screen.getByLabelText(/Last Name/i), "Karimov");
     await user.type(screen.getByLabelText(/Email/i), "rustam@example.com");
-    await user.type(screen.getByLabelText(/^Phone/i), "992901112233");
+    const phone: HTMLInputElement = screen.getByLabelText(/^Phone/i);
+    await user.click(phone);
+    await user.clear(phone);
+    await user.type(phone, "992901112233");
     await user.click(screen.getByRole("button", { name: "Create" }));
     expect(await screen.findByText("Use international format, starting with +")).toBeDefined();
   });
