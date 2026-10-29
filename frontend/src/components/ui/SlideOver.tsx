@@ -69,7 +69,7 @@ export function SlideOver({
             footer
               ? "grid-rows-[auto_minmax(0,1fr)_auto]"
               : "grid-rows-[auto_minmax(0,1fr)]"
-          } overflow-hidden bg-card shadow-2xl motion-safe:animate-[card-scale-in_200ms_ease-out] has-focus-visible:animate-none ${desktopDrawerClasses}`}
+          } overflow-hidden bg-card shadow-2xl motion-safe:animate-[card-scale-in_200ms_ease-out] ${desktopDrawerClasses}`}
         >
           <div
             className={`flex shrink-0 items-center justify-between gap-3 border-b border-border-warm px-6 py-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] ${headerDesktopPadding}`}

@@ -56,7 +56,7 @@ export function Modal({
           <Dialog.Popup
             initialFocus={initialFocus}
             finalFocus={finalFocus}
-            className={`relative flex w-full ${maxWidthClassName} flex-col overflow-hidden bg-card shadow-xl motion-safe:animate-[card-scale-in_200ms_ease-out] has-focus-visible:animate-none ${fullScreenOnMobile ? "h-dvh max-h-dvh rounded-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl" : "max-h-[calc(100dvh-32px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] rounded-2xl"}`}
+            className={`relative flex w-full ${maxWidthClassName} flex-col overflow-hidden bg-card shadow-xl motion-safe:animate-[card-scale-in_200ms_ease-out] ${fullScreenOnMobile ? "h-dvh max-h-dvh rounded-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl" : "max-h-[calc(100dvh-32px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] rounded-2xl"}`}
           >
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-warm px-5 py-2">
               <Dialog.Title className="text-lg font-semibold text-ink">{title}</Dialog.Title>
