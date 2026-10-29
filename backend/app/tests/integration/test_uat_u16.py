@@ -245,3 +245,45 @@ async def test_withdrawn_enrollment_cannot_queue_or_deliver_sms(client: AsyncCli
     response: Response = await ReminderScenario.send(client, test_accountant, student_id)
     assert response.status_code == 200
     assert response.json()["results"][0]["outcome"] == "no_debt"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('remaining', ['834.50', '0.00'])
+async def test_sms_dispatch_uses_current_debt(client: AsyncClient, test_accountant: User, test_mentor: User, remaining: str) -> None:
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from app.models.charge import Charge, ChargeStatus
+    from app.models.outbox_event import OutboxEventStatus
+    from app.repositories.sqlalchemy.outbox_repository import SQLAlchemyOutboxRepository
+    from app.services.sms.sender import SmsSendResult
+    from app.workers.outbox import OutboxWorkerManager
+
+    class Sender:
+        def __init__(self) -> None:
+            self.messages: list[str] = []
+
+        async def send(self, phone: str, message: str, idempotency_key: str) -> SmsSendResult:
+            self.messages.append(message)
+            return SmsSendResult(provider_message_id='fake', status='accepted')
+
+    student_id: int = await ReminderScenario.student(test_mentor, '+992900000001', None)
+    assert (await ReminderScenario.send(client, test_accountant, student_id)).status_code == 200
+    async with TestingSessionLocal() as session:
+        if Decimal(remaining) == 0:
+            await session.execute(update(Charge).where(Charge.student_id == student_id).values(status=ChargeStatus.CANCELLED))
+        else:
+            await session.execute(update(Charge).where(Charge.student_id == student_id).values(amount=Decimal(remaining)))
+        await session.commit()
+        events: Any = await SQLAlchemyOutboxRepository(session).claim_pending_batch('flf', 180, 10, datetime.now(timezone.utc))
+        await session.commit()
+    sender: Sender = Sender()
+    worker: OutboxWorkerManager = OutboxWorkerManager(database_url='unused', payload_master_key=settings.JWT_SECRET_KEY, sms_sender=sender, sms_send_interval_seconds=0)
+    assert await worker.process_single_event(events[0], 'flf', TestingSessionLocal)
+    event: OutboxEvent = (await ReminderScenario.events())[0]
+    if Decimal(remaining) == 0:
+        assert not sender.messages
+        assert event.status == OutboxEventStatus.EXPIRED and event.last_error == 'no_current_debt'
+        assert event.dispatched_amount is None
+    else:
+        assert remaining in sender.messages[0]
+        assert event.status == OutboxEventStatus.DELIVERED and event.dispatched_amount == Decimal(remaining)

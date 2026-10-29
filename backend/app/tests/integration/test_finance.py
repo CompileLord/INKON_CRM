@@ -195,7 +195,7 @@ async def test_payment_is_cash_and_discount_is_separate(
     # A 50 discount reduces the debt by exactly 50.
     discount_resp = await client.post(
         "/api/v1/finance/discounts/",
-        json={"student_id": student_id, "amount": "20.00", "reason_code": "SOCIAL"},
+        json={"student_id": student_id, "charge_id": payment["allocations"][0]["charge_id"], "amount": "20.00", "reason_code": "SOCIAL"},
         headers=acc_headers,
     )
     assert discount_resp.status_code == 201
@@ -223,9 +223,11 @@ async def test_partial_discount_does_not_settle_whole_charge(
     ).json()
     billed = Decimal(balance_before["billed_to_date"])
 
+    charge_response = await client.get(f"/api/v1/finance/charges/?student_id={student_id}", headers=acc_headers)
+    charge_id = charge_response.json()["items"][0]["id"]
     discount_resp = await client.post(
         "/api/v1/finance/discounts/",
-        json={"student_id": student_id, "amount": "10.00", "reason_code": "GOODWILL"},
+        json={"student_id": student_id, "charge_id": charge_id, "amount": "10.00", "reason_code": "GOODWILL"},
         headers=acc_headers,
     )
     assert discount_resp.status_code == 201

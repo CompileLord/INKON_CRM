@@ -125,18 +125,11 @@ class SQLAlchemyUserRepository(SQLAlchemyBaseRepository[User], UserRepository):
         self, page: int, page_size: int, search: str | None, mentor_id: int | None,
         course_id: int | None, payment_status: str | None,
     ) -> RepositoryPage[dict[str, Any]]:
-        debts: Any = StudentDirectoryQuery().debts(SchoolCalendar.today())
-        active: Any = (
-            select(Enrollment.student_id.label("student_id"), func.count(Enrollment.id).label("count"),
-                   func.sum(case((func.coalesce(Enrollment.billing_mode, "paid") != "grant", 1), else_=0)).label("paid"))
-            .join(Course, Course.id == Enrollment.course_id)
-            .where(Enrollment.is_deleted.is_(False), Enrollment.status == EnrollmentStatus.ACTIVE,
-                   Course.is_deleted.is_(False), Course.status == CourseStatus.ACTIVE)
-            .group_by(Enrollment.student_id).subquery()
-        )
+        directory_query: StudentDirectoryQuery = StudentDirectoryQuery()
+        debts: Any = directory_query.debts(SchoolCalendar.today())
+        active: Any = directory_query.active_enrollments()
         debt: Any = func.coalesce(debts.c.debt, Decimal("0.00"))
-        status: Any = case((debt > 0, "debt"),
-                           ((func.coalesce(active.c.count, 0) > 0) & (active.c.paid == 0), "grant"), else_="ok")
+        status: Any = directory_query.payment_status(debt, active)
         query: Any = (select(User, debt.label("debt"), status.label("payment_status"))
                       .outerjoin(debts, debts.c.student_id == User.id)
                       .outerjoin(active, active.c.student_id == User.id)

@@ -4,8 +4,10 @@ import random
 from dataclasses import dataclass
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Optional
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.security import PasswordWorkService
@@ -23,6 +25,7 @@ from app.services.sms.sender import SmsDeliveryError, SmsSender, SmsSendResult
 class SmsDispatchInspection:
     invalid_reason: Optional[str]
     parent_addressee_name: Optional[str]
+    dispatched_amount: Optional[Decimal] = None
 
 
 class StudentPasswordSmsDispatcher:
@@ -95,6 +98,8 @@ class StudentPasswordSmsDispatcher:
                 await session.commit()
                 return False
             event.attempt_count = attempt_count
+            if inspection.dispatched_amount is not None:
+                await session.execute(update(OutboxEvent).where(OutboxEvent.id == event.id, OutboxEvent.lease_owner == lease_owner).values(dispatched_amount=inspection.dispatched_amount))
             await session.commit()
         send_result: Optional[SmsSendResult] = None
         failure: Optional[SmsDeliveryError] = None

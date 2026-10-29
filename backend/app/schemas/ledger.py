@@ -54,7 +54,7 @@ class DiscountCreatePayload(BaseModel):
 
     model_config = {"extra": "forbid"}
     student_id: int
-    charge_id: Optional[int] = None
+    charge_id: int
     amount: PositiveMoney
     occurred_at: Optional[datetime] = None
     reason_code: Optional[str] = Field(None, max_length=50)
@@ -138,6 +138,7 @@ class PaymentOptionResponse(BaseModel):
     overdue_days: int
     remaining_contract_maximum: Decimal
     billing_mode: str
+    status: str
 
 
 class PaymentOptionsResponse(BaseModel):

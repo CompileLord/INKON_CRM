@@ -387,9 +387,10 @@ async def test_discount_cannot_exceed_outstanding_charges(
 
     student_id, _ = await _setup(client, admin_headers, test_mentor.id, "toobig@example.com", price="300.00")
 
+    charge_id = await db_session.scalar(select(Charge.id).where(Charge.student_id == student_id).order_by(Charge.id))
     too_big = await client.post(
         "/api/v1/finance/discounts/",
-        json={"student_id": student_id, "amount": "99999.00", "reason_code": "OOPS"},
+        json={"student_id": student_id, "charge_id": charge_id, "amount": "99999.00", "reason_code": "OOPS"},
         headers=acc_headers,
     )
     assert too_big.status_code == 400

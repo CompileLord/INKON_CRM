@@ -301,7 +301,10 @@ class SQLAlchemyOutboxRepository:
         values: dict[str, Any] = {"status": status}
         if status == "sent":
             values["sent_at"] = now
-        await self._session.execute(update(DebtReminderNotification).where(DebtReminderNotification.id == notification_id).values(**values))
+        result: Any = await self._session.execute(update(DebtReminderNotification).where(DebtReminderNotification.id == notification_id).values(**values))
+        if result.rowcount:
+            from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
+            await SQLAlchemyCacheGenerationRepository(self._session).advance()
 
     async def sync_terminal_debt_reminders(self) -> None:
         notification_ids: Any = select(cast(func.split_part(OutboxEvent.correlation_key, ":", 2), Integer)).where(

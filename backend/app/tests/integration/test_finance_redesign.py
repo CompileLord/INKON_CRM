@@ -166,21 +166,12 @@ async def test_void_and_refund_lifecycle(
     p_res = await db_session.execute(payment_q)
     payment_entry = p_res.scalars().first()
 
-    # 2. Refund as Accountant -> expect 403 Forbidden (SuperAdmin only!)
     refund_acc = await client.post(
         f"/api/v1/finance/payments/{payment_entry.id}/refund",
         json={"amount": "200.00", "reason_code": "CUSTOMER_REQ"},
         headers=acc_headers,
     )
-    assert refund_acc.status_code == 403
-
-    # 3. Refund as SuperAdmin -> expect 200
-    refund_admin = await client.post(
-        f"/api/v1/finance/payments/{payment_entry.id}/refund",
-        json={"amount": "200.00", "to_wallet": False, "reason_code": "CUSTOMER_REQ"},
-        headers=admin_headers,
-    )
-    assert refund_admin.status_code == 200
+    assert refund_acc.status_code == 200
 
     # 4. A refunded payment can no longer be voided — the two would
     #    double-count the reversal.

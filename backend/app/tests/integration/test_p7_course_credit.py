@@ -13,6 +13,7 @@ from app.models.enrollment import Enrollment
 from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.models.user import User
 from app.tests.integration.test_p7_targets import make_enrollment
+from app.services.finance_service import FinanceService
 
 
 @pytest.mark.asyncio
@@ -62,3 +63,36 @@ async def test_course_credit_allocation_and_errors(client: AsyncClient, db_sessi
     assert response.json()['allocated_amount'] == '50.00' and response.json()['wallet_credit'] == '100.00'
     response = await client.post(url, headers=headers, json={'enrollment_id': enrollment.id})
     assert response.status_code == 422 and response.json()['detail']['code'] == 'nothing_to_allocate'
+
+
+@pytest.mark.asyncio
+async def test_credit_allocation_idempotency(client: AsyncClient, db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User, test_accountant: User) -> None:
+    enrollment: Enrollment = await make_enrollment(db_session, test_student, test_mentor, 'Idempotent credit')
+    entry: LedgerEntry = LedgerEntry(student_id=test_student.id, type=LedgerEntryType.ADJUSTMENT, amount=Decimal('100.00'), occurred_at=datetime.now(timezone.utc), recorded_by_id=test_admin.id)
+    db_session.add(entry)
+    await db_session.commit()
+    headers: dict[str, str] = {'Authorization': f'Bearer {create_access_token(test_accountant.id, test_accountant.role)}', 'Idempotency-Key': 'credit-retry'}
+    url: str = f'/api/v1/finance/students/{test_student.id}/credit-allocations'
+    first: Response = await client.post(url, headers=headers, json={'enrollment_id': enrollment.id, 'amount': '25.00'})
+    replay: Response = await client.post(url, headers=headers, json={'enrollment_id': enrollment.id, 'amount': '25.00'})
+    mismatch: Response = await client.post(url, headers=headers, json={'enrollment_id': enrollment.id, 'amount': '30.00'})
+    assert first.status_code == 201, first.text
+    assert replay.status_code == 200 and replay.json() == first.json()
+    assert mismatch.status_code == 409 and mismatch.json()['detail']['code'] == 'idempotency_key_payload_mismatch'
+    assert Decimal((await FinanceService(db_session).get_unallocated_credit(test_student.id))) == Decimal('75.00')
+
+
+@pytest.mark.asyncio
+async def test_course_credit_batches_availability(client: AsyncClient, db_session: AsyncSession, test_student: User, test_mentor: User, test_admin: User, monkeypatch: pytest.MonkeyPatch) -> None:
+    enrollment: Enrollment = await make_enrollment(db_session, test_student, test_mentor, 'Batched credit')
+    for _ in range(5):
+        db_session.add(LedgerEntry(student_id=test_student.id, type=LedgerEntryType.ADJUSTMENT, amount=Decimal('10'), occurred_at=datetime.now(timezone.utc), recorded_by_id=test_admin.id))
+    await db_session.flush()
+
+    async def reject_per_entry_query(service: FinanceService, entry: LedgerEntry) -> Decimal:
+        raise AssertionError('availability must be batched')
+
+    monkeypatch.setattr(FinanceService, '_entry_available', reject_per_entry_query)
+    result: dict = await FinanceService(db_session).allocate_course_credit(test_student.id, enrollment.id, Decimal('5'), test_admin)
+    assert result['allocated_amount'] == Decimal('5')
+    assert len(result['allocations']) == 1

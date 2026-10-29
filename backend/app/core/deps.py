@@ -302,6 +302,7 @@ def get_notification_service(db: AsyncSession = Depends(get_db_session)) -> "Not
 
 def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "DebtReminderService":
     from app.repositories.sqlalchemy.debt_reminder_repository import SQLAlchemyDebtReminderRepository
+    from app.repositories.sqlalchemy.cache_generation_repository import SQLAlchemyCacheGenerationRepository
     from app.services.audit_service import AuditService
     from app.services.debt_reminder_service import DebtReminderService
     from app.core.config import settings
@@ -311,7 +312,7 @@ def get_debt_reminder_service(db: AsyncSession = Depends(get_db_session)) -> "De
     return DebtReminderService(
         SQLAlchemyDebtReminderRepository(db), AuditService(db),
         sms=DebtReminderSms(SQLAlchemyOutboxRepository(db), OutboxPayloadEncryptor.from_settings(settings.JWT_SECRET_KEY)),
-        interval_seconds=settings.DEBT_REMINDER_INTERVAL_SECONDS,
+        interval_seconds=settings.DEBT_REMINDER_INTERVAL_SECONDS, cache_generation=SQLAlchemyCacheGenerationRepository(db),
     )
 
 

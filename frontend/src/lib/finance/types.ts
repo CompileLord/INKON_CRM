@@ -48,7 +48,7 @@ export interface RefundPaymentPayload {
 export interface DiscountCreatePayload {
   student_id: number;
   amount: string;
-  charge_id?: number;
+  charge_id: number;
   reason_code?: string;
   comment?: string;
   occurred_at?: string;
@@ -135,6 +135,7 @@ export interface PaymentOption {
   overdue_days: number;
   remaining_contract_maximum: string;
   billing_mode: string;
+  status?: "active" | "withdrawn";
 }
 
 export interface PaymentOptions {
@@ -181,6 +182,9 @@ export interface ReceiptAllocationItem {
 
 export interface PaymentReceipt {
   receipt_number: string;
+  status: "valid" | "voided" | "refunded" | "partially_refunded";
+  refunded_amount: string;
+  net_amount: string;
   occurred_at: string;
   student_id: number;
   student_name: string;
@@ -306,4 +310,13 @@ export interface CourseCreditAllocationResponse {
   allocated_amount: string;
   wallet_credit: string;
   allocations: { charge_id: number; ledger_entry_id: number; amount: string }[];
+}
+
+export interface DebtPage {
+  items: DebtItem[];
+  total: number;
+  student_total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }

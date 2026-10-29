@@ -412,9 +412,26 @@ class FinanceService:
         alloc_res = await self.db.execute(alloc_q)
         settled_by_charge: Dict[int, Decimal] = {row[0]: Decimal(row[1] or 0) for row in alloc_res.all()}
 
+        entry_ids: list[int] = [entry.id for entry in entries]
+        allocated_rows: Any = await self.db.execute(
+            select(Allocation.ledger_entry_id, func.sum(Allocation.amount))
+            .join(LedgerEntry, LedgerEntry.id == Allocation.ledger_entry_id)
+            .where(Allocation.ledger_entry_id.in_(entry_ids), self._consumed_credit_allocation())
+            .group_by(Allocation.ledger_entry_id)
+        )
+        allocated_by_entry: dict[int, Decimal] = {row[0]: Decimal(row[1]) for row in allocated_rows.all()}
+        refund_rows: Any = await self.db.execute(
+            select(LedgerEntry.reverses_entry_id, func.sum(LedgerEntry.amount))
+            .where(LedgerEntry.reverses_entry_id.in_(entry_ids), LedgerEntry.type == LedgerEntryType.REFUND,
+                   LedgerEntry.is_cash_out.is_(True))
+            .group_by(LedgerEntry.reverses_entry_id)
+        )
+        refunded_by_entry: dict[int, Decimal] = {row[0]: Decimal(row[1]) for row in refund_rows.all()}
         touched: List[int] = []
         for entry in entries:
-            available = await self._entry_available(entry)
+            if limit is not None and limit <= ZERO:
+                break
+            available: Decimal = entry.amount - allocated_by_entry.get(entry.id, ZERO) - refunded_by_entry.get(entry.id, ZERO)
             if limit is not None:
                 available = min(available, limit)
             if available <= ZERO:
@@ -787,11 +804,9 @@ class FinanceService:
         )).all()}
         for target in targets:
             enrollment = enrollments.get(target.enrollment_id)
-            if enrollment is None or (enrollment.status != EnrollmentStatus.ACTIVE and not (
-                course_id is not None and enrollment.status == EnrollmentStatus.WITHDRAWN
-            )):
+            if enrollment is None or enrollment.status not in (EnrollmentStatus.ACTIVE, EnrollmentStatus.WITHDRAWN):
                 raise HTTPException(status_code=422, detail={"code": "invalid_payment_target"})
-            maximum: Decimal = ZERO if enrollment.effective_billing_mode == BillingMode.GRANT else balances.get(target.enrollment_id, ZERO)
+            maximum: Decimal = balances.get(target.enrollment_id, ZERO)
             if target.amount > maximum:
                 raise HTTPException(status_code=422, detail={"code": "payment_target_exceeds_balance", "enrollment_id": target.enrollment_id, "maximum": format(maximum, ".2f")})
 
@@ -863,29 +878,28 @@ class FinanceService:
         self.db.add(entry)
         await self.db.flush()
 
-        if payload.charge_id:
-            charge_res = await self.db.execute(
-                select(Charge).filter(
-                    Charge.id == payload.charge_id,
-                    Charge.student_id == payload.student_id,
-                    Charge.is_deleted == False,  # noqa: E712
-                )
+        charge_res = await self.db.execute(
+            select(Charge).filter(
+                Charge.id == payload.charge_id,
+                Charge.student_id == payload.student_id,
+                Charge.is_deleted == False,  # noqa: E712
             )
-            charge = charge_res.scalars().first()
-            if not charge:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Target charge not found for student",
-                )
-            remaining = await self._charge_remaining(charge)
-            if payload.amount > remaining:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Discount {payload.amount} exceeds the charge's remaining balance {remaining}",
-                )
-            targets = [charge]
-        else:
-            targets = await self._open_charges(payload.student_id)
+        )
+        charge = charge_res.scalars().first()
+        if not charge:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target charge not found for student",
+            )
+        remaining = await self._charge_remaining(charge)
+        if charge.status != ChargeStatus.OPEN or remaining <= ZERO:
+            raise HTTPException(status_code=422, detail={"code": "discount_charge_not_open"})
+        if payload.amount > remaining:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Discount {payload.amount} exceeds the charge's remaining balance {remaining}",
+            )
+        targets = [charge]
 
         await self._apply_credit([entry], targets)
 
@@ -1001,11 +1015,11 @@ class FinanceService:
         payload: RefundPaymentPayload,
         current_user: User,
     ) -> LedgerEntry:
-        """Refund part or all of a payment (SuperAdmin only)."""
-        if current_user.role != UserRole.SUPERADMIN:
+        """Refund part or all of a payment."""
+        if current_user.role not in (UserRole.SUPERADMIN, UserRole.ACCOUNTANT):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only SuperAdmin can issue refunds",
+                detail="Only finance staff can issue refunds",
             )
 
         target = await self._get_payment_entry(payment_id)
@@ -1625,8 +1639,25 @@ class FinanceService:
             for item in top_debtors["items"]
         ]
 
+        eligible_payments: Decimal = Decimal(await self.db.scalar(
+            select(func.coalesce(func.sum(PaymentTarget.amount), ZERO)).select_from(PaymentTarget)
+            .join(LedgerEntry, LedgerEntry.id == PaymentTarget.ledger_entry_id)
+            .join(Enrollment, Enrollment.id == PaymentTarget.enrollment_id)
+            .where(expected_revenue_enrollment, LedgerEntry.type == LedgerEntryType.PAYMENT,
+                   LedgerEntry.id.notin_(voided), in_period)
+        ) or ZERO)
+        refund_entry: Any = aliased(LedgerEntry)
+        eligible_refunds: Decimal = Decimal(await self.db.scalar(
+            select(func.coalesce(func.sum(PaymentTarget.amount * refund_entry.amount / LedgerEntry.amount), ZERO)).select_from(PaymentTarget)
+            .join(LedgerEntry, LedgerEntry.id == PaymentTarget.ledger_entry_id)
+            .join(Enrollment, Enrollment.id == PaymentTarget.enrollment_id)
+            .join(refund_entry, refund_entry.reverses_entry_id == LedgerEntry.id)
+            .where(expected_revenue_enrollment, refund_entry.type == LedgerEntryType.REFUND,
+                   refund_entry.is_cash_out.is_(True), refund_entry.occurred_at >= dt_from, refund_entry.occurred_at <= dt_to)
+        ) or ZERO)
+        eligible_collected: Decimal = eligible_payments - eligible_refunds
         collection_rate = (
-            str((collected_in_period / billed_in_period).quantize(Decimal("0.0001")))
+            str((eligible_collected / billed_in_period).quantize(Decimal("0.0001")))
             if billed_in_period > 0
             else "0.0000"
         )
@@ -1871,19 +1902,29 @@ class FinanceService:
             select(Enrollment, Course.title, charge_totals.c.maximum, charge_totals.c.open_debt, charge_totals.c.oldest_due)
             .join(Course, Course.id == Enrollment.course_id)
             .outerjoin(charge_totals, charge_totals.c.enrollment_id == Enrollment.id)
-            .where(Enrollment.student_id == student_id, Enrollment.status == EnrollmentStatus.ACTIVE,
+            .where(Enrollment.student_id == student_id,
+                   or_(Enrollment.status == EnrollmentStatus.ACTIVE,
+                       and_(Enrollment.status == EnrollmentStatus.WITHDRAWN, charge_totals.c.maximum > ZERO)),
                    Enrollment.is_deleted.is_(False)).order_by(Course.title, Enrollment.id)
         )
         return {"wallet_credit": await self.get_unallocated_credit(student_id), "enrollments": [
             {"enrollment_id": enrollment.id, "course_id": enrollment.course_id, "course_title": title,
              "open_debt": debt or ZERO, "remaining_contract_maximum": maximum or ZERO,
              "overdue_days": max(0, (today - oldest_due).days) if oldest_due else 0,
-             "billing_mode": enrollment.effective_billing_mode}
+             "billing_mode": enrollment.effective_billing_mode, "status": enrollment.status}
             for enrollment, title, maximum, debt, oldest_due in rows.all()
         ]}
 
     async def get_payment_receipt(self, payment_id: int) -> dict:
         entry = await self._get_payment_entry(payment_id)
+        reversals: list[LedgerEntry] = list((await self.db.scalars(select(LedgerEntry).where(
+            LedgerEntry.reverses_entry_id == entry.id,
+            LedgerEntry.type.in_([LedgerEntryType.VOID, LedgerEntryType.REFUND]),
+        ))).all())
+        refunded_amount: Decimal = sum((reversal.amount for reversal in reversals if reversal.type == LedgerEntryType.REFUND), ZERO)
+        is_voided: bool = any(reversal.type == LedgerEntryType.VOID for reversal in reversals)
+        receipt_status: str = ("voided" if is_voided else "refunded" if refunded_amount >= entry.amount else
+                               "partially_refunded" if refunded_amount > ZERO else "valid")
 
         student_res = await self.db.execute(select(User).filter(User.id == entry.student_id))
         student = student_res.scalars().first()
@@ -1915,6 +1956,9 @@ class FinanceService:
 
         return {
             "receipt_number": f"REC-{entry.id:06d}",
+            "status": receipt_status,
+            "refunded_amount": refunded_amount,
+            "net_amount": ZERO if is_voided else entry.amount - refunded_amount,
             "occurred_at": entry.occurred_at,
             "student_id": student.id,
             "student_name": f"{student.first_name} {student.last_name}",

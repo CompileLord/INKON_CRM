@@ -10,7 +10,7 @@ from app.models.charge import ChargeStatus
 from app.models.enrollment import EnrollmentStatus
 from app.models.ledger import LedgerEntry
 from app.schemas.payment import PaymentCreate, PaymentIdempotency
-from app.schemas.debt import DebtResponse
+from app.schemas.debt import DebtPageResponse, DebtResponse
 from app.schemas.debt_reminder import DebtReminderRequest, DebtReminderResponse
 from app.services.debt_reminder_service import DebtReminderService
 from app.schemas.common import PaginatedResponse
@@ -40,6 +40,7 @@ from app.services.finance_service import FinanceService, get_dushanbe_today
 from app.repositories.interfaces.enrollment_repository import EnrollmentRepository
 from app.services.payment_date_window import PaymentDateWindow
 from app.services.payment_idempotency_service import PaymentIdempotencyService, PaymentRecordResult
+from app.services.credit_allocation_idempotency_service import CreditAllocationIdempotencyService
 
 router = APIRouter()
 
@@ -136,7 +137,7 @@ async def void_payment(
 async def refund_payment(
     id: int = Path(..., ge=1),
     payload: RefundPaymentPayload = ...,
-    current_user: User = Depends(require_superadmin),
+    current_user: User = Depends(require_accountant),
     db: AsyncSession = Depends(get_db_session),
 ) -> LedgerEntry:
     finance_service = FinanceService(db)
@@ -177,10 +178,14 @@ async def allocate_credit(
 
 @router.post("/students/{student_id}/credit-allocations", response_model=CourseCreditAllocationResponse, status_code=status.HTTP_201_CREATED)
 async def allocate_course_credit(
-    student_id: int, payload: CourseCreditAllocationPayload,
+    student_id: int, payload: CourseCreditAllocationPayload, response: Response,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key", pattern=PaymentIdempotency.KEY_PATTERN.pattern),
     current_user: User = Depends(require_accountant), db: AsyncSession = Depends(get_db_session),
 ) -> dict:
-    return await FinanceService(db).allocate_course_credit(student_id, payload.enrollment_id, payload.amount, current_user)
+    result, replayed = await CreditAllocationIdempotencyService(db).allocate(student_id, payload, current_user, idempotency_key)
+    if replayed:
+        response.status_code = status.HTTP_200_OK
+    return result
 
 
 @router.get("/students/{id}/ledger", response_model=List[dict])
@@ -271,7 +276,7 @@ async def reopen_period(
     )
 
 
-@router.get("/debts/", response_model=PaginatedResponse[DebtResponse])
+@router.get("/debts/", response_model=DebtPageResponse)
 async def get_debts(
     search: Optional[str] = Query(None, description="Case-insensitive name, email or phone search before pagination"),
     course_id: Optional[int] = Query(None),

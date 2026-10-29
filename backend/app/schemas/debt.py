@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel
 from app.schemas.enrollment import EffectiveBillingMode
+from app.schemas.common import PaginatedResponse
 from app.models.enrollment import EnrollmentStatus
 
 
@@ -33,3 +34,7 @@ class DebtResponse(BaseModel):
     reminder_masked_destination: str | None = None
     parent_telegram_linked: bool
     last_reminder_at: Optional[datetime]
+
+
+class DebtPageResponse(PaginatedResponse[DebtResponse]):
+    student_total: int

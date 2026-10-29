@@ -315,7 +315,8 @@ async def test_all_finance_mutations_advance_generation_without_redis(
         if workflow == "payment":
             await scenario.payment(session)
         elif workflow == "discount":
-            await service.create_discount(DiscountCreatePayload(student_id=scenario.student_id, amount=Decimal("1.00")), scenario.admin)
+            target_id: int | None = await session.scalar(select(Charge.id).where(Charge.enrollment_id == scenario.enrollment_id, Charge.status == ChargeStatus.OPEN).order_by(Charge.id))
+            await service.create_discount(DiscountCreatePayload(student_id=scenario.student_id, charge_id=target_id, amount=Decimal("1.00")), scenario.admin)
         elif workflow == "adjustment":
             await service.create_adjustment(AdjustmentCreatePayload(student_id=scenario.student_id, amount=Decimal("1.00"), reason_code="generation"), scenario.admin)
         elif workflow == "void":
