@@ -40,3 +40,7 @@ async def test_debt_sms_delivery_log_pagination_status_and_retry(client: AsyncCl
     assert filtered.json()["total"] == 2
     retry = await client.post(f"/api/v1/notifications/logs/{failed['id']}/retry", headers=headers)
     assert retry.status_code == 409 and retry.json()["detail"]["code"] == "debt_reminder_sms_retry_unavailable"
+    failed_retry = await client.post(f"/api/v1/notifications/logs/{provider_failure['id']}/retry", headers=headers)
+    assert failed_retry.status_code == 409 and failed_retry.json()["detail"]["code"] == "debt_reminder_sms_retry_unavailable"
+    missing_retry = await client.post("/api/v1/notifications/logs/-999999/retry", headers=headers)
+    assert missing_retry.status_code == 404 and missing_retry.json()["detail"]["code"] == "notification_not_found"
