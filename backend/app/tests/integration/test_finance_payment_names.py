@@ -7,18 +7,14 @@ from httpx import AsyncClient
 from sqlalchemy import event, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token
 from app.models.ledger import LedgerEntry, LedgerEntryType
 from app.models.payment import PaymentMethod
 from app.models.user import User, UserRole
 from app.services.finance_service import FinanceService
 from app.tests.conftest import test_engine
+from app.tests.factories import auth_headers
 
 PAYMENTS_URL: str = "/api/v1/finance/payments/"
-
-
-def authorization_headers(user: User) -> dict:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 async def create_student(db_session: AsyncSession, first_name: str, last_name: str, email: str) -> User:
@@ -71,7 +67,7 @@ async def test_payment_list_items_carry_student_names(
     student = await create_student(db_session, "Aziza", "Karimova", "aziza@example.com")
     await create_payment_entry(db_session, student, test_accountant, 0)
 
-    response = await client.get(PAYMENTS_URL, headers=authorization_headers(test_accountant))
+    response = await client.get(PAYMENTS_URL, headers=auth_headers(test_accountant))
 
     assert response.status_code == 200
     item = response.json()["items"][0]
@@ -89,7 +85,7 @@ async def test_soft_deleted_student_payments_keep_the_student_name(
     await db_session.execute(update(User).where(User.id == student.id).values(is_deleted=True))
     await db_session.commit()
 
-    response = await client.get(PAYMENTS_URL, headers=authorization_headers(test_accountant))
+    response = await client.get(PAYMENTS_URL, headers=auth_headers(test_accountant))
 
     assert response.status_code == 200
     item = response.json()["items"][0]
@@ -114,7 +110,7 @@ async def test_unknown_student_row_yields_null_names_without_error(
 
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(FinanceService, "_decorate_entries", decorate_with_vanished_user)
-        response = await client.get(PAYMENTS_URL, headers=authorization_headers(test_accountant))
+        response = await client.get(PAYMENTS_URL, headers=auth_headers(test_accountant))
 
     assert response.status_code == 200
     item = response.json()["items"][0]
@@ -130,7 +126,7 @@ async def test_statement_count_does_not_grow_with_page_size(
     for index in range(8):
         student = await create_student(db_session, f"First{index}", f"Last{index}", f"s{index}@example.com")
         await create_payment_entry(db_session, student, test_accountant, index)
-    headers = authorization_headers(test_accountant)
+    headers = auth_headers(test_accountant)
 
     small_page_count = await count_statements_for(client, f"{PAYMENTS_URL}?page=1&page_size=2", headers)
     large_page_count = await count_statements_for(client, f"{PAYMENTS_URL}?page=1&page_size=8", headers)
@@ -142,5 +138,5 @@ async def test_statement_count_does_not_grow_with_page_size(
 async def test_mentor_and_student_remain_denied(
     client: AsyncClient, test_mentor: User, test_student: User
 ) -> None:
-    assert (await client.get(PAYMENTS_URL, headers=authorization_headers(test_mentor))).status_code == 403
-    assert (await client.get(PAYMENTS_URL, headers=authorization_headers(test_student))).status_code == 403
+    assert (await client.get(PAYMENTS_URL, headers=auth_headers(test_mentor))).status_code == 403
+    assert (await client.get(PAYMENTS_URL, headers=auth_headers(test_student))).status_code == 403

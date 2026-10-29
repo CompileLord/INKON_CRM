@@ -5,11 +5,11 @@ from typing import Any
 import pytest
 from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.journal import JournalEntryUpdate
 from app.services.journal_service import JournalService
 from app.tests.integration.test_remediation_wp21 import create_journal
+from app.tests.factories import auth_headers
 
 
 @pytest.fixture(autouse=True)
@@ -18,9 +18,7 @@ def school_day_2026_08_10(freeze_school_today: Callable[[date], None]) -> None:
 
 
 class AutosaveBoundsFixture:
-    @staticmethod
-    def headers(user: User) -> dict[str, str]:
-        return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
+    headers = staticmethod(auth_headers)
 
     @staticmethod
     def cell(index: int = 0, comment: str | None = None) -> dict[str, Any]:

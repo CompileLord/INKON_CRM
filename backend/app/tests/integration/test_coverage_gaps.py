@@ -5,16 +5,12 @@ import pytest
 from httpx import AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.redis import redis_client
-from app.core.security import create_access_token, verify_password
+from app.core.security import verify_password
 from app.models.user import User
 from app.models.course import Course
 from app.models.notification_log import NotificationLog, NotificationType, NotificationStatus
 from datetime import date, datetime, timezone
-
-
-def get_auth_headers(user: User):
-    token = create_access_token(user.id, user.role)
-    return {"Authorization": f"Bearer {token}"}
+from app.tests.factories import auth_headers
 
 
 @pytest.mark.asyncio
@@ -114,8 +110,8 @@ async def test_password_reset_success_and_replay_rejection(
 
 @pytest.mark.asyncio
 async def test_user_update_and_self_update(client: AsyncClient, test_admin: User, test_student: User):
-    admin_headers = get_auth_headers(test_admin)
-    student_headers = get_auth_headers(test_student)
+    admin_headers = auth_headers(test_admin)
+    student_headers = auth_headers(test_student)
 
     # Superadmin updates user
     res = await client.patch(f"/api/v1/users/{test_student.id}", json={"first_name": "UpdatedName"}, headers=admin_headers)
@@ -134,7 +130,7 @@ async def test_user_update_and_self_update(client: AsyncClient, test_admin: User
 
 @pytest.mark.asyncio
 async def test_course_get_schedule_delete(client: AsyncClient, test_admin: User, test_mentor: User):
-    headers = get_auth_headers(test_admin)
+    headers = auth_headers(test_admin)
 
     # Create course first
     res = await client.post("/api/v1/courses/", json={
@@ -167,7 +163,7 @@ async def test_course_get_schedule_delete(client: AsyncClient, test_admin: User,
 
 @pytest.mark.asyncio
 async def test_mentor_profile_non_self_rbac(client: AsyncClient, test_student: User, test_mentor: User):
-    student_headers = get_auth_headers(test_student)
+    student_headers = auth_headers(test_student)
     res = await client.get(f"/api/v1/mentors/{test_mentor.id}/profile", headers=student_headers)
     assert res.status_code == 403
 
@@ -188,7 +184,7 @@ async def test_notifications_endpoints(client: AsyncClient, test_student: User, 
     await db_session.commit()
     await db_session.refresh(log)
 
-    headers: dict[str, str] = get_auth_headers(test_student)
+    headers: dict[str, str] = auth_headers(test_student)
 
     # GET /notifications/
     res_list: Response = await client.get("/api/v1/notifications/", headers=headers)

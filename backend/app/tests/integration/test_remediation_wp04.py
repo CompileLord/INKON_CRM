@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.document import Document
 from app.models.user import User, UserRole
+from app.tests.factories import auth_headers
 
 
 async def upload_private_document(
@@ -26,10 +27,6 @@ async def upload_private_document(
             "Authorization": f"Bearer {create_access_token(administrator.id, administrator.role)}"
         },
     )
-
-
-def authorization_headers(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
 
 
 @pytest.mark.asyncio
@@ -93,31 +90,31 @@ async def test_private_download_matches_document_listing_policy(
     anonymous = await client.get(f"/api/v1/documents/{owned_student_id}/download")
     student_owned = await client.get(
         f"/api/v1/documents/{owned_student_id}/download",
-        headers=authorization_headers(test_student),
+        headers=auth_headers(test_student),
     )
     student_peer = await client.get(
         f"/api/v1/documents/{peer_student_id}/download",
-        headers=authorization_headers(test_student),
+        headers=auth_headers(test_student),
     )
     mentor_student = await client.get(
         f"/api/v1/documents/{peer_student_id}/download",
-        headers=authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     mentor_owned = await client.get(
         f"/api/v1/documents/{owned_mentor_id}/download",
-        headers=authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     mentor_peer = await client.get(
         f"/api/v1/documents/{peer_mentor_id}/download",
-        headers=authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     administrator_download = await client.get(
         f"/api/v1/documents/{peer_mentor_id}/download",
-        headers=authorization_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     accountant_download = await client.get(
         f"/api/v1/documents/{owned_student_id}/download",
-        headers=authorization_headers(accountant),
+        headers=auth_headers(accountant),
     )
 
     assert anonymous.status_code == 401
@@ -163,7 +160,7 @@ async def test_private_download_denies_legacy_path_deleted_records_and_unsafe_fi
     await db_session.commit()
     traversal_download = await client.get(
         f"/api/v1/documents/{document_id}/download",
-        headers=authorization_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     assert traversal_download.status_code == 404
     assert b"root:" not in traversal_download.content
@@ -179,7 +176,7 @@ async def test_private_download_denies_legacy_path_deleted_records_and_unsafe_fi
     await db_session.commit()
     symlink_download = await client.get(
         f"/api/v1/documents/{document_id}/download",
-        headers=authorization_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     assert symlink_download.status_code == 404
     assert private_bytes not in symlink_download.content
@@ -189,7 +186,7 @@ async def test_private_download_denies_legacy_path_deleted_records_and_unsafe_fi
     await db_session.commit()
     deleted_download = await client.get(
         f"/api/v1/documents/{document_id}/download",
-        headers=authorization_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     assert deleted_download.status_code == 404
     assert private_bytes not in deleted_download.content
@@ -242,7 +239,7 @@ async def test_download_never_echoes_invalid_stored_media_type(
     await db_session.commit()
     download: Response = await client.get(
         f"/api/v1/documents/{document.id}/download",
-        headers=authorization_headers(test_admin),
+        headers=auth_headers(test_admin),
     )
     assert download.status_code == 200
     assert download.headers["content-type"] == "application/octet-stream"

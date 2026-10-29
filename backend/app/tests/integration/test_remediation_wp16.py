@@ -5,15 +5,10 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token
 from app.models.course import Course, CourseExamType
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.user import User, UserRole
-
-
-def _authorization_headers(user: User) -> dict[str, str]:
-    token: str = create_access_token(user.id, user.role)
-    return {"Authorization": f"Bearer {token}"}
+from app.tests.factories import auth_headers
 
 
 async def _create_student(
@@ -118,7 +113,7 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
 
     response = await client.get(
         "/api/v1/students/?page=1&page_size=1&mentor_id=%d" % other_mentor.id,
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert response.status_code == 200
     page_data: dict[str, object] = response.json()
@@ -135,7 +130,7 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
 
     unrelated_search = await client.get(
         "/api/v1/students/?search=wp16_unrelated",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert unrelated_search.status_code == 200
     assert unrelated_search.json() == {
@@ -158,7 +153,7 @@ async def test_mentor_directory_scopes_items_search_count_and_page_to_owned_stud
     await db_session.commit()
     zero_course_response = await client.get(
         "/api/v1/students/",
-        headers=_authorization_headers(zero_course_mentor),
+        headers=auth_headers(zero_course_mentor),
     )
     assert zero_course_response.status_code == 200
     assert zero_course_response.json()["items"] == []
@@ -235,7 +230,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     response = await client.get(
         "/api/v1/students/?search=wp16_",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert response.status_code == 200
     assert response.json()["total"] == 4
@@ -248,7 +243,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     deleted_enrollment_search = await client.get(
         "/api/v1/students/?search=wp16_deleted_enrollment_only",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert deleted_enrollment_search.status_code == 200
     assert deleted_enrollment_search.json()["items"] == []
@@ -256,7 +251,7 @@ async def test_mentor_directory_applies_each_enrollment_status_and_deletion_boun
 
     deleted_course_search = await client.get(
         "/api/v1/students/?search=wp16_deleted_course_only",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert deleted_course_search.status_code == 200
     assert deleted_course_search.json()["items"] == []
@@ -348,7 +343,7 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
     for page_number, expected_student_id in enumerate(expected_student_ids, start=1):
         response = await client.get(
             f"/api/v1/students/?search=wp16_order_&page={page_number}&page_size=1",
-            headers=_authorization_headers(test_mentor),
+            headers=auth_headers(test_mentor),
         )
         assert response.status_code == 200
         assert response.json()["total"] == len(expected_student_ids)
@@ -357,7 +352,7 @@ async def test_mentor_directory_paginates_by_stable_user_id_order(
 
     beyond_last_page = await client.get(
         "/api/v1/students/?search=wp16_order_&page=6&page_size=1",
-        headers=_authorization_headers(test_mentor),
+        headers=auth_headers(test_mentor),
     )
     assert beyond_last_page.status_code == 200
     assert beyond_last_page.json()["items"] == []
@@ -393,7 +388,7 @@ async def test_admin_and_accountant_keep_unscoped_student_directory_access(
     for user in (test_admin, test_accountant):
         response = await client.get(
             "/api/v1/students/?search=wp16_",
-            headers=_authorization_headers(user),
+            headers=auth_headers(user),
         )
         assert response.status_code == 200
         assert response.json()["total"] == 2

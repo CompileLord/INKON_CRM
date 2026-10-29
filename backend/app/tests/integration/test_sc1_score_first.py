@@ -7,7 +7,6 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.scoring import ScoringPolicy
-from app.core.security import create_access_token
 from app.models.course import CourseExamType
 from app.models.course_schedule import CourseSchedule
 from app.models.journal import Journal
@@ -15,6 +14,7 @@ from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User
 from app.services.journal_service import get_lesson_dates
 from scripts.report_over_limit_bonuses import OverLimitBonus, OverLimitBonusReport
+from app.tests.factories import auth_headers
 
 
 @pytest.fixture(autouse=True)
@@ -77,10 +77,6 @@ class TestScoringPolicyFormula:
         assert ScoringPolicy.default_exam_max_score(CourseExamType.MONTHLY) == 60
 
 
-def headers_for(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id, user.role)}"}
-
-
 async def create_course(client: AsyncClient, admin_headers: dict[str, str], mentor_id: int) -> int:
     response = await client.post(
         "/api/v1/courses/",
@@ -110,11 +106,11 @@ async def enroll_and_first_journal(
     mentor: User,
     student: User,
 ) -> tuple[int, int]:
-    course_id: int = await create_course(client, headers_for(admin), mentor.id)
+    course_id: int = await create_course(client, auth_headers(admin), mentor.id)
     enrollment = await client.post(
         "/api/v1/enrollments/",
         json={"student_id": student.id, "course_id": course_id},
-        headers=headers_for(admin),
+        headers=auth_headers(admin),
     )
     assert enrollment.status_code == 201
     async with db_session.begin():
@@ -128,7 +124,7 @@ async def test_full_marks_reach_exactly_the_maximum_and_one_more_bonus_point_is_
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     grid = (await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)).json()
     entries = grid["students"][0]["entries"]
     batch = await client.put(
@@ -183,7 +179,7 @@ async def test_exam_over_limit_is_422_with_code_and_stores_nothing(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     grid = (await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)).json()
     version: int = grid["students"][0]["summary"]["version"]
     response = await client.patch(
@@ -203,7 +199,7 @@ async def test_bonus_maximum_setting_updates_journal_and_recomputes_every_summar
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     before = (await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)).json()
     assert before["bonus_max_score"] == 20
     before_maximum: int = before["students"][0]["summary"]["max_period_score"]
@@ -238,7 +234,7 @@ async def test_bonus_maximum_payload_is_validated(
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
     response = await client.patch(
-        f"/api/v1/journals/{journal_id}/exam-max-score", json=payload, headers=headers_for(test_mentor)
+        f"/api/v1/journals/{journal_id}/exam-max-score", json=payload, headers=auth_headers(test_mentor)
     )
     assert response.status_code == 422
 
@@ -248,7 +244,7 @@ async def test_lowering_bonus_maximum_below_a_stored_bonus_is_refused(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     version: int = (await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)).json()["students"][0]["summary"]["version"]
     stored = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
@@ -269,7 +265,7 @@ async def test_over_limit_bonus_is_kept_listed_and_does_not_block_an_exam_edit(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     _, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     async with db_session.begin():
         await db_session.execute(
             update(JournalStudentSummary)
@@ -315,7 +311,7 @@ async def test_percentage_only_responses_carry_score_siblings(
     client: AsyncClient, db_session: AsyncSession, test_admin: User, test_mentor: User, test_student: User
 ) -> None:
     course_id, journal_id = await enroll_and_first_journal(client, db_session, test_admin, test_mentor, test_student)
-    mentor_headers: dict[str, str] = headers_for(test_mentor)
+    mentor_headers: dict[str, str] = auth_headers(test_mentor)
     version: int = (await client.get(f"/api/v1/journals/{journal_id}", headers=mentor_headers)).json()["students"][0]["summary"]["version"]
     saved = await client.patch(
         f"/api/v1/journals/{journal_id}/students/{test_student.id}/summary",
@@ -335,11 +331,11 @@ async def test_percentage_only_responses_carry_score_siblings(
     assert metrics["class_avg_score"] > 0
     assert metrics["class_avg_max_score"] >= stored_maximum
 
-    student_class = (await client.get(f"/api/v1/journals/{journal_id}/class", headers=headers_for(test_student))).json()
+    student_class = (await client.get(f"/api/v1/journals/{journal_id}/class", headers=auth_headers(test_student))).json()
     assert student_class["class_avg_score"] == 50.0
     assert student_class["bonus_max_score"] == 20
 
-    profile = (await client.get("/api/v1/students/me/profile", headers=headers_for(test_student))).json()
+    profile = (await client.get("/api/v1/students/me/profile", headers=auth_headers(test_student))).json()
     assert profile["totals"]["total_score"] >= 50
     assert profile["totals"]["total_max_score"] >= stored_maximum
     course_row = profile["courses"][0]
