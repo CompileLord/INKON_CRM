@@ -1,6 +1,5 @@
 from dataclasses import replace
 from datetime import date, time, timedelta
-from decimal import Decimal
 import json
 import math
 import os
@@ -27,15 +26,14 @@ from app.schemas.journal import GradingQueueItemResponse, JournalResponse
 from app.services.journal_query_service import JournalQueryService
 from app.services.journal_service import JournalService, get_lesson_dates
 from app.services.enrollment_service import EnrollmentService
+from app.tests.factories import create_course, create_user, enroll_student
 
 
 class TestMentorQueue:
     async def seed(self, session: AsyncSession, count: int) -> tuple[User, list[Course]]:
-        mentor: User = User(first_name="Own", last_name="Mentor", role=UserRole.MENTOR)
-        foreign: User = User(first_name="Foreign", last_name="Mentor", role=UserRole.MENTOR)
-        student: User = User(first_name="Queue", last_name="Student", role=UserRole.STUDENT)
-        session.add_all([mentor, foreign, student])
-        await session.flush()
+        mentor: User = await create_user(session, UserRole.MENTOR, first_name="Own", last_name="Mentor")
+        foreign: User = await create_user(session, UserRole.MENTOR, first_name="Foreign", last_name="Mentor")
+        student: User = await create_user(session, UserRole.STUDENT, first_name="Queue", last_name="Student")
         today: date = date.today()
         courses: list[Course] = []
         index: int
@@ -45,17 +43,15 @@ class TestMentorQueue:
         graded: int
         weekday: int
         for index in range(count + 3):
-            course: Course = Course(
-                title=f"Course {index}", description="Queue fixture", mentor_id=foreign.id if index == count else mentor.id,
+            course: Course = await create_course(
+                session, foreign if index == count else mentor,
+                title=f"Course {index}", description="Queue fixture",
                 start_date=today - timedelta(days=60), end_date=today + timedelta(days=60),
-                exam_type="weekly", price=Decimal("100.00"),
                 status=CourseStatus.ARCHIVED if index == count + 1 else CourseStatus.ACTIVE,
                 is_deleted=index == count + 2,
             )
-            session.add(course)
-            await session.flush()
             courses.append(course)
-            session.add(Enrollment(student_id=student.id, course_id=course.id, price_at_enrollment=Decimal("100.00"), color_hex="#123456"))
+            await enroll_student(session, student, course)
             session.add_all([CourseSchedule(course_id=course.id, day_of_week=weekday, time_start=time(9), time_end=time(10)) for weekday in range(7)])
             for label, start_offset, end_offset, graded in (
                 ("empty", -2, 0, 0), ("partial", -1, 0, 1), ("complete", -1, -1, 1),
@@ -241,10 +237,8 @@ class TestCanonicalLessonDates:
         mentor: User
         courses: list[Course]
         mentor, courses = await TestMentorQueue().seed(db_session, 1)
-        student: User = User(first_name="New", last_name="Student", role=UserRole.STUDENT)
-        administrator: User = User(first_name="Admin", last_name="User", role=UserRole.SUPERADMIN)
-        db_session.add_all([student, administrator])
-        await db_session.flush()
+        student: User = await create_user(db_session, UserRole.STUDENT, first_name="New", last_name="Student")
+        administrator: User = await create_user(db_session, UserRole.SUPERADMIN, first_name="Admin", last_name="User")
         calculate: MagicMock
         with patch.object(LessonDateCalculator, "calculate", wraps=LessonDateCalculator.calculate) as calculate:
             await EnrollmentService(db_session).enroll_student(student.id, courses[0].id, administrator)

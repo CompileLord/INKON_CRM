@@ -8,13 +8,14 @@ from sqlalchemy import select
 
 from app.core.security import create_access_token
 from app.models.user import User, UserRole
-from app.models.course import Course, CourseStatus, CourseExamType
+from app.models.course import CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal, JournalPeriodType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.payment import Payment, PaymentMethod
 from app.workers.tasks import archive_expired_courses, check_payment_reminders
 from app.telegram_bot.bot import bot
+from app.tests.factories import create_course, create_user, enroll_student
 
 
 @pytest.mark.asyncio
@@ -28,27 +29,18 @@ async def test_mentor_analytics_endpoint(
     admin_token = create_access_token(test_admin.id, test_admin.role)
     headers = {"Authorization": f"Bearer {admin_token}"}
 
-    course = Course(
+    course = await create_course(
+        db_session,
+        test_mentor,
         title="Math",
         description="Intro math",
         start_date=date(2026, 7, 1),
         end_date=date(2026, 7, 31),
-        exam_type=CourseExamType.WEEKLY,
         price=Decimal("120.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
     )
-    db_session.add(course)
     await db_session.commit()
 
-    enrollment = Enrollment(
-        student_id=test_student.id,
-        course_id=course.id,
-        price_at_enrollment=Decimal("120.0"),
-        color_hex="#00FF00",
-        status=EnrollmentStatus.ACTIVE
-    )
-    db_session.add(enrollment)
+    await enroll_student(db_session, test_student, course, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00")
 
     journal = Journal(
         course_id=course.id,
@@ -104,56 +96,52 @@ async def test_mentor_aggregate_contract_preserves_populations_and_unknown_gradi
     test_student: User
 ) -> None:
     admin_headers = {"Authorization": f"Bearer {create_access_token(test_admin.id, test_admin.role)}"}
-    active_course = Course(
+    active_course = await create_course(
+        db_session,
+        test_mentor,
         title="Active aggregate course",
         description="Aggregate contract fixture",
         start_date=date(2026, 7, 1),
         end_date=date(2026, 7, 31),
-        exam_type=CourseExamType.WEEKLY,
         price=Decimal("120.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE
     )
-    archived_course = Course(
+    archived_course = await create_course(
+        db_session,
+        test_mentor,
         title="Archived aggregate course",
         description="Aggregate contract fixture",
         start_date=date(2026, 6, 1),
         end_date=date(2026, 6, 30),
-        exam_type=CourseExamType.WEEKLY,
         price=Decimal("120.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ARCHIVED
+        status=CourseStatus.ARCHIVED,
     )
-    deleted_course = Course(
+    deleted_course = await create_course(
+        db_session,
+        test_mentor,
         title="Deleted aggregate course",
         description="Aggregate contract fixture",
         start_date=date(2026, 5, 1),
         end_date=date(2026, 5, 31),
-        exam_type=CourseExamType.WEEKLY,
         price=Decimal("120.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
-        is_deleted=True
+        is_deleted=True,
     )
-    db_session.add_all([active_course, archived_course, deleted_course])
     await db_session.flush()
-    deleted_enrollment_student = User(
+    deleted_enrollment_student = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="soft-deleted-enrollment@example.com",
         password_hash=None,
         first_name="Deleted",
         last_name="Enrollment",
-        role=UserRole.STUDENT,
-        must_set_password=False
     )
-    soft_deleted_course_student = User(
+    soft_deleted_course_student = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="soft-deleted-course-only-student@example.com",
         password_hash=None,
         first_name="Deleted Course",
         last_name="Only",
-        role=UserRole.STUDENT,
-        must_set_password=False
     )
-    db_session.add_all([deleted_enrollment_student, soft_deleted_course_student])
     await db_session.flush()
     journals = [
         Journal(course_id=active_course.id, period_label="Zero", period_start=date(2026, 7, 1), period_end=date(2026, 7, 7), period_type=JournalPeriodType.WEEK),
@@ -173,13 +161,7 @@ async def test_mentor_aggregate_contract_preserves_populations_and_unknown_gradi
         JournalStudentSummary(is_graded=True, journal_id=journals[4].id, student_id=test_student.id, sum_score=40, max_period_score=0),
         JournalStudentSummary(is_graded=True, journal_id=journals[5].id, student_id=test_student.id, sum_score=80, max_period_score=100)
     ])
-    db_session.add_all([
-        Enrollment(student_id=test_student.id, course_id=active_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.ACTIVE),
-        Enrollment(student_id=test_student.id, course_id=archived_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.WITHDRAWN),
-        Enrollment(student_id=test_student.id, course_id=deleted_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.COMPLETED),
-        Enrollment(student_id=deleted_enrollment_student.id, course_id=active_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.ACTIVE, is_deleted=True),
-        Enrollment(student_id=soft_deleted_course_student.id, course_id=deleted_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.WITHDRAWN)
-    ])
+    db_session.add_all([Enrollment(student_id=test_student.id, course_id=active_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.ACTIVE), Enrollment(student_id=test_student.id, course_id=archived_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.WITHDRAWN), Enrollment(student_id=test_student.id, course_id=deleted_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.COMPLETED), Enrollment(student_id=deleted_enrollment_student.id, course_id=active_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.ACTIVE, is_deleted=True), Enrollment(student_id=soft_deleted_course_student.id, course_id=deleted_course.id, price_at_enrollment=Decimal("120.0"), color_hex="#00FF00", status=EnrollmentStatus.WITHDRAWN)])
     await db_session.commit()
 
     analytics_response = await client.get(f"/api/v1/mentors/{test_mentor.id}/analytics", headers=admin_headers)

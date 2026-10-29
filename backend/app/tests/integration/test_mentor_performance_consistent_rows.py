@@ -5,11 +5,12 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token
-from app.models.course import Course, CourseExamType, CourseStatus
+from app.models.course import Course, CourseExamType
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal, JournalPeriodType
 from app.models.journal_student_summary import JournalStudentSummary
 from app.models.user import User, UserRole
+from app.tests.factories import create_course, create_user, enroll_student
 
 
 @pytest.mark.asyncio
@@ -24,81 +25,74 @@ async def test_mentor_performance_numbers_use_consistent_set_of_graded_rows(
     admin_headers: dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
     today: date = date.today()
 
-    active_course: Course = Course(
+    active_course: Course = await create_course(
+        db_session,
+        test_mentor,
         title="Physics",
         description="Applied physics",
         start_date=today - timedelta(days=60),
         end_date=today + timedelta(days=60),
         exam_type=CourseExamType.MONTHLY,
         price=Decimal("150.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
     )
-    db_session.add(active_course)
     await db_session.flush()
 
-    active_student_two: User = User(
+    active_student_two: User = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="second.active.student@example.com",
         password_hash=None,
         first_name="Faridun",
         last_name="Saidov",
-        role=UserRole.STUDENT,
-        must_set_password=False,
     )
-    withdrawn_student: User = User(
+    withdrawn_student: User = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="withdrawn.student@example.com",
         password_hash=None,
         first_name="Rustam",
         last_name="Karimov",
-        role=UserRole.STUDENT,
-        must_set_password=False,
     )
-    deleted_student: User = User(
+    deleted_student: User = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="deleted.student@example.com",
         password_hash=None,
         first_name="Deleted",
         last_name="Student",
-        role=UserRole.STUDENT,
-        must_set_password=False,
         is_deleted=True,
     )
-    db_session.add_all([active_student_two, withdrawn_student, deleted_student])
     await db_session.flush()
 
-    enrollment_active_one: Enrollment = Enrollment(
-        student_id=test_student.id,
-        course_id=active_course.id,
+    await enroll_student(
+        db_session,
+        test_student,
+        active_course,
         price_at_enrollment=Decimal("150.0"),
         color_hex="#112233",
-        status=EnrollmentStatus.ACTIVE,
     )
-    enrollment_active_two: Enrollment = Enrollment(
-        student_id=active_student_two.id,
-        course_id=active_course.id,
+    await enroll_student(
+        db_session,
+        active_student_two,
+        active_course,
         price_at_enrollment=Decimal("150.0"),
         color_hex="#445566",
-        status=EnrollmentStatus.ACTIVE,
     )
-    enrollment_withdrawn: Enrollment = Enrollment(
-        student_id=withdrawn_student.id,
-        course_id=active_course.id,
+    await enroll_student(
+        db_session,
+        withdrawn_student,
+        active_course,
         price_at_enrollment=Decimal("150.0"),
         color_hex="#778899",
         status=EnrollmentStatus.WITHDRAWN,
     )
-    enrollment_deleted: Enrollment = Enrollment(
-        student_id=deleted_student.id,
-        course_id=active_course.id,
+    await enroll_student(
+        db_session,
+        deleted_student,
+        active_course,
         price_at_enrollment=Decimal("150.0"),
         color_hex="#99AABB",
-        status=EnrollmentStatus.ACTIVE,
     )
-    db_session.add_all([
-        enrollment_active_one,
-        enrollment_active_two,
-        enrollment_withdrawn,
-        enrollment_deleted,
-    ])
     await db_session.flush()
 
     past_period_one: Journal = Journal(
@@ -218,27 +212,25 @@ async def test_mentor_performance_when_no_periods_are_graded(
     admin_headers: dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
     today: date = date.today()
 
-    active_course: Course = Course(
+    active_course: Course = await create_course(
+        db_session,
+        test_mentor,
         title="Chemistry",
         description="Organic chemistry",
         start_date=today - timedelta(days=60),
         end_date=today + timedelta(days=60),
         exam_type=CourseExamType.MONTHLY,
         price=Decimal("180.0"),
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
     )
-    db_session.add(active_course)
     await db_session.flush()
 
-    enrollment: Enrollment = Enrollment(
-        student_id=test_student.id,
-        course_id=active_course.id,
+    await enroll_student(
+        db_session,
+        test_student,
+        active_course,
         price_at_enrollment=Decimal("180.0"),
         color_hex="#112233",
-        status=EnrollmentStatus.ACTIVE,
     )
-    db_session.add(enrollment)
     await db_session.flush()
 
     period_one: Journal = Journal(

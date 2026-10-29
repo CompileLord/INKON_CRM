@@ -5,10 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
 from app.models.user import User, UserRole
-from app.models.course import Course, CourseExamType, CourseStatus
+from app.models.course import CourseStatus
 from app.models.enrollment import Enrollment, EnrollmentStatus
 from app.models.journal import Journal, JournalPeriodType
 from app.models.journal_student_summary import JournalStudentSummary
+from app.tests.factories import create_course, create_user, enroll_student
 
 
 @pytest.mark.asyncio
@@ -21,47 +22,45 @@ async def test_student_profile_history_with_soft_deleted_enrollment_and_retained
     student_token = create_access_token(test_student.id, test_student.role)
     student_headers = {"Authorization": f"Bearer {student_token}"}
 
-    course_active = Course(
+    course_active = await create_course(
+        db_session,
+        test_mentor,
         title="Active Enrolled Course",
         description="Course description",
         start_date=date(2026, 1, 1),
         end_date=date(2026, 6, 30),
-        exam_type=CourseExamType.WEEKLY,
         price="100.00",
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
     )
-    course_deleted = Course(
+    course_deleted = await create_course(
+        db_session,
+        test_mentor,
         title="Historical Deleted Course",
         description="Course description",
         start_date=date(2025, 1, 1),
         end_date=date(2025, 6, 30),
-        exam_type=CourseExamType.WEEKLY,
         price="100.00",
-        mentor_id=test_mentor.id,
         status=CourseStatus.ARCHIVED,
         is_deleted=True,
     )
-    db_session.add_all([course_active, course_deleted])
     await db_session.flush()
 
-    enrollment_active = Enrollment(
-        course_id=course_active.id,
-        student_id=test_student.id,
+    await enroll_student(
+        db_session,
+        test_student,
+        course_active,
         price_at_enrollment="100.00",
         color_hex="#111111",
-        status=EnrollmentStatus.ACTIVE,
         is_deleted=False,
     )
-    enrollment_deleted = Enrollment(
-        course_id=course_deleted.id,
-        student_id=test_student.id,
+    await enroll_student(
+        db_session,
+        test_student,
+        course_deleted,
         price_at_enrollment="100.00",
         color_hex="#222222",
         status=EnrollmentStatus.COMPLETED,
         is_deleted=True,
     )
-    db_session.add_all([enrollment_active, enrollment_deleted])
 
     journal_active = Journal(
         course_id=course_active.id,
@@ -165,18 +164,17 @@ async def test_student_profile_history_with_no_current_enrollments_retained_summ
     student_token = create_access_token(test_student.id, test_student.role)
     student_headers = {"Authorization": f"Bearer {student_token}"}
 
-    past_course = Course(
+    past_course = await create_course(
+        db_session,
+        test_mentor,
         title="Past Finished Course",
         description="Course description",
         start_date=date(2025, 1, 1),
         end_date=date(2025, 6, 30),
-        exam_type=CourseExamType.WEEKLY,
         price="100.00",
-        mentor_id=test_mentor.id,
         status=CourseStatus.ARCHIVED,
         is_deleted=True,
     )
-    db_session.add(past_course)
     await db_session.flush()
 
     past_journal = Journal(
@@ -244,34 +242,33 @@ async def test_student_profile_authorization_and_cross_user_boundaries(
     test_mentor: User,
     test_student: User
 ) -> None:
-    other_student = User(
+    other_student = await create_user(
+        db_session,
+        UserRole.STUDENT,
         email="other_boundary_student@example.com",
         password_hash="hash",
         first_name="Other",
         last_name="Student",
-        role=UserRole.STUDENT,
     )
-    unassigned_mentor = User(
+    unassigned_mentor = await create_user(
+        db_session,
+        UserRole.MENTOR,
         email="unassigned_boundary_mentor@example.com",
         password_hash="hash",
         first_name="Unassigned",
         last_name="Mentor",
-        role=UserRole.MENTOR,
     )
-    db_session.add_all([other_student, unassigned_mentor])
     await db_session.flush()
 
-    course = Course(
+    course = await create_course(
+        db_session,
+        test_mentor,
         title="Boundary Course",
         description="Course description",
         start_date=date(2026, 1, 1),
         end_date=date(2026, 6, 30),
-        exam_type=CourseExamType.WEEKLY,
         price="100.00",
-        mentor_id=test_mentor.id,
-        status=CourseStatus.ACTIVE,
     )
-    db_session.add(course)
     await db_session.flush()
 
     enrollment = Enrollment(course_id=course.id, student_id=test_student.id, price_at_enrollment="100.00", color_hex="#123456", status=EnrollmentStatus.ACTIVE)
