@@ -282,6 +282,7 @@ describe("payment route ownership", () => {
     expect(amountInput.closest("fieldset")?.disabled).toBe(false);
     expect(within(paymentDialog).queryByRole("button", { name: "Keep editing" })).toBeNull();
     expect(within(confirmDialog).getByRole("button", { name: "Keep editing" })).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(within(confirmDialog).getByRole("button", { name: "Keep editing" })));
     expect(within(confirmDialog).getByRole("button", { name: "Discard changes" })).toBeTruthy();
   });
 });

@@ -416,6 +416,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
           message={t("finance:paymentModal.discardBody")}
           cancelLabel={t("finance:paymentModal.keepEditing")}
           confirmLabel={t("finance:paymentModal.discardChanges")}
+          focusCancelFirst
           onCancel={keepEditingAgain}
           onConfirm={discard}
           finalFocus={() => (isLocked ? null : (student ? changeStudentButton : searchField).current)}
