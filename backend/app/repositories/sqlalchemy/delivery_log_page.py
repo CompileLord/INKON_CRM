@@ -48,7 +48,7 @@ class DeliveryLogPage:
         items: dict[int, dict[str, Any]] = {}
         if notification_ids:
             legacy_items: list[dict[str, Any]]
-            legacy_items, _ = await legacy(1, len(notification_ids), None, notification_ids=notification_ids)
+            legacy_items, _ = await legacy(1, len(notification_ids), None, notification_ids=notification_ids, include_total=False)
             items.update({item["id"]: item for item in legacy_items})
         if event_ids:
             rows: Any = (await self.session.execute(select(OutboxEvent, User.first_name, User.last_name).outerjoin(User, User.id == OutboxEvent.target_user_id).where(OutboxEvent.id.in_(event_ids), OutboxEvent.kind == OutboxEventKind.DEBT_REMINDER_SMS))).all()
@@ -63,7 +63,7 @@ class DeliveryLogPage:
 
     async def legacy(
         self, page: int, page_size: int, delivery_status: NotificationStatus | None,
-        notification_id: int | None = None, notification_ids: list[int] | None = None,
+        notification_id: int | None = None, notification_ids: list[int] | None = None, include_total: bool = True,
     ) -> tuple[list[dict[str, Any]], int]:
         conditions: list[ColumnElement[bool]] = (
             [func.coalesce(NotificationLog.delivery_state, NotificationLog.status) == delivery_status.value]
@@ -74,9 +74,11 @@ class DeliveryLogPage:
             conditions.append(NotificationLog.id == notification_id)
         if notification_ids is not None:
             conditions.append(NotificationLog.id.in_(notification_ids))
-        total: int = (
-            await self.session.execute(select(func.count()).select_from(NotificationLog).where(*conditions))
-        ).scalar_one()
+        total: int = 0
+        if include_total:
+            total = (
+                await self.session.execute(select(func.count()).select_from(NotificationLog).where(*conditions))
+            ).scalar_one()
         reminder_course: Any = aliased(Course)
         exam_course: Any = aliased(Course)
         rows: Sequence[Row[Any]] = (
