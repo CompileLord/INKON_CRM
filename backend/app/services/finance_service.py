@@ -1639,8 +1639,25 @@ class FinanceService:
             for item in top_debtors["items"]
         ]
 
+        eligible_payments: Decimal = Decimal(await self.db.scalar(
+            select(func.coalesce(func.sum(PaymentTarget.amount), ZERO)).select_from(PaymentTarget)
+            .join(LedgerEntry, LedgerEntry.id == PaymentTarget.ledger_entry_id)
+            .join(Enrollment, Enrollment.id == PaymentTarget.enrollment_id)
+            .where(expected_revenue_enrollment, LedgerEntry.type == LedgerEntryType.PAYMENT,
+                   LedgerEntry.id.notin_(voided), in_period)
+        ) or ZERO)
+        refund_entry: Any = aliased(LedgerEntry)
+        eligible_refunds: Decimal = Decimal(await self.db.scalar(
+            select(func.coalesce(func.sum(PaymentTarget.amount * refund_entry.amount / LedgerEntry.amount), ZERO)).select_from(PaymentTarget)
+            .join(LedgerEntry, LedgerEntry.id == PaymentTarget.ledger_entry_id)
+            .join(Enrollment, Enrollment.id == PaymentTarget.enrollment_id)
+            .join(refund_entry, refund_entry.reverses_entry_id == LedgerEntry.id)
+            .where(expected_revenue_enrollment, refund_entry.type == LedgerEntryType.REFUND,
+                   refund_entry.is_cash_out.is_(True), refund_entry.occurred_at >= dt_from, refund_entry.occurred_at <= dt_to)
+        ) or ZERO)
+        eligible_collected: Decimal = eligible_payments - eligible_refunds
         collection_rate = (
-            str((collected_in_period / billed_in_period).quantize(Decimal("0.0001")))
+            str((eligible_collected / billed_in_period).quantize(Decimal("0.0001")))
             if billed_in_period > 0
             else "0.0000"
         )
