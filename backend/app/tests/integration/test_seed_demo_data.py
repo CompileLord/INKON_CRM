@@ -182,3 +182,39 @@ async def test_seed_courses_remain_current_with_history(seed_school_day: date, s
         assert all('2026' not in course.title for course in courses)
         assert await session.scalar(select(func.count()).select_from(Journal)) > 0
         assert await session.scalar(select(func.count()).select_from(LedgerEntry).where(LedgerEntry.type == LedgerEntryType.PAYMENT)) == 28
+
+
+@pytest.mark.asyncio
+async def test_demo_full_tuition_students_have_no_remaining_balance(seed_school_day: date, seeded: SeededDatabase) -> None:
+    from decimal import Decimal
+    from app.services.finance_service import FinanceService
+
+    async with AsyncSessionLocal() as session:
+        finance_service: FinanceService = FinanceService(session)
+        full_payments: list[LedgerEntry] = list((await session.scalars(select(LedgerEntry).where(
+            LedgerEntry.type == LedgerEntryType.PAYMENT,
+            LedgerEntry.comment == "Full course tuition payment",
+        ))).all())
+        cohort: list[User] = list((await session.scalars(select(User).where(User.role == UserRole.STUDENT))).all())
+        balances: dict[int, Decimal] = {
+            student.id: (await finance_service.get_student_balance(student.id))["net_receivable"]
+            for student in cohort
+        }
+        print(f"Demo debtors: {sum(balance > 0 for balance in balances.values())} of {len(cohort)}")
+        assert len(full_payments) == 16
+        assert all(balances[payment.student_id] == Decimal("0.00") for payment in full_payments)
+        full_student_ids: set[int] = {payment.student_id for payment in full_payments}
+        for payment in full_payments:
+            options: dict = await finance_service.get_payment_options(payment.student_id)
+            assert all(option["remaining_contract_maximum"] == Decimal("0.00") for option in options["enrollments"])
+            receipt: dict = await finance_service.get_payment_receipt(payment.id)
+            assert receipt["status"] == "valid"
+            assert sum((allocation["allocated_amount"] for allocation in receipt["allocations"]), Decimal("0.00")) == payment.amount
+        partial_payments: list[LedgerEntry] = list((await session.scalars(select(LedgerEntry).where(
+            LedgerEntry.type == LedgerEntryType.PAYMENT,
+            LedgerEntry.comment == "First installment payment",
+        ))).all())
+        assert len(partial_payments) == 12
+        assert any(balances[payment.student_id] > 0 for payment in partial_payments)
+        paid_student_ids: set[int] = full_student_ids | {payment.student_id for payment in partial_payments}
+        assert any(balance > 0 for student_id, balance in balances.items() if student_id not in paid_student_ids)

@@ -322,7 +322,12 @@ class DemoDataPopulator:
                     method: PaymentMethod = PaymentMethod.CASH if idx % 2 == 0 else PaymentMethod.TRANSFER
 
                     if idx < 4:
-                        amount: Decimal = cdef["price"]
+                        payment_options: dict[str, Any] = await finance_service.get_payment_options(student.id)
+                        amount: Decimal = next(
+                            option["remaining_contract_maximum"]
+                            for option in payment_options["enrollments"]
+                            if option["course_id"] == course_id
+                        )
                         comment: str = "Full course tuition payment"
                     elif idx < 7:
                         amount: Decimal = cdef["price"] / Decimal("2.0")
