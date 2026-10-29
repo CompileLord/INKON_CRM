@@ -193,7 +193,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative">
+      <div className="group/grid relative" data-scrolled={viewport.canScrollLeft ? "true" : "false"}>
         <div
           ref={headerStripRef}
           data-testid="journal-grid-header"
@@ -214,7 +214,7 @@ export const JournalGrid: React.FC<JournalGridProps> = ({
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 z-30 border-b border-r border-border bg-beige bg-clip-padding px-2 py-3 sm:px-4 shadow-[1px_0_0_0_var(--color-border)] text-left text-sm font-semibold text-ink"
+                  className="sticky left-0 z-30 border-b border-r border-border bg-beige px-2 py-3 sm:px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-full after:w-3 after:bg-gradient-to-r after:from-scrim after:to-transparent after:opacity-0 motion-safe:after:transition-opacity motion-safe:after:duration-150 motion-safe:after:ease-out group-data-[scrolled=true]/grid:after:opacity-40 text-left text-sm font-semibold text-ink"
                 >
                   {t("table.students")}
                 </th>

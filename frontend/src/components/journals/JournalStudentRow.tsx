@@ -73,7 +73,7 @@ export const JournalStudentRow: React.FC<JournalStudentRowProps> = React.memo(({
     <tr className="group/row" data-self={isSelf ? "true" : undefined}>
       <th
         scope="row"
-        className={`sticky left-0 z-20 ${compact ? "w-[120px] min-w-[120px] max-w-[120px] px-2" : "w-[200px] min-w-[200px] max-w-[200px] px-4"} border-b border-r border-border bg-clip-padding shadow-[1px_0_0_0_var(--color-border)] py-2 text-left text-sm font-semibold leading-5 text-ink group-hover/row:bg-row-hover ${
+        className={`sticky left-0 z-20 ${compact ? "w-[120px] min-w-[120px] max-w-[120px] px-2" : "w-[200px] min-w-[200px] max-w-[200px] px-4"} border-b border-r border-border after:pointer-events-none after:absolute after:inset-y-0 after:left-full after:w-3 after:bg-gradient-to-r after:from-scrim after:to-transparent after:opacity-0 motion-safe:after:transition-opacity motion-safe:after:duration-150 motion-safe:after:ease-out group-data-[scrolled=true]/grid:after:opacity-40 py-2 text-left text-sm font-semibold leading-5 text-ink group-hover/row:bg-row-hover ${
           isSelf ? "border-l-4 border-l-maroon bg-beige dark:border-l-accent" : "bg-card"
         }`}
       >
