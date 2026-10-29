@@ -40,7 +40,7 @@
     "commentPlaceholder": "Note about the transaction...",
     "saveError": "Failed to accept payment",
     "chooseStudent": "Choose a student before recording payment.",
-    "invalidAmount": "Enter a positive decimal amount. A comma or dot may separate decimals.",
+    "invalidAmount": "Enter a positive amount with up to 2 decimals.",
     "invalidDate": "Choose a valid payment date.",
     "ambiguousResult": "The response was interrupted. Check whether the payment was recorded before submitting again. Your entered values are retained.",
     "permissionError": "Your account cannot record this payment.",
@@ -112,6 +112,7 @@
     "noAllocations": "No current allocations",
     "print": "Print receipt",
     "printTitle": "Receipt {{number}}",
+    "netAmount": "Net amount",
     "printTotal": "Amount received",
     "printBlocked": "The browser blocked the print window. Allow pop-ups and try again.",
     "targets": "Paid by course"

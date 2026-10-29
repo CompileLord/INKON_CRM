@@ -16,7 +16,8 @@ export function enrollFailureKey(error: unknown): EnrollFailureKey {
     status = (error as { status: number }).status;
     detail = (error as { detail?: unknown }).detail;
   }
-  if (status === 422 && detail === "course_already_ended") return "courseAlreadyEnded";
+  const code: unknown = typeof detail === "object" && detail !== null ? (detail as { code?: unknown }).code : detail;
+  if (status === 422 && code === "course_already_ended") return "courseAlreadyEnded";
   if (status === 409) return "duplicateConflict";
   return "genericError";
 }

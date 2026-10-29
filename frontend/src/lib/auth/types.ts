@@ -76,4 +76,5 @@ export interface HTTPValidationError {
 export interface ApiErrorCodeDetail {
   code: string;
   message?: string;
+  course_count?: number;
 }

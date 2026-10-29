@@ -151,7 +151,6 @@
     "unreadUnavailable": "Unread count unavailable",
     "stale": "The latest update failed. Previous information is shown.",
     "notifications": "Your notifications",
-    "notificationsEmpty": "Results and reminders for your account will appear here.",
     "notificationsFailed": "Notifications could not be loaded. Try again.",
     "read": "Read",
     "unreadState": "Unread",
@@ -165,5 +164,14 @@
       "generic": "Account notification"
     }
   },
-  "perMonthSuffix": "/ mo"
+  "perMonthSuffix": "/ mo",
+  "apiErrors": {
+    "phoneTaken": "This phone number is already in use.",
+    "emailTaken": "This email is already in use.",
+    "courseAlreadyEnded": "This course has already ended. Students can't be enrolled in it.",
+    "mentorRoleRequired": "Only a mentor can be assigned to a course.",
+    "mentorHasActiveCourses": "This mentor has {{courses}} active courses. Assign another mentor to them first.",
+    "discountChargeNotOpen": "This charge is already settled or closed, so a discount can't be applied.",
+    "idempotencyKeyPayloadMismatch": "This request was already sent with different details. Reload the page and try again."
+  }
 }

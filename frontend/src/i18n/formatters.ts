@@ -155,6 +155,12 @@ export function getSchoolMonthRange(date: Date = new Date()): { start: string; e
   return { start: prefix + "-01", end: prefix + "-" + String(lastDay).padStart(2, "0") };
 }
 
+function formatTajikRelative(elapsedMinutes: number): string {
+  if (elapsedMinutes < 1) return i18n.t("ui:relativeTime.now", { lng: "tg" });
+  if (elapsedMinutes < 60) return i18n.t("ui:relativeTime.minutes", { lng: "tg", count: elapsedMinutes });
+  return i18n.t("ui:relativeTime.hours", { lng: "tg", count: Math.floor(elapsedMinutes / 60) });
+}
+
 export function formatRecentRelativeTime(
   date: string | Date | null | undefined,
   lng?: string,
@@ -165,6 +171,7 @@ export function formatRecentRelativeTime(
   if (isNaN(moment.getTime())) return null;
   const elapsedMinutes = Math.floor((now.getTime() - moment.getTime()) / 60000);
   if (elapsedMinutes < 0 || elapsedMinutes >= 60) return null;
+  if (isTajikRequestedWithoutIntlSupport(lng)) return formatTajikRelative(elapsedMinutes);
   return new Intl.RelativeTimeFormat(getActiveLocale(lng), { numeric: "auto" }).format(-elapsedMinutes, "minute");
 }
 
@@ -178,6 +185,7 @@ export function formatActivityTime(
   if (isNaN(moment.getTime())) return String(date);
   const elapsedMinutes: number = Math.floor((now.getTime() - moment.getTime()) / 60000);
   if (elapsedMinutes >= 0 && elapsedMinutes < 24 * 60) {
+    if (isTajikRequestedWithoutIntlSupport(lng)) return formatTajikRelative(elapsedMinutes);
     const formatter: Intl.RelativeTimeFormat = new Intl.RelativeTimeFormat(getActiveLocale(lng), { numeric: "auto" });
     return elapsedMinutes < 60 ? formatter.format(-elapsedMinutes, "minute") : formatter.format(-Math.floor(elapsedMinutes / 60), "hour");
   }

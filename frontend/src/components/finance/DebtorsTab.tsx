@@ -58,6 +58,8 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
     ? loaded.filter((debt) => `${debt.student.first_name} ${debt.student.last_name} ${debt.course.title}`.toLowerCase().includes(normalizedSearch))
     : loaded;
   const total: number = debts.data?.total ?? 0;
+  const studentTotal: number = debts.data?.student_total ?? total;
+  const withdrawnOnlyStudents: Set<number> = DebtReminders.withdrawnOnlyStudentIds(loaded);
   const totalPages: number = debts.data?.total_pages ?? 1;
   const lastValidPage: number = Math.max(1, totalPages);
   const ambiguousStudents: Set<number> = CourseBalanceIdentity.studentIdsSharingAName(loaded);
@@ -180,6 +182,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
         onAcceptPayment={acceptPayment}
         extraAction={renderRowAction?.(debt)}
         onRemind={(target: DebtItem) => void sendReminders([target.student.id], target)}
+        remindable={!withdrawnOnlyStudents.has(debt.student.id)}
         isReminding={!bulkRunning && remindingIds.has(debt.student.id)}
       />
     );
@@ -193,7 +196,7 @@ export function DebtorsTab({ view, recordedPayment, onPageChange, onChangeFilter
 
   const summary = debts.data ? (
     <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted tabular-nums">
-      <span>{t("finance:debtorsTab.total", { count: total, formatted: formatNumber(total, i18n.language) })}</span>
+      <span>{t("finance:debtorsTab.total", { count: studentTotal, formatted: formatNumber(studentTotal, i18n.language) })}</span>
       {normalizedSearch && (
         <span>{t("finance:debtorsTab.pageMatches", { shown: formatNumber(visible.length, i18n.language), loaded: formatNumber(loaded.length, i18n.language) })}</span>
       )}

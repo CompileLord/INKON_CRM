@@ -8,7 +8,7 @@ export type PaymentAmountResult =
 
 export class PaymentAmountParser {
   private static readonly groupingWhitespace: RegExp = /\s/g;
-  private static readonly decimalPattern: RegExp = /^\d+([.,]\d+)?$/;
+  private static readonly decimalPattern: RegExp = /^\d+([.,]\d{1,2})?$/;
 
   static parse(raw: string): PaymentAmountResult {
     const compact: string = raw.replace(PaymentAmountParser.groupingWhitespace, "");

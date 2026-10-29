@@ -59,7 +59,7 @@ const CREDIT_ALLOCATION_ERROR_CODES: readonly string[] = [
 
 export class PaymentTargets {
   static isPayable(option: PaymentOption): boolean {
-    return option.billing_mode !== "grant" && isPositiveMoney(option.remaining_contract_maximum);
+    return isPositiveMoney(option.remaining_contract_maximum);
   }
 
   static hasDebt(option: PaymentOption): boolean {
@@ -93,7 +93,7 @@ export class PaymentTargets {
       if (parsed.canonical !== null) {
         targets.push({ enrollment_id: option.enrollment_id, amount: parsed.canonical });
         total = addMoney(total, parsed.canonical);
-      } else if (parsed.problem === "invalid") {
+      } else if (parsed.problem === "invalid" || parsed.problem === "notPositive") {
         invalidEnrollmentIds.push(option.enrollment_id);
       }
     }

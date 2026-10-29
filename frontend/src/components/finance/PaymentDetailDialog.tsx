@@ -1,4 +1,4 @@
-import { Banknote, CalendarDays, Landmark, Printer, Receipt, UserCheck } from "lucide-react";
+import { Ban, Banknote, CalendarDays, Landmark, Printer, Receipt, Undo2, UserCheck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { usePaymentReceipt, usePaymentStatus } from "../../lib/finance/hooks";
@@ -50,18 +50,28 @@ export function PaymentDetailModal({ payment, onClose }: PaymentDetailModalProps
   const targets: readonly PaymentTarget[] = receipt.data?.targets ?? known?.targets ?? [];
   const isReceiptReserved: boolean = receipt.isLoading && !receipt.data;
 
+  const receiptStatus = receipt.data?.status ?? "valid";
+  const isReversed: boolean = receiptStatus !== "valid";
+  const reversalMark: string | null = !receipt.data || !isReversed
+    ? null
+    : receiptStatus === "voided"
+      ? t("paymentsTab.pillVoided")
+      : t("paymentsTab.pillRefunded", { amount: formatExactMoney(receipt.data.refunded_amount) });
+
   const printReceipt = (): void => {
     if (!receipt.data) return;
     const data = receipt.data;
     const printed: boolean = ReceiptPrinter.print({
       title: t("paymentDetail.printTitle", { number: data.receipt_number }),
       heading: t("paymentDetail.printTitle", { number: data.receipt_number }),
+      statusMark: reversalMark,
       lines: [
         { label: t("paymentDetail.student"), value: data.student_name },
         { label: t("paymentModal.date"), value: formatDateTime(data.occurred_at, i18n.language, SCHOOL_TIMEZONE) },
         { label: t("paymentModal.method"), value: data.method ? t(`common:enums.paymentMethod.${data.method}`) : t("paymentDetail.unavailable") },
         { label: t("paymentDetail.acceptedBy"), value: data.accepted_by_name },
         { label: t("paymentDetail.printTotal"), value: t("moneyAmount", { amount: formatExactMoney(data.amount) }) },
+        ...(isReversed ? [{ label: t("paymentDetail.netAmount"), value: t("moneyAmount", { amount: formatExactMoney(data.net_amount) }) }] : []),
       ],
       targetsHeading: t("paymentDetail.targets"),
       targets: targets.map((target) => ({ label: target.course_title, value: t("moneyAmount", { amount: formatExactMoney(target.amount) }) })),
@@ -123,6 +133,13 @@ export function PaymentDetailModal({ payment, onClose }: PaymentDetailModalProps
                 <span className="text-muted">{t("paymentDetail.unavailable")}</span>
               )}
             </DetailRow>
+            {receipt.data && isReversed && (
+              <DetailRow icon={receiptStatus === "voided" ? <Ban size={16} /> : <Undo2 size={16} />} label={t("paymentDetail.netAmount")}>
+                <span data-testid="receipt-reversal" className={`font-medium tabular-nums ${receiptStatus === "voided" ? "text-destructive" : "text-warning"}`}>
+                  {PaymentStatus.hasNotice(known) ? "" : `${reversalMark} · `}{t("moneyAmount", { amount: formatExactMoney(receipt.data.net_amount) })}
+                </span>
+              </DetailRow>
+            )}
             <DetailRow icon={<UserCheck size={16} />} label={t("paymentDetail.acceptedBy")}>
               {receipt.data ? (
                 receipt.data.accepted_by_name

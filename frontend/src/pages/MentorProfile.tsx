@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDeleteUser, useMentorAnalytics, useMentorProfile } from "../lib/users/hooks";
 import { AuthApiError, NetworkError } from "../lib/auth/errors";
+import { ApiErrorCodes } from "../lib/auth/apiErrorCodes";
 import type { User, MentorProfileResult, MentorStaffProfileResponse } from "../lib/users/types";
 import { useAuthStore } from "../store/authStore";
 import { mentorLocationState, mentorProfileTab, mentorReturnTarget, type MentorProfileTab } from "../lib/mentors/mentorNavigation";
@@ -144,8 +145,8 @@ function MentorProfileWorkspace({ id, role, userId }: { id: number | undefined; 
     try {
       await deleteUser.mutateAsync(deleteTarget.id);
       if (live()) navigate(back.to, { state: back.state });
-    } catch {
-      if (live()) setDeleteError(t("mentors:form.deleteAccountError"));
+    } catch (deleteFailure) {
+      if (live()) setDeleteError(ApiErrorCodes.translate(deleteFailure, t) ?? t("mentors:form.deleteAccountError"));
     } finally {
       if (live()) {
         deleteLockRef.current = false;

@@ -176,3 +176,24 @@ describe("DeliveryLog list states", () => {
     expect(cards[0].className).toContain("border-border");
   });
 });
+
+describe("DeliveryLog debt reminder SMS items", () => {
+  it("renders an SMS card with amount and translated reason and never offers Retry", async () => {
+    endpoints.fetchDeliveryLog.mockResolvedValue(listing([
+      entry(-5, { type: "debt_reminder_sms", status: "failed", course_id: null, course_title: null, amount: "700.00", reason: "no_current_debt", student_id: 9 }),
+      entry(-6, { type: "debt_reminder_sms", status: "failed", course_id: null, course_title: null, amount: "10.00", reason: "weird_internal_code" }),
+      entry(3, { status: "failed" }),
+    ]));
+    renderLog();
+    const cards: HTMLElement[] = await screen.findAllByTestId("delivery-item");
+    expect(cards).toHaveLength(3);
+    expect(within(cards[0]).getByText("Debt reminder (SMS)")).toBeTruthy();
+    expect(within(cards[0]).getByText("700 TJS")).toBeTruthy();
+    expect(within(cards[0]).getByTestId("delivery-reason").textContent).toBe("Not sent: the student had no current debt.");
+    expect(within(cards[0]).getByTestId("delivery-icon").getAttribute("data-kind")).toBe("debtReminderSms");
+    expect(within(cards[0]).queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(within(cards[1]).queryByTestId("delivery-reason")).toBeNull();
+    expect(within(cards[1]).queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(within(cards[2]).getByRole("button", { name: "Retry" })).toBeTruthy();
+  });
+});

@@ -22,6 +22,7 @@ import {
   recordMentorsNavigation,
   restoreMentorsScrollAndFocus,
 } from "../lib/users/returnContext";
+import { ApiErrorCodes } from "../lib/auth/apiErrorCodes";
 import { useAuthStore } from "../store/authStore";
 import type { PaginatedUsers, User } from "../lib/users/types";
 
@@ -295,11 +296,11 @@ export function Mentors() {
     try {
       try {
         await deleteUser.mutateAsync(deleteTarget.id);
-      } catch {
+      } catch (deleteFailure) {
         const latestAuth = useAuthStore.getState();
         const latestOwner = `${latestAuth.role ?? "anonymous"}:${latestAuth.userId ?? "none"}`;
         if (!isMountedRef.current || currentGen !== deleteGenRef.current || ownerRef.current !== currentOwner || latestOwner !== currentOwner) return;
-        setDeleteError(t("form.deleteAccountError"));
+        setDeleteError(ApiErrorCodes.translate(deleteFailure, t) ?? t("form.deleteAccountError"));
         return;
       }
 

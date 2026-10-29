@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { formatExactMoney } from "../../lib/money";
+import { formatNumber } from "../../i18n/formatters";
 import type { AuditChange, AuditEvent } from "../../lib/audit/api";
 import { AuditPresentation, type AuditQueueMarker, type AuditScheduleChange } from "../../lib/audit/auditPresentation";
 import { useAuditLabels, type AuditLabels } from "./useAuditLabels";
@@ -25,7 +26,8 @@ function entityKeyOf(event: AuditEvent): string {
   return role === "mentor" ? "mentor" : "user";
 }
 
-function summarizeChange(t: Translate, labels: AuditLabels, action: string, change: AuditChange): string {
+function summarizeChange(t: Translate, labels: AuditLabels, action: string, change: AuditChange): string | null {
+  if (!labels.isDisplayable(change.field_name, change.old_value) || !labels.isDisplayable(change.field_name, change.new_value)) return null;
   const field: string = labels.fieldLabel(change.field_name);
   const shape = AuditPresentation.changeShape(change.old_value, change.new_value);
   if (AuditPresentation.isReferenceField(change.field_name)) {
@@ -75,7 +77,7 @@ export function useAuditEventText(event: AuditEvent): AuditEventText {
   const detailEntries: string[] = [
     ...schedules.map((schedule) => summarizeSchedule(t, labels, schedule)),
     ...(listed ? [] : others.map((change) => summarizeChange(t, labels, event.action, change))),
-  ];
+  ].filter((entry): entry is string => entry !== null);
   const changeSummary: string =
     detailEntries.length > 0 && detailEntries.length <= MAXIMUM_LISTED_DETAILS
       ? detailEntries.join("; ")
@@ -106,6 +108,17 @@ export function useAuditEventText(event: AuditEvent): AuditEventText {
       sentence: { key: "statement.payment.void.amount", values: { actor, amount: amountText, name: event.entity_label } },
       details: null,
       subtitle: reason === null ? genericSubtitle : t("event.reason", { reason: labels.valueText("reason_code", reason) }),
+    };
+  }
+
+  const monthsCancelled: string | null = valueOf("months_cancelled");
+  const cancelledAmount: string | null = valueOf("cancelled_amount");
+  if (event.entity_type === "enrollment" && event.action === "update" && monthsCancelled !== null && cancelledAmount !== null && event.entity_label !== null) {
+    const months: number = Number(monthsCancelled);
+    return {
+      sentence: { key: "statement.enrollment.withdraw", values: { actor, name: event.entity_label, course: event.course_title ?? unnamed } },
+      details: null,
+      subtitle: months > 0 ? t("event.withdrawalSummary", { months: formatNumber(months, i18n.language), amount: t("moneyAmount", { amount: formatExactMoney(cancelledAmount) }) }) : t("event.withdrawalNoCharges"),
     };
   }
 

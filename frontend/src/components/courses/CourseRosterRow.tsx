@@ -26,10 +26,12 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
   const { t, i18n } = useTranslation("courseDetail");
   const { t: tEnrollments } = useTranslation("enrollments");
   const studentName: string = `${item.student.first_name} ${item.student.last_name}`.trim();
-  const price: string = formatTjs(item.price_at_enrollment, { perMonth: true, lng: i18n.language });
+  const hasMoney: boolean = item.price_at_enrollment !== undefined;
+  const price: string = hasMoney ? formatTjs(item.price_at_enrollment, { perMonth: true, lng: i18n.language }) : "";
   const enrolledOn: string = t("students.enrolledSince", { date: formatDate(item.enrolled_at) });
 
-  const priceOrBadge: ReactNode = item.billing_mode === "grant" ? <GrantBadge billingMode={item.billing_mode} /> : price;
+  const priceOrBadge: ReactNode = !hasMoney ? null : item.billing_mode === "grant" ? <GrantBadge billingMode={item.billing_mode} /> : price;
+  const moneyHidden: boolean = priceOrBadge === null;
 
   const content = (
     <span data-testid="student-identity" className="flex min-w-0 items-center gap-3">
@@ -42,12 +44,12 @@ export function CourseRosterRow({ item, canOpenProfile, canWithdraw, canSwitchBi
       <span className="flex min-w-0 flex-1 flex-col">
         <span ref={(element: HTMLElement | null) => registerName(item.student_id, element)} className="truncate text-sm font-medium text-ink">{studentName}</span>
         <span className="truncate text-xs text-muted">{item.student.email ?? formatPhoneDisplay(item.student.phone)}</span>
-        <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted sm:hidden">{priceOrBadge}<span>{item.billing_mode === "grant" ? enrolledOn : `· ${enrolledOn}`}</span></span>
+        <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted sm:hidden">{priceOrBadge}<span>{moneyHidden || item.billing_mode === "grant" ? enrolledOn : `· ${enrolledOn}`}</span></span>
       </span>
       <span className="flex shrink-0 items-center gap-4">
         <EnrollmentStatusBadge status={item.status} />
         <span className="hidden flex-col items-end text-right sm:flex">
-          <span className="flex min-h-5 items-center text-sm font-medium tabular-nums text-ink">{priceOrBadge}</span>
+          {!moneyHidden && <span className="flex min-h-5 items-center text-sm font-medium tabular-nums text-ink">{priceOrBadge}</span>}
           <span className="text-xs tabular-nums text-muted">{enrolledOn}</span>
         </span>
       </span>

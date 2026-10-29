@@ -27,6 +27,7 @@ export function DeliveryItemCard({ item, role, userId, retrying, onRetry }: Deli
   const sentText: string = item.sent_at
     ? formatRecentRelativeTime(item.sent_at, i18n.language) ?? formatDateTime(item.sent_at, i18n.language, SCHOOL_TIMEZONE)
     : t("deliveryLog.notSent");
+  const reason: string | null = NotificationPresentation.knownReason(item.reason);
   const hasContext: boolean = Boolean(item.course_title) || item.amount != null || item.score != null;
 
   return (
@@ -43,6 +44,7 @@ export function DeliveryItemCard({ item, role, userId, retrying, onRetry }: Deli
           <DeliveryStatusChip status={item.status} attempts={item.attempts} />
         </div>
         <p className="break-words text-sm text-muted">{t(`events.${kind}.title`)}</p>
+        {reason && <p data-testid="delivery-reason" className="break-words text-sm text-muted">{t(`deliveryLog.reasons.${reason}`)}</p>}
         {hasContext && (
           <p data-testid="delivery-context" className="flex flex-wrap items-center gap-x-1.5 text-sm text-ink">
             {item.course_title && (courseLink ? <Link to={`/courses/${item.course_id}`} className={LINK_CLASS}>{item.course_title}</Link> : <span>{item.course_title}</span>)}

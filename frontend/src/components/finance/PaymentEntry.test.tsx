@@ -120,12 +120,12 @@ describe("Payment entry form", () => {
     renderFinance("?tab=payments");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await chooseStudentAndCourse(user);
-    await user.type(screen.getByLabelText(AMOUNT_LABEL), "12345678901234567890,123456789");
+    await user.type(screen.getByLabelText(AMOUNT_LABEL), "12345678901234567890,12");
     await pickDate(user, "2026-03-01");
     await user.click(screen.getByRole("button", { name: "Accept Payment" }));
     await screen.findByText("Payment #321 recorded");
     expect(String(mock.history.post[0].headers?.["Idempotency-Key"])).toMatch(/^[0-9a-f-]{36}$/);
-    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "12345678901234567890.123456789", paid_at: "2026-02-28T19:00:00.000Z", student_id: 7, targets: [{ enrollment_id: 500, amount: "12345678901234567890.123456789" }] });
+    expect(JSON.parse(mock.history.post[0].data)).toMatchObject({ amount: "12345678901234567890.12", paid_at: "2026-02-28T19:00:00.000Z", student_id: 7, targets: [{ enrollment_id: 500, amount: "12345678901234567890.12" }] });
   }, 20000);
 
   it("announces the pending status and keeps the dialog values when the result is ambiguous", async () => {

@@ -200,6 +200,7 @@ export function describeCourseApiError(
 ): string {
   const t = translator ?? ((key: string) => key);
   if (err instanceof AuthApiError) {
+    if (err.code === "mentor_role_required") return t("common:apiErrors.mentorRoleRequired");
     if (err.code === "schedule_weekdays_immutable") return t("courses:form.errors.scheduleWeekdaysImmutable");
     if (hasScheduleTimeRangeViolation(err)) return t("courses:form.errors.scheduleTimeRangeInvalid");
     if (err.status === 403) return t("courses:form.errors.forbidden");

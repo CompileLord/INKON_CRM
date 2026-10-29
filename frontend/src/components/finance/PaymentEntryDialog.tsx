@@ -43,12 +43,13 @@ const INPUT_CLASSES: string =
   "min-h-12 w-full min-w-0 rounded-[10px] border bg-card px-3 py-2 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-strip disabled:text-muted";
 
 const FAILURE_MESSAGE_KEYS: Record<PaymentFailureKind, string> = {
-  ambiguous: "paymentModal.ambiguousResult",
-  permission: "paymentModal.permissionError",
-  closedPeriod: "paymentModal.closedPeriod",
-  enrollment: "paymentModal.enrollmentError",
-  withdrawnExceedsDebt: "paymentModal.withdrawnExceedsDebt",
-  rejected: "paymentModal.saveError",
+  ambiguous: "finance:paymentModal.ambiguousResult",
+  permission: "finance:paymentModal.permissionError",
+  closedPeriod: "finance:paymentModal.closedPeriod",
+  enrollment: "finance:paymentModal.enrollmentError",
+  withdrawnExceedsDebt: "finance:paymentModal.withdrawnExceedsDebt",
+  idempotencyMismatch: "common:apiErrors.idempotencyKeyPayloadMismatch",
+  rejected: "finance:paymentModal.saveError",
 };
 
 const TARGET_ERROR_KEYS: Record<Exclude<PaymentTargetError["code"], "payment_target_exceeds_balance">, string> = {
@@ -95,6 +96,8 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
   const draftsChanged: boolean = Object.keys(drafts).some((key) => (drafts[Number(key)] ?? "") !== (baselineDrafts.current[Number(key)] ?? ""));
   const dirty: boolean = draftsChanged || comment !== "" || method !== "cash" || paidAt !== initialDate || student?.id !== initialStudent?.id;
   const studentLabel: string = student?.name ?? "";
+  const liveProblems: Record<number, TargetRowProblem> = Object.fromEntries(plan.invalidEnrollmentIds.map((id: number): [number, TargetRowProblem] => [id, { messageKey: "paymentModal.invalidAmount" }]));
+  const hasInvalidAmount: boolean = plan.invalidEnrollmentIds.length > 0;
 
   useEffect(() => {
     if (prefilled.current || defaultCourseId === undefined || !paymentOptions.data) return;
@@ -279,7 +282,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
         <Button variant="secondary" disabled={pending} onClick={requestClose}>
           {t("common:cancel")}
         </Button>
-        <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired}>
+        <Button type="submit" form="shared-payment-form" loading={pending} disabled={verificationRequired || hasInvalidAmount} disabledReason={hasInvalidAmount ? t("finance:paymentModal.invalidAmount") : undefined}>
           {t(pending ? "finance:paymentModal.recording" : "finance:paymentModal.acceptPayment")}
         </Button>
       </div>
@@ -308,7 +311,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
           </p>
           {failure && (
             <div role="alert" className="rounded-xl border border-destructive bg-danger-surface p-3 text-sm text-destructive">
-              {t(`finance:${FAILURE_MESSAGE_KEYS[failure]}`)}
+              {t(FAILURE_MESSAGE_KEYS[failure])}
             </div>
           )}
           {verificationRequired && (
@@ -375,7 +378,7 @@ export function PaymentEntryDialog({ onClose, onSuccess, defaultStudentId, defau
                 studentId={student.id}
                 paymentOptions={paymentOptions}
                 drafts={drafts}
-                problems={rowProblems}
+                problems={{ ...liveProblems, ...rowProblems }}
                 total={plan.total}
                 fieldProblem={problemFor("targets")}
                 failureKey={targetFailureKey}

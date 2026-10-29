@@ -55,7 +55,7 @@ afterEach(() => {
 
 describe("profile save errors", () => {
   it("maps a duplicate phone 409 onto the phone field", async () => {
-    vi.spyOn(usersApi, "updateOwnProfile").mockRejectedValue(new AuthApiError(409, "User with this phone already exists"));
+    vi.spyOn(usersApi, "updateOwnProfile").mockRejectedValue(new AuthApiError(409, { code: "phone_taken" }));
     renderSection();
     await editPhoneAndSave();
     expect(await screen.findByText("This phone number is already in use.")).toBeTruthy();

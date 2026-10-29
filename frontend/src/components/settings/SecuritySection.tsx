@@ -22,6 +22,7 @@ const EMPTY_VALUES: ChangePasswordFormValues = { currentPassword: "", newPasswor
 export function SecuritySection({ onChanged }: SecuritySectionProps) {
   const { t } = useTranslation(["settings", "auth", "validation"]);
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
+  const isStudent: boolean = useAuthStore((state) => state.role) === "student";
   const [formErrorKey, setFormErrorKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const schema = useMemo(() => createChangePasswordFormSchema(t), [t]);
@@ -60,7 +61,7 @@ export function SecuritySection({ onChanged }: SecuritySectionProps) {
         <SettingsRow
           icon={<KeyRound size={18} />}
           label={t("settings:security.currentPassword")}
-          description={t("settings:security.currentPasswordHint")}
+          description={isStudent ? t("settings:security.currentPasswordHint") : undefined}
           controlId="security-current-password"
         >
           <Input id="security-current-password" type="password" autoComplete="current-password" disabled={submitting} error={errors.currentPassword?.message} {...register("currentPassword")} />

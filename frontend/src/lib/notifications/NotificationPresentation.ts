@@ -1,11 +1,11 @@
-import { Bell, CalendarClock, ClipboardCheck, ShieldAlert, type LucideIcon } from "lucide-react";
+import { Bell, CalendarClock, ClipboardCheck, MessageSquare, ShieldAlert, type LucideIcon } from "lucide-react";
 import { isPathAllowed } from "../auth/roleAccess";
 import type { Role } from "../users/types";
 import type { BadgeStatus } from "../../components/ui/Badge";
 import { AuditPresentation, type AuditDayRelation } from "../audit/auditPresentation";
 import type { DeliveryLogItem, DeliveryRetryFailure, NotificationLogItem, NotificationStatus, NotificationType } from "./types";
 
-export type NotificationEventKind = "examResult" | "paymentTwoDays" | "paymentOneDay" | "telegramLockout" | "generic";
+export type NotificationEventKind = "examResult" | "paymentTwoDays" | "paymentOneDay" | "telegramLockout" | "debtReminderSms" | "generic";
 
 export interface DeliveryStatusPresentation {
   labelKey: string;
@@ -26,6 +26,7 @@ export class NotificationPresentation {
       payment_reminder_1d: "paymentOneDay",
       telegram_link_lockout: "telegramLockout",
     };
+    if (type === "debt_reminder_sms") return "debtReminderSms";
     return known[type as NotificationType] ?? "generic";
   }
 
@@ -39,12 +40,17 @@ export class NotificationPresentation {
     return known[status] ?? known.queued;
   }
 
+  static emptyAudience(role: Role | null): "student" | "admin" | "staff" {
+    return role === "student" ? "student" : role === "superadmin" ? "admin" : "staff";
+  }
+
   static categoryIcon(type: string): LucideIcon {
     const icons: Record<NotificationEventKind, LucideIcon> = {
       examResult: ClipboardCheck,
       paymentTwoDays: CalendarClock,
       paymentOneDay: CalendarClock,
       telegramLockout: ShieldAlert,
+      debtReminderSms: MessageSquare,
       generic: Bell,
     };
     return icons[NotificationPresentation.eventKind(type)];
@@ -58,8 +64,13 @@ export class NotificationPresentation {
     return role !== null && typeof courseId === "number" && isPathAllowed(role, `/courses/${courseId}`, userId);
   }
 
-  static canRetry(item: Pick<DeliveryLogItem, "status">): boolean {
-    return item.status === "failed";
+  static canRetry(item: Pick<DeliveryLogItem, "status"> & { type?: string }): boolean {
+    return item.status === "failed" && item.type !== "debt_reminder_sms";
+  }
+
+  static knownReason(reason: string | null | undefined): string | null {
+    const known: readonly string[] = ["no_current_debt", "no_current_debt_or_parent", "delivery_outcome_unknown"];
+    return reason != null && known.includes(reason) ? reason : null;
   }
 
   static retryFailure(error: unknown): DeliveryRetryFailure {

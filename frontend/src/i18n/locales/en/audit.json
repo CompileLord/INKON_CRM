@@ -129,7 +129,9 @@
     "password_sms_queued": "Password SMS",
     "schedules": "Schedule",
     "scheduleStart": "Lesson start, {{day}}",
-    "scheduleEnd": "Lesson end, {{day}}"
+    "scheduleEnd": "Lesson end, {{day}}",
+    "cancelled_amount": "Cancelled amount",
+    "months_cancelled": "Cancelled months"
   },
   "values": {
     "none": "No value",
@@ -172,7 +174,8 @@
     "queueReason": {
       "initial": "First login details",
       "reset": "New password"
-    }
+    },
+    "unavailable": "Not available"
   },
   "states": {
     "loading": "Loading changes",
@@ -209,7 +212,9 @@
     "similarCount": "{{count}} similar changes",
     "showSimilar": "Show all",
     "hideSimilar": "Hide",
-    "detailsSuffix": ": {{details}}"
+    "detailsSuffix": ": {{details}}",
+    "withdrawalSummary": "Cancelled months: {{months}} · Cancelled amount: {{amount}}",
+    "withdrawalNoCharges": "No charges were cancelled"
   },
   "moneyAmount": "{{amount}} TJS",
   "actor": {
@@ -302,7 +307,8 @@
       },
       "delete": {
         "any": "<actor>{{actor}}</actor> removed the enrollment of {{name}} in {{course}}"
-      }
+      },
+      "withdraw": "<actor>{{actor}}</actor> withdrew {{name}} from {{course}}"
     },
     "course": {
       "create": {
