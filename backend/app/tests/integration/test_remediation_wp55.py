@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, time, timedelta
 from decimal import Decimal
 import json
@@ -21,6 +22,7 @@ from app.models.enrollment import Enrollment
 from app.models.journal import Journal
 from app.models.journal_entry import JournalEntry
 from app.models.user import User, UserRole
+from app.repositories.interfaces.journal_repository import MentorJournalBatch
 from app.schemas.journal import GradingQueueItemResponse, JournalResponse
 from app.services.journal_query_service import JournalQueryService
 from app.services.journal_service import JournalService, get_lesson_dates
@@ -76,8 +78,26 @@ class TestMentorQueue:
             for journal in await service.get_course_journals_aggregated(course.id):
                 if journal.state in ("empty", "partial") and journal.period_start <= today:
                     queue.append(GradingQueueItemResponse(journal_id=journal.id, course_id=course.id, course_title=course.title, period_label=journal.period_label, period_start=journal.period_start, period_end=journal.period_end, state=journal.state, cells_filled=journal.cells_filled, cells_expected=journal.cells_expected, is_current=journal.period_start <= today <= journal.period_end))
-        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
+        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal(), item.journal_id))
         return queue
+
+    @pytest.mark.asyncio
+    async def test_queue_ties_are_ordered_by_journal_id(self, db_session: AsyncSession) -> None:
+        mentor: User
+        courses: list[Course]
+        mentor, courses = await self.seed(db_session, 2)
+        service: JournalQueryService = JournalQueryService(db_session)
+        batch: MentorJournalBatch = await service.journal_repository.get_mentor_journal_batch(mentor.id, date.today())
+        reversed_batch: MentorJournalBatch = replace(batch, courses=tuple(reversed(batch.courses)))
+        with patch.object(service.journal_repository, "get_mentor_journal_batch", return_value=reversed_batch):
+            actual: list[GradingQueueItemResponse] = await service.get_mentor_grading_queue(mentor.id)
+        tied: list[GradingQueueItemResponse] = [item for item in actual if item.period_label == "empty"]
+        assert len(tied) == 2
+        assert tied[0].period_start == tied[1].period_start
+        assert tied[0].period_end == tied[1].period_end
+        assert tied[0].is_current == tied[1].is_current
+        assert tied[0].journal_id < tied[1].journal_id
+        assert actual == await self.legacy(db_session, courses)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("course_count", [1, 10, 100])

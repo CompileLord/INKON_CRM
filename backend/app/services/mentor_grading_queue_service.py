@@ -52,5 +52,5 @@ class MentorGradingQueueService:
                     is_current=journal.period_start <= today <= journal.period_end,
                 ))
 
-        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal()))
+        queue.sort(key=lambda item: (0 if item.is_current else 1, -item.period_end.toordinal(), item.journal_id))
         return queue
