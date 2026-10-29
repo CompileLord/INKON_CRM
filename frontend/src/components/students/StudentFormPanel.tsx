@@ -9,6 +9,7 @@ import { StudentParentPhoneField, StudentPaymentFields, StudentPhoneField } from
 import { StudentEmailField } from "./StudentEmailField";
 import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
+import { useHeldWhileClosing, usePresence } from "../ui/usePresence";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { AvatarUploadField } from "../ui/AvatarUploadField";
@@ -47,18 +48,22 @@ export function StudentFormPanel({
   onAvatarSaved,
   finalFocus,
 }: StudentFormPanelProps) {
-  if (!open) {
+  const { present, onOpenChangeComplete } = usePresence(open);
+  const heldStudent: User | undefined = useHeldWhileClosing(student, open);
+  const heldMode = useHeldWhileClosing(mode, open);
+  if (!present) {
     return null;
   }
 
-  const effectiveMode = mode ?? (student ? "edit" : "create");
+  const effectiveMode = heldMode ?? (heldStudent ? "edit" : "create");
 
   return (
     <StudentFormPanelInner
-      key={student?.id ?? "new"}
+      key={heldStudent?.id ?? "new"}
       open={open}
+      onOpenChangeComplete={onOpenChangeComplete}
       mode={effectiveMode}
-      student={student}
+      student={heldStudent}
       onClose={onClose}
       onSaved={onSaved}
       onAvatarSaved={onAvatarSaved}
@@ -75,6 +80,7 @@ interface StudentFormPanelInnerProps {
   onSaved: (action: "created" | "updated", user?: UserCreateResponse) => void;
   onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
+  onOpenChangeComplete?: (open: boolean) => void;
 }
 
 const inputClass =
@@ -84,6 +90,7 @@ const labelClass = "text-sm font-medium text-ink";
 
 function StudentFormPanelInner({
   open,
+  onOpenChangeComplete,
   mode = "create",
   student,
   onClose,
@@ -320,6 +327,7 @@ function StudentFormPanelInner({
       )}
       <SlideOver
         open={open}
+        onOpenChangeComplete={onOpenChangeComplete}
         onClose={handleAttemptClose}
         closeDisabled={isLocked}
         title={isEditing ? t("form.editStudentTitle") : t("form.newStudentTitle")}

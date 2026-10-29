@@ -3,6 +3,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShellStore } from "../../store/shellStore";
+import { useEntryArmed } from "./usePresence";
 
 interface ModalProps {
   open: boolean;
@@ -34,13 +35,15 @@ export function Modal({
   const { t } = useTranslation("common");
   const closeShell = useShellStore((state) => state.close);
 
+  const armedOpen: boolean = useEntryArmed(open);
+
   useEffect(() => {
     if (open) closeShell();
   }, [open, closeShell]);
 
   return (
     <Dialog.Root
-      open={open}
+      open={armedOpen}
       disablePointerDismissal={closeDisabled}
       onOpenChangeComplete={onOpenChangeComplete}
       onOpenChange={(next) => {

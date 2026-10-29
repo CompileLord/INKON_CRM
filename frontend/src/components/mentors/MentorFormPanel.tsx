@@ -7,6 +7,8 @@ import { MentorNavigationGuard, type NavigationDecision } from "./MentorNavigati
 import { MentorContactFields } from "./MentorContactFields";
 import { DatePicker } from "../ui/DatePicker";
 import { SlideOver } from "../ui/SlideOver";
+import { FORM_INPUT_CLASS as inputClass, FORM_LABEL_CLASS as labelClass } from "../ui/formFieldClasses";
+import { useHeldWhileClosing, usePresence } from "../ui/usePresence";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { AvatarUploadField } from "../ui/AvatarUploadField";
@@ -32,46 +34,36 @@ interface MentorFormPanelProps {
   onSaved: (action: "created" | "updated", user?: User) => void;
   onAvatarSaved?: (user?: User) => void;
   finalFocus?: ComponentProps<typeof SlideOver>["finalFocus"];
+  onOpenChangeComplete?: (open: boolean) => void;
 }
 
-export function MentorFormPanel({
-  open,
-  mode,
-  mentor,
-  onClose,
-  onSaved,
-  onAvatarSaved,
-  finalFocus,
-}: MentorFormPanelProps) {
-  if (!open) {
+export function MentorFormPanel({ open, mode, mentor, ...rest }: MentorFormPanelProps) {
+  const { present, onOpenChangeComplete } = usePresence(open);
+  const held = useHeldWhileClosing({ mentor, mode }, open);
+  if (!present) {
     return null;
   }
 
-  const effectiveMode = mode ?? (mentor ? "edit" : "create");
+  const effectiveMode = held.mode ?? (held.mentor ? "edit" : "create");
 
   return (
     <MentorFormPanelInner
-      key={mentor?.id ?? "new"}
+      key={held.mentor?.id ?? "new"}
+      {...rest}
       open={open}
+      onOpenChangeComplete={onOpenChangeComplete}
       mode={effectiveMode}
-      mentor={mentor}
-      onClose={onClose}
-      onSaved={onSaved}
-      onAvatarSaved={onAvatarSaved}
-      finalFocus={finalFocus}
+      mentor={held.mentor}
     />
   );
 }
 
 type MentorFormPanelInnerProps = MentorFormPanelProps;
 
-const inputClass =
-  "w-full min-h-[48px] rounded-xl border border-control-border bg-card px-3.5 py-2.5 text-base text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon focus-visible:ring-offset-2 motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out disabled:pointer-events-none disabled:opacity-60";
-
-const labelClass = "text-sm font-medium text-ink";
 
 function MentorFormPanelInner({
   open,
+  onOpenChangeComplete,
   mode = "create",
   mentor,
   onClose,
@@ -362,6 +354,7 @@ function MentorFormPanelInner({
       )}
       <SlideOver
         open={open}
+        onOpenChangeComplete={onOpenChangeComplete}
         onClose={handleAttemptClose}
         closeDisabled={isLocked}
         title={isEditing ? t("form.editMentorTitle") : t("form.newMentorTitle")}

@@ -3,6 +3,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useShellStore } from "../../store/shellStore";
+import { useEntryArmed } from "./usePresence";
 
 export type SlideOverVariant = "person" | "course";
 
@@ -17,6 +18,7 @@ export interface SlideOverProps {
   pending?: boolean;
   initialFocus?: ComponentProps<typeof Dialog.Popup>["initialFocus"];
   finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"];
+  onOpenChangeComplete?: (open: boolean) => void;
 }
 
 export function SlideOver({
@@ -30,9 +32,11 @@ export function SlideOver({
   pending = false,
   initialFocus,
   finalFocus,
+  onOpenChangeComplete,
 }: SlideOverProps) {
   const { t } = useTranslation("common");
   const closeShell = useShellStore((state) => state.close);
+  const armedOpen: boolean = useEntryArmed(open);
   const isDismissBlocked = closeDisabled || pending;
   const isCourseVariant = variant === "course";
 
@@ -52,7 +56,8 @@ export function SlideOver({
 
   return (
     <Dialog.Root
-      open={open}
+      open={armedOpen}
+      onOpenChangeComplete={onOpenChangeComplete}
       disablePointerDismissal={isDismissBlocked}
       onOpenChange={(next) => {
         if (!next && !isDismissBlocked) {

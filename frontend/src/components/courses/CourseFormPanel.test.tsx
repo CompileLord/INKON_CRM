@@ -28,8 +28,7 @@ it("renders course form panel with course drawer variant geometry and accessible
   expect(dialog.className).toContain("md:max-w-[560px]");
   expect(dialog.className).toContain("md:inset-y-0");
   expect(dialog.className).toContain("md:rounded-l-2xl");
-  expect(dialog.className).toContain("md:origin-right");
-  expect(dialog.className).toContain("origin-bottom");
+  expect(dialog.className).toContain("data-[starting-style]:translate-x-full");
 
   expect(screen.getByRole("heading", { name: "New Course" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
