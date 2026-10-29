@@ -125,7 +125,7 @@ class MentorMiniResponse(BaseModel):
     id: int
     first_name: str
     last_name: str
-    email: str
+    email: str | None
     is_deleted: bool
 
 

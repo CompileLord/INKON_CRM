@@ -61,6 +61,9 @@ class CourseService:
                 detail="Mentor not found"
             )
 
+        if mentor.role != UserRole.MENTOR:
+            raise HTTPException(status_code=422, detail={"code": "mentor_role_required"})
+
         course = Course(
             title=data.title,
             description=data.description,
@@ -145,6 +148,9 @@ class CourseService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Mentor not found"
                 )
+
+            if new_mentor.role != UserRole.MENTOR:
+                raise HTTPException(status_code=422, detail={"code": "mentor_role_required"})
 
             history_query = select(CourseMentorHistory).filter(
                 CourseMentorHistory.course_id == course_id,
