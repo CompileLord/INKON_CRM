@@ -48,7 +48,7 @@ export interface RefundPaymentPayload {
 export interface DiscountCreatePayload {
   student_id: number;
   amount: string;
-  charge_id?: number;
+  charge_id: number;
   reason_code?: string;
   comment?: string;
   occurred_at?: string;

@@ -3246,7 +3246,7 @@ Send an Idempotency-Key header to make retries safe. A first request answers 201
 ```json
 {
   "student_id": integer,
-  "charge_id?": integer,
+  "charge_id": integer,
   "amount": number,
   "occurred_at?": string,
   "reason_code?": string,

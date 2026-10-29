@@ -878,29 +878,28 @@ class FinanceService:
         self.db.add(entry)
         await self.db.flush()
 
-        if payload.charge_id:
-            charge_res = await self.db.execute(
-                select(Charge).filter(
-                    Charge.id == payload.charge_id,
-                    Charge.student_id == payload.student_id,
-                    Charge.is_deleted == False,  # noqa: E712
-                )
+        charge_res = await self.db.execute(
+            select(Charge).filter(
+                Charge.id == payload.charge_id,
+                Charge.student_id == payload.student_id,
+                Charge.is_deleted == False,  # noqa: E712
             )
-            charge = charge_res.scalars().first()
-            if not charge:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Target charge not found for student",
-                )
-            remaining = await self._charge_remaining(charge)
-            if payload.amount > remaining:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Discount {payload.amount} exceeds the charge's remaining balance {remaining}",
-                )
-            targets = [charge]
-        else:
-            targets = await self._open_charges(payload.student_id)
+        )
+        charge = charge_res.scalars().first()
+        if not charge:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target charge not found for student",
+            )
+        remaining = await self._charge_remaining(charge)
+        if charge.status != ChargeStatus.OPEN or remaining <= ZERO:
+            raise HTTPException(status_code=422, detail={"code": "discount_charge_not_open"})
+        if payload.amount > remaining:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Discount {payload.amount} exceeds the charge's remaining balance {remaining}",
+            )
+        targets = [charge]
 
         await self._apply_credit([entry], targets)
 
