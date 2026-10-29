@@ -26,13 +26,31 @@ Related merges: U16 SMS reminders (765e54e), U18 withdrawals (e201338, 572d90f, 
   - New: `test_remediation_wp19::test_analytics_uses_existing_auth_checkout_in_a_single_connection_pool`, a date-dependent fixture (the course end date is today + 65 days, so on some days it bills a fourth month). The product code is unaffected; fixed in `fix/wp19-date` (22/22 in that file pass).
 - Frontend: `tsc` clean; vitest 2248/2248 passed.
 
+## Live-test fixes (2026-10-29)
+
+Owner decisions LT1–LT4 are in `00-decisions.md` §0.6.
+
+| Batch | Branch (merge on `master`) | What changed |
+|---|---|---|
+| A — finance | `fix/live-batch-finance` (7909cdf) | Idempotent credit allocation (replay 200, mismatch 409 `idempotency_key_payload_mismatch`); reminder SMS rendered at dispatch from current debt (`outbox_events.dispatched_amount`, expired with `no_current_debt`); debtor cache keyed by finance generation; `student_total`, payment-option `status`, receipt `status` / `refunded_amount` / `net_amount`; `discount_charge_not_open`. Migration `flf_credit_allocation`. |
+| B — operations | `fix/live-batch-ops` (4d8162a), `fix/delivery-log-queries` (8fd464a) | `mentor_role_required`, `mentor_has_active_courses`; `phone_taken` / `email_taken` codes in `detail`; debt-reminder SMS in the delivery log (retry answers 409 `debt_reminder_sms_retry_unavailable`); grouped journal progress query (195 → 65 ms at 300 courses); nullable future attendance; stable grading-queue order. |
+| Seeder | `fix/seed-full-payments` (cde8eb0) | Full-tuition demo students pay every started month. |
+| C — screens | `fix/live-batch-fe` (55e8312) | «Отчислен» badges, amount validation, receipt state, SMS cards, translated API error codes, audit sentences, Tajik relative time, role-specific wording, dashboard truncation, mentor course price. |
+| UI follow-ups | `fix/motion-pop` (c82001b), `fix/trend-header` (eb1f1ff), `fix/parent-link-inline` (f752748), `fix/phone-default-992` (4b2f8fb), `fix/audit-inspector` (5e46413), `fix/motion-polish` (0ce4cfb), `fix/audit-tests` (d96eddb) | Page and modal motion, compact trend header, legend picker above the table, inline parent link, +992 default (forms and login), readable audit inspector, motion polish (tabs, drawers, modals, sticky journal column, discard confirmation). |
+| Screenshots | `docs/screenshots` (e610c14), `docs/screenshots-retake` (6970294) | `docs/screenshots/2026-10-29/`, all roles. |
+
+Final check on `master` (0ce4cfb + d96eddb):
+- Backend: 2292 passed, 6 skipped, 1 failed, 4 errors — only the known wp11 and 4 × wp13.
+- Frontend: tsc clean; vitest 2312/2316. The 4 failures were stale audit tests expecting the pre-inspector output; fixed in d96eddb (audit files 50/50). The whole suite was not rerun after that test-only change.
+- Live check: a partly refunded receipt shows «Возвращено: 100 TJS» once and «Итого после возврата».
+
 ## Open items
 
 - Staff notifications (admin inbox generator) and the Telegram lockout reset need a separate spec (§9).
-- Debt-reminder retry (separate `DebtReminderNotification` model) is not covered by the delivery-log retry.
 - Student profile: mentors and students do not see the course mentor name or balance (no endpoint for their role); schedules come from the first 100 courses.
-- The Debtors counter counts student-and-course rows; a student owing on two courses counts twice.
-- The bell popover's empty text is the same for every role.
+- Audit feed refund row prints «Сумма: 100.00» unformatted, repeats the student name, and shows an unknown reason code raw («Причина: other»). There is no void or refund screen, so reason codes are free API text.
+- Audit drawer: the «Курс» row repeats the course already in «Распределение»; a `mentor_id` change is omitted.
+- No exit animation yet for `ResponsiveSurface` popovers, `JournalCommentEditor`, or the course edit drawer opened from the row menu; the confirm dialog stacks a second backdrop.
 - `PaymentEntryDialog.tsx` is close to the 20 KB file cap.
 - Before any deploy: re-run the read-only production count of active enrollments that have charges.
 
