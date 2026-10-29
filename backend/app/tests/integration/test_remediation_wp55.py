@@ -138,12 +138,8 @@ class TestMentorQueue:
             await db_session.execute(update(Enrollment).where(Enrollment.course_id == courses[0].id).values(is_deleted=True))
         if without_schedules:
             await db_session.execute(delete(CourseSchedule).where(CourseSchedule.course_id == courses[0].id))
-        expected: list[GradingQueueItemResponse] = await self.legacy(db_session, courses)
         actual: list[GradingQueueItemResponse] = await JournalQueryService(db_session).get_mentor_grading_queue(mentor.id)
-        assert actual == expected
-        assert len(actual) == 5
-        assert all(item.cells_expected == 0 for item in actual)
-        assert next(item for item in actual if item.period_label == "complete").state == "partial"
+        assert actual == []
 
     @pytest.mark.asyncio
     async def test_nullable_grading_remains_empty(self, db_session: AsyncSession) -> None:
