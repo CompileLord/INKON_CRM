@@ -5,42 +5,26 @@ from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
 
 
-@pytest.mark.asyncio
-async def test_superadmin_creates_user(client: AsyncClient, test_admin: User) -> None:
-    token = create_access_token(test_admin.id, test_admin.role)
-    headers = {"Authorization": f"Bearer {token}"}
-
-    response = await client.post(
-        "/api/v1/users/",
-        json={
-            "email": "newuser@example.com",
-            "first_name": "New",
-            "last_name": "User",
-            "role": "mentor",
-            "phone": "+992931112233"
-        },
-        headers=headers
-    )
-    assert response.status_code == 201
-    assert response.json()["email"] == "newuser@example.com"
+@pytest.fixture
+def role_fixture(request: pytest.FixtureRequest) -> User:
+    return request.getfixturevalue(request.param)
 
 
 @pytest.mark.asyncio
-async def test_student_cannot_create_user(client: AsyncClient, test_student: User) -> None:
-    token = create_access_token(test_student.id, test_student.role)
-    headers = {"Authorization": f"Bearer {token}"}
-
+@pytest.mark.parametrize("role_fixture, expected_status", [("test_admin", 201), ("test_student", 403)], indirect=["role_fixture"])
+async def test_create_user_permission(
+    client: AsyncClient, role_fixture: User, expected_status: int,
+) -> None:
+    user: User = role_fixture
+    token: str = create_access_token(user.id, user.role)
     response = await client.post(
         "/api/v1/users/",
-        json={
-            "email": "another@example.com",
-            "first_name": "Bad",
-            "last_name": "Actor",
-            "role": "student", "phone": "+992900000999"
-        },
-        headers=headers
+        json={"email": "newuser@example.com", "first_name": "New", "last_name": "User", "role": "mentor", "phone": "+992931112233"},
+        headers={"Authorization": f"Bearer {token}"},
     )
-    assert response.status_code == 403
+    assert response.status_code == expected_status
+    if expected_status == 201:
+        assert response.json()["email"] == "newuser@example.com"
 
 
 @pytest.mark.asyncio
