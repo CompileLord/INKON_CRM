@@ -109,6 +109,8 @@ class PayomchiSmsSender:
             provider_message_id: object = body["id"]
         except (ValueError, KeyError, TypeError):
             raise SmsDeliveryError("provider_response_malformed", retryable=True) from None
+        if isinstance(provider_message_id, int) and not isinstance(provider_message_id, bool):
+            provider_message_id = str(provider_message_id)
         if not isinstance(provider_status, str) or not isinstance(provider_message_id, str):
             raise SmsDeliveryError("provider_response_malformed", retryable=True)
         if provider_status in self.REJECTED_STATUSES:

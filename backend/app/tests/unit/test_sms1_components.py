@@ -107,6 +107,26 @@ class TestPayomchiSmsSender:
         assert str(caught.value) == "provider_response_malformed"
         await sender.aclose()
 
+    async def test_numeric_provider_message_id_is_accepted_as_text(self) -> None:
+        provider_body: dict[str, object] = {"id": 378925, "phone": "992718329090", "status": "pending", "channel": "SMS"}
+        sender: PayomchiSmsSender = SmsSenderTestSupport.build_sender(httpx.MockTransport(lambda request: httpx.Response(201, json=provider_body)))
+        result: SmsSendResult = await sender.send("+992718329090", "KitobCRM: test message", "k")
+        assert result == SmsSendResult(provider_message_id="378925", status="pending")
+        await sender.aclose()
+
+    @pytest.mark.parametrize("body", [
+        {"id": 123456, "status": "sent"},
+        {"id": True, "status": "sent"},
+        {"id": 1.5, "status": "sent"},
+        {"id": None, "status": "sent"},
+    ])
+    async def test_numeric_provider_message_id_still_cannot_leak_codes_or_pass_when_not_an_integer(self, body: dict[str, object]) -> None:
+        sender: PayomchiSmsSender = SmsSenderTestSupport.build_sender(httpx.MockTransport(lambda request: httpx.Response(201, json=body)))
+        with pytest.raises(SmsDeliveryError) as caught:
+            await sender.send("+992900000001", "KitobCRM: your code 123456", "k")
+        assert str(caught.value) == "provider_response_malformed"
+        await sender.aclose()
+
     async def test_settings_repr_and_serialization_redact_sms_api_key(self) -> None:
         from app.core.config import Settings
 
