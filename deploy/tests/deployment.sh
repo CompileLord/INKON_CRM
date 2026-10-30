@@ -59,7 +59,7 @@ for scenario in success archive restic; do
     [[ "$scenario" == success ]]
     [[ "$(tar -xOf "$TEST_ARCHIVE" ./document)" == test-only ]]
     grep -Fq 'bbbbbbb|run --rm --no-deps -T --user 10001:10001 api tar -C /app/storage -cf - .' "$TEST_COMMAND_LOG"
-    grep -Fq 'restic|forget ' "$TEST_COMMAND_LOG"
+    grep -Fq 'restic|forget --group-by host,tags --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune' "$TEST_COMMAND_LOG"
   else
     [[ "$scenario" != success ]]
     ! grep -Fq 'restic|forget ' "$TEST_COMMAND_LOG"
