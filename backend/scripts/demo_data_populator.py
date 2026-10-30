@@ -40,6 +40,34 @@ class DemoDataPopulator:
             raise ResetGuardError("Demo students require ALLOW_EMAILLESS_USERS=true; enable it only in disposable development environments.")
 
     @staticmethod
+    async def synchronize_sequences(session: AsyncSession) -> None:
+        sequence_rows = await session.execute(text("""
+            SELECT
+                table_namespace.nspname AS schema_name,
+                t.relname AS table_name,
+                c.attname AS column_name,
+                s.relname AS sequence_name
+            FROM pg_class s
+            JOIN pg_namespace sequence_namespace ON sequence_namespace.oid = s.relnamespace
+            JOIN pg_depend d ON d.objid = s.oid
+            JOIN pg_class t ON d.refobjid = t.oid
+            JOIN pg_namespace table_namespace ON table_namespace.oid = t.relnamespace
+            JOIN pg_attribute c ON (d.refobjid, d.refobjsubid) = (c.attrelid, c.attnum)
+            WHERE s.relkind = 'S'
+              AND sequence_namespace.nspname = current_schema()
+              AND table_namespace.nspname = current_schema()
+            ORDER BY t.relname;
+        """))
+        for schema_name, table_name, column_name, sequence_name in sequence_rows.fetchall():
+            max_res = await session.execute(text(f'SELECT MAX("{column_name}") FROM "{schema_name}"."{table_name}"'))
+            max_val = max_res.scalar()
+            qualified_sequence_name: str = f"\"{schema_name}\".\"{sequence_name}\""
+            if max_val is not None and max_val > 0:
+                await session.execute(text("SELECT setval(CAST(:sequence_name AS regclass), :next_value, true)"), {"sequence_name": qualified_sequence_name, "next_value": max_val})
+            else:
+                await session.execute(text("SELECT setval(CAST(:sequence_name AS regclass), 1, false)"), {"sequence_name": qualified_sequence_name})
+
+    @staticmethod
     async def populate_demo_data(
         session_factory: async_sessionmaker[AsyncSession],
         storage_root: Path,
@@ -348,24 +376,6 @@ class DemoDataPopulator:
             await session.commit()
             logger.info("Financial payments seeded successfully.")
 
-            sequence_rows = await session.execute(text("""
-                SELECT
-                    t.relname AS table_name,
-                    c.attname AS column_name,
-                    s.relname AS sequence_name
-                FROM pg_class s
-                JOIN pg_depend d ON d.objid = s.oid
-                JOIN pg_class t ON d.refobjid = t.oid
-                JOIN pg_attribute c ON (d.refobjid, d.refobjsubid) = (c.attrelid, c.attnum)
-                WHERE s.relkind = 'S'
-                ORDER BY t.relname;
-            """))
-            for table_name, column_name, sequence_name in sequence_rows.fetchall():
-                max_res = await session.execute(text(f'SELECT MAX("{column_name}") FROM "{table_name}"'))
-                max_val = max_res.scalar()
-                if max_val is not None and max_val > 0:
-                    await session.execute(text(f"SELECT setval('{sequence_name}', {max_val}, true)"))
-                else:
-                    await session.execute(text(f"SELECT setval('{sequence_name}', 1, false)"))
+            await DemoDataPopulator.synchronize_sequences(session)
             await session.commit()
             logger.info("Database sequences synchronized successfully.")

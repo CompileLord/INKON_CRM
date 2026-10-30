@@ -249,3 +249,31 @@ async def test_demo_full_tuition_students_have_no_remaining_balance(seed_school_
         assert any(balances[payment.student_id] > 0 for payment in partial_payments)
         paid_student_ids: set[int] = full_student_ids | {payment.student_id for payment in partial_payments}
         assert any(balance > 0 for student_id, balance in balances.items() if student_id not in paid_student_ids)
+
+
+@pytest.mark.asyncio
+async def test_sequence_synchronization_only_touches_current_schema() -> None:
+    from sqlalchemy import text
+    from scripts.demo_data_populator import DemoDataPopulator
+
+    foreign_schema_name: str = "sequence_sync_foreign_schema"
+    async with AsyncSessionLocal() as session:
+        await session.execute(text(f'DROP SCHEMA IF EXISTS "{foreign_schema_name}" CASCADE'))
+        await session.execute(text(f'CREATE SCHEMA "{foreign_schema_name}"'))
+        await session.execute(text(f'CREATE TABLE "{foreign_schema_name}".foreign_rows (id SERIAL PRIMARY KEY)'))
+        for _ in range(3):
+            await session.execute(text(f'INSERT INTO "{foreign_schema_name}".foreign_rows DEFAULT VALUES'))
+        await session.execute(text(f'DELETE FROM "{foreign_schema_name}".foreign_rows'))
+        await session.commit()
+    try:
+        async with AsyncSessionLocal() as session:
+            await DemoDataPopulator.synchronize_sequences(session)
+            await session.commit()
+            foreign_sequence_state: tuple[int, bool] = (
+                await session.execute(text(f'SELECT last_value, is_called FROM "{foreign_schema_name}".foreign_rows_id_seq'))
+            ).one()
+        assert tuple(foreign_sequence_state) == (3, True)
+    finally:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text(f'DROP SCHEMA IF EXISTS "{foreign_schema_name}" CASCADE'))
+            await session.commit()
