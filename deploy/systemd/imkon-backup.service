@@ -2,6 +2,7 @@
 Description=IMKON nightly database dump and off-site backup
 After=docker.service
 Requires=docker.service
+OnFailure=imkon-backup-alert@%n.service
 
 [Service]
 Type=oneshot

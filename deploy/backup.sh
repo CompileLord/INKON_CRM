@@ -18,7 +18,7 @@ mv "$dump_file.partial" "$dump_file"
 restic backup --compression max --tag db "$dump_file"
 compose run --rm --no-deps -T --user 10001:10001 api tar -C /app/storage -cf - . |
   restic backup --tag storage --stdin --stdin-filename storage.tar
-restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+restic forget --group-by host,tags --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
 
 find "$BACKUP_DIRECTORY" -name 'nightly-*.dump' -mtime +7 -delete
 log "Backup finished: $dump_file"

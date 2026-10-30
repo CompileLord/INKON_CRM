@@ -8,9 +8,9 @@ Topology: Caddy, API, arq worker, PostgreSQL and Redis run with Docker Compose o
 2. As root on the VPS, copy the repository's `deploy/` directory and run `DEPLOY_PUBLIC_KEY="<ssh public key>" ./provision_vps.sh`. It is idempotent.
 3. As the `deploy` user create `/etc/imkon/backend.env` from `deploy/backend.env.example` (mode 600) with real secrets. Generate secrets with `openssl rand -hex 32`. `BACKEND_CORS_ORIGINS` must stay `["https://crm.kitobedu.com"]`. The `DATABASE_URL` and `REDIS_URL` passwords must match `POSTGRES_PASSWORD` and `REDIS_PASSWORD`.
 4. Create `/etc/imkon/deploy.env` from `deploy/deploy.env.example`. For a staging host set `API_DOMAIN=api-staging-crm.kitobedu.com`.
-5. Create `/etc/imkon/backup.env` (mode 600) with `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the Backblaze B2 or Cloudflare R2 credentials, then run `restic init` once with that environment.
+5. Create `/etc/imkon/backup.env` (mode 600) with `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the Backblaze B2 or Cloudflare R2 credentials, then run `restic init` once with that environment. Optionally add `BACKUP_ALERT_EMAIL` and `BACKUP_ALERT_PHONE` (E.164): the failure alert uses them when no superadmin can be reached, for example when the database container is down.
 6. `docker login ghcr.io` as `deploy` with a read-only token (`read:packages`).
-7. Enable the timers: `sudo systemctl enable --now imkon-backup.timer imkon-restore-check.timer`.
+7. Enable the timers: `sudo systemctl enable --now imkon-backup.timer imkon-restore-check.timer`. `provision_vps.sh` installs the `imkon-backup-alert@.service` template and adds `deploy` to the `systemd-journal` group; both jobs reference it through `OnFailure=`. Re-run `provision_vps.sh` on an existing host to pick it up.
 8. GitHub: create Environments `staging` and `production` (production with required reviewers). In each add secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` (output of `ssh-keyscan <host>`).
 
 ## 2. Deploy
@@ -39,7 +39,11 @@ Deploy this release with `ALLOW_EMAILLESS_USERS=false` (the default in every env
 
 Nightly storage backups run `tar` in a one-off API container as UID/GID `10001:10001`, streaming `storage.tar` to restic under the `storage` tag. This reads app-owned 0600 uploads without granting the host `deploy` user filesystem access or widening upload permissions. The backup fails if either the archive command or restic fails.
 
-The monthly `imkon-restore-check.service` (`deploy/restore_check.sh`) restores the latest off-site dump into a throwaway Postgres container and runs `alembic current` plus a row count. Run it manually after any backup change: `sudo systemctl start imkon-restore-check.service`.
+The monthly `imkon-restore-check.service` (`deploy/restore_check.sh`) restores the latest off-site dump into a throwaway Postgres container, runs `alembic current`, and fails unless every one of `users`, `courses`, `enrollments`, `charges`, `journals`, `journal_entries`, `audit_logs`, `refresh_tokens` and `alembic_version` exists, `users` has at least one row and `alembic_version` has exactly one row. It also restores the latest `storage` snapshot and fails unless `storage.tar` is readable and contains at least one file. Run it manually after any backup change: `sudo systemctl start imkon-restore-check.service`.
+
+### Failure alerts
+
+`imkon-backup.service` and `imkon-restore-check.service` declare `OnFailure=imkon-backup-alert@%n.service`, so any failure, including a script that never started, runs `deploy/notify_failure.sh <unit>`. It mails every live `superadmin` (and sends SMS to their phone when `SMS_API_KEY` is configured) through `python -m scripts.notify_admins` in a one-off API container. The alert names the host, the unit, the UTC time and the last 15 journal lines, with values of `PASSWORD`, `SECRET`, `KEY` and `TOKEN` variables from `backup.env` redacted. If no admin can be reached (database down, no superadmin, every send failing), it falls back to `BACKUP_ALERT_EMAIL` and `BACKUP_ALERT_PHONE`. If that also fails, `imkon-backup-alert@<unit>.service` fails and logs `ALERT DELIVERY FAILED` in the journal (`journalctl -u 'imkon-backup-alert@*'`); the original unit stays failed either way. The alert cannot be sent while Docker itself is down. Test it with `sudo systemctl start imkon-backup-alert@imkon-backup.service`.
 
 ## 5. Rotate secrets
 

@@ -1,0 +1,8 @@
+[Unit]
+Description=Alert superadmins that %i failed
+After=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/opt/imkon/deploy/notify_failure.sh %i

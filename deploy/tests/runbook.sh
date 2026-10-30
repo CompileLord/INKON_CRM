@@ -9,3 +9,7 @@ grep -Fq 'Removing a key early makes its queued payloads unreadable' "$repositor
 printf 'PASS outbox key rotation warning\n'
 grep -Fq 'tar -xpf /tmp/storage-restore/storage.tar -C /var/lib/imkon/storage' "$repository_directory/deploy/RUNBOOK.md"
 printf 'PASS storage archive restore procedure\n'
+grep -Fq 'OnFailure=imkon-backup-alert@%n.service' "$repository_directory/deploy/RUNBOOK.md"
+printf 'PASS failure alert documentation\n'
+grep -Fq 'BACKUP_ALERT_EMAIL' "$repository_directory/deploy/RUNBOOK.md"
+printf 'PASS alert fallback documentation\n'

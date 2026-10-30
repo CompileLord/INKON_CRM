@@ -2,6 +2,7 @@
 Description=IMKON restore drill into a throwaway Postgres container
 After=docker.service
 Requires=docker.service
+OnFailure=imkon-backup-alert@%n.service
 
 [Service]
 Type=oneshot
