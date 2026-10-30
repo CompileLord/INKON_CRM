@@ -36,53 +36,73 @@ class AlertDeliveryReport:
         return self.delivered_count > 0
 
 
+def parse_recipient_list(raw_value: str | None, case_insensitive: bool) -> list[str]:
+    recipients: list[str] = []
+    seen_keys: set[str] = set()
+    for entry in (raw_value or "").split(","):
+        cleaned_entry: str = entry.strip()
+        if not cleaned_entry:
+            continue
+        key: str = cleaned_entry.lower() if case_insensitive else cleaned_entry
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        recipients.append(cleaned_entry)
+    return recipients
+
+
 class BackupAlertService:
     def __init__(
         self,
         admin_contact_loader: AdminContactLoader,
         email_sender: AlertEmailSender,
         sms_sender: SmsSender | None,
-        fallback_email: str | None,
-        fallback_phone: str | None,
+        extra_emails: str | None,
+        extra_phones: str | None,
     ) -> None:
         self._admin_contact_loader: AdminContactLoader = admin_contact_loader
         self._email_sender: AlertEmailSender = email_sender
         self._sms_sender: SmsSender | None = sms_sender
-        self._fallback_email: str | None = fallback_email or None
-        self._fallback_phone: str | None = fallback_phone or None
+        self._extra_emails: list[str] = parse_recipient_list(extra_emails, case_insensitive=True)
+        self._extra_phones: list[str] = parse_recipient_list(extra_phones, case_insensitive=False)
         self._phone_formatter: ProviderPhoneFormatter = ProviderPhoneFormatter()
 
     async def notify(self, subject: str, message: str) -> AlertDeliveryReport:
         report: AlertDeliveryReport = AlertDeliveryReport()
         admin_recipients: AlertRecipients = await self._load_admin_recipients(report)
-        await self._deliver(admin_recipients, subject, message, report)
-        if report.succeeded:
-            return report
-        fallback_recipients: AlertRecipients = AlertRecipients(
-            emails=[self._fallback_email] if self._fallback_email else [],
-            phones=[self._fallback_phone] if self._fallback_phone else [],
+        recipients: AlertRecipients = AlertRecipients(
+            emails=self._merge_unique(admin_recipients.emails, self._extra_emails, case_insensitive=True),
+            phones=self._merge_unique(admin_recipients.phones, self._extra_phones, case_insensitive=False),
         )
-        if not fallback_recipients.emails and not fallback_recipients.phones:
+        if not recipients.emails and not recipients.phones:
             report.failures.append("no_recipient_available")
             return report
-        await self._deliver(fallback_recipients, subject, message, report)
+        await self._deliver(recipients, subject, message, report)
         return report
+
+    @staticmethod
+    def _merge_unique(first: list[str], second: list[str], case_insensitive: bool) -> list[str]:
+        merged: list[str] = []
+        seen_keys: set[str] = set()
+        for value in first + second:
+            key: str = value.lower() if case_insensitive else value
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            merged.append(value)
+        return merged
 
     async def _load_admin_recipients(self, report: AlertDeliveryReport) -> AlertRecipients:
         try:
             contacts: list[AdminContact] = await self._admin_contact_loader()
         except Exception as error:
             report.failures.append(f"admin_lookup_failed:{type(error).__name__}")
-            logger.error("Admin lookup failed (%s); using fallback recipients", type(error).__name__)
+            logger.error("Admin lookup failed (%s); notifying configured recipients only", type(error).__name__)
             return AlertRecipients(emails=[], phones=[])
-        emails: list[str] = []
-        phones: list[str] = []
-        for contact in contacts:
-            if contact.email and contact.email.lower() not in (address.lower() for address in emails):
-                emails.append(contact.email)
-            if contact.phone and contact.phone not in phones:
-                phones.append(contact.phone)
-        return AlertRecipients(emails=emails, phones=phones)
+        return AlertRecipients(
+            emails=[contact.email for contact in contacts if contact.email],
+            phones=[contact.phone for contact in contacts if contact.phone],
+        )
 
     async def _deliver(
         self,

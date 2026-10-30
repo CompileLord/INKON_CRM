@@ -10,13 +10,13 @@ if [[ ! "$failed_unit" =~ ^[A-Za-z0-9@._-]+$ ]]; then
 fi
 
 configuration_file="${BACKUP_CONFIGURATION_FILE:-/etc/imkon/backup.env}"
-fallback_email=""
-fallback_phone=""
+extra_emails=""
+extra_phones=""
 secret_values=()
 if [[ -r "$configuration_file" ]]; then
   source "$configuration_file"
-  fallback_email="${BACKUP_ALERT_EMAIL:-}"
-  fallback_phone="${BACKUP_ALERT_PHONE:-}"
+  extra_emails="${BACKUP_ALERT_EMAIL:-}"
+  extra_phones="${BACKUP_ALERT_PHONE:-}"
   while IFS= read -r variable_name; do
     if [[ "$variable_name" =~ (PASSWORD|SECRET|KEY|TOKEN) && -n "${!variable_name:-}" ]]; then
       secret_values+=("${!variable_name}")
@@ -47,9 +47,9 @@ fi
 export IMAGE_TAG
 
 if ! compose run --rm --no-deps -T \
-  -e "BACKUP_ALERT_EMAIL=$fallback_email" -e "BACKUP_ALERT_PHONE=$fallback_phone" \
+  -e "BACKUP_ALERT_EMAIL=$extra_emails" -e "BACKUP_ALERT_PHONE=$extra_phones" \
   api python -m scripts.notify_admins --subject "$subject" --message "$message"; then
-  echo "ALERT DELIVERY FAILED: $failed_unit failure at $failure_time could not be sent to any admin or fallback address" >&2
+  echo "ALERT DELIVERY FAILED: $failed_unit failure at $failure_time could not be sent to any superadmin or configured alert recipient" >&2
   exit 1
 fi
 log "Failure alert sent for $failed_unit"

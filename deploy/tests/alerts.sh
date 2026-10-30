@@ -4,13 +4,13 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
 export TEST_SECRET_VALUE=hunter2-restic-secret
-printf 'RESTIC_PASSWORD=%s\nBACKUP_ALERT_EMAIL=ops@example.com\nBACKUP_ALERT_PHONE=+992900000009\n' "$TEST_SECRET_VALUE" > "$BACKUP_CONFIGURATION_FILE"
+printf 'RESTIC_PASSWORD=%s\nBACKUP_ALERT_EMAIL="ops@example.com, second@example.com"\nBACKUP_ALERT_PHONE=+992900000009\n' "$TEST_SECRET_VALUE" > "$BACKUP_CONFIGURATION_FILE"
 printf 'bbbbbbb\n' > "$IMKON_DATA_DIR/current_release"
 
 export TEST_SCENARIO=success
 : > "$TEST_COMMAND_LOG"
 bash "$repository_directory/deploy/notify_failure.sh" imkon-backup.service > "$test_directory/alert-success.log" 2>&1
-grep -Fq 'bbbbbbb|run --rm --no-deps -T -e BACKUP_ALERT_EMAIL=ops@example.com -e BACKUP_ALERT_PHONE=+992900000009 api python -m scripts.notify_admins --subject [IMKON] imkon-backup.service failed on ' "$TEST_COMMAND_LOG"
+grep -Fq 'bbbbbbb|run --rm --no-deps -T -e BACKUP_ALERT_EMAIL=ops@example.com, second@example.com -e BACKUP_ALERT_PHONE=+992900000009 api python -m scripts.notify_admins --subject [IMKON] imkon-backup.service failed on ' "$TEST_COMMAND_LOG"
 grep -Fq 'Unit: imkon-backup.service' "$TEST_COMMAND_LOG"
 grep -Eq 'Time \(UTC\): [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z' "$TEST_COMMAND_LOG"
 grep -Fq "Host: $(hostname)" "$TEST_COMMAND_LOG"
