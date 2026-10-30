@@ -29,8 +29,8 @@ class NotifyAdminsCommand:
             admin_contact_loader=cls.load_admin_contacts,
             email_sender=EmailService(),
             sms_sender=sms_sender,
-            fallback_email=os.environ.get("BACKUP_ALERT_EMAIL"),
-            fallback_phone=os.environ.get("BACKUP_ALERT_PHONE"),
+            extra_emails=os.environ.get("BACKUP_ALERT_EMAIL"),
+            extra_phones=os.environ.get("BACKUP_ALERT_PHONE"),
         )
         try:
             report: AlertDeliveryReport = await service.notify(subject, message)

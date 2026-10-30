@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import UserRole
 from app.repositories.interfaces.admin_contact_repository import AdminContact
 from app.repositories.sqlalchemy.admin_contact_repository import SQLAlchemyAdminContactRepository
-from app.services.backup_alert_service import AlertDeliveryReport, BackupAlertService
+from app.services.backup_alert_service import AlertDeliveryReport, BackupAlertService, parse_recipient_list
 from app.services.sms.sender import SmsDeliveryError
 from app.tests.factories import create_user
 from app.tests.sms_fakes import FakeSmsSender
@@ -47,10 +47,10 @@ def build_service(
     contacts_loader,
     email_sender: FakeEmailSender,
     sms_sender: FakeSmsSender | None,
-    fallback_email: str | None = None,
-    fallback_phone: str | None = None,
+    extra_emails: str | None = None,
+    extra_phones: str | None = None,
 ) -> BackupAlertService:
-    return BackupAlertService(contacts_loader, email_sender, sms_sender, fallback_email, fallback_phone)
+    return BackupAlertService(contacts_loader, email_sender, sms_sender, extra_emails, extra_phones)
 
 
 @pytest.mark.asyncio
@@ -104,8 +104,51 @@ async def test_repository_excludes_soft_deleted_and_non_superadmin_users(db_sess
     assert contacts == [AdminContact(email="live@example.com", phone="+992900000001")]
 
 
+def test_parse_recipient_list_trims_and_ignores_empty_entries() -> None:
+    assert parse_recipient_list(" a@example.com , ,b@example.com,, ", case_insensitive=True) == ["a@example.com", "b@example.com"]
+    assert parse_recipient_list(None, case_insensitive=True) == []
+    assert parse_recipient_list("", case_insensitive=False) == []
+
+
+def test_parse_recipient_list_deduplicates_emails_case_insensitively_and_phones_exactly() -> None:
+    assert parse_recipient_list("A@example.com,a@EXAMPLE.com", case_insensitive=True) == ["A@example.com"]
+    assert parse_recipient_list("+992900000001,+992900000001,+992900000002", case_insensitive=False) == ["+992900000001", "+992900000002"]
+
+
 @pytest.mark.asyncio
-async def test_no_admin_found_uses_fallback_address_and_phone() -> None:
+async def test_extras_are_notified_even_when_admins_succeed() -> None:
+    contacts: list[AdminContact] = [AdminContact(email="boss@example.com", phone=None)]
+    email_sender: FakeEmailSender = FakeEmailSender()
+    sms_sender: FakeSmsSender = FakeSmsSender()
+    service: BackupAlertService = build_service(
+        loader_returning(contacts), email_sender, sms_sender, "ops@example.com, second@example.com", "+992900000009"
+    )
+
+    report: AlertDeliveryReport = await service.notify(SUBJECT, MESSAGE)
+
+    assert report.succeeded and report.delivered_count == 4
+    assert [sent.to_email for sent in email_sender.sent] == ["boss@example.com", "ops@example.com", "second@example.com"]
+    assert [send.phone_e164 for send in sms_sender.sends] == ["+992900000009"]
+
+
+@pytest.mark.asyncio
+async def test_extras_matching_superadmin_contacts_are_not_notified_twice() -> None:
+    contacts: list[AdminContact] = [AdminContact(email="Boss@Example.com", phone="+992900000001")]
+    email_sender: FakeEmailSender = FakeEmailSender()
+    sms_sender: FakeSmsSender = FakeSmsSender()
+    service: BackupAlertService = build_service(
+        loader_returning(contacts), email_sender, sms_sender, "boss@example.com,ops@example.com", "+992900000001,+992900000009"
+    )
+
+    report: AlertDeliveryReport = await service.notify(SUBJECT, MESSAGE)
+
+    assert report.delivered_count == 4
+    assert [sent.to_email for sent in email_sender.sent] == ["Boss@Example.com", "ops@example.com"]
+    assert [send.phone_e164 for send in sms_sender.sends] == ["+992900000001", "+992900000009"]
+
+
+@pytest.mark.asyncio
+async def test_no_admin_found_still_notifies_extras() -> None:
     email_sender: FakeEmailSender = FakeEmailSender()
     sms_sender: FakeSmsSender = FakeSmsSender()
     service: BackupAlertService = build_service(loader_returning([]), email_sender, sms_sender, "ops@example.com", "+992900000009")
@@ -118,19 +161,45 @@ async def test_no_admin_found_uses_fallback_address_and_phone() -> None:
 
 
 @pytest.mark.asyncio
-async def test_database_failure_uses_fallback_address() -> None:
+async def test_database_failure_still_notifies_extras() -> None:
     email_sender: FakeEmailSender = FakeEmailSender()
-    service: BackupAlertService = build_service(failing_loader, email_sender, None, "ops@example.com")
+    sms_sender: FakeSmsSender = FakeSmsSender()
+    service: BackupAlertService = build_service(failing_loader, email_sender, sms_sender, "ops@example.com,second@example.com", "+992900000009")
 
     report: AlertDeliveryReport = await service.notify(SUBJECT, MESSAGE)
 
-    assert report.succeeded
-    assert [sent.to_email for sent in email_sender.sent] == ["ops@example.com"]
+    assert report.succeeded and report.delivered_count == 3
+    assert [sent.to_email for sent in email_sender.sent] == ["ops@example.com", "second@example.com"]
+    assert [send.phone_e164 for send in sms_sender.sends] == ["+992900000009"]
     assert "admin_lookup_failed:ConnectionError" in report.failures
 
 
 @pytest.mark.asyncio
-async def test_no_admin_and_no_fallback_reports_failure() -> None:
+async def test_invalid_extra_phone_is_skipped_without_blocking_others() -> None:
+    email_sender: FakeEmailSender = FakeEmailSender()
+    sms_sender: FakeSmsSender = FakeSmsSender()
+    service: BackupAlertService = build_service(loader_returning([]), email_sender, sms_sender, "ops@example.com", "not-a-phone,+992900000009")
+
+    report: AlertDeliveryReport = await service.notify(SUBJECT, MESSAGE)
+
+    assert report.succeeded and report.delivered_count == 2
+    assert [send.phone_e164 for send in sms_sender.sends] == ["+992900000009"]
+    assert "sms_invalid_phone" in report.failures
+
+
+@pytest.mark.asyncio
+async def test_failing_extra_email_does_not_stop_other_extras() -> None:
+    email_sender: FakeEmailSender = FakeEmailSender(failing_addresses={"ops@example.com"})
+    service: BackupAlertService = build_service(loader_returning([]), email_sender, None, "ops@example.com,second@example.com")
+
+    report: AlertDeliveryReport = await service.notify(SUBJECT, MESSAGE)
+
+    assert report.succeeded and report.delivered_count == 1
+    assert [sent.to_email for sent in email_sender.sent] == ["second@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_no_admin_and_no_extras_reports_failure() -> None:
     report: AlertDeliveryReport = await build_service(loader_returning([]), FakeEmailSender(), FakeSmsSender()).notify(SUBJECT, MESSAGE)
 
     assert not report.succeeded
@@ -164,7 +233,7 @@ async def test_failing_sms_does_not_stop_email() -> None:
 
 
 @pytest.mark.asyncio
-async def test_all_channels_failing_falls_back_then_reports_failure_when_fallback_fails() -> None:
+async def test_nothing_delivered_reports_failure() -> None:
     contacts: list[AdminContact] = [AdminContact(email="boss@example.com", phone=None)]
     email_sender: FakeEmailSender = FakeEmailSender(failing_addresses={"boss@example.com", "ops@example.com"})
 

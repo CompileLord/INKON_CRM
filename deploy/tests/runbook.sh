@@ -11,5 +11,7 @@ grep -Fq 'tar -xpf /tmp/storage-restore/storage.tar -C /var/lib/imkon/storage' "
 printf 'PASS storage archive restore procedure\n'
 grep -Fq 'OnFailure=imkon-backup-alert@%n.service' "$repository_directory/deploy/RUNBOOK.md"
 printf 'PASS failure alert documentation\n'
-grep -Fq 'BACKUP_ALERT_EMAIL' "$repository_directory/deploy/RUNBOOK.md"
-printf 'PASS alert fallback documentation\n'
+grep -Fq 'comma-separated addresses, quoted if they contain spaces' "$repository_directory/deploy/RUNBOOK.md"
+grep -Fq 'always notified on every failure alert' "$repository_directory/deploy/RUNBOOK.md"
+! grep -Fq 'falls back to' "$repository_directory/deploy/RUNBOOK.md"
+printf 'PASS alert extra recipients documentation\n'
