@@ -40,6 +40,9 @@ case "$*" in
   'up -d caddy')
     [[ "$TEST_SCENARIO" != caddy || "$IMAGE_TAG" == aaaaaaa ]]
     ;;
+  'run --rm --no-deps -T -e BACKUP_ALERT_EMAIL='*' api python -m scripts.notify_admins --subject '*)
+    [[ "$TEST_SCENARIO" != alert_delivery_fails ]]
+    ;;
   'run --rm --no-deps -T --user 10001:10001 api tar -C /app/storage -cf - .')
     [[ "$TEST_SCENARIO" != archive ]]
     tar -C "$TEST_UPLOAD_DIRECTORY" -cf - .
@@ -50,6 +53,12 @@ STUB
 cat > "$test_directory/bin/curl" <<'STUB'
 #!/usr/bin/env bash
 [[ "$TEST_SCENARIO" != health ]]
+STUB
+cat > "$test_directory/bin/journalctl" <<'STUB'
+#!/usr/bin/env bash
+printf 'journalctl|%s\n' "$*" >> "$TEST_COMMAND_LOG"
+[[ "$TEST_SCENARIO" != journal_unavailable ]] || exit 1
+printf 'Backup step failed\nRESTIC_PASSWORD leaked: %s\n' "$TEST_SECRET_VALUE"
 STUB
 cat > "$test_directory/bin/sleep" <<'STUB'
 #!/usr/bin/env bash

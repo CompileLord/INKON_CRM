@@ -37,7 +37,7 @@ systemctl restart docker
 if ! id "$DEPLOY_USER" > /dev/null 2>&1; then
   useradd --create-home --shell /bin/bash "$DEPLOY_USER"
 fi
-usermod -aG docker "$DEPLOY_USER"
+usermod -aG docker,systemd-journal "$DEPLOY_USER"
 install -d -m 700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh"
 grep -qxF "$DEPLOY_PUBLIC_KEY" "/home/$DEPLOY_USER/.ssh/authorized_keys" 2> /dev/null \
   || echo "$DEPLOY_PUBLIC_KEY" >> "/home/$DEPLOY_USER/.ssh/authorized_keys"
@@ -77,4 +77,4 @@ if [[ -d "$SCRIPT_DIRECTORY/systemd" ]]; then
   systemctl daemon-reload
 fi
 
-echo "Provisioning complete. Next: create /etc/imkon/backend.env, /etc/imkon/deploy.env, /etc/imkon/backup.env, docker login ghcr.io as $DEPLOY_USER, enable timers."
+echo "Provisioning complete. Next: create /etc/imkon/backend.env, /etc/imkon/deploy.env, /etc/imkon/backup.env (optionally BACKUP_ALERT_EMAIL and BACKUP_ALERT_PHONE), docker login ghcr.io as $DEPLOY_USER, enable timers."
